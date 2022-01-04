@@ -1020,7 +1020,7 @@ fn CodeBuilder::PrepareFunction(
 	{
 		auto& function_type= function_variable.t;
 		if( ( is_constructor || is_destructor ) &&
-			!(function_type.return_type == void_type_ && !function_type.return_value_is_reference ) )
+			!(function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 		{
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope_ptr, function_declaration.src_loc )
 		}
@@ -1271,7 +1271,7 @@ fn CodeBuilder::PrepareFunction(
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
 	}
-	if( function_variable.t.return_value_is_reference )
+	if( function_variable.t.return_value_type != ValueType::Value )
 	{
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeReturnIndex, "nonnull" );
 	}
@@ -1336,7 +1336,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, names_scope, src_loc )
 	}
 
-	auto ret_is_void= func_type.return_type == void_type_ && !func_type.return_value_is_reference;
+	auto ret_is_void= func_type.return_type == void_type_ && func_type.return_value_type == ValueType::Value;
 
 	if( operator == OverloadedOperator::Add ||
 		operator == OverloadedOperator::Sub )
@@ -1395,7 +1395,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 		{
 			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, src_loc )
 		}
-		if( !( func_type.return_type == bool_type_ && !func_type.return_value_is_reference ) )
+		if( !( func_type.return_type == bool_type_ && func_type.return_value_type == ValueType::Value ) )
 		{
 			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, src_loc, void_type_ )
 		}
@@ -1481,7 +1481,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
 	// TODO - maybe forbid incomplete types even for references?
-	if( !func_variable.t.return_value_is_reference && !EnsureTypeComplete( func_variable.t.return_type ) )
+	if( func_variable.t.return_value_type == ValueType::Value && !EnsureTypeComplete( func_variable.t.return_type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
@@ -1682,7 +1682,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
-			if( func_variable.t.return_type == void_type_ && !func_variable.t.return_value_is_reference )
+			if( func_variable.t.return_type == void_type_ && func_variable.t.return_value_type == ValueType::Value )
 			{
 				// Manually generate "return" for void-return functions.
 				CallDestructorsForAllVariablesFrames( args_names_scope_ptr, function_context, block.end_src_loc );
@@ -2604,8 +2604,7 @@ fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
 	var FunctionType mut function_type
 	{
 		.return_type= void_type_,
-		.return_value_is_reference= false,
-		.return_value_is_mutable= false,
+		.return_value_type= ValueType::Value,
 	};
 
 	var FunctionContext mut function_context(

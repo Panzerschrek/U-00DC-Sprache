@@ -364,8 +364,8 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	{
 		ADD_TYPEINFO_FIELD( "return_type", function_type.return_type )
 		ADD_LIST_FIELD( "arguments_list", BuildTypeinfoFunctionParamsList( root_namespace, function_type ) )
-		ADD_BOOL_FIELD( "return_value_is_reference", function_type.return_value_is_reference )
-		ADD_BOOL_FIELD( "return_value_is_mutable"  , function_type.return_value_is_mutable )
+		ADD_BOOL_FIELD( "return_value_is_reference", function_type.return_value_type != ValueType::Value )
+		ADD_BOOL_FIELD( "return_value_is_mutable"  , function_type.return_value_type == ValueType::ReferenceMut )
 		ADD_BOOL_FIELD( "unsafe"                   , function_type.is_unsafe )
 		// SPRACHE_TODO - add also reference pollution.
 	}

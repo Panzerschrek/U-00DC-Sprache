@@ -582,20 +582,11 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 			mangler_state.Push( "F" );
 
 			{
-				var FunctionType::Param mut ret_param
+				var FunctionType::Param ret_param
 				{
 					.t( function_type.return_type ),
-					.value_type= ValueType::Value,
+					.value_type= function_type.return_value_type,
 				};
-
-				if( !function_type.return_value_is_reference )
-				{
-					ret_param.value_type= ValueType::Value;
-				}
-				else
-				{
-					ret_param.value_type= select( function_type.return_value_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-				}
 
 				EncodeFunctionParam( mangler_state, ret_param );
 			}

@@ -93,8 +93,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		var FunctionType mut function_type
 		{
 			.return_type( void_type_ ),
-			.return_value_is_mutable= false,
-			.return_value_is_reference= false,
+			.return_value_type= ValueType::Value,
 		};
 		{
 			var FunctionType::Param mut this_param
@@ -297,8 +296,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		var FunctionType mut function_type
 		{
 			.return_type( void_type_ ),
-			.return_value_is_mutable= false,
-			.return_value_is_reference= false,
+			.return_value_type= ValueType::Value,
 		};
 		{
 			var FunctionType::Param mut dst_param
@@ -514,8 +512,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		var FunctionType mut function_type
 		{
 			.return_type( void_type_ ),
-			.return_value_is_mutable= false,
-			.return_value_is_reference= false,
+			.return_value_type= ValueType::Value,
 		};
 		{
 			var FunctionType::Param mut dst_param
@@ -655,8 +652,7 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 	var FunctionType mut function_type
 	{
 		.return_type( void_type_ ),
-		.return_value_is_mutable= false,
-		.return_value_is_reference= false,
+		.return_value_type= ValueType::Value,
 	};
 	{
 		var FunctionType::Param mut this_param

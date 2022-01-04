@@ -101,8 +101,7 @@ struct FunctionType
 
 	ust::vector</Param/> params;
 	Type return_type;
-	bool return_value_is_reference;
-	bool return_value_is_mutable;
+	ValueType return_value_type;
 
 	bool is_unsafe= false;
 
@@ -582,8 +581,7 @@ public:
 	struct FunctionTypeParam
 	{
 		TemplateSignatureParam return_type;
-		bool return_value_is_mutable;
-		bool return_value_is_reference;
+		ValueType return_value_type;
 
 		bool is_unsafe;
 

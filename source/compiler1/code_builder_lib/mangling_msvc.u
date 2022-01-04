@@ -326,11 +326,11 @@ fn ManglerMSVC::EncodeFunctionType( this, ManglerStateMSVC &mut mangler_state, F
 	// Calling convention code
 	mangler_state.PushElement( "A" );
 
-	if( function_type.return_value_is_reference )
+	if( function_type.return_value_type != ValueType::Value )
 	{
 		mangler_state.PushElement( g_reference_prefix );
 		mangler_state.PushElement( pointer_types_modifier_.range() );
-		mangler_state.PushElement( select( function_type.return_value_is_mutable ? g_mut_prefix : g_imut_prefix ) );
+		mangler_state.PushElement( select( function_type.return_value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
 	}
 	else if(
 		!function_type.return_type.GetClassType().empty()||

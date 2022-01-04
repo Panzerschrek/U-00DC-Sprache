@@ -237,8 +237,8 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 {
 	if(
 		this.return_type != dst.return_type ||
-		this.return_value_is_reference != dst.return_value_is_reference ||
-		( !this.return_value_is_mutable && dst.return_value_is_mutable ) || // Allow mutability conversions, except mut->imut
+		( this.return_value_type == ValueType::Value ) != ( dst.return_value_type == ValueType::Value ) ||
+		( this.return_value_type == ValueType::ReferenceImut && dst.return_value_type == ValueType::ReferenceMut ) || // Allow mutability conversions, except mut->imut
 		( this.is_unsafe && !dst.is_unsafe ) || // Disable unsafe function to safe function conversion
 		this.params.size() != dst.params.size() )
 	{
@@ -299,7 +299,7 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 fn FunctionType::IsStructRet( this ) : bool
 {
 	return
-		!return_value_is_reference &&
+		return_value_type == ValueType::Value &&
 		( !return_type.GetClassType().empty() || !return_type.GetArrayType().empty() || !return_type.GetTupleType().empty() );
 }
 
@@ -343,8 +343,7 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 
 	return
 		l.return_type == r.return_type &&
-		l.return_value_is_reference == r.return_value_is_reference &&
-		l.return_value_is_mutable == r.return_value_is_mutable &&
+		l.return_value_type == r.return_value_type &&
 		l.is_unsafe == r.is_unsafe;
 }
 
@@ -881,8 +880,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 
 	if( !(
 		tl.return_type == tr.return_type &&
-		tl.return_value_is_reference == tr.return_value_is_reference &&
-		tl.return_value_is_mutable == tr.return_value_is_mutable &&
+		tl.return_value_type == tr.return_value_type &&
 		tl.is_unsafe == tr.is_unsafe &&
 		tl.params.size() == tr.params.size() &&
 		tl.params.size() > 0s &&
@@ -1136,8 +1134,7 @@ op TemplateSignatureParam::FunctionTypeParam::Param::==(Param& l, Param& r) : bo
 op TemplateSignatureParam::FunctionTypeParam::==(FunctionTypeParam& l, FunctionTypeParam& r) : bool
 {
 	if( !(l.return_type == r.return_type) ||
-		l.return_value_is_mutable != r.return_value_is_mutable ||
-		l.return_value_is_reference != r.return_value_is_reference ||
+		l.return_value_type != r.return_value_type ||
 		l.is_unsafe != r.is_unsafe ||
 		l.params.size() != r.params.size() )
 	{

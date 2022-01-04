@@ -2636,7 +2636,7 @@ fn CodeBuilder::DoCallFunction(
 	}
 
 	// TODO - maybe forbid calling functions with incomplete type for returned reference?
-	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type ) )
+	if( function_type.return_value_type == ValueType::Value && !EnsureTypeComplete( function_type.return_type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, function_type.return_type )
 		return ErrorValue();
@@ -2662,7 +2662,7 @@ fn CodeBuilder::DoCallFunction(
 	var ust::vector</ LLVMValueRef /> mut constexpr_args;
 	auto mut is_constexpr= false;
 	if( function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete &&
-		!function_type.return_value_is_reference )
+		function_type.return_value_type == ValueType::Value )
 	{
 		is_constexpr= true;
 		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
@@ -2897,22 +2897,21 @@ fn CodeBuilder::DoCallFunction(
 	var Variable mut result
 	{
 		.t= function_type.return_type,
+		.value_type= function_type.return_value_type,
 	};
 
 	var ust::string8 mut node_name= "call result " + function_type.return_type.ToString();
 
-	if( function_type.return_value_is_reference )
+	if( function_type.return_value_type != ValueType::Value )
 	{
 		result.location= Variable::Location::Pointer;
-		result.value_type= select( function_type.return_value_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
 		result.node_id= function_context.references_graph.AddNode(
-			select( function_type.return_value_is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+			select( function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 			move(node_name) );
 	}
 	else
 	{
-		result.value_type= ValueType::Value;
 		if( is_s_ret )
 		{
 			result.location= Variable::Location::Pointer;
@@ -2933,7 +2932,7 @@ fn CodeBuilder::DoCallFunction(
 
 		if( res.errors.empty() )
 		{
-			if( !function.t.return_value_is_reference && function.t.return_type == void_type_ )
+			if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
 			{
 				unsafe{  result.constexpr_value= LLVMConstNull( fundamental_llvm_types_.void_ );  }
 			}
@@ -2976,7 +2975,7 @@ fn CodeBuilder::DoCallFunction(
 		{
 			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front_unchecked(), u32(llvm_args.size()), "\0"[0] );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
-			else if( !function.t.return_value_is_reference && function.t.return_type == void_type_ )
+			else if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
 			{
 				unsafe{  result.llvm_value= LLVMGetUndef( fundamental_llvm_types_.void_ );  }
 			}
@@ -3000,7 +2999,7 @@ fn CodeBuilder::DoCallFunction(
 	}
 
 	// Prepare result references.
-	if( function_type.return_value_is_reference )
+	if( function_type.return_value_type != ValueType::Value )
 	{
 		foreach( &param_reference : function_type.return_references )
 		{
