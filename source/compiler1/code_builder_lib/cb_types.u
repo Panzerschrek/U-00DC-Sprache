@@ -163,9 +163,17 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		var FunctionType::Param mut out_param
 		{
 			.t( invalid_type_ ),
-			.is_reference= param.reference_modifier == Synt::ReferenceModifier::Reference,
-			.is_mutable= param.mutability_modifier == Synt::MutabilityModifier::Mutable,
+			.value_type= ValueType::Value,
 		};
+
+		if( param.reference_modifier == Synt::ReferenceModifier::None )
+		{
+			out_param.value_type= ValueType::Value;
+		}
+		else
+		{
+			out_param.value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		}
 
 		if( param.name == KeywordToString( Keyword::this_ ) )
 		{
@@ -190,7 +198,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 					REPORT_ERROR( UsingKeywordAsName, names_scope, param.src_loc )
 				}
 
-				out_param.is_reference= true;
+				out_param.value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 				out_param.t= ust::to_non_nullable( class_type );
 			}
 		}
@@ -219,7 +227,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	foreach( &param : res.params )
 	{
 		auto mut llvm_type= param.t.GetLLVMType();
-		if( param.is_reference )
+		if( param.value_type != ValueType::Value )
 		{
 			unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
 		}
@@ -276,7 +284,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 		// If there is no tag for return reference, assume, that it may refer to any reference param, but not inner reference of any param.
 		for( auto mut i= 0s; i < res.params.size(); ++i )
 		{
-			if( res.params[i].is_reference )
+			if( res.params[i].value_type != ValueType::Value )
 			{
 				// TODO - what if param is immutable reference and return reference is mutable?
 				var FunctionType::ParamReference mut param_reference{ .param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };

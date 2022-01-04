@@ -442,23 +442,18 @@ fn ManglerMSVC::EncodeFunctionParams( this, ManglerStateMSVC &mut mangler_state,
 
 	foreach( & param : params )
 	{
-		if( !param.is_reference && !param.t.GetFundamentalType().empty() )
+		if( param.value_type == ValueType::Value && !param.t.GetFundamentalType().empty() )
 		{
 			// For trivial params (fundamentals with no reference modifiers) do not create backreferences.
 			EncodeType( mangler_state, param.t );
 		}
 		else
 		{
-			var FunctionType::Param mut param_copy= param;
-			if( !param_copy.is_reference )
-			{
-				param_copy.is_mutable= false; // We do not care about mutability modifier for value params.
-			}
 
 			var bool mut found = false;
 			for( auto mut i= 0s; i < back_references.size(); ++i )
 			{
-				if( param_copy == back_references[i] )
+				if( param == back_references[i] )
 				{
 					mangler_state.PushElement( char8(i + size_type("0"c8)) );
 					found= true;
@@ -468,18 +463,18 @@ fn ManglerMSVC::EncodeFunctionParams( this, ManglerStateMSVC &mut mangler_state,
 
 			if( !found )
 			{
-				if( param.is_reference )
+				if( param.value_type != ValueType::Value )
 				{
 					mangler_state.PushElement( g_reference_prefix );
 					mangler_state.PushElement( pointer_types_modifier_.range() );
-					mangler_state.PushElement( select( param.is_mutable ? g_mut_prefix : g_imut_prefix ) );
+					mangler_state.PushElement( select( param.value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
 				}
 
 				EncodeType( mangler_state, param.t );
 
 				if( back_references.size() < g_num_back_references )
 				{
-					back_references.push_back( param_copy );
+					back_references.push_back( param );
 				}
 			}
 		}

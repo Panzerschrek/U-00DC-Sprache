@@ -562,8 +562,8 @@ fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_n
 
 		auto& param= function_type.params[i];
 		ADD_TYPEINFO_FIELD( "type", param.t )
-		ADD_BOOL_FIELD( "is_reference", param.is_reference )
-		ADD_BOOL_FIELD( "is_mutable"  , param.is_mutable   )
+		ADD_BOOL_FIELD( "is_reference", param.value_type != ValueType::Value )
+		ADD_BOOL_FIELD( "is_mutable"  , param.value_type == ValueType::ReferenceMut )
 
 		// SPRACHE_TODO - add reference pollution
 

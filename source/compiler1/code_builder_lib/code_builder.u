@@ -1283,18 +1283,18 @@ fn CodeBuilder::PrepareFunction(
 
 		var bool param_type_is_composite= !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty();
 		// Mark pointer-parameters as "nonnull".
-		if( param.is_reference || param_type_is_composite )
+		if( param.value_type != ValueType::Value || param_type_is_composite )
 		{
 			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nonnull" );
 		}
 		// Mutable reference args or composite value-args must not alias.
 		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
-		if( param.is_reference || param_type_is_composite )
+		if( param.value_type != ValueType::Value || param_type_is_composite )
 		{
 			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "noalias" );
 		}
 		// Mark as "readonly" immutable reference params.
-		if( !param.is_mutable && param.is_reference )
+		if( param.value_type == ValueType::ReferenceImut )
 		{
 			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "readonly" );
 		}
@@ -1513,7 +1513,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			var NamesScopeVariable mut out_arg
 			{
 				.t= type_param.t,
-				.is_mutable= type_param.is_mutable,
+				.is_mutable= in_param.mutability_modifier == Synt::MutabilityModifier::Mutable,
 			};
 
 			// Ensure type completness even for reference args because of reference checking.
@@ -1530,7 +1530,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				function_context.args_inner_variable_nodes[arg_n]= inner_reference_variable_node_id;
 			}
 
-			if( type_param.is_reference )
+			if( type_param.value_type != ValueType::Value )
 			{
 				unsafe
 				{
@@ -1553,7 +1553,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				}
 
 				out_arg.node_id= function_context.references_graph.AddNode(
-					select( type_param.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+					select( out_arg.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 					in_param.name );
 				function_context.references_graph.AddLink( variable_node_id, out_arg.node_id );
 
@@ -1921,7 +1921,7 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 	auto& params= function_type.params;
 	for( auto mut i= 0s; i < params.size(); ++i )
 	{
-		if( !params[i].is_reference )
+		if( params[i].value_type == ValueType::Value )
 		{
 			continue;
 		}
@@ -2130,7 +2130,7 @@ fn CodeBuilder::IsDefaultConstructor( FunctionVariable& function_variable, Class
 	if( function_variable.t.params.size() != 1s ){ return false; }
 
 	auto& param= function_variable.t.params.front();
-	return param.t == class_type && param.is_mutable && param.is_reference;
+	return param.t == class_type && param.value_type == ValueType::ReferenceMut;
 }
 
 fn CodeBuilder::IsCopyConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
@@ -2141,8 +2141,8 @@ fn CodeBuilder::IsCopyConstructor( FunctionVariable& function_variable, ClassTyp
 	auto& param_dst= function_variable.t.params.front();
 	auto& param_src= function_variable.t.params.back();
 	return
-		param_dst.t == class_type &&  param_dst.is_mutable && param_dst.is_reference &&
-		param_src.t == class_type && !param_src.is_mutable && param_src.is_reference;
+		param_dst.t == class_type && param_dst.value_type == ValueType::ReferenceMut &&
+		param_src.t == class_type && param_src.value_type == ValueType::ReferenceImut;
 }
 
 fn CodeBuilder::IsCopyAssignmentOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
@@ -2152,8 +2152,8 @@ fn CodeBuilder::IsCopyAssignmentOperator( FunctionVariable& function_variable, C
 	auto& param_dst= function_variable.t.params.front();
 	auto& param_src= function_variable.t.params.back();
 	return
-		param_dst.t == class_type &&  param_dst.is_mutable && param_dst.is_reference &&
-		param_src.t == class_type && !param_src.is_mutable && param_src.is_reference;
+		param_dst.t == class_type && param_dst.value_type == ValueType::ReferenceMut &&
+		param_src.t == class_type && param_src.value_type == ValueType::ReferenceImut;
 }
 
 fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef

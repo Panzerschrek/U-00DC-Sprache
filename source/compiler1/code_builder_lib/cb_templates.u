@@ -524,9 +524,17 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		var TemplateSignatureParam::FunctionTypeParam::Param mut out_param
 		{
 			.t= CreateTemplateSignatureParam( names_scope, function_context, template_params, param.t, template_params_usage_flags ),
-			.is_mutable= param.mutability_modifier == Synt::MutabilityModifier::Mutable,
-			.is_reference= param.reference_modifier == Synt::ReferenceModifier::Reference,
+			.value_type= ValueType::Value,
 		};
+
+		if( param.reference_modifier == Synt::ReferenceModifier::None )
+		{
+			out_param.value_type= ValueType::Value;
+		}
+		else
+		{
+			out_param.value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		}
 
 		all_types_are_known &= !out_param.t.GetTypeParam().empty();
 
@@ -833,7 +841,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 fn CodeBuilder::GenTemplateFunction(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
-	ust::array_view_imut</VariableTypeExtened/> mut args,
+	ust::array_view_imut</VariableTypeExtended/> mut args,
 	bool first_arg_is_this,
 	NamesScopePtr& instantiation_point_names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
@@ -851,7 +859,7 @@ fn CodeBuilder::GenTemplateFunction(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
 	TemplateArgsFinished& known_template_args,
-	ust::array_view_imut</VariableTypeExtened/> mut args,
+	ust::array_view_imut</VariableTypeExtended/> mut args,
 	bool first_arg_is_this,
 	NamesScopePtr& instantiation_point_names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
@@ -906,7 +914,7 @@ fn CodeBuilder::GenTemplateFunction(
 	for( auto mut i= 0s; i < args.size(); ++i )
 	{
 		var Synt::FunctionType::Param& function_param= function_syntax_element.function_type.params[i];
-		var VariableTypeExtened& arg= args[i];
+		var VariableTypeExtended& arg= args[i];
 
 		auto is_this= function_param.name == KeywordToString( Keyword::this_ );
 		auto param_is_mutable_reference=
@@ -1550,8 +1558,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				auto& expected_param= function_type_param.params[i];
 				auto& given_arg= given_function_type.params[i];
 
-				if( expected_param.is_mutable != given_arg.is_mutable ||
-					expected_param.is_reference != given_arg.is_reference )
+				if( expected_param.value_type != given_arg.value_type )
 				{
 					return false;
 				}

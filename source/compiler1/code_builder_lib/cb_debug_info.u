@@ -381,7 +381,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 	foreach( &param : t.params )
 	{
 		auto mut di_type= CreateDIType( param.t );
-		if( param.is_reference )
+		if( param.value_type != ValueType::Value )
 		{
 			unsafe
 			{

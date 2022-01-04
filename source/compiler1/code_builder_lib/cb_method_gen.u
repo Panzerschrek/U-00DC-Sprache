@@ -100,8 +100,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			var FunctionType::Param mut this_param
 			{
 				.t( Type( class_type ) ),
-				.is_reference= true,
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
 			};
 			function_type.params.push_back( move(this_param) );
 		}
@@ -305,14 +304,12 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			var FunctionType::Param mut dst_param
 			{
 				.t( Type( class_type ) ),
-				.is_reference= true,
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
 			};
 			var FunctionType::Param mut src_param
 			{
 				.t( Type( class_type ) ),
-				.is_reference= true,
-				.is_mutable= false,
+				.value_type= ValueType::ReferenceImut,
 			};
 			function_type.params.push_back( move(dst_param) );
 			function_type.params.push_back( move(src_param) );
@@ -524,14 +521,12 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			var FunctionType::Param mut dst_param
 			{
 				.t( Type( class_type ) ),
-				.is_reference= true,
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
 			};
 			var FunctionType::Param mut src_param
 			{
 				.t( Type( class_type ) ),
-				.is_reference= true,
-				.is_mutable= false,
+				.value_type= ValueType::ReferenceImut,
 			};
 			function_type.params.push_back( move(dst_param) );
 			function_type.params.push_back( move(src_param) );
@@ -667,8 +662,7 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 		var FunctionType::Param mut this_param
 		{
 			.t( Type( class_type ) ),
-			.is_reference= true,
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
 		};
 		function_type.params.push_back( move(this_param) );
 	}

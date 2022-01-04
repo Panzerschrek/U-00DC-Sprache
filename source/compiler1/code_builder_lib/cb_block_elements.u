@@ -1665,7 +1665,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	// Try process overloaded operator.
 	if( ! variable.t.GetClassType().empty() )
 	{
-		var [ VariableTypeExtened, 1 ] args
+		var [ VariableTypeExtended, 1 ] args
 		[ {
 			.t(variable.t),
 			.value_type= variable.value_type,
