@@ -869,7 +869,7 @@ size_t CodeBuilder::PrepareFunction(
 			else
 				out_param.value_type= ValueType::Value;
 
-			ProcessFunctionParamReferencesTags( names_scope.GetErrors(), func.type_, function_type, in_param, out_param, function_type.params.size() - 1u );
+			ProcessFunctionParamReferencesTags( func.type_, function_type, in_param, out_param, function_type.params.size() - 1u );
 		} // for arguments
 
 		function_type.unsafe= func.type_.unsafe_;

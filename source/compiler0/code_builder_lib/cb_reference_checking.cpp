@@ -7,14 +7,12 @@ namespace U
 {
 
 void CodeBuilder::ProcessFunctionParamReferencesTags(
-	CodeBuilderErrorsContainer& errors_container,
 	const Synt::FunctionType& func,
 	FunctionType& function_type,
 	const Synt::FunctionParam& in_param,
 	const FunctionType::Param& out_param,
 	const size_t arg_number )
 {
-	U_UNUSED(errors_container); // TODO - remove it.
 
 	if( function_type.return_value_type != ValueType::Value && !func.return_value_reference_tag_.empty() )
 	{

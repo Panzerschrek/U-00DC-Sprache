@@ -116,7 +116,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		else
 			out_param.value_type= ValueType::ReferenceImut;
 
-		ProcessFunctionParamReferencesTags( names_scope.GetErrors(), function_type_name, function_type, in_param, out_param, function_type.params.size() - 1u );
+		ProcessFunctionParamReferencesTags( function_type_name, function_type, in_param, out_param, function_type.params.size() - 1u );
 	}
 
 	function_type.unsafe= function_type_name.unsafe_;
