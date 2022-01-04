@@ -132,7 +132,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 {
 	// Structs (and other composite types) passed by pointer.
 	// This pointer is non-null and actual storage is unique for each arg, so "noalias" must present.
-	// Also "readonly" must be set for immutable value args.
+	// "readonly" should not be set since it's possible to mutate arg in its destructor.
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; }
@@ -161,12 +161,12 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
 
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
 }
 
@@ -291,7 +291,7 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
 {
 	// Composite type value-arguments passed by pointer.
 	// This pointer is non-null and actual storage is unique for each arg, so "noalias" must present.
-	// Also "readonly" must be set for mutable value-params.
+	// "readonly" should not be set since it's possible to mutate arg in its destructor.
 	static const char c_program_text[]=
 	R"(
 		fn Foo( [ i32, 2 ] mut a, tup[ bool, f64 ] imut b );
@@ -309,7 +309,7 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
 }
 

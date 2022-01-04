@@ -1681,8 +1681,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	ArgsVector<FunctionType::Param> args;
 	args.emplace_back();
 	args.back().type= variable->type;
-	args.back().is_mutable= variable->value_type == ValueType::ReferenceMut;
-	args.back().is_reference= variable->value_type != ValueType::Value;
+	args.back().value_type= variable->value_type;
 	const FunctionVariable* const overloaded_operator=
 		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, block_names, src_loc );
 	if( overloaded_operator != nullptr )

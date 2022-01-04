@@ -410,17 +410,21 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 
 	all_types_are_known&= function_param.return_type->IsType();
 
-	for( const Synt::FunctionParam& arg : function_pointer_type_name.params_ )
+	for( const Synt::FunctionParam& in_param : function_pointer_type_name.params_ )
 	{
-		auto t= CreateTemplateSignatureParameter( arg.type_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
+		auto t= CreateTemplateSignatureParameter( in_param.type_, names_scope, function_context, template_parameters, template_parameters_usage_flags );
 		all_types_are_known&= t.IsType();
 
-		TemplateSignatureParam::FunctionParam::Param param;
-		param.type= std::make_unique<TemplateSignatureParam>( std::move(t) );
-		param.is_mutable= arg.mutability_modifier_ == Synt::MutabilityModifier::Mutable;
-		param.is_reference= arg.reference_modifier_ == Synt::ReferenceModifier::Reference;
+		TemplateSignatureParam::FunctionParam::Param out_param;
+		out_param.type= std::make_unique<TemplateSignatureParam>( std::move(t) );
+		if( in_param.reference_modifier_ == Synt::ReferenceModifier::None )
+			out_param.value_type= ValueType::Value;
+		else if( in_param.mutability_modifier_ == Synt::MutabilityModifier::Mutable )
+			out_param.value_type= ValueType::ReferenceMut;
+		else
+			out_param.value_type= ValueType::ReferenceImut;
 
-		function_param.params.push_back( std::move(param) );
+		function_param.params.push_back( std::move(out_param) );
 	}
 
 	if( all_types_are_known )
@@ -732,8 +736,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			for( size_t i= 0; i < template_param.params.size(); ++i )
 			{
 				if( !(
-					given_function_type.params[i].is_mutable == template_param.params[i].is_mutable &&
-					given_function_type.params[i].is_reference == template_param.params[i].is_reference &&
+					given_function_type.params[i].value_type == template_param.params[i].value_type &&
 					MatchTemplateArg( template_, args_names_scope, given_function_type.params[i].type, src_loc, *template_param.params[i].type )
 					) )
 					return false;
@@ -1018,7 +1021,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 			( function_param.reference_modifier_ == Synt::ReferenceModifier::Reference || function_param.name_ == Keywords::this_ );
 
 		// Functin arg declared as "mut&", but given something immutable.
-		if( expected_arg_is_mutalbe_reference && !given_args[i].is_mutable )
+		if( expected_arg_is_mutalbe_reference && given_args[i].value_type != ValueType::ReferenceMut )
 			return result;
 
 		const TemplateSignatureParam& signature_param= function_template.signature_params[i];

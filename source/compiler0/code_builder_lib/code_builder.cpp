@@ -534,9 +534,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	const FunctionVariable* constructor= nullptr;
 	for( const FunctionVariable& candidate : constructors->functions )
 	{
-		const FunctionType& constructor_type= *candidate.type.GetFunctionType();
-		if( candidate.is_this_call && constructor_type.params.size() == 2u &&
-			constructor_type.params.back().type == class_type && constructor_type.params.back().is_reference && !constructor_type.params.back().is_mutable )
+		if( IsCopyConstructor( *candidate.type.GetFunctionType(), class_type ) )
 		{
 			constructor= &candidate;
 			break;
@@ -836,15 +834,15 @@ size_t CodeBuilder::PrepareFunction(
 		// Params.
 		function_type.params.reserve( func.type_.params_.size() );
 
-		for( const Synt::FunctionParam& arg : func.type_.params_ )
+		for( const Synt::FunctionParam& in_param : func.type_.params_ )
 		{
 			const bool is_this=
-				&arg == &func.type_.params_.front() &&
-				arg.name_ == Keywords::this_ &&
-				std::get_if<Synt::EmptyVariant>(&arg.type_) != nullptr;
+				&in_param == &func.type_.params_.front() &&
+				in_param.name_ == Keywords::this_ &&
+				std::get_if<Synt::EmptyVariant>(&in_param.type_) != nullptr;
 
-			if( !is_this && IsKeyword( arg.name_ ) )
-				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.src_loc_ );
+			if( !is_this && IsKeyword( in_param.name_ ) )
+				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_param.src_loc_ );
 
 			function_type.params.emplace_back();
 			FunctionType::Param& out_param= function_type.params.back();
@@ -854,18 +852,22 @@ size_t CodeBuilder::PrepareFunction(
 				func_variable.is_this_call= true;
 				if( base_class == nullptr )
 				{
-					REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), arg.src_loc_, func_name );
+					REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), in_param.src_loc_, func_name );
 					return ~0u;
 				}
 				out_param.type= base_class;
 			}
 			else
-				out_param.type= PrepareType( arg.type_, names_scope, *global_function_context_ );
+				out_param.type= PrepareType( in_param.type_, names_scope, *global_function_context_ );
 
-			out_param.is_mutable= ( is_this && is_special_method ) || arg.mutability_modifier_ == MutabilityModifier::Mutable;
-			out_param.is_reference= is_this || arg.reference_modifier_ == ReferenceModifier::Reference;
+			if( is_this )
+				out_param.value_type= ( is_special_method || in_param.mutability_modifier_ == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+			else if( in_param.reference_modifier_ == ReferenceModifier::Reference )
+				out_param.value_type= in_param.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+			else
+				out_param.value_type= ValueType::Value;
 
-			ProcessFunctionParamReferencesTags( names_scope.GetErrors(), func.type_, function_type, arg, out_param, function_type.params.size() - 1u );
+			ProcessFunctionParamReferencesTags( names_scope.GetErrors(), func.type_, function_type, in_param, out_param, function_type.params.size() - 1u );
 		} // for arguments
 
 		function_type.unsafe= func.type_.unsafe_;
@@ -1182,15 +1184,15 @@ Type CodeBuilder::BuildFuncCode(
 			const FunctionType::Param& param= function_type.params[i];
 
 			const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
-			// Mark pointer-parameters as nonnull.
-			if( param.is_reference || param_is_composite )
+			// Mark reference params as nonnull.
+			if( param.value_type != ValueType::Value || param_is_composite )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
-			// Mutable reference args or composite value-args must not alias.
+			// Mutable reference params or composite value-args must not alias.
 			// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
-			if( param.is_reference || param_is_composite )
+			if( param.value_type != ValueType::Value || param_is_composite )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
-			// Mark as "readonly" immutable reference params and immutable value params of composite types.
-			if( !param.is_mutable && ( param.is_reference || param_is_composite ) )
+			// Mark as "readonly" immutable reference params.
+			if( param.value_type == ValueType::ReferenceImut )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ReadOnly );
 		}
 
@@ -1278,7 +1280,7 @@ Type CodeBuilder::BuildFuncCode(
 		const std::string& arg_name= declaration_arg.name_;
 
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
-		U_ASSERT( !( is_this && !param.is_reference ) );
+		U_ASSERT( !( is_this && param.value_type == ValueType::Value ) );
 
 		Variable var;
 		var.location= Variable::Location::Pointer;
@@ -1288,7 +1290,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( declaration_arg.mutability_modifier_ != MutabilityModifier::Mutable )
 			var.value_type= ValueType::ReferenceImut;
 
-		if( param.is_reference )
+		if( param.value_type != ValueType::Value )
 		{
 			var.llvm_value= &llvm_arg;
 			CreateReferenceVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
@@ -1321,10 +1323,10 @@ Type CodeBuilder::BuildFuncCode(
 		// Register arg on stack, only if it is value-argument.
 		const auto var_node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, arg_name );
 		function_context.args_nodes[ arg_number ].first= var_node;
-		if( param.is_reference )
+		if( param.value_type != ValueType::Value )
 		{
 			const auto reference_node= function_context.variables_state.AddNode(
-				param.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				param.value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 				arg_name + " reference" );
 			function_context.variables_state.AddLink( var_node, reference_node );
 			var.node= reference_node;

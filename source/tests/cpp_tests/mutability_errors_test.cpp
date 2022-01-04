@@ -168,6 +168,60 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest8)
 	U_TEST_ASSERT( error.src_loc.GetLine() == 8u );
 }
 
+U_TEST(ChangeValueArg_Test0)
+{
+	// Mutating imut value arg.
+	static const char c_program_text[]=
+	R"(
+		fn Foo(i32 imut x)
+		{
+			x= 0;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
+}
+
+U_TEST(ChangeValueArg_Test1)
+{
+	// Mutating implicitly imut value arg.
+	static const char c_program_text[]=
+	R"(
+		fn Foo(i32 x)
+		{
+			x= 0;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
+}
+
+U_TEST(ChangeValueArg_Test2)
+{
+	// Mutating mut value arg.
+	static const char c_program_text[]=
+	R"(
+		fn Foo(i32 mut x)
+		{
+			x= 0;
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST(ImmutableClassField_Test0)
 {
 	// Mutating class field via member access operator.

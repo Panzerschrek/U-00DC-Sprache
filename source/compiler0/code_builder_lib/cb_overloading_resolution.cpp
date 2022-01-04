@@ -18,16 +18,9 @@ enum class ArgOverloadingClass
 	MutalbeReference,
 };
 
-ArgOverloadingClass GetArgOverloadingClass( const bool is_reference, const bool is_mutable )
+ArgOverloadingClass GetArgOverloadingClass( const FunctionType::Param& param )
 {
-	if( is_reference && is_mutable )
-		return ArgOverloadingClass::MutalbeReference;
-	return ArgOverloadingClass::ImmutableReference;
-}
-
-ArgOverloadingClass GetArgOverloadingClass( const FunctionType::Param& arg )
-{
-	return GetArgOverloadingClass( arg.is_reference, arg.is_mutable );
+	return param.value_type == ValueType::ReferenceMut ? ArgOverloadingClass::MutalbeReference : ArgOverloadingClass::ImmutableReference;
 }
 
 enum class ConversionsCompareResult
@@ -665,11 +658,9 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	ArgsVector<FunctionType::Param> actual_args;
 	actual_args.resize(2u);
 	actual_args[0u].type= dst_type;
-	actual_args[0u].is_mutable= true;
-	actual_args[0u].is_reference= true;
+	actual_args[0u].value_type= ValueType::ReferenceMut;
 	actual_args[1u].type= src_type;
-	actual_args[1u].is_mutable= false;
-	actual_args[1u].is_reference= true;
+	actual_args[1u].value_type= ValueType::ReferenceImut;
 
 	const FunctionVariable* const func= GetOverloadedFunction( constructors, actual_args, true, errors_container, src_loc, false, false );
 	if( func != nullptr && func->is_conversion_constructor )

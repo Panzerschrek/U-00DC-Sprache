@@ -68,8 +68,7 @@ public:
 		struct Param
 		{
 			std::shared_ptr<const TemplateSignatureParam> type;
-			bool is_mutable;
-			bool is_reference;
+			ValueType value_type= ValueType::Value;
 
 			bool operator==( const Param& other ) const;
 		};

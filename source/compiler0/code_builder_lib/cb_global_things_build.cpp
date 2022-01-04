@@ -623,10 +623,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
-			const FunctionType& constructor_type= *constructor.type.GetFunctionType();
-
-			U_ASSERT( constructor_type.params.size() >= 1u && constructor_type.params.front().type == class_type );
-			if( !( constructor_type.params.size() == 2u && constructor_type.params.back().type == class_type && !constructor_type.params.back().is_mutable ) )
+			if( !IsCopyConstructor( *constructor.type.GetFunctionType(), class_type ) )
 			{
 				the_class.have_explicit_noncopy_constructors= true;
 				break;

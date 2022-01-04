@@ -19,7 +19,7 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 	if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
 	{
 		// Arg reference to return reference
-		if( out_param.is_reference && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_reference_tag_ )
+		if( out_param.value_type != ValueType::Value && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_reference_tag_ )
 			function_type.return_references.emplace( arg_number, FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return reference
@@ -30,7 +30,7 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tag_.empty() )
 	{
 		// In arg reference to return value references
-		if( out_param.is_reference && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_inner_reference_tag_ )
+		if( out_param.value_type != ValueType::Value && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_inner_reference_tag_ )
 			function_type.return_references.emplace( arg_number, FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return value references
@@ -94,7 +94,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
 		for( size_t i= 0u; i < function_type.params.size(); ++i )
 		{
-			if( function_type.params[i].is_reference )
+			if( function_type.params[i].value_type != ValueType::Value )
 				function_type.return_references.emplace( i, FunctionType::c_arg_reference_tag_number );
 		}
 	}
@@ -298,7 +298,7 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 {
 	for( size_t i= 0u; i < function_context.function_type.params.size(); ++i )
 	{
-		if( !function_context.function_type.params[i].is_reference )
+		if( function_context.function_type.params[i].value_type == ValueType::Value )
 			continue;
 
 		const auto& node_pair= function_context.args_nodes[i];

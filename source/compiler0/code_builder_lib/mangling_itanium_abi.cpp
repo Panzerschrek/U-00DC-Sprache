@@ -320,11 +320,11 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 
 void EncodeFunctionParam( ManglerState& mangler_state, const FunctionType::Param& param )
 {
-	if( param.is_reference )
+	if( param.value_type != ValueType::Value )
 	{
 		const ManglerState::NodeHolder ref_node( mangler_state );
 		mangler_state.Push( "R" );
-		if( param.is_mutable )
+		if( param.value_type == ValueType::ReferenceMut )
 			EncodeTypeName( mangler_state, param.type );
 		else
 		{
@@ -425,8 +425,13 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 
 		{
 			FunctionType::Param ret;
-			ret.is_mutable= function->return_value_is_mutable;
-			ret.is_reference= function->return_value_is_reference;
+			if( !function->return_value_is_reference )
+				ret.value_type= ValueType::Value;
+			else if( function->return_value_is_mutable )
+				ret.value_type= ValueType::ReferenceMut;
+			else
+				ret.value_type= ValueType::ReferenceImut;
+
 			ret.type= function->return_type;
 			EncodeFunctionParam( mangler_state, ret );
 		}

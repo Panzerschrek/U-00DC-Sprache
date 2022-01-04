@@ -1448,8 +1448,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 	// Apply here move-assignment.
 	if( op == OverloadedOperator::Assign &&
-		args.front().is_mutable && args.front().is_reference  &&
-		!args.back().is_reference &&
+		args.front().value_type == ValueType::ReferenceMut &&
+		args.back().value_type == ValueType::Value &&
 		args.front().type == args.back().type &&
 		( args.front().type.GetClassType() != nullptr || args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 	{
@@ -1585,8 +1585,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	ArgsVector<FunctionType::Param> args;
 	args.emplace_back();
 	args.back().type= variable.type;
-	args.back().is_mutable= variable.value_type == ValueType::ReferenceMut;
-	args.back().is_reference= variable.value_type != ValueType::Value;
+	args.back().value_type= variable.value_type;
 
 	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, names, src_loc );
 
@@ -2507,10 +2506,10 @@ Value CodeBuilder::DoCallFunction(
 			src_loc= Synt::GetExpressionSrcLoc( *args[ j - preevaluated_args.size() ] );
 		}
 
-		if( expr.constexpr_value != nullptr && !( param.is_reference && param.is_mutable ) )
+		if( expr.constexpr_value != nullptr && param.value_type != ValueType::ReferenceMut )
 			constant_llvm_args.push_back( expr.constexpr_value );
 
-		if( param.is_reference )
+		if( param.value_type != ValueType::Value )
 		{
 			if( !ReferenceIsConvertible( expr.type, param.type, names.GetErrors(), call_src_loc ) &&
 				GetConversionConstructor( expr.type, param.type, names.GetErrors(), src_loc ) == nullptr )
@@ -2519,7 +2518,7 @@ Value CodeBuilder::DoCallFunction(
 				return ErrorValue();
 			}
 
-			if( param.is_mutable )
+			if( param.value_type == ValueType::ReferenceMut )
 			{
 				if( expr.value_type == ValueType::Value )
 				{
@@ -2568,7 +2567,7 @@ Value CodeBuilder::DoCallFunction(
 			// Lock references.
 			args_nodes.emplace_back(
 				function_context,
-				param.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				param.value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 				"reference_arg " + std::to_string(i) );
 
 			if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, args_nodes.back().Node() ) )
@@ -2873,10 +2872,10 @@ Value CodeBuilder::DoCallFunction(
 		if( referene_pollution.src.second == FunctionType::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
-			U_ASSERT( function_type.params[ referene_pollution.src.first ].is_reference );
+			U_ASSERT( function_type.params[ referene_pollution.src.first ].value_type != ValueType::Value );
 			src_nodes.emplace( args_nodes[ referene_pollution.src.first ].Node() );
 
-			if( function_type.params[ referene_pollution.src.first ].is_mutable )
+			if( function_type.params[ referene_pollution.src.first ].value_type == ValueType::ReferenceMut )
 				src_variables_is_mut= true;
 		}
 		else
@@ -2895,7 +2894,7 @@ Value CodeBuilder::DoCallFunction(
 			}
 		}
 
-		if( function_type.params[ dst_arg ].is_reference && !src_nodes.empty() )
+		if( function_type.params[ dst_arg ].value_type != ValueType::Value && !src_nodes.empty() )
 		{
 			const bool dst_inner_reference_is_mut= function_type.params[ dst_arg ].type.GetInnerReferenceType() == InnerReferenceType::Mut;
 			// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
@@ -3028,8 +3027,7 @@ FunctionType::Param CodeBuilder::GetArgExtendedType( const Variable& variable )
 {
 	FunctionType::Param arg_type_extended;
 	arg_type_extended.type= variable.type;
-	arg_type_extended.is_reference= variable.value_type != ValueType::Value;
-	arg_type_extended.is_mutable= variable.value_type == ValueType::ReferenceMut;
+	arg_type_extended.value_type= variable.value_type;
 	return arg_type_extended;
 }
 

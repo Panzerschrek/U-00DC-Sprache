@@ -30,7 +30,7 @@ def CouldNotOverloadFunction_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "CouldNotOverloadFunction" )
+	assert( errors_list[0].error_code == "FunctionPrototypeDuplication" )
 	assert( errors_list[0].src_loc.line == 2 or errors_list[0].src_loc.line == 3 )
 
 

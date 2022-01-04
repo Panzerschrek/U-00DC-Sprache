@@ -13,6 +13,13 @@
 namespace U
 {
 
+enum class ValueType
+{
+	Value,
+	ReferenceMut,
+	ReferenceImut,
+};
+
 struct FunctionType;
 struct FunctionPointerType;
 struct ArrayType;
@@ -159,8 +166,7 @@ public:
 	struct Param
 	{
 		Type type;
-		bool is_reference;
-		bool is_mutable;
+		ValueType value_type= ValueType::Value;
 	};
 
 	// "first" - arg number, "second" is inner tag number or ~0, if it is reference itself
