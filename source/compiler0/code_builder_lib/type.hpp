@@ -13,7 +13,7 @@
 namespace U
 {
 
-enum class ValueType
+enum class ValueType : uint8_t
 {
 	Value,
 	ReferenceMut,
