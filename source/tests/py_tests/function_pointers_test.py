@@ -635,3 +635,26 @@ def FunctionPointerAsSpecializedTemplateParameter_Test2():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 5684.5 )
+
+
+def MutabilityModifiersInFunctionTypeTest():
+	c_program_text= """
+		template</ type A /> struct is_same_type_impl
+		{
+			template</ type B /> struct same</ B /> { auto constexpr value= false; }
+			template</ /> struct same</ A /> { auto constexpr value= true; }
+		}
+
+		// Mutability for value param doesn't matter.
+		static_assert( is_same_type_impl</ fn(i32 mut x) />::same</ fn(i32 imut x) />::value );
+		static_assert( is_same_type_impl</ fn(i32     x) />::same</ fn(i32 imut x) />::value );
+
+		// Mutability for reference param matter.
+		static_assert( !is_same_type_impl</ fn(i32 &mut x) />::same</ fn(i32 &imut x) />::value );
+		static_assert(  is_same_type_impl</ fn(i32 &    x) />::same</ fn(i32 &imut x) />::value );
+
+		// Mutability for return value matter.
+		static_assert( !is_same_type_impl</ fn() : i32 &mut />::same</ fn() : i32 &imut />::value );
+		static_assert(  is_same_type_impl</ fn() : i32 &    />::same</ fn() : i32 &imut />::value );
+	"""
+	tests_lib.build_program( c_program_text )
