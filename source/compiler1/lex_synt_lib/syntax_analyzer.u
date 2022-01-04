@@ -1500,14 +1500,8 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			var StructNamedInitializer mut constructor_initializer_list{ .src_loc= it_.front().src_loc };
 			NextLexem();
 
-			while( NotEndOfFile() )
+			while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::BracketRight )
 			{
-				if( it_.front().lexem_type == Lexem::Type::BracketRight )
-				{
-					NextLexem();
-					break;
-				}
-
 				if( it_.front().lexem_type != Lexem::Type::Identifier )
 				{
 					PushErrorMessage();
@@ -1533,13 +1527,18 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 				if( it_.front().lexem_type == Lexem::Type::Comma )
 				{
 					NextLexem();
+					if( it_.front().lexem_type == Lexem::Type::BracketRight )
+					{
+						break;
+					}
 				}
-				else if( it_.front().lexem_type != Lexem::Type::BracketRight )
+				else
 				{
-					PushErrorMessage();
 					break;
 				}
 			}
+
+			ExpectLexem( Lexem::Type::BracketRight );
 
 			res.constructor_initializer_list.reset( move(constructor_initializer_list) );
 		}
@@ -1632,6 +1631,7 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 			if( it_.front().lexem_type != Lexem::Type::Identifier )
 			{
 				PushErrorMessage();
+				break;
 			}
 			auto& name= it_.front().text;
 			auto& src_loc= it_.front().src_loc;
@@ -1654,6 +1654,14 @@ fn SyntaxAnalyzer::ParseInitializer( mut this, bool parse_expression_initializer
 			if( it_.front().lexem_type == Lexem::Type::Comma )
 			{
 				NextLexem();
+				if( it_.front().lexem_type == Lexem::Type::BraceRight )
+				{
+					break;
+				}
+			}
+			else
+			{
+				break;
 			}
 		}
 		ExpectLexem( Lexem::Type::BraceRight );

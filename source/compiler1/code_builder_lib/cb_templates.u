@@ -501,7 +501,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 {
 	var TemplateSignatureParam::FunctionTypeParam mut function_type_param
 	{
-		.return_type( TemplateSignatureParam::TypeParam() )
+		.return_type( TemplateSignatureParam::TypeParam() ),
 		.return_value_is_mutable= signature_param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable,
 		.return_value_is_reference= signature_param.return_value_reference_modifier == Synt::ReferenceModifier::Reference,
 		.is_unsafe= signature_param.is_unsafe,

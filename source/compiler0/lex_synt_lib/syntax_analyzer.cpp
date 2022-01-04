@@ -1774,7 +1774,13 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 		result.members_initializers.back().initializer= std::move(initializer);
 
 		if( it_->type == Lexem::Type::Comma )
+		{
 			NextLexem();
+			if( it_->type == Lexem::Type::BraceRight )
+				break;
+		}
+		else
+			break;
 	}
 	ExpectLexem( Lexem::Type::BraceRight );
 
@@ -2890,14 +2896,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			result->constructor_initialization_list_= std::make_unique<StructNamedInitializer>( it_->src_loc );
 			NextLexem();
 
-			while( NotEndOfFile() )
+			while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
 			{
-				if( it_->type == Lexem::Type::BracketRight )
-				{
-					NextLexem();
-					break;
-				}
-
 				if( it_->type != Lexem::Type::Identifier )
 				{
 					PushErrorMessage();
@@ -2913,8 +2913,15 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					PushErrorMessage();
 
 				if( it_->type == Lexem::Type::Comma )
+				{
 					NextLexem();
+					if( it_->type == Lexem::Type::BracketRight )
+						break;
+				}
+				else
+					break;
 			}
+			ExpectLexem( Lexem::Type::BracketRight );
 		}
 
 		if( it_->type == Lexem::Type::BraceLeft )
