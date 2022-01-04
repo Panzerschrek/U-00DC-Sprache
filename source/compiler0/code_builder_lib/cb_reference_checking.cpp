@@ -16,7 +16,7 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 {
 	U_UNUSED(errors_container); // TODO - remove it.
 
-	if( function_type.return_value_is_reference && !func.return_value_reference_tag_.empty() )
+	if( function_type.return_value_type != ValueType::Value && !func.return_value_reference_tag_.empty() )
 	{
 		// Arg reference to return reference
 		if( out_param.value_type != ValueType::Value && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_reference_tag_ )
@@ -27,7 +27,7 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 			function_type.return_references.emplace( arg_number, 0u );
 	}
 
-	if( !function_type.return_value_is_reference && !func.return_value_inner_reference_tag_.empty() )
+	if( function_type.return_value_type == ValueType::Value && !func.return_value_inner_reference_tag_.empty() )
 	{
 		// In arg reference to return value references
 		if( out_param.value_type != ValueType::Value && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_inner_reference_tag_ )
@@ -44,7 +44,7 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 	const Synt::FunctionType& func,
 	const FunctionType& function_type )
 {
-	if( !function_type.return_value_is_reference )
+	if( function_type.return_value_type == ValueType::Value )
 	{
 		// Check names of tags, report about unknown tag names.
 		if( !func.return_value_inner_reference_tag_.empty() )
@@ -72,7 +72,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 {
 	// Generate mapping of input references to output references, if reference tags are not specified explicitly.
 
-	if( function_type.return_value_is_reference && function_type.return_references.empty() )
+	if( function_type.return_value_type != ValueType::Value && function_type.return_references.empty() )
 	{
 		if( !func.return_value_reference_tag_.empty() )
 		{

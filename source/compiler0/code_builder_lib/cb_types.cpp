@@ -94,8 +94,11 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		function_type.return_type= void_type_;
 	else
 		function_type.return_type= PrepareType( *function_type_name.return_type_, names_scope, function_context );
-	function_type.return_value_is_mutable= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
-	function_type.return_value_is_reference= function_type_name.return_value_reference_modifier_ == ReferenceModifier::Reference;
+
+	if( function_type_name.return_value_reference_modifier_ == ReferenceModifier::None )
+		function_type.return_value_type= ValueType::Value;
+	else
+		function_type.return_value_type= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 	for( const Synt::FunctionParam& in_param : function_type_name.params_ )
 	{
@@ -200,7 +203,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	}
 
 	llvm::Type* llvm_function_return_type= function_type.return_type.GetLLVMType();
-	if( function_type.return_value_is_reference )
+	if( function_type.return_value_type != ValueType::Value )
 		llvm_function_return_type= llvm_function_return_type->getPointerTo();
 	else if( first_arg_is_sret || function_type.return_type == void_type_ )
 	{

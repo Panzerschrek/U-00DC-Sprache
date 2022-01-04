@@ -425,13 +425,7 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 
 		{
 			FunctionType::Param ret;
-			if( !function->return_value_is_reference )
-				ret.value_type= ValueType::Value;
-			else if( function->return_value_is_mutable )
-				ret.value_type= ValueType::ReferenceMut;
-			else
-				ret.value_type= ValueType::ReferenceImut;
-
+			ret.value_type= function->return_value_type;
 			ret.type= function->return_type;
 			EncodeFunctionParam( mangler_state, ret );
 		}

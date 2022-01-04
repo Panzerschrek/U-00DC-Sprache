@@ -2721,7 +2721,7 @@ Value CodeBuilder::DoCallFunction(
 	{
 		// Currently, we can not pass back referenes from constexpr functions evaluator.
 		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() &&
-			!function_type.return_value_is_reference && function_type.return_type.ReferencesTagsCount() == 0u )
+			function_type.return_value_type == ValueType::Value && function_type.return_type.ReferencesTagsCount() == 0u )
 		{
 			const ConstexprFunctionEvaluator::Result evaluation_result=
 				constexpr_function_evaluator_.Evaluate( llvm::dyn_cast<llvm::Function>(function), constant_llvm_args );
@@ -2739,7 +2739,7 @@ Value CodeBuilder::DoCallFunction(
 				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
 					MoveConstantToMemory( result.llvm_value, evaluation_result.result_constant, function_context );
 
-				if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
+				if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 					constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
 				else
 					constant_call_result= evaluation_result.result_constant;
@@ -2750,7 +2750,7 @@ Value CodeBuilder::DoCallFunction(
 		else
 		{
 			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
-			if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
+			if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 				call_result= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 		}
 	}
@@ -2769,11 +2769,11 @@ Value CodeBuilder::DoCallFunction(
 		result.llvm_value= call_result;
 	result.constexpr_value= constant_call_result;
 
-	if( function_type.return_value_is_reference )
+	result.value_type= function_type.return_value_type;
+	if( function_type.return_value_type != ValueType::Value )
 	{
 		result.location= Variable::Location::Pointer;
-		result.value_type= function_type.return_value_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-		result.node= function_context.variables_state.AddNode( function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "fn_result " + result.type.ToString() );
+		result.node= function_context.variables_state.AddNode( function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "fn_result " + result.type.ToString() );
 	}
 	else
 	{
@@ -2781,12 +2781,11 @@ Value CodeBuilder::DoCallFunction(
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
 
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
-		result.value_type= ValueType::Value;
 		result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "fn_result " + result.type.ToString() );
 	}
 
 	// Prepare result references.
-	if( function_type.return_value_is_reference )
+	if( function_type.return_value_type != ValueType::Value )
 	{
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{

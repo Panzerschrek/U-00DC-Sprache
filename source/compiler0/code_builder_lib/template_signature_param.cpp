@@ -53,8 +53,7 @@ bool TemplateSignatureParam::FunctionParam::operator==( const FunctionParam& oth
 
 	return
 		*this->return_type == *other.return_type &&
-		this->return_value_is_mutable == other.return_value_is_mutable &&
-		this->return_value_is_reference == other.return_value_is_reference &&
+		this->return_value_type == other.return_value_type &&
 		this->is_unsafe == other.is_unsafe;
 }
 

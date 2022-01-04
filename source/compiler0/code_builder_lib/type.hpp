@@ -188,8 +188,7 @@ public:
 	// If this changed, virtual functions compare function must be changed too!
 	ArgsVector<Param> params;
 	Type return_type;
-	bool return_value_is_reference= false;
-	bool return_value_is_mutable= false;
+	ValueType return_value_type= ValueType::Value;
 	bool unsafe= false;
 
 	// Use "std::set" for references description, because we needs stable order for function type mangling.

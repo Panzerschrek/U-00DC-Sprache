@@ -823,10 +823,12 @@ size_t CodeBuilder::PrepareFunction(
 			}
 		}
 
-		function_type.return_value_is_mutable= func.type_.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
-		function_type.return_value_is_reference= func.type_.return_value_reference_modifier_ == ReferenceModifier::Reference;
+		if( func.type_.return_value_reference_modifier_ == ReferenceModifier::None )
+			function_type.return_value_type= ValueType::Value;
+		else
+			function_type.return_value_type= func.type_.return_value_mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
-		if( is_special_method && !( function_type.return_type == void_type_ && !function_type.return_value_is_reference ) )
+		if( is_special_method && !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.src_loc_ );
 
 		ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), func.type_, function_type );
@@ -1058,7 +1060,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	if( !is_this_class )
 		REPORT_ERROR( OperatorDoesNotHaveParentClassArguments, errors_container, src_loc );
 
-	const bool ret_is_void= func_type.return_type == void_type_ && !func_type.return_value_is_reference;
+	const bool ret_is_void= func_type.return_type == void_type_ && func_type.return_value_type == ValueType::Value;
 
 	switch( overloaded_operator )
 	{
@@ -1076,7 +1078,7 @@ void CodeBuilder::CheckOverloadedOperator(
 	case OverloadedOperator::GreaterEqual:
 		if( func_type.params.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
-		if( !( func_type.return_type == bool_type_ && !func_type.return_value_is_reference ) )
+		if( !( func_type.return_type == bool_type_ && func_type.return_value_type == ValueType::Value ) )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, bool_type_ );
 		break;
 		
@@ -1201,7 +1203,7 @@ Type CodeBuilder::BuildFuncCode(
 			llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::StructRet );
 			llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::NoAlias );
 		}
-		if( function_type.return_value_is_reference )
+		if( function_type.return_value_type != ValueType::Value )
 			llvm_function->addAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull );
 
 		func_variable.llvm_function= llvm_function;
@@ -1243,7 +1245,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc_, arg.type );
 	}
-	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type ) )
+	if( function_type.return_value_type == ValueType::Value && !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
 
 	NamesScope function_names( "", &parent_names_scope );
@@ -1479,7 +1481,7 @@ Type CodeBuilder::BuildFuncCode(
 	// In other case, we have "return" in all branches and destructors call before each "return".
 	if( !block_build_info.have_terminal_instruction_inside )
 	{
-		if( function_type.return_type == void_type_ && !function_type.return_value_is_reference )
+		if( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value )
 		{
 			// Manually generate "return" for void-return functions.
 			CallDestructors( args_storage, function_names, function_context, block->end_src_loc_ );

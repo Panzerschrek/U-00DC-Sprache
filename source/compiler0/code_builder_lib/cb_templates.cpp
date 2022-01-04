@@ -398,8 +398,11 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 
 	const Synt::FunctionType& function_pointer_type_name= *function_pointer_type_name_ptr;
 
-	function_param.return_value_is_reference= function_pointer_type_name.return_value_reference_modifier_ == Synt::ReferenceModifier::Reference;
-	function_param.return_value_is_mutable= function_pointer_type_name.return_value_mutability_modifier_ == Synt::MutabilityModifier::Mutable;
+	if( function_pointer_type_name.return_value_reference_modifier_ == ReferenceModifier::None )
+		function_param.return_value_type= ValueType::Value;
+	else
+		function_param.return_value_type= function_pointer_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+
 	function_param.is_unsafe= function_pointer_type_name.unsafe_;
 
 	// TODO - maybe check also reference tags?
@@ -726,8 +729,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 
 			if( !(
 				given_function_type.unsafe == template_param.is_unsafe &&
-				given_function_type.return_value_is_mutable == template_param.return_value_is_mutable &&
-				given_function_type.return_value_is_reference == template_param.return_value_is_reference &&
+				given_function_type.return_value_type == template_param.return_value_type &&
 				MatchTemplateArg( template_, args_names_scope, given_function_type.return_type, src_loc, *template_param.return_type ) &&
 				given_function_type.params.size() == template_param.params.size()
 				) )

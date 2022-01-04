@@ -299,8 +299,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	{
 		add_typeinfo_field( "return_type", function_type->return_type );
 		add_list_field( "arguments_list"      , BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
-		add_bool_field( "return_value_is_reference", function_type->return_value_is_reference );
-		add_bool_field( "return_value_is_mutable"  , function_type->return_value_is_mutable );
+		add_bool_field( "return_value_is_reference", function_type->return_value_type != ValueType::Value );
+		add_bool_field( "return_value_is_mutable"  , function_type->return_value_type == ValueType::ReferenceMut );
 		add_bool_field( "unsafe"                   , function_type->unsafe );
 		// SPRACHE_TODO - add also reference pollution.
 	}

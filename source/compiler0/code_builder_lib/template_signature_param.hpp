@@ -60,10 +60,9 @@ public:
 	struct FunctionParam
 	{
 		std::shared_ptr<const TemplateSignatureParam> return_type;
-		bool return_value_is_mutable;
-		bool return_value_is_reference;
+		ValueType return_value_type= ValueType::Value;
 
-		bool is_unsafe;
+		bool is_unsafe= false;
 
 		struct Param
 		{
