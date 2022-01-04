@@ -4,6 +4,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(ExpressionInitializerTest0)
 {
 	// Expression initializer for integers
@@ -877,5 +880,7 @@ U_TEST(InitializerForZeroSizedArray_Test0)
 
 	BuildProgram( c_program_text );
 }
+
+} // namespace
 
 } // namespace U

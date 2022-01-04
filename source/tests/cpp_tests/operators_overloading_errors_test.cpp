@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( OperatorDeclarationOutsideClass_Test )
 {
 	static const char c_program_text[]=
@@ -198,5 +201,7 @@ U_TEST( IndexationOperatorHaveFirstArgumentOfNonparentClass )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperatorDoesNotHaveParentClassArguments ); // TODO - use separate error code for this case
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
+
+} // namespace
 
 } // namespace U

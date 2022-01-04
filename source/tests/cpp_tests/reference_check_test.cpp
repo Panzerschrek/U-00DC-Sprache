@@ -1,7 +1,9 @@
 #include "tests.hpp"
 
-
 namespace U
+{
+
+namespace
 {
 
 U_TEST( ReferenceCheckTest_MultipleMutableReferencesOnStack )
@@ -1228,5 +1230,7 @@ U_TEST( ReferenceCheckTest_TryChangeArgs2 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
+
+} // namespace
 
 } // namespace U

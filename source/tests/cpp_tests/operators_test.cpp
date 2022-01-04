@@ -5,6 +5,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(BasicBinaryOperationsTest)
 {
 	static const char c_program_text[]=
@@ -1446,5 +1449,7 @@ U_TEST( RemOperatorTest2 )
 		}
 	}
 }
+
+} // namespace
 
 } // namespace U

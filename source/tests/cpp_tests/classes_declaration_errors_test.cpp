@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( ClassBodyDuplicationTest0 )
 {
 	static const char c_program_text[]=
@@ -294,5 +297,7 @@ U_TEST( UsingIncompleteTypeTest15 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
+
+} // namespace
 
 } // namespace U

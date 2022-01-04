@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( TypedefsTest0 )
 {
 	// Simple test.
@@ -377,5 +380,7 @@ U_TEST( TypedefsTemplates_Test8_ShortTypedefTemplateForm_Test1 )
 
 	U_TEST_ASSERT( static_cast<uint64_t>( 23541 ) == result_value.IntVal.getLimitedValue() );
 }
+
+} // namespace
 
 } // namespace U

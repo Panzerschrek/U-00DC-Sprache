@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( TypeConversionTest0 )
 {
 	// i8 to i16, sign extension
@@ -535,5 +538,7 @@ U_TEST( TypeConversionTest15 )
 		U_TEST_ASSERT( static_cast<int32_t>(value) == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
 	}
 }
+
+} // namespace
 
 } // namespace U

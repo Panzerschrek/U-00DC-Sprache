@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( BindingConstReferenceToNonconstReference_InThisCall_Test0 )
 {
 	// Call of nonstatic "thiscall" method with mutable this, using immutable object.
@@ -266,5 +269,7 @@ U_TEST(TryCallThisCallFunctionPassingExplicitThisWhenImpliciThisAlsoExists)
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotSelectOverloadedFunction );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
+
+} // namespace
 
 } // namespace U

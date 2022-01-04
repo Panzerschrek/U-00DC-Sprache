@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( BasicReferenceInVariableCheck )
 {
 	static const char c_program_text[]=
@@ -1141,5 +1144,7 @@ U_TEST( NameNotFound_ForReferenceTags_Test2 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::NameNotFound );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
+
+} // namespace
 
 } // namespace U

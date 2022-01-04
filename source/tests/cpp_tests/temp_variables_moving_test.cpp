@@ -4,10 +4,13 @@
 namespace U
 {
 
-static std::vector<int> g_constructirs_call_sequence;
-static std::vector<int>  g_destructors_call_sequence;
+namespace
+{
 
-static llvm::GenericValue ConstructorCalled(
+std::vector<int> g_constructirs_call_sequence;
+std::vector<int>  g_destructors_call_sequence;
+
+llvm::GenericValue ConstructorCalled(
 	llvm::FunctionType*,
 	llvm::ArrayRef<llvm::GenericValue> args )
 {
@@ -15,7 +18,7 @@ static llvm::GenericValue ConstructorCalled(
 	return llvm::GenericValue();
 }
 
-static llvm::GenericValue DestructorCalled(
+llvm::GenericValue DestructorCalled(
 	llvm::FunctionType*,
 	llvm::ArrayRef<llvm::GenericValue> args )
 {
@@ -23,7 +26,7 @@ static llvm::GenericValue DestructorCalled(
 	return llvm::GenericValue();
 }
 
-static void TestPrepare()
+void TestPrepare()
 {
 	g_constructirs_call_sequence.clear();
 	 g_destructors_call_sequence.clear();
@@ -482,5 +485,7 @@ U_TEST(TempVariablesMovingTest8_MoveVariableFromFunctionResultWithMutableReferen
 	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 	U_TEST_ASSERT( static_cast<uint64_t>(856) == result_value.IntVal.getLimitedValue() );
 }
+
+} // namespace
 
 } // namespace U

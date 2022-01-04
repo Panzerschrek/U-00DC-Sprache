@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( ClassTemplateTest0 )
 {
 	// Simple declaration of class templates.
@@ -1826,5 +1829,7 @@ U_TEST( LazyClassFunctionsBuild_Test0 )
 
 	BuildProgram( c_program_text );
 }
+
+} // namespace
 
 } // namespace U

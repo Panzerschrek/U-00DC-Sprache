@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(ExpectedConstantExpressionTest0)
 {
 	// Constructed struct is not contant expression.
@@ -357,5 +360,7 @@ U_TEST( ArrayIndexOutOfBoundsTest0 )
 	U_TEST_ASSERT( build_result.errors[4u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
 	U_TEST_ASSERT( build_result.errors[4u].src_loc.GetLine() == 10u );
 }
+
+} // namespace
 
 } // namespace U

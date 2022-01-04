@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( ClassesDeclarationTest0 )
 {
 	// Declare class, then, declare it body in same namespace.
@@ -55,5 +58,7 @@ U_TEST( ClassesDeclarationTest2 )
 
 	BuildProgram( c_program_text );
 }
+
+} // namespace
 
 } // namespace U

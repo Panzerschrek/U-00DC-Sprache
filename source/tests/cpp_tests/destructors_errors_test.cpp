@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( FunctionBodyDuplication_ForDestructors_Test0 )
 {
 	static const char c_program_text[]=
@@ -72,5 +75,7 @@ U_TEST( ExplicitArgumentsInDestructorTest1 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExplicitArgumentsInDestructor );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
+
+} // namespace
 
 } // namespace U

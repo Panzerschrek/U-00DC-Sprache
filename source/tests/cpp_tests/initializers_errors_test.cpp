@@ -6,6 +6,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(ExpectedInitializerTest0)
 {
 	// Expected initializer for fundamental variable.
@@ -782,5 +785,7 @@ U_TEST(TuplesInitializersErrors_Test8)
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
+
+} // namespace
 
 } // namespace U

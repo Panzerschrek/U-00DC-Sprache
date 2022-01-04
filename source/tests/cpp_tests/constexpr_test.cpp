@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(ConstexprTest0)
 {
 	// Simple integer constant expression for array size.
@@ -621,5 +624,7 @@ U_TEST( EnumsAreConstexpr )
 
 	BuildProgram( c_program_text );
 }
+
+} // namespace
 
 } // namespace U

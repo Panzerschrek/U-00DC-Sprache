@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( UsingKeywordAsName_ForTypedef_Test0 )
 {
 	static const char c_program_text[]=
@@ -177,5 +180,7 @@ U_TEST( TemplateArgumentNotUsedInSignature_ForTypedefTemplate_Test0 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentNotUsedInSignature );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
+
+} // namespace
 
 } // namespace U

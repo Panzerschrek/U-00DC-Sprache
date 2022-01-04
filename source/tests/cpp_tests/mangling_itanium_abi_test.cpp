@@ -3,6 +3,11 @@
 namespace U
 {
 
+namespace
+{
+
+U_TEST( CheckTestsWithSameNameInDifferentModules ){}
+
 U_TEST( NamespacesManglingTest )
 {
 	static const char c_program_text[]=
@@ -821,5 +826,7 @@ U_TEST( VirtualTableMangling_Test1 )
 
 	U_TEST_ASSERT( engine->FindGlobalVariableNamed( "_ZTVN3Lol3WTFE", true ) != nullptr );
 }
+
+} // namespace
 
 } // namespace U

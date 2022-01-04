@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( EnumsDeclarationTest )
 {
 	static const char c_program_text[]=
@@ -258,5 +261,7 @@ U_TEST( UnderlayingTypeForEnumTest0 )
 
 	BuildProgram( c_program_text );
 }
+
+} // namespace
 
 } // namespace U

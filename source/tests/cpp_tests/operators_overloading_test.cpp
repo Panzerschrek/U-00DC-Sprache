@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( OperatorsOverloadingTest0_NonThisCallOperators )
 {
 	static const char c_program_text[]=
@@ -1100,5 +1103,7 @@ U_TEST( OperatorBodyOutsideClass )
 	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
 	U_TEST_ASSERT( static_cast<uint64_t>( 584147 / 55 + ( 584147 + 55 ) ) == result_value.IntVal.getLimitedValue() );
 }
+
+} // namespace
 
 } // namespace U

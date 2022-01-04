@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( ImportsTest0 )
 {
 	static const char c_program_text_a[]=
@@ -1012,5 +1015,7 @@ U_TEST( ImportInClassFieldInitializer_Test2 )
 
 	engine->runFunction( function, {} );
 }
+
+} // namespace
 
 } // namespace U

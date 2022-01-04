@@ -4,6 +4,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(InvalidTypeForAutoVariableTest0)
 {
 	// Assign functions set.
@@ -149,5 +152,7 @@ U_TEST(BindingConstReferenceToNonconstReferenceTest0)
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::BindingConstReferenceToNonconstReference );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
+
+} // namespace
 
 } // namespace U

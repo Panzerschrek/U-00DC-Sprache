@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 template<class T>
 void FillLLVMVal( llvm::GenericValue& llvm_val, const T& val )
 {
@@ -449,5 +452,6 @@ U_TEST( OperatorsPriorityTest11 )
 	DoTest( c_program_text, expected, args );
 }
 
+} // namespace
 
 } // namespace U

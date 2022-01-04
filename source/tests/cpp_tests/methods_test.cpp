@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(MethodTest0)
 {
 	// Simple declaration of static method.
@@ -628,5 +631,7 @@ U_TEST( InnerClassTest3 )
 		( 854 / 2 - 854 / 5 + 854 + 854 * 2 ) ==
 		static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
 }
+
+} // namespace
 
 } // namespace U

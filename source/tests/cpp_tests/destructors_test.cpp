@@ -26,8 +26,6 @@ void DestructorTestPrepare()
 	llvm::sys::DynamicLibrary::AddSymbol( "lle_X__Z16DestructorCalledi", reinterpret_cast<void*>( &DestructorCalled ) );
 }
 
-} // namespace
-
 U_TEST(DestructorsTest0)
 {
 	DestructorTestPrepare();
@@ -2588,5 +2586,7 @@ U_TEST(DestructorTest_ForArrayValueArgument_Test1)
 
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 62, 11, 99 } ) );
 }
+
+} // namespace
 
 } // namespace U

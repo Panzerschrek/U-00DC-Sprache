@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( InvalidValueAsTemplateArgumentTest0 )
 {
 	static const char c_program_text[]=
@@ -581,5 +584,7 @@ U_TEST( ExpectedConstantExpression_InTemplateSignatureArgument_Test1 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedConstantExpression, 7u ) );
 }
+
+} // namespace
 
 } // namespace U

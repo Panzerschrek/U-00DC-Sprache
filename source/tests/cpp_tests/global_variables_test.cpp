@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( GlobalVariablesTest0 )
 {
 	// Simple global variable.
@@ -347,5 +350,7 @@ U_TEST( StaticAssertInsideClass_Test1 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::StaticAssertionFailed );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
+
+} // namespace
 
 } // namespace U

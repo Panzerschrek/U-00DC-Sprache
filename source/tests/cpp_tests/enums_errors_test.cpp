@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( Redefinition_ForEnums )
 {
 	static const char c_program_text[]=
@@ -205,5 +208,7 @@ U_TEST( UnderlayingTypeIsTooSmall_Test )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnderlayingTypeForEnumIsTooSmall );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
 }
+
+} // namespace
 
 } // namespace U

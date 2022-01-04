@@ -4,6 +4,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( EmptyProgramTest0 )
 {
 	// Empty string is valid program.
@@ -2104,5 +2107,7 @@ U_TEST(AccessExternalAddressSpace)
 
 	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(i[0] - i[1]) );
 }
+
+} // namespace
 
 } // namespace U

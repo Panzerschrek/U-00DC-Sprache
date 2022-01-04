@@ -3,6 +3,11 @@
 namespace U
 {
 
+namespace
+{
+
+U_TEST( CheckTestsWithSameNameInDifferentModules ){}
+
 U_TEST( BasicFunctionManglingTest )
 {
 	static const char c_program_text[]=
@@ -963,5 +968,7 @@ U_TEST( TypeinfoClassManglingTest )
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$_TI@H@@@Z" ) != nullptr );
 }
+
+} // namespace
 
 } // namespace U

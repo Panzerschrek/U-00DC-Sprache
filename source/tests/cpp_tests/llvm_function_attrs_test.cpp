@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeValueParamsAttrs )
 {
 	// No special attributes must be set for fundamental types value params.
@@ -567,5 +570,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	}
 }
+
+} // namespace
 
 } // namespace U

@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( FunctionDeclarationOutsideItsScopeTest0 )
 {
 	// Bar doesn`t exists.
@@ -77,5 +80,7 @@ U_TEST( Redefenition_ForNamespaces_Test0 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
+
+} // namespace
 
 } // namespace U

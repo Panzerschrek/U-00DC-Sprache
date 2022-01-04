@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( ReferenceClassFieldDeclaration )
 {
 	static const char c_program_text[]=
@@ -218,5 +221,7 @@ U_TEST( AssignMutableReferenceInsideClass )
 
 	U_TEST_ASSERT( static_cast<uint64_t>( 54124 ) == result_value.IntVal.getLimitedValue() );
 }
+
+} // namespace
 
 } // namespace U

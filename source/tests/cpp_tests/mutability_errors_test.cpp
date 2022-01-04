@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(BindingConstReferenceToNonconstReferenceTest0)
 {
 	// Initialize reference using value-object.
@@ -293,5 +296,7 @@ U_TEST(ImmutableClassField_Test4)
 
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotSelectOverloadedFunction, 14u ) );
 }
+
+} // namespace
 
 } // namespace U

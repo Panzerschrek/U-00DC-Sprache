@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(AutoMoveInitializationOptimization_Test0)
 {
 	static const char c_program_text[]=
@@ -443,5 +446,7 @@ U_TEST(ArgumentVariableAllocationOptimization_Test2)
 
 	engine->runFunction( function, {} );
 }
+
+} // namespace
 
 } // namespace U

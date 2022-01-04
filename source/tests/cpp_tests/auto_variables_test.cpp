@@ -5,6 +5,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(AutoVariableTest0)
 {
 	// Value-variable with value-expression assignment.
@@ -182,5 +185,7 @@ U_TEST(AutoVariableTest6)
 
 	U_TEST_ASSERT( static_cast<uint64_t>(4136574) == result_value.IntVal.getLimitedValue() );
 }
+
+} // namespace
 
 } // namespace U

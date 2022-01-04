@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(ConstructorOutsideClassTest0)
 {
 	// Constructor body.
@@ -476,5 +479,7 @@ U_TEST( InitializerForBaseClassField_Test1 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerForBaseClassField );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
 }
+
+} // namespace
 
 } // namespace U

@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( ReferncesTagsTest_BaseReferencesDefinition0 )
 {
 	static const char c_program_text[]=
@@ -195,5 +198,7 @@ U_TEST( ImplicitThisTag )
 
 	BuildProgram( c_program_text );
 }
+
+} // namespace
 
 } // namespace U

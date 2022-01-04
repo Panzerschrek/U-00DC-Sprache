@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( IfMergeTest0_PollutionAllowedInAllBranches )
 {
 	static const char c_program_text[]=
@@ -1091,5 +1094,7 @@ U_TEST( TupleForMegeTest5 )
 
 	BuildProgram( c_program_text );
 }
+
+} // namespace
 
 } // namespace U

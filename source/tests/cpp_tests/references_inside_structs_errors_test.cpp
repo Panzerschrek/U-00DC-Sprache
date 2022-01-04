@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( CopyAssignmentOperatorForStructsWithReferencesDeleted )
 {
 	static const char c_program_text[]=
@@ -180,5 +183,7 @@ U_TEST( AssignToImmutableReferenceInsideStruct_Test1 )
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedReferenceValue );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
+
+} // namespace
 
 } // namespace U

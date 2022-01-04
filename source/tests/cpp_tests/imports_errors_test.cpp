@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( ImportedNamespaceShouldNotBeModified_Test0 )
 {
 	static const char c_program_text_a[]=
@@ -850,5 +853,7 @@ U_TEST( TypeTemplateRedefinition_ForImports_Test2 )
 		},
 		"root" );
 }
+
+} // namespace
 
 } // namespace U

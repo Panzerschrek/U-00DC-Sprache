@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST( NamespacesTest0 )
 {
 	// Should get functions from namespace.
@@ -141,5 +144,7 @@ U_TEST( NamespacesTest5 )
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
 }
+
+} // namespace
 
 } // namespace U

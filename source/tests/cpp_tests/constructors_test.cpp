@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(ConstructorTest0)
 {
 	static const char c_program_text[]=
@@ -706,5 +709,7 @@ U_TEST(ConstructorTest20)
 
 	U_TEST_ASSERT( static_cast<uint64_t>(5566) == result_value.IntVal.getLimitedValue() );
 }
+
+} // namespace
 
 } // namespace U

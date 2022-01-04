@@ -65,8 +65,6 @@ void LifetimesTestPrepare()
 	llvm::sys::DynamicLibrary::AddSymbol( "lle_X_CaptureValue", reinterpret_cast<void*>( &ValueCaputeCalled ) );
 }
 
-} // namespace
-
 U_TEST( StackVariableLifetime_Test0 )
 {
 	LifetimesTestPrepare();
@@ -737,5 +735,7 @@ U_TEST( LifetimesForTakeOperator_Test )
 	expected_x= 111;
 	U_TEST_ASSERT( g_lifetimes_call_sequence[3].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[3].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
 }
+
+} // namespace
 
 } // namespace U

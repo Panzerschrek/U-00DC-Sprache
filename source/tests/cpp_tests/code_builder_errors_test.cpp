@@ -3,6 +3,9 @@
 namespace U
 {
 
+namespace
+{
+
 U_TEST(NameNotFoundTest_Minus1)
 {
 	// Unknown type.
@@ -1778,5 +1781,7 @@ U_TEST(ReturnValueDiffersFromPrototypeTest3)
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u || error.src_loc.GetLine() == 3u );
 }
+
+} // namespace
 
 } // namespace U

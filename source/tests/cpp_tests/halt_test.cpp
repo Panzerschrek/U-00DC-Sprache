@@ -29,8 +29,6 @@ void HaltTestPrepare()
 	llvm::sys::DynamicLibrary::AddSymbol( "lle_X___U_halt", reinterpret_cast<void*>( &HaltCalled ) );
 }
 
-} // namespace
-
 U_TEST( HaltTest0 )
 {
 	HaltTestPrepare();
@@ -308,5 +306,7 @@ U_TEST( ArrayOutOfBoundsShouldHalt2 )
 	}
 	U_TEST_ASSERT(true);
 }
+
+} // namespace
 
 } // namespace U
