@@ -94,22 +94,29 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		function_type.return_type= void_type_;
 	else
 		function_type.return_type= PrepareType( *function_type_name.return_type_, names_scope, function_context );
-	function_type.return_value_is_mutable= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable;
-	function_type.return_value_is_reference= function_type_name.return_value_reference_modifier_ == ReferenceModifier::Reference;
 
-	for( const Synt::FunctionParam& arg : function_type_name.params_ )
+	if( function_type_name.return_value_reference_modifier_ == ReferenceModifier::None )
+		function_type.return_value_type= ValueType::Value;
+	else
+		function_type.return_value_type= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+
+	for( const Synt::FunctionParam& in_param : function_type_name.params_ )
 	{
-		if( IsKeyword( arg.name_ ) )
-			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), arg.src_loc_ );
+		if( IsKeyword( in_param.name_ ) )
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_param.src_loc_ );
 
 		function_type.params.emplace_back();
 		FunctionType::Param& out_param= function_type.params.back();
-		out_param.type= PrepareType( arg.type_, names_scope, function_context );
+		out_param.type= PrepareType( in_param.type_, names_scope, function_context );
 
-		out_param.is_mutable= arg.mutability_modifier_ == MutabilityModifier::Mutable;
-		out_param.is_reference= arg.reference_modifier_ == ReferenceModifier::Reference;
+		if( in_param.reference_modifier_ == Synt::ReferenceModifier::None )
+			out_param.value_type= ValueType::Value;
+		else if( in_param.mutability_modifier_ == Synt::MutabilityModifier::Mutable )
+			out_param.value_type= ValueType::ReferenceMut;
+		else
+			out_param.value_type= ValueType::ReferenceImut;
 
-		ProcessFunctionParamReferencesTags( names_scope.GetErrors(), function_type_name, function_type, arg, out_param, function_type.params.size() - 1u );
+		ProcessFunctionParamReferencesTags( function_type_name, function_type, in_param, out_param, function_type.params.size() - 1u );
 	}
 
 	function_type.unsafe= function_type_name.unsafe_;
@@ -173,19 +180,19 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	if( first_arg_is_sret )
 		args_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
 
-	for( const FunctionType::Param& arg : function_type.params )
+	for( const FunctionType::Param& param : function_type.params )
 	{
-		llvm::Type* type= arg.type.GetLLVMType();
-		if( arg.is_reference )
+		llvm::Type* type= param.type.GetLLVMType();
+		if( param.value_type != ValueType::Value )
 			type= type->getPointerTo();
 		else
 		{
-			if( arg.type.GetFundamentalType() != nullptr ||
-				arg.type.GetEnumType() != nullptr ||
-				arg.type.GetRawPointerType() != nullptr ||
-				arg.type.GetFunctionPointerType() )
+			if( param.type.GetFundamentalType() != nullptr ||
+				param.type.GetEnumType() != nullptr ||
+				param.type.GetRawPointerType() != nullptr ||
+				param.type.GetFunctionPointerType() )
 			{}
-			else if( arg.type.GetClassType() != nullptr || arg.type.GetArrayType() != nullptr || arg.type.GetTupleType() != nullptr )
+			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Mark value-parameters of composite types as pointer.
 				type= type->getPointerTo();
@@ -196,7 +203,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	}
 
 	llvm::Type* llvm_function_return_type= function_type.return_type.GetLLVMType();
-	if( function_type.return_value_is_reference )
+	if( function_type.return_value_type != ValueType::Value )
 		llvm_function_return_type= llvm_function_return_type->getPointerTo();
 	else if( first_arg_is_sret || function_type.return_type == void_type_ )
 	{

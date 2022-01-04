@@ -76,15 +76,7 @@ struct RawPointerType
 
 struct FunctionType
 {
-	struct Param
-	{
-		Type t;
-		bool is_reference;
-		bool is_mutable;
-
-		op==(Param& l, Param& r) : bool;
-		op!=(Param& l, Param& r) : bool;
-	}
+	type Param = VariableTypeExtended;
 
 	struct ParamReference
 	{
@@ -109,8 +101,7 @@ struct FunctionType
 
 	ust::vector</Param/> params;
 	Type return_type;
-	bool return_value_is_reference;
-	bool return_value_is_mutable;
+	ValueType return_value_type;
 
 	bool is_unsafe= false;
 
@@ -309,10 +300,13 @@ struct Variable
 
 fn ConstantVariableToString( Type&  t, LLVMValueRef constant_value ) : ust::string8;
 
-struct VariableTypeExtened
+struct VariableTypeExtended
 {
 	Type t;
 	ValueType value_type;
+
+	op==(VariableTypeExtended& l, VariableTypeExtended& r) : bool;
+	op!=(VariableTypeExtended& l, VariableTypeExtended& r) : bool;
 }
 
 struct FunctionVariable
@@ -587,16 +581,14 @@ public:
 	struct FunctionTypeParam
 	{
 		TemplateSignatureParam return_type;
-		bool return_value_is_mutable;
-		bool return_value_is_reference;
+		ValueType return_value_type;
 
 		bool is_unsafe;
 
 		struct Param
 		{
 			TemplateSignatureParam t;
-			bool is_mutable;
-			bool is_reference;
+			ValueType value_type;
 
 			op==(Param& l, Param& r) : bool;
 		}

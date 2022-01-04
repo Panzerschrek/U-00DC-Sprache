@@ -406,7 +406,7 @@ U_TEST( CouldNotOverloadFunction_ForImports_Test0 )
 			"root" );
 
 	U_TEST_ASSERT( !result.errors.empty() );
-	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( result.errors[0u].code == CodeBuilderErrorCode::FunctionPrototypeDuplication );
 	U_TEST_ASSERT( result.errors[0u].src_loc.GetLine() == 2u );
 }
 

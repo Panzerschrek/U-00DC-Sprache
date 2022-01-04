@@ -78,8 +78,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		constructor_type.return_type= void_type_;
 		constructor_type.params.emplace_back();
 		constructor_type.params.back().type= class_type;
-		constructor_type.params.back().is_mutable= true;
-		constructor_type.params.back().is_reference= true;
+		constructor_type.params.back().value_type= ValueType::ReferenceMut;
 
 		constructor_type.llvm_type=
 			llvm::FunctionType::get(
@@ -251,11 +250,9 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 		constructor_type.return_type= void_type_;
 		constructor_type.params.resize(2u);
 		constructor_type.params[0].type= class_type;
-		constructor_type.params[0].is_mutable= true;
-		constructor_type.params[0].is_reference= true;
+		constructor_type.params[0].value_type= ValueType::ReferenceMut;
 		constructor_type.params[1].type= class_type;
-		constructor_type.params[1].is_mutable= false;
-		constructor_type.params[1].is_reference= true;
+		constructor_type.params[1].value_type= ValueType::ReferenceImut;
 
 		// Generate default reference pollution for copying.
 		for( size_t i= 0u; i < Type(class_type).ReferencesTagsCount(); ++i )
@@ -377,8 +374,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr& class
 	destructor_type.return_type= void_type_;
 	destructor_type.params.resize(1u);
 	destructor_type.params[0].type= class_type;
-	destructor_type.params[0].is_mutable= true;
-	destructor_type.params[0].is_reference= true;
+	destructor_type.params[0].value_type= ValueType::ReferenceMut;
 
 	llvm::Type* const this_llvm_type= the_class.llvm_type->getPointerTo();
 	destructor_type.llvm_type=
@@ -537,11 +533,9 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 		op_type.return_type= void_type_;
 		op_type.params.resize(2u);
 		op_type.params[0].type= class_type;
-		op_type.params[0].is_mutable= true;
-		op_type.params[0].is_reference= true;
+		op_type.params[0].value_type= ValueType::ReferenceMut;
 		op_type.params[1].type= class_type;
-		op_type.params[1].is_mutable= false;
-		op_type.params[1].is_reference= true;
+		op_type.params[1].value_type= ValueType::ReferenceImut;
 
 		// Generate default reference pollution for copying.
 		for( size_t i= 0u; i < Type(class_type).ReferencesTagsCount(); ++i )
@@ -705,10 +699,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const FunctionVariable* constructor= nullptr;;
 		for( const FunctionVariable& candidate_constructor : constructors_set->functions )
 		{
-			const FunctionType& constructor_type= *candidate_constructor.type.GetFunctionType();
-
-			if( constructor_type.params.size() == 2u &&
-				constructor_type.params.back().type == class_type_ptr && !constructor_type.params.back().is_mutable )
+			if( IsCopyConstructor( *candidate_constructor.type.GetFunctionType(), type ) )
 			{
 				constructor= &candidate_constructor;
 				break;
@@ -784,10 +775,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		const FunctionVariable* op= nullptr;;
 		for( const FunctionVariable& candidate_op : operators_set->functions )
 		{
-			const FunctionType& op_type= *candidate_op .type.GetFunctionType();
-
-			if( op_type.params[0u].type == type &&  op_type.params[0u].is_mutable && op_type.params[0u].is_reference &&
-				op_type.params[1u].type == type && !op_type.params[1u].is_mutable && op_type.params[1u].is_reference )
+			if( IsCopyAssignmentOperator( *candidate_op .type.GetFunctionType(), type ) )
 			{
 				op= &candidate_op;
 				break;
@@ -872,23 +860,23 @@ bool CodeBuilder::IsDefaultConstructor( const FunctionType& function_type, const
 {
 	return
 		function_type.params.size() == 1u &&
-		function_type.params[0].type == base_class &&  function_type.params[0].is_mutable && function_type.params[0].is_reference;
+		function_type.params[0].type == base_class && function_type.params[0].value_type == ValueType::ReferenceMut;
 }
 
 bool CodeBuilder::IsCopyConstructor( const FunctionType& function_type, const Type& base_class )
 {
 	return
 		function_type.params.size() == 2u &&
-		function_type.params[0].type == base_class &&  function_type.params[0].is_mutable && function_type.params[0].is_reference &&
-		function_type.params[1].type == base_class && !function_type.params[1].is_mutable && function_type.params[1].is_reference;
+		function_type.params[0].type == base_class && function_type.params[0].value_type == ValueType::ReferenceMut &&
+		function_type.params[1].type == base_class && function_type.params[1].value_type == ValueType::ReferenceImut;
 }
 
 bool CodeBuilder::IsCopyAssignmentOperator( const FunctionType& function_type, const Type& base_class )
 {
 	return
 		function_type.params.size() == 2u &&
-		function_type.params[0].type == base_class &&  function_type.params[0].is_mutable && function_type.params[0].is_reference &&
-		function_type.params[1].type == base_class && !function_type.params[1].is_mutable && function_type.params[1].is_reference;
+		function_type.params[0].type == base_class && function_type.params[0].value_type == ValueType::ReferenceMut &&
+		function_type.params[1].type == base_class && function_type.params[1].value_type == ValueType::ReferenceImut;
 }
 
 } //namespace U

@@ -88,13 +88,6 @@ struct TypeTemplatesSet
 	std::vector<const Synt::TypeTemplate*> syntax_elements;
 };
 
-enum class ValueType
-{
-	Value,
-	ReferenceMut,
-	ReferenceImut,
-};
-
 struct Variable final
 {
 	enum class Location

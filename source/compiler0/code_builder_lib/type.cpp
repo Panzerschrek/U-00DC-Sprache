@@ -540,14 +540,13 @@ size_t Type::Hash() const
 		{
 			size_t hash= 0;
 			for( const FunctionType::Param& param : function.params )
-				hash= llvm::hash_combine( hash, param.type.Hash(), param.is_reference, param.is_mutable );
+				hash= llvm::hash_combine( hash, param.type.Hash(), param.value_type );
 
 			hash=
 				llvm::hash_combine(
 					hash,
 					function.return_type.Hash(),
-					function.return_value_is_reference,
-					function.return_value_is_mutable,
+					function.return_value_type,
 					function.unsafe );
 
 			for( const FunctionType::ParamReference& param_reference : function.return_references )
@@ -644,23 +643,29 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 {
 	const FunctionType&  src_function_type= *this;
 	const FunctionType& dst_function_type= other;
-	if( src_function_type.return_type != dst_function_type.return_type ||
-		src_function_type.return_value_is_reference != dst_function_type.return_value_is_reference )
+	if( src_function_type.return_type != dst_function_type.return_type )
 		return false;
 
-	if( !src_function_type.return_value_is_mutable && dst_function_type.return_value_is_mutable )
+	if( ( src_function_type.return_value_type == ValueType::Value ) != ( dst_function_type.return_value_type == ValueType::Value ) )
+		return false;
+
+	if( src_function_type.return_value_type == ValueType::ReferenceImut && dst_function_type.return_value_type == ValueType::ReferenceMut )
 		return false; // Allow mutability conversions, except mut->imut
 
 	if( src_function_type.params.size() != dst_function_type.params.size() )
 		return false;
 	for( size_t i= 0u; i < src_function_type.params.size(); ++i )
 	{
-		if( src_function_type.params[i].type != dst_function_type.params[i].type ||
-			src_function_type.params[i].is_reference != dst_function_type.params[i].is_reference )
+		if( src_function_type.params[i].type != dst_function_type.params[i].type )
 			return false;
 
-		if( src_function_type.params[i].is_mutable && !dst_function_type.params[i].is_mutable )
-			return false; // Allow mutability conversions, except mut->imut
+		// Disable conversion for reference and value args.
+		if( ( src_function_type.params[i].value_type == ValueType::Value ) != ( dst_function_type.params[i].value_type == ValueType::Value ) )
+			return false;
+
+		// Allow mutability conversions, except mut->imut
+		if( src_function_type.params[i].value_type == ValueType::ReferenceMut && dst_function_type.params[i].value_type == ValueType::ReferenceImut )
+			return false;
 	}
 
 	// We can convert function, returning less references to function, returning more referenes.
@@ -697,13 +702,13 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 bool FunctionType::IsStructRet() const
 {
 	return
-		!return_value_is_reference &&
+		return_value_type == ValueType::Value &&
 		( return_type.GetClassType() != nullptr || return_type.GetArrayType() != nullptr || return_type.GetTupleType() != nullptr );
 }
 
 bool operator==( const FunctionType::Param& l, const FunctionType::Param& r )
 {
-	return l.type == r.type && l.is_mutable == r.is_mutable && l.is_reference == r.is_reference;
+	return l.type == r.type && l.value_type == r.value_type;
 }
 
 bool operator!=( const FunctionType::Param& l, const FunctionType::Param& r )
@@ -728,8 +733,7 @@ bool operator==( const FunctionType& l, const FunctionType& r )
 {
 	return
 		l.return_type == r.return_type &&
-		l.return_value_is_mutable == r.return_value_is_mutable &&
-		l.return_value_is_reference == r.return_value_is_reference &&
+		l.return_value_type == r.return_value_type &&
 		l.params == r.params &&
 		l.return_references == r.return_references &&
 		l.references_pollution == r.references_pollution &&
@@ -746,10 +750,10 @@ std::string FunctionParamsToString( const ArgsVector<FunctionType::Param>& param
 	std::string result;
 	for( const FunctionType::Param& param : params )
 	{
-		if( param.is_reference )
-			result+= "& ";
-		if( param.is_mutable )
-			result+= "mut ";
+		if( param.value_type == ValueType::ReferenceMut )
+			result+= "&mut ";
+		if( param.value_type == ValueType::ReferenceImut )
+			result+= "&imut ";
 
 		result+= param.type.ToString();
 		if( &param != &params.back() )

@@ -360,7 +360,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 	var ust::vector</LLVMMetadataRef/> mut di_types;
 	{
 		auto mut di_type= CreateDIType( t.return_type );
-		if( t.return_value_is_reference )
+		if( t.return_value_type != ValueType::Value )
 		{
 			unsafe
 			{
@@ -381,7 +381,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 	foreach( &param : t.params )
 	{
 		auto mut di_type= CreateDIType( param.t );
-		if( param.is_reference )
+		if( param.value_type != ValueType::Value )
 		{
 			unsafe
 			{

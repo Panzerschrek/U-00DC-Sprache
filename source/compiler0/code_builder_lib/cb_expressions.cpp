@@ -1448,8 +1448,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 	// Apply here move-assignment.
 	if( op == OverloadedOperator::Assign &&
-		args.front().is_mutable && args.front().is_reference  &&
-		!args.back().is_reference &&
+		args.front().value_type == ValueType::ReferenceMut &&
+		args.back().value_type == ValueType::Value &&
 		args.front().type == args.back().type &&
 		( args.front().type.GetClassType() != nullptr || args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 	{
@@ -1585,8 +1585,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	ArgsVector<FunctionType::Param> args;
 	args.emplace_back();
 	args.back().type= variable.type;
-	args.back().is_mutable= variable.value_type == ValueType::ReferenceMut;
-	args.back().is_reference= variable.value_type != ValueType::Value;
+	args.back().value_type= variable.value_type;
 
 	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, names, src_loc );
 
@@ -2507,10 +2506,10 @@ Value CodeBuilder::DoCallFunction(
 			src_loc= Synt::GetExpressionSrcLoc( *args[ j - preevaluated_args.size() ] );
 		}
 
-		if( expr.constexpr_value != nullptr && !( param.is_reference && param.is_mutable ) )
+		if( expr.constexpr_value != nullptr && param.value_type != ValueType::ReferenceMut )
 			constant_llvm_args.push_back( expr.constexpr_value );
 
-		if( param.is_reference )
+		if( param.value_type != ValueType::Value )
 		{
 			if( !ReferenceIsConvertible( expr.type, param.type, names.GetErrors(), call_src_loc ) &&
 				GetConversionConstructor( expr.type, param.type, names.GetErrors(), src_loc ) == nullptr )
@@ -2519,7 +2518,7 @@ Value CodeBuilder::DoCallFunction(
 				return ErrorValue();
 			}
 
-			if( param.is_mutable )
+			if( param.value_type == ValueType::ReferenceMut )
 			{
 				if( expr.value_type == ValueType::Value )
 				{
@@ -2568,7 +2567,7 @@ Value CodeBuilder::DoCallFunction(
 			// Lock references.
 			args_nodes.emplace_back(
 				function_context,
-				param.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				param.value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 				"reference_arg " + std::to_string(i) );
 
 			if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, args_nodes.back().Node() ) )
@@ -2722,7 +2721,7 @@ Value CodeBuilder::DoCallFunction(
 	{
 		// Currently, we can not pass back referenes from constexpr functions evaluator.
 		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() &&
-			!function_type.return_value_is_reference && function_type.return_type.ReferencesTagsCount() == 0u )
+			function_type.return_value_type == ValueType::Value && function_type.return_type.ReferencesTagsCount() == 0u )
 		{
 			const ConstexprFunctionEvaluator::Result evaluation_result=
 				constexpr_function_evaluator_.Evaluate( llvm::dyn_cast<llvm::Function>(function), constant_llvm_args );
@@ -2740,7 +2739,7 @@ Value CodeBuilder::DoCallFunction(
 				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
 					MoveConstantToMemory( result.llvm_value, evaluation_result.result_constant, function_context );
 
-				if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
+				if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 					constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
 				else
 					constant_call_result= evaluation_result.result_constant;
@@ -2751,7 +2750,7 @@ Value CodeBuilder::DoCallFunction(
 		else
 		{
 			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
-			if( !function_type.return_value_is_reference && function_type.return_type == void_type_ )
+			if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 				call_result= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 		}
 	}
@@ -2770,11 +2769,11 @@ Value CodeBuilder::DoCallFunction(
 		result.llvm_value= call_result;
 	result.constexpr_value= constant_call_result;
 
-	if( function_type.return_value_is_reference )
+	result.value_type= function_type.return_value_type;
+	if( function_type.return_value_type != ValueType::Value )
 	{
 		result.location= Variable::Location::Pointer;
-		result.value_type= function_type.return_value_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-		result.node= function_context.variables_state.AddNode( function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "fn_result " + result.type.ToString() );
+		result.node= function_context.variables_state.AddNode( function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut, "fn_result " + result.type.ToString() );
 	}
 	else
 	{
@@ -2782,12 +2781,11 @@ Value CodeBuilder::DoCallFunction(
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
 
 		result.location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
-		result.value_type= ValueType::Value;
 		result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "fn_result " + result.type.ToString() );
 	}
 
 	// Prepare result references.
-	if( function_type.return_value_is_reference )
+	if( function_type.return_value_type != ValueType::Value )
 	{
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
@@ -2873,10 +2871,10 @@ Value CodeBuilder::DoCallFunction(
 		if( referene_pollution.src.second == FunctionType::c_arg_reference_tag_number )
 		{
 			// Reference-arg itself
-			U_ASSERT( function_type.params[ referene_pollution.src.first ].is_reference );
+			U_ASSERT( function_type.params[ referene_pollution.src.first ].value_type != ValueType::Value );
 			src_nodes.emplace( args_nodes[ referene_pollution.src.first ].Node() );
 
-			if( function_type.params[ referene_pollution.src.first ].is_mutable )
+			if( function_type.params[ referene_pollution.src.first ].value_type == ValueType::ReferenceMut )
 				src_variables_is_mut= true;
 		}
 		else
@@ -2895,7 +2893,7 @@ Value CodeBuilder::DoCallFunction(
 			}
 		}
 
-		if( function_type.params[ dst_arg ].is_reference && !src_nodes.empty() )
+		if( function_type.params[ dst_arg ].value_type != ValueType::Value && !src_nodes.empty() )
 		{
 			const bool dst_inner_reference_is_mut= function_type.params[ dst_arg ].type.GetInnerReferenceType() == InnerReferenceType::Mut;
 			// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
@@ -3028,8 +3026,7 @@ FunctionType::Param CodeBuilder::GetArgExtendedType( const Variable& variable )
 {
 	FunctionType::Param arg_type_extended;
 	arg_type_extended.type= variable.type;
-	arg_type_extended.is_reference= variable.value_type != ValueType::Value;
-	arg_type_extended.is_mutable= variable.value_type == ValueType::ReferenceMut;
+	arg_type_extended.value_type= variable.value_type;
 	return arg_type_extended;
 }
 

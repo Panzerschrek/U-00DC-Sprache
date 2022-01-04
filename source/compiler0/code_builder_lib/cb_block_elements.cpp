@@ -382,7 +382,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		if( function_context.return_type == std::nullopt )
 		{
-			if( function_context.function_type.return_value_is_reference )
+			if( function_context.function_type.return_value_type != ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.src_loc_ );
 				return block_info;
@@ -395,7 +395,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		if( !( function_context.return_type == void_type_ && !function_context.function_type.return_value_is_reference ) )
+		if( !( function_context.return_type == void_type_ && function_context.function_type.return_value_type == ValueType::Value ) )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, void_type_, *function_context.return_type );
 			return block_info;
@@ -436,7 +436,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return block_info;
 	}
 
-	if( function_context.function_type.return_value_is_reference )
+	if( function_context.function_type.return_value_type != ValueType::Value )
 	{
 		if( !ReferenceIsConvertible( expression_result.type, *function_context.return_type, names.GetErrors(), return_operator.src_loc_ ) )
 		{
@@ -449,7 +449,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.src_loc_ );
 			return block_info;
 		}
-		if( expression_result.value_type == ValueType::ReferenceImut && function_context.function_type.return_value_is_mutable )
+		if( expression_result.value_type == ValueType::ReferenceImut && function_context.function_type.return_value_type == ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc_ );
 			return block_info;
@@ -468,7 +468,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{ // Lock references to return value variables.
 			ReferencesGraphNodeHolder return_value_lock(
 				function_context,
-				function_context.function_type.return_value_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				function_context.function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 				"return value lock" );
 			if( expression_result.node != nullptr )
 				function_context.variables_state.AddLink( expression_result.node, return_value_lock.Node() );
@@ -1681,8 +1681,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	ArgsVector<FunctionType::Param> args;
 	args.emplace_back();
 	args.back().type= variable->type;
-	args.back().is_mutable= variable->value_type == ValueType::ReferenceMut;
-	args.back().is_reference= variable->value_type != ValueType::Value;
+	args.back().value_type= variable->value_type;
 	const FunctionVariable* const overloaded_operator=
 		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, block_names, src_loc );
 	if( overloaded_operator != nullptr )

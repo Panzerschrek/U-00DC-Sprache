@@ -617,7 +617,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition, function_context );
 
 	// Know type and value type of each branch.
-	var [ VariableTypeExtened, 2 ] mut branches_types[ { .value_type= zero_init }, { .value_type= zero_init } ];
+	var [ VariableTypeExtended, 2 ] mut branches_types[ { .value_type= zero_init }, { .value_type= zero_init } ];
 	for( auto mut i= 0s; i < 2s; ++i )
 	{
 		auto instructions_state= SaveInstructionsState( function_context );
@@ -2268,7 +2268,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 {
 	auto in_args= ust::make_array( arg_l, arg_r );
 
-	var ust::vector</VariableTypeExtened/> mut args;
+	var ust::vector</VariableTypeExtended/> mut args;
 
 	{
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
@@ -2280,7 +2280,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			if( function_context.args_preevaluation_cache.find( in_arg ).empty() )
 			{
 				auto arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() );
-				var VariableTypeExtened mut f_arg{ .t(arg.t), .value_type= arg.value_type };
+				var VariableTypeExtended mut f_arg{ .t(arg.t), .value_type= arg.value_type };
 				function_context.args_preevaluation_cache.insert( in_arg, move(f_arg) );
 				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 			}
@@ -2436,7 +2436,7 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 		return ust::optional</Value/>();
 	}
 
-	var [ VariableTypeExtened, 1 ] args[ { .t(variable.t), .value_type= variable.value_type } ];
+	var [ VariableTypeExtended, 1 ] args[ { .t(variable.t), .value_type= variable.value_type } ];
 
 	if_var( mut overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 	{
@@ -2464,9 +2464,9 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& synt_args,
 	SrcLoc& src_loc ) : ust::optional</Value/>
 {
-	var ust::vector</ VariableTypeExtened /> mut args;
+	var ust::vector</ VariableTypeExtended /> mut args;
 
-	var VariableTypeExtened mut this_type{ .t(variable.t), .value_type= variable.value_type };
+	var VariableTypeExtended mut this_type{ .t(variable.t), .value_type= variable.value_type };
 	args.push_back( move(this_type) );
 
 	{
@@ -2477,7 +2477,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 		foreach( &in_arg : synt_args )
 		{
 			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, in_arg.deref() );
-			var VariableTypeExtened mut type_extended{ .t(arg.t), .value_type= arg.value_type };
+			var VariableTypeExtended mut type_extended{ .t(arg.t), .value_type= arg.value_type };
 			args.push_back( move(type_extended) );
 			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 		}
@@ -2512,7 +2512,7 @@ fn CodeBuilder::CallFunctionsSet(
 	SrcLoc& src_loc ) : Value
 {
 	// Pre-evaluate arguments to know exact types and select exact function.
-	var ust::vector</VariableTypeExtened/> mut args_evaluated;
+	var ust::vector</VariableTypeExtended/> mut args_evaluated;
 	{
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
@@ -2521,7 +2521,7 @@ fn CodeBuilder::CallFunctionsSet(
 
 		if_var( &thi : this_ )
 		{
-			var VariableTypeExtened mut out_arg{ .t( thi.t ), .value_type= thi.value_type };
+			var VariableTypeExtended mut out_arg{ .t( thi.t ), .value_type= thi.value_type };
 			args_evaluated.push_back( move(out_arg) );
 		}
 
@@ -2530,7 +2530,7 @@ fn CodeBuilder::CallFunctionsSet(
 			if( function_context.args_preevaluation_cache.find( arg ).empty() )
 			{
 				auto arg_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg.deref() );
-				var VariableTypeExtened mut out_arg{ .t( arg_variable.t ), .value_type= arg_variable.value_type };
+				var VariableTypeExtended mut out_arg{ .t( arg_variable.t ), .value_type= arg_variable.value_type };
 				function_context.args_preevaluation_cache.insert( arg, move(out_arg) );
 				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 			}
@@ -2636,7 +2636,7 @@ fn CodeBuilder::DoCallFunction(
 	}
 
 	// TODO - maybe forbid calling functions with incomplete type for returned reference?
-	if( !function_type.return_value_is_reference && !EnsureTypeComplete( function_type.return_type ) )
+	if( function_type.return_value_type == ValueType::Value && !EnsureTypeComplete( function_type.return_type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, function_type.return_type )
 		return ErrorValue();
@@ -2662,7 +2662,7 @@ fn CodeBuilder::DoCallFunction(
 	var ust::vector</ LLVMValueRef /> mut constexpr_args;
 	auto mut is_constexpr= false;
 	if( function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete &&
-		!function_type.return_value_is_reference )
+		function_type.return_value_type == ValueType::Value )
 	{
 		is_constexpr= true;
 		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
@@ -2731,7 +2731,7 @@ fn CodeBuilder::DoCallFunction(
 			}
 		}
 
-		if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null && !( param.is_mutable && param.is_reference ) )
+		if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null && param.value_type != ValueType::ReferenceMut )
 		{
 			// TODO - what about types conversion in constexpr call?
 			constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
@@ -2741,9 +2741,9 @@ fn CodeBuilder::DoCallFunction(
 			is_constexpr= false;
 		}
 
-		if( param.is_reference )
+		if( param.value_type != ValueType::Value )
 		{
-			if( param.is_mutable )
+			if( param.value_type == ValueType::ReferenceMut )
 			{
 				if( arg.value_type == ValueType::Value )
 				{
@@ -2763,7 +2763,7 @@ fn CodeBuilder::DoCallFunction(
 			if( arg.node_id != ReferencesGraph::c_empty_node_id )
 			{
 				auto arg_node_id= function_context.references_graph.AddNode(
-					select( param.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+					select( param.value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 					"reference arg " + arg_number_str );
 				args_nodes[arg_n]= arg_node_id;
 				if( !function_context.references_graph.TryAddLink( arg.node_id, arg_node_id ) )
@@ -2897,22 +2897,21 @@ fn CodeBuilder::DoCallFunction(
 	var Variable mut result
 	{
 		.t= function_type.return_type,
+		.value_type= function_type.return_value_type,
 	};
 
 	var ust::string8 mut node_name= "call result " + function_type.return_type.ToString();
 
-	if( function_type.return_value_is_reference )
+	if( function_type.return_value_type != ValueType::Value )
 	{
 		result.location= Variable::Location::Pointer;
-		result.value_type= select( function_type.return_value_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
 		result.node_id= function_context.references_graph.AddNode(
-			select( function_type.return_value_is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+			select( function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 			move(node_name) );
 	}
 	else
 	{
-		result.value_type= ValueType::Value;
 		if( is_s_ret )
 		{
 			result.location= Variable::Location::Pointer;
@@ -2933,7 +2932,7 @@ fn CodeBuilder::DoCallFunction(
 
 		if( res.errors.empty() )
 		{
-			if( !function.t.return_value_is_reference && function.t.return_type == void_type_ )
+			if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
 			{
 				unsafe{  result.constexpr_value= LLVMConstNull( fundamental_llvm_types_.void_ );  }
 			}
@@ -2976,7 +2975,7 @@ fn CodeBuilder::DoCallFunction(
 		{
 			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front_unchecked(), u32(llvm_args.size()), "\0"[0] );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
-			else if( !function.t.return_value_is_reference && function.t.return_type == void_type_ )
+			else if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
 			{
 				unsafe{  result.llvm_value= LLVMGetUndef( fundamental_llvm_types_.void_ );  }
 			}
@@ -3000,7 +2999,7 @@ fn CodeBuilder::DoCallFunction(
 	}
 
 	// Prepare result references.
-	if( function_type.return_value_is_reference )
+	if( function_type.return_value_type != ValueType::Value )
 	{
 		foreach( &param_reference : function_type.return_references )
 		{
@@ -3099,7 +3098,7 @@ fn CodeBuilder::DoCallFunction(
 		if( function_type.params[ dst_arg ].t.GetInnerReferenceKind() == InnerReferenceKind::None ||
 			args_nodes[src_arg] == ReferencesGraph::c_empty_node_id ||
 			args_nodes[dst_arg] == ReferencesGraph::c_empty_node_id ||
-			!function_type.params[ dst_arg ].is_reference ) // Skip reference pollution for value params. TODO - is this correct?
+			function_type.params[ dst_arg ].value_type == ValueType::Value ) // Skip reference pollution for value params. TODO - is this correct?
 		{
 			continue;
 		}
@@ -3110,7 +3109,7 @@ fn CodeBuilder::DoCallFunction(
 		{
 			// Reference-arg itself.
 			src_nodes.insert( args_nodes[src_arg] );
-			src_variables_is_mut= function_type.params[src_arg].is_mutable;
+			src_variables_is_mut= function_type.params[src_arg].value_type == ValueType::ReferenceMut;
 		}
 		else
 		{

@@ -1546,7 +1546,7 @@ U_TEST(CouldNotOverloadFunctionTest1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CouldNotOverloadFunction );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::FunctionBodyDuplication );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u || error.src_loc.GetLine() == 3u );
 }
 

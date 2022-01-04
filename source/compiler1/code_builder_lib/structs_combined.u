@@ -193,19 +193,6 @@ op RawPointerType::!=( RawPointerType& l, RawPointerType& r ) : bool
 	return !(l == r);
 }
 
-op FunctionType::Param::==(Param& l, Param& r) : bool
-{
-	return
-		l.t == r.t &&
-		l.is_reference == r.is_reference &&
-		l.is_mutable == r.is_mutable;
-}
-
-op FunctionType::Param::!=(Param& l, Param& r) : bool
-{
-	return !(l == r);
-}
-
 op FunctionType::ParamReference::==(ParamReference& l, ParamReference& r) : bool
 {
 	return
@@ -250,8 +237,8 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 {
 	if(
 		this.return_type != dst.return_type ||
-		this.return_value_is_reference != dst.return_value_is_reference ||
-		( !this.return_value_is_mutable && dst.return_value_is_mutable ) || // Allow mutability conversions, except mut->imut
+		( this.return_value_type == ValueType::Value ) != ( dst.return_value_type == ValueType::Value ) ||
+		( this.return_value_type == ValueType::ReferenceImut && dst.return_value_type == ValueType::ReferenceMut ) || // Allow mutability conversions, except mut->imut
 		( this.is_unsafe && !dst.is_unsafe ) || // Disable unsafe function to safe function conversion
 		this.params.size() != dst.params.size() )
 	{
@@ -299,8 +286,8 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		auto& this_param= this.params[i];
 		auto& dst_param= dst.params[i];
 		if( this_param.t != dst_param.t ||
-			this_param.is_reference != dst_param.is_reference ||
-			(this_param.is_mutable && !dst_param.is_mutable ) ) // Allow mutability conversions, except mut->imut
+			( this_param.value_type == ValueType::Value ) != ( dst_param.value_type == ValueType::Value ) ||
+			this_param.value_type == ValueType::ReferenceMut && dst_param.value_type == ValueType::ReferenceImut ) // Allow mutability conversions, except mut->imut
 		{
 			return false;
 		}
@@ -312,7 +299,7 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 fn FunctionType::IsStructRet( this ) : bool
 {
 	return
-		!return_value_is_reference &&
+		return_value_type == ValueType::Value &&
 		( !return_type.GetClassType().empty() || !return_type.GetArrayType().empty() || !return_type.GetTupleType().empty() );
 }
 
@@ -356,8 +343,7 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 
 	return
 		l.return_type == r.return_type &&
-		l.return_value_is_reference == r.return_value_is_reference &&
-		l.return_value_is_mutable == r.return_value_is_mutable &&
+		l.return_value_type == r.return_value_type &&
 		l.is_unsafe == r.is_unsafe;
 }
 
@@ -372,13 +358,13 @@ fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) 
 
 	foreach( &param : params )
 	{
-		if( param.is_reference )
+		if( param.value_type == ValueType::ReferenceMut )
 		{
-			result+= "& ";
+			result+= "&mut ";
 		}
-		if( param.is_mutable )
+		if( param.value_type == ValueType::ReferenceImut )
 		{
-			result+= "mut ";
+			result+= "&imut ";
 		}
 
 		result+= param.t.ToString();
@@ -875,6 +861,16 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 	return "";
 }
 
+op VariableTypeExtended::==(VariableTypeExtended& l, VariableTypeExtended& r) : bool
+{
+	return l.t == r.t && l.value_type == r.value_type;
+}
+
+op VariableTypeExtended::!=(VariableTypeExtended& l, VariableTypeExtended& r) : bool
+{
+	return !(l == r);
+}
+
 fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 {
 	halt if( !( this.is_this_call && other.is_this_call ) );
@@ -884,12 +880,11 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 
 	if( !(
 		tl.return_type == tr.return_type &&
-		tl.return_value_is_reference == tr.return_value_is_reference &&
-		tl.return_value_is_mutable == tr.return_value_is_mutable &&
+		tl.return_value_type == tr.return_value_type &&
 		tl.is_unsafe == tr.is_unsafe &&
 		tl.params.size() == tr.params.size() &&
 		tl.params.size() > 0s &&
-		tl.params.front().is_mutable == tr.params.front().is_mutable
+		tl.params.front().value_type == tr.params.front().value_type
 		) )
 	{
 		return false;
@@ -901,8 +896,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		auto& param_r= tr.params[i];
 		if( !(
 			param_l.t == param_r.t &&
-			param_l.is_mutable == param_r.is_mutable &&
-			param_l.is_reference == param_r.is_reference
+			param_l.value_type == param_r.value_type
 			) )
 		{
 			return false;
@@ -1134,14 +1128,13 @@ op TemplateSignatureParam::RawPointerTypeParam::==(RawPointerTypeParam& l, RawPo
 
 op TemplateSignatureParam::FunctionTypeParam::Param::==(Param& l, Param& r) : bool
 {
-	return l.t == r.t && l.is_mutable == r.is_mutable && l.is_reference == r.is_reference;
+	return l.t == r.t && l.value_type == r.value_type;
 }
 
 op TemplateSignatureParam::FunctionTypeParam::==(FunctionTypeParam& l, FunctionTypeParam& r) : bool
 {
 	if( !(l.return_type == r.return_type) ||
-		l.return_value_is_mutable != r.return_value_is_mutable ||
-		l.return_value_is_reference != r.return_value_is_reference ||
+		l.return_value_type != r.return_value_type ||
 		l.is_unsafe != r.is_unsafe ||
 		l.params.size() != r.params.size() )
 	{

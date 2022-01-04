@@ -408,12 +408,12 @@ fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ cha
 
 fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& param )
 {
-	if( param.is_reference )
+	if( param.value_type != ValueType::Value )
 	{
 		ADD_NODE( mangler_state )
 		{
 			mangler_state.Push( "R" );
-			if( param.is_mutable )
+			if( param.value_type == ValueType::ReferenceMut )
 			{
 				EncodeTypeName( mangler_state, param.t );
 			}
@@ -585,9 +585,9 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 				var FunctionType::Param ret_param
 				{
 					.t( function_type.return_type ),
-					.is_mutable= function_type.return_value_is_mutable,
-					.is_reference= function_type.return_value_is_reference,
+					.value_type= function_type.return_value_type,
 				};
+
 				EncodeFunctionParam( mangler_state, ret_param );
 			}
 

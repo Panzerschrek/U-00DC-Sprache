@@ -14,15 +14,7 @@ enum ArgOverloadingClass
 	MutalbeReference,
 }
 
-fn GetArgOverloadingClass( FunctionType::Param& param ) : ArgOverloadingClass
-{
-	return select(
-		param.is_reference && param.is_mutable
-			? ArgOverloadingClass::MutalbeReference
-			: ArgOverloadingClass::ImmutableReference );
-}
-
-fn GetArgOverloadingClass( VariableTypeExtened& arg ) : ArgOverloadingClass
+fn GetArgOverloadingClass( VariableTypeExtended& arg ) : ArgOverloadingClass
 {
 	return select( arg.value_type == ValueType::ReferenceMut ? ArgOverloadingClass::MutalbeReference : ArgOverloadingClass::ImmutableReference );
 }
@@ -84,7 +76,7 @@ fn ComplareConversionsType(
 }
 
 fn CompareConversionsMutability(
-	VariableTypeExtened& src,
+	VariableTypeExtended& src,
 	FunctionType::Param& dst_left,
 	FunctionType::Param& dst_right ) : ConversionsCompareResult
 {
@@ -108,7 +100,7 @@ fn CompareConversionsMutability(
 }
 
 fn CompareConversions(
-	VariableTypeExtened& src,
+	VariableTypeExtended& src,
 	FunctionType::Param& dst_left,
 	FunctionType::Param& dst_right ) : ConversionsCompareResult
 {
@@ -137,7 +129,7 @@ fn CompareConversions(
 }
 
 fn CompareConversions(
-	VariableTypeExtened& src,
+	VariableTypeExtended& src,
 	FunctionType::Param& dst_left,
 	FunctionType::Param& dst_right,
 	TemplateSignatureParam& template_param_l,
@@ -380,7 +372,7 @@ fn CompareTemplateSpecialization( TemplateSignatureParam& l, TemplateSignaturePa
 	halt; // Unhandled combination of template signature parameter kinds.
 }
 
-fn ActualArgsToString( ust::array_view_imut</VariableTypeExtened/> actual_args ) : ust::string8
+fn ActualArgsToString( ust::array_view_imut</VariableTypeExtended/> actual_args ) : ust::string8
 {
 	var ust::string8 mut result;
 	foreach( &type_extended : actual_args )
@@ -481,7 +473,7 @@ fn CodeBuilder::ApplyOverloadedFunction(
 fn CodeBuilder::GetOverloadedFunctionImpl(
 	mut this,
 	FunctionsSet & functions_set,
-	ust::array_view_imut</VariableTypeExtened/> actual_args,
+	ust::array_view_imut</VariableTypeExtended/> actual_args,
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc,
@@ -712,7 +704,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 fn CodeBuilder::GetOverloadedFunction(
 	mut this,
 	FunctionsSet& functions_set,
-	ust::array_view_imut</VariableTypeExtened/> actual_args,
+	ust::array_view_imut</VariableTypeExtended/> actual_args,
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
@@ -722,7 +714,7 @@ fn CodeBuilder::GetOverloadedFunction(
 
 fn CodeBuilder::GetOverloadedOperator(
 	mut this,
-	ust::array_view_imut</VariableTypeExtened/> args,
+	ust::array_view_imut</VariableTypeExtended/> args,
 	OverloadedOperator operator,
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
@@ -787,7 +779,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	auto constructors_lock= constructors_ptr.try_lock_imut();
 	auto& constructors= constructors_lock.deref().functions_set;
 
-	var [ VariableTypeExtened, 2 ] constructor_args
+	var [ VariableTypeExtended, 2 ] constructor_args
 	[
 		{ .t= dst, .value_type= ValueType::ReferenceMut },
 		{ .t= src, .value_type= ValueType::ReferenceImut },

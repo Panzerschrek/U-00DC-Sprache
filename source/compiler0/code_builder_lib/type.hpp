@@ -13,6 +13,13 @@
 namespace U
 {
 
+enum class ValueType : uint8_t
+{
+	Value,
+	ReferenceMut,
+	ReferenceImut,
+};
+
 struct FunctionType;
 struct FunctionPointerType;
 struct ArrayType;
@@ -159,8 +166,7 @@ public:
 	struct Param
 	{
 		Type type;
-		bool is_reference;
-		bool is_mutable;
+		ValueType value_type= ValueType::Value;
 	};
 
 	// "first" - arg number, "second" is inner tag number or ~0, if it is reference itself
@@ -182,8 +188,7 @@ public:
 	// If this changed, virtual functions compare function must be changed too!
 	ArgsVector<Param> params;
 	Type return_type;
-	bool return_value_is_reference= false;
-	bool return_value_is_mutable= false;
+	ValueType return_value_type= ValueType::Value;
 	bool unsafe= false;
 
 	// Use "std::set" for references description, because we needs stable order for function type mangling.

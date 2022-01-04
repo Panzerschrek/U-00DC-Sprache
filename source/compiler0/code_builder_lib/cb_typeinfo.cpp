@@ -299,8 +299,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	{
 		add_typeinfo_field( "return_type", function_type->return_type );
 		add_list_field( "arguments_list"      , BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
-		add_bool_field( "return_value_is_reference", function_type->return_value_is_reference );
-		add_bool_field( "return_value_is_mutable"  , function_type->return_value_is_mutable );
+		add_bool_field( "return_value_is_reference", function_type->return_value_type != ValueType::Value );
+		add_bool_field( "return_value_is_mutable"  , function_type->return_value_type == ValueType::ReferenceMut );
 		add_bool_field( "unsafe"                   , function_type->unsafe );
 		// SPRACHE_TODO - add also reference pollution.
 	}
@@ -706,13 +706,13 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& functi
 			"is_reference",
 			Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
-		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, param.is_reference ) ) );
+		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, param.value_type != ValueType::Value ) ) );
 
 		node_type_class.members->AddName(
 			"is_mutable",
 			Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
-		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, param.is_mutable ) ) );
+		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, param.value_type == ValueType::ReferenceMut ) ) );
 
 		// SPRACHE_TODO - add reference pollution
 

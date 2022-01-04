@@ -766,7 +766,6 @@ private:
 
 	// Reference-checking.
 	void ProcessFunctionParamReferencesTags(
-		CodeBuilderErrorsContainer& errors_container,
 		const Synt::FunctionType& func,
 		FunctionType& function_type,
 		const Synt::FunctionParam& in_arg,
