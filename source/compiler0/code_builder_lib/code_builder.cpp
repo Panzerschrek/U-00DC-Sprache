@@ -1174,11 +1174,6 @@ Type CodeBuilder::BuildFuncCode(
 				func_variable.no_mangle ? func_name : mangler_->MangleFunction( parent_names_scope, func_name, function_type ),
 				module_.get() );
 
-
-		// Merge functions with identical code.
-		// We doesn`t need different addresses for different functions.
-		llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
-
 		SetupFunctionParamsAndRetAttributes( func_variable );
 	}
 	else
@@ -1204,10 +1199,6 @@ Type CodeBuilder::BuildFuncCode(
 		comdat->setSelectionKind( llvm::Comdat::Any );
 		llvm_function->setComdat( comdat );
 	}
-	llvm_function->setDoesNotThrow(); // We do not support exceptions.
-
-	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
-		llvm_function->addFnAttr( llvm::Attribute::UWTable );
 
 	func_variable.have_body= true;
 
@@ -2052,22 +2043,20 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 	}
 	if( function_type.return_value_type != ValueType::Value )
 		llvm_function->addAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull );
-}
 
-void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
-{
 	// Merge functions with identical code.
 	// We doesn`t need different addresses for different functions.
-	function.setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+	llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
-	function.setLinkage( llvm::GlobalValue::PrivateLinkage );
-
-	function.setDoesNotThrow(); // We do not support exceptions.
+	llvm_function->setDoesNotThrow(); // We do not support exceptions.
 
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
-		function.addFnAttr( llvm::Attribute::UWTable );
-}
+		llvm_function->addFnAttr( llvm::Attribute::UWTable );
 
+	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
+	if( function_variable.is_generated )
+		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+}
 
 void CodeBuilder::CreateLifetimeStart( FunctionContext& function_context, llvm::Value* const address )
 {

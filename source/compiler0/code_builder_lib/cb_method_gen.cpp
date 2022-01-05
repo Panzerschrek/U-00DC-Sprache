@@ -110,14 +110,14 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 
 		}
 	}
-	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
-	SetupFunctionParamsAndRetAttributes( *constructor_variable );
 
 	constructor_variable->have_body= true;
 	constructor_variable->is_this_call= true;
 	constructor_variable->is_generated= true;
 	constructor_variable->is_constructor= true;
 	constructor_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
+
+	SetupFunctionParamsAndRetAttributes( *constructor_variable );
 
 	FunctionContext function_context(
 		*constructor_variable->type.GetFunctionType(),
@@ -289,14 +289,14 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 			constructor_variable= &inserted_value->GetFunctionsSet()->functions.back();
 		}
 	}
-	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
-	SetupFunctionParamsAndRetAttributes( *constructor_variable );
 
 	constructor_variable->have_body= true;
 	constructor_variable->is_this_call= true;
 	constructor_variable->is_generated= true;
 	constructor_variable->is_constructor= true;
 	constructor_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
+
+	SetupFunctionParamsAndRetAttributes( *constructor_variable );
 
 	FunctionContext function_context(
 		*constructor_variable->type.GetFunctionType(),
@@ -406,8 +406,6 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 	CallMembersDestructors( function_context, the_class.members->GetErrors(), the_class.body_src_loc );
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
-
-	SetupGeneratedFunctionAttributes( *destructor_function.llvm_function );
 
 	destructor_function.have_body= true;
 }
@@ -557,13 +555,13 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 			operator_variable= &inserted_value->GetFunctionsSet()->functions.back();
 		}
 	}
-	SetupGeneratedFunctionAttributes( *operator_variable->llvm_function );
-	SetupFunctionParamsAndRetAttributes( *operator_variable );
 
 	operator_variable->have_body= true;
 	operator_variable->is_this_call= true;
 	operator_variable->is_generated= true;
 	operator_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
+
+	SetupFunctionParamsAndRetAttributes( *operator_variable );
 
 	FunctionContext function_context(
 		*operator_variable->type.GetFunctionType(),

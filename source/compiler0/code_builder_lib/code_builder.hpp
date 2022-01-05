@@ -895,7 +895,6 @@ private:
 	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name );
 
 	void SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
-	void SetupGeneratedFunctionAttributes( llvm::Function& function );
 
 	void CreateLifetimeStart( FunctionContext& function_context, llvm::Value* address );
 	void CreateLifetimeEnd( FunctionContext& function_context, llvm::Value* address );
