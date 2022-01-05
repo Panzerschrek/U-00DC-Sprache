@@ -80,11 +80,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		constructor_type.params.back().type= class_type;
 		constructor_type.params.back().value_type= ValueType::ReferenceMut;
 
-		constructor_type.llvm_type=
-			llvm::FunctionType::get(
-				fundamental_llvm_types_.void_for_ret,
-				{ the_class.llvm_type->getPointerTo() },
-				false );
+		constructor_type.llvm_type= GetLLVMFunctionType( constructor_type );
 
 		llvm::Function* const llvm_constructor_function=
 			llvm::Function::Create(
@@ -265,11 +261,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 			constructor_type.references_pollution.emplace(pollution);
 		}
 
-		constructor_type.llvm_type=
-			llvm::FunctionType::get(
-				fundamental_llvm_types_.void_for_ret,
-				{ the_class.llvm_type->getPointerTo(), the_class.llvm_type->getPointerTo() },
-				false );
+		constructor_type.llvm_type= GetLLVMFunctionType( constructor_type );
 
 		llvm::Function* const llvm_constructor_function=
 			llvm::Function::Create(
@@ -376,12 +368,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr& class
 	destructor_type.params[0].type= class_type;
 	destructor_type.params[0].value_type= ValueType::ReferenceMut;
 
-	llvm::Type* const this_llvm_type= the_class.llvm_type->getPointerTo();
-	destructor_type.llvm_type=
-		llvm::FunctionType::get(
-			fundamental_llvm_types_.void_for_ret,
-			llvm::ArrayRef<llvm::Type*>( &this_llvm_type, 1u ),
-			false );
+	destructor_type.llvm_type= GetLLVMFunctionType( destructor_type );
 
 	FunctionVariable destructor_function;
 	destructor_function.type= destructor_type;
@@ -548,11 +535,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 			op_type.references_pollution.emplace(pollution);
 		}
 
-		op_type.llvm_type=
-			llvm::FunctionType::get(
-				fundamental_llvm_types_.void_for_ret,
-				{ the_class.llvm_type->getPointerTo(), the_class.llvm_type->getPointerTo() },
-				false );
+		op_type.llvm_type= GetLLVMFunctionType( op_type );
 
 		llvm::Function* const llvm_op_function=
 			llvm::Function::Create(

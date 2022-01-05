@@ -165,17 +165,18 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 				module_.get() );
 	}
 
+	FunctionType global_function_type;
+	global_function_type.return_type= void_type_;
+	global_function_type.llvm_type= GetLLVMFunctionType( global_function_type );
+
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this function context.
 	llvm::Function* const global_function=
 		llvm::Function::Create(
-			llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, false ),
+			global_function_type.llvm_type,
 			llvm::Function::LinkageTypes::ExternalLinkage,
 			"",
 			module_.get() );
-
-	FunctionType global_function_type;
-	global_function_type.return_type= void_type_;
 
 	FunctionContext global_function_context(
 		std::move(global_function_type),
