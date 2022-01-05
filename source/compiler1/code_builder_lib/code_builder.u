@@ -1298,6 +1298,12 @@ fn CodeBuilder::PrepareFunction(
 		{
 			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "readonly" );
 		}
+		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
+		// It is not possible to capture this reference.
+		if( param.value_type == ValueType::Value && param_type_is_composite )
+		{
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nocapture" );
+		}
 	}
 
 	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.src_loc );
