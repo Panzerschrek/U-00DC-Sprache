@@ -104,15 +104,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			function_type.params.push_back( move(this_param) );
 		}
 
-		unsafe
-		{
-			function_type.llvm_type=
-				LLVMFunctionType(
-					fundamental_llvm_types_.void_for_ret_,
-					LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
-					1u,
-					LLVMBool::False );
-		}
+		FillLLVMFunctionType( function_type );
 
 		// Prepare function variable.
 		var FunctionVariable mut function_variable
@@ -321,21 +313,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			function_type.references_pollution.push_back( move(pollution) );
 		}
 
-		unsafe
-		{
-			var[ LLVMTypeRef, 2 ] args_llvm_types
-			[
-				LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
-				LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
-			];
-
-			function_type.llvm_type=
-				LLVMFunctionType(
-					fundamental_llvm_types_.void_for_ret_,
-					args_llvm_types[0],
-					2u,
-					LLVMBool::False );
-		}
+		FillLLVMFunctionType( function_type );
 
 		// Prepare function variable.
 		var FunctionVariable mut function_variable
@@ -537,21 +515,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			function_type.references_pollution.push_back( move(pollution) );
 		}
 
-		unsafe
-		{
-			var[ LLVMTypeRef, 2 ] args_llvm_types
-			[
-				LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
-				LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
-			];
-
-			function_type.llvm_type=
-				LLVMFunctionType(
-					fundamental_llvm_types_.void_for_ret_,
-					args_llvm_types[0],
-					2u,
-					LLVMBool::False );
-		}
+		FillLLVMFunctionType( function_type );
 
 		// Prepare function variable.
 		var FunctionVariable mut function_variable
@@ -663,15 +627,7 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 		function_type.params.push_back( move(this_param) );
 	}
 
-	unsafe
-	{
-		function_type.llvm_type=
-			LLVMFunctionType(
-				fundamental_llvm_types_.void_for_ret_,
-				LLVMPointerType( class_type.lock_imut().deref().llvm_type, 0u ),
-				1u,
-				LLVMBool::False );
-	}
+	FillLLVMFunctionType( function_type );
 
 	// Prepare function variable.
 	var FunctionVariable mut function_variable
