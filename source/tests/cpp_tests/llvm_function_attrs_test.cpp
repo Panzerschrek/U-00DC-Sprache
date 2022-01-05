@@ -6,6 +6,104 @@ namespace U
 namespace
 {
 
+U_TEST( LLVMFunctionAttrsTest_FunctionsLinkage )
+{
+	// All regular functions must have "external" linkage.
+	static const char c_program_text[]=
+	R"(
+		fn FuncDeclaration();
+		fn FuncDefinition(){}
+
+		fn FuncWithPrototype();
+		fn FuncWithPrototype(){}
+
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const func_declaration= module->getFunction( "_Z15FuncDeclarationv" );
+	U_TEST_ASSERT( func_declaration != nullptr );
+	U_TEST_ASSERT( func_declaration->getLinkage() == llvm::GlobalVariable::ExternalLinkage );
+
+	const llvm::Function* const func_defenition= module->getFunction( "_Z14FuncDefinitionv" );
+	U_TEST_ASSERT( func_defenition != nullptr );
+	U_TEST_ASSERT( func_defenition->getLinkage() == llvm::GlobalVariable::ExternalLinkage );
+
+	const llvm::Function* const func_with_prototype= module->getFunction( "_Z17FuncWithPrototypev" );
+	U_TEST_ASSERT( func_with_prototype != nullptr );
+	U_TEST_ASSERT( func_with_prototype->getLinkage() == llvm::GlobalVariable::ExternalLinkage );
+}
+
+U_TEST( LLVMFunctionAttrsTest_MethodsLinkage )
+{
+	// All regular class functions must have "external" linkage.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn FuncDeclaration();
+			fn FuncDefinition(){}
+
+			fn FuncWithPrototype();
+
+			fn ThisCallMethod( this ){}
+			fn ThisCallMethodWithPrototype( mut this );
+		}
+
+		fn S::FuncWithPrototype(){}
+		fn S::ThisCallMethodWithPrototype( mut this ){}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const func_declaration= module->getFunction( "_ZN1S15FuncDeclarationEv" );
+	U_TEST_ASSERT( func_declaration != nullptr );
+	U_TEST_ASSERT( func_declaration->getLinkage() == llvm::GlobalVariable::ExternalLinkage );
+
+	const llvm::Function* const func_defenition= module->getFunction( "_ZN1S14FuncDefinitionEv" );
+	U_TEST_ASSERT( func_defenition != nullptr );
+	U_TEST_ASSERT( func_defenition->getLinkage() == llvm::GlobalVariable::ExternalLinkage );
+
+	const llvm::Function* const func_with_prototype= module->getFunction( "_ZN1S17FuncWithPrototypeEv" );
+	U_TEST_ASSERT( func_with_prototype != nullptr );
+	U_TEST_ASSERT( func_with_prototype->getLinkage() == llvm::GlobalVariable::ExternalLinkage );
+
+	const llvm::Function* const this_call_method= module->getFunction( "_ZN1S14ThisCallMethodERKS_" );
+	U_TEST_ASSERT( this_call_method != nullptr );
+	U_TEST_ASSERT( this_call_method->getLinkage() == llvm::GlobalVariable::ExternalLinkage );
+
+	const llvm::Function* const this_call_method_with_prototype= module->getFunction( "_ZN1S27ThisCallMethodWithPrototypeERS_" );
+	U_TEST_ASSERT( this_call_method_with_prototype != nullptr );
+	U_TEST_ASSERT( this_call_method_with_prototype->getLinkage() == llvm::GlobalVariable::ExternalLinkage );
+}
+
+U_TEST( LLVMFunctionAttrsTest_TemplateFunctionsLinkage )
+{
+	// All template functions and functions inside template classes must have "private" linkage.
+	static const char c_program_text[]=
+	R"(
+		template</type T/> fn GetZero() : T { return T(0); }
+
+		template</type T/> struct S { fn StaticMethod(){} }
+
+		fn Foo()
+		{
+			GetZero</f32/>();
+			S</u32/>::StaticMethod();
+		}
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const get_zero= module->getFunction( "_Z7GetZeroIfEvv" );
+	U_TEST_ASSERT( get_zero != nullptr );
+	U_TEST_ASSERT( get_zero->getLinkage() == llvm::GlobalVariable::PrivateLinkage );
+
+	const llvm::Function* const template_static_method= module->getFunction( "_ZN1SIjE12StaticMethodEv" );
+	U_TEST_ASSERT( template_static_method != nullptr );
+	U_TEST_ASSERT( template_static_method->getLinkage() == llvm::GlobalVariable::PrivateLinkage );
+}
+
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeValueParamsAttrs )
 {
 	// No special attributes must be set for fundamental types value params.
@@ -506,10 +604,12 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 
 	// "this" as mutable reference param should be marked with "nonnull" and "noalias".
 	// "src" (for copy methods) should be marked as "nonnull", "noalias", "readonly", as any other immutable reference param.
+	// All methods must have private linkage because they are generated.
 
 	{
 		const llvm::Function* const default_constructor= module->getFunction( "_ZN1S11constructorERS_" );
 		U_TEST_ASSERT( default_constructor != nullptr );
+		U_TEST_ASSERT( default_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
 		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
@@ -519,6 +619,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 	{
 		const llvm::Function* const copy_constructor= module->getFunction( "_ZN1S11constructorERS_RKS_" );
 		U_TEST_ASSERT( copy_constructor != nullptr );
+		U_TEST_ASSERT( copy_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
@@ -533,6 +634,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 	{
 		const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN1SaSERS_RKS_" );
 		U_TEST_ASSERT( copy_assignment_operator != nullptr );
+		U_TEST_ASSERT( copy_assignment_operator->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
@@ -547,6 +649,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 	{
 		const llvm::Function* const destructor= module->getFunction( "_ZN1S10destructorERS_" );
 		U_TEST_ASSERT( destructor != nullptr );
+		U_TEST_ASSERT( destructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
 		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
@@ -571,10 +674,12 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 
 	// "this" as mutable reference param should be marked with "nonnull" and "noalias".
 	// "src" (for copy methods) should be marked as "nonnull", "readonly", "noalias", as any other immutable reference param.
+	// All methods must have private linkage because they are generated.
 
 	{
 		const llvm::Function* const default_constructor= module->getFunction( "_ZN1S11constructorERS_" );
 		U_TEST_ASSERT( default_constructor != nullptr );
+		U_TEST_ASSERT( default_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
 		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
@@ -584,6 +689,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 	{
 		const llvm::Function* const copy_constructor= module->getFunction( "_ZN1S11constructorERS_RKS_" );
 		U_TEST_ASSERT( copy_constructor != nullptr );
+		U_TEST_ASSERT( copy_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
@@ -598,6 +704,7 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 	{
 		const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN1SaSERS_RKS_" );
 		U_TEST_ASSERT( copy_assignment_operator != nullptr );
+		U_TEST_ASSERT( copy_assignment_operator->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
