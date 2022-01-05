@@ -758,7 +758,7 @@ private:
 
 	fn AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name );
 
-	fn SetupLLVMFunctionAttributes( this, NamesScope& names_scope, FunctionVariable& func_variable );
+	fn SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable );
 
 	fn MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction );
 

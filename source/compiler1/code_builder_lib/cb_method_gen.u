@@ -134,7 +134,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	}
 	var FunctionVariable &mut function_variable= constructors.functions[constructor_index];
 
-	SetupLLVMFunctionAttributes( class_members, function_variable );
+	SetupFunctionParamsAndRetAttributes( function_variable );
 
 	// Build code itself.
 
@@ -346,7 +346,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	}
 	var FunctionVariable &mut function_variable= constructors.functions[ constructor_index ];
 
-	SetupLLVMFunctionAttributes( class_members, function_variable );
+	SetupFunctionParamsAndRetAttributes( function_variable );
 
 	// Build code itself.
 
@@ -548,7 +548,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	}
 	var FunctionVariable &mut function_variable= operators.functions[operator_index];
 
-	SetupLLVMFunctionAttributes( class_members, function_variable );
+	SetupFunctionParamsAndRetAttributes( function_variable );
 
 	// Build code itself.
 
@@ -674,7 +674,7 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 	// Generate body for previously generated prototype.
 	var FunctionVariable &mut function_variable= destructors.functions.back();
 
-	SetupLLVMFunctionAttributes( class_members, function_variable );
+	SetupFunctionParamsAndRetAttributes( function_variable );
 
 	// Build code itself.
 

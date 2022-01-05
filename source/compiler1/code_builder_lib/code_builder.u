@@ -1264,47 +1264,7 @@ fn CodeBuilder::PrepareFunction(
 				function_variable.t.llvm_type );
 	}
 
-	// Setup attributes
-	var bool is_s_ret= function_variable.t.IsStructRet();
-	if( is_s_ret )
-	{
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
-	}
-	if( function_variable.t.return_value_type != ValueType::Value )
-	{
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeReturnIndex, "nonnull" );
-	}
-
-	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
-	{
-		var FunctionType::Param& param= function_variable.t.params[i];
-		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + select( is_s_ret ? 1u : 0u ) + u32(i);
-
-		var bool param_type_is_composite= !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty();
-		// Mark pointer-parameters as "nonnull".
-		if( param.value_type != ValueType::Value || param_type_is_composite )
-		{
-			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nonnull" );
-		}
-		// Mutable reference args or composite value-args must not alias.
-		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
-		if( param.value_type != ValueType::Value || param_type_is_composite )
-		{
-			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "noalias" );
-		}
-		// Mark as "readonly" immutable reference params.
-		if( param.value_type == ValueType::ReferenceImut )
-		{
-			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "readonly" );
-		}
-		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
-		// It is not possible to capture this reference.
-		if( param.value_type == ValueType::Value && param_type_is_composite )
-		{
-			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nocapture" );
-		}
-	}
+	SetupFunctionParamsAndRetAttributes( function_variable );
 
 	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.src_loc );
 }
@@ -1472,7 +1432,27 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	auto body_syntax_element_ptr= ust::to_non_nullable(func_variable.body_syntax_element);
 	var Synt::Function& body_syntax_element= body_syntax_element_ptr.deref();
 
-	SetupLLVMFunctionAttributes( names_scope.lock_imut().deref(), func_variable );
+	unsafe
+	{
+		if( names_scope.lock_imut().deref().IsInsideTemplate() )
+		{
+			LLVMSetLinkage( func_variable.llvm_function, LLVMLinkage::Private );
+		}
+		else
+		{
+			// Set comdat. This needed because we want linkage like "inline" in C++ but for all functions.
+			var size_type mut name_length = zero_init;
+			var char8& name_start= LLVMGetValueName2( func_variable.llvm_function, name_length );
+
+			var ust::string8 mut name_str;
+			name_str.resize( name_length + 1s, "\0"c8 );
+			ust::memory_copy( cast_ref_unsafe</void/>( name_str.front_unchecked() ), cast_ref_unsafe</void/>( name_start ), name_length );
+
+			auto comdat= LLVMGetOrInsertComdat( module_, name_str.front_unchecked() );
+			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
+			LLVMSetComdat( func_variable.llvm_function, comdat );
+		}
+	}
 
 	CreateFunctionDebugInfo( func_variable );
 
@@ -2214,40 +2194,65 @@ fn CodeBuilder::AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 inde
 	}
 }
 
-fn CodeBuilder::SetupLLVMFunctionAttributes( this, NamesScope& names_scope, FunctionVariable& func_variable )
+fn CodeBuilder::SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable )
 {
-	if( func_variable.is_generated || names_scope.IsInsideTemplate() )
+	var bool is_s_ret= function_variable.t.IsStructRet();
+	if( is_s_ret )
 	{
-		unsafe{  LLVMSetLinkage( func_variable.llvm_function, LLVMLinkage::Private );  }
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
 	}
-	else
+	if( function_variable.t.return_value_type != ValueType::Value )
 	{
-		// Set comdat. This needed because we want linkage like "inline" in C++ but for all functions.
-		unsafe
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeReturnIndex, "nonnull" );
+	}
+
+	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
+	{
+		var FunctionType::Param& param= function_variable.t.params[i];
+		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + select( is_s_ret ? 1u : 0u ) + u32(i);
+
+		var bool param_type_is_composite= !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty();
+		// Mark pointer-parameters as "nonnull".
+		if( param.value_type != ValueType::Value || param_type_is_composite )
 		{
-			var size_type mut name_length = zero_init;
-			var char8& name_start= LLVMGetValueName2( func_variable.llvm_function, name_length );
-
-			var ust::string8 mut name_str;
-			name_str.resize( name_length + 1s, "\0"c8 );
-			ust::memory_copy( cast_ref_unsafe</void/>( name_str.front_unchecked() ), cast_ref_unsafe</void/>( name_start ), name_length );
-
-			auto comdat= LLVMGetOrInsertComdat( module_, name_str.front_unchecked() );
-			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
-			LLVMSetComdat( func_variable.llvm_function, comdat );
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nonnull" );
+		}
+		// Mutable reference args or composite value-args must not alias.
+		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
+		if( param.value_type != ValueType::Value || param_type_is_composite )
+		{
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "noalias" );
+		}
+		// Mark as "readonly" immutable reference params.
+		if( param.value_type == ValueType::ReferenceImut )
+		{
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "readonly" );
+		}
+		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
+		// It is not possible to capture this reference.
+		if( param.value_type == ValueType::Value && param_type_is_composite )
+		{
+			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nocapture" );
 		}
 	}
 
 	// Merge functions with identical code.
 	// We doesn't need different addresses for different functions.
-	unsafe{  LLVMSetUnnamedAddress( func_variable.llvm_function, LLVMUnnamedAddr::GlobalUnnamedAddr );  }
+	unsafe{  LLVMSetUnnamedAddress( function_variable.llvm_function, LLVMUnnamedAddr::GlobalUnnamedAddr );  }
 
 	// We do not support exceptions. So, mark all functions as "nounwind".
-	AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFunctionIndex, "nounwind" );
+	AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFunctionIndex, "nounwind" );
 
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
 	{
-		AddFunctionAttribute( func_variable.llvm_function, LLVMAttributeFunctionIndex, "uwtable" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFunctionIndex, "uwtable" );
+	}
+
+	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
+	if( function_variable.is_generated )
+	{
+		unsafe{  LLVMSetLinkage( function_variable.llvm_function, LLVMLinkage::Private );  }
 	}
 }
 
