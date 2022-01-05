@@ -1019,14 +1019,16 @@ size_t CodeBuilder::PrepareFunction(
 		inserted_func_variable.body_src_loc= inserted_func_variable.prototype_src_loc= func.src_loc_;
 		inserted_func_variable.syntax_element= &func;
 
-		BuildFuncCode(
-			inserted_func_variable,
-			base_class,
-			names_scope,
-			func_name,
-			func.type_.params_,
-			nullptr,
-			func.constructor_initialization_list_.get() );
+		const FunctionType& func_type= *inserted_func_variable.type.GetFunctionType();
+
+		inserted_func_variable.llvm_function=
+			llvm::Function::Create(
+				func_type.llvm_type,
+				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
+				inserted_func_variable.no_mangle ? func_name : mangler_->MangleFunction( names_scope, func_name, func_type ),
+				module_.get() );
+
+		SetupFunctionParamsAndRetAttributes( inserted_func_variable );
 
 		return functions_set.functions.size() - 1u;
 	}
@@ -1159,32 +1161,15 @@ Type CodeBuilder::BuildFuncCode(
 	NamesScope& parent_names_scope,
 	const std::string& func_name,
 	const Synt::FunctionParams& params,
-	const Synt::Block* const block,
+	const Synt::Block& block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
 {
+	U_ASSERT( !func_variable.have_body );
+	func_variable.have_body= true;
+
 	const FunctionType& function_type= *func_variable.type.GetFunctionType();
 
-	llvm::Function* llvm_function;
-	if( func_variable.llvm_function == nullptr )
-	{
-		func_variable.llvm_function= llvm_function=
-			llvm::Function::Create(
-				function_type.llvm_type,
-				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				func_variable.no_mangle ? func_name : mangler_->MangleFunction( parent_names_scope, func_name, function_type ),
-				module_.get() );
-
-		SetupFunctionParamsAndRetAttributes( func_variable );
-	}
-	else
-		llvm_function= func_variable.llvm_function;
-
-	if( block == nullptr )
-	{
-		// This is only prototype, then, function preparing work is done.
-		func_variable.have_body= false;
-		return function_type.return_type;
-	}
+	llvm::Function* const llvm_function= func_variable.llvm_function;
 
 	// Build debug info only for functions with body.
 	CreateFunctionDebugInfo( func_variable, func_name );
@@ -1199,8 +1184,6 @@ Type CodeBuilder::BuildFuncCode(
 		comdat->setSelectionKind( llvm::Comdat::Any );
 		llvm_function->setComdat( comdat );
 	}
-
-	func_variable.have_body= true;
 
 	// Ensure completeness only for functions body.
 	// Require full completeness even for reference arguments.
@@ -1345,7 +1328,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( constructor_initialization_list == nullptr )
 		{
 			// Create dummy initialization list for constructors without explicit initialization list.
-			const Synt::StructNamedInitializer dumy_initialization_list( block->src_loc_ );
+			const Synt::StructNamedInitializer dumy_initialization_list( block.src_loc_ );
 
 			BuildConstructorInitialization(
 				*function_context.this_,
@@ -1374,7 +1357,7 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
 	}
 
-	const BlockBuildInfo block_build_info= BuildBlock( function_names, function_context, *block );
+	const BlockBuildInfo block_build_info= BuildBlock( function_names, function_context, block );
 	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
 	// If we build func code only for return type deducing - we can return. Function code will be generated later.
@@ -1449,8 +1432,8 @@ Type CodeBuilder::BuildFuncCode(
 		if( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value )
 		{
 			// Manually generate "return" for void-return functions.
-			CallDestructors( args_storage, function_names, function_context, block->end_src_loc_ );
-			CheckReferencesPollutionBeforeReturn( function_context, function_names.GetErrors(), block->end_src_loc_ );
+			CallDestructors( args_storage, function_names, function_context, block.end_src_loc_ );
+			CheckReferencesPollutionBeforeReturn( function_context, function_names.GetErrors(), block.end_src_loc_ );
 
 			if( function_context.destructor_end_block == nullptr )
 				function_context.llvm_ir_builder.CreateRetVoid();
@@ -1462,7 +1445,7 @@ Type CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
-			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block->end_src_loc_ );
+			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc_ );
 			return function_type.return_type;
 		}
 	}
@@ -1477,7 +1460,7 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.llvm_ir_builder.SetInsertPoint( function_context.destructor_end_block );
 		llvm_function->getBasicBlockList().push_back( function_context.destructor_end_block );
 
-		CallMembersDestructors( function_context, function_names.GetErrors(), block->end_src_loc_ );
+		CallMembersDestructors( function_context, function_names.GetErrors(), block.end_src_loc_ );
 		function_context.llvm_ir_builder.CreateRetVoid();
 	}
 

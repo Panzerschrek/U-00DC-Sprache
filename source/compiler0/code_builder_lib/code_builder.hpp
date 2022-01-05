@@ -442,7 +442,7 @@ private:
 		NamesScope& parent_names_scope,
 		const std::string& func_name,
 		const Synt::FunctionParams& params,
-		const Synt::Block* block, // null for prototypes.
+		const Synt::Block& block,
 		const Synt::StructNamedInitializer* constructor_initialization_list );
 
 	void BuildConstructorInitialization(

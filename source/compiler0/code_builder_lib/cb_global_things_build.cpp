@@ -266,7 +266,8 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 			FunctionVariable& function_variable= functions_set.functions[function_index];
 
 			// Immediately build functions with auto return type.
-			if( function_variable.return_type_is_auto && !function_variable.have_body )
+			// TODO - this is too complicated. Maybe remove auto-return functions from language?
+			if( function_variable.return_type_is_auto && !function_variable.have_body && function->block_ != nullptr )
 			{
 				// First, compile function only for return type deducing.
 				const Type return_type=
@@ -276,18 +277,26 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 						names_scope,
 						functions_set_name,
 						function_variable.syntax_element->type_.params_,
-						function_variable.syntax_element->block_.get(),
+						*function_variable.syntax_element->block_,
 						function_variable.syntax_element->constructor_initialization_list_.get() );
 
 				FunctionType function_type= *function_variable.type.GetFunctionType();
 				function_type.return_type= return_type;
 				function_type.llvm_type= GetLLVMFunctionType( function_type );
-				function_variable.type= std::move(function_type);
 
 				function_variable.have_body= false;
 				function_variable.return_type_is_auto= false;
 				function_variable.llvm_function->eraseFromParent();
-				function_variable.llvm_function= nullptr;
+				function_variable.llvm_function=
+					llvm::Function::Create(
+						function_type.llvm_type,
+						llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
+						function_variable.no_mangle ? function->name_.back() : mangler_->MangleFunction( names_scope, function->name_.back(), function_type ),
+						module_.get() );
+
+				function_variable.type= std::move(function_type);
+
+				SetupFunctionParamsAndRetAttributes( function_variable );
 
 				// Then, compile function again, when type already known.
 				BuildFuncCode(
@@ -296,7 +305,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					names_scope,
 					functions_set_name,
 					function_variable.syntax_element->type_.params_,
-					function_variable.syntax_element->block_.get(),
+					*function_variable.syntax_element->block_,
 					function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
 		}
@@ -325,7 +334,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					names_scope,
 					function_variable.syntax_element->name_.back(),
 					function_variable.syntax_element->type_.params_,
-					function_variable.syntax_element->block_.get(),
+					*function_variable.syntax_element->block_,
 					function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
 		}
@@ -344,7 +353,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					names_scope,
 					function_variable.syntax_element->name_.back(),
 					function_variable.syntax_element->type_.params_,
-					function_variable.syntax_element->block_.get(),
+					*function_variable.syntax_element->block_,
 					function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
 		}
@@ -838,14 +847,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			for( FunctionVariable& function : functions_set->functions )
 			{
 				if( function.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr &&
-					function.syntax_element != nullptr )
+					!function.have_body && function.syntax_element != nullptr && function.syntax_element->block_ != nullptr )
 					BuildFuncCode(
 						function,
 						class_type,
 						*the_class.members,
 						name,
 						function.syntax_element->type_.params_,
-						function.syntax_element->block_.get(),
+						*function.syntax_element->block_,
 						function.syntax_element->constructor_initialization_list_.get() );
 			}
 		}); // for functions

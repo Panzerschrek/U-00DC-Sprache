@@ -1151,7 +1151,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 			*template_args_namespace,
 			func_name,
 			function_declaration.type_.params_,
-			function_declaration.block_.get(),
+			*function_declaration.block_,
 			function_declaration.constructor_initialization_list_.get() );
 
 	// Set correct mangled name
