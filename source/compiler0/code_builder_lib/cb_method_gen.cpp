@@ -111,8 +111,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		}
 	}
 	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
-	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
-	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
+	SetupFunctionParamsAndRetAttributes( *constructor_variable );
 
 	constructor_variable->have_body= true;
 	constructor_variable->is_this_call= true;
@@ -291,12 +290,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 		}
 	}
 	SetupGeneratedFunctionAttributes( *constructor_variable->llvm_function );
-	// Both args are "nonnull", "this" is "noalias".
-	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
-	constructor_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
-	constructor_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull );
-	constructor_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NoAlias );
-	constructor_variable->llvm_function->addAttribute( 2u, llvm::Attribute::ReadOnly );
+	SetupFunctionParamsAndRetAttributes( *constructor_variable );
 
 	constructor_variable->have_body= true;
 	constructor_variable->is_this_call= true;
@@ -383,8 +377,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr& class
 			mangler_->MangleFunction( *the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
 			module_.get() );
 
-	destructor_function.llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
-	destructor_function.llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
+	SetupFunctionParamsAndRetAttributes( destructor_function );
 
 	return destructor_function;
 }
@@ -565,12 +558,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 		}
 	}
 	SetupGeneratedFunctionAttributes( *operator_variable->llvm_function );
-	// Both args are "nonnull", "this" is "noalias".
-	operator_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NonNull );
-	operator_variable->llvm_function->addAttribute( 1u, llvm::Attribute::NoAlias );
-	operator_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NonNull );
-	operator_variable->llvm_function->addAttribute( 2u, llvm::Attribute::NoAlias );
-	operator_variable->llvm_function->addAttribute( 2u, llvm::Attribute::ReadOnly );
+	SetupFunctionParamsAndRetAttributes( *operator_variable );
 
 	operator_variable->have_body= true;
 	operator_variable->is_this_call= true;

@@ -1164,54 +1164,22 @@ Type CodeBuilder::BuildFuncCode(
 {
 	const FunctionType& function_type= *func_variable.type.GetFunctionType();
 
-	const bool first_arg_is_sret= function_type.IsStructRet();
-
 	llvm::Function* llvm_function;
 	if( func_variable.llvm_function == nullptr )
 	{
-		llvm_function=
+		func_variable.llvm_function= llvm_function=
 			llvm::Function::Create(
 				function_type.llvm_type,
 				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
 				func_variable.no_mangle ? func_name : mangler_->MangleFunction( parent_names_scope, func_name, function_type ),
 				module_.get() );
 
+
 		// Merge functions with identical code.
 		// We doesn`t need different addresses for different functions.
 		llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
-		for( size_t i= 0u; i < function_type.params.size(); i++ )
-		{
-			const auto arg_attr_index=
-				static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
-			const FunctionType::Param& param= function_type.params[i];
-
-			const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
-			// Mark reference params as nonnull.
-			if( param.value_type != ValueType::Value || param_is_composite )
-				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
-			// Mutable reference params or composite value-args must not alias.
-			// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
-			if( param.value_type != ValueType::Value || param_is_composite )
-				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
-			// Mark as "readonly" immutable reference params.
-			if( param.value_type == ValueType::ReferenceImut )
-				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ReadOnly );
-			// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
-			// It is not possible to capture this reference.
-			if( param.value_type == ValueType::Value && param_is_composite )
-				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoCapture );
-		}
-
-		if( first_arg_is_sret )
-		{
-			llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::StructRet );
-			llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::NoAlias );
-		}
-		if( function_type.return_value_type != ValueType::Value )
-			llvm_function->addAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull );
-
-		func_variable.llvm_function= llvm_function;
+		SetupFunctionParamsAndRetAttributes( func_variable );
 	}
 	else
 		llvm_function= func_variable.llvm_function;
@@ -1271,10 +1239,11 @@ Type CodeBuilder::BuildFuncCode(
 
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
+
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		// Skip "sret".
-		if( first_arg_is_sret && &llvm_arg == &*llvm_function->arg_begin() )
+		if( &llvm_arg == &*llvm_function->arg_begin() && function_type.IsStructRet() )
 		{
 			llvm_arg.setName( "_return_value" );
 			function_context.s_ret_= &llvm_arg;
@@ -2044,6 +2013,45 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 	var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
 	return var;
+}
+
+void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
+{
+	const auto llvm_function= function_variable.llvm_function;
+	const FunctionType& function_type= *function_variable.type.GetFunctionType();
+
+	const bool first_arg_is_sret= function_type.IsStructRet();
+
+	for( size_t i= 0u; i < function_type.params.size(); i++ )
+	{
+		const auto arg_attr_index=
+			static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
+		const FunctionType::Param& param= function_type.params[i];
+
+		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
+		// Mark reference params as nonnull.
+		if( param.value_type != ValueType::Value || param_is_composite )
+			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
+		// Mutable reference params or composite value-args must not alias.
+		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
+		if( param.value_type != ValueType::Value || param_is_composite )
+			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
+		// Mark as "readonly" immutable reference params.
+		if( param.value_type == ValueType::ReferenceImut )
+			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ReadOnly );
+		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
+		// It is not possible to capture this reference.
+		if( param.value_type == ValueType::Value && param_is_composite )
+			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoCapture );
+	}
+
+	if( first_arg_is_sret )
+	{
+		llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::StructRet );
+		llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::NoAlias );
+	}
+	if( function_type.return_value_type != ValueType::Value )
+		llvm_function->addAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull );
 }
 
 void CodeBuilder::SetupGeneratedFunctionAttributes( llvm::Function& function )
