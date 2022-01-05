@@ -340,7 +340,22 @@ void EncodeFunctionParam( ManglerState& mangler_state, const FunctionType::Param
 void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params )
 {
 	for( const FunctionType::Param& param : params )
-		EncodeFunctionParam( mangler_state, param );
+	{
+		if(
+			param.value_type == ValueType::Value &&
+			param.type.GetFundamentalType() != nullptr &&
+			param.type.GetFundamentalType()->fundamental_type == U_FundamentalType::Void )
+		{
+			// We need to distinguish between function with no params (with "v" for params) and function with single "void" param.
+			// So, mark real "void: params with "const".
+			// Normaly we do not use "konst" prefix for value params, so, "void" type is single exception.
+			const ManglerState::NodeHolder konst_node( mangler_state );
+			mangler_state.Push( "K" );
+			EncodeTypeName( mangler_state, param.type );
+		}
+		else
+			EncodeFunctionParam( mangler_state, param );
+	}
 
 	if( params.empty() )
 		mangler_state.Push( "v" );

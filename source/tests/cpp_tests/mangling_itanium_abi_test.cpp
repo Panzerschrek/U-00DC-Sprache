@@ -79,6 +79,28 @@ U_TEST( FunctionsParametersManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3FooRA55_i" ) != nullptr );
 }
 
+U_TEST( VoidParamManglingTest )
+{
+	static const char c_program_text[]=
+	R"(
+		fn NoArgs(){}
+		fn SingleVoidArg(void v){}
+		fn TwoVoidArgs(void v0, void v1){}
+		fn VoidAndNonVoidArgs(i32 &mut x, f32& y, bool z, void v0, char8 c, char16& cc, void v1 ){}
+		fn VoidRefArg( void& v ){}
+		fn VoidMutRefArg( void &mut v ){}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z6NoArgsv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z13SingleVoidArgKv" ) != nullptr ); // Should add "const" prefix
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z11TwoVoidArgsKvS_" ) != nullptr ); // Should add "const" prefix and create substitution
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z18VoidAndNonVoidArgsRiRKfbKvcRKDsS2_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z10VoidRefArgRKv" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z13VoidMutRefArgRv" ) != nullptr );
+}
+
 U_TEST( ClassmethodsManglingTest )
 {
 	static const char c_program_text[]=
