@@ -1196,6 +1196,10 @@ Type CodeBuilder::BuildFuncCode(
 			// Mark as "readonly" immutable reference params.
 			if( param.value_type == ValueType::ReferenceImut )
 				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ReadOnly );
+			// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
+			// It is not possible to capture this reference.
+			if( param.value_type == ValueType::Value && param_is_composite )
+				llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoCapture );
 		}
 
 		if( first_arg_is_sret )
