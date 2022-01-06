@@ -384,3 +384,101 @@ def ConstructingAbstractClassOrInterface_Test11():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ConstructingAbstractClassOrInterface_Test12():
+	c_program_text= """
+	class A abstract
+	{
+		fn constructor( mut this, A& a )= default;
+		fn virtual pure Foo(this);
+	}
+
+	class B final : A
+	{
+		fn virtual override Foo(this){}
+	}
+
+	fn Foo(A a);
+
+	fn Bar()
+	{
+		Foo(B()); // Trying to construct value argument of abstract type "A", using its child "B".
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].src_loc.line == 16 )
+
+
+def ConstructingAbstractClassOrInterface_Test13():
+	c_program_text= """
+	class A abstract
+	{
+		fn constructor( mut this, A& a )= default;
+		fn virtual pure Foo(this);
+	}
+
+	class B final : A
+	{
+		fn virtual override Foo(this){}
+	}
+
+	fn Foo() : A
+	{
+		return B(); // Trying to construct return value of abstract class "A", using value of its child "B".
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].src_loc.line == 15 )
+
+
+def ConstructingAbstractClassOrInterface_Test14():
+	c_program_text= """
+	class A abstract
+	{
+		fn constructor( mut this, A& a )= default;
+		fn virtual pure Foo(this);
+	}
+
+	class B final : A
+	{
+		fn virtual override Foo(this){}
+	}
+
+	fn Bar()
+	{
+		var A a= B(); // Trying to use initializer expression to initialize value of abstract clas "A" using value of its child "B".
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].src_loc.line == 15 )
+
+
+def ConstructingAbstractClassOrInterface_Test15():
+	c_program_text= """
+	class A abstract
+	{
+		fn constructor( mut this, A& a )= default;
+		fn virtual pure Foo(this);
+	}
+
+	class B final : A
+	{
+		fn virtual override Foo(this){}
+	}
+
+	fn Bar()
+	{
+		var A a(B()); // Trying to use initializer expression to initialize value of abstract clas "A" using value of its child "B".
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].src_loc.line == 15 )
