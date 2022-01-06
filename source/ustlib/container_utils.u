@@ -25,6 +25,7 @@ fn call_destructor( T&mut t ) unsafe
 {
 	static_if( typeinfo</T/>.is_class )
 	{
+		// In case of polymorph class virtual destructor (with address correction, if necessary) will be called.
 		unsafe{ t.destructor(); }
 	}
 	else if( typeinfo</T/>.is_array )

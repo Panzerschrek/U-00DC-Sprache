@@ -162,6 +162,19 @@ fn is_ancestor_for() : bool
 	else{ return false; }
 }
 
+template</type T/>
+fn constexpr is_polymorph_non_final_class() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		return typeinfo</T/>.is_polymorph && !typeinfo</T/>.is_final;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 template</ type ListType, size_type name_size />
 fn constexpr class_have_field( ListType& fields_list, [ char8, name_size ]& name ) : bool
 {
