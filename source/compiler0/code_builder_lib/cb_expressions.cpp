@@ -2672,6 +2672,12 @@ Value CodeBuilder::DoCallFunction(
 						REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, param.type );
 						return ErrorValue();
 					}
+					// Allow value params of abstract types (it is useful in templates) but disallow call of such functions.
+					if( param.type.IsAbstract() )
+					{
+						REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, param.type );
+						return ErrorValue();
+					}
 
 					// Create copy of class or tuple value. Call copy constructor.
 					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( param.type.GetLLVMType() );

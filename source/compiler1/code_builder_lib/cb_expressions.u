@@ -2870,6 +2870,13 @@ fn CodeBuilder::DoCallFunction(
 				}
 				else
 				{
+					// Allow value params of abstract types (it is useful in templates) but disallow call of such functions.
+					if( expected_arg_type.IsAbstract() )
+					{
+						REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, src_loc, expected_arg_type )
+						return ErrorValue();
+					}
+
 					auto mut var_copy= LLVMValueRef::Null;
 					unsafe
 					{
