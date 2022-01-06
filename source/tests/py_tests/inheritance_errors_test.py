@@ -482,3 +482,28 @@ def ConstructingAbstractClassOrInterface_Test15():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
 	assert( errors_list[0].src_loc.line == 15 )
+
+
+def ConstructingAbstractClassOrInterface_Test16():
+	c_program_text= """
+	class A abstract
+	{
+		fn constructor( mut this, A& a )= default;
+		fn virtual pure Foo(this);
+	}
+
+	class B final : A
+	{
+		fn virtual override Foo(this){}
+	}
+
+	fn Bar(bool b)
+	{
+		var B mut b;
+		take(cast_ref</A/>(b)); // Error, calling default constructor of abstract class "A" in "take" operator.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].src_loc.line == 16 )

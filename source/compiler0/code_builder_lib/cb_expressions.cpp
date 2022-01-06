@@ -1284,6 +1284,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
+	if( expression_result.type.IsAbstract() )
+	{
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), take_operator.src_loc_, expression_result.type );
+		return ErrorValue();
+	}
+
 	// Allocate variable for result.
 	Variable result;
 	result.location= Variable::Location::Pointer;

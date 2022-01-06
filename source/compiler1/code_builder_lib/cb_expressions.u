@@ -553,7 +553,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( ExpectedVariable, names_scope, take_operator.src_loc, ust::string8( "global constant" ) )
 		return ErrorValue();
 	}
-
 	if( variable.value_type != ValueType::ReferenceMut )
 	{
 		REPORT_ERROR( ExpectedReferenceValue, names_scope, take_operator.src_loc )
@@ -562,6 +561,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	if( function_context.references_graph.HaveOutgoingLinks( variable.node_id ) )
 	{
 		REPORT_ERROR( MovedVariableHaveReferences, names_scope, take_operator.src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
+		return ErrorValue();
+	}
+	if( variable.t.IsAbstract() )
+	{
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, take_operator.src_loc, variable.t )
 		return ErrorValue();
 	}
 
