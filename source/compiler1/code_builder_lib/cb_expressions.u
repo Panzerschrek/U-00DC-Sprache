@@ -2305,6 +2305,19 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		// Do move assign.
 		// TODO - what exact evaluation order should be here?
 
+		if_var( class_type : args_ref.front().t.GetClassType() )
+		{
+			// Forbid move-assignment for destination of non-final polymorph class.
+			// This is needed to prevent changing class fields (including virtual table pointer) relevant to derived class with class fields relevant to base class.
+			// For example
+			// cast_ref</Base/>(derived)= Base();
+			auto kind= class_type.lock_imut().deref().kind;
+			if( kind == ClassType::Kind::Interface || kind == ClassType::Kind::Abstract || kind == ClassType::Kind::PolymorphNonFinal )
+			{
+				REPORT_ERROR( MoveAssignForNonFinalPolymorphClass, names_scope, src_loc, args_ref.front().t )
+			}
+		}
+
 		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
 
 		// Prevent modification of r_var during l_val calculation.

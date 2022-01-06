@@ -507,3 +507,47 @@ def ConstructingAbstractClassOrInterface_Test16():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
 	assert( errors_list[0].src_loc.line == 16 )
+
+
+def MoveAssignForNonFinalPolymorphClass_Test0():
+	c_program_text= """
+	class A polymorph {}
+	class B final : A {}
+	fn Bar(bool b)
+	{
+		var B mut b;
+		cast_ref</A/>(b)= A(); // Error - move-assign value to reference of non-final polymorph class.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MoveAssignForNonFinalPolymorphClass" )
+	assert( errors_list[0].src_loc.line == 7 )
+
+
+def MoveAssignForNonFinalPolymorphClass_Tes1():
+	c_program_text= """
+	class A abstract {}
+	class B final : A {}
+	fn Bar(bool b)
+	{
+		var B mut b;
+		b= B(); // Ok - move-assign for final polymorph class.
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveAssignForNonFinalPolymorphClass_Test2():
+	c_program_text= """
+	class A polymorph {}
+	fn Bar(bool b)
+	{
+		var A mut a;
+		a= A(); // Error - move-assign value to reference of non-final polymorph class.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MoveAssignForNonFinalPolymorphClass" )
+	assert( errors_list[0].src_loc.line == 6 )

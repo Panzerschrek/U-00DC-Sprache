@@ -1459,6 +1459,16 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		args.front().type == args.back().type &&
 		( args.front().type.GetClassType() != nullptr || args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 	{
+		if( const auto class_type= args.front().type.GetClassType() )
+		{
+			// Forbid move-assignment for destination of non-final polymorph class.
+			// This is needed to prevent changing class fields (including virtual table pointer) relevant to derived class with class fields relevant to base class.
+			// For example
+			// cast_ref</Base/>(derived)= Base();
+			if( class_type->kind == Class::Kind::Interface || class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::PolymorphNonFinal )
+				REPORT_ERROR( MoveAssignForNonFinalPolymorphClass, names.GetErrors(), src_loc, args.front().type );
+		}
+
 		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
 		const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
 
