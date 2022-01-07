@@ -551,3 +551,47 @@ def MoveAssignForNonFinalPolymorphClass_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MoveAssignForNonFinalPolymorphClass" )
 	assert( errors_list[0].src_loc.line == 6 )
+
+
+def TakeForNonFinalPolymorphClass_Test0():
+	c_program_text= """
+	class A polymorph {}
+	fn Bar(bool b)
+	{
+		var A mut a;
+		take(a); // Error - taking polymorh non-final class.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TakeForNonFinalPolymorphClass" )
+	assert( errors_list[0].src_loc.line == 6 )
+
+
+def TakeForNonFinalPolymorphClass_Test1():
+	c_program_text= """
+	class A polymorph {}
+	class B : A {}
+	fn Bar(bool b)
+	{
+		var B mut b;
+		take(b); // Error - taking polymorh non-final class (which is derived from some base class).
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TakeForNonFinalPolymorphClass" )
+	assert( errors_list[0].src_loc.line == 7 )
+
+
+def TakeForNonFinalPolymorphClass_Test2():
+	c_program_text= """
+	class A polymorph {}
+	class B final : A {}
+	fn Bar(bool b)
+	{
+		var B mut b;
+		take(b); // Ok - taking final polymorph class.
+	}
+	"""
+	tests_lib.build_program( c_program_text )

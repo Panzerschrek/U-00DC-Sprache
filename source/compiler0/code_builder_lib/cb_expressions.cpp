@@ -1277,17 +1277,25 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), take_operator.src_loc_ );
 		return ErrorValue();
 	}
-
 	if( function_context.variables_state.HaveOutgoingLinks( expression_result.node ) )
 	{
 		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), take_operator.src_loc_, expression_result.node->name );
 		return ErrorValue();
 	}
-
 	if( expression_result.type.IsAbstract() )
 	{
 		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), take_operator.src_loc_, expression_result.type );
 		return ErrorValue();
+	}
+	if( const auto class_type= expression_result.type.GetClassType() )
+	{
+		// Do not allow taking values of polymorph non-final classes to avoid calling default constructor of base class in place of derived class.
+		// It may break derived class invariants and will overwrite virtual table pointer.
+		if( class_type->kind == Class::Kind::Interface || class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::PolymorphNonFinal )
+		{
+			REPORT_ERROR( TakeForNonFinalPolymorphClass, names.GetErrors(), take_operator.src_loc_, expression_result.type );
+			return ErrorValue();
+		}
 	}
 
 	// Allocate variable for result.
