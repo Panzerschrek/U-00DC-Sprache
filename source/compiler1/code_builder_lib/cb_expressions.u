@@ -572,8 +572,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		// Do not allow taking values of polymorph non-final classes to avoid calling default constructor of base class in place of derived class.
 		// It may break derived class invariants and will overwrite virtual table pointer.
-			auto kind= class_type.lock_imut().deref().kind;
-			if( kind == ClassType::Kind::Interface || kind == ClassType::Kind::Abstract || kind == ClassType::Kind::PolymorphNonFinal )
+		auto kind= class_type.lock_imut().deref().kind;
+		if( kind == ClassType::Kind::Interface || kind == ClassType::Kind::Abstract || kind == ClassType::Kind::PolymorphNonFinal )
 		{
 			REPORT_ERROR( TakeForNonFinalPolymorphClass, names_scope, take_operator.src_loc, variable.t )
 			return ErrorValue();
