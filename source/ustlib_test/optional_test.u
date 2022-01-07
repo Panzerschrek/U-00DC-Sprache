@@ -133,6 +133,29 @@ fn nomangle main() : i32
 		opt.try_deref()= 666;
 		halt if( opt.try_deref() != 666 );
 	}
+	{ // try_take
+		var ust::optional</i32/> mut opt(77);
+		auto taken_value= opt.try_take();
+		halt if( taken_value != 77 );
+		halt if( !opt.empty() );
+	}
+	{ // as_ref for imut optional
+		var ust::optional</i32/> empty_opt;
+		halt if( !empty_opt.as_ref().empty() );
+
+		var ust::optional</i32/> non_empty_opt( 42 );
+		halt if( non_empty_opt.as_ref().try_deref() != 42 );
+	}
+	{ // as_ref for mut optional
+		var ust::optional</i32/> mut opt;
+		halt if( !opt.as_ref().empty() );
+
+		opt.reset( 666 );
+		halt if( opt.as_ref().empty() );
+		opt.as_ref().try_deref()= 999;
+
+		halt if( opt.try_deref() != 999 );
+	}
 
 	return 0;
 }

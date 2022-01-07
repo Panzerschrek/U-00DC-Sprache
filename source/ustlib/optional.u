@@ -1,5 +1,6 @@
 import "aligned_storage.u"
 import "container_utils.u"
+import "optional_ref.u"
 import "hash.u"
 
 namespace ust
@@ -8,6 +9,7 @@ namespace ust
 template</ type T />
 class optional
 {
+	// TODO - disable optional for types with references inside?
 public:
 	type hasher= optional_hasher;
 
@@ -168,6 +170,47 @@ public:
 			}
 			move_into_uninitialized( deref_unchecked(), move(val) );
 			has_value_ = true;
+		}
+	}
+
+	fn
+	enable_if( typeinfo</T/>.references_tags_count == size_type(0) )
+	as_ref( mut this ) : optional_ref_mut</T/>'this'
+	{
+		if( has_value_ )
+		{
+			unsafe{  return optional_ref_mut</T/>( deref_unchecked() );  }
+		}
+		else
+		{
+			return optional_ref_mut</T/>();
+		}
+	}
+
+	fn
+	enable_if( typeinfo</T/>.references_tags_count == size_type(0) )
+	as_ref( imut this ) : optional_ref_imut</T/>'this'
+	{
+		if( has_value_ )
+		{
+			unsafe{  return ust::optional_ref_imut</T/>( deref_unchecked() );  }
+		}
+		else
+		{
+			return optional_ref_imut</T/>();
+		}
+	}
+
+	// Take value, leave optional empty.
+	fn try_take( mut this'a' ) : T'a'
+	{
+		halt if(empty());
+		has_value_ = false;
+		unsafe
+		{
+			var T mut t= uninitialized;
+			memory_copy( cast_ref_unsafe</void/>(t), cast_ref_unsafe</void/>(deref_unchecked()), typeinfo</T/>.size_of );
+			return move(t);
 		}
 	}
 
