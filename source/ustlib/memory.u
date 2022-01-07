@@ -63,7 +63,7 @@ fn memory_free( void& mem ) unsafe
 
 fn memory_copy( void &mut dst, void & src, size_type size_bytes ) unsafe
 {
-	unsafe{  memcpy( $<(dst), $<(cast_mut(src)), size_bytes );  }
+	unsafe{  ust_memory_copy_impl( $<(dst), $<(cast_mut(src)), size_bytes );  }
 }
 
 fn memory_equals( void& a, void& b, size_type size ) unsafe : bool
@@ -142,5 +142,8 @@ fn allocation_size_check( size_type size )
 fn nomangle malloc( size_type size ) unsafe : $(void);
 fn nomangle free( $(void) ptr )unsafe ;
 fn nomangle realloc( $(void) ptr, size_type size ) unsafe : $(void);
-fn nomangle memcpy( $(void) dst, $(void) src, size_type size ) unsafe;
 fn nomangle memcmp( $(void) a, $(void) b, size_type size ) unsafe : i32;
+
+// External implementation functions.
+
+fn nomangle ust_memory_copy_impl( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
