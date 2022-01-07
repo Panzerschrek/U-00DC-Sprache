@@ -39,5 +39,18 @@ fn nomangle main() : i32
 		var ust::optional</ i32 /> imut opt(0);
 		opt.try_deref()= 0; //##expect_error ExpectedReferenceValue
 	}
+	{ // as_ref creates value linked with original optional
+		var ust::optional</ i32 /> mut opt(12);
+		auto ref= opt.as_ref();
+
+		// Can not modify original optional because reference to it exists
+		opt.try_deref(); //##expect_error ReferenceProtectionError
+	}
+	{ // try_take requires mutable optional
+		var ust::optional</ i32 /> opt(14);
+
+		opt.try_take(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+
 	return 0;
 }
