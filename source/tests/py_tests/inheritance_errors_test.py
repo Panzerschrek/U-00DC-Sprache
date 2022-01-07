@@ -384,3 +384,214 @@ def ConstructingAbstractClassOrInterface_Test11():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ConstructingAbstractClassOrInterface_Test12():
+	c_program_text= """
+	class A abstract
+	{
+		fn constructor( mut this, A& a )= default;
+		fn virtual pure Foo(this);
+	}
+
+	class B final : A
+	{
+		fn virtual override Foo(this){}
+	}
+
+	fn Foo(A a);
+
+	fn Bar()
+	{
+		Foo(B()); // Trying to construct value argument of abstract type "A", using its child "B".
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].src_loc.line == 17 )
+
+
+def ConstructingAbstractClassOrInterface_Test13():
+	c_program_text= """
+	class A abstract
+	{
+		fn constructor( mut this, A& a )= default;
+		fn virtual pure Foo(this);
+	}
+
+	class B final : A
+	{
+		fn virtual override Foo(this){}
+	}
+
+	fn Foo() : A
+	{
+		return B(); // Trying to construct return value of abstract class "A", using value of its child "B".
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypesMismatch" )
+	assert( errors_list[0].src_loc.line == 15 )
+
+
+def ConstructingAbstractClassOrInterface_Test14():
+	c_program_text= """
+	class A abstract
+	{
+		fn constructor( mut this, A& a )= default;
+		fn virtual pure Foo(this);
+	}
+
+	class B final : A
+	{
+		fn virtual override Foo(this){}
+	}
+
+	fn Bar()
+	{
+		var A a= B(); // Trying to use initializer expression to initialize value of abstract clas "A" using value of its child "B".
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].src_loc.line == 15 )
+
+
+def ConstructingAbstractClassOrInterface_Test15():
+	c_program_text= """
+	class A abstract
+	{
+		fn constructor( mut this, A& a )= default;
+		fn virtual pure Foo(this);
+	}
+
+	class B final : A
+	{
+		fn virtual override Foo(this){}
+	}
+
+	fn Bar()
+	{
+		var A a(B()); // Trying to use initializer expression to initialize value of abstract clas "A" using value of its child "B".
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].src_loc.line == 15 )
+
+
+def ConstructingAbstractClassOrInterface_Test16():
+	c_program_text= """
+	class A abstract
+	{
+		fn constructor( mut this, A& a )= default;
+		fn virtual pure Foo(this);
+	}
+
+	class B final : A
+	{
+		fn virtual override Foo(this){}
+	}
+
+	fn Bar(bool b)
+	{
+		var B mut b;
+		take(cast_ref</A/>(b)); // Error, calling default constructor of abstract class "A" in "take" operator.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstructingAbstractClassOrInterface" )
+	assert( errors_list[0].src_loc.line == 16 )
+
+
+def MoveAssignForNonFinalPolymorphClass_Test0():
+	c_program_text= """
+	class A polymorph {}
+	class B final : A {}
+	fn Bar(bool b)
+	{
+		var B mut b;
+		cast_ref</A/>(b)= A(); // Error - move-assign value to reference of non-final polymorph class.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MoveAssignForNonFinalPolymorphClass" )
+	assert( errors_list[0].src_loc.line == 7 )
+
+
+def MoveAssignForNonFinalPolymorphClass_Tes1():
+	c_program_text= """
+	class A abstract {}
+	class B final : A {}
+	fn Bar(bool b)
+	{
+		var B mut b;
+		b= B(); // Ok - move-assign for final polymorph class.
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MoveAssignForNonFinalPolymorphClass_Test2():
+	c_program_text= """
+	class A polymorph {}
+	fn Bar(bool b)
+	{
+		var A mut a;
+		a= A(); // Error - move-assign value to reference of non-final polymorph class.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "MoveAssignForNonFinalPolymorphClass" )
+	assert( errors_list[0].src_loc.line == 6 )
+
+
+def TakeForNonFinalPolymorphClass_Test0():
+	c_program_text= """
+	class A polymorph {}
+	fn Bar(bool b)
+	{
+		var A mut a;
+		take(a); // Error - taking polymorh non-final class.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TakeForNonFinalPolymorphClass" )
+	assert( errors_list[0].src_loc.line == 6 )
+
+
+def TakeForNonFinalPolymorphClass_Test1():
+	c_program_text= """
+	class A polymorph {}
+	class B : A {}
+	fn Bar(bool b)
+	{
+		var B mut b;
+		take(b); // Error - taking polymorh non-final class (which is derived from some base class).
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TakeForNonFinalPolymorphClass" )
+	assert( errors_list[0].src_loc.line == 7 )
+
+
+def TakeForNonFinalPolymorphClass_Test2():
+	c_program_text= """
+	class A polymorph {}
+	class B final : A {}
+	fn Bar(bool b)
+	{
+		var B mut b;
+		take(b); // Ok - taking final polymorph class.
+	}
+	"""
+	tests_lib.build_program( c_program_text )

@@ -131,7 +131,20 @@ public:
 			}
 			else
 			{
-				$>(ptr_)= move(val);
+				static_if( is_polymorph_non_final_class</T/>() )
+				{
+					// This instance of "box_nullable</Base/>" may be initialized with "box_nullable</Derived/>".
+					// In such case we can't reuse allocation for construction of new value of "Base" class,
+					// because dynamic type info of allocated class is used for deallocation of "ptr_".
+					// So, just deallocate initial "ptr" and allocate new one.
+					reset();
+					ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
+					move_into_uninitialized( $>(ptr_), move(val) );
+				}
+				else
+				{
+					$>(ptr_)= move(val);
+				}
 			}
 		}
 	}

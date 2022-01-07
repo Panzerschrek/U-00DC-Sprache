@@ -553,7 +553,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		REPORT_ERROR( ExpectedVariable, names_scope, take_operator.src_loc, ust::string8( "global constant" ) )
 		return ErrorValue();
 	}
-
 	if( variable.value_type != ValueType::ReferenceMut )
 	{
 		REPORT_ERROR( ExpectedReferenceValue, names_scope, take_operator.src_loc )
@@ -563,6 +562,22 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		REPORT_ERROR( MovedVariableHaveReferences, names_scope, take_operator.src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
 		return ErrorValue();
+	}
+	if( variable.t.IsAbstract() )
+	{
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, take_operator.src_loc, variable.t )
+		return ErrorValue();
+	}
+	if_var( class_type : variable.t.GetClassType() )
+	{
+		// Do not allow taking values of polymorph non-final classes to avoid calling default constructor of base class in place of derived class.
+		// It may break derived class invariants and will overwrite virtual table pointer.
+		auto kind= class_type.lock_imut().deref().kind;
+		if( kind == ClassType::Kind::Interface || kind == ClassType::Kind::Abstract || kind == ClassType::Kind::PolymorphNonFinal )
+		{
+			REPORT_ERROR( TakeForNonFinalPolymorphClass, names_scope, take_operator.src_loc, variable.t )
+			return ErrorValue();
+		}
 	}
 
 	var ust::string8 src_variable_name= function_context.references_graph.GetNodeName( variable.node_id );
@@ -2301,6 +2316,19 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		// Do move assign.
 		// TODO - what exact evaluation order should be here?
 
+		if_var( class_type : args_ref.front().t.GetClassType() )
+		{
+			// Forbid move-assignment for destination of non-final polymorph class.
+			// This is needed to prevent changing class fields (including virtual table pointer) relevant to derived class with class fields relevant to base class.
+			// For example
+			// cast_ref</Base/>(derived)= Base();
+			auto kind= class_type.lock_imut().deref().kind;
+			if( kind == ClassType::Kind::Interface || kind == ClassType::Kind::Abstract || kind == ClassType::Kind::PolymorphNonFinal )
+			{
+				REPORT_ERROR( MoveAssignForNonFinalPolymorphClass, names_scope, src_loc, args_ref.front().t )
+			}
+		}
+
 		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
 
 		// Prevent modification of r_var during l_val calculation.
@@ -2870,6 +2898,13 @@ fn CodeBuilder::DoCallFunction(
 				}
 				else
 				{
+					// Allow value params of abstract types (it is useful in templates) but disallow call of such functions.
+					if( expected_arg_type.IsAbstract() )
+					{
+						REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, src_loc, expected_arg_type )
+						return ErrorValue();
+					}
+
 					auto mut var_copy= LLVMValueRef::Null;
 					unsafe
 					{

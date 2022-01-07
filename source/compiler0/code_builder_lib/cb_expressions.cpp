@@ -1277,11 +1277,25 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), take_operator.src_loc_ );
 		return ErrorValue();
 	}
-
 	if( function_context.variables_state.HaveOutgoingLinks( expression_result.node ) )
 	{
 		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), take_operator.src_loc_, expression_result.node->name );
 		return ErrorValue();
+	}
+	if( expression_result.type.IsAbstract() )
+	{
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), take_operator.src_loc_, expression_result.type );
+		return ErrorValue();
+	}
+	if( const auto class_type= expression_result.type.GetClassType() )
+	{
+		// Do not allow taking values of polymorph non-final classes to avoid calling default constructor of base class in place of derived class.
+		// It may break derived class invariants and will overwrite virtual table pointer.
+		if( class_type->kind == Class::Kind::Interface || class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::PolymorphNonFinal )
+		{
+			REPORT_ERROR( TakeForNonFinalPolymorphClass, names.GetErrors(), take_operator.src_loc_, expression_result.type );
+			return ErrorValue();
+		}
 	}
 
 	// Allocate variable for result.
@@ -1453,6 +1467,16 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		args.front().type == args.back().type &&
 		( args.front().type.GetClassType() != nullptr || args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 	{
+		if( const auto class_type= args.front().type.GetClassType() )
+		{
+			// Forbid move-assignment for destination of non-final polymorph class.
+			// This is needed to prevent changing class fields (including virtual table pointer) relevant to derived class with class fields relevant to base class.
+			// For example
+			// cast_ref</Base/>(derived)= Base();
+			if( class_type->kind == Class::Kind::Interface || class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::PolymorphNonFinal )
+				REPORT_ERROR( MoveAssignForNonFinalPolymorphClass, names.GetErrors(), src_loc, args.front().type );
+		}
+
 		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
 		const Variable r_var_real= *BuildExpressionCode( right_expr, names, function_context ).GetVariable();
 
@@ -2670,6 +2694,12 @@ Value CodeBuilder::DoCallFunction(
 						// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
 						// TODO - print more reliable message.
 						REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, param.type );
+						return ErrorValue();
+					}
+					// Allow value params of abstract types (it is useful in templates) but disallow call of such functions.
+					if( param.type.IsAbstract() )
+					{
+						REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, param.type );
 						return ErrorValue();
 					}
 

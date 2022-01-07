@@ -894,7 +894,7 @@ def MoveClassWithParent_Test3():
 			i32 x;
 			fn constructor( i32 in_x ) ( x= in_x ) {}
 		}
-		class B : A
+		class B final : A
 		{
 			fn constructor( i32 in_x ) ( base(in_x) ) {}
 		}
