@@ -173,7 +173,9 @@ public:
 		}
 	}
 
-	fn as_ref( mut this ) : optional_ref_mut</T/>'this'
+	fn
+	enable_if( typeinfo</T/>.references_tags_count == size_type(0) )
+	as_ref( mut this ) : optional_ref_mut</T/>'this'
 	{
 		if( has_value_ )
 		{
@@ -185,7 +187,9 @@ public:
 		}
 	}
 
-	fn as_ref( imut this ) : optional_ref_imut</T/>'this'
+	fn
+	enable_if( typeinfo</T/>.references_tags_count == size_type(0) )
+	as_ref( imut this ) : optional_ref_imut</T/>'this'
 	{
 		if( has_value_ )
 		{
