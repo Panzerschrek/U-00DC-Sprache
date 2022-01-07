@@ -9,6 +9,6 @@ define linkonce_odr void @ust_memory_copy_impl( %__U_void* %dst, %__U_void* %src
 	ret void
 }
 
-declare void @llvm.memcpy.p0i8.p0i8.i32(i8* nocapture writeonly, i8* nocapture readonly, i32, i1 immarg) #1
+declare void @llvm.memcpy.p0i8.p0i8.i32(i8* nocapture writeonly, i8* nocapture readonly, i32, i1 immarg) #0
 
 attributes #0 = { argmemonly nounwind }
