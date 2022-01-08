@@ -63,7 +63,21 @@ fn memory_free( void& mem ) unsafe
 
 fn memory_copy( void &mut dst, void & src, size_type size_bytes ) unsafe
 {
-	unsafe{  memcpy( $<(dst), $<(cast_mut(src)), size_bytes );  }
+	unsafe{  ust_memory_copy_impl( $<(dst), $<(cast_mut(src)), size_bytes );  }
+}
+
+fn memory_copy_aligned( size_type alignment, void &mut dst, void & src, size_type size_bytes ) unsafe
+{
+	// For most cases this function will be called with constexpr alignment. So, i hope this branching will be optimized.
+	unsafe
+	{
+		if( alignment == 1s ) {  ust_memory_copy_align_1_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  }
+		else if( alignment ==  2s ) {  ust_memory_copy_align_2_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  }
+		else if( alignment ==  4s ) {  ust_memory_copy_align_4_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  }
+		else if( alignment ==  8s ) {  ust_memory_copy_align_8_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  }
+		else if( alignment == 16s ) {  ust_memory_copy_align_16_impl( $<(dst), $<(cast_mut(src)), size_bytes );  }
+		else {  ust_memory_copy_align_1_impl ( $<(dst), $<(cast_mut(src)), size_bytes );  }
+	}
 }
 
 fn memory_equals( void& a, void& b, size_type size ) unsafe : bool
@@ -142,5 +156,13 @@ fn allocation_size_check( size_type size )
 fn nomangle malloc( size_type size ) unsafe : $(void);
 fn nomangle free( $(void) ptr )unsafe ;
 fn nomangle realloc( $(void) ptr, size_type size ) unsafe : $(void);
-fn nomangle memcpy( $(void) dst, $(void) src, size_type size ) unsafe;
 fn nomangle memcmp( $(void) a, $(void) b, size_type size ) unsafe : i32;
+
+// External implementation functions.
+
+fn nomangle ust_memory_copy_impl( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
+fn nomangle ust_memory_copy_align_1_impl ( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
+fn nomangle ust_memory_copy_align_2_impl ( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
+fn nomangle ust_memory_copy_align_4_impl ( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
+fn nomangle ust_memory_copy_align_8_impl ( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
+fn nomangle ust_memory_copy_align_16_impl( $(void) dst, $(void) src, size_type size_bytes ) unsafe;

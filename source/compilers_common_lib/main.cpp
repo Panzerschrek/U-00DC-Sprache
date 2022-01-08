@@ -617,6 +617,8 @@ int Main( int argc, const char* argv[] )
 		#include "bc_files_headers/checked_math.h"
 		#include "bc_files_headers/halt.h"
 		#include "bc_files_headers/math.h"
+		#include "bc_files_headers/memory_32.h"
+		#include "bc_files_headers/memory_64.h"
 		#include "bc_files_headers/volatile.h"
 
 		// Prepare stdlib modules set.
@@ -627,6 +629,7 @@ int Main( int argc, const char* argv[] )
 			STRING_REF(checked_math),
 			STRING_REF(halt),
 			STRING_REF(math),
+			data_layout.getPointerSizeInBits() == 32u ? STRING_REF(memory_32) : STRING_REF(memory_64),
 			STRING_REF(volatile),
 		};
 		#undef STRING_REF

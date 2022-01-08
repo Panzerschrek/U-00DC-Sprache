@@ -130,7 +130,7 @@ public:
 				table_value.cell_content= TableValue::CellContent::ValueRemoved;
 				call_destructor( table_value.key_storage );
 				var value_type mut r= uninitialized;
-				memory_copy( cast_ref_unsafe</void/>( r ), cast_ref_unsafe</void/>( table_value.value_storage ), typeinfo</ typeof(table_value.value_storage) />.size_of );
+				memory_copy_aligned( typeinfo</ typeof(table_value.value_storage) />.align_of, cast_ref_unsafe</void/>( r ), cast_ref_unsafe</void/>( table_value.value_storage ), typeinfo</ typeof(table_value.value_storage) />.size_of );
 				return move(r);
 			}
 		}
@@ -249,8 +249,8 @@ private:
 							if( new_value.cell_content == TableValue::CellContent::Empty )
 							{
 								new_value.cell_content= TableValue::CellContent::HaveValue;
-								memory_copy( cast_ref_unsafe</void/>( new_value.key_storage ), cast_ref_unsafe</void/>( old_value.key_storage ), typeinfo</ key_type />.size_of );
-								memory_copy( cast_ref_unsafe</void/>( new_value.value_storage ), cast_ref_unsafe</void/>( old_value.value_storage ), typeinfo</ value_type />.size_of );
+								memory_copy_aligned( typeinfo</ key_type   />.align_of, cast_ref_unsafe</void/>( new_value.key_storage   ), cast_ref_unsafe</void/>( old_value.key_storage   ), typeinfo</ key_type   />.size_of );
+								memory_copy_aligned( typeinfo</ value_type />.align_of, cast_ref_unsafe</void/>( new_value.value_storage ), cast_ref_unsafe</void/>( old_value.value_storage ), typeinfo</ value_type />.size_of );
 								break; // We must find value, bacause new_capacity >= size_
 							}
 							key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & new_capacity_mask;
