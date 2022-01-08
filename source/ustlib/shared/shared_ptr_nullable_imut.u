@@ -20,17 +20,17 @@ public:
 
 	fn conversion_constructor( shared_ptr_mut</T/> & ptr )
 	{
-		unsafe{  impl_= shared_ptr_base</ T />( ptr.get_impl() );  }
+		unsafe{  impl_= impl_type( ptr.get_impl() );  }
 	}
 
 	fn conversion_constructor( shared_ptr_imut</T/> & ptr )
 	{
-		unsafe{  impl_= shared_ptr_base</ T />( ptr.get_impl() );  }
+		unsafe{  impl_= impl_type( ptr.get_impl() );  }
 	}
 
 	fn conversion_constructor( shared_ptr_nullable_mut</T/>& ptr )
 	{
-		unsafe{  impl_= shared_ptr_base</ T />( ptr.get_impl() );  }
+		unsafe{  impl_= impl_type( ptr.get_impl() );  }
 	}
 
 	template</ type U />
@@ -75,29 +75,29 @@ public:
 	}
 
 public: // Methods for internal usage
-	fn constructor( shared_ptr_base</ T /> mut impl ) unsafe
+	fn constructor( impl_type mut impl ) unsafe
 	( impl_(move(impl)) )
 	{}
 
-	fn get_impl( this ) unsafe : shared_ptr_base</ T />
+	fn get_impl( this ) unsafe : impl_type
 	{
 		return impl_;
 	}
 
 private:
 	type this_type= shared_ptr_nullable_imut</T/>;
+	type impl_type= shared_ptr_base</ T, true />;
 
 private:
-	shared_ptr_base</ T /> impl_;
+	impl_type impl_;
 }
 
 template</ type T />
 fn to_non_nullable( shared_ptr_nullable_imut</T/> & val ) : shared_ptr_imut</T/>
 {
-	halt if( val.empty() );
 	unsafe
 	{
-		return shared_ptr_imut</T/>( val.get_impl() );
+		return shared_ptr_imut</T/>( shared_ptr_base</ T, false />( val.get_impl() ) );
 	}
 }
 

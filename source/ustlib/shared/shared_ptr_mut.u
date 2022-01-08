@@ -56,20 +56,21 @@ public:
 
 public: // Methods for internal usage
 	// impl must be non-empty
-	fn constructor( shared_ptr_base</ T /> mut impl ) unsafe
+	fn constructor( impl_type mut impl ) unsafe
 	( impl_(move(impl)) )
 	{}
 
-	fn get_impl( this ) unsafe : shared_ptr_base</ T />
+	fn get_impl( this ) unsafe : impl_type
 	{
 		return impl_;
 	}
 
 private:
 	type this_type= shared_ptr_mut</T/>;
+	type impl_type= shared_ptr_base</ T, false />;
 
 private:
-	shared_ptr_base</ T /> impl_;
+	impl_type impl_;
 }
 
 template</type T/>
