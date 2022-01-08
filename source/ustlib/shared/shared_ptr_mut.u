@@ -3,75 +3,7 @@ import "shared_ptr_base.u"
 namespace ust
 {
 
-template</ type T />
-class shared_ptr_mut
-{
-public:
-	type hasher= shared_ptr_hasher;
-
-public:
-	fn constructor( T mut value )
-	( impl_( move(value) ) )
-	{}
-
-	template</ type U />
-	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
-	conversion_constructor( mut this, shared_ptr_mut</U/>& ptr )
-	{
-		unsafe{  impl_= ptr.get_impl();  }
-	}
-
-	fn constructor( mut this, this_type &imut other )= default;
-	op=( mut this, this_type &imut other )= default;
-
-	fn reset( mut this, T mut value )
-	{
-		impl_.reset( move(value) );
-	}
-
-	fn empty( this ) : bool
-	{
-		return false;
-	}
-
-	fn lock_mut ( this ) : shared_ptr_impl::lock_mut </T/>'this'
-	{
-		unsafe{  return impl_.lock_mut_unchecked ();  }
-	}
-
-	fn lock_imut( this ) : shared_ptr_impl::lock_imut</T/>'this'
-	{
-		unsafe{  return impl_.lock_imut_unchecked();  }
-	}
-
-	op==( this_type& l, this_type& r ) : bool
-	{
-		return l.impl_ == r.impl_;
-	}
-
-	op!=( this_type& l, this_type& r ) : bool
-	{
-		return l.impl_ != r.impl_;
-	}
-
-public: // Methods for internal usage
-	// impl must be non-empty
-	fn constructor( impl_type mut impl ) unsafe
-	( impl_(move(impl)) )
-	{}
-
-	fn get_impl( this ) unsafe : impl_type
-	{
-		return impl_;
-	}
-
-private:
-	type this_type= shared_ptr_mut</T/>;
-	type impl_type= shared_ptr_base</ T, false />;
-
-private:
-	impl_type impl_;
-}
+template</type T/> type shared_ptr_mut= shared_ptr_base</T, false, true/>;
 
 template</type T/>
 fn make_shared_ptr( T mut value ) : shared_ptr_mut</T/>

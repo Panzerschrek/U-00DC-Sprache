@@ -6,8 +6,7 @@ import "../type_traits.u"
 namespace ust
 {
 
-// Pass "is_nullable" flag to eliminate unnecessary "nullptr" checks for non-nullable shared_ptr types.
-template</ type T, bool is_nullable />
+template</ type T, bool is_nullable, bool is_mutable />
 class shared_ptr_base shared
 {
 	// Forbid shared pointers for structs with references inside.
@@ -16,8 +15,10 @@ class shared_ptr_base shared
 	type hasher= shared_ptr_base_hasher;
 
 public:
+	// Default constructor. Exists only for nullable shared_ptr.
 	fn enable_if(is_nullable) constructor()= default;
 
+	// Construct with value.
 	fn constructor( T mut value )
 	{
 		unsafe
@@ -32,15 +33,27 @@ public:
 		}
 	}
 
-	template</ type U />
-	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
-	conversion_constructor( mut this, shared_ptr_base</U/>& ptr )
+	// Constructor for nullable ptr from non-nullable ptr.
+	fn enable_if( is_nullable ) conversion_constructor( mut this, shared_ptr_base</T, false, is_mutable/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+			++$>(counter_).use_count_total;
+			++$>(counter_).use_count_strong;
+		}
+	}
+
+	// Constructor for immutable ptr from mutable ptr.
+	fn enable_if( !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, is_nullable, true/>& ptr )
 	{
 		if( !ptr.empty() )
 		{
 			unsafe
 			{
-				value_= $<( cast_ref</T/>( $>(ptr.get_value_ptr() ) ) );
+				value_= ptr.get_value_ptr();
 				counter_= ptr.get_counter_ptr();
 				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				++$>(counter_).use_count_total;
@@ -49,34 +62,20 @@ public:
 		}
 	}
 
-	// Constructor for nullable ptr from non-nullable ptr.
-	fn enable_if( is_nullable ) constructor( mut this, shared_ptr_base</T, false/>& ptr_non_nullable )
+	// Constructor for immutable nullable ptr from mutable non-nullable ptr.
+	fn enable_if( !is_mutable && is_nullable ) conversion_constructor( mut this, shared_ptr_base</T, false, true/>& ptr )
 	{
 		unsafe
 		{
-			value_= ptr_non_nullable.get_value_ptr();
-			counter_= ptr_non_nullable.get_counter_ptr();
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
 			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 			++$>(counter_).use_count_total;
 			++$>(counter_).use_count_strong;
 		}
 	}
 
-	// Constructor for non-nullable ptr from nullable ptr.
-	// Halts if source is empty.
-	fn enable_if( !is_nullable ) constructor( mut this, shared_ptr_base</T, true/>& ptr_nullable )
-	{
-		halt if( ptr_nullable.empty() );
-		unsafe
-		{
-			value_= ptr_nullable.get_value_ptr();
-			counter_= ptr_nullable.get_counter_ptr();
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-			++$>(counter_).use_count_total;
-			++$>(counter_).use_count_strong;
-		}
-	}
-
+	// Copy constructor.
 	fn constructor( mut this, this_type &imut other )
 	{
 		if( !other.empty() )
@@ -85,6 +84,24 @@ public:
 			{
 				value_= other.value_;
 				counter_= other.counter_;
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+				++$>(counter_).use_count_total;
+				++$>(counter_).use_count_strong;
+			}
+		}
+	}
+
+	// Construct from shared_ptr of compatible type.
+	template</ type U />
+	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	conversion_constructor( mut this, shared_ptr_base</U, is_nullable, is_mutable/>& ptr )
+	{
+		if( !ptr.empty() )
+		{
+			unsafe
+			{
+				value_= $<( cast_ref</T/>( $>(ptr.get_value_ptr() ) ) );
+				counter_= ptr.get_counter_ptr();
 				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				++$>(counter_).use_count_total;
 				++$>(counter_).use_count_strong;
@@ -112,6 +129,7 @@ public:
 		}
 	}
 
+	// Copy-assignment operator.
 	op=( mut this, this_type &imut other )
 	{
 		// Call copy constructor for other and move-assign copy to this.
@@ -141,7 +159,53 @@ public:
 		}
 	}
 
-	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t 'this'
+	// Checked conversion to non-nullable from nullable.
+	fn enable_if(is_nullable) try_to_non_nullable( this ) : shared_ptr_base</T, false, is_mutable/>
+	{
+		halt if(empty());
+
+		unsafe
+		{
+			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+			++$>(counter_).use_count_total;
+			++$>(counter_).use_count_strong;
+
+			// Just copy contents (a pait of pointers). This works fine since layeout of different shared_ptr_base classes is same.
+			var shared_ptr_base</T, false, is_mutable/> mut res= uninitialized;
+
+			static_assert( typeinfo</this_type/>.size_of  == typeinfo</ shared_ptr_base</T, false, is_mutable/> />.size_of  );
+			static_assert( typeinfo</this_type/>.align_of == typeinfo</ shared_ptr_base</T, false, is_mutable/> />.align_of );
+
+			memory_copy_aligned( typeinfo</this_type/>.align_of, cast_ref_unsafe</void/>(res), cast_ref_unsafe</void/>(this), typeinfo</this_type/>.size_of );
+			return move(res);
+		}
+	}
+
+	// Lock operations.
+
+	fn enable_if(is_nullable && is_mutable) try_lock_mut( this ) : lock_mut_t 'this'
+	{
+		halt if( empty() );
+		unsafe{  return lock_mut_unchecked();  }
+	}
+
+	fn enable_if(is_nullable) try_lock_imut( this ) : lock_imut_t'this'
+	{
+		halt if( empty() );
+		unsafe{  return lock_imut_unchecked();  }
+	}
+
+	fn enable_if(!is_nullable && is_mutable) lock_mut( this ) : lock_mut_t 'this'
+	{
+		unsafe{  return lock_mut_unchecked();  }
+	}
+
+	fn enable_if(!is_nullable) lock_imut( this ) : lock_imut_t'this'
+	{
+		unsafe{  return lock_imut_unchecked();  }
+	}
+
+	fn enable_if(is_mutable) lock_mut_unchecked( this ) unsafe : lock_mut_t 'this'
 	{
 		unsafe{  return lock_mut_t ( $>(value_), counter_ );  }
 	}
@@ -150,6 +214,8 @@ public:
 	{
 		unsafe{  return lock_imut_t( $>(value_), counter_ );  }
 	}
+
+	// Compare.
 
 	op==( this_type& l, this_type& r ) : bool
 	{
@@ -179,7 +245,7 @@ public: // Methods for internal usage.
 	{}
 
 private:
-	type this_type= shared_ptr_base</ T, is_nullable />;
+	type this_type= shared_ptr_base</ T, is_nullable, is_mutable />;
 	type value_ptr= $(T);
 	type counter_ptr= $(shared_ptr_impl::counter);
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
@@ -192,8 +258,8 @@ private:
 
 struct shared_ptr_base_hasher
 {
-	template</type T, bool is_nullable/>
-	fn hash( shared_ptr_base</T, is_nullable/>& ptr ) : size_type
+	template</type T, bool is_nullable, bool is_mutable/>
+	fn hash( shared_ptr_base</T, is_nullable, is_mutable/>& ptr ) : size_type
 	{
 		unsafe
 		{
@@ -211,7 +277,7 @@ struct shared_ptr_hasher
 	}
 }
 
-template</ type T />
+template</ type T, bool is_mutable />
 class weak_ptr_base shared
 {
 public:
@@ -233,7 +299,7 @@ public:
 	}
 
 	// Construct from non-nullable shared_ptr_base.
-	fn constructor( shared_ptr_base</ T, false />& ptr )
+	fn constructor( shared_ptr_base</ T, false, is_mutable />& ptr )
 	{
 		unsafe
 		{
@@ -244,9 +310,10 @@ public:
 		}
 	}
 
+	// Construct from weak_ptr of compatible type.
 	template</ type U />
 	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
-	conversion_constructor( mut this, weak_ptr_base</U/>& ptr )
+	conversion_constructor( mut this, weak_ptr_base</U, is_mutable/>& ptr )
 	{
 		unsafe
 		{
@@ -329,8 +396,8 @@ public: // Methods for internal usage.
 	}
 
 private:
-	type this_type= weak_ptr_base</ T />;
-	type shared_ptr_type= shared_ptr_base</ T, true />;
+	type this_type= weak_ptr_base</ T, is_mutable />;
+	type shared_ptr_type= shared_ptr_base</ T, true, is_mutable />;
 	type value_ptr= $(T);
 	type counter_ptr= $(shared_ptr_impl::counter);
 	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
