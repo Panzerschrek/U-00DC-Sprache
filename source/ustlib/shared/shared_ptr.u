@@ -283,8 +283,32 @@ class weak_ptr_base shared
 public:
 	fn constructor()= default;
 
-	// Construct from nullable shared_ptr_base.
-	fn constructor( shared_ptr_type& ptr )
+	// Construct from non-nullable immutable shared_ptr.
+	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, false, false/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+			++$>(counter_).use_count_total;
+		}
+	}
+
+	// Construct from non-nullable mutable shared_ptr.
+	fn conversion_constructor( shared_ptr_base</ T, false, true/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+			++$>(counter_).use_count_total;
+		}
+	}
+
+	// Construct from nullable immutable shared_ptr.
+	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, true, false/>& ptr )
 	{
 		unsafe
 		{
@@ -298,15 +322,18 @@ public:
 		}
 	}
 
-	// Construct from non-nullable shared_ptr_base.
-	fn constructor( shared_ptr_base</ T, false, is_mutable />& ptr )
+	// Construct from nullable mutable shared_ptr.
+	fn conversion_constructor( shared_ptr_base</ T, true, true/>& ptr )
 	{
 		unsafe
 		{
 			value_= ptr.get_value_ptr();
 			counter_= ptr.get_counter_ptr();
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-			++$>(counter_).use_count_total;
+			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
+			{
+				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+				++$>(counter_).use_count_total;
+			}
 		}
 	}
 
