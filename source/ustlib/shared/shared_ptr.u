@@ -254,17 +254,9 @@ struct shared_ptr_base_hasher
 	{
 		unsafe
 		{
+			// TODO - fix this. It's invalid to call "ref_to_int" for potentially null reference.
 			return ust::ref_to_int( cast_ref_unsafe</void/>( $>( ptr.get_value_ptr() ) ) );
 		}
-	}
-}
-
-struct shared_ptr_hasher
-{
-	template</type PtrT/>
-	fn hash( PtrT& ptr ) : size_type
-	{
-		unsafe{ return shared_ptr_base_hasher::hash( ptr.get_impl() ); }
 	}
 }
 

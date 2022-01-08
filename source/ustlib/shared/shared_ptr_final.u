@@ -173,15 +173,6 @@ struct shared_ptr_final_base_hasher
 	}
 }
 
-struct shared_ptr_final_hasher
-{
-	template</type PtrT/>
-	fn hash( PtrT& ptr ) : size_type
-	{
-		unsafe{ return shared_ptr_final_base_hasher::hash( ptr.get_impl() ); }
-	}
-}
-
 // All necessary type aliases.
 
 template</type T/> type shared_ptr_final= shared_ptr_final_base</T, false/>;
