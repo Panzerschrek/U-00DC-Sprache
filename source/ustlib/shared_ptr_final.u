@@ -34,7 +34,7 @@ public:
 		unsafe
 		{
 			ptr_= ptr.get_ptr();
-			++$>(ptr_).counter;
+			shared_ptr_final_impl::counter_inc( $>(ptr_).counter );
 		}
 	}
 
@@ -46,7 +46,7 @@ public:
 			unsafe
 			{
 				ptr_= other.ptr_;
-				++$>(ptr_).counter;
+				shared_ptr_final_impl::counter_inc( $>(ptr_).counter );
 			}
 		}
 	}
@@ -56,7 +56,7 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			--$>(ptr_).counter;
+			shared_ptr_final_impl::counter_dec( $>(ptr_).counter );
 			if( $>(ptr_).counter == 0u )
 			{
 				call_destructor( $>(ptr_).value );
@@ -102,8 +102,7 @@ public:
 
 		unsafe
 		{
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-			++$>(ptr_).counter;
+			shared_ptr_final_impl::counter_inc( $>(ptr_).counter );
 			return shared_ptr_final_base</T, false/>( ptr_ );
 		}
 	}
@@ -201,6 +200,18 @@ struct storage
 {
 	u32 counter;
 	T value;
+}
+
+fn counter_inc( u32& mut c )
+{
+	// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+	++c;
+}
+
+fn counter_dec( u32& mut c )
+{
+	// Normally overflow is not possible here.
+	--c;
 }
 
 } // namespace shared_ptr_final_impl

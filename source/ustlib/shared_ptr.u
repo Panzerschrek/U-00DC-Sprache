@@ -40,9 +40,8 @@ public:
 		{
 			value_= ptr.get_value_ptr();
 			counter_= ptr.get_counter_ptr();
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-			++$>(counter_).use_count_total;
-			++$>(counter_).use_count_strong;
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
 		}
 	}
 
@@ -55,9 +54,8 @@ public:
 			{
 				value_= ptr.get_value_ptr();
 				counter_= ptr.get_counter_ptr();
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-				++$>(counter_).use_count_total;
-				++$>(counter_).use_count_strong;
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
 			}
 		}
 	}
@@ -69,9 +67,8 @@ public:
 		{
 			value_= ptr.get_value_ptr();
 			counter_= ptr.get_counter_ptr();
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-			++$>(counter_).use_count_total;
-			++$>(counter_).use_count_strong;
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
 		}
 	}
 
@@ -84,9 +81,8 @@ public:
 			{
 				value_= other.value_;
 				counter_= other.counter_;
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-				++$>(counter_).use_count_total;
-				++$>(counter_).use_count_strong;
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
 			}
 		}
 	}
@@ -102,9 +98,8 @@ public:
 			{
 				value_= $<( cast_ref</T/>( $>(ptr.get_value_ptr() ) ) );
 				counter_= ptr.get_counter_ptr();
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-				++$>(counter_).use_count_total;
-				++$>(counter_).use_count_strong;
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
 			}
 		}
 	}
@@ -114,14 +109,14 @@ public:
 		if( empty() ) { return; }
 		unsafe
 		{
-			--$>(counter_).use_count_strong;
+			shared_ptr_impl::counter_dec( $>(counter_).use_count_strong );
 			if( $>(counter_).use_count_strong == 0u )
 			{
 				call_destructor( $>(value_) );
 				memory_free( polymorph_restore_original_ref( $>(value_) ) );
 			}
 
-			--$>(counter_).use_count_total;
+			shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
 			if( $>(counter_).use_count_total == 0u )
 			{
 				memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
@@ -167,8 +162,8 @@ public:
 		unsafe
 		{
 			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-			++$>(counter_).use_count_total;
-			++$>(counter_).use_count_strong;
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
 			return shared_ptr_base</T, false, is_mutable/>( value_, counter_ );
 		}
 	}
@@ -273,8 +268,7 @@ public:
 		{
 			value_= ptr.get_value_ptr();
 			counter_= ptr.get_counter_ptr();
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-			++$>(counter_).use_count_total;
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
 		}
 	}
 
@@ -285,8 +279,7 @@ public:
 		{
 			value_= ptr.get_value_ptr();
 			counter_= ptr.get_counter_ptr();
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-			++$>(counter_).use_count_total;
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
 		}
 	}
 
@@ -299,8 +292,7 @@ public:
 			counter_= ptr.get_counter_ptr();
 			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
 			{
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-				++$>(counter_).use_count_total;
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
 			}
 		}
 	}
@@ -314,8 +306,7 @@ public:
 			counter_= ptr.get_counter_ptr();
 			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
 			{
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-				++$>(counter_).use_count_total;
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
 			}
 		}
 	}
@@ -331,8 +322,7 @@ public:
 			{
 				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) ); // Convert reference here.
 				counter_= ptr.get_counter_ptr();
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-				++$>(counter_).use_count_total;
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
 			}
 		}
 	}
@@ -348,7 +338,7 @@ public:
 		{
 			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
 			{
-				--$>(counter_).use_count_total;
+				shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
 				if( $>(counter_).use_count_total == 0u )
 				{
 					memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
@@ -377,9 +367,8 @@ public:
 			{
 				return shared_ptr_type();
 			}
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-			++$>(counter_).use_count_total;
-			++$>(counter_).use_count_strong;
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
 			return shared_ptr_type( value_, counter_ );
 		}
 	}
@@ -439,6 +428,18 @@ struct counter
 	u32 use_count_total;
 	u32 use_count_strong; // always <= use_count_total
 	i32 lock_count; // 0 - not locked, positive value - locked as imut, -1 - locked as mut.
+}
+
+fn counter_inc( u32& mut c )
+{
+	// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+	++c;
+}
+
+fn counter_dec( u32& mut c )
+{
+	// Normally overflow is not possible here.
+	--c;
 }
 
 template</ type T />
