@@ -169,15 +169,7 @@ public:
 			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 			++$>(counter_).use_count_total;
 			++$>(counter_).use_count_strong;
-
-			// Just copy contents (a pait of pointers). This works fine since layeout of different shared_ptr_base classes is same.
-			var shared_ptr_base</T, false, is_mutable/> mut res= uninitialized;
-
-			static_assert( typeinfo</this_type/>.size_of  == typeinfo</ shared_ptr_base</T, false, is_mutable/> />.size_of  );
-			static_assert( typeinfo</this_type/>.align_of == typeinfo</ shared_ptr_base</T, false, is_mutable/> />.align_of );
-
-			memory_copy_aligned( typeinfo</this_type/>.align_of, cast_ref_unsafe</void/>(res), cast_ref_unsafe</void/>(this), typeinfo</this_type/>.size_of );
-			return move(res);
+			return shared_ptr_base</T, false, is_mutable/>( value_, counter_ );
 		}
 	}
 
