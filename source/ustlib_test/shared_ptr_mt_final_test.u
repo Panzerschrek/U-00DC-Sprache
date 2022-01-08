@@ -1,6 +1,5 @@
 //##success_test
-import "../ustlib/shared_mt/shared_ptr_mt_final.u"
-import "../ustlib/shared_mt/shared_ptr_mt_final_nullable.u"
+import "../ustlib/shared_ptr_mt_final.u"
 import "../ustlib/unordered_map.u"
 
 type IntPtr= ust::shared_ptr_mt_final</i32/>;
