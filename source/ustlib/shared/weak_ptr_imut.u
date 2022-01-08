@@ -1,8 +1,0 @@
-import "shared_ptr_base.u"
-
-namespace ust
-{
-
-template</type T/> type weak_ptr_imut= weak_ptr_base</T, false/>;
-
-} // namespace ust

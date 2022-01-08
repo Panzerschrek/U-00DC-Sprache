@@ -1,8 +1,0 @@
-import "shared_ptr_base.u"
-
-namespace ust
-{
-
-template</type T/> type shared_ptr_nullable_imut= shared_ptr_base</T, true, false/>;
-
-} // namespace ust

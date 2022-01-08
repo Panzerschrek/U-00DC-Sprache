@@ -408,6 +408,29 @@ private:
 	counter_ptr counter_= zero_init;
 }
 
+// All necessary type aliases.
+
+template</type T/> type shared_ptr_imut= shared_ptr_base</T, false, false/>;
+template</type T/> type shared_ptr_mut= shared_ptr_base</T, false, true/>;
+template</type T/> type shared_ptr_nullable_imut= shared_ptr_base</T, true, false/>;
+template</type T/> type shared_ptr_nullable_mut= shared_ptr_base</T, true, true/>;
+template</type T/> type weak_ptr_imut= weak_ptr_base</T, false/>;
+template</type T/> type weak_ptr_mut= weak_ptr_base</T, true/>;
+
+// Helper function for shared_ptr construction.
+template</type T/>
+fn make_shared_ptr( T mut value ) : shared_ptr_mut</T/>
+{
+	return shared_ptr_mut</T/>( move(value) );
+}
+
+// Helper function for conversion to non-nullable type. TODO - remove it?
+template</type T, bool is_mutable/>
+fn to_non_nullable( shared_ptr_base</T, true, is_mutable/>& ptr ) : shared_ptr_base</T, false, is_mutable/>
+{
+	return ptr.try_to_non_nullable();
+}
+
 namespace shared_ptr_impl
 {
 

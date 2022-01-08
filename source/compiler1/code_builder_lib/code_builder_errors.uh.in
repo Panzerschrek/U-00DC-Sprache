@@ -1,4 +1,4 @@
-import "/shared/shared_ptr_nullable_mut.u"
+import "/shared/shared_ptr.u"
 import "/string.u"
 import "/vector.u"
 import "/lex_synt_lib/src_loc.uh"

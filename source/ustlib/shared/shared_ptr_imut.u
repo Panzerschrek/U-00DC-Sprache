@@ -1,9 +1,0 @@
-import "shared_ptr_base.u"
-import "shared_ptr_mut.u"
-
-namespace ust
-{
-
-template</type T/> type shared_ptr_imut= shared_ptr_base</T, false, false/>;
-
-} // namespace ust
