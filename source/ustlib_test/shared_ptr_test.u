@@ -1,5 +1,5 @@
 //##success_test
-import "../ustlib/shared/shared_ptr.u"
+import "../ustlib/shared_ptr.u"
 
 import "../ustlib/box.u"
 import "../ustlib/box_nullable.u"

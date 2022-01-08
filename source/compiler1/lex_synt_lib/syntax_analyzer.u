@@ -1,4 +1,4 @@
-import "/shared/shared_ptr.u"
+import "/shared_ptr.u"
 import "/string_conversions.u"
 import "/unordered_set.u"
 import "/keywords.uh"

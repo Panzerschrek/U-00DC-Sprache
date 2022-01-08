@@ -1,5 +1,5 @@
 //##fail_test
-import "../ustlib/shared/shared_ptr.u"
+import "../ustlib/shared_ptr.u"
 
 type IntPtrMut=  ust::shared_ptr_mut </i32/>;
 type IntPtrImut= ust::shared_ptr_imut</i32/>;

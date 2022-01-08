@@ -1,7 +1,7 @@
 import "/box.u"
 import "/box_nullable.u"
 import "/optional.u"
-import "/shared/shared_ptr_final.u"
+import "/shared_ptr_final.u"
 import "/string.u"
 import "/variant.u"
 import "/vector.u"

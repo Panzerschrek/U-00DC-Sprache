@@ -1,5 +1,5 @@
-import "../container_utils.u"
-import "../memory.u"
+import "container_utils.u"
+import "memory.u"
 
 namespace ust
 {

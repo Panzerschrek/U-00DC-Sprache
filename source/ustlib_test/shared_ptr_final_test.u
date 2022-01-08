@@ -1,5 +1,5 @@
 //##success_test
-import "../ustlib/shared/shared_ptr_final.u"
+import "../ustlib/shared_ptr_final.u"
 import "../ustlib/type_traits.u"
 import "../ustlib/unordered_map.u"
 

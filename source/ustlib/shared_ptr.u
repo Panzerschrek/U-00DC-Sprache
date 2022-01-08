@@ -1,7 +1,7 @@
-import "../container_utils.u"
-import "../memory.u"
-import "../polymorph.u"
-import "../type_traits.u"
+import "container_utils.u"
+import "memory.u"
+import "polymorph.u"
+import "type_traits.u"
 
 namespace ust
 {

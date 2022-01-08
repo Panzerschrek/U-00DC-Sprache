@@ -1,4 +1,4 @@
-import "/shared/shared_ptr.u"
+import "/shared_ptr.u"
 import "/string.u"
 import "/vector.u"
 import "/lex_synt_lib/src_loc.uh"
