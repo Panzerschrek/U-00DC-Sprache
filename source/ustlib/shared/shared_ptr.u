@@ -63,7 +63,7 @@ public:
 	}
 
 	// Constructor for immutable nullable ptr from mutable non-nullable ptr.
-	fn enable_if( !is_mutable && is_nullable ) conversion_constructor( mut this, shared_ptr_base</T, false, true/>& ptr )
+	fn enable_if( is_nullable && !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, false, true/>& ptr )
 	{
 		unsafe
 		{
@@ -228,7 +228,6 @@ public:
 	}
 
 public: // Methods for internal usage.
-
 	fn get_value_ptr( this ) unsafe : $(T)
 	{
 		return value_;
@@ -361,26 +360,6 @@ public:
 
 	fn destructor()
 	{
-		reset();
-	}
-
-	op=( mut this, this_type &imut other )
-	{
-		reset();
-		unsafe
-		{
-			if( other.counter_ != nullptr</shared_ptr_impl::counter/>() )
-			{
-				value_= other.value_;
-				counter_= other.counter_;
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-				++$>(counter_).use_count_total;
-			}
-		}
-	}
-
-	fn reset( mut this )
-	{
 		unsafe
 		{
 			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
@@ -389,11 +368,21 @@ public:
 				if( $>(counter_).use_count_total == 0u )
 				{
 					memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
-					value_= nullptr</T/>();
 				}
-				counter_= nullptr</shared_ptr_impl::counter/>();
 			}
 		}
+	}
+
+	op=( mut this, this_type &imut other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= this_type(other);
+	}
+
+	fn reset( mut this )
+	{
+		// Move value ot out "this", call destructor for it, construct default value in place of "this".
+		take(this);
 	}
 
 	fn lock( this ) : shared_ptr_type
