@@ -1,73 +1,217 @@
-import "shared_ptr_final_base.u"
+import "../container_utils.u"
+import "../memory.u"
 
 namespace ust
 {
 
-template</ type T />
-class shared_ptr_final
+// Mark as "shared", because counter operations are not thread-safe.
+template</ type T, bool is_nullable />
+class shared_ptr_final_base shared
 {
-public:
-	type hasher= shared_ptr_final_hasher;
+	// Forbid shared pointers for structs with references inside.
+	static_assert( typeinfo</T/>.references_tags_count == size_type(0) );
+
+	type hasher= shared_ptr_final_base_hasher;
 
 public:
+	// Default constructor. Exists only for nullable shared_ptr_final.
+	fn enable_if(is_nullable) constructor()= default;
+
+	// Construct with value.
 	fn constructor( T mut value )
 	{
-		impl_= shared_ptr_final_base</T/>( move(value) );
+		unsafe
+		{
+			ptr_= $<( cast_ref_unsafe</storage/>( memory_allocate( typeinfo</storage/>.size_of ) ) );
+			move_into_uninitialized( $>(ptr_).value, move(value) );
+			$>(ptr_).counter= 1u;
+		}
 	}
 
-	fn constructor( mut this, this_type &imut other )= default;
-	op=( mut this, this_type &imut other )= default;
+	// Constructor for nullable ptr from non-nullable ptr.
+	fn enable_if(is_nullable) conversion_constructor( mut this, shared_ptr_final_base</T, false/>& ptr )
+	{
+		unsafe
+		{
+			ptr_= ptr.get_ptr();
+			++$>(ptr_).counter;
+		}
+	}
+
+	// Copy constructor.
+	fn constructor( mut this, this_type &imut other )
+	{
+		if( !other.empty() )
+		{
+			unsafe
+			{
+				ptr_= other.ptr_;
+				++$>(ptr_).counter;
+			}
+		}
+	}
+
+	fn destructor()
+	{
+		if( empty() ) { return; }
+		unsafe
+		{
+			--$>(ptr_).counter;
+			if( $>(ptr_).counter == 0u )
+			{
+				call_destructor( $>(ptr_).value );
+				memory_free( cast_ref_unsafe</void/>( $>(ptr_) ) );
+			}
+		}
+	}
+
+	// Copy-assignment operator.
+	op=( mut this, this_type &imut other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= this_type(other);
+	}
+
+	fn enable_if(is_nullable) reset( mut this )
+	{
+		// Move value ot out "this", call destructor for it, construct default value in place of "this".
+		take(this);
+	}
 
 	fn reset( mut this, T mut value )
 	{
-		impl_.reset( move(value) );
+		this= this_type( move(value) );
 	}
 
 	fn empty( this ) : bool
 	{
-		return false;
-	}
-
-	fn deref( this ) : T &imut
-	{
-		unsafe
+		static_if( is_nullable )
 		{
-			return impl_.deref_unchecked();
+			return ptr_ == nullptr</storage/>();
+		}
+		else
+		{
+			return false;
 		}
 	}
 
+	// Checked conversion to non-nullable from nullable.
+	fn enable_if(is_nullable) try_to_non_nullable( this ) : shared_ptr_final_base</T, false/>
+	{
+		halt if(empty());
+
+		unsafe
+		{
+			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+			++$>(ptr_).counter;
+			return shared_ptr_final_base</T, false/>( ptr_ );
+		}
+	}
+
+	// Deref operations.
+
+	fn enable_if(is_nullable) try_deref( this ) : T &imut
+	{
+		halt if(empty());
+		unsafe{  return deref_unchecked();  }
+	}
+
+	fn enable_if(!is_nullable) deref( this ) : T &imut
+	{
+		unsafe{  return deref_unchecked();  }
+	}
+
+	fn deref_unchecked( this ) unsafe : T &imut
+	{
+		unsafe
+		{
+			return $>(ptr_).value;
+		}
+	}
+
+	// Compare.
+
 	op==( this_type& l, this_type& r ) : bool
 	{
-		return l.impl_ == r.impl_;
+		return l.ptr_ == r.ptr_;
 	}
 
 	op!=( this_type& l, this_type& r ) : bool
 	{
-		return l.impl_ != r.impl_;
+		return l.ptr_ != r.ptr_;
 	}
 
-public: // Methods for internal usage
-	// impl must be non-empty
-	fn constructor( shared_ptr_final_base</ T /> mut impl ) unsafe
-	( impl_(move(impl)) )
+public: // Methods for internal usage.
+	fn get_ptr( this ) unsafe : $(storage)
+	{
+		return ptr_;
+	}
+
+	// Counter must be incremented before this constructor call.
+	fn constructor( $(storage) ptr ) unsafe
+	( ptr_(ptr) )
 	{}
 
-	fn get_impl( this ) unsafe : shared_ptr_final_base</ T />
-	{
-		return impl_;
-	}
+private:
+	type this_type= shared_ptr_final_base</T, is_nullable/>;
+	type storage= shared_ptr_final_impl::storage</T/>;
 
 private:
-	type this_type= shared_ptr_final</T/>;
-
-private:
-	shared_ptr_final_base</T/> impl_;
+	$(storage) ptr_= zero_init;
 }
+
+struct shared_ptr_final_base_hasher
+{
+	template</type T, bool is_nullable/>
+	fn hash( shared_ptr_final_base</T, is_nullable/>& ptr ) : size_type
+	{
+		unsafe
+		{
+			// TODO - fix this. It's invalid to call "ref_to_int" for potentially null reference.
+			return ust::ref_to_int( cast_ref_unsafe</void/>( ptr.deref_unchecked() ) );
+		}
+	}
+}
+
+struct shared_ptr_final_hasher
+{
+	template</type PtrT/>
+	fn hash( PtrT& ptr ) : size_type
+	{
+		unsafe{ return shared_ptr_final_base_hasher::hash( ptr.get_impl() ); }
+	}
+}
+
+// All necessary type aliases.
+
+template</type T/> type shared_ptr_final= shared_ptr_final_base</T, false/>;
+template</type T/> type shared_ptr_final_nullable= shared_ptr_final_base</T, true/>;
+
+// Helper functions.
 
 template</type T/>
 fn make_shared_ptr_final( T mut value ) : shared_ptr_final</T/>
 {
 	return shared_ptr_final</T/>( move(value) );
 }
+
+// Helper function for conversion to non-nullable type. TODO - remove it?
+template</ type T />
+fn to_non_nullable( shared_ptr_final_base</T, true/> & ptr ) : shared_ptr_final</T/>
+{
+	return ptr.try_to_non_nullable();
+}
+
+namespace shared_ptr_final_impl
+{
+
+template</type T/>
+struct storage
+{
+	u32 counter;
+	T value;
+}
+
+} // namespace shared_ptr_final_impl
 
 } // namespace ust

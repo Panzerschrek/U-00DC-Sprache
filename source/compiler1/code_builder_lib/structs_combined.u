@@ -20,7 +20,7 @@ namespace ToStringHelper
 {
 
 template</type T/>
-fn ToString( ust::shared_ptr_final</T/>& b ) : ust::string8
+fn ToString( ust::shared_ptr_final_base</T, false/>& b ) : ust::string8
 {
 	return ToStringHelper::ToString( b.deref() );
 }
