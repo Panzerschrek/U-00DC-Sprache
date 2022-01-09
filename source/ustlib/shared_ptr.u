@@ -327,9 +327,18 @@ public:
 		}
 	}
 
+	// Copy constructor.
 	fn constructor( mut this, this_type &imut other )
 	{
-		this= other;
+		unsafe
+		{
+			value_= other.get_value_ptr();
+			counter_= other.get_counter_ptr();
+			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
+			{
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			}
+		}
 	}
 
 	fn destructor()
