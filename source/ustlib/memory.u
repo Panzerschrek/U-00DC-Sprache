@@ -84,7 +84,7 @@ fn memory_equals( void& a, void& b, size_type size ) unsafe : bool
 {
 	unsafe
 	{
-		return memcmp( $<(cast_mut(a)), $<(cast_mut(b)), size ) == 0;
+		return ust_memory_compare_impl( $<(cast_mut(a)), $<(cast_mut(b)), size ) == 0;
 	}
 }
 
@@ -152,9 +152,6 @@ fn allocation_size_check( size_type size )
 
 } // namespace ust
 
-// C standard library functions, used to implement memory functions for Ü.
-fn nomangle memcmp( $(void) a, $(void) b, size_type size ) unsafe : i32;
-
 // External implementation functions.
 
 fn nomangle ust_memory_allocate_impl( size_type size ) unsafe : $(void);
@@ -167,3 +164,4 @@ fn nomangle ust_memory_copy_align_2_impl ( $(void) dst, $(void) src, size_type s
 fn nomangle ust_memory_copy_align_4_impl ( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
 fn nomangle ust_memory_copy_align_8_impl ( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
 fn nomangle ust_memory_copy_align_16_impl( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
+fn nomangle ust_memory_compare_impl( $(void) a, $(void) b, size_type size ) unsafe : i32;
