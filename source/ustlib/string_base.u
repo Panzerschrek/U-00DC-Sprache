@@ -270,8 +270,18 @@ public:
 
 		unsafe
 		{
+			// TODO - use some sort of fast memory equals function.
+			// Now just compare chars one by one.
 			auto size= l.size();
-			return memory_equals( cast_ref_unsafe</void/>( $>(l.ptr_) ), cast_ref_unsafe</void/>( $>(r.data()) ), size * c_element_size_ );
+			auto r_ptr= r.data();
+			for( auto mut i= 0s; i < size; ++i )
+			{
+				if( $>(l.ptr_ + i) != $>(r_ptr + i) )
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 	}
 
