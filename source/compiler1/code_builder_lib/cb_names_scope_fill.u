@@ -442,7 +442,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		if( !prev_namespace.empty() )
 		{
 			// Ok - extend previous namespace
-			NamesScopeFill( ust::to_non_nullable( prev_namespace ), namespace_.deref().elements );
+			NamesScopeFill( prev_namespace.try_to_non_nullable(), namespace_.deref().elements );
 		}
 		else
 		{
@@ -452,7 +452,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	}
 
 	var NamesScopeValue mut names_scope_value( NamesScope( namespace_.deref().name, names_scope_ptr ) );
-	NamesScopeFill( ust::to_non_nullable( names_scope_value.Get</NamesScope/>() ), namespace_.deref().elements );
+	NamesScopeFill( names_scope_value.Get</NamesScope/>().try_to_non_nullable(), namespace_.deref().elements );
 
 	auto mut lock= names_scope_ptr.lock_mut();
 	lock.deref().AddName( namespace_.deref().name, move(names_scope_value) );
@@ -460,7 +460,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility, size_type field_index )
 {
-	var ClassTypePtr class_type_non_null = ust::to_non_nullable(class_type);
+	var ClassTypePtr class_type_non_null = class_type.try_to_non_nullable();
 
 	auto& field_name= class_field.deref().name;
 	if( IsKeyword( field_name ) )
@@ -624,7 +624,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 				auto inner_namespace_value= inner_namespace_value.Get</NamesScope/>();
 				if( !inner_namespace_value.empty() )
 				{
-					NamesScopeFillOutOfLineElements( ust::to_non_nullable( inner_namespace_value ), namespace_.deref().elements );
+					NamesScopeFillOutOfLineElements( inner_namespace_value.try_to_non_nullable(), namespace_.deref().elements );
 				}
 			}
 		}
@@ -676,9 +676,9 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 			auto class_members= class_type_ptr.try_lock_imut().deref().members;
 			if( !class_.deref().is_forward_declaration )
 			{
-				NamesScopeFillClass( class_members, class_.deref().class_elements, ust::to_non_nullable(class_type_ptr) );
+				NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr.try_to_non_nullable() );
 			}
-			return ust::to_non_nullable(class_type_ptr);
+			return class_type_ptr.try_to_non_nullable();
 		}
 		else
 		{
@@ -693,7 +693,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 	select( class_.deref().is_forward_declaration ? class_type.forward_declaration_syntax_element : class_type.syntax_element )= class_;
 
 	var NamesScopeValue mut names_scope_value( move(class_type) );
-	auto class_type_ptr= ust::to_non_nullable( names_scope_value.Get</ClassType/>() );
+	auto class_type_ptr= names_scope_value.Get</ClassType/>().try_to_non_nullable();
 
 	current_class_table_.push_back( class_type_ptr );
 

@@ -1,14 +1,14 @@
-import "../atomic.u"
-import "../container_utils.u"
-import "../memory.u"
-import "../polymorph.u"
-import "../pthread.u"
-import "../type_traits.u"
+import "atomic.u"
+import "container_utils.u"
+import "memory.u"
+import "polymorph.u"
+import "pthread.u"
+import "type_traits.u"
 
 namespace ust
 {
 
-template</ type T />
+template</ type T, bool is_nullable, bool is_mutable />
 class shared_ptr_mt_base
 {
 	// Forbid shared pointers for structs with references inside.
@@ -21,8 +21,10 @@ class shared_ptr_mt_base
 	type hasher= shared_ptr_mt_base_hasher;
 
 public:
-	fn constructor()= default;
+	// Default constructor. Exists only for nullable shared_ptr_mt.
+	fn enable_if(is_nullable) constructor()= default;
 
+	// Construct with value.
 	fn constructor( T mut value )
 	{
 		unsafe
@@ -41,9 +43,64 @@ public:
 		}
 	}
 
+	// Constructor for nullable ptr from non-nullable ptr.
+	fn enable_if( is_nullable ) conversion_constructor( mut this, shared_ptr_mt_base</T, false, is_mutable/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			atomic_inc( $>(counter_).use_count_total  );
+			atomic_inc( $>(counter_).use_count_strong );
+		}
+	}
+
+	// Constructor for immutable ptr from mutable ptr.
+	fn enable_if( !is_mutable ) conversion_constructor( mut this, shared_ptr_mt_base</T, is_nullable, true/>& ptr )
+	{
+		if( !ptr.empty() )
+		{
+			unsafe
+			{
+				value_= ptr.get_value_ptr();
+				counter_= ptr.get_counter_ptr();
+				atomic_inc( $>(counter_).use_count_total  );
+				atomic_inc( $>(counter_).use_count_strong );
+			}
+		}
+	}
+
+	// Constructor for immutable nullable ptr from mutable non-nullable ptr.
+	fn enable_if( is_nullable && !is_mutable ) conversion_constructor( mut this, shared_ptr_mt_base</T, false, true/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			atomic_inc( $>(counter_).use_count_total  );
+			atomic_inc( $>(counter_).use_count_strong );
+		}
+	}
+
+	// Copy constructor.
+	fn constructor( mut this, this_type &imut other )
+	{
+		if( !other.empty() )
+		{
+			unsafe
+			{
+				value_= other.value_;
+				counter_= other.counter_;
+				atomic_inc( $>(counter_).use_count_total  );
+				atomic_inc( $>(counter_).use_count_strong );
+			}
+		}
+	}
+
+	// Construct from shared_ptr_mt of compatible type.
 	template</ type U />
 	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
-	conversion_constructor( mut this, shared_ptr_mt_base</U/>& ptr )
+	conversion_constructor( mut this, shared_ptr_mt_base</U, is_nullable, is_mutable/>& ptr )
 	{
 		if( !ptr.empty() )
 		{
@@ -58,33 +115,7 @@ public:
 		}
 	}
 
-	fn constructor( mut this, this_type &imut other )
-	{
-		this= other;
-	}
-
 	fn destructor()
-	{
-		reset();
-	}
-
-	op=( mut this, this_type &imut other )
-	{
-		reset();
-		unsafe
-		{
-			if( other.counter_ != nullptr</shared_ptr_mt_impl::counter/>() )
-			{
-				value_= other.value_;
-				counter_= other.counter_;
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-				atomic_inc( $>(counter_).use_count_total  );
-				atomic_inc( $>(counter_).use_count_strong );
-			}
-		}
-	}
-
-	fn reset( mut this )
 	{
 		if( empty() ) { return; }
 		unsafe
@@ -99,9 +130,20 @@ public:
 				halt if( pthread_rwlock_destroy( $>(counter_).rwlock ) != 0 );
 				memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
 			}
-			value_= nullptr</T/>();
-			counter_= nullptr</shared_ptr_mt_impl::counter/>();
 		}
+	}
+
+	// Copy-assignment operator.
+	op=( mut this, this_type &imut other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= this_type(other);
+	}
+
+	fn enable_if(is_nullable) reset( mut this )
+	{
+		// Move value ot out "this", call destructor for it, construct default value in place of "this".
+		take(this);
 	}
 
 	fn reset( mut this, T mut value )
@@ -111,7 +153,51 @@ public:
 
 	fn empty( this ) : bool
 	{
-		return value_ == nullptr</T/>();
+		static_if( is_nullable )
+		{
+			return value_ == nullptr</T/>();
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	// Checked conversion to non-nullable from nullable.
+	fn enable_if(is_nullable) try_to_non_nullable( this ) : shared_ptr_mt_base</T, false, is_mutable/>
+	{
+		halt if(empty());
+
+		unsafe
+		{
+			atomic_inc( $>(counter_).use_count_total  );
+			atomic_inc( $>(counter_).use_count_strong );
+			return shared_ptr_mt_base</T, false, is_mutable/>( value_, counter_ );
+		}
+	}
+
+	// Lock operations.
+
+	fn enable_if(is_nullable && is_mutable) try_lock_mut( this ) : lock_mut_t 'this'
+	{
+		halt if( empty() );
+		unsafe{  return lock_mut_unchecked();  }
+	}
+
+	fn enable_if(is_nullable) try_lock_imut( this ) : lock_imut_t'this'
+	{
+		halt if( empty() );
+		unsafe{  return lock_imut_unchecked();  }
+	}
+
+	fn enable_if(!is_nullable && is_mutable) lock_mut( this ) : lock_mut_t 'this'
+	{
+		unsafe{  return lock_mut_unchecked();  }
+	}
+
+	fn enable_if(!is_nullable) lock_imut( this ) : lock_imut_t'this'
+	{
+		unsafe{  return lock_imut_unchecked();  }
 	}
 
 	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t 'this'
@@ -123,6 +209,8 @@ public:
 	{
 		unsafe{  return lock_imut_t( $>(value_), counter_ );  }
 	}
+
+	// Compare.
 
 	op==( this_type& l, this_type& r ) : bool
 	{
@@ -152,7 +240,7 @@ public: // Methods for internal usage.
 	{}
 
 private:
-	type this_type= shared_ptr_mt_base</ T />;
+	type this_type= shared_ptr_mt_base</ T, is_nullable, is_mutable />;
 	type lock_mut_t = shared_ptr_mt_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_mt_impl::lock_imut</T/>;
 
@@ -163,8 +251,8 @@ private:
 
 struct shared_ptr_mt_base_hasher
 {
-	template</type T/>
-	fn hash( shared_ptr_mt_base</T/>& ptr ) : size_type
+	template</type T, bool is_nullable, bool is_mutable/>
+	fn hash( shared_ptr_mt_base</T, is_nullable, is_mutable/>& ptr ) : size_type
 	{
 		unsafe
 		{
@@ -173,22 +261,36 @@ struct shared_ptr_mt_base_hasher
 	}
 }
 
-struct shared_ptr_mt_hasher
-{
-	template</type PtrT/>
-	fn hash( PtrT& ptr ) : size_type
-	{
-		unsafe{ return shared_ptr_mt_base_hasher::hash( ptr.get_impl() ); }
-	}
-}
-
-template</ type T />
+template</ type T, bool is_mutable />
 class weak_ptr_mt_base
 {
 public:
 	fn constructor()= default;
 
-	fn constructor( shared_ptr_mt_base</T/>& ptr )
+	// Construct from non-nullable immutable shared_ptr_mt.
+	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_mt_base</ T, false, false/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			atomic_inc( $>(counter_).use_count_total );
+		}
+	}
+
+	// Construct from non-nullable mutable shared_ptr_mt.
+	fn conversion_constructor( shared_ptr_mt_base</ T, false, true/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			atomic_inc( $>(counter_).use_count_total );
+		}
+	}
+
+	// Construct from nullable immutable shared_ptr_mt.
+	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_mt_base</ T, true, false/>& ptr )
 	{
 		unsafe
 		{
@@ -196,15 +298,29 @@ public:
 			counter_= ptr.get_counter_ptr();
 			if( counter_ != nullptr</shared_ptr_mt_impl::counter/>() )
 			{
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				atomic_inc( $>(counter_).use_count_total );
 			}
 		}
 	}
 
+	// Construct from nullable mutable shared_ptr_mt.
+	fn conversion_constructor( shared_ptr_mt_base</ T, true, true/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			if( counter_ != nullptr</shared_ptr_mt_impl::counter/>() )
+			{
+				atomic_inc( $>(counter_).use_count_total );
+			}
+		}
+	}
+
+	// Construct from weak_ptr_mt of compatible type.
 	template</ type U />
 	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
-	conversion_constructor( mut this, weak_ptr_mt_base</U/>& ptr )
+	conversion_constructor( mut this, weak_ptr_mt_base</U, is_mutable/>& ptr )
 	{
 		unsafe
 		{
@@ -212,38 +328,26 @@ public:
 			{
 				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) );
 				counter_= ptr.get_counter_ptr();
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 				atomic_inc( $>(counter_).use_count_total );
 			}
 		}
 	}
 
+	// Copy constructor.
 	fn constructor( mut this, this_type &imut other )
 	{
-		this= other;
+		unsafe
+		{
+			value_= other.get_value_ptr();
+			counter_= other.get_counter_ptr();
+			if( counter_ != nullptr</shared_ptr_mt_impl::counter/>() )
+			{
+				atomic_inc( $>(counter_).use_count_total );
+			}
+		}
 	}
 
 	fn destructor()
-	{
-		reset();
-	}
-
-	op=( mut this, this_type &imut other )
-	{
-		reset();
-		unsafe
-		{
-			if( other.counter_ != nullptr</shared_ptr_mt_impl::counter/>() )
-			{
-				value_= other.value_;
-				counter_= other.counter_;
-				// It's almost impossible to get counter owerflow here - so, ignore such possibility.
-				atomic_inc( $>(counter_).use_count_total );
-			}
-		}
-	}
-
-	fn reset( mut this )
 	{
 		unsafe
 		{
@@ -253,23 +357,32 @@ public:
 				{
 					halt if( pthread_rwlock_destroy( $>(counter_).rwlock ) != 0 );
 					memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
-					value_= nullptr</T/>();
 				}
-				counter_= nullptr</shared_ptr_mt_impl::counter/>();
 			}
 		}
 	}
 
-	fn lock( this ) : shared_ptr_mt_base</T/>
+	op=( mut this, this_type &imut other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= this_type(other);
+	}
+
+	fn reset( mut this )
+	{
+		// Move value ot out "this", call destructor for it, construct default value in place of "this".
+		take(this);
+	}
+
+	fn lock( this ) : shared_ptr_mt_base</T, true, is_mutable/>
 	{
 		unsafe
 		{
 			if( counter_ == nullptr</shared_ptr_mt_impl::counter/>() )
 			{
-				return shared_ptr_mt_base</T/>();
+				return shared_ptr_mt_base</T, true, is_mutable/>();
 			}
 
-			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
 			atomic_inc( $>(counter_).use_count_total );
 
 			var u32 mut count= atomic_read( $>(counter_).use_count_strong );
@@ -278,7 +391,7 @@ public:
 				if( count == 0u )
 				{
 					atomic_dec( $>(counter_).use_count_total );
-					return shared_ptr_mt_base</T/>();
+					return shared_ptr_mt_base</T, true, is_mutable/>();
 				}
 
 				if( atomic_compare_exchange_weak(
@@ -290,7 +403,7 @@ public:
 				}
 			}
 
-			return shared_ptr_mt_base</T/>( value_, counter_ );
+			return shared_ptr_mt_base</T, true, is_mutable/>( value_, counter_ );
 		}
 	}
 
@@ -306,13 +419,29 @@ public: // Methods for internal usage.
 	}
 
 private:
-	type this_type= weak_ptr_mt_base</ T />;
+	type this_type= weak_ptr_mt_base</ T, is_mutable />;
 	type lock_mut_t = shared_ptr_mt_impl::lock_mut </T/>;
 	type lock_imut_t= shared_ptr_mt_impl::lock_imut</T/>;
 
 private:
 	$(T) value_= zero_init;
 	$(shared_ptr_mt_impl::counter) counter_= zero_init;
+}
+
+// All necessary type aliases.
+
+template</type T/> type shared_ptr_mt_imut= shared_ptr_mt_base</T, false, false/>;
+template</type T/> type shared_ptr_mt_mut= shared_ptr_mt_base</T, false, true/>;
+template</type T/> type shared_ptr_mt_nullable_imut= shared_ptr_mt_base</T, true, false/>;
+template</type T/> type shared_ptr_mt_nullable_mut= shared_ptr_mt_base</T, true, true/>;
+template</type T/> type weak_ptr_mt_imut= weak_ptr_mt_base</T, false/>;
+template</type T/> type weak_ptr_mt_mut= weak_ptr_mt_base</T, true/>;
+
+// Helper function for shared_ptr_mt construction.
+template</type T/>
+fn make_shared_ptr_mt( T mut value ) : shared_ptr_mt_mut</T/>
+{
+	return shared_ptr_mt_mut</T/>( move(value) );
 }
 
 namespace shared_ptr_mt_impl

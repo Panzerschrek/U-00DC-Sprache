@@ -1,0 +1,516 @@
+import "container_utils.u"
+import "memory.u"
+import "polymorph.u"
+import "type_traits.u"
+
+namespace ust
+{
+
+template</ type T, bool is_nullable, bool is_mutable />
+class shared_ptr_base shared
+{
+	// Forbid shared pointers for structs with references inside.
+	static_assert( typeinfo</T/>.references_tags_count == size_type(0) );
+
+	type hasher= shared_ptr_base_hasher;
+
+public:
+	// Default constructor. Exists only for nullable shared_ptr.
+	fn enable_if(is_nullable) constructor()= default;
+
+	// Construct with value.
+	fn constructor( T mut value )
+	{
+		unsafe
+		{
+			value_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
+			move_into_uninitialized( $>(value_), move(value) );
+
+			counter_= $<( cast_ref_unsafe</ shared_ptr_impl::counter />( memory_allocate( typeinfo</ shared_ptr_impl::counter />.size_of ) ) );
+			$>(counter_).use_count_total= 1u;
+			$>(counter_).use_count_strong= 1u;
+			$>(counter_).lock_count= 0;
+		}
+	}
+
+	// Constructor for nullable ptr from non-nullable ptr.
+	fn enable_if( is_nullable ) conversion_constructor( mut this, shared_ptr_base</T, false, is_mutable/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+		}
+	}
+
+	// Constructor for immutable ptr from mutable ptr.
+	fn enable_if( !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, is_nullable, true/>& ptr )
+	{
+		if( !ptr.empty() )
+		{
+			unsafe
+			{
+				value_= ptr.get_value_ptr();
+				counter_= ptr.get_counter_ptr();
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+			}
+		}
+	}
+
+	// Constructor for immutable nullable ptr from mutable non-nullable ptr.
+	fn enable_if( is_nullable && !is_mutable ) conversion_constructor( mut this, shared_ptr_base</T, false, true/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+		}
+	}
+
+	// Copy constructor.
+	fn constructor( mut this, this_type &imut other )
+	{
+		if( !other.empty() )
+		{
+			unsafe
+			{
+				value_= other.value_;
+				counter_= other.counter_;
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+			}
+		}
+	}
+
+	// Construct from shared_ptr of compatible type.
+	template</ type U />
+	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	conversion_constructor( mut this, shared_ptr_base</U, is_nullable, is_mutable/>& ptr )
+	{
+		if( !ptr.empty() )
+		{
+			unsafe
+			{
+				value_= $<( cast_ref</T/>( $>(ptr.get_value_ptr() ) ) );
+				counter_= ptr.get_counter_ptr();
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+			}
+		}
+	}
+
+	fn destructor()
+	{
+		if( empty() ) { return; }
+		unsafe
+		{
+			shared_ptr_impl::counter_dec( $>(counter_).use_count_strong );
+			if( $>(counter_).use_count_strong == 0u )
+			{
+				call_destructor( $>(value_) );
+				memory_free( polymorph_restore_original_ref( $>(value_) ) );
+			}
+
+			shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
+			if( $>(counter_).use_count_total == 0u )
+			{
+				memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
+			}
+		}
+	}
+
+	// Copy-assignment operator.
+	op=( mut this, this_type &imut other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= this_type(other);
+	}
+
+	fn enable_if(is_nullable) reset( mut this )
+	{
+		// Move value ot out "this", call destructor for it, construct default value in place of "this".
+		take(this);
+	}
+
+	fn reset( mut this, T mut value )
+	{
+		this= this_type( move(value) );
+	}
+
+	fn empty( this ) : bool
+	{
+		static_if( is_nullable )
+		{
+			return value_ == nullptr</T/>();
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	// Checked conversion to non-nullable from nullable.
+	fn enable_if(is_nullable) try_to_non_nullable( this ) : shared_ptr_base</T, false, is_mutable/>
+	{
+		halt if(empty());
+
+		unsafe
+		{
+			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+			return shared_ptr_base</T, false, is_mutable/>( value_, counter_ );
+		}
+	}
+
+	// Lock operations.
+
+	fn enable_if(is_nullable && is_mutable) try_lock_mut( this ) : lock_mut_t 'this'
+	{
+		halt if( empty() );
+		unsafe{  return lock_mut_unchecked();  }
+	}
+
+	fn enable_if(is_nullable) try_lock_imut( this ) : lock_imut_t'this'
+	{
+		halt if( empty() );
+		unsafe{  return lock_imut_unchecked();  }
+	}
+
+	fn enable_if(!is_nullable && is_mutable) lock_mut( this ) : lock_mut_t 'this'
+	{
+		unsafe{  return lock_mut_unchecked();  }
+	}
+
+	fn enable_if(!is_nullable) lock_imut( this ) : lock_imut_t'this'
+	{
+		unsafe{  return lock_imut_unchecked();  }
+	}
+
+	fn enable_if(is_mutable) lock_mut_unchecked( this ) unsafe : lock_mut_t 'this'
+	{
+		unsafe{  return lock_mut_t ( $>(value_), counter_ );  }
+	}
+
+	fn lock_imut_unchecked( this ) unsafe : lock_imut_t'this'
+	{
+		unsafe{  return lock_imut_t( $>(value_), counter_ );  }
+	}
+
+	// Compare.
+
+	op==( this_type& l, this_type& r ) : bool
+	{
+		return l.value_ == r.value_;
+	}
+
+	op!=( this_type& l, this_type& r ) : bool
+	{
+		return l.value_ != r.value_;
+	}
+
+public: // Methods for internal usage.
+	fn get_value_ptr( this ) unsafe : $(T)
+	{
+		return value_;
+	}
+
+	fn get_counter_ptr( this ) unsafe : $(shared_ptr_impl::counter)
+	{
+		return counter_;
+	}
+
+	// Counter must be incremented before this constructor call.
+	fn constructor( $(T) value_ptr, $(shared_ptr_impl::counter) counter_ptr ) unsafe
+	( value_(value_ptr), counter_(counter_ptr) )
+	{}
+
+private:
+	type this_type= shared_ptr_base</ T, is_nullable, is_mutable />;
+	type value_ptr= $(T);
+	type counter_ptr= $(shared_ptr_impl::counter);
+	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
+	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
+
+private:
+	value_ptr value_= zero_init;
+	counter_ptr counter_= zero_init;
+}
+
+struct shared_ptr_base_hasher
+{
+	template</type T, bool is_nullable, bool is_mutable/>
+	fn hash( shared_ptr_base</T, is_nullable, is_mutable/>& ptr ) : size_type
+	{
+		unsafe
+		{
+			// TODO - fix this. It's invalid to call "ref_to_int" for potentially null reference.
+			return ust::ref_to_int( cast_ref_unsafe</void/>( $>( ptr.get_value_ptr() ) ) );
+		}
+	}
+}
+
+template</ type T, bool is_mutable />
+class weak_ptr_base shared
+{
+public:
+	fn constructor()= default;
+
+	// Construct from non-nullable immutable shared_ptr.
+	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, false, false/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+		}
+	}
+
+	// Construct from non-nullable mutable shared_ptr.
+	fn conversion_constructor( shared_ptr_base</ T, false, true/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+		}
+	}
+
+	// Construct from nullable immutable shared_ptr.
+	fn enable_if(!is_mutable) conversion_constructor( shared_ptr_base</ T, true, false/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
+			{
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			}
+		}
+	}
+
+	// Construct from nullable mutable shared_ptr.
+	fn conversion_constructor( shared_ptr_base</ T, true, true/>& ptr )
+	{
+		unsafe
+		{
+			value_= ptr.get_value_ptr();
+			counter_= ptr.get_counter_ptr();
+			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
+			{
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			}
+		}
+	}
+
+	// Construct from weak_ptr of compatible type.
+	template</ type U />
+	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	conversion_constructor( mut this, weak_ptr_base</U, is_mutable/>& ptr )
+	{
+		unsafe
+		{
+			if( ptr.get_value_ptr() != nullptr</U/>() )
+			{
+				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) ); // Convert reference here.
+				counter_= ptr.get_counter_ptr();
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			}
+		}
+	}
+
+	// Copy constructor.
+	fn constructor( mut this, this_type &imut other )
+	{
+		unsafe
+		{
+			value_= other.get_value_ptr();
+			counter_= other.get_counter_ptr();
+			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
+			{
+				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			}
+		}
+	}
+
+	fn destructor()
+	{
+		unsafe
+		{
+			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
+			{
+				shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
+				if( $>(counter_).use_count_total == 0u )
+				{
+					memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
+				}
+			}
+		}
+	}
+
+	op=( mut this, this_type &imut other )
+	{
+		// Call copy constructor for other and move-assign copy to this.
+		this= this_type(other);
+	}
+
+	fn reset( mut this )
+	{
+		// Move value ot out "this", call destructor for it, construct default value in place of "this".
+		take(this);
+	}
+
+	fn lock( this ) : shared_ptr_type
+	{
+		unsafe
+		{
+			if( counter_ == nullptr</shared_ptr_impl::counter/>() || $>(counter_).use_count_strong == 0u )
+			{
+				return shared_ptr_type();
+			}
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
+			shared_ptr_impl::counter_inc( $>(counter_).use_count_strong );
+			return shared_ptr_type( value_, counter_ );
+		}
+	}
+
+public: // Methods for internal usage.
+	fn get_value_ptr( this ) unsafe : $(T)
+	{
+		return value_;
+	}
+
+	fn get_counter_ptr( this ) unsafe : $(shared_ptr_impl::counter)
+	{
+		return counter_;
+	}
+
+private:
+	type this_type= weak_ptr_base</ T, is_mutable />;
+	type shared_ptr_type= shared_ptr_base</ T, true, is_mutable />;
+	type value_ptr= $(T);
+	type counter_ptr= $(shared_ptr_impl::counter);
+	type lock_mut_t = shared_ptr_impl::lock_mut </T/>;
+	type lock_imut_t= shared_ptr_impl::lock_imut</T/>;
+
+private:
+	value_ptr value_= zero_init;
+	counter_ptr counter_= zero_init;
+}
+
+// All necessary type aliases.
+
+template</type T/> type shared_ptr_imut= shared_ptr_base</T, false, false/>;
+template</type T/> type shared_ptr_mut= shared_ptr_base</T, false, true/>;
+template</type T/> type shared_ptr_nullable_imut= shared_ptr_base</T, true, false/>;
+template</type T/> type shared_ptr_nullable_mut= shared_ptr_base</T, true, true/>;
+template</type T/> type weak_ptr_imut= weak_ptr_base</T, false/>;
+template</type T/> type weak_ptr_mut= weak_ptr_base</T, true/>;
+
+// Helper function for shared_ptr construction.
+template</type T/>
+fn make_shared_ptr( T mut value ) : shared_ptr_mut</T/>
+{
+	return shared_ptr_mut</T/>( move(value) );
+}
+
+namespace shared_ptr_impl
+{
+
+struct counter
+{
+	u32 use_count_total;
+	u32 use_count_strong; // always <= use_count_total
+	i32 lock_count; // 0 - not locked, positive value - locked as imut, -1 - locked as mut.
+}
+
+fn counter_inc( u32& mut c )
+{
+	// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+	++c;
+}
+
+fn counter_dec( u32& mut c )
+{
+	// Normally overflow is not possible here.
+	--c;
+}
+
+template</ type T />
+class lock_mut
+{
+public:
+	fn constructor( mut this'a', T &'b  mut value, $(counter) counter ) ' a <- b ' unsafe
+		( value_(value), counter_(counter) )
+	{
+		unsafe
+		{
+			halt if( $>(counter_).lock_count != 0 ); // halt if have any locks
+			$>(counter_).lock_count= -1;
+		}
+	}
+
+	fn destructor()
+	{
+		unsafe{  $>(counter_).lock_count= 0;  }
+	}
+
+	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
+	fn deref( mut this ) : T &'this  mut
+	{
+		unsafe
+		{
+			return $>( $<(value_) );
+		}
+	}
+
+private:
+	T & mut value_;
+	$(counter) counter_= zero_init;
+}
+
+template</ type T />
+class lock_imut
+{
+public:
+	fn constructor( mut this'a', T &'b imut value, $(counter) counter ) ' a <- b ' unsafe
+		( value_(value), counter_(counter) )
+	{
+		unsafe
+		{
+			halt if( $>(counter_).lock_count < 0 ); // halt if have mutable locks
+			// It's almost impossible to get counter owerflow here - so, ignore such possibility.
+			++$>(counter_).lock_count;
+		}
+	}
+
+	fn destructor()
+	{
+		unsafe{  --$>(counter_).lock_count;  }
+	}
+
+	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
+	fn deref( this ) : T &'this imut
+	{
+		unsafe
+		{
+			return $>($<(cast_mut(value_)));
+		}
+	}
+
+private:
+	T &imut value_;
+	$(counter) counter_= zero_init;
+}
+
+} // namespace shared_ptr_impl
+
+} // namespace ust

@@ -1,6 +1,6 @@
 //##success_test
 import "../ustlib/thread.u"
-import "../ustlib/shared_mt/shared_ptr_mt_mut.u"
+import "../ustlib/shared_ptr_mt.u"
 import "../ustlib/vector.u"
 
 fn Bar(){}

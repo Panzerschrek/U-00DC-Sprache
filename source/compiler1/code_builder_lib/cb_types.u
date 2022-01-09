@@ -199,7 +199,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 				}
 
 				out_param.value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-				out_param.t= ust::to_non_nullable( class_type );
+				out_param.t= class_type.try_to_non_nullable();
 			}
 		}
 		else

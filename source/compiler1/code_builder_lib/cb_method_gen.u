@@ -153,7 +153,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	{
 		var NamesScopeVariable base_variable
 		{
-			.t= ust::to_non_nullable(base_class),
+			.t= base_class.try_to_non_nullable(),
 			.is_mutable= true,
 			.llvm_value= CreateBaseClassFieldGEP( this_llvm_value, function_context ),
 		};
@@ -370,7 +370,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		auto dst_member_value= CreateBaseClassFieldGEP( dst_llvm_value, function_context );
 		auto src_member_value= CreateBaseClassFieldGEP( src_llvm_value, function_context );
 
-		BuildCopyConstructorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), src_loc );
+		BuildCopyConstructorPart( class_members_ptr, function_context, dst_member_value, src_member_value, base_class.try_to_non_nullable(), src_loc );
 	}
 
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
@@ -572,7 +572,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		auto dst_member_value= CreateBaseClassFieldGEP( dst_llvm_value, function_context );
 		auto src_member_value= CreateBaseClassFieldGEP( src_llvm_value, function_context );
 
-		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, ust::to_non_nullable(base_class), src_loc );
+		BuildCopyAssignmentOperatorPart( class_members_ptr, function_context, dst_member_value, src_member_value, base_class.try_to_non_nullable(), src_loc );
 	}
 
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )

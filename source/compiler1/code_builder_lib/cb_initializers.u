@@ -1281,7 +1281,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	{
 		var NamesScopeVariable base_variable
 		{
-			.t= ust::to_non_nullable(base_class),
+			.t= base_class.try_to_non_nullable(),
 			.is_mutable= true,
 			.llvm_value= CreateBaseClassFieldGEP( this_.llvm_value, function_context ),
 		};
@@ -1354,7 +1354,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		{
 			var NamesScopeVariable base_variable
 			{
-				.t= ust::to_non_nullable( base_class ),
+				.t= base_class.try_to_non_nullable(),
 				.is_mutable= true,
 				.llvm_value= CreateBaseClassFieldGEP( this_.llvm_value, function_context ),
 				.node_id= this_.node_id,

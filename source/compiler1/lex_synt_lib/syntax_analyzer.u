@@ -1,4 +1,4 @@
-import "/shared/shared_ptr_final_nullable.u"
+import "/shared_ptr.u"
 import "/string_conversions.u"
 import "/unordered_set.u"
 import "/keywords.uh"
@@ -3314,7 +3314,7 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 	}
 
 	var MacroVariablesMapsStack mut macro_variables_maps_stack;
-	macro_variables_maps_stack.push_back( ust::to_non_nullable(macro_variables_map_opt) );
+	macro_variables_maps_stack.push_back( macro_variables_map_opt.try_to_non_nullable() );
 
 	var UniqueMacroIdentifiersMap mut unique_macro_indentifiers_map;
 
@@ -3415,7 +3415,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 				{
 					return ust::shared_ptr_final_nullable</MacroVariablesMap/>();
 				}
-				element.sub_elements.push_back( ust::to_non_nullable(sub_variables_map_opt) );
+				element.sub_elements.push_back( sub_variables_map_opt.try_to_non_nullable() );
 			}
 		}
 		else if( match_element.kind == Macro::MatchElementKind::Repeated )
@@ -3433,7 +3433,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 					{
 						return ust::shared_ptr_final_nullable</MacroVariablesMap/>();
 					}
-					element.sub_elements.push_back( ust::to_non_nullable(sub_variables_map_opt) );
+					element.sub_elements.push_back( sub_variables_map_opt.try_to_non_nullable() );
 
 					// Process separator
 					if( match_element.lexem.lexem_type != Lexem::Type::EndOfFile )
@@ -3467,7 +3467,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 					{
 						return ust::shared_ptr_final_nullable</MacroVariablesMap/>();
 					}
-					element.sub_elements.push_back( ust::to_non_nullable(sub_variables_map_opt) );
+					element.sub_elements.push_back( sub_variables_map_opt.try_to_non_nullable() );
 
 					// Process separator
 					if( match_element.lexem.lexem_type != Lexem::Type::EndOfFile )

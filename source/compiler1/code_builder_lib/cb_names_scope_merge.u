@@ -172,7 +172,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		auto src_namespace= src.Get</NamesScope/>();
 		if( !dst_namespace.empty() )
 		{
-			NamesScopeMerge( ust::to_non_nullable(dst_namespace), src_namespace.try_lock_imut().deref() );
+			NamesScopeMerge( dst_namespace.try_to_non_nullable(), src_namespace.try_lock_imut().deref() );
 			return;
 		}
 	}

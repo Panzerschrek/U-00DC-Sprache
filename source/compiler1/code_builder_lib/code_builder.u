@@ -329,7 +329,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	// Merge namespaces. This must be done AFTER class table praparation.
 	foreach( child_node_index : source_graph_node.children )
 	{
-		auto ptr= ust::to_non_nullable( compiled_sources_cache_[child_node_index].names_scope );
+		auto ptr= compiled_sources_cache_[child_node_index].names_scope.try_to_non_nullable();
 		NamesScopeMerge( global_names_scope, ptr.lock_imut().deref() );
 	}
 
@@ -372,13 +372,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	if( !f_ptr.empty() )
 	{
 		// In case of access to functions set using function name, build only prototype, not full body.
-		BuildFunctionsSet( names_scope, ust::to_non_nullable( f_ptr ), false );
+		BuildFunctionsSet( names_scope, f_ptr.try_to_non_nullable(), false );
 
 		// Append "this" to functions set of this class.
 		auto class_type= names_scope.lock_imut().deref().GetClass();
 		if( !class_type.empty() &&
 			!function_context.this_.empty() &&
-			ust::to_non_nullable( class_type ) == function_context.this_.try_deref().t &&
+			class_type.try_to_non_nullable() == function_context.this_.try_deref().t &&
 			!function_context.whole_this_is_unavailable )
 		{
 			var ThisMethodsSet mut this_methods_set
@@ -532,14 +532,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto class_type_ptr= names_scope_value.Get</ClassType/>();
 	if( !class_type_ptr.empty() )
 	{
-		auto ptr_non_null= ust::to_non_nullable(class_type_ptr);
-		return Type( ptr_non_null );
+		return Type( class_type_ptr.try_to_non_nullable() );
 	}
 
 	auto enum_type_ptr= names_scope_value.Get</Enum/>();
 	if( !enum_type_ptr.empty() )
 	{
-		auto ptr_non_null= ust::to_non_nullable(enum_type_ptr);
+		auto ptr_non_null= enum_type_ptr.try_to_non_nullable();
 		BuildEnum( names_scope, ptr_non_null );
 		return Type( ptr_non_null );
 	}
@@ -547,7 +546,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto type_alias_ptr= names_scope_value.Get</TypeAlias/>();
 	if( !type_alias_ptr.empty() )
 	{
-		BuildTypeAlias( names_scope, ust::to_non_nullable(type_alias_ptr) );
+		BuildTypeAlias( names_scope, type_alias_ptr.try_to_non_nullable() );
 
 		if_var( &t : type_alias_ptr.try_lock_imut().deref().t )
 		{
@@ -558,7 +557,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto global_variable_ptr= names_scope_value.Get</GlobalVariable/>();
 	if( !global_variable_ptr.empty() )
 	{
-		BuildGlobalVariable( names_scope, ust::to_non_nullable(global_variable_ptr) );
+		BuildGlobalVariable( names_scope, global_variable_ptr.try_to_non_nullable() );
 
 		if_var( &v : global_variable_ptr.try_lock_imut().deref().variable )
 		{
@@ -582,7 +581,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto global_auto_variable_ptr= names_scope_value.Get</GlobalAutoVariable/>();
 	if( !global_auto_variable_ptr.empty() )
 	{
-		BuildGlobalAutoVariable( names_scope, ust::to_non_nullable(global_auto_variable_ptr) );
+		BuildGlobalAutoVariable( names_scope, global_auto_variable_ptr.try_to_non_nullable() );
 
 		if_var( &v : global_auto_variable_ptr.try_lock_imut().deref().variable )
 		{
@@ -630,7 +629,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto type_templates_set_ptr= names_scope_value.Get</TypeTemplatesSet/>();
 	if( !type_templates_set_ptr.empty() )
 	{
-		return ust::shared_ptr_imut</TypeTemplatesSet/>( ust::to_non_nullable( type_templates_set_ptr ) );
+		return ust::shared_ptr_imut</TypeTemplatesSet/>( type_templates_set_ptr.try_to_non_nullable() );
 	}
 
 	return ErrorValue();
@@ -737,7 +736,7 @@ fn CodeBuilder::ResolveValue(
 			}
 			if( !type_alias.empty() )
 			{
-				BuildTypeAlias( names_scope, ust::to_non_nullable(type_alias) );
+				BuildTypeAlias( names_scope, type_alias.try_to_non_nullable() );
 
 				if_var( &t : type_alias.try_lock_imut().deref().t )
 				{
@@ -768,18 +767,20 @@ fn CodeBuilder::ResolveValue(
 
 			if( !class_.empty() )
 			{
+				auto class_non_null= class_.try_to_non_nullable();
+
 				// We need to build class here, because class internal namespace may be filled in build process in case of inheritance.
 				// TODO - maybe not build it here if class have no parents?
-				BuildClass( ust::to_non_nullable(current_scope), ust::to_non_nullable( class_ ) );
+				BuildClass( current_scope.try_to_non_nullable(), class_non_null );
 
 				auto class_lock= class_.try_lock_imut();
 				auto& class_ref= class_lock.deref();
 				namespace_= class_ref.members;
 
-				if( u32( names_scope.lock_imut().deref().GetAccessFor( ust::to_non_nullable(class_) ) ) <
+				if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) <
 					u32( class_ref.GetMemberVisibility( name_component_name ) ) )
 				{
-					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, complex_name.src_loc, name_component_name, Type(ust::to_non_nullable(class_)).ToString() )
+					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, complex_name.src_loc, name_component_name, Type(class_non_null).ToString() )
 				}
 			}
 
@@ -798,8 +799,8 @@ fn CodeBuilder::ResolveValue(
 			}
 			else if( !enum_.empty() )
 			{
-				auto enum_non_null= ust::to_non_nullable(enum_);
-				BuildEnum( ust::to_non_nullable(current_scope), enum_non_null );
+				auto enum_non_null= enum_.try_to_non_nullable();
+				BuildEnum( current_scope.try_to_non_nullable(), enum_non_null );
 
 				auto lock= enum_.try_lock_imut();
 
@@ -846,7 +847,7 @@ fn CodeBuilder::ResolveValue(
 			auto functions_set= current_value.try_deref().Get</NamesScopeFunctionsSet/>();
 			if( !type_templates_set.empty() )
 			{
-				BuiltTypeTemplatesSet( ust::to_non_nullable(current_scope), ust::to_non_nullable(type_templates_set) );
+				BuiltTypeTemplatesSet( current_scope.try_to_non_nullable(), type_templates_set.try_to_non_nullable() );
 
 				if( skip_last_template_args && i + 1s == complex_name.tail.size()  )
 				{
@@ -856,7 +857,7 @@ fn CodeBuilder::ResolveValue(
 				auto generated_type= GenTemplateType(
 					names_scope,
 					function_context,
-					ust::to_non_nullable(type_templates_set),
+					type_templates_set.try_to_non_nullable(),
 					template_args.deref(),
 					complex_name.src_loc );
 				if( !generated_type.empty() )
@@ -875,7 +876,7 @@ fn CodeBuilder::ResolveValue(
 			}
 			else if( !functions_set.empty() )
 			{
-				BuildFunctionsSet( ust::to_non_nullable(current_scope), ust::to_non_nullable( functions_set ), false );
+				BuildFunctionsSet( current_scope.try_to_non_nullable(), functions_set.try_to_non_nullable(), false );
 				auto lock= functions_set.try_lock_imut();
 				auto& f= lock.deref();
 
@@ -919,7 +920,7 @@ fn CodeBuilder::ResolveValue(
 		}
 	}
 
-	return NamesScopeValueToValue( ust::to_non_nullable(current_scope), function_context, current_value.try_deref(), complex_name.src_loc );
+	return NamesScopeValueToValue( current_scope.try_to_non_nullable(), function_context, current_value.try_deref(), complex_name.src_loc );
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
@@ -1048,7 +1049,7 @@ fn CodeBuilder::PrepareFunction(
 	// Setup references pollution for copy methods.
 	if( !class_type.empty() )
 	{
-		auto class_type_non_null= ust::to_non_nullable( class_type );
+		auto class_type_non_null= class_type.try_to_non_nullable();
 		if( ( is_constructor && IsCopyConstructor( function_variable, class_type_non_null ) ) ||
 			( function_declaration.operator == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_variable, class_type_non_null ) ) )
 		{
@@ -1127,7 +1128,7 @@ fn CodeBuilder::PrepareFunction(
 		if( class_type.empty() ){ invalid_func= true; }
 		else
 		{
-			auto class_type_non_null= ust::to_non_nullable( class_type );
+			auto class_type_non_null= class_type.try_to_non_nullable();
 			if( is_constructor && ( IsDefaultConstructor( function_variable, class_type_non_null ) || IsCopyConstructor( function_variable, class_type_non_null ) ) )
 			{}
 			else if( function_declaration.operator == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_variable, class_type_non_null ) )
@@ -1285,7 +1286,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 		return;
 	}
 
-	auto class_type_non_null= ust::to_non_nullable( class_type );
+	auto class_type_non_null= class_type.try_to_non_nullable();
 
 	auto mut is_this_class= false;
 	foreach( & param : func_type.params )
@@ -1429,7 +1430,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
-	auto body_syntax_element_ptr= ust::to_non_nullable(func_variable.body_syntax_element);
+	auto body_syntax_element_ptr= func_variable.body_syntax_element.try_to_non_nullable();
 	var Synt::Function& body_syntax_element= body_syntax_element_ptr.deref();
 
 	unsafe
@@ -2077,14 +2078,14 @@ fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 	if_var( &class_type_ptr : t.GetClassType() )
 	{
 		// TODO - maybe names scope is not needed here?
-		auto class_parent_scope= ust::to_non_nullable( class_type_ptr.lock_imut().deref().members.lock_imut().deref().GetParent() );
+		auto class_parent_scope= class_type_ptr.lock_imut().deref().members.lock_imut().deref().GetParent().try_to_non_nullable();
 
 		BuildClass( class_parent_scope, class_type_ptr );
 		return class_type_ptr.lock_imut().deref().is_complete;
 	}
 	if_var( &enum_type_ptr : t.GetEnumType() )
 	{
-		auto enum_parent_scope= ust::to_non_nullable( enum_type_ptr.lock_imut().deref().names_scope.lock_imut().deref().GetParent() );
+		auto enum_parent_scope= enum_type_ptr.lock_imut().deref().names_scope.lock_imut().deref().GetParent().try_to_non_nullable();
 		BuildEnum( enum_parent_scope, enum_type_ptr );
 
 		return enum_type_ptr.lock_imut().deref().underlaying_type.llvm_type != LLVMTypeRef::Null;

@@ -53,7 +53,7 @@ import "code_builder.uh"
 ->
 <?
 	{
-		auto dependent_type_typeinfo= GetTypeinfoPrototype( ?dependent_type, ust::to_non_nullable(class_members.lock_imut().deref().GetParent()) );
+		auto dependent_type_typeinfo= GetTypeinfoPrototype( ?dependent_type, class_members.lock_imut().deref().GetParent().try_to_non_nullable() );
 		var ClassField mut class_field
 		{
 			.t= dependent_type_typeinfo.t,
@@ -304,7 +304,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	}
 
 	var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
-	var NamesScopePtr root_namespace= ust::to_non_nullable( class_members.lock_imut().deref().GetParent() );
+	var NamesScopePtr root_namespace= class_members.lock_imut().deref().GetParent().try_to_non_nullable();
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
 
@@ -592,7 +592,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 			auto field_ptr= member.value().Get</ClassField/>();
 			if( !field_ptr.empty() )
 			{
-				var ClassFieldForTypeinfo mut f{ .class_field= ust::to_non_nullable(field_ptr), .name= member.key() };
+				var ClassFieldForTypeinfo mut f{ .class_field= field_ptr.try_to_non_nullable(), .name= member.key() };
 				class_fields.push_back( move(f) );
 			}
 		}
@@ -743,11 +743,11 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 			}
 			else if( !class_ptr.empty() )
 			{
-				t= ust::to_non_nullable(class_ptr);
+				t= class_ptr.try_to_non_nullable();
 			}
 			else if( !enum_ptr.empty() )
 			{
-				t= ust::to_non_nullable(enum_ptr);
+				t= enum_ptr.try_to_non_nullable();
 			}
 			else
 			{
