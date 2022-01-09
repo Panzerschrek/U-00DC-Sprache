@@ -60,7 +60,7 @@ fn memory_allocate( size_type size_bytes ) unsafe : void &mut
 	memory_impl::allocation_size_check( size_bytes );
 	unsafe
 	{
-		auto ptr= malloc( size_bytes );
+		auto ptr= ust_memory_allocate_impl( size_bytes );
 		halt if( ptr == nullptr</void/>() );
 		return $>(ptr);
 	}
@@ -71,7 +71,7 @@ fn memory_reallocate( void& mem, size_type new_size_bytes ) unsafe : void &mut
 	memory_impl::allocation_size_check( new_size_bytes );
 	unsafe
 	{
-		auto ptr= realloc( $<(cast_mut(mem)), new_size_bytes );
+		auto ptr= ust_memory_reallocate_impl( $<(cast_mut(mem)), new_size_bytes );
 		halt if( ptr == nullptr</void/>() );
 		return $>(ptr);
 	}
@@ -79,7 +79,7 @@ fn memory_reallocate( void& mem, size_type new_size_bytes ) unsafe : void &mut
 
 fn memory_free( void& mem ) unsafe
 {
-	unsafe{  free( $<(cast_mut(mem)) );  }
+	unsafe{  ust_memory_free_impl( $<(cast_mut(mem)) );  }
 }
 
 fn memory_copy( void &mut dst, void & src, size_type size_bytes ) unsafe
@@ -174,12 +174,13 @@ fn allocation_size_check( size_type size )
 } // namespace ust
 
 // C standard library functions, used to implement memory functions for Ü.
-fn nomangle malloc( size_type size ) unsafe : $(void);
-fn nomangle free( $(void) ptr )unsafe ;
-fn nomangle realloc( $(void) ptr, size_type size ) unsafe : $(void);
 fn nomangle memcmp( $(void) a, $(void) b, size_type size ) unsafe : i32;
 
 // External implementation functions.
+
+fn nomangle ust_memory_allocate_impl( size_type size ) unsafe : $(void);
+fn nomangle ust_memory_reallocate_impl( $(void) ptr, size_type new_size ) unsafe : $(void);
+fn nomangle ust_memory_free_impl( $(void) ptr ) unsafe;
 
 fn nomangle ust_memory_copy_impl( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
 fn nomangle ust_memory_copy_align_1_impl ( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
