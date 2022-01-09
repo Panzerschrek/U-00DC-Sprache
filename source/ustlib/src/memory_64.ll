@@ -13,6 +13,7 @@ declare void @llvm.memcpy.p0i8.p0i8.i64(i8* nocapture writeonly, i8* nocapture r
 declare i8* @malloc( i64 )
 declare i8* @realloc( i8*, i64 )
 declare void @free( i8* )
+declare i32 @memcmp( i8*, i8*, i64 )
 
 ; Impl functions
 
@@ -93,6 +94,15 @@ define linkonce_odr void @ust_memory_copy_align_16_impl( %__U_void* %dst, %__U_v
 	%src_casted = bitcast %"__U_void"* %src to i8*
 	call void @llvm.memcpy.p0i8.p0i8.i64(i8* align 16 %dst_casted, i8* align 16 %src_casted, i64 %size, i1 false)
 	ret void
+}
+
+$ust_memory_compare_impl = comdat any
+define linkonce_odr i32 @ust_memory_compare_impl( %__U_void* %a, %__U_void* %b, i64 %size ) unnamed_addr comdat
+{
+	%a_casted = bitcast %"__U_void"* %a to i8*
+	%b_casted = bitcast %"__U_void"* %b to i8*
+	%res = call i32 @memcmp(i8* align 16 %a_casted, i8* align 16 %b_casted, i64 %size)
+	ret i32 %res
 }
 
 attributes #0 = { argmemonly nounwind }
