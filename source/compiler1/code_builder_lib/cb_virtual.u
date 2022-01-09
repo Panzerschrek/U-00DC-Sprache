@@ -114,7 +114,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 
 			var VirtualFunctionWithName mut f
 			{
-				.functions_set= ust::to_non_nullable( functions_set_ptr ),
+				.functions_set= functions_set_ptr.try_to_non_nullable(),
 				.index= i,
 				.name= class_member.key(),
 			};

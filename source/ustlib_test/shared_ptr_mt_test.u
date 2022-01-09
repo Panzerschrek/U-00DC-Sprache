@@ -226,12 +226,12 @@ fn nomangle main() : i32
 	}
 	{ // Nullable shared_ptr can be converted to non-nullable shared_ptr
 		var IntPtrNullableMut ptr0(35);
-		var IntPtrMut ptr1= ust::to_non_nullable(ptr0);
+		var IntPtrMut ptr1= ptr0.try_to_non_nullable();
 		halt if( !RefEq( ptr1.lock_imut().deref(), ptr0.try_lock_imut().deref() ) );
 	}
 	{ // Nullable shared_ptr can be converted to non-nullable shared_ptr
 		var IntPtrNullableImut ptr0(35);
-		var IntPtrImut ptr1= ust::to_non_nullable(ptr0);
+		var IntPtrImut ptr1= ptr0.try_to_non_nullable();
 		halt if( !RefEq( ptr1.lock_imut().deref(), ptr0.try_lock_imut().deref() ) );
 	}
 	//

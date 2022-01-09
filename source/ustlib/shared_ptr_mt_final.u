@@ -189,13 +189,6 @@ fn make_shared_ptr_mt_final( T mut value ) : shared_ptr_mt_final</T/>
 	return shared_ptr_mt_final</T/>( move(value) );
 }
 
-// Helper function for conversion to non-nullable type. TODO - remove it?
-template</ type T />
-fn to_non_nullable( shared_ptr_mt_final_base</T, true/> & ptr ) : shared_ptr_mt_final</T/>
-{
-	return ptr.try_to_non_nullable();
-}
-
 namespace shared_ptr_mt_final_impl
 {
 

@@ -365,7 +365,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
-		var Type base_type= ust::to_non_nullable(base_class);
+		var Type base_type= base_class.try_to_non_nullable();
 		var Variable mut base_
 		{
 			.t= base_type,
@@ -389,7 +389,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			break;
 		}
-		root_names_scope= ust::to_non_nullable( parent );
+		root_names_scope= parent.try_to_non_nullable();
 	}
 
 	var Type t= PrepareType( names_scope, function_context, typeinfo_.type_name );
@@ -1224,7 +1224,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						return ErrorValue();
 					}
 					this_value_corrected= CreateBaseClassFieldGEP( this_value_corrected, function_context );
-					current_class_type= ust::to_non_nullable( base_class );
+					current_class_type= base_class.try_to_non_nullable();
 				}
 			}
 
@@ -1311,7 +1311,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			auto functions_set_ptr= class_member.try_deref().Get</NamesScopeFunctionsSet/>();
 			if( !functions_set_ptr.empty() )
 			{
-				BuildFunctionsSet( class_type.lock_imut().deref().members, ust::to_non_nullable( functions_set_ptr ), false );
+				BuildFunctionsSet( class_type.lock_imut().deref().members, functions_set_ptr.try_to_non_nullable(), false );
 
 				var ThisMethodsSet mut this_methods_set{ .this_= variable };
 

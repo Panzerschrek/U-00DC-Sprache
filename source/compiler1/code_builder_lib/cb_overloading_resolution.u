@@ -733,7 +733,7 @@ fn CodeBuilder::GetOverloadedOperator(
 				auto functions_set_ptr= operators_value.Get</NamesScopeFunctionsSet/>();
 				if( !functions_set_ptr.empty() )
 				{
-					BuildFunctionsSet( class_members, ust::to_non_nullable( functions_set_ptr ), false );
+					BuildFunctionsSet( class_members, functions_set_ptr.try_to_non_nullable(), false );
 
 					auto functions_set_lock= functions_set_ptr.try_lock_imut();
 					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.deref().functions_set, args, false, names_scope, src_loc, true, false ) )

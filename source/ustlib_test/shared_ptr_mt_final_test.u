@@ -32,7 +32,7 @@ fn nomangle main() : i32
 	}
 	{ //Can convert nullable to non-nullable
 		var IntPtrNullable ptr0(92);
-		var IntPtr ptr1= ust::to_non_nullable(ptr0);
+		var IntPtr ptr1= ptr0.try_to_non_nullable();
 		halt if( ptr0 != ptr1 );
 		halt if( ptr1.deref() != 92 );
 		halt if( !ust::ref_cmp_eq( ptr0.try_deref(), ptr1.deref() ) );
