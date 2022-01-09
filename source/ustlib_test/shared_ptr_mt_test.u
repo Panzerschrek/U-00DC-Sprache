@@ -1,10 +1,5 @@
 //##success_test
-import "../ustlib/shared_mt/shared_ptr_mt_mut.u"
-import "../ustlib/shared_mt/shared_ptr_mt_imut.u"
-import "../ustlib/shared_mt/shared_ptr_mt_nullable_mut.u"
-import "../ustlib/shared_mt/shared_ptr_mt_nullable_imut.u"
-import "../ustlib/shared_mt/weak_ptr_mt_mut.u"
-import "../ustlib/shared_mt/weak_ptr_mt_imut.u"
+import "../ustlib/shared_ptr_mt.u"
 
 import "../ustlib/box.u"
 import "../ustlib/box_nullable.u"
