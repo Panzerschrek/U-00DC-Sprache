@@ -30,7 +30,21 @@ fn nomangle main() : i32
 		var IntPtrNullableImut ptr_nullable(0);
 
 		ptr.lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
-		ptr_nullable.lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_nullable.try_lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Nullable pointers have no "lock" methods (only "try_lock" methods).
+		var IntPtrNullableMut ptr_mut(0);
+		var IntPtrNullableImut ptr_imut(0);
+
+		ptr_mut.lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_imut.lock_imut(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // Non-nullable pointers have no "try_lock" methods (only "lock" methods).
+		var IntPtrMut ptr_mut(0);
+		var IntPtrImut ptr_imut(0);
+
+		ptr_mut.try_lock_mut(); //##expect_error CouldNotSelectOverloadedFunction
+		ptr_imut.try_lock_imut(); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	{ // Reference can not outlive lock.
 		var IntPtrMut mut ptr_mut(0);
@@ -49,6 +63,10 @@ fn nomangle main() : i32
 		weak_ptr_mut .lock_imut(); //##expect_error NameNotFound
 		weak_ptr_imut.lock_mut (); //##expect_error NameNotFound
 		weak_ptr_imut.lock_imut(); //##expect_error NameNotFound
+		weak_ptr_mut .try_lock_mut (); //##expect_error NameNotFound
+		weak_ptr_mut .try_lock_imut(); //##expect_error NameNotFound
+		weak_ptr_imut.try_lock_mut (); //##expect_error NameNotFound
+		weak_ptr_imut.try_lock_imut(); //##expect_error NameNotFound
 	}
 	return 0;
 }
