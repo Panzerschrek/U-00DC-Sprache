@@ -33,6 +33,25 @@ fn int_to_ref( size_type i ) unsafe : T&
 	}
 }
 
+// Base integer to raw pointer and back conversion functions.
+template</type T/>
+fn ptr_to_int( $(T) v ) : size_type
+{
+	unsafe
+	{
+		return cast_ref_unsafe</size_type/>(v); // Cast reference to pointer to reference to integer, read integer value.
+	}
+}
+
+template</type T/>
+fn int_to_ptr( size_type i ) unsafe : $(T)
+{
+	unsafe
+	{
+		return cast_ref_unsafe</$(T)/>(i); // Cast reference to integer to reference to pointer, read pointer value.
+	}
+}
+
 // Allocation-deallocation functions.
 // If allocation function can not allocate memory block with requested size - program will be halted.
 

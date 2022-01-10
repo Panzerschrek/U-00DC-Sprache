@@ -19,5 +19,21 @@ fn nomangle main() : i32
 		halt if( ref != num );
 	}
 
+	unsafe
+	{
+		// int -> ptr -> int must save value
+		var size_type mut num(9684);
+		halt if( ust::ptr_to_int( ust::int_to_ptr</void/>( num ) ) != num );
+	}
+
+	unsafe
+	{
+		// ptr -> int -> ptr must save value
+		var f32 mut num= 65.54f;
+		auto ptr_num= ust::ptr_to_int( $<(num) );
+		var $(f32) ptr= ust::int_to_ptr</f32/>( ptr_num );
+		halt if( $>(ptr) != num );
+	}
+
 	return 0;
 }
