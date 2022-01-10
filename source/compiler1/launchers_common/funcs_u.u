@@ -501,7 +501,7 @@ public:
 				vfs_interface_.this_,
 				full_file_path_view,
 				IVfsInterface::FillStringCallback(FillStringCallback),
-				ust::ref_to_int( result  ) );
+				ust::ref_to_int( result ) );
 			if( ok )
 			{
 				return move(result);
