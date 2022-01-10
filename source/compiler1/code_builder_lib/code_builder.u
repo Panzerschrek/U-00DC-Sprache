@@ -76,7 +76,7 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 		fundamental_llvm_types_.bool_= LLVMInt1TypeInContext( llvm_context_ );
 
 		fundamental_llvm_types_.void_= LLVMStructCreateNamed( llvm_context_, "__U_void\0"[0] );
-		LLVMStructSetBody( fundamental_llvm_types_.void_, LLVMTypeRef::Null, 0u, LLVMBool::False );
+		LLVMStructSetBody( fundamental_llvm_types_.void_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
 
 		fundamental_llvm_types_.int_ptr= LLVMIntPtrTypeInContext( llvm_context_, data_layout_ );
 	}
@@ -106,13 +106,13 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 
 	unsafe // Prepare dummy function.
 	{
-		auto global_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, LLVMTypeRef::Null, 0u, LLVMBool::False );
+		auto global_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
 		global_llvm_function_= LLVMAddFunction( module_, "\0"[0], global_function_llvm_type );
 	}
 
 	unsafe // Prepare halt function.
 	{
-		auto halt_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, LLVMTypeRef::Null, 0u, LLVMBool::False );
+		auto halt_function_llvm_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
 		halt_function_= LLVMAddFunction( module_, "__U_halt\0"[0], halt_function_llvm_type );
 	}
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "noreturn" );
@@ -128,17 +128,17 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 			var u32 lifetime_end_id = LLVMLookupIntrinsicID( lifetime_end_name[0], typeinfo</typeof(lifetime_end_name)/>.element_count );
 
 			lifetime_function_arg_type_= LLVMPointerType( fundamental_llvm_types_.u8_, 0u );
-			lifetime_start_intrinsic_= LLVMGetIntrinsicDeclaration( module_, lifetime_start_id, lifetime_function_arg_type_, 1s );
-			lifetime_end_intrinsic_= LLVMGetIntrinsicDeclaration( module_, lifetime_end_id, lifetime_function_arg_type_, 1s );
+			lifetime_start_intrinsic_= LLVMGetIntrinsicDeclaration( module_, lifetime_start_id, $<(lifetime_function_arg_type_), 1s );
+			lifetime_end_intrinsic_= LLVMGetIntrinsicDeclaration( module_, lifetime_end_id, $<(lifetime_function_arg_type_), 1s );
 		}
 	}
 	if( create_lifetimes_ && generate_lifetime_start_end_debug_calls_ )
 	{
 		unsafe
 		{
-			var LLVMTypeRef arg_type= LLVMPointerType( fundamental_llvm_types_.u8_, 0u );
+			var LLVMTypeRef mut arg_type= LLVMPointerType( fundamental_llvm_types_.u8_, 0u );
 			var LLVMTypeRef ret_type= fundamental_llvm_types_.void_for_ret_;
-			var LLVMTypeRef function_type= LLVMFunctionType( ret_type, arg_type, 1u, LLVMBool::False );
+			var LLVMTypeRef function_type= LLVMFunctionType( ret_type, $<(arg_type), 1u, LLVMBool::False );
 
 			lifetime_start_debug_func_= LLVMAddFunction( module_, "__U_debug_lifetime_start\0"[0], function_type );
 			lifetime_end_debug_func_= LLVMAddFunction( module_, "__U_debug_lifetime_end\0"[0], function_type );
@@ -198,11 +198,9 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 			auto llvm_type= typeinfo_cache_[i].v.t.GetLLVMType();
 			if( LLVMIsOpaqueStruct( llvm_type ) == LLVMBool::True )
 			{
-				auto dummy_type= LLVMTypeRef::Null;
-				LLVMStructSetBody( llvm_type, dummy_type, 0u, LLVMBool::False );
+				LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
 
-				auto dummy_constant= LLVMValueRef::Null;
-				auto initializer= LLVMConstNamedStruct( llvm_type, dummy_constant, 0u );
+				auto initializer= LLVMConstNamedStruct( llvm_type, ust::nullptr</LLVMValueRef/>(), 0u );
 				LLVMSetInitializer( typeinfo_cache_[i].v.llvm_value, initializer );
 			}
 		}
@@ -2265,7 +2263,7 @@ fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_
 		LLVMSetMetadata(
 			load_instruction,
 			LLVMGetMDKindIDInContext( llvm_context_, name[0], u32( typeinfo</typeof(name)/>.element_count ) ),
-			LLVMMetadataAsValue( llvm_context_, LLVMMDNodeInContext2( llvm_context_, LLVMMetadataRef::Null, 0s ) ) );
+			LLVMMetadataAsValue( llvm_context_, LLVMMDNodeInContext2( llvm_context_, ust::nullptr</LLVMMetadataRef/>(), 0s ) ) );
 	}
 }
 
@@ -2333,13 +2331,13 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 		auto mut sub_ref= LLVMValueRef::Null;
 		unsafe
 		{
-			var [ LLVMValueRef, 2 ] indexes
+			var [ LLVMValueRef, 2 ] mut indexes
 			[
 				GetZeroGEPIndex(),
 				LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
 			];
 
-			sub_ref= LLVMBuildGEP( function_context.llvm_ir_builder, ref, indexes[0], 2u, "\0"[0] );
+			sub_ref= LLVMBuildGEP( function_context.llvm_ir_builder, ref, $<(indexes[0]), 2u, "\0"[0] );
 		}
 
 		if( parent.class_ == dst_type )
@@ -2360,13 +2358,13 @@ fn CodeBuilder::CreateFieldGEP( this, LLVMValueRef value, ClassField& field, Fun
 	auto op_name_nt= "." + field.syntax_element.deref().name + "\0";
 	unsafe
 	{
-		var [ LLVMValueRef, 2 ] indexes
+		var [ LLVMValueRef, 2 ] mut indexes
 		[
 			GetZeroGEPIndex(),
 			LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
 		];
 
-		return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, op_name_nt.front() );
+		return LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, op_name_nt.front() );
 	}
 }
 
@@ -2374,25 +2372,25 @@ fn CodeBuilder::CreateParentFieldGEP( this, LLVMValueRef value, ClassType::Paren
 {
 	unsafe
 	{
-		var [ LLVMValueRef, 2 ] indexes
+		var [ LLVMValueRef, 2 ] mut indexes
 		[
 			GetZeroGEPIndex(),
 			LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
 		];
 
-		return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "\0"[0] );
+		return LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, "\0"[0] );
 	}
 }
 
 fn CodeBuilder::CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef
 {
-	var [ LLVMValueRef, 2 ] indexes
+	var [ LLVMValueRef, 2 ] mut indexes
 	[
 		GetZeroGEPIndex(),
 		GetZeroGEPIndex(), // Base class is always zero field.
 	];
 
-	unsafe{  return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, ".base\0"[0] );  }
+	unsafe{  return LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, ".base\0"[0] );  }
 }
 
 fn CodeBuilder::CreateTupleElementGEP( this, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef
@@ -2400,13 +2398,13 @@ fn CodeBuilder::CreateTupleElementGEP( this, LLVMValueRef value, size_type eleme
 	auto op_name_nt= "[" + ust::to_string8(element_index) + "]\0";
 	unsafe
 	{
-		var [ LLVMValueRef, 2 ] indexes
+		var [ LLVMValueRef, 2 ] mut indexes
 		[
 			GetZeroGEPIndex(),
 			LLVMConstInt( fundamental_llvm_types_.u32_, u64(element_index), LLVMBool::False )
 		];
 
-		return LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, op_name_nt.front() );
+		return LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, op_name_nt.front() );
 	}
 }
 
@@ -2421,12 +2419,12 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 			auto length= LLVMGetArrayLength( constant_type );
 			for( auto mut i= 0u; i < length; ++i )
 			{
-				var [ LLVMValueRef, 2 ] indexes
+				var [ LLVMValueRef, 2 ] mut indexes
 				[
 					GetZeroGEPIndex(),
 					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
 				];
-				auto element_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr, indexes[0], 2u, ".\0"[0] );
+				auto element_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr, $<(indexes[0]), 2u, ".\0"[0] );
 
 				auto constant_element= LLVMConstExtractValue( constant, i, 1u );
 
@@ -2438,12 +2436,12 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 			auto length= LLVMCountStructElementTypes( constant_type );
 			for( auto mut i= 0u; i < length; ++i )
 			{
-				var [ LLVMValueRef, 2 ] indexes
+				var [ LLVMValueRef, 2 ] mut indexes
 				[
 					GetZeroGEPIndex(),
 					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
 				];
-				auto element_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr, indexes[0], 2u, ".\0"[0] );
+				auto element_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr, $<(indexes[0]), 2u, ".\0"[0] );
 
 				auto constant_element= LLVMConstExtractValue( constant, i, 1u );
 
@@ -2522,14 +2520,14 @@ fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_contex
 
 		var u64 size_of= LLVMABISizeOfType( data_layout_, t );
 		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool::False );
-		var LLVMValueRef ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, "\0"[0] );
+		var LLVMValueRef mut ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, "\0"[0] );
 
-		var [ LLVMValueRef, 2 ] args[ size_of_value, ptr_converted ];
-		LLVMBuildCall( function_context.llvm_ir_builder, lifetime_start_intrinsic_, args[0], 2u, "\0"[0] );
+		var [ LLVMValueRef, 2 ] mut args[ size_of_value, ptr_converted ];
+		LLVMBuildCall( function_context.llvm_ir_builder, lifetime_start_intrinsic_, $<(args[0]), 2u, "\0"[0] );
 
 		if( generate_lifetime_start_end_debug_calls_ )
 		{
-			LLVMBuildCall( function_context.llvm_ir_builder, lifetime_start_debug_func_, ptr_converted, 1u, "\0"[0] );
+			LLVMBuildCall( function_context.llvm_ir_builder, lifetime_start_debug_func_, $<(ptr_converted), 1u, "\0"[0] );
 		}
 	}
 }
@@ -2556,14 +2554,14 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 
 		var u64 size_of= LLVMABISizeOfType( data_layout_, t );
 		var LLVMValueRef size_of_value= LLVMConstInt( fundamental_llvm_types_.u64_, size_of, LLVMBool::False );
-		var LLVMValueRef ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, "\0"[0] );
+		var LLVMValueRef mut ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, "\0"[0] );
 
-		var [ LLVMValueRef, 2 ] args[ size_of_value, ptr_converted ];
-		LLVMBuildCall( function_context.llvm_ir_builder, lifetime_end_intrinsic_, args[0], 2u, "\0"[0] );
+		var [ LLVMValueRef, 2 ] mut args[ size_of_value, ptr_converted ];
+		LLVMBuildCall( function_context.llvm_ir_builder, lifetime_end_intrinsic_, $<(args[0]), 2u, "\0"[0] );
 
 		if( generate_lifetime_start_end_debug_calls_ )
 		{
-			LLVMBuildCall( function_context.llvm_ir_builder, lifetime_end_debug_func_, ptr_converted, 1u, "\0"[0] );
+			LLVMBuildCall( function_context.llvm_ir_builder, lifetime_end_debug_func_, $<(ptr_converted), 1u, "\0"[0] );
 		}
 	}
 }

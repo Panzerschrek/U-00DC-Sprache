@@ -43,7 +43,7 @@ fn ConstexprFunctionEvaluator::Evaluate( mut this, LLVMValueRef function, ust::a
 			U1_ConstexprFunctionEvaluatorEvaluate(
 				impl_,
 				function,
-				args.front_unchecked(),
+				args.data(),
 				args.size(),
 				ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
 				cast_ref_unsafe</void/>( result.errors ) );

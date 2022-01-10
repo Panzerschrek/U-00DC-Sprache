@@ -732,9 +732,9 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 
 				unsafe
 				{
-					var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), counter_value ];
-					dst_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst, indexes[0], 2u, "[]\0"[0] );
-					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
+					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
+					dst_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst, $<(indexes[0]), 2u, "[]\0"[0] );
+					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, $<(indexes[0]), 2u, "[]\0"[0] );
 				}
 
 				BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
@@ -778,8 +778,8 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 				// Call it.
 				unsafe
 				{
-					var[ LLVMValueRef, 2 ] llvm_args[ dst, src ];
-					LLVMBuildCall( function_context.llvm_ir_builder, constructor_.llvm_function, llvm_args[0], 2u, "\0"[0] );
+					var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
+					LLVMBuildCall( function_context.llvm_ir_builder, constructor_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] );
 				}
 				break;
 			}
@@ -826,9 +826,9 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 
 				unsafe
 				{
-					var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), counter_value ];
-					dst_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst, indexes[0], 2u, "[]\0"[0] );
-					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, indexes[0], 2u, "[]\0"[0] );
+					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
+					dst_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst, $<(indexes[0]), 2u, "[]\0"[0] );
+					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, $<(indexes[0]), 2u, "[]\0"[0] );
 				}
 
 				BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
@@ -872,8 +872,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 				// Call it.
 				unsafe
 				{
-					var[ LLVMValueRef, 2 ] llvm_args[ dst, src ];
-					LLVMBuildCall( function_context.llvm_ir_builder, operator_.llvm_function, llvm_args[0], 2u, "\0"[0] );
+					var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
+					LLVMBuildCall( function_context.llvm_ir_builder, operator_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] );
 				}
 				break;
 			}
@@ -896,8 +896,8 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 
 				unsafe
 				{
-					var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), counter_value ];
-					element_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, indexes[0], 2u, "[]\0"[0] );
+					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
+					element_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, "[]\0"[0] );
 				}
 
 				BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type, src_loc );
@@ -930,7 +930,8 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 		// Call it.
 		unsafe
 		{
-			LLVMBuildCall( function_context.llvm_ir_builder, destructor_.llvm_function, value, 1u, "\0"[0] );
+			auto mut v= value;
+			LLVMBuildCall( function_context.llvm_ir_builder, destructor_.llvm_function, $<(v), 1u, "\0"[0] );
 		}
 	}
 }

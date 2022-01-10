@@ -774,7 +774,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		unsafe
 		{
 			auto phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, LLVMPointerType( result.t.GetLLVMType(), 0u ), "select_result\0"[0] );
-			LLVMAddIncoming( phi_node, branches_reference_values[0], branches_end_blocks[0], 2u );
+			LLVMAddIncoming( phi_node, $<(branches_reference_values[0]), $<(branches_end_blocks[0]), 2u );
 			result.llvm_value= phi_node;
 		}
 	}
@@ -986,7 +986,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, halt_block );
 					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, halt_block );
 
-					LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, LLVMValueRef::Null, 0u, "\0"[0] );
+					LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
 					LLVMBuildUnreachable( function_context.llvm_ir_builder );
 
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, ok_block );
@@ -1004,8 +1004,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			unsafe
 			{
-				var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), index_value ];
-				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] ); // TODO - maybe add "inbounds" attribute?
+				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), index_value ];
+				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ); // TODO - maybe add "inbounds" attribute?
 			}
 
 			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
@@ -1697,7 +1697,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
-			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_value, index_value, 1u, "+\0"[0] );
+			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_value, $<(index_value), 1u, "+\0"[0] );
 		}
 	}
 	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() && !r_raw_pointer_type.empty() )
@@ -1788,9 +1788,9 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 					sub_value= LLVMBuildZExt( function_context.llvm_ir_builder, sub_value, dst_type, "\0"[0] );
 				}
 			}
-			auto index_negative= LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, "\0"[0] );
+			auto mut index_negative= LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, "\0"[0] );
 
-			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, l_in_register, index_negative, 1u, "-\0"[0] );
+			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, l_in_register, $<(index_negative), 1u, "-\0"[0] );
 		}
 	}
 	else if(
@@ -2234,9 +2234,9 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 
 		phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, "\0"[0] );
 
-		var [ LLVMValueRef, 2 ] incoming_values[ l_var_in_register, r_var_in_register ];
-		var [ LLVMBasicBlockRef, 2 ] incoming_blocks[ l_part_block, r_part_end_block ];
-		LLVMAddIncoming( phi_node, incoming_values[0], incoming_blocks[0], 2u );
+		var [ LLVMValueRef, 2 ] mut incoming_values[ l_var_in_register, r_var_in_register ];
+		var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ l_part_block, r_part_end_block ];
+		LLVMAddIncoming( phi_node, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
 	}
 
 	var Variable mut result
@@ -3008,7 +3008,7 @@ fn CodeBuilder::DoCallFunction(
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
 		{
-			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front_unchecked(), u32(llvm_args.size()), "\0"[0] );
+			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.data(), u32(llvm_args.size()), "\0"[0] );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
 			else if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
 			{

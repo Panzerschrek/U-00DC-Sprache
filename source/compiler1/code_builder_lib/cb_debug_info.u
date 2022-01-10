@@ -252,7 +252,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 				LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
 				LLVMDIFlags(0),
 				LLVMMetadataRef::Null, // DerivedFrom
-				LLVMMetadataRef::Null, 0u, // elements
+				ust::nullptr</LLVMMetadataRef/>(), 0u, // elements
 				0u, // RuntimeLang
 				LLVMMetadataRef::Null,// VTableHolder
 				"\0"c8, 0s);
@@ -281,12 +281,13 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef
 {
 	unsafe
 	{
+		auto mut subrange= LLVMDIBuilderGetOrCreateSubrange( debug_info_.builder, 0i64, i64(t.element_count) );
 		return LLVMDIBuilderCreateArrayType(
 			debug_info_.builder,
 			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u,
 			CreateDIType( t.element_type ),
-			LLVMDIBuilderGetOrCreateSubrange( debug_info_.builder, 0i64, i64(t.element_count) ), 1u );
+			$<(subrange), 1u );
 	}
 }
 
@@ -334,7 +335,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
 			LLVMDIFlags(0),
 			LLVMMetadataRef::Null, // DerivedFrom
-			elements.front_unchecked(), u32(elements.size()),
+			elements.data(), u32(elements.size()),
 			0u, // RuntimeLang
 			LLVMMetadataRef::Null,// VTableHolder
 			"\0"c8, 0s);
@@ -403,7 +404,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 		return LLVMDIBuilderCreateSubroutineType(
 			debug_info_.builder,
 			debug_info_.source_file_entries.front(),
-			di_types.front_unchecked(), u32( di_types.size() ),
+			di_types.data(), u32( di_types.size() ),
 			LLVMDIFlags(0) );
 	}
 }
@@ -526,7 +527,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 			LLVMABIAlignmentOfType( data_layout_, class_type.llvm_type ) * 8u32,
 			LLVMDIFlags(0),
 			LLVMMetadataRef::Null, // DerivedFrom
-			elements.front_unchecked(), u32(elements.size()),
+			elements.data(), u32(elements.size()),
 			0u, // RuntimeLang
 			LLVMMetadataRef::Null,// VTableHolder
 			"\0"c8, 0s);
@@ -580,7 +581,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 			src_loc.GetLine(),
 			LLVMABISizeOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u32,
-			elements.front_unchecked(), u32(elements.size()),
+			elements.data(), u32(elements.size()),
 			CreateDITypeImpl(enum_.underlaying_type) );
 
 		debug_info_.enums_di_types.insert( t, di_type );

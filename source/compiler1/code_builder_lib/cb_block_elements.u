@@ -1601,7 +1601,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	unsafe
 	{
-		LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, LLVMValueRef::Null, 0u, "\0"[0] );
+		LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
 		LLVMBuildUnreachable( function_context.llvm_ir_builder );
 	}
 
@@ -1634,7 +1634,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, true_block );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, true_block );
 
-		LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, LLVMValueRef::Null, 0u, "\0"[0] );
+		LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
 		LLVMBuildUnreachable( function_context.llvm_ir_builder );
 
 		// False branch
@@ -1723,8 +1723,8 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		unsafe
 		{
 			var LLVMValueRef
-				delta_value= LLVMConstInt( size_type_.GetLLVMType(), u64(i64(delta)), LLVMBool::True ),
-				result_value= LLVMBuildGEP( function_context.llvm_ir_builder, pointer_value, delta_value, 1u, op_name[0] );
+				mut delta_value= LLVMConstInt( size_type_.GetLLVMType(), u64(i64(delta)), LLVMBool::True ),
+				result_value= LLVMBuildGEP( function_context.llvm_ir_builder, pointer_value, $<(delta_value), 1u, op_name[0] );
 			LLVMBuildStore( function_context.llvm_ir_builder, result_value, variable.llvm_value );
 		}
 	}
