@@ -484,7 +484,7 @@ public:
 				file_path_view,
 				parent_file_path_normalized_view,
 				IVfsInterface::FillStringCallback(FillStringCallback),
-				ust::ref_to_int( cast_ref_unsafe</void/>( result ) ) );
+				ust::ref_to_int( result ) );
 			return move(result);
 		}
 	}
@@ -501,7 +501,7 @@ public:
 				vfs_interface_.this_,
 				full_file_path_view,
 				IVfsInterface::FillStringCallback(FillStringCallback),
-				ust::ref_to_int( cast_ref_unsafe</void/>( result ) ) );
+				ust::ref_to_int( result  ) );
 			if( ok )
 			{
 				return move(result);
@@ -515,7 +515,7 @@ private:
 	{
 		unsafe
 		{
-			auto &mut str= cast_mut(cast_ref_unsafe</ust::string8/>(ust::int_to_ref(user_data)));
+			auto &mut str= cast_mut( ust::int_to_ref</ust::string8/>(user_data) );
 			str= U1::StringToArrayView( result_path_normalized.data, result_path_normalized.size );
 		}
 	}

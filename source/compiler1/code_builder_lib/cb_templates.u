@@ -757,7 +757,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 	var TypeTemplatePtr& type_template_ptr= template_args_evaluation_result.type_template;
 
 	var size_type mut int_ptr= zero_init;
-	unsafe{  int_ptr= ust::ref_to_int( cast_ref_unsafe</void/>( type_template_ptr.deref() ) );  }
+	unsafe{  int_ptr= ust::ref_to_int( type_template_ptr.deref() );  }
 	auto template_key=
 		ust::to_string8( int_ptr ) +
 		mangler_.deref().MangleTemplateArgs( template_args_evaluation_result.signature_args );
@@ -1051,7 +1051,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 	// Use combination of template args (not signature params) and template pointer. This combination should be unique.
 	var size_type mut int_ptr= zero_init;
-	unsafe{  int_ptr= ust::ref_to_int( cast_ref_unsafe</void/>( function_template_ptr.deref() ) );  }
+	unsafe{  int_ptr= ust::ref_to_int( function_template_ptr.deref() );  }
 	auto template_key=
 		ust::to_string8( int_ptr ) +
 		mangler_.deref().MangleTemplateArgs( result_template_args );
@@ -1167,7 +1167,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	{
 		unsafe
 		{
-			cache_key+= ust::to_string8( ust::ref_to_int( cast_ref_unsafe</void/>( function_template_ptr.deref() ) ) );
+			cache_key+= ust::to_string8( ust::ref_to_int( function_template_ptr.deref() ) );
 		}
 		cache_key+= "_";
 	}

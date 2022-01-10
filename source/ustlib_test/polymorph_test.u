@@ -15,7 +15,7 @@ fn RefEq( A& a, B& b ) : bool
 {
 	unsafe
 	{
-		return ust::ref_to_int( cast_ref_unsafe</void/>(a) ) == ust::ref_to_int( cast_ref_unsafe</void/>(b) );
+		return ust::ref_to_int( a ) == ust::ref_to_int( b );
 	}
 }
 
