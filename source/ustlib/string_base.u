@@ -245,6 +245,12 @@ public:
 		return this_type( range().subrange( start_index, end_index ) );
 	}
 
+	// Access raw data.
+	fn data( mut this ) unsafe : $(char_type)
+	{
+		return ptr_;
+	}
+
 	// compare
 
 	op==( this_type& l, this_type& r ) : bool
