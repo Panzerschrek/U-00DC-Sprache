@@ -64,7 +64,7 @@ fn RefEq( T& a, T& b ) :  bool
 {
 	unsafe
 	{
-		return ust::ref_to_int( cast_ref_unsafe</void/>(a) ) == ust::ref_to_int( cast_ref_unsafe</void/>(b) );
+		return ust::ref_to_int( a ) == ust::ref_to_int( b );
 	}
 }
 
@@ -235,14 +235,14 @@ fn nomangle main() : i32
 			var ust::shared_ptr_mut</Impl/> mut ptr0( Impl() );
 			var ust::shared_ptr_mut</I0/> ptr1(ptr0);
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref()  ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 		{
 			var ust::shared_ptr_mut</Impl/> mut ptr0( Impl() );
 			var ust::shared_ptr_mut</I1/> ptr1(ptr0);
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 	}
@@ -251,14 +251,14 @@ fn nomangle main() : i32
 			var ust::shared_ptr_imut</Impl/> mut ptr0( Impl() );
 			var ust::shared_ptr_imut</I0/> ptr1(ptr0);
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 		{
 			var ust::shared_ptr_imut</Impl/> mut ptr0( Impl() );
 			var ust::shared_ptr_imut</I1/> ptr1(ptr0);
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 	}
@@ -267,14 +267,14 @@ fn nomangle main() : i32
 			var ust::shared_ptr_nullable_mut</Impl/> mut ptr0( Impl() );
 			var ust::shared_ptr_nullable_mut</I0/> ptr1(ptr0);
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.try_lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.try_lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 		{
 			var ust::shared_ptr_nullable_mut</Impl/> mut ptr0( Impl() );
 			var ust::shared_ptr_nullable_mut</I1/> ptr1(ptr0);
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.try_lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.try_lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 	}
@@ -283,14 +283,14 @@ fn nomangle main() : i32
 			var ust::shared_ptr_nullable_imut</Impl/> mut ptr0( Impl() );
 			var ust::shared_ptr_nullable_imut</I0/> ptr1(ptr0);
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.try_lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.try_lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 		{
 			var ust::shared_ptr_nullable_imut</Impl/> mut ptr0( Impl() );
 			var ust::shared_ptr_nullable_imut</I1/> ptr1(ptr0);
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.try_lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr1.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.try_lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 	}
@@ -301,7 +301,7 @@ fn nomangle main() : i32
 			var ust::weak_ptr_mut</I0/> ptr2(ptr1);
 			var ust::shared_ptr_nullable_mut</I0/> ptr3(ptr2.lock());
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 		{
@@ -310,7 +310,7 @@ fn nomangle main() : i32
 			var ust::weak_ptr_mut</I1/> ptr2(ptr1);
 			var ust::shared_ptr_nullable_mut</I1/> ptr3(ptr2.lock());
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 	}
@@ -321,7 +321,7 @@ fn nomangle main() : i32
 			var ust::weak_ptr_imut</I0/> ptr2(ptr1);
 			var ust::shared_ptr_nullable_imut</I0/> ptr3(ptr2.lock());
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 		{
@@ -330,7 +330,7 @@ fn nomangle main() : i32
 			var ust::weak_ptr_imut</I1/> ptr2(ptr1);
 			var ust::shared_ptr_nullable_imut</I1/> ptr3(ptr2.lock());
 
-			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( cast_ref_unsafe</void/>( ptr0.lock_imut().deref() ) ) );  }
+			unsafe{  halt if( ust::ref_to_int( ust::polymorph_restore_original_ref( ptr3.try_lock_imut().deref() ) ) != ust::ref_to_int( ptr0.lock_imut().deref() ) );  }
 			move(ptr0); // Let casted ptr free shared object.
 		}
 	}
