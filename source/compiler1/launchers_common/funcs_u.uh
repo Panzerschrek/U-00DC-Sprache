@@ -4,7 +4,7 @@ import "../code_builder_lib/code_builder.uh"
 
 struct U1_StringView ordered
 {
-	char8& data;
+	$(char8) data;
 	size_type size;
 }
 
