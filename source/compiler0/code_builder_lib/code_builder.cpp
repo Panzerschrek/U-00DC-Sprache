@@ -609,7 +609,7 @@ void CodeBuilder::CallDestructorsImpl(
 				if( stored_variable.type.HaveDestructor() )
 					CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
 
-				// Avoid calling "lifetime.end" for variables withot address.
+				// Avoid calling "lifetime.end" for variables without address.
 				if( stored_variable.location == Variable::Location::Pointer )
 					CreateLifetimeEnd( function_context, stored_variable.llvm_value );
 			}
