@@ -7,7 +7,7 @@ enum ConstexprFunctionEvaluatorRef : size_type{ Null }
 fn nomangle U1_ConstexprFunctionEvaluatorCreate( LLVMTargetDataRef data_layout ) unsafe : ConstexprFunctionEvaluatorRef;
 fn nomangle U1_ConstexprFunctionEvaluatorDestroy( ConstexprFunctionEvaluatorRef constexpr_function_evaluator ) unsafe;
 
-type ConstexprFunctionEvaluatorErrorHandlerFunc= fn( void &mut user_data, char8& error_text_start, size_type error_text_size );
+type ConstexprFunctionEvaluatorErrorHandlerFunc= fn( void &mut user_data, $(char8) error_text_start, size_type error_text_size );
 
 fn nomangle U1_ConstexprFunctionEvaluatorEvaluate(
 	ConstexprFunctionEvaluatorRef constexpr_function_evaluator,
