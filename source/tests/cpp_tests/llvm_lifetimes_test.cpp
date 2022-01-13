@@ -736,6 +736,98 @@ U_TEST( LifetimesForTakeOperator_Test )
 	U_TEST_ASSERT( g_lifetimes_call_sequence[3].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[3].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
 }
 
+U_TEST( LifetimesForRawPointers_Test0 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()(x= 951){}
+		}
+		fn nomangle CaptureValue(S& data, u64 size);
+		fn Foo()
+		{
+			var S mut s;
+			CaptureValue(s, 4u64);
+			auto ptr = $<(s);
+			s.x= 159;
+			CaptureValue(s, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 6 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart ); // ptr
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::CaptureValue ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::LifetimeEnd ); // ptr
+	U_TEST_ASSERT( g_lifetimes_call_sequence[5].call_result == CallResult::LifetimeEnd ); // s
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[5].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[4].address );
+
+	const int32_t expected_x0= 951;
+	const int32_t expected_x1= 159;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x0) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x0, sizeof(expected_x0)) == 0 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].captured_data.size() == sizeof(expected_x1) && std::memcmp(g_lifetimes_call_sequence[3].captured_data.data(), &expected_x1, sizeof(expected_x1)) == 0 );
+}
+
+U_TEST( LifetimesForRawPointers_Test1 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn constructor()(x= 32147){}
+		}
+		fn nomangle CaptureValue(S& data, u64 size);
+		fn Bar( $(S) s_ptr ){ unsafe{  $>(s_ptr).x= 74123;  } }
+		fn Foo()
+		{
+			var S mut s;
+			CaptureValue(s, 4u64);
+			Bar( $<(s) );
+			CaptureValue(s, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 6 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart ); // ptr
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd ); // ptr
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::CaptureValue ); // s
+	U_TEST_ASSERT( g_lifetimes_call_sequence[5].call_result == CallResult::LifetimeEnd ); // s
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[5].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[3].address );
+
+	const int32_t expected_x0= 32147;
+	const int32_t expected_x1= 74123;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x0) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x0, sizeof(expected_x0)) == 0 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].captured_data.size() == sizeof(expected_x1) && std::memcmp(g_lifetimes_call_sequence[4].captured_data.data(), &expected_x1, sizeof(expected_x1)) == 0 );
+}
+
 } // namespace
 
 } // namespace U
