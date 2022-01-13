@@ -319,6 +319,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				U_ASSERT( expression_result.node->kind == ReferencesGraphNode::Kind::Variable );
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
+			U_ASSERT( expression_result.location == Variable::Location::Pointer );
 			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
 			CreateLifetimeEnd( function_context, expression_result.llvm_value );
 
@@ -373,6 +374,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				U_ASSERT( expression_result.node->kind == ReferencesGraphNode::Kind::Variable );
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
+			U_ASSERT( expression_result.location == Variable::Location::Pointer );
 			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
 			CreateLifetimeEnd( function_context, expression_result.llvm_value );
 
@@ -759,6 +761,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			if( expression_result.node != nullptr )
 				function_context.variables_state.MoveNode( expression_result.node );
 
+			U_ASSERT( expression_result.location == Variable::Location::Pointer );
 			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
 			CreateLifetimeEnd( function_context, expression_result.llvm_value );
 		}
@@ -804,6 +807,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			if( initializer_variable.node != nullptr )
 				function_context.variables_state.MoveNode( initializer_variable.node );
 
+			U_ASSERT( initializer_variable.location == Variable::Location::Pointer );
 			CopyBytes( variable.llvm_value, initializer_variable.llvm_value, variable.type, function_context );
 			CreateLifetimeEnd( function_context, initializer_variable.llvm_value );
 

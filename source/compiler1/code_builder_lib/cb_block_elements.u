@@ -340,7 +340,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( out_variable.llvm_value != expr.llvm_value )
 			{
 				CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
-				CreateLifetimeEnd( function_context, expr.llvm_value );
+				if( expr.location == Variable::Location::Pointer )
+				{
+					CreateLifetimeEnd( function_context, expr.llvm_value );
+				}
 			}
 		}
 		else
@@ -515,7 +518,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						else
 						{
 							CopyBytes( s_ret, expr.llvm_value, expr.t, function_context );
-							CreateLifetimeEnd( function_context, expr.llvm_value );
+							if( expr.location == Variable::Location::Pointer )
+							{
+								CreateLifetimeEnd( function_context, expr.llvm_value );
+							}
 						}
 					}
 				}
@@ -1490,7 +1496,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			if( out_variable.llvm_value != expr.llvm_value )
 			{
 				CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
-				CreateLifetimeEnd( function_context, expr.llvm_value );
+				if( expr.location == Variable::Location::Pointer )
+				{
+					CreateLifetimeEnd( function_context, expr.llvm_value );
+				}
 			}
 		}
 		else

@@ -872,6 +872,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						// Move.
 						if( branch_result.node != nullptr )
 							function_context.variables_state.MoveNode( branch_result.node );
+						U_ASSERT( branch_result.location == Variable::Location::Pointer );
 						CopyBytes( result.llvm_value, branch_result.llvm_value, result.type, function_context );
 						CreateLifetimeEnd( function_context, branch_result.llvm_value );
 					}
@@ -1501,6 +1502,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		if( r_var_real.node != nullptr )
 			function_context.variables_state.MoveNode( r_var_real.node );
 
+		U_ASSERT( r_var_real.location == Variable::Location::Pointer );
 		CopyBytes( l_var_real.llvm_value, r_var_real.llvm_value, l_var_real.type, function_context );
 		CreateLifetimeEnd( function_context, r_var_real.llvm_value );
 
