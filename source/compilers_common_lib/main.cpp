@@ -366,10 +366,15 @@ cl::opt<bool> print_llvm_asm(
 	cl::init(false),
 	cl::cat(options_category) );
 
-cl::opt<bool> configurable_halt(
-	"configurable-halt",
-	cl::desc("Make halt handler configurable via _U_halt_handler global variable."),
-	cl::init(false),
+enum class HaltMode{ Trap, ConfigurableHandler, Unreachable, };
+cl::opt< HaltMode > halt_mode(
+	"halt-mode",
+	cl::init(HaltMode::Trap),
+	cl::desc("Halt handling mode:"),
+	cl::values(
+		clEnumValN( HaltMode::Trap, "trap", "Produce trap instruction." ),
+		clEnumValN( HaltMode::ConfigurableHandler, "configurable_handler", "Produce call to configurable _U_halt_handler function/" ),
+		clEnumValN( HaltMode::Unreachable, "unreachable", "Treat \"halt\" as unreachable instruction. Behavior is undefined if \"halt\" happens." ) ),
 	cl::cat(options_category) );
 
 } // namespace Options
@@ -622,19 +627,36 @@ int Main( int argc, const char* argv[] )
 		#include "bc_files_headers/atomic.h"
 		#include "bc_files_headers/checked_math.h"
 		#include "bc_files_headers/halt_configurable.h"
-		#include "bc_files_headers/halt_non_configurable.h"
+		#include "bc_files_headers/halt_trap.h"
+		#include "bc_files_headers/halt_unreachable.h"
 		#include "bc_files_headers/math.h"
 		#include "bc_files_headers/memory_32.h"
 		#include "bc_files_headers/memory_64.h"
 		#include "bc_files_headers/volatile.h"
 
+
 		// Prepare stdlib modules set.
 		#define STRING_REF(x) llvm::StringRef( reinterpret_cast<const char*>(c_##x##_file_content), sizeof(c_##x##_file_content) )
+
+		llvm::StringRef halt_module = STRING_REF(halt_trap);
+		switch(Options::halt_mode)
+		{
+			case Options::HaltMode::Trap:
+				halt_module= STRING_REF(halt_trap);
+				break;
+			case Options::HaltMode::ConfigurableHandler:
+				halt_module= STRING_REF(halt_configurable);
+				break;
+			case Options::HaltMode::Unreachable:
+				halt_module= STRING_REF(halt_unreachable);
+				break;
+		};
+
 		const llvm::StringRef asm_funcs_modules[]=
 		{
 			STRING_REF(atomic),
 			STRING_REF(checked_math),
-			Options::configurable_halt ? STRING_REF(halt_configurable) : STRING_REF(halt_non_configurable),
+			halt_module,
 			STRING_REF(math),
 			data_layout.getPointerSizeInBits() == 32u ? STRING_REF(memory_32) : STRING_REF(memory_64),
 			STRING_REF(volatile),
