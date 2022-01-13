@@ -124,8 +124,8 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		auto& lifetime_end_name= "llvm.lifetime.end";
 		unsafe
 		{
-			var u32 lifetime_start_id = LLVMLookupIntrinsicID( lifetime_start_name[0], typeinfo</typeof(lifetime_start_name)/>.element_count );
-			var u32 lifetime_end_id = LLVMLookupIntrinsicID( lifetime_end_name[0], typeinfo</typeof(lifetime_end_name)/>.element_count );
+			var u32 lifetime_start_id = LLVMLookupIntrinsicID( $<(cast_mut(lifetime_start_name)[0]), typeinfo</typeof(lifetime_start_name)/>.element_count );
+			var u32 lifetime_end_id = LLVMLookupIntrinsicID( $<(cast_mut(lifetime_end_name)[0]), typeinfo</typeof(lifetime_end_name)/>.element_count );
 
 			lifetime_function_arg_type_= LLVMPointerType( fundamental_llvm_types_.u8_, 0u );
 			lifetime_start_intrinsic_= LLVMGetIntrinsicDeclaration( module_, lifetime_start_id, $<(lifetime_function_arg_type_), 1s );
@@ -157,8 +157,8 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 				debug_info_.source_file_entries.push_back(
 					LLVMDIBuilderCreateFile(
 						debug_info_.builder,
-						node.file_path_normalized.front(), node.file_path_normalized.size(),
-						"\0"c8, 0s ) );
+						cast_mut(node.file_path_normalized).data(), node.file_path_normalized.size(),
+						ust::nullptr</char8/>(), 0s ) );
 			}
 		}
 
@@ -172,11 +172,11 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 					debug_info_.builder,
 					c_dwarf_language_id,
 					debug_info_.source_file_entries.front(),
-					"\0"c8, 0s, // TODO - set producer
+					ust::nullptr</char8/>(), 0s, // TODO - set producer
 					LLVMBool::False, // TODO - pass "optimized' flag
-					"\0"c8, 0s, // Flags
+					ust::nullptr</char8/>(), 0s, // Flags
 					0u, // Runtime version
-					"\0"c8, 0s, // SplitName
+					ust::nullptr</char8/>(), 0s, // SplitName
 					LLVMDWARFEmissionKind::Full,
 					0u, // DWOId
 					LLVMBool::True, // SplitDebugInlining
@@ -1441,15 +1441,17 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		{
 			// Set comdat. This needed because we want linkage like "inline" in C++ but for all functions.
 			var size_type mut name_length = zero_init;
-			var char8& name_start= LLVMGetValueName2( func_variable.llvm_function, name_length );
+			var $(char8) name_start= LLVMGetValueName2( func_variable.llvm_function, name_length );
+			if( name_length > 0s )
+			{
+				var ust::string8 mut name_str;
+				name_str.resize( name_length + 1s, "\0"c8 );
+				ust::memory_copy( cast_ref_unsafe</void/>( name_str.front_unchecked() ), cast_ref_unsafe</void/>( $>(name_start) ), name_length );
 
-			var ust::string8 mut name_str;
-			name_str.resize( name_length + 1s, "\0"c8 );
-			ust::memory_copy( cast_ref_unsafe</void/>( name_str.front_unchecked() ), cast_ref_unsafe</void/>( name_start ), name_length );
-
-			auto comdat= LLVMGetOrInsertComdat( module_, name_str.front_unchecked() );
-			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
-			LLVMSetComdat( func_variable.llvm_function, comdat );
+				auto comdat= LLVMGetOrInsertComdat( module_, name_str.front_unchecked() );
+				LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
+				LLVMSetComdat( func_variable.llvm_function, comdat );
+			}
 		}
 	}
 
@@ -1482,7 +1484,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			{
 				function_context.s_ret= LLVMGetParam( func_variable.llvm_function, 0u );
 				var ust::array_view_imut</ char8 /> param_name= "_return_value";
-				LLVMSetValueName2( function_context.s_ret, param_name.front(), param_name.size() );
+				LLVMSetValueName2( function_context.s_ret, param_name.data(), param_name.size() );
 			}
 		}
 
@@ -1520,7 +1522,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				unsafe
 				{
 					auto arg_value= LLVMGetParam( func_variable.llvm_function, llvm_arg_n );
-					LLVMSetValueName2( arg_value, in_param.name.front(), in_param.name.size() );
+					LLVMSetValueName2( arg_value, cast_mut(in_param.name).data(), in_param.name.size() );
 					out_arg.llvm_value= arg_value;
 				}
 
@@ -1552,7 +1554,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					unsafe
 					{
 						auto arg_value= LLVMGetParam( func_variable.llvm_function, llvm_arg_n );
-						LLVMSetValueName2( arg_value, in_param.name.front(), in_param.name.size() );
+						LLVMSetValueName2( arg_value, cast_mut(in_param.name).data(), in_param.name.size() );
 						out_arg.llvm_value= arg_value;
 					}
 				}
@@ -1562,7 +1564,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					unsafe
 					{
 						auto arg_value= LLVMGetParam( func_variable.llvm_function, llvm_arg_n );
-						LLVMSetValueName2( arg_value, arg_name.front(), arg_name.size() );
+						LLVMSetValueName2( arg_value, cast_mut(arg_name).data(), arg_name.size() );
 
 						out_arg.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, out_arg.t.GetLLVMType(), (in_param.name + "\0").front() );
 						CreateLifetimeStart( function_context, out_arg.llvm_value );
@@ -2203,7 +2205,7 @@ fn CodeBuilder::AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 inde
 {
 	unsafe
 	{
-		auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.front(), attr_name.size() );
+		auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.data(), attr_name.size() );
 		auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
 		LLVMAddAttributeAtIndex( llvm_function, index, attr );
 	}
@@ -2278,7 +2280,7 @@ fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_
 		auto& name= "nonnull";
 		LLVMSetMetadata(
 			load_instruction,
-			LLVMGetMDKindIDInContext( llvm_context_, name[0], u32( typeinfo</typeof(name)/>.element_count ) ),
+			LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( typeinfo</typeof(name)/>.element_count ) ),
 			LLVMMetadataAsValue( llvm_context_, LLVMMDNodeInContext2( llvm_context_, ust::nullptr</LLVMMetadataRef/>(), 0s ) ) );
 	}
 }

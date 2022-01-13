@@ -18,14 +18,14 @@ fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variab
 	unsafe
 	{
 		var size_type mut linkage_name_size= 0s;
-		var char8& linkage_name_start= LLVMGetValueName2( func_variable.llvm_function, linkage_name_size );
+		var $(char8) linkage_name_start= LLVMGetValueName2( func_variable.llvm_function, linkage_name_size );
 
 		var LLVMMetadataRef file= debug_info_.source_file_entries[ src_loc.GetFileIndex() ];
 
 		auto di_function= LLVMDIBuilderCreateFunction(
 			debug_info_.builder,
 			file,
-			name.front_unchecked(), name.size(),
+			cast_mut(name).data(), name.size(),
 			linkage_name_start, linkage_name_size,
 			file,
 			src_loc.GetLine(),
@@ -104,7 +104,7 @@ fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_con
 		auto di_variable= LLVMDIBuilderCreateAutoVariable(
 			debug_info_.builder,
 			function_context.current_debug_info_scope,
-			name.front_unchecked(), name.size(),
+			cast_mut(name).data(), name.size(),
 			debug_info_.source_file_entries[ src_loc.GetFileIndex() ],
 			src_loc.GetLine(),
 			CreateDIType( variable.t ),
@@ -144,12 +144,12 @@ fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& fun
 			LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
 			0u, // address space
-			"\0"c8, 0s );
+			ust::nullptr</char8/>(), 0s );
 
 		auto di_variable= LLVMDIBuilderCreateAutoVariable(
 			debug_info_.builder,
 			function_context.current_debug_info_scope,
-			name.front_unchecked(), name.size(),
+			cast_mut(name).data(), name.size(),
 			debug_info_.source_file_entries[ src_loc.GetFileIndex() ],
 			src_loc.GetLine(),
 			di_type,
@@ -224,7 +224,7 @@ fn CodeBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 	{
 		return LLVMDIBuilderCreateBasicType(
 			debug_info_.builder,
-			stub_type_name.front(), stub_type_name.size(),
+			stub_type_name.data(), stub_type_name.size(),
 			8u,
 			LLVMDWARFTypeEncoding::unsigned,
 			0u );
@@ -245,7 +245,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 			return LLVMDIBuilderCreateStructType(
 				debug_info_.builder,
 				di_file,
-				type_name.front_unchecked(), type_name.size(),
+				type_name.data(), type_name.size(),
 				di_file,
 				0u, // Line
 				LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
@@ -255,7 +255,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 				ust::nullptr</LLVMMetadataRef/>(), 0u, // elements
 				0u, // RuntimeLang
 				LLVMMetadataRef::Null,// VTableHolder
-				"\0"c8, 0s);
+				ust::nullptr</char8/>(), 0s);
 		}
 	}
 
@@ -270,7 +270,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 	{
 		return LLVMDIBuilderCreateBasicType(
 			debug_info_.builder,
-			type_name.front_unchecked(), type_name.size(),
+			type_name.data(), type_name.size(),
 			u32( t.GetSize() * 8s ),
 			encoding,
 			0u );
@@ -310,7 +310,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 				LLVMDIBuilderCreateMemberType(
 					debug_info_.builder,
 					di_file,
-					name.front_unchecked(), name.size(),
+					cast_mut(name).data(), name.size(),
 					di_file,
 					0u, // Line
 					LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,
@@ -328,7 +328,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 		return LLVMDIBuilderCreateStructType(
 			debug_info_.builder,
 			di_file,
-			name.front_unchecked(), name.size(),
+			cast_mut(name).data(), name.size(),
 			di_file,
 			0u, // Line
 			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
@@ -338,7 +338,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 			elements.data(), u32(elements.size()),
 			0u, // RuntimeLang
 			LLVMMetadataRef::Null,// VTableHolder
-			"\0"c8, 0s);
+			ust::nullptr</char8/>(), 0s);
 	}
 }
 
@@ -352,7 +352,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, RawPointerType& t ) : LLVMMetadataRe
 			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
 			0u, // address space
-			"\0"c8, 0s );
+			ust::nullptr</char8/>(), 0s );
 	}
 }
 
@@ -372,7 +372,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
 					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
 					0u, // address space
-					"\0"c8, 0s );
+					ust::nullptr</char8/>(), 0s );
 			}
 		}
 
@@ -393,7 +393,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
 					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
 					0u, // address space
-					"\0"c8, 0s );
+					ust::nullptr</char8/>(), 0s );
 			}
 		}
 		di_types.push_back( di_type );
@@ -419,7 +419,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionPointerType& t ) : LLVMMetad
 			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
 			0u, // address space
-			"\0"c8, 0s );
+			ust::nullptr</char8/>(), 0s );
 	}
 }
 
@@ -471,14 +471,14 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 						LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
 						LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
 						0u, // address space
-						"\0"c8, 0s );
+						ust::nullptr</char8/>(), 0s );
 				}
 
 				elements.push_back(
 					LLVMDIBuilderCreateMemberType(
 						debug_info_.builder,
 						di_file,
-						field_name.front_unchecked(), field_name.size(),
+						cast_mut(field_name).data(), field_name.size(),
 						di_file,
 						0u, // Line
 						LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,
@@ -501,7 +501,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 					LLVMDIBuilderCreateMemberType(
 						debug_info_.builder,
 						di_file,
-						name.front_unchecked(), name.size(),
+						cast_mut(name).data(), name.size(),
 						di_file,
 						0u, // Line
 						LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,
@@ -520,7 +520,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 		auto di_type= LLVMDIBuilderCreateStructType(
 			debug_info_.builder,
 			di_file,
-			name.front_unchecked(), name.size(),
+			cast_mut(name).data(), name.size(),
 			di_file,
 			src_loc.GetLine(),
 			LLVMABISizeOfType( data_layout_, class_type.llvm_type ) * 8u64,
@@ -530,7 +530,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 			elements.data(), u32(elements.size()),
 			0u, // RuntimeLang
 			LLVMMetadataRef::Null,// VTableHolder
-			"\0"c8, 0s);
+			ust::nullptr</char8/>(), 0s);
 
 		debug_info_.classes_di_types[t]= di_type;
 		return di_type;
@@ -560,7 +560,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 			elements.push_back(
 				LLVMDIBuilderCreateEnumerator(
 					debug_info_.builder,
-					name.front_unchecked(), name.size(),
+					cast_mut(name).data(), name.size(),
 					select( is_unsigned ? i64(LLVMConstIntGetZExtValue(constexpr_value)) : LLVMConstIntGetSExtValue(constexpr_value) ),
 					select( is_unsigned ? LLVMBool::True : LLVMBool::False ) ) );
 		}
@@ -576,7 +576,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 		auto di_type= LLVMDIBuilderCreateEnumerationType(
 			debug_info_.builder,
 			di_file,
-			name.front_unchecked(), name.size(),
+			cast_mut(name).data(), name.size(),
 			di_file,
 			src_loc.GetLine(),
 			LLVMABISizeOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u64,

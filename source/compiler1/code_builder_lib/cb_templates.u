@@ -1099,7 +1099,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		mangler_.deref().MangleFunction( function_template.parent_names_scope.lock().try_lock_imut().deref(), function_name, function_variable.t, result_template_args );
 	unsafe
 	{
-		LLVMSetValueName2( function_variable.llvm_function, name_mangled.front(), name_mangled.size() - 1s );
+		LLVMSetValueName2( function_variable.llvm_function, cast_mut(name_mangled).data(), name_mangled.size() - 1s );
 	}
 
 	{

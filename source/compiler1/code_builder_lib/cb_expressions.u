@@ -191,7 +191,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			if( char_type == U_FundamentalType::char8_ )
 			{
-				constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal.value.front_unchecked(), u32(string_literal.value.size()), LLVMBool::True );
+				var ust::string8 mut string_literal_value = string_literal.value; // HACK! Create copy of string to fix ReferenceProtection error.
+				constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal_value.data(), u32(string_literal_value.size()), LLVMBool::True );
 				array_size= string_literal.value.size();
 
 				if( string_literals_cache_[0].find( string_literal.value ).empty() )
