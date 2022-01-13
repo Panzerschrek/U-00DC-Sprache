@@ -253,7 +253,8 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 				{
 					if( variable.type.HaveDestructor() )
 						CallDestructor( variable.llvm_value, variable.type, function_context, errors_container, src_loc );
-					CreateLifetimeEnd( function_context, variable.llvm_value );
+					if( variable.location == Variable::Location::Pointer )
+						CreateLifetimeEnd( function_context, variable.llvm_value );
 				}
 				function_context.variables_state.MoveNode( variable.node );
 				any_node_moved= true;
