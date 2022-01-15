@@ -1,6 +1,6 @@
 ; ModuleID = 'Ü-std'
 
-attributes #0 = { cold nounwind }
+attributes #0 = { cold noreturn nounwind }
 
 ;
 ; halt
