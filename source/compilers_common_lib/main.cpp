@@ -372,8 +372,8 @@ cl::opt< HaltMode > halt_mode(
 	cl::init(HaltMode::Trap),
 	cl::desc("Halt handling mode:"),
 	cl::values(
-		clEnumValN( HaltMode::Trap, "trap", "Produce trap instruction." ),
-		clEnumValN( HaltMode::ConfigurableHandler, "configurable_handler", "Produce call to configurable _U_halt_handler function/" ),
+		clEnumValN( HaltMode::Trap, "trap", "Produce trap instruction (default)." ),
+		clEnumValN( HaltMode::ConfigurableHandler, "configurable_handler", "Produce call to configurable \"_U_halt_handler\" function." ),
 		clEnumValN( HaltMode::Unreachable, "unreachable", "Treat \"halt\" as unreachable instruction. Behavior is undefined if \"halt\" happens." ) ),
 	cl::cat(options_category) );
 
