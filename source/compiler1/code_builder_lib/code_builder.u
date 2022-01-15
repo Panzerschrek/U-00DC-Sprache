@@ -100,7 +100,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	{
 		var ust::string8 mut module_name= source_graph.nodes.front().file_path_normalized;
 		module_name += "\0";
-		module_ = LLVMModuleCreateWithNameInContext( module_name.front_unchecked(), llvm_context_ );
+		module_ = LLVMModuleCreateWithNameInContext( module_name.front(), llvm_context_ );
 		LLVMSetModuleDataLayout( module_, data_layout_ );
 	}
 
@@ -1446,9 +1446,9 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			{
 				var ust::string8 mut name_str;
 				name_str.resize( name_length + 1s, "\0"c8 );
-				ust::memory_copy( cast_ref_unsafe</void/>( name_str.front_unchecked() ), cast_ref_unsafe</void/>( $>(name_start) ), name_length );
+				ust::memory_copy( cast_ref_unsafe</void/>( name_str.front() ), cast_ref_unsafe</void/>( $>(name_start) ), name_length );
 
-				auto comdat= LLVMGetOrInsertComdat( module_, name_str.front_unchecked() );
+				auto comdat= LLVMGetOrInsertComdat( module_, name_str.front() );
 				LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
 				LLVMSetComdat( func_variable.llvm_function, comdat );
 			}
@@ -2188,12 +2188,12 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string8& name_null_terminat
 	{
 		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
 
-		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front_unchecked() );
+		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
 		LLVMSetLinkage( global_variable, LLVMLinkage::External );
 		LLVMSetUnnamedAddress( global_variable, LLVMUnnamedAddr::GlobalUnnamedAddr );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
 
-		auto comdat= LLVMGetOrInsertComdat( module_, name_null_terminated.front_unchecked() );
+		auto comdat= LLVMGetOrInsertComdat( module_, name_null_terminated.front() );
 		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
 		LLVMSetComdat( global_variable, comdat );
 
