@@ -1,0 +1,4 @@
+fn HaltIfTrue(bool b)
+{
+	halt if(b);
+}

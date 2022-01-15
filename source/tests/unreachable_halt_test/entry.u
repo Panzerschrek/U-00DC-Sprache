@@ -1,0 +1,7 @@
+fn HaltIfTrue(bool b);
+
+fn nomangle main() : i32
+{
+	HaltIfTrue(true);
+	return 0;
+}
