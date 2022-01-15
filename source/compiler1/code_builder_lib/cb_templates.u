@@ -602,8 +602,6 @@ fn CodeBuilder::GenTemplateType(
 		}
 	}
 
-	// TODO - select more specialized type template here.
-
 	if( candidate_type_templates.empty() )
 	{
 		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_src_loc )
