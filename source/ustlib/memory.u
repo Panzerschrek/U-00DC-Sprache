@@ -28,7 +28,7 @@ fn int_to_ref( size_type i ) unsafe : T&
 {
 	unsafe
 	{
-		auto ptr= cast_ref_unsafe</$(T)/>(i); // Cast reference to integer to reference to pointer, read poibnter value.
+		auto ptr= cast_ref_unsafe</$(T)/>(i); // Cast reference to integer to reference to pointer, read pointer value.
 		return $>(ptr);
 	}
 }
