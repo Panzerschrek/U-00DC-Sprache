@@ -122,10 +122,12 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 			unsafe
 			{
 				var size_type mut name_length= 0s;
-				var char8& name_start= LLVMGetValueName2( functions_set.functions[i].llvm_function, name_length );
-
-				f.mangled_name.resize( name_length, "\0"c8 );
-				ust::memory_copy( cast_ref_unsafe</void/>( f.mangled_name.front_unchecked() ), cast_ref_unsafe</void/>( name_start ), name_length );
+				var $(char8) name_start= LLVMGetValueName2( functions_set.functions[i].llvm_function, name_length );
+				if( name_length > 0s )
+				{
+					f.mangled_name.resize( name_length, "\0"c8 );
+					ust::memory_copy( cast_ref_unsafe</void/>( f.mangled_name.front() ), cast_ref_unsafe</void/>( $>(name_start) ), name_length );
+				}
 			}
 
 			this_virtual_functions.push_back( move(f) );
@@ -353,8 +355,7 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 
 	unsafe
 	{
-		auto dummy= LLVMTypeRef::Null;
-		auto fn_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, dummy, 0u, LLVMBool::True );
+		auto fn_type= LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::True );
 		auto fn_ptr_type= LLVMPointerType( fn_type, 0u );
 		auto own_virtual_functions_table_type= LLVMArrayType( fn_ptr_type, own_functions_count );
 
@@ -362,7 +363,7 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 
 		// TODO - maybe create unnamed struct (like a tuple)?
 		class_type.virtual_table_llvm_type= LLVMStructCreateNamed( llvm_context_, virtual_table_type_name.front() );
-		LLVMStructSetBody( class_type.virtual_table_llvm_type, virtual_table_struct_fields.front(), u32(virtual_table_struct_fields.size()), LLVMBool::False );
+		LLVMStructSetBody( class_type.virtual_table_llvm_type, virtual_table_struct_fields.data(), u32(virtual_table_struct_fields.size()), LLVMBool::False );
 	}
 }
 
@@ -383,12 +384,12 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 
 	unsafe
 	{
-		var LLVMValueRef global_value= LLVMAddGlobal( module_, type_id_type, name_mangled_null_terminated.front_unchecked() );
+		var LLVMValueRef global_value= LLVMAddGlobal( module_, type_id_type, name_mangled_null_terminated.front() );
 		LLVMSetLinkage( global_value, LLVMLinkage::External );
 		LLVMSetGlobalConstant( global_value, LLVMBool::True );
 		LLVMSetInitializer( global_value, LLVMConstNull( type_id_type ) );
 
-		var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front_unchecked() );
+		var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front() );
 		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
 		LLVMSetComdat( global_value, comdat );
 
@@ -464,9 +465,9 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 			}
 		}
 
-		initializer_values.push_back( LLVMConstArray( fn_type_ptr, function_pointers_initializer_values.front_unchecked(), u32(function_pointers_initializer_values.size()) ) );
+		initializer_values.push_back( LLVMConstArray( fn_type_ptr, function_pointers_initializer_values.data(), u32(function_pointers_initializer_values.size()) ) );
 
-		return LLVMConstNamedStruct( ancestor_class.virtual_table_llvm_type, initializer_values.front(), u32(initializer_values.size()) );
+		return LLVMConstNamedStruct( ancestor_class.virtual_table_llvm_type, initializer_values.data(), u32(initializer_values.size()) );
 	}
 }
 
@@ -515,12 +516,12 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 		{
 			auto parent_ptr= CreateParentFieldGEP( this_, parent, function_context );
 
-			var [ LLVMValueRef, 2 ] vtable_indexes
+			var [ LLVMValueRef, 2 ] mut vtable_indexes
 			[
 				GetZeroGEPIndex(),
 				LLVMConstInt( fundamental_llvm_types_.u32_, u64( select( parent.field_number == 0u ? 0u : vtable_field_number ) ), LLVMBool::False )
 			];
-			auto vtable_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_indexes[0], 2u, "\0"[0] );
+			auto vtable_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_to_vtable_ptr, $<(vtable_indexes[0]), 2u, "\0"[0] );
 
 			SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, parent.class_.lock_imut().deref(), function_context );
 
@@ -536,8 +537,8 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 	{
 		unsafe
 		{
-			var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
-			auto vtable_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, this_, indexes[0], 2u, "\0"[0] );
+			var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
+			auto vtable_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, this_, $<(indexes[0]), 2u, "\0"[0] );
 
 			LLVMBuildStore( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_ptr );
 		}
@@ -640,12 +641,12 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 			unsafe
 			{
-				var [ LLVMValueRef, 2 ] index_list
+				var [ LLVMValueRef, 2 ] mut index_list
 				[
 					GetZeroGEPIndex(),
 					LLVMConstInt( fundamental_llvm_types_.u32_, u64(field_index), LLVMBool::False )
 				];
-				function_virtual_table= LLVMBuildGEP( function_context.llvm_ir_builder, function_virtual_table, index_list[0], 2u, "\0"[0] );
+				function_virtual_table= LLVMBuildGEP( function_context.llvm_ir_builder, function_virtual_table, $<(index_list[0]), 2u, "\0"[0] );
 			}
 
 			auto next_class_ptr= current_class.parents[ parent_virtual_table_index ].class_;
@@ -666,22 +667,22 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			functions_table_field_number= select( current_class.parents.empty() ? c_funcs_table_field_number : u32( current_class.parents.size() ) );
 		}
 
-		var [ LLVMValueRef, 2 ] functions_table_indeces
+		var [ LLVMValueRef, 2 ] mut functions_table_indeces
 		[
 			GetZeroGEPIndex(),
 			LLVMConstInt( fundamental_llvm_types_.u32_, u64(functions_table_field_number), LLVMBool::False )
 		];
 		auto functions_table_ptr=
-			LLVMBuildGEP( function_context.llvm_ir_builder,  function_virtual_table, functions_table_indeces[0], 2u, "\0"[0] );
+			LLVMBuildGEP( function_context.llvm_ir_builder,  function_virtual_table, $<(functions_table_indeces[0]), 2u, "\0"[0] );
 
 		// Fetch function.
-		var [ LLVMValueRef, 2 ] function_ptr_indexes
+		var [ LLVMValueRef, 2 ] mut function_ptr_indexes
 		[
 			GetZeroGEPIndex(),
 			LLVMConstInt( fundamental_llvm_types_.u32_, u64(index_in_table), LLVMBool::False )
 		];
 		auto ptr_to_function_ptr=
-			LLVMBuildGEP( function_context.llvm_ir_builder, functions_table_ptr, function_ptr_indexes[0], 2u, "\0"[0] );
+			LLVMBuildGEP( function_context.llvm_ir_builder, functions_table_ptr, $<(function_ptr_indexes[0]), 2u, "\0"[0] );
 
 		auto abstract_function_ptr= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_to_function_ptr, "\0"[0] );
 		MarkLoadInstructionWithNonNullMetadata( abstract_function_ptr ); // Function pointer inside virtual table is never null.
@@ -702,9 +703,9 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 			for( auto mut current_class_ptr= class_type_ptr; !current_class_ptr.lock_imut().deref().parents.empty(); )
 			{
-				var [ LLVMValueRef, 2 ] index_list[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
+				var [ LLVMValueRef, 2 ] mut index_list[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
 				first_root_virtual_table=
-					LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, index_list[0], 2u, "\0"[0] );
+					LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, $<(index_list[0]), 2u, "\0"[0] );
 
 				auto current_class_ptr_copy= current_class_ptr;
 				foreach( &parent : current_class_ptr_copy.lock_imut().deref().parents )
@@ -717,13 +718,13 @@ fn CodeBuilder::TryFetchVirtualFunction(
 				}
 			}
 
-			var [ LLVMValueRef, 2 ] offset_indeces
+			var [ LLVMValueRef, 2 ] mut offset_indeces
 			[
 				GetZeroGEPIndex(),
 				LLVMConstInt( fundamental_llvm_types_.u32_, u64(c_offset_field_number), LLVMBool::False )
 			];
 			auto offset_ptr=
-				LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, offset_indeces[0], 2u, "\0"[0] );
+				LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, $<(offset_indeces[0]), 2u, "\0"[0] );
 
 			auto offset= LLVMBuildLoad( function_context.llvm_ir_builder, offset_ptr, "\0"[0] );
 

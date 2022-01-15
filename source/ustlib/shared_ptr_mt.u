@@ -256,7 +256,7 @@ struct shared_ptr_mt_base_hasher
 	{
 		unsafe
 		{
-			return ust::ref_to_int( cast_ref_unsafe</void/>( $>( ptr.get_value_ptr() ) ) );
+			return ust::ptr_to_int( ptr.get_value_ptr() );
 		}
 	}
 }

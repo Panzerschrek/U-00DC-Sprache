@@ -47,11 +47,11 @@ extern "C" size_t U1_ConvertUTF8ToUTF32(
 		return dst_buff_size + 1; // Size is unknown, but greater then expected.
 }
 
-extern "C" LLVMValueRef U1_ConstDataArray(LLVMTypeRef t, const void* const data, const size_t size, const size_t element_count)
+extern "C" LLVMValueRef U1_ConstDataArray(LLVMTypeRef t, const char* const data, const size_t size, const size_t element_count)
 {
 	return llvm::wrap(
 		llvm::ConstantDataArray::getRaw(
-			llvm::StringRef(static_cast<const char*>(data), size),
+			llvm::StringRef(data, size),
 			element_count,
 			llvm::unwrap(t)));
 }

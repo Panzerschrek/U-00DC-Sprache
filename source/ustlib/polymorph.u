@@ -50,7 +50,7 @@ fn polymorph_is_instance_of( B& b ) : bool
 	{
 		unsafe
 		{
-			return cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id == ust::ref_to_int( cast_ref_unsafe</void/>( typeinfo</A/>.type_id ) );
+			return cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id == ust::ref_to_int( typeinfo</A/>.type_id );
 		}
 	}
 	else
@@ -126,7 +126,7 @@ fn polymorph_cast_impl( From &'x mut from ) : optional_ref</ To, true />'x'
 			unsafe
 			{
 				// TODO - support cast A->B in hierarchy A->B->C
-				if( cast_ref_unsafe</ virtual_class />(from).vptr.type_id == ust::ref_to_int( cast_ref_unsafe</void/>( typeinfo</To/>.type_id ) ) )
+				if( cast_ref_unsafe</ virtual_class />(from).vptr.type_id == ust::ref_to_int( typeinfo</To/>.type_id ) )
 				{
 					return optional_ref</ To, true />( cast_ref_unsafe</To/>( cast_mut( polymorph_restore_original_ref(from) ) ) );
 				}

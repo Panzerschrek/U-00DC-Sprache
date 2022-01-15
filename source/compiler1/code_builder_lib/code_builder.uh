@@ -36,9 +36,9 @@ import "structs_combined.uh"
 			auto counter_test= LLVMBuildICmp( ?function_context.llvm_ir_builder, LLVMIntPredicate::ULT, counter_value_plus_one, loop_count_value, "\0"[0] );
 			LLVMBuildCondBr( ?function_context.llvm_ir_builder, counter_test, loop_block, block_after_loop );
 
-			var [ LLVMValueRef, 2 ] incoming_values[ zero_value, counter_value_plus_one ];
-			var [ LLVMBasicBlockRef, 2 ] incoming_blocks[ block_before_loop, LLVMGetInsertBlock( ?function_context.llvm_ir_builder ) ];
-			LLVMAddIncoming( counter_value, incoming_values[0], incoming_blocks[0], 2u );
+			var [ LLVMValueRef, 2 ] mut incoming_values[ zero_value, counter_value_plus_one ];
+			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ block_before_loop, LLVMGetInsertBlock( ?function_context.llvm_ir_builder ) ];
+			LLVMAddIncoming( counter_value, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
 
 			LLVMAppendExistingBasicBlock( ?function_context.llvm_function, block_after_loop );
 			LLVMPositionBuilderAtEnd( ?function_context.llvm_ir_builder, block_after_loop );

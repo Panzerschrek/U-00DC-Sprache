@@ -13,7 +13,7 @@ fn U1_ProcessCodeBuilderErrors(
 	{
 		unsafe
 		{
-			var U1_StringView text_view{ .data= err.text.front_unchecked(), .size= err.text.size() };
+			var U1_StringView text_view{ .data= cast_mut(err.text).data(), .size= err.text.size() };
 
 			var UserHandle error_data= errors_handling_callbacks.error_callback( data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), u32(err.code), text_view );
 			if( !err.errors_context.empty() )
@@ -21,8 +21,8 @@ fn U1_ProcessCodeBuilderErrors(
 				auto lock= err.errors_context.try_lock_imut();
 				var U1::TemplateErrorsContext& errors_context= lock.deref();
 
-				var U1_StringView context_name{ .data= errors_context.context_name.front_unchecked(), .size= errors_context.context_name.size() };
-				var U1_StringView args_description{ .data= errors_context.args_description.front_unchecked(), .size= errors_context.args_description.size() };
+				var U1_StringView context_name{ .data= cast_mut(errors_context.context_name).data(), .size= errors_context.context_name.size() };
+				var U1_StringView args_description{ .data= cast_mut(errors_context.args_description).data(), .size= errors_context.args_description.size() };
 
 				var UserHandle context_user_handle= errors_handling_callbacks.template_errors_context_callback(
 					error_data,
@@ -123,9 +123,9 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 		{
 			foreach( &err : node.synt_result.errors )
 			{
-				var U1_StringView text_view{ .data= err.text.front(), .size= err.text.size() };
 				unsafe
 				{
+					var U1_StringView text_view{ .data= cast_mut(err.text).data(), .size= err.text.size() };
 					errors_handling_callbacks.error_callback( data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), u32(U1::CodeBuilderErrorCode::BuildFailed), text_view );
 				}
 			}
@@ -159,7 +159,7 @@ fn nomangle U1_BuildProgrammUsingVFS(
 		{
 			unsafe
 			{
-				var U1_StringView path_view{ .data= node.file_path_normalized.front_unchecked(), .size= node.file_path_normalized.size() };
+				var U1_StringView path_view{ .data= cast_mut(node.file_path_normalized).data(), .size= node.file_path_normalized.size() };
 				result_source_file_path_callback( result_source_file_path_processing_data, path_view );
 			}
 		}
@@ -168,7 +168,7 @@ fn nomangle U1_BuildProgrammUsingVFS(
 		{
 			unsafe
 			{
-				var U1_StringView text{ .data= err.text.front_unchecked(), .size= err.text.size() };
+				var U1_StringView text{ .data= cast_mut(err.text).data(), .size= err.text.size() };
 				lex_synt_error_callback( lex_synt_error_callback_data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), text );
 			}
 		}
@@ -336,11 +336,11 @@ fn GetCodeBuilderOptionsForTests() : CodeBuilderOptions
 	return move(options);
 }
 
-fn StringToArrayView( char8 &'x string_start, size_type string_size ) unsafe : ust::array_view_imut</ char8 />'x'
+fn StringToArrayView( $(char8) string_start, size_type string_size ) unsafe : ust::array_view_imut</ char8 />
 {
 	unsafe
 	{
-		return ust::array_view_imut</ char8 />( $<( cast_mut(string_start) ), string_size );
+		return ust::array_view_imut</ char8 />( string_start, string_size );
 	}
 }
 
@@ -476,15 +476,15 @@ public:
 		{
 			var ust::string8 mut result;
 
-			var U1_StringView file_path_view{ .data= file_path.front_unchecked(), .size= file_path.size() };
-			var U1_StringView parent_file_path_normalized_view{ .data= parent_file_path_normalized.front_unchecked(), .size= parent_file_path_normalized.size() };
+			var U1_StringView file_path_view{ .data= cast_mut(file_path).data(), .size= file_path.size() };
+			var U1_StringView parent_file_path_normalized_view{ .data= cast_mut(parent_file_path_normalized).data(), .size= parent_file_path_normalized.size() };
 
 			vfs_interface_.normalize_path_function(
 				vfs_interface_.this_,
 				file_path_view,
 				parent_file_path_normalized_view,
 				IVfsInterface::FillStringCallback(FillStringCallback),
-				ust::ref_to_int( cast_ref_unsafe</void/>( result ) ) );
+				ust::ref_to_int( result ) );
 			return move(result);
 		}
 	}
@@ -495,13 +495,13 @@ public:
 		{
 			var ust::string8 mut result;
 
-			var U1_StringView full_file_path_view{ .data= full_file_path.front_unchecked(), .size= full_file_path.size() };
+			var U1_StringView full_file_path_view{ .data= cast_mut(full_file_path).data(), .size= full_file_path.size() };
 
 			var bool ok= vfs_interface_.load_file_content_function(
 				vfs_interface_.this_,
 				full_file_path_view,
 				IVfsInterface::FillStringCallback(FillStringCallback),
-				ust::ref_to_int( cast_ref_unsafe</void/>( result ) ) );
+				ust::ref_to_int( result ) );
 			if( ok )
 			{
 				return move(result);
@@ -515,7 +515,7 @@ private:
 	{
 		unsafe
 		{
-			auto &mut str= cast_mut(cast_ref_unsafe</ust::string8/>(ust::int_to_ref(user_data)));
+			auto &mut str= cast_mut( ust::int_to_ref</ust::string8/>(user_data) );
 			str= U1::StringToArrayView( result_path_normalized.data, result_path_normalized.size );
 		}
 	}

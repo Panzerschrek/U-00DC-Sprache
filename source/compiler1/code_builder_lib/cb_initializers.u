@@ -177,13 +177,13 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		{
 			unsafe
 			{
-				var [ LLVMValueRef, 2 ] indexes
+				var [ LLVMValueRef, 2 ] mut indexes
 				[
 					GetZeroGEPIndex(),
 					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
 				];
 
-				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+				element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] );
 			}
 
 			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, element_initializer.deref() );
@@ -208,7 +208,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			halt if( elements_constants.size() != size_type(array_type.element_count) ); // TODO - replace with assert
 			unsafe
 			{
-				return LLVMConstArray( element_variable.t.GetLLVMType(), elements_constants.front_unchecked(), u32(elements_constants.size()) );
+				return LLVMConstArray( element_variable.t.GetLLVMType(), elements_constants.data(), u32(elements_constants.size()) );
 			}
 		}
 		return LLVMValueRef::Null;
@@ -257,7 +257,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			halt if( elements_constants.size() != tuple_type.element_types.size() ); // TODO - replace with assert
 			unsafe
 			{
-				return LLVMConstStructInContext( llvm_context_, elements_constants.front_unchecked(), u32(elements_constants.size()), LLVMBool::False );
+				return LLVMConstStructInContext( llvm_context_, elements_constants.data(), u32(elements_constants.size()), LLVMBool::False );
 			}
 		}
 		return LLVMValueRef::Null;
@@ -442,7 +442,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	{
 		unsafe
 		{
-			return LLVMConstNamedStruct( class_type.llvm_type, constant_initializers.front_unchecked(), u32(constant_initializers.size()) );
+			return LLVMConstNamedStruct( class_type.llvm_type, constant_initializers.data(), u32(constant_initializers.size()) );
 		}
 	}
 
@@ -485,8 +485,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 				unsafe
 				{
-					var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), counter_value ];
-					element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
+					element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] );
 				}
 
 				BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
@@ -603,8 +603,8 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			{
 				unsafe
 				{
-					var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), counter_value ];
-					element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] );
+					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
+					element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] );
 				}
 
 				BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, src_loc );

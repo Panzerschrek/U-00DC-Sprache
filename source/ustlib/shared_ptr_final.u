@@ -166,8 +166,7 @@ struct shared_ptr_final_base_hasher
 	{
 		unsafe
 		{
-			// TODO - fix this. It's invalid to call "ref_to_int" for potentially null reference.
-			return ust::ref_to_int( cast_ref_unsafe</void/>( ptr.deref_unchecked() ) );
+			return ust::ptr_to_int( ptr.get_ptr() );
 		}
 	}
 }

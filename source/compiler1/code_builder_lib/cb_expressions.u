@@ -5,6 +5,13 @@ import "code_builder.uh"
 namespace U1
 {
 
+template</type Dst, type Src/>
+fn CastPtr($(Src) src) unsafe : $(Dst)
+{
+	// Cast reference to pointer to reference to pointer of other type.
+	unsafe{  return cast_ref_unsafe</$(Dst)/>(src);  }
+}
+
 fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable
 {
 	var Value mut value= BuildExpressionCode( names_scope, function_context, expression );
@@ -181,6 +188,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	auto element_llvm_type= GetFundamentalLLVMType(char_type);
 
+	var ust::string8 mut string_literal_value = string_literal.value; // HACK! Create copy of string to fix ReferenceProtection error.
 	if( is_array )
 	{
 		auto mut array_size= 0s;
@@ -191,30 +199,30 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			if( char_type == U_FundamentalType::char8_ )
 			{
-				constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal.value.front_unchecked(), u32(string_literal.value.size()), LLVMBool::True );
-				array_size= string_literal.value.size();
+				constexpr_value= LLVMConstStringInContext( llvm_context_, string_literal_value.data(), u32(string_literal_value.size()), LLVMBool::True );
+				array_size= string_literal_value.size();
 
-				if( string_literals_cache_[0].find( string_literal.value ).empty() )
+				if( string_literals_cache_[0].find( string_literal_value ).empty() )
 				{
 					global_value= AddGlobalConstantVariable( "str\0", LLVMTypeOf( constexpr_value ), constexpr_value );
-					string_literals_cache_[0].insert( string_literal.value, global_value );
+					string_literals_cache_[0].insert( string_literal_value, global_value );
 				}
 				else
 				{
-					global_value= string_literals_cache_[0].find( string_literal.value ).try_deref();
+					global_value= string_literals_cache_[0].find( string_literal_value ).try_deref();
 				}
 			}
 			else if( char_type == U_FundamentalType::char16_ )
 			{
 				var ust::string16 mut buff;
-				auto buff_size= string_literal.value.size() * 4s;
+				auto buff_size= string_literal_value.size() * 4s;
 				buff.resize( buff_size, "\0"c16 ); // Reserve enough space.
 
-				array_size= U1_ConvertUTF8ToUTF16( string_literal.value.front_unchecked(), string_literal.value.size(), buff.front_unchecked(), buff_size );
+				array_size= U1_ConvertUTF8ToUTF16( string_literal_value.data(), string_literal_value.size(), buff.data(), buff_size );
 				halt if(array_size > buff.size());
-				buff.resize( array_size, "\0"c16  );
+				buff.resize( array_size, "\0"c16 );
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( buff.front_unchecked() ), array_size * typeinfo</char16/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, CastPtr</char8/>(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
 
 				if( string_literals_cache_[1].find( buff ).empty() )
 				{
@@ -229,14 +237,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			else if( char_type == U_FundamentalType::char32_ )
 			{
 				var ust::string32 mut buff;
-				auto buff_size= string_literal.value.size() * 4s;
+				auto buff_size= string_literal_value.size() * 4s;
 				buff.resize( buff_size, "\0"c32 ); // Reserve enough space.
 
-				array_size= U1_ConvertUTF8ToUTF32( string_literal.value.front_unchecked(), string_literal.value.size(), buff.front_unchecked(), buff_size );
+				array_size= U1_ConvertUTF8ToUTF32( string_literal_value.data(), string_literal_value.size(), buff.data(), buff_size );
 				halt if(array_size > buff.size());
 				buff.resize( array_size, "\0"c32 );
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, cast_ref_unsafe</void/>( buff.front_unchecked() ), array_size * typeinfo</char32/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, CastPtr</char8/>(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
 
 				if( string_literals_cache_[2].find( buff ).empty() )
 				{
@@ -276,21 +284,21 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			if( char_type == U_FundamentalType::char8_ )
 			{
-				if( string_literal.value.size() != 1s )
+				if( string_literal_value.size() != 1s )
 				{
-					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal.value )
+					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
 					return ErrorValue();
 				}
 
-				constexpr_value= LLVMConstInt( element_llvm_type, u64(string_literal.value.front()), LLVMBool::False );
+				constexpr_value= LLVMConstInt( element_llvm_type, u64(string_literal_value.front()), LLVMBool::False );
 			}
 			else if( char_type == U_FundamentalType::char16_ )
 			{
 				var char16 mut c= zero_init;
-				if( string_literal.value.empty() ||
-					U1_ConvertUTF8ToUTF16( string_literal.value.front_unchecked(), string_literal.value.size(), c, 1s ) != 1s )
+				if( string_literal_value.empty() ||
+					U1_ConvertUTF8ToUTF16( string_literal_value.data(), string_literal_value.size(), $<(c), 1s ) != 1s )
 				{
-					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal.value )
+					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
 					return ErrorValue();
 				}
 
@@ -299,10 +307,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			else if( char_type == U_FundamentalType::char32_ )
 			{
 				var char32 mut c= zero_init;
-				if( string_literal.value.empty() ||
-					U1_ConvertUTF8ToUTF32( string_literal.value.front_unchecked(), string_literal.value.size(), c, 1s ) != 1s )
+				if( string_literal_value.empty() ||
+					U1_ConvertUTF8ToUTF32( string_literal_value.data(), string_literal_value.size(), $<(c), 1s ) != 1s )
 				{
-					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal.value )
+					REPORT_ERROR( InvalidSizeForCharLiteral, names_scope, string_literal.src_loc, string_literal_value )
 					return ErrorValue();
 				}
 
@@ -777,7 +785,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		unsafe
 		{
 			auto phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, LLVMPointerType( result.t.GetLLVMType(), 0u ), "select_result\0"[0] );
-			LLVMAddIncoming( phi_node, branches_reference_values[0], branches_end_blocks[0], 2u );
+			LLVMAddIncoming( phi_node, $<(branches_reference_values[0]), $<(branches_end_blocks[0]), 2u );
 			result.llvm_value= phi_node;
 		}
 	}
@@ -989,7 +997,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, halt_block );
 					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, halt_block );
 
-					LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, LLVMValueRef::Null, 0u, "\0"[0] );
+					LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
 					LLVMBuildUnreachable( function_context.llvm_ir_builder );
 
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, ok_block );
@@ -1007,8 +1015,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			unsafe
 			{
-				var [ LLVMValueRef, 2 ] indexes[ GetZeroGEPIndex(), index_value ];
-				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, indexes[0], 2u, "[]\0"[0] ); // TODO - maybe add "inbounds" attribute?
+				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), index_value ];
+				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ); // TODO - maybe add "inbounds" attribute?
 			}
 
 			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
@@ -1700,7 +1708,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
-			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_value, index_value, 1u, "+\0"[0] );
+			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_value, $<(index_value), 1u, "+\0"[0] );
 		}
 	}
 	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() && !r_raw_pointer_type.empty() )
@@ -1791,9 +1799,9 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 					sub_value= LLVMBuildZExt( function_context.llvm_ir_builder, sub_value, dst_type, "\0"[0] );
 				}
 			}
-			auto index_negative= LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, "\0"[0] );
+			auto mut index_negative= LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, "\0"[0] );
 
-			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, l_in_register, index_negative, 1u, "-\0"[0] );
+			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, l_in_register, $<(index_negative), 1u, "-\0"[0] );
 		}
 	}
 	else if(
@@ -2237,9 +2245,9 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 
 		phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, "\0"[0] );
 
-		var [ LLVMValueRef, 2 ] incoming_values[ l_var_in_register, r_var_in_register ];
-		var [ LLVMBasicBlockRef, 2 ] incoming_blocks[ l_part_block, r_part_end_block ];
-		LLVMAddIncoming( phi_node, incoming_values[0], incoming_blocks[0], 2u );
+		var [ LLVMValueRef, 2 ] mut incoming_values[ l_var_in_register, r_var_in_register ];
+		var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ l_part_block, r_part_end_block ];
+		LLVMAddIncoming( phi_node, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
 	}
 
 	var Variable mut result
@@ -3011,7 +3019,7 @@ fn CodeBuilder::DoCallFunction(
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
 		{
-			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.front_unchecked(), u32(llvm_args.size()), "\0"[0] );
+			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.data(), u32(llvm_args.size()), "\0"[0] );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
 			else if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
 			{
