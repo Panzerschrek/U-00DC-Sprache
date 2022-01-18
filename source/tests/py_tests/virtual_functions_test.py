@@ -705,6 +705,41 @@ def FunctionDoesNotOverride_Test2():
 	assert( errors_list[0].src_loc.line == 8 )
 
 
+def FunctionDoesNotOverride_Test3():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this, i32 &'r x) : i32 &'r;
+		}
+		class B : A
+		{
+			fn virtual override Foo(this, i32 & x) : i32 &; // Different return references (both "this" and "x" by-default).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
+	assert( errors_list[0].src_loc.line == 8 )
+
+
+def FunctionDoesNotOverride_Test4():
+	c_program_text= """
+		class A polymorph
+		{
+			i32& x;
+			fn virtual Foo(mut this'a', i32 &'b x) ' a <- b ';
+		}
+		class B : A
+		{
+			fn virtual override Foo(mut this, i32 & x); // Different references pollution.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionDoesNotOverride" )
+	assert( errors_list[0].src_loc.line == 9 )
+
+
 def OverrideFinalFunction_Test0():
 	c_program_text= """
 		class A polymorph
