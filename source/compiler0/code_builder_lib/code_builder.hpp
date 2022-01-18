@@ -125,6 +125,11 @@ private:
 	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
 
 	// Virtual stuff
+	void CheckvirtualFunctionOverridingReferenceNotation(
+		CodeBuilderErrorsContainer& errors_container,
+		const SrcLoc& src_loc,
+		const FunctionVariable& src_function,
+		const FunctionVariable& new_function );
 	void PrepareClassVirtualTable( Class& the_class );
 	void PrepareClassVirtualTableType( const ClassPtr& class_type );
 
