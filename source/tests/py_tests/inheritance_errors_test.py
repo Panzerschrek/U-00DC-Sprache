@@ -595,3 +595,45 @@ def TakeForNonFinalPolymorphClass_Test2():
 	}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def FunctionOverridingWithReferencesNotationChange_Test0():
+	c_program_text= """
+	class A interface
+	{
+		fn virtual pure Foo(this'a') : i32 &'a ;
+	}
+	class B : A
+	{
+		// Error, returned reference changed from empty list to internal reference of "this", because reference field was added.
+		fn virtual override Foo(this'a') : i32 &'a;
+		i32& x;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
+	assert( errors_list[0].src_loc.line == 10 )
+
+
+def FunctionOverridingWithReferencesNotationChange_Test1():
+	c_program_text= """
+	class A polymorph
+	{
+		fn virtual Foo(this'a') : i32 &'a
+		{
+			return g_zero;
+		}
+	}
+	auto g_zero= 0;
+	class B : A
+	{
+		// Error, returned reference changed from empty list to internal reference of "this", because reference field was added.
+		fn virtual override Foo(this'a') : i32 &'a;
+		i32& x;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
+	assert( errors_list[0].src_loc.line == 12 )

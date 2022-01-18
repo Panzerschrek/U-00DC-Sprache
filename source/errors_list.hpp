@@ -70,7 +70,6 @@ PROCESS_ERROR( StaticAssertionFailed, "Static assertion failed." )
 PROCESS_ERROR( ArrayIndexOutOfBounds, "Array index out of bounds. Index is {0}, but array contains only {1} elements." )
 PROCESS_ERROR( TupleIndexOutOfBounds, "Tuple index out of bounds. Index is {0}, but tuple contains only {1} elements." )
 
-
 // Initializers errors.
 PROCESS_ERROR( ArrayInitializerForNonArray, "Array initializer for not array or tuple." )
 PROCESS_ERROR( ArrayInitializersCountMismatch, "Array initializers count mismatch. Expected {0}, got {1}." )
@@ -183,6 +182,7 @@ PROCESS_ERROR( VirtualForPrivateFunction, "Virtual for private function \"{0}\".
 PROCESS_ERROR( VirtualForFunctionTemplate, "\"virtual\" for template function \"{0}\"." )
 PROCESS_ERROR( VirtualForFunctionImplementation, "\"virtual\" for function implementation \"{0}\"." )
 PROCESS_ERROR( VirtualMismatch, "\"virtual\" specifiers mismatch for function \"{0}\"." )
+PROCESS_ERROR( FunctionOverridingWithReferencesNotationChange, "Function overriding causes changes in references notation (return references or references pollution)." )
 
 // NoMangle
 PROCESS_ERROR( NoMangleForNonglobalFunction, "\"nomangle\" for non-global function \"{0}\"." )
