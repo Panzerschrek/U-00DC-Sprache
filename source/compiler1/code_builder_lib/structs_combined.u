@@ -903,6 +903,8 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		}
 	}
 
+	// TODO - check references consequences!!!
+
 	return true;
 }
 

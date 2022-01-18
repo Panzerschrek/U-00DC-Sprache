@@ -632,6 +632,13 @@ private:
 	fn CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef;
 
 	// Virtual stuff
+	fn CheckvirtualFunctionOverridingReferenceNotation(
+		this,
+		NamesScopePtr& names_scope,
+		SrcLoc& src_loc,
+		FunctionVariable& src_function,
+		FunctionVariable& new_function,
+		ClassType& new_class_type );
 	fn PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr );
 	fn PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type_ptr );
 

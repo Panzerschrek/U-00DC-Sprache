@@ -558,9 +558,60 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		lock.deref().fields_order= move(fields_order);
 	}
 
+	{
+		auto mut class_lock= class_type.lock_mut();
+		var ClassType &mut class_= class_lock.deref();
+
+		unsafe
+		{
+			// Check opaque before set body for cases of errors (class body duplication).
+			if( LLVMIsOpaqueStruct( class_.llvm_type ) == LLVMBool::True )
+			{
+				LLVMStructSetBody( class_.llvm_type, fields_llvm_types.data(), u32(fields_llvm_types.size()), LLVMBool::False );
+			}
+		}
+	}
+
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
 	TryGenerateDestructorPrototype( class_type );
 
+	{ // Setup inner reference kind. Do this before methods generation and virtual table preparation.
+		auto mut class_lock= class_type.lock_mut();
+		auto &mut class_= class_lock.deref();
+
+		var InnerReferenceKind mut class_inner_reference_kind= InnerReferenceKind::None;
+
+		foreach( &parent : class_.parents )
+		{
+			auto parent_inner_reference_kind= parent.class_.lock_imut().deref().inner_reference_kind;
+			if( u32(parent_inner_reference_kind) > u32(class_inner_reference_kind) )
+			{
+				class_inner_reference_kind= parent_inner_reference_kind;
+			}
+		}
+
+		auto class_members_lock= class_members.lock_imut();
+
+		foreach( &field_pair : class_.fields_order )
+		{
+			auto field_lock= field_pair[1].lock_imut();
+			var ClassField& field= field_lock.deref();
+
+			auto field_inner_reference_kind=
+				select( field.is_reference
+					? select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut )
+					: field.t.GetInnerReferenceKind() );
+
+			if( u32(field_inner_reference_kind) > u32(class_inner_reference_kind) )
+			{
+				class_inner_reference_kind= field_inner_reference_kind;
+			}
+		}
+
+		class_.inner_reference_kind= class_inner_reference_kind;
+	}
+
+	// Prepare virtual table.
 	if( !syntax_element.parents.empty() ||
 		syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
 		syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface ||
@@ -573,20 +624,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			unsafe
 			{
 				fields_llvm_types.front()= LLVMPointerType( class_type.lock_imut().deref().virtual_table_llvm_type, 0u );
-			}
-		}
-	}
-
-	{
-		auto mut class_lock= class_type.lock_mut();
-		var ClassType &mut class_= class_lock.deref();
-
-		unsafe
-		{
-			// Check opaque before set body for cases of errors (class body duplication).
-			if( LLVMIsOpaqueStruct( class_.llvm_type ) == LLVMBool::True )
-			{
-				LLVMStructSetBody( class_.llvm_type, fields_llvm_types.data(), u32(fields_llvm_types.size()), LLVMBool::False );
 			}
 		}
 	}
@@ -715,42 +752,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				}
 			}
 		}
-	}
-
-	{ // Setup inner reference kind. Do this before methods generation.
-		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.deref();
-
-		var InnerReferenceKind mut class_inner_reference_kind= InnerReferenceKind::None;
-
-		foreach( &parent : class_.parents )
-		{
-			auto parent_inner_reference_kind= parent.class_.lock_imut().deref().inner_reference_kind;
-			if( u32(parent_inner_reference_kind) > u32(class_inner_reference_kind) )
-			{
-				class_inner_reference_kind= parent_inner_reference_kind;
-			}
-		}
-
-		auto class_members_lock= class_members.lock_imut();
-
-		foreach( &field_pair : class_.fields_order )
-		{
-			auto field_lock= field_pair[1].lock_imut();
-			var ClassField& field= field_lock.deref();
-
-			auto field_inner_reference_kind=
-				select( field.is_reference
-					? select( field.is_mutable ? InnerReferenceKind::Mut : InnerReferenceKind::Imut )
-					: field.t.GetInnerReferenceKind() );
-
-			if( u32(field_inner_reference_kind) > u32(class_inner_reference_kind) )
-			{
-				class_inner_reference_kind= field_inner_reference_kind;
-			}
-		}
-
-		class_.inner_reference_kind= class_inner_reference_kind;
 	}
 
 	BuildClassPolymorphTypeId( class_type );
