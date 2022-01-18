@@ -42,10 +42,21 @@ fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 
 	// TODO - maybe allow returning of "this" inner references if inner reference kind "imut" to "mut" was changed?
 
+	var FunctionType::ParamReference this_inner_reference{ .param_index(0), .reference_index(0) };
+
 	// Disable inner reference kind change if function returns "this" inner reference.
-	foreach( return_reference : src_function.t.return_references )
+	foreach( &return_reference : src_function.t.return_references )
 	{
-		if( return_reference.param_index == 0u8 /* this param */ && return_reference.reference_index == 0u8 /* inner reference */ )
+		if( return_reference == this_inner_reference)
+		{
+			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
+		}
+	}
+
+	// Disable inner reference kind change if function does reterence pollution with "this" inner reference as source or as destination.
+	foreach( &reference_pollution : src_function.t.references_pollution )
+	{
+		if( reference_pollution.src == this_inner_reference || reference_pollution.dst == this_inner_reference )
 		{
 			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
 		}

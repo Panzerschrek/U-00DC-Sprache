@@ -739,3 +739,141 @@ def FunctionOverridingWithReferencesNotationChange_Test6():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
 	assert( errors_list[0].src_loc.line == 10 )
+
+
+def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test0():
+	c_program_text= """
+	struct S{ i32& x; }
+	class A interface
+	{
+		fn virtual pure Foo( mut this'a', S& s'b' ) ' a <- b ';
+	}
+	class B : A
+	{
+		// Error, reference pollution changed because pollutuon destination ("this" inner reference) was changed because reference filed was added.
+		fn virtual override Foo( mut this'a', S& s'b' ) ' a <- b ';
+		i32& x;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
+	assert( errors_list[0].src_loc.line == 10 )
+
+
+def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test1():
+	c_program_text= """
+	struct S{ i32& x; }
+	class A interface
+	{
+		fn virtual pure Foo( this'a', S &mut s'b' ) ' b <- a ';
+	}
+	class B : A
+	{
+		// Error, reference pollution changed because pollutuon source ("this" inner reference) was changed because reference filed was added.
+		fn virtual override Foo( this'a', S &mut s'b' ) ' b <- a ';
+		i32& x;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
+	assert( errors_list[0].src_loc.line == 10 )
+
+
+def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test2():
+	c_program_text= """
+	struct S{ i32& x; }
+	class A abstract
+	{
+		fn virtual pure Foo( mut this'a', S& s'b' ) ' a <- b ';
+		i32& x;
+	}
+	class B : A
+	{
+		// Ok, inner reference kind doesn't changed.
+		fn virtual override Foo( mut this'a', S& s'b' ) ' a <- b ';
+		i32& y;
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test3():
+	c_program_text= """
+	struct S{ i32& x; }
+	class A interface
+	{
+		fn virtual pure Foo( mut this'a', S& s'b' ) ' a <- b ';
+	}
+	class B abstract : A {}
+	class C : B
+	{
+		// Error, reference pollution changed because pollutuon destination ("this" inner reference) was changed because reference filed was added.
+		fn virtual override Foo( mut this'a', S& s'b' ) ' a <- b ';
+		i32& x;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
+	assert( errors_list[0].src_loc.line == 11 )
+
+
+def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test4():
+	c_program_text= """
+	struct S{ i32& x; }
+	class A interface
+	{
+		fn virtual pure Foo( this'a', S &mut s'b' ) ' a <- b ';
+	}
+	class B abstract : A { i32& x; }
+	class C : B
+	{
+		// Error, reference pollution changed because pollutuon source ("this" inner reference) was changed because reference filed was added in intermediate class.
+		fn virtual override Foo( this'a', S &mut s'b' ) ' a <- b ';
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
+	assert( errors_list[0].src_loc.line == 11 )
+
+
+def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test5():
+	c_program_text= """
+	class A interface
+	{
+		fn virtual pure Foo( mut this'a', i32&'b x ) ' a <- b ';
+	}
+	class B : A
+	{
+		// Error, reference pollution changed because pollutuon destination ("this" inner reference) was changed because reference filed was added.
+		fn virtual override Foo( mut this'a', i32&'b x ) ' a <- b ';
+		i32& x;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
+	assert( errors_list[0].src_loc.line == 9 )
+
+
+def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test6():
+	c_program_text= """
+	class A polymorph
+	{
+		fn virtual Foo( mut this'a', i32&'b x ) ' a <- b ';
+		i32& x;
+	}
+	class B : A
+	{
+		// Error, reference pollution changed because pollutuon destination ("this" inner reference) was changed because inner reference kind was changed ("imut" to "mut").
+		fn virtual override Foo( mut this'a', i32&'b x ) ' a <- b ';
+		i32 &mut x;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
+	assert( errors_list[0].src_loc.line == 10 )
