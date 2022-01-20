@@ -463,23 +463,15 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			class_field->is_reference= in_field.reference_modifier == Synt::ReferenceModifier::Reference;
 			class_field->type= PrepareType( class_field->syntax_element->type, *the_class.members, *global_function_context_ );
 
-			if( !class_field->is_reference || in_field.mutability_modifier == Synt::MutabilityModifier::Constexpr )
+			// Full type completeness required for all field, even reference fileds, because we need to forbid references to types with references.
+			if( !EnsureTypeComplete( class_field->type ) )
 			{
-				// Full type completeness required for value-fields and constexpr reference-fields.
-				if( !EnsureTypeComplete( class_field->type ) )
-				{
-					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc_, class_field->type );
-					return;
-				}
+				REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc_, class_field->type );
+				return;
 			}
 
 			if( class_field->is_reference )
 			{
-				if( !EnsureTypeComplete( class_field->type ) )
-				{
-					REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), in_field.src_loc_, class_field->type );
-					return;
-				}
 				if( class_field->type.ReferencesTagsCount() > 0u )
 					REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, class_parent_namespace.GetErrors(), in_field.src_loc_, in_field.name );
 			}
