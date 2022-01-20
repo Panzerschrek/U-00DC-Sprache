@@ -351,6 +351,23 @@ bool Type::IsAbstract() const
 	return false;
 }
 
+bool Type::HaveSharedState() const
+{
+	if( const auto array_type= GetArrayType() )
+		return array_type->type.HaveSharedState();
+	else if( const auto tuple_type= GetTupleType() )
+	{
+		bool have_shared_state= false;
+		for( const Type& element : tuple_type->elements )
+			have_shared_state= have_shared_state || element.HaveSharedState();
+		return have_shared_state;
+	}
+	else if( const Class* const class_= GetClassType() )
+		return class_->have_shared_state;
+
+	return false;
+}
+
 size_t Type::ReferencesTagsCount() const
 {
 	return GetInnerReferenceType() == InnerReferenceType::None ? 0 : 1;

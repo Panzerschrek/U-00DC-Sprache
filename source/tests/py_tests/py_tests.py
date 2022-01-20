@@ -70,6 +70,7 @@ def main():
 		"type_conversions_test",
 		"typeinfo_test",
 		"typeof_test",
+		"shared_state_test",
 		"static_if_test",
 		"strong_order_test",
 		"uninitialized_initializer_test",

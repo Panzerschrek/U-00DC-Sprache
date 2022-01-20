@@ -103,6 +103,7 @@ public:
 	bool HaveDestructor() const;
 	bool CanBeConstexpr() const;
 	bool IsAbstract() const;
+	bool HaveSharedState() const;
 
 	size_t ReferencesTagsCount() const;
 	InnerReferenceType GetInnerReferenceType() const;

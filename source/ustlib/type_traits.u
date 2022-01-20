@@ -104,12 +104,6 @@ fn constexpr is_tuple_typeinfo_type() : bool
 	else { return false; }
 }
 
-template</ type T />
-fn constexpr have_shared_state() : bool
-{
-	return type_traits_impl::have_shared_state_impl( typeinfo</T/> );
-}
-
 template</ type T, type FnT, size_type name_size />
 fn constexpr class_have_method( [ char8, name_size ]& name ) : bool
 {
@@ -187,78 +181,6 @@ fn constexpr has_ancestor( ParentListType& parents_list ) : bool
 		{ return true; }
 		if( type_traits_impl::has_ancestor</ ParentCandidate />( list_elemet.type.parents_list ) )
 		{ return true; }
-	}
-	return false;
-}
-
-template</ type TypeinfoType />
-fn constexpr have_shared_state_impl( TypeinfoType& typeinfo_ ) : bool
-{
-	static_if( is_class_typeinfo_type</ TypeinfoType />() )
-	{
-		if( typeinfo_.shared )
-		{
-			return true;
-		}
-		return
-			class_have_shared_state_fields ( typeinfo_.fields_list  ) ||
-			class_have_shared_check_typedef( typeinfo_.types_list   ) ||
-			class_have_shared_state_parents( typeinfo_.parents_list );
-	}
-	else if( is_array_typeinfo_type</ TypeinfoType />() )
-	{
-		return type_traits_impl::have_shared_state_impl( typeinfo_.element_type );
-	}
-	else if( is_tuple_typeinfo_type</ TypeinfoType />() )
-	{
-		for( & element : typeinfo_.elements_list )
-		{
-			if( type_traits_impl::have_shared_state_impl( element.type ) )
-			{
-				return true;
-			}
-		}
-
-		return false;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-template</ type ListType />
-fn constexpr class_have_shared_check_typedef( ListType& types_list ) : bool
-{
-	for( &list_element : types_list )
-	{
-		if( type_traits_impl::string_equals( list_element.name, "element_type_for_shared_check" ) )
-		{
-			if( have_shared_state_impl( list_element.type ) )
-			{
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-template</ type ListType />
-fn constexpr class_have_shared_state_fields( ListType& fields_list ) : bool
-{
-	for( &list_element : fields_list )
-	{
-		if( have_shared_state_impl( list_element.type ) ){ return true; }
-	}
-	return false;
-}
-
-template</ type ListType />
-fn constexpr class_have_shared_state_parents( ListType& parents_list ) : bool
-{
-	for( &list_element : parents_list )
-	{
-		if( have_shared_state_impl( list_element.type ) ){ return true; }
 	}
 	return false;
 }

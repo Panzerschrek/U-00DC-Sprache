@@ -217,6 +217,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	add_bool_field( "is_default_constructible", type.IsDefaultConstructible() );
 	add_bool_field( "is_copy_constructible"   , type.IsCopyConstructible()    );
 	add_bool_field( "is_copy_assignable"      , type.IsCopyAssignable()       );
+	add_bool_field( "have_shared_state"       , type.HaveSharedState()        );
 
 	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
 	{
@@ -286,7 +287,6 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_bool_field( "is_interface", class_type->kind == Class::Kind::Interface );
 
 		add_bool_field( "is_typeinfo", class_type->typeinfo_type != std::nullopt );
-		add_bool_field( "shared", class_type->have_shared_state );
 	}
 	else if( const RawPointerType* const raw_pointer_type= type.GetRawPointerType() )
 	{

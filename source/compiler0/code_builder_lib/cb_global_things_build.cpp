@@ -488,9 +488,11 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				the_class.can_be_constexpr= false;
 
 			++the_class.field_count;
+
+
 		} );
 
-	// Determine inner reference type.
+	// Determine inner reference type and shared state flag.
 	the_class.members->ForEachValueInThisScope(
 		[&]( const Value& value )
 		{
@@ -507,10 +509,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				the_class.inner_reference_type= std::max( the_class.inner_reference_type, field->type.GetInnerReferenceType() );
 			}
 
+			the_class.have_shared_state |= field->type.HaveSharedState();
 		});
 
 	for( const Class::Parent& parent : the_class.parents )
+	{
 		the_class.inner_reference_type= std::max( the_class.inner_reference_type, parent.class_->inner_reference_type );
+		the_class.have_shared_state |= parent.class_->have_shared_state;
+	}
 
 	// Fill llvm struct type fields
 	ClassFieldsVector<llvm::Type*> fields_llvm_types;

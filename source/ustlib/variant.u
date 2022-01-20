@@ -189,9 +189,6 @@ public:
 	}
 
 private:
-	type element_type_for_shared_check= Y;
-
-private:
 	aligned_storage</
 		variant_impl::get_max_tuple_element_size</Y/>(),
 		variant_impl::get_max_tuple_element_alignment</Y/>()

@@ -245,6 +245,7 @@ public:
 	fn IsCopyAssignable( this ) : bool;
 	fn CanBeConstexpr( this ) : bool;
 	fn IsAbstract( this ) : bool;
+	fn HaveSharedState( this ) : bool;
 
 	fn GetInnerReferenceKind( this ) : InnerReferenceKind;
 

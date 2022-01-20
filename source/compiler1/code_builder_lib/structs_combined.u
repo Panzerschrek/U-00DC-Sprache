@@ -671,6 +671,31 @@ fn Type::IsAbstract( this ) : bool
 	return false;
 }
 
+fn Type::HaveSharedState( this ) : bool
+{
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.HaveSharedState();
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( element_type.HaveSharedState() )
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		return class_type.lock_imut().deref().have_shared_state;
+	}
+
+	return false;
+}
+
 fn Type::GetInnerReferenceKind( this ) : InnerReferenceKind
 {
 	if_var( &array_type : GetArrayType() )
