@@ -9,7 +9,6 @@ General:
 *) Different calling conventions (for API calls, for example)
 *) Anonymous (module-local) symbols - functions, classes, variables.
 *) <, <=, >, >= for enums.
-*) Forbid inner reference kind changing in inheritance.
 *) Forbid "shared" tag changing in inheritance.
 *) build-in "for" for array types.
 *) type for raw data representation (like "char" in C++, which may alias with every type).
