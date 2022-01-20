@@ -884,7 +884,9 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		tl.is_unsafe == tr.is_unsafe &&
 		tl.params.size() == tr.params.size() &&
 		tl.params.size() > 0s &&
-		tl.params.front().value_type == tr.params.front().value_type
+		tl.params.front().value_type == tr.params.front().value_type &&
+		tl.return_references.size() == tr.return_references.size() &&
+		tl.references_pollution.size() == tr.references_pollution.size()
 		) )
 	{
 		return false;
@@ -898,6 +900,22 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 			param_l.t == param_r.t &&
 			param_l.value_type == param_r.value_type
 			) )
+		{
+			return false;
+		}
+	}
+
+	for( auto mut i= 0s; i < tl.return_references.size(); ++i )
+	{
+		if( tl.return_references[i] != tr.return_references[i] )
+		{
+			return false;
+		}
+	}
+
+	for( auto mut i= 0s; i < tl.references_pollution.size(); ++i )
+	{
+		if( tl.references_pollution[i] != tr.references_pollution[i] )
 		{
 			return false;
 		}

@@ -203,6 +203,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	}
 
 	add_size_field( "references_tags_count", type.ReferencesTagsCount() );
+	add_bool_field( "contains_mutable_references", type.GetInnerReferenceType() == InnerReferenceType::Mut );
 
 	add_bool_field( "is_fundamental"     , type.GetFundamentalType()     != nullptr );
 	add_bool_field( "is_enum"            , type.GetEnumType()            != nullptr );

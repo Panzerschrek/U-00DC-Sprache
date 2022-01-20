@@ -19,6 +19,50 @@ struct VirtualFunctionWithName
 	}
 }
 
+fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
+	this,
+	NamesScopePtr& names_scope,
+	SrcLoc& src_loc,
+	FunctionVariable& src_function,
+	FunctionVariable& new_function,
+	ClassType& new_class_type )
+{
+	var ClassTypePtr src_function_this_type= src_function.t.params.front().t.GetClassType().try_deref();
+
+	auto src_class_inner_reference_kind= src_function_this_type.lock_imut().deref().inner_reference_kind;
+	auto new_class_inner_reference_kind= new_class_type.inner_reference_kind;
+
+	if( src_class_inner_reference_kind == new_class_inner_reference_kind )
+	{
+		// Ok - nothing changed.
+		return;
+	}
+
+	// In case if inner reference kind changed - check this function.
+
+	// TODO - maybe allow returning of "this" inner references if inner reference kind "imut" to "mut" was changed?
+
+	var FunctionType::ParamReference this_inner_reference{ .param_index(0), .reference_index(0) };
+
+	// Disable inner reference kind change if function returns "this" inner reference.
+	foreach( &return_reference : src_function.t.return_references )
+	{
+		if( return_reference == this_inner_reference)
+		{
+			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
+		}
+	}
+
+	// Disable inner reference kind change if function does reference pollution with "this" inner reference as source or as destination.
+	foreach( &reference_pollution : src_function.t.references_pollution )
+	{
+		if( reference_pollution.src == this_inner_reference || reference_pollution.dst == this_inner_reference )
+		{
+			REPORT_ERROR( FunctionOverridingWithReferencesNotationChange, names_scope, src_loc )
+		}
+	}
+}
+
 fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 {
 	// Class now should not be complete, but parents and functions should be known.
@@ -145,17 +189,6 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		auto mut functions_set_lock= f.functions_set.lock_mut();
 		var FunctionVariable &mut function= functions_set_lock.deref().functions_set.functions[ f.index ];
 
-		auto mut virtual_table_index= ~0u;
-		for( auto mut i= 0s; i < class_type.virtual_table.size(); ++i )
-		{
-			var ClassType::VirtualTableEntry& entry= class_type.virtual_table[i];
-			if( function_name == entry.name && function.VirtuallyEquals( entry.function_variable ) )
-			{
-				virtual_table_index= u32(i);
-				break;
-			}
-		}
-
 		var SrcLoc mut src_loc;
 		var Synt::Function::VirtualKind mut virtual_kind= Synt::Function::VirtualKind::None;
 		if_var( &el : function.body_syntax_element )
@@ -167,6 +200,18 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		{
 			src_loc= el.src_loc;
 			virtual_kind= el.virtual_kind;
+		}
+
+		auto mut virtual_table_index= ~0u;
+		for( auto mut i= 0s; i < class_type.virtual_table.size(); ++i )
+		{
+			var ClassType::VirtualTableEntry& entry= class_type.virtual_table[i];
+			if( function_name == entry.name && function.VirtuallyEquals( entry.function_variable ) )
+			{
+				CheckvirtualFunctionOverridingReferenceNotation( class_members_ptr, src_loc, entry.function_variable, function, class_type );
+				virtual_table_index= u32(i);
+				break;
+			}
 		}
 
 		if( virtual_kind != Synt::Function::VirtualKind::None && class_type.GetMemberVisibility( function_name ) == Synt::ClassVisibility::Private )
