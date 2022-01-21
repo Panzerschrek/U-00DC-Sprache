@@ -119,6 +119,17 @@ CodeBuilder::CodeBuilder(
 		fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u
 		? FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 )
 		: FundamentalType( U_FundamentalType::u64, fundamental_llvm_types_.u64 );
+
+	// Use named struct for polymorph type id table element, because this is recursive struct.
+	{
+		polymorph_type_id_table_element_type_= llvm::StructType::create( llvm_context_, "__U_polymorph_type_id_table_element" );
+		llvm::Type* const elements[]
+		{
+			fundamental_llvm_types_.int_ptr, // Parent class offset.
+			polymorph_type_id_table_element_type_->getPointerTo(), // Pointer to parent class type_id table.
+		};
+		polymorph_type_id_table_element_type_->setBody( elements );
+	}
 }
 
 CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_graph )

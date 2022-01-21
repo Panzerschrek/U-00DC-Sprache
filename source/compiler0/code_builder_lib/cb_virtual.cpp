@@ -265,7 +265,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr& class_type )
 	Virtual table layout for polymorph class without parens:
 
 		size_type base_offset;
-		size_type& type_id;
+		type_id_table_element* type_id; // pointer to first element of null-terminated table.
 		[ fn(), N ] functions_table;
 
 	Virtual table layout for polymorph class with parents:
@@ -305,7 +305,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr& class_type )
 	{
 		// No parents - create special fields - base offset, type id, etc.
 		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
-		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() ); // type_id field
+		virtual_table_struct_fields.push_back( polymorph_type_id_table_element_type_->getPointerTo() ); // type_id field
 	}
 
 	const auto fn_type= llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, true );
@@ -326,7 +326,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr& class_type )
 
 void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class_type )
 {
-	U_ASSERT( the_class.polymorph_type_id == nullptr );
+	U_ASSERT( the_class.polymorph_type_id_table == nullptr );
 
 	// Build polymorph type id only for polymorph classes. TODO - maybe not build it for abstract classes or interfaces?
 	if( !(
@@ -336,8 +336,10 @@ void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class
 		the_class.kind == Class::Kind::PolymorphFinal ) )
 		return;
 
-	llvm::Type* const type_id_type= fundamental_llvm_types_.int_ptr;
-	the_class.polymorph_type_id=
+	// TODO - fill real table.
+	llvm::Type* const type_id_type= llvm::ArrayType::get( polymorph_type_id_table_element_type_, 1 );
+
+	the_class.polymorph_type_id_table=
 		new llvm::GlobalVariable(
 			*module_,
 			type_id_type,
@@ -345,9 +347,9 @@ void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class
 			llvm::GlobalValue::ExternalLinkage,
 			llvm::Constant::getNullValue( type_id_type ),
 			"_type_id_for_" + mangler_->MangleType( class_type ) );
-	llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id->getName() );
+	llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id_table->getName() );
 	type_id_comdat->setSelectionKind( llvm::Comdat::Any );
-	the_class.polymorph_type_id->setComdat( type_id_comdat );
+	the_class.polymorph_type_id_table->setComdat( type_id_comdat );
 }
 
 llvm::Constant* CodeBuilder::BuildClassVirtualTable_r(
@@ -384,7 +386,14 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r(
 					global_function_context_->llvm_ir_builder.CreatePtrToInt( dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr ) ) );
 
 		// Type id
-		initializer_values.push_back( dst_class.polymorph_type_id );
+		// Take address of first element of type id table.
+		llvm::Value* const gep_indices[]{ GetZeroGEPIndex(), GetZeroGEPIndex() };
+		const auto address=
+			llvm::ConstantExpr::getGetElementPtr(
+				nullptr,
+				dst_class.polymorph_type_id_table,
+				gep_indices );
+		initializer_values.push_back( address );
 	}
 
 	const auto array_type= llvm::dyn_cast<llvm::ArrayType>( ancestor_class.virtual_table_llvm_type->getElementType( uint32_t(initializer_values.size() ) ) );

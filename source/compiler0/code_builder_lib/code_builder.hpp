@@ -961,6 +961,7 @@ private:
 	Type void_type_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
+	llvm::StructType* polymorph_type_id_table_element_type_= nullptr;
 
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	const std::unique_ptr<IMangler> mangler_;

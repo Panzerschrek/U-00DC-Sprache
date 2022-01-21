@@ -265,12 +265,20 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 
 		if( is_polymorph )
 		{
-			U_ASSERT( class_type->polymorph_type_id != nullptr );
+			U_ASSERT( class_type->polymorph_type_id_table != nullptr );
 			typeinfo_class->members->AddName(
 				"type_id",
 				Value( ClassField( typeinfo_class, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() );
-			fields_initializers.push_back( class_type->polymorph_type_id );
+
+			// Take address of fist member of first element of typeinfo table, which is offset of type "int_ptr".
+			llvm::Value* const gep_indices[]{ GetZeroGEPIndex(), GetZeroGEPIndex(), GetZeroGEPIndex() };
+			const auto address=
+				llvm::ConstantExpr::getGetElementPtr(
+					nullptr,
+					class_type->polymorph_type_id_table,
+					gep_indices );
+			fields_initializers.push_back( address );
 		}
 
 		add_bool_field( "is_struct", class_type->kind == Class::Kind::Struct );
