@@ -32,9 +32,10 @@ fn polymorph_is_same_type( A& a, B& b ) : bool
 		unsafe
 		{
 			// Virtual table pointer is always first field in class.
+			// Types are same if "type_id_table" address is same.
 			return
-				cast_ref_unsafe</ polymorph_impl::virtual_class />(a).vptr.type_id ==
-				cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id;
+				cast_ref_unsafe</ polymorph_impl::virtual_class />(a).vptr.type_id_table ==
+				cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id_table;
 		}
 	}
 	else
@@ -50,7 +51,10 @@ fn polymorph_is_instance_of( B& b ) : bool
 	{
 		unsafe
 		{
-			return cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id == ust::ref_to_int( typeinfo</A/>.type_id );
+			auto& virtual_table= cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr;
+			var polymorph_impl::type_id_table_element& type_id_table_first_element= $>( virtual_table.type_id_table );
+			var $(size_type) size_type_address= $<( cast_mut( type_id_table_first_element.parent_offset ) );
+			return size_type_address == $<( cast_mut( typeinfo</A/>.type_id ) );
 		}
 	}
 	else
@@ -89,7 +93,13 @@ namespace polymorph_impl
 struct virtual_table
 {
 	size_type offset_of_allocated_object;
-	size_type type_id;
+	$(type_id_table_element) type_id_table;
+}
+
+struct type_id_table_element
+{
+	size_type parent_offset;
+	$(type_id_table_element) parent_type_id_table;
 }
 
 struct virtual_class
@@ -126,26 +136,18 @@ fn polymorph_cast_impl( From &'x mut from ) : optional_ref</ To, true />'x'
 			// Derived to base cast.
 			return optional_ref</ To, true  />( from );
 		}
-		else if( is_ancestor_for</ From, To />() )
-		{
-			// Base to derived cast.
-			unsafe
-			{
-				// TODO - support cast A->B in hierarchy A->B->C
-				if( cast_ref_unsafe</ virtual_class />(from).vptr.type_id == ust::ref_to_int( typeinfo</To/>.type_id ) )
-				{
-					return optional_ref</ To, true />( cast_ref_unsafe</To/>( cast_mut( polymorph_restore_original_ref(from) ) ) );
-				}
-				else
-				{
-					return optional_ref</ To, true />();
-				}
-			}
-		}
 		else
 		{
-			static_assert(false); // Unsupported polymorph_cast.
-			halt;
+			// Base to derived cast or cast for unrelated types.
+			unsafe
+			{
+				// Obtain pointer to "type_id" table.
+				auto& virtual_table= cast_ref_unsafe</ virtual_class />(from).vptr;
+				var $(type_id_table_element) type_id_table= virtual_table.type_id_table;
+				// Obtain pointer to allocated object.
+				var $(u8) ptr= $<( cast_ref_unsafe</u8/>( from ) ) - virtual_table.offset_of_allocated_object;
+				return polymorph_cast_r</To/>( ptr, type_id_table );
+			}
 		}
 	}
 	else
@@ -153,6 +155,36 @@ fn polymorph_cast_impl( From &'x mut from ) : optional_ref</ To, true />'x'
 		static_assert(false); // polymorph_cast works only for polymorph classes.
 		halt;
 	}
+}
+
+// Recursively try to find destination class in "type_id" tables of class and all its ancestors. If found - perform cast and return result.
+template</ type To />
+fn polymorph_cast_r( $(u8) ptr, $(type_id_table_element) mut type_id_table ) : optional_ref</ To, true />
+{
+	unsafe
+	{
+		// If address of "type_id" from "typeinfo" is equal to "type_id_table" address - return result.
+		var $(size_type) size_type_address= $<( $>(type_id_table).parent_offset );
+		if( size_type_address == $<( cast_mut( typeinfo</To/>.type_id ) ) )
+		{
+			return optional_ref</ To, true />( cast_ref_unsafe</To/>( $>(ptr) ) );
+		}
+
+		// Iterate over all parents and try to find target class.
+		while( $>(type_id_table).parent_type_id_table != nullptr</type_id_table_element/>() )
+		{
+			auto ptr_corrected= ptr + $>(type_id_table).parent_offset;
+			auto res= ust::polymorph_impl::polymorph_cast_r</To/>( ptr_corrected, $>(type_id_table).parent_type_id_table );
+			if( !res.empty() )
+			{
+				return res;
+			}
+			++type_id_table;
+		}
+
+	}
+
+	return optional_ref</ To, true />();
 }
 
 } // namespace polymorph_impl
