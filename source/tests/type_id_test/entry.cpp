@@ -1,9 +1,9 @@
 #include <cassert>
 #include <iostream>
 
-extern "C" void* GetSomeClassIdA();
-extern "C" void* GetSomeClassIdB();
-extern "C" void* GetSomeClassIdTypeinfo();
+extern "C" size_t GetSomeClassIdA();
+extern "C" size_t GetSomeClassIdB();
+extern "C" size_t GetSomeClassIdTypeinfo();
 
 int main()
 {

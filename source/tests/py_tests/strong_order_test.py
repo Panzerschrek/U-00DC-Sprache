@@ -56,7 +56,7 @@ def VirtualTableOrder_Test0():
 		struct VirtualTable ordered
 		{
 			size_type offset;
-			size_type type_id;
+			$(void) type_id;
 			[ CMethod, 128 ] functions;
 		}
 
@@ -124,7 +124,7 @@ def VirtualTableOrder_Test1():
 		struct VirtualTable ordered
 		{
 			size_type offset;
-			size_type type_id;
+			$(void) type_id;
 			[ CMethod, 128 ] functions;
 		}
 
@@ -156,7 +156,7 @@ def VirtualTableOrder_Test1():
 				halt if( virtual_table.functions[5] != cast_ref_unsafe</CMethod/>( fn_foo4 ) );
 				// "I" virtual table start.
 				halt if( cast_ref_unsafe</size_type/>(virtual_table.functions[6]) == 0s ); // "I" should have non-zero offset.
-				halt if( cast_ref_unsafe</size_type/>(virtual_table.functions[7]) != virtual_table.type_id ); // Type id for "I" is same as for "C"
+				halt if( cast_ref_unsafe</$(void)/>(virtual_table.functions[7]) != virtual_table.type_id ); // Type id for "I" is same as for "C"
 				// Methods of "I" interface.
 				halt if( virtual_table.functions[ 8] != cast_ref_unsafe</CMethod/>( destructor_ptr ) );
 				halt if( virtual_table.functions[ 9] != CMethod( C::I0 ) );
