@@ -414,6 +414,9 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 
 fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_ptr )
 {
+	// Mangle name before creating mutable lock.
+	var ust::string8 name_mangled_null_terminated= "_type_id_for_" + mangler_.deref().MangleType( class_type_ptr );
+
 	auto mut class_lock= class_type_ptr.lock_mut();
 	var ClassType& mut class_= class_lock.deref();
 
@@ -461,7 +464,6 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 
 		var LLVMTypeRef type_id_table_type= LLVMArrayType( polymorph_type_id_table_element_type_, u32(initializers.size()) );
 
-		var ust::string8 name_mangled_null_terminated= "_type_id_for_" + mangler_.deref().MangleType( class_type_ptr );
 
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, type_id_table_type, name_mangled_null_terminated.front() );
 		LLVMSetLinkage( global_value, LLVMLinkage::External );
