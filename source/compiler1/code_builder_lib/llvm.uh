@@ -53,10 +53,10 @@ enum LLVMLinkage : u32
 
 enum LLVMIntPredicate : u32
 {
-	Dummy00, Dymmy01, Dummy02, Dummy03, Dummy04, Dummy05, Dummy06, Dummy07,
-	Dummy08, Dymmy09, Dummy0A, Dummy0B, Dummy0C, Dummy0D, Dummy0E, Dummy0F,
-	Dummy10, Dymmy11, Dummy12, Dummy13, Dummy14, Dummy15, Dummy16, Dummy17,
-	Dummy18, Dymmy19, Dummy1A, Dummy1B, Dummy1C, Dummy1D, Dummy1E, Dummy1F,
+	Dummy00, Dummy01, Dummy02, Dummy03, Dummy04, Dummy05, Dummy06, Dummy07,
+	Dummy08, Dummy09, Dummy0A, Dummy0B, Dummy0C, Dummy0D, Dummy0E, Dummy0F,
+	Dummy10, Dummy11, Dummy12, Dummy13, Dummy14, Dummy15, Dummy16, Dummy17,
+	Dummy18, Dummy19, Dummy1A, Dummy1B, Dummy1C, Dummy1D, Dummy1E, Dummy1F,
 
 	// Shoud start with 32
 	EQ      , /**< equal */
@@ -224,6 +224,8 @@ fn nomangle LLVMSetValueName2(LLVMValueRef Val, $(char8) Name, size_type NameLen
 fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
 fn nomangle LLVMConstIntGetSExtValue(LLVMValueRef ConstantVal) unsafe : i64;
 fn nomangle LLVMGetInitializer(LLVMValueRef GlobalVar) unsafe : LLVMValueRef;
+fn nomangle LLVMGetOperand(LLVMValueRef Val, u32 Index) unsafe : LLVMValueRef;
+fn nomangle LLVMGetNumOperands(LLVMValueRef Val) unsafe : i32;
 fn nomangle LLVMIsConstant(LLVMValueRef Val) unsafe : LLVMBool;
 fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 
@@ -231,6 +233,7 @@ fn nomangle LLVMReplaceAllUsesWith(LLVMValueRef OldVal, LLVMValueRef NewVal) uns
 
 fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
+fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
 
 // Global value
 

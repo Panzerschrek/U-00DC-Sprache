@@ -118,9 +118,19 @@ fn nomangle main() : i32
 		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</A />(b) ).try_deref(), b ) );
 		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</I0/>(b) ).try_deref(), b ) );
 		halt if( !RefEq( ust::polymorph_cast</B/>( cast_ref</I1/>(b) ).try_deref(), b ) );
+		halt if( !RefEq( ust::polymorph_cast</A/>( cast_ref</B />(b) ).try_deref(), cast_ref</A/>(b) ) );
+		halt if( !RefEq( ust::polymorph_cast</A/>( cast_ref</I0/>(b) ).try_deref(), cast_ref</A/>(b) ) );
+		halt if( !RefEq( ust::polymorph_cast</A/>( cast_ref</I1/>(b) ).try_deref(), cast_ref</A/>(b) ) );
+		halt if( !RefEq( ust::polymorph_cast</I0/>( cast_ref</I1/>(b) ).try_deref(), cast_ref</I0/>(b) ) );
+		halt if( !RefEq( ust::polymorph_cast</I1/>( cast_ref</I0/>(b) ).try_deref(), cast_ref</I1/>(b) ) );
 
+		halt if( !ust::polymorph_cast</C/>( cast_ref</B />(b) ).empty() );
+		halt if( !ust::polymorph_cast</C/>( cast_ref</A />(b) ).empty() );
 		halt if( !ust::polymorph_cast</C/>( cast_ref</I0/>(b) ).empty() );
 		halt if( !ust::polymorph_cast</C/>( cast_ref</I1/>(b) ).empty() );
+
+		var C imut c;
+		halt if( !ust::polymorph_cast</B/>( c ).empty() );
 	}
 	{ // is_insance_of
 

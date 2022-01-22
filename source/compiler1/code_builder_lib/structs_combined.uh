@@ -199,7 +199,7 @@ struct ClassType
 	ust::vector</VirtualTableEntry/> virtual_table;
 	LLVMTypeRef virtual_table_llvm_type= LLVMTypeRef::Null;
 	LLVMValueRef virtual_table_llvm_variable= LLVMValueRef::Null; // May be null for interfaces and abstract classes.
-	LLVMValueRef polymorph_type_id= LLVMValueRef::Null; // Exists in polymorph classes.
+	LLVMValueRef polymorph_type_id_table= LLVMValueRef::Null; // Exists in polymorph classes.
 
 	// non-empty, if this is typeinfo class (root or some of list nodes)
 	ust::optional</Type/> typeinfo_src_type_;

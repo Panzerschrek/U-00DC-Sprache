@@ -371,10 +371,24 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			if( EnsureTypeComplete( field->type ) )
 			{
-				// Constexpr references field should be "GlobalVariable"
-				const auto var= llvm::dyn_cast<llvm::GlobalVariable>( variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) ));
-				result.llvm_value= var;
-				result.constexpr_value= var->getInitializer();
+				// Constexpr references field should be "GlobalVariable" or Constexpr GEP.
+				const auto element= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
+
+				result.llvm_value= element;
+
+				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
+					result.constexpr_value= global_variable->getInitializer();
+				else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
+				{
+					// TODO - what first operand is constant GEP too?
+					llvm::Constant* value= llvm::dyn_cast<llvm::GlobalVariable>(constant_expression->getOperand(0u))->getInitializer();
+
+					// Skip first zero index.
+					for( llvm::User::const_op_iterator op= std::next(std::next(constant_expression->op_begin())), op_end= constant_expression->op_end(); op != op_end; ++op )
+						value= value->getAggregateElement( llvm::dyn_cast<llvm::Constant>(op->get()) );
+					result.constexpr_value= value;
+				}
+				else U_ASSERT(false);
 			}
 			else
 				return ErrorValue(); // Actual error will be reported in another place.

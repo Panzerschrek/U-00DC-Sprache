@@ -249,13 +249,22 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 
 			if( element_type->isPointerTy() )
 			{
+				size_t element_ptr= 0;
 				if( element_type->getPointerElementType()->isFunctionTy() )
 					errors_.push_back( "passing function pointer to constexpr function" );
-				else
+				else if( llvm::ConstantExpr* const constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
 				{
-					const size_t element_ptr= MoveConstantToStack( *llvm::dyn_cast<llvm::GlobalVariable>(element)->getInitializer() );
-					std::memcpy( constants_stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
+					if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
+						element_ptr= size_t( BuildGEP( constant_expression ).IntVal.getLimitedValue() );
+					else U_ASSERT(false);
 				}
+				else if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
+					element_ptr= MoveConstantToStack( *global_variable->getInitializer() );
+				else if( element->isNullValue() )
+					element_ptr= 0;
+				else U_ASSERT(false);
+
+				std::memcpy( constants_stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
 			}
 			else
 				CopyConstantToStack( *element, stack_offset + element_offset );

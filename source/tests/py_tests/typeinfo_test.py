@@ -980,3 +980,25 @@ def Typeinfo_SrcType_Test1():
 	"""
 
 	tests_lib.build_program( c_program_text )
+
+
+def TypeId_Test():
+	c_program_text= """
+		class A polymorph{}
+		class B : A{}
+
+		auto& a_id= typeinfo</A/>.type_id;
+		auto& b_id= typeinfo</B/>.type_id;
+		var size_type a_id_copy= typeinfo</A/>.type_id;
+		var size_type b_id_copy= typeinfo</B/>.type_id;
+
+		fn Foo()
+		{
+			auto& a_id= typeinfo</A/>.type_id;
+			auto& b_id= typeinfo</B/>.type_id;
+			var size_type a_id_copy= typeinfo</A/>.type_id;
+			var size_type b_id_copy= typeinfo</B/>.type_id;
+		}
+	"""
+
+	tests_lib.build_program( c_program_text )

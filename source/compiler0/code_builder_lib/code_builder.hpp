@@ -135,7 +135,7 @@ private:
 
 	void BuildPolymorphClassTypeId( Class& the_class, const Type& class_type );
 
-	llvm::Constant* BuildClassVirtualTable_r( const Class& ancestor_class, const Class& dst_class, llvm::Value* dst_class_ptr_null_based );
+	llvm::Constant* BuildClassVirtualTable_r( const Class& ancestor_class, const Class& dst_class, uint64_t offset );
 	void BuildClassVirtualTable( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 
 	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction(
@@ -961,6 +961,7 @@ private:
 	Type void_type_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
+	llvm::StructType* polymorph_type_id_table_element_type_= nullptr;
 
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	const std::unique_ptr<IMangler> mangler_;

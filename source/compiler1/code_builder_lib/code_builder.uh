@@ -643,7 +643,7 @@ private:
 	fn PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type_ptr );
 
 	fn BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_ptr );
-	fn BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, LLVMValueRef dst_class_ptr_null_based ) : LLVMValueRef;
+	fn BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, u64 offset ) : LLVMValueRef;
 	fn BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr );
 
 	fn SetupVirtualTablePointers_r(
@@ -839,6 +839,7 @@ private:
 	Type void_type_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
+	LLVMTypeRef polymorph_type_id_table_element_type_= LLVMTypeRef::Null;
 
 	LLVMModuleRef module_= LLVMModuleRef::Null;
 
