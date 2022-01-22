@@ -224,6 +224,8 @@ fn nomangle LLVMSetValueName2(LLVMValueRef Val, $(char8) Name, size_type NameLen
 fn nomangle LLVMConstIntGetZExtValue(LLVMValueRef ConstantVal) unsafe : u64;
 fn nomangle LLVMConstIntGetSExtValue(LLVMValueRef ConstantVal) unsafe : i64;
 fn nomangle LLVMGetInitializer(LLVMValueRef GlobalVar) unsafe : LLVMValueRef;
+fn nomangle LLVMGetOperand(LLVMValueRef Val, u32 Index) unsafe : LLVMValueRef;
+fn nomangle LLVMGetNumOperands(LLVMValueRef Val) unsafe : i32;
 fn nomangle LLVMIsConstant(LLVMValueRef Val) unsafe : LLVMBool;
 fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 
@@ -231,6 +233,7 @@ fn nomangle LLVMReplaceAllUsesWith(LLVMValueRef OldVal, LLVMValueRef NewVal) uns
 
 fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
+fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
 
 // Global value
 

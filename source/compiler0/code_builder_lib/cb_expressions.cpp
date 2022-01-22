@@ -383,7 +383,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					// TODO - what first operand is constant GEP too?
 					llvm::Constant* value= llvm::dyn_cast<llvm::GlobalVariable>(constant_expression->getOperand(0u))->getInitializer();
 
-					for( llvm::User::const_op_iterator op= std::next(constant_expression->op_begin()), op_end= constant_expression->op_end(); op != op_end; ++op )
+					// Skip first zero index.
+					for( llvm::User::const_op_iterator op= std::next(std::next(constant_expression->op_begin())), op_end= constant_expression->op_end(); op != op_end; ++op )
 						value= value->getAggregateElement( llvm::dyn_cast<llvm::Constant>(op->get()) );
 					result.constexpr_value= value;
 				}
