@@ -23,13 +23,19 @@ public:
 		unsafe{  ptr_= $<(ref);  }
 	}
 
+	// Construct 'imut' reference from 'mut' reference.
 	fn enable_if( !is_mutable )
 	constructor( mut this'x', T &'y imut ref ) ' x <- y '
 	{
 		unsafe{  ptr_= $<( cast_mut(ref) );  }
 	}
 
-	// Construct 'imut' reference from 'mut' reference.
+	// Construct form raw pointer. Pointer should be valid or should be null.
+	fn constructor( $(T) ptr ) unsafe
+	( ptr_= ptr )
+	{}
+
+	// Assign 'mut' reference to 'imut' reference.
 	op enable_if( !is_mutable )
 	=( mut this'x', optional_ref</ T, true />& other'y' ) ' x <- y'
 	{

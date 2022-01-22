@@ -146,7 +146,7 @@ fn polymorph_cast_impl( From &'x mut from ) : optional_ref</ To, true />'x'
 				var $(type_id_table_element) type_id_table= virtual_table.type_id_table;
 				// Obtain pointer to allocated object.
 				var $(u8) ptr= $<( cast_ref_unsafe</u8/>( from ) ) - virtual_table.offset_of_allocated_object;
-				return polymorph_cast_r</To/>( ptr, type_id_table );
+				return optional_ref</ To, true />( polymorph_cast_r</To/>( ptr, type_id_table ) );
 			}
 		}
 	}
@@ -159,7 +159,7 @@ fn polymorph_cast_impl( From &'x mut from ) : optional_ref</ To, true />'x'
 
 // Recursively try to find destination class in "type_id" tables of class and all its ancestors. If found - perform cast and return result.
 template</ type To />
-fn polymorph_cast_r( $(u8) ptr, $(type_id_table_element) mut type_id_table ) : optional_ref</ To, true />
+fn polymorph_cast_r( $(u8) ptr, $(type_id_table_element) mut type_id_table ) : $(To)
 {
 	unsafe
 	{
@@ -167,7 +167,7 @@ fn polymorph_cast_r( $(u8) ptr, $(type_id_table_element) mut type_id_table ) : o
 		var $(size_type) size_type_address= $<( $>(type_id_table).parent_offset );
 		if( size_type_address == $<( cast_mut( typeinfo</To/>.type_id ) ) )
 		{
-			return optional_ref</ To, true />( cast_ref_unsafe</To/>( $>(ptr) ) );
+			return $<( cast_ref_unsafe</To/>( $>(ptr) ) );
 		}
 
 		// Iterate over all parents and try to find target class.
@@ -175,7 +175,7 @@ fn polymorph_cast_r( $(u8) ptr, $(type_id_table_element) mut type_id_table ) : o
 		{
 			auto ptr_corrected= ptr + $>(type_id_table).parent_offset;
 			auto res= ust::polymorph_impl::polymorph_cast_r</To/>( ptr_corrected, $>(type_id_table).parent_type_id_table );
-			if( !res.empty() )
+			if( res != nullptr</To/>() )
 			{
 				return res;
 			}
@@ -184,7 +184,7 @@ fn polymorph_cast_r( $(u8) ptr, $(type_id_table_element) mut type_id_table ) : o
 
 	}
 
-	return optional_ref</ To, true />();
+	return nullptr</To/>();
 }
 
 } // namespace polymorph_impl
