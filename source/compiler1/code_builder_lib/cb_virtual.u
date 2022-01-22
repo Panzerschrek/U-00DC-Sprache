@@ -479,7 +479,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 	}
 }
 
-fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, LLVMValueRef dst_class_ptr_null_based ) : LLVMValueRef
+fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, u64 offset ) : LLVMValueRef
 {
 	var ust::vector</LLVMValueRef/> mut initializer_values;
 
@@ -489,16 +489,22 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 	{
 		if( parent.field_number == 0u )
 		{
-			auto offset_ptr= CreateBaseClassFieldGEP( dst_class_ptr_null_based, function_context );
-			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().deref(), dst_class, offset_ptr ) );
+			unsafe
+			{
+				var u64 parent_offset= offset + LLVMOffsetOfElement( data_layout_, ancestor_class.llvm_type, parent.field_number );
+				initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().deref(), dst_class, parent_offset ) );
+			}
 		}
 	}
 	foreach( &parent : ancestor_class.parents )
 	{
 		if( parent.field_number != 0u )
 		{
-			auto offset_ptr= CreateParentFieldGEP( dst_class_ptr_null_based, parent, function_context );
-			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().deref(), dst_class, offset_ptr ) );
+			unsafe
+			{
+				var u64 parent_offset= offset + LLVMOffsetOfElement( data_layout_, ancestor_class.llvm_type, parent.field_number );
+				initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().deref(), dst_class, parent_offset ) );
+			}
 		}
 	}
 
@@ -507,8 +513,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 		if( initializer_values.empty() )
 		{
 			// offset
-			initializer_values.push_back(
-				LLVMBuildPtrToInt( function_context.llvm_ir_builder, dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr, "\0"[0] ) );
+			initializer_values.push_back( LLVMConstInt( fundamental_llvm_types_.int_ptr, offset, LLVMBool::False ) );
 
 			// Type id
 			auto dummy_function_context= CreateGlobalFunctionContext();
@@ -568,10 +573,7 @@ fn CodeBuilder::BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr )
 			return;
 		}
 
-		auto mut this_nullptr= LLVMValueRef::Null;
-		unsafe{  this_nullptr= LLVMConstNull( LLVMPointerType( class_type_ptr.lock_imut().deref().llvm_type, 0u ) );  }
-
-		virtual_table_initializer= BuildClassVirtualTable_r( class_, class_, this_nullptr );
+		virtual_table_initializer= BuildClassVirtualTable_r( class_, class_, 0u64 );
 	}
 
 	auto name_mangled= mangler_.deref().MangleVirtualTable( class_type_ptr );

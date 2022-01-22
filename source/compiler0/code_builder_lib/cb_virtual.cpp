@@ -384,38 +384,25 @@ void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class
 	the_class.polymorph_type_id_table->setComdat( type_id_comdat );
 }
 
-llvm::Constant* CodeBuilder::BuildClassVirtualTable_r(
-	const Class& ancestor_class,
-	const Class& dst_class,
-	llvm::Value* const dst_class_ptr_null_based )
+llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_class, const Class& dst_class, const uint64_t offset )
 {
-	std::vector<llvm::Constant*> initializer_values;
-	for( const Class::Parent& parent : ancestor_class.parents )
-	{
-		if( parent.field_number == 0u )
-		{
-			llvm::Value* const offset_ptr=
-				global_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, { GetZeroGEPIndex(), GetFieldGEPIndex( 0 ) } );
-			initializer_values.push_back( BuildClassVirtualTable_r( *parent.class_, dst_class, offset_ptr ) );
-		}
-	}
+	const auto class_data_layout= data_layout_.getStructLayout( ancestor_class.llvm_type );
 
+	llvm::SmallVector<llvm::Constant*, 5> initializer_values;
 	for( const Class::Parent& parent : ancestor_class.parents )
 	{
-		if( parent.field_number != 0u )
-		{
-			llvm::Value* const offset_ptr=
-				global_function_context_->llvm_ir_builder.CreateGEP( dst_class_ptr_null_based, { GetZeroGEPIndex(), GetFieldGEPIndex( parent.field_number ) } );
-			initializer_values.push_back( BuildClassVirtualTable_r( *parent.class_, dst_class, offset_ptr ) );
-		}
+		const uint64_t parent_offset= offset + class_data_layout->getElementOffset( parent.field_number );
+		const auto initializer= BuildClassVirtualTable_r( *parent.class_, dst_class, parent_offset );
+		if( parent.field_number == 0 )
+			initializer_values.insert( initializer_values.begin(), initializer );
+		else
+			initializer_values.push_back( initializer );
 	}
 
 	if( initializer_values.empty() )
 	{
 		// offset
-		initializer_values.push_back(
-				llvm::dyn_cast<llvm::Constant>(
-					global_function_context_->llvm_ir_builder.CreatePtrToInt( dst_class_ptr_null_based, fundamental_llvm_types_.int_ptr ) ) );
+		initializer_values.push_back( llvm::ConstantInt::get( fundamental_llvm_types_.int_ptr, offset ) );
 
 		// Type id
 		// Take address of first element of type id table.
@@ -472,8 +459,7 @@ void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_ty
 
 	U_ASSERT( the_class.virtual_table_llvm_type != nullptr );
 
-	llvm::Value* const this_nullptr= llvm::Constant::getNullValue( the_class.llvm_type->getPointerTo() );
-	auto virtual_table_initializer= BuildClassVirtualTable_r( the_class, the_class, this_nullptr );
+	auto virtual_table_initializer= BuildClassVirtualTable_r( the_class, the_class, 0u );
 
 	the_class.virtual_table_llvm_variable=
 		new llvm::GlobalVariable(
