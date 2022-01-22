@@ -92,6 +92,17 @@ fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data
 			? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
 			: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ ) );
 	}
+
+	unsafe
+	{
+		polymorph_type_id_table_element_type_= LLVMStructCreateNamed( llvm_context_, "__U_polymorph_type_id_table_element\0"[0] );
+		var [ LLVMTypeRef, 2 ] mut elements
+		[
+			fundamental_llvm_types_.int_ptr,
+			LLVMPointerType( polymorph_type_id_table_element_type_, 0u ),
+		];
+		LLVMStructSetBody( polymorph_type_id_table_element_type_, $<(elements[0]), 2u, LLVMBool::False );
+	}
 }
 
 fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResult

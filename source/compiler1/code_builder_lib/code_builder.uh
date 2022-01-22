@@ -839,6 +839,7 @@ private:
 	Type void_type_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
+	LLVMTypeRef polymorph_type_id_table_element_type_= LLVMTypeRef::Null;
 
 	LLVMModuleRef module_= LLVMModuleRef::Null;
 
