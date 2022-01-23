@@ -429,7 +429,7 @@ int Main( int argc, const char* argv[] )
 	}
 	else
 	{
-		std::cout << "Unknown optimization: " << Options::optimization_level << std::endl;
+		std::cerr << "Unknown optimization: " << Options::optimization_level << std::endl;
 		return 1;
 	}
 
@@ -570,11 +570,10 @@ int Main( int argc, const char* argv[] )
 				result_module= std::move( code_builder_launch_result.llvm_module );
 			else
 			{
-				const bool not_ok=
-					llvm::Linker::linkModules( *result_module, std::move(code_builder_launch_result.llvm_module) );
+				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(code_builder_launch_result.llvm_module) );
 				if( not_ok )
 				{
-					std::cout << "Error, linking file \"" << input_file << "\"" << std::endl;
+					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
 					have_some_errors= true;
 				}
 			}
@@ -590,8 +589,7 @@ int Main( int argc, const char* argv[] )
 		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
-			const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped=
-				llvm::MemoryBuffer::getFile( input_file );
+			const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped= llvm::MemoryBuffer::getFile( input_file );
 			if( !file_mapped || *file_mapped == nullptr )
 			{
 				std::cerr << "Can't load file \"" << input_file << "\\" << std::endl;
@@ -599,8 +597,7 @@ int Main( int argc, const char* argv[] )
 				continue;
 			}
 
-			llvm::Expected<std::unique_ptr<llvm::Module>> module =
-				llvm::parseBitcodeFile( **file_mapped, llvm_context );
+			llvm::Expected<std::unique_ptr<llvm::Module>> module= llvm::parseBitcodeFile( **file_mapped, llvm_context );
 
 			if( !module )
 			{
@@ -614,11 +611,10 @@ int Main( int argc, const char* argv[] )
 				result_module= std::move( *module );
 			else
 			{
-				const bool not_ok=
-					llvm::Linker::linkModules( *result_module, std::move(*module) );
+				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(*module) );
 				if( not_ok )
 				{
-					std::cout << "Error, linking file \"" << input_file << "\"" << std::endl;
+					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
 					have_some_errors= true;
 				}
 			}
@@ -643,25 +639,24 @@ int Main( int argc, const char* argv[] )
 		#include "bc_files_headers/memory_64.h"
 		#include "bc_files_headers/volatile.h"
 
-
 		// Prepare stdlib modules set.
 		#define STRING_REF(x) llvm::StringRef( reinterpret_cast<const char*>(c_##x##_file_content), sizeof(c_##x##_file_content) )
 
-		llvm::StringRef halt_module = STRING_REF(halt_trap);
+		llvm::StringRef halt_module= STRING_REF(halt_trap);
 		switch(Options::halt_mode)
 		{
-			case Options::HaltMode::Trap:
-				halt_module= STRING_REF(halt_trap);
-				break;
+		case Options::HaltMode::Trap:
+			halt_module= STRING_REF(halt_trap);
+			break;
 		case Options::HaltMode::Abort:
 			halt_module= STRING_REF(halt_abort);
 			break;
-			case Options::HaltMode::ConfigurableHandler:
-				halt_module= STRING_REF(halt_configurable);
-				break;
-			case Options::HaltMode::Unreachable:
-				halt_module= STRING_REF(halt_unreachable);
-				break;
+		case Options::HaltMode::ConfigurableHandler:
+			halt_module= STRING_REF(halt_configurable);
+			break;
+		case Options::HaltMode::Unreachable:
+			halt_module= STRING_REF(halt_unreachable);
+			break;
 		};
 
 		const llvm::StringRef asm_funcs_modules[]=
