@@ -246,7 +246,7 @@ cl::opt<std::string> output_file_name(
 	"o",
 	cl::desc("Output filename"),
 	cl::value_desc("filename"),
-	cl::Required,
+	cl::Optional,
 	cl::cat(options_category) );
 
 cl::list<std::string> include_dir(
@@ -257,7 +257,7 @@ cl::list<std::string> include_dir(
 	cl::ZeroOrMore,
 	cl::cat(options_category));
 
-enum class FileType{ BC, LL, Obj, Asm };
+enum class FileType{ BC, LL, Obj, Asm, Null };
 cl::opt< FileType > file_type(
 	"filetype",
 	cl::init(FileType::Obj),
@@ -266,7 +266,8 @@ cl::opt< FileType > file_type(
 		clEnumValN( FileType::BC, "bc", "Emit an llvm bitcode ('.bc') file" ),
 		clEnumValN( FileType::LL, "ll", "Emit an llvm asm ('.ll') file" ),
 		clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
-		clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" )),
+		clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" ),
+		clEnumValN( FileType::Null, "null", "Emit no output file. Usable for compilation check." ) ),
 	cl::cat(options_category) );
 
 cl::opt<char> optimization_level(
@@ -395,6 +396,12 @@ int Main( int argc, const char* argv[] )
 
 	llvm::cl::HideUnrelatedOptions( Options::options_category );
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
+
+	if( Options::output_file_name.empty() && Options::file_type != Options::FileType::Null )
+	{
+		std::cerr << "No output file specified" << std::endl;
+		return 1;
+	}
 
 	if( Options::deps_tracking && DepFile::NothingChanged( Options::output_file_name, argc, argv ) )
 		return 0;
@@ -804,6 +811,10 @@ int Main( int argc, const char* argv[] )
 	case Options::FileType::LL:
 		// Handle this case later, because there is no LL code dumping pass.
 		break;
+
+	case Options::FileType::Null:
+		// Do nothing.
+		break;
 	}
 
 	// Run all passes.
@@ -811,7 +822,7 @@ int Main( int argc, const char* argv[] )
 
 	// Check if output file is ok.
 	out_file_stream.flush();
-	if( out_file_stream.has_error() )
+	if( !Options::output_file_name.empty() && out_file_stream.has_error() )
 	{
 		std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
 		return 1;
