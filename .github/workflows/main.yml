@@ -3,11 +3,19 @@ name: CI
 on: [push]
 
 jobs:
-  build:
-
+  build_release_llvm_bin:
     runs-on: ubuntu-18.04
-
     steps:
     - uses: actions/checkout@v1
     - name: build project
-      run: sudo apt-get install ninja-build && ./ci_build.sh
+      run: |
+        sudo apt-get install ninja-build
+        ./ci/build_release_llvm_bin.sh
+  build_debug_llvm_src:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: build project
+      run: |
+        sudo apt-get install ninja-build
+        ./ci/build_debug_llvm_src.sh
