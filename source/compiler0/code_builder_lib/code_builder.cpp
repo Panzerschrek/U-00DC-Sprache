@@ -1099,8 +1099,8 @@ void CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		if( !(
 				func_type.return_type.GetFundamentalType() != nullptr &&
-				IsSignedInteger( func_type.return_type.GetFundamentalType()->fundamental_type )
-				&& func_type.return_value_type == ValueType::Value ) )
+				IsSignedInteger( func_type.return_type.GetFundamentalType()->fundamental_type ) &&
+				func_type.return_value_type == ValueType::Value ) )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, "signed integer" );
 		break;
 		

@@ -734,21 +734,9 @@ U_TEST( OperatorsOverloadingTest_EqualityOperators )
 			{
 				return a.x == b.x;
 			}
-			op> ( MyInt &imut a, MyInt &imut b ) : bool
+			op<=>( MyInt &imut a, MyInt &imut b ) : i32
 			{
-				return a.x >  b.x;
-			}
-			op>=( MyInt &imut a, MyInt &imut b ) : bool
-			{
-				return a.x >= b.x;
-			}
-			op< ( MyInt &imut a, MyInt &imut b ) : bool
-			{
-				return a.x <  b.x;
-			}
-			op<=( MyInt &imut a, MyInt &imut b ) : bool
-			{
-				return a.x <= b.x;
+				return a.x - b.x;
 			}
 		}
 

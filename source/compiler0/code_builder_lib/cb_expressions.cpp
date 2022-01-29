@@ -565,9 +565,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				function_context );
 	}
 
+	const auto overloaded_operator= GetOverloadedOperatorForBinaryOperator( binary_operator.operator_type_ );
+
 	std::optional<Value> overloaded_operator_call_try=
 		TryCallOverloadedBinaryOperator(
-			GetOverloadedOperatorForBinaryOperator( binary_operator.operator_type_ ),
+			overloaded_operator,
 			*binary_operator.left_, *binary_operator.right_,
 			false,
 			binary_operator.src_loc_,
@@ -584,6 +586,31 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				variable->llvm_value= function_context.llvm_ir_builder.CreateNot( CreateMoveToLLVMRegisterInstruction( *variable, function_context ) );
 				if( variable->constexpr_value != nullptr )
 					variable->constexpr_value= llvm::ConstantExpr::getNot( variable->constexpr_value );
+			}
+
+			if( overloaded_operator == OverloadedOperator::CompareOrder &&
+				variable->type.GetFundamentalType() != nullptr &&
+				IsSignedInteger( variable->type.GetFundamentalType()->fundamental_type ) )
+			{
+				const auto value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
+				const auto zero= llvm::Constant::getNullValue( variable->type.GetLLVMType() );
+				if( binary_operator.operator_type_ == BinaryOperatorType::Less )
+				{
+					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( value_in_register, zero );
+				}
+				if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
+				{
+					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( value_in_register, zero );
+				}
+				if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
+				{
+					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( value_in_register, zero );
+				}
+				if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
+				{
+					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( value_in_register, zero );
+				}
+				variable->type= bool_type_;
 			}
 		}
 
