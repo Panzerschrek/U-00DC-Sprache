@@ -511,7 +511,6 @@ const ProgramStringMap<std::string> g_op_names
 	{ "%", "rm" },
 
 	{ "==", "eq" },
-	{ "!=", "ne" },
 	{  ">", "gt" },
 	{ ">=", "ge" },
 	{  "<", "lt" },

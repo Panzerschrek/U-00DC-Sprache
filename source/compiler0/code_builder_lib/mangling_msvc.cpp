@@ -59,7 +59,6 @@ const ProgramStringMap<std::string> g_op_names
 	{ "%", "?L" },
 
 	{ "==", "?8" },
-	{ "!=", "?9" },
 	{  ">", "?O" },
 	{ ">=", "?P" },
 	{  "<", "?M" },

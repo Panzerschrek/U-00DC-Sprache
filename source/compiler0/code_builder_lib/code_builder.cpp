@@ -1088,7 +1088,6 @@ void CodeBuilder::CheckOverloadedOperator(
 		break;
 
 	case OverloadedOperator::Equal:
-	case OverloadedOperator::NotEqual:
 	case OverloadedOperator::Less:
 	case OverloadedOperator::LessEqual:
 	case OverloadedOperator::Greater:

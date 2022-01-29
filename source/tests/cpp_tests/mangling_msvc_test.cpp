@@ -726,10 +726,6 @@ U_TEST( OperatorsMangling_Test0 )
 			{
 				return a.x == b.x;
 			}
-			op!=( Box &imut a, Box &imut b ) : bool
-			{
-				return a.x != b.x;
-			}
 			op>( Box &imut a, Box &imut b ) : bool
 			{
 				return a.x > b.x;
@@ -875,7 +871,6 @@ U_TEST( OperatorsMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??LBox@@YA?AU0@AEBU0@0@Z" ) != nullptr ); // %
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??8Box@@YA_NAEBU0@0@Z" ) != nullptr ); // ==
-	U_TEST_ASSERT( engine->FindFunctionNamed( "??9Box@@YA_NAEBU0@0@Z" ) != nullptr ); // !=
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??OBox@@YA_NAEBU0@0@Z" ) != nullptr ); // >
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??PBox@@YA_NAEBU0@0@Z" ) != nullptr ); // >=
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??MBox@@YA_NAEBU0@0@Z" ) != nullptr ); // <

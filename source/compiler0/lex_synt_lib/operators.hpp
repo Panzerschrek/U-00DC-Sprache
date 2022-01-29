@@ -41,7 +41,6 @@ enum class OverloadedOperator : uint8_t
 	Rem,
 
 	Equal,
-	NotEqual,
 	Less,
 	LessEqual,
 	Greater,
