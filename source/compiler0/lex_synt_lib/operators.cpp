@@ -49,7 +49,7 @@ std::string OverloadedOperatorToString( const OverloadedOperator op )
 	case OverloadedOperator::Div: return "/";
 	case OverloadedOperator::Rem: return "%";
 
-	case OverloadedOperator::Equal: return "==";
+	case OverloadedOperator::CompareEqual: return "==";
 	case OverloadedOperator::Less: return "<";
 	case OverloadedOperator::LessEqual: return "<=";
 	case OverloadedOperator::Greater: return ">";
@@ -102,8 +102,8 @@ OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorT
 	case BinaryOperatorType::And: return OverloadedOperator::And;
 	case BinaryOperatorType::Or : return OverloadedOperator::Or ;
 	case BinaryOperatorType::Xor: return OverloadedOperator::Xor;
-	case BinaryOperatorType::Equal: return OverloadedOperator::Equal;
-	case BinaryOperatorType::NotEqual: return OverloadedOperator::Equal;
+	case BinaryOperatorType::Equal: return OverloadedOperator::CompareEqual;
+	case BinaryOperatorType::NotEqual: return OverloadedOperator::CompareEqual;
 	case BinaryOperatorType::Less: return OverloadedOperator::Less;
 	case BinaryOperatorType::LessEqual: return OverloadedOperator::LessEqual;
 	case BinaryOperatorType::Greater: return OverloadedOperator::Greater;

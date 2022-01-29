@@ -2701,7 +2701,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		case Lexem::Type::Star   : overloaded_operator= OverloadedOperator::Mul; break;
 		case Lexem::Type::Slash  : overloaded_operator= OverloadedOperator::Div; break;
 		case Lexem::Type::Percent: overloaded_operator= OverloadedOperator::Rem; break;
-		case Lexem::Type::CompareEqual   : overloaded_operator= OverloadedOperator::Equal   ; break;
+		case Lexem::Type::CompareEqual   : overloaded_operator= OverloadedOperator::CompareEqual   ; break;
 		case Lexem::Type::CompareLess          : overloaded_operator= OverloadedOperator::Less        ; break;
 		case Lexem::Type::CompareLessOrEqual   : overloaded_operator= OverloadedOperator::LessEqual   ; break;
 		case Lexem::Type::CompareGreater       : overloaded_operator= OverloadedOperator::Greater     ; break;

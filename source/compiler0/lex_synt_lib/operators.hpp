@@ -40,7 +40,7 @@ enum class OverloadedOperator : uint8_t
 	Div,
 	Rem,
 
-	Equal,
+	CompareEqual,
 	Less,
 	LessEqual,
 	Greater,

@@ -1087,7 +1087,7 @@ void CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		break;
 
-	case OverloadedOperator::Equal:
+	case OverloadedOperator::CompareEqual:
 	case OverloadedOperator::Less:
 	case OverloadedOperator::LessEqual:
 	case OverloadedOperator::Greater:
