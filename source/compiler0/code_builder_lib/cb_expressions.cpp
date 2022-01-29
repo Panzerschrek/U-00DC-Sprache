@@ -574,7 +574,21 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			names,
 			function_context );
 	if( overloaded_operator_call_try != std::nullopt )
+	{
+		if( auto* variable= overloaded_operator_call_try->GetVariable())
+		{
+			if( binary_operator.operator_type_ == BinaryOperatorType::NotEqual &&
+				variable->type == bool_type_ )
+			{
+				// "!=" is implemented via "==", so, invert result.
+				variable->llvm_value= function_context.llvm_ir_builder.CreateNot( CreateMoveToLLVMRegisterInstruction( *variable, function_context ) );
+				if( variable->constexpr_value != nullptr )
+					variable->constexpr_value= llvm::ConstantExpr::getNot( variable->constexpr_value );
+			}
+		}
+
 		return std::move(*overloaded_operator_call_try);
+	}
 
 	Variable l_var=
 		BuildExpressionCodeEnsureVariable(

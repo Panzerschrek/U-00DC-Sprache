@@ -103,6 +103,7 @@ OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorT
 	case BinaryOperatorType::Or : return OverloadedOperator::Or ;
 	case BinaryOperatorType::Xor: return OverloadedOperator::Xor;
 	case BinaryOperatorType::Equal: return OverloadedOperator::Equal;
+	case BinaryOperatorType::NotEqual: return OverloadedOperator::Equal;
 	case BinaryOperatorType::Less: return OverloadedOperator::Less;
 	case BinaryOperatorType::LessEqual: return OverloadedOperator::LessEqual;
 	case BinaryOperatorType::Greater: return OverloadedOperator::Greater;
