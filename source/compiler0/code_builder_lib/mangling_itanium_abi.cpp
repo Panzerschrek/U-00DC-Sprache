@@ -511,10 +511,7 @@ const ProgramStringMap<std::string> g_op_names
 	{ "%", "rm" },
 
 	{ "==", "eq" },
-	{  ">", "gt" },
-	{ ">=", "ge" },
-	{  "<", "lt" },
-	{ "<=", "le" },
+	{ "<=>", "ss" }, // C++ spaceship operator
 
 	{ "&", "an" },
 	{ "|", "or" },

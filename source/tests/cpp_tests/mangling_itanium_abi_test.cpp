@@ -290,22 +290,6 @@ U_TEST( OperatorsManglingTest )
 			{
 				return a.x == b.x;
 			}
-			op>( Box &imut a, Box &imut b ) : bool
-			{
-				return a.x > b.x;
-			}
-			op>=( Box &imut a, Box &imut b ) : bool
-			{
-				return a.x >= b.x;
-			}
-			op<( Box &imut a, Box &imut b ) : bool
-			{
-				return a.x < b.x;
-			}
-			op<=( Box &imut a, Box &imut b ) : bool
-			{
-				return a.x <= b.x;
-			}
 
 			op&( Box &imut a, Box &imut b ) : Box
 			{
@@ -421,10 +405,6 @@ U_TEST( OperatorsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxrmERKS_S1_" ) != nullptr ); // %
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxeqERKS_S1_" ) != nullptr ); // ==
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxgtERKS_S1_" ) != nullptr ); // >
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxgeERKS_S1_" ) != nullptr ); // >=
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxltERKS_S1_" ) != nullptr ); // <
-	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxleERKS_S1_" ) != nullptr ); // <=
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxanERKS_S1_" ) != nullptr ); // &
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxorERKS_S1_" ) != nullptr ); // |

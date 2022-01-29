@@ -1088,14 +1088,20 @@ void CodeBuilder::CheckOverloadedOperator(
 		break;
 
 	case OverloadedOperator::CompareEqual:
-	case OverloadedOperator::Less:
-	case OverloadedOperator::LessEqual:
-	case OverloadedOperator::Greater:
-	case OverloadedOperator::GreaterEqual:
 		if( func_type.params.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		if( !( func_type.return_type == bool_type_ && func_type.return_value_type == ValueType::Value ) )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, bool_type_ );
+		break;
+
+	case OverloadedOperator::CompareOrder:
+		if( func_type.params.size() != 2u )
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
+		if( !(
+				func_type.return_type.GetFundamentalType() != nullptr &&
+				IsSignedInteger( func_type.return_type.GetFundamentalType()->fundamental_type )
+				&& func_type.return_value_type == ValueType::Value ) )
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, "signed integer" );
 		break;
 		
 	case OverloadedOperator::Mul:
