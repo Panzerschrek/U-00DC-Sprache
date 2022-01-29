@@ -290,6 +290,10 @@ U_TEST( OperatorsManglingTest )
 			{
 				return a.x == b.x;
 			}
+			op<=>( Box &imut a, Box &imut b ) : i32
+			{
+				return i32(a.x) - i32(b.x);
+			}
 
 			op&( Box &imut a, Box &imut b ) : Box
 			{
@@ -405,6 +409,7 @@ U_TEST( OperatorsManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxrmERKS_S1_" ) != nullptr ); // %
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxeqERKS_S1_" ) != nullptr ); // ==
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxssERKS_S1_" ) != nullptr ); // <=>
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxanERKS_S1_" ) != nullptr ); // &
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3BoxorERKS_S1_" ) != nullptr ); // |
