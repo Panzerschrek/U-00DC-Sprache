@@ -579,13 +579,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( auto* variable= overloaded_operator_call_try->GetVariable())
 		{
-			if( binary_operator.operator_type_ == BinaryOperatorType::NotEqual &&
-				variable->type == bool_type_ )
+			if( binary_operator.operator_type_ == BinaryOperatorType::NotEqual && variable->type == bool_type_ )
 			{
 				// "!=" is implemented via "==", so, invert result.
 				variable->llvm_value= function_context.llvm_ir_builder.CreateNot( CreateMoveToLLVMRegisterInstruction( *variable, function_context ) );
-				if( variable->constexpr_value != nullptr )
-					variable->constexpr_value= llvm::ConstantExpr::getNot( variable->constexpr_value );
+				variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
 			}
 
 			if( overloaded_operator == OverloadedOperator::CompareOrder &&
@@ -594,23 +592,19 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			{
 				const auto value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 				const auto zero= llvm::Constant::getNullValue( variable->type.GetLLVMType() );
+
 				if( binary_operator.operator_type_ == BinaryOperatorType::Less )
-				{
 					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( value_in_register, zero );
-				}
 				if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
-				{
 					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( value_in_register, zero );
-				}
 				if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
-				{
 					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( value_in_register, zero );
-				}
 				if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
-				{
 					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( value_in_register, zero );
-				}
+
+				variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
 				variable->type= bool_type_;
+				variable->location= Variable::Location::LLVMRegister;
 			}
 		}
 
