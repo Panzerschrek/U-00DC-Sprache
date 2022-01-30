@@ -143,8 +143,8 @@ U_TEST( InvalidReturnTypeForOperator_Test )
 
 			// Expected bool
 			op==( S &mut a, S &mut b );
-			// Expected signed integer
-			op<=>( S &mut a, S &mut b ) : bool;
+			// Expected i32
+			op<=>( S& a, S& b ) : i64;
 		}
 	)";
 
