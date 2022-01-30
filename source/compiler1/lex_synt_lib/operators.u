@@ -35,6 +35,7 @@ fn GetOverloadedOperatorForBinaryOperator( BinaryOperatorType o ) : OverloadedOp
 	if( o == BinaryOperatorType::LessEqual    ) { return OverloadedOperator::CompareOrder; }
 	if( o == BinaryOperatorType::Greater      ) { return OverloadedOperator::CompareOrder; }
 	if( o == BinaryOperatorType::GreaterEqual ) { return OverloadedOperator::CompareOrder; }
+	if( o == BinaryOperatorType::CompareOrder ) { return OverloadedOperator::CompareOrder; }
 	if( o == BinaryOperatorType::ShiftLeft  ) { return OverloadedOperator::ShiftLeft ; }
 	if( o == BinaryOperatorType::ShiftRight ) { return OverloadedOperator::ShiftRight; }
 

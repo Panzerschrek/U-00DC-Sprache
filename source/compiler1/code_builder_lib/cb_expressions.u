@@ -2176,6 +2176,73 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			}
 		}
 	}
+	else if( operator == BinaryOperatorType::CompareOrder )
+	{
+		if( l_type != r_type )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
+			return ErrorValue();
+		}
+		// TODO - maybe allow order compare for enums?
+		if( l_fundamental_type.empty() && l_raw_pointer_type.empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+
+		if( !l_fundamental_type.empty() && !( is_integer || is_float || IsChar( l_fundamental_type.try_deref().fundamental_type ) ) )
+		{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+				return ErrorValue();
+		}
+
+		unsafe
+		{
+			var LLVMValueRef mut less= zero_init, mut greater= zero_init;
+
+			if( is_float )
+			{
+				less= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
+			}
+			else if( is_signed )
+			{
+				less= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] );
+			}
+			else
+			{
+				less= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] );
+			}
+
+			if( is_float )
+			{
+				greater= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
+			}
+			else if( is_signed )
+			{
+				greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] );
+			}
+			else
+			{
+				greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
+			}
+
+			auto result_fundamental_type= U_FundamentalType::i32_;
+			var LLVMTypeRef result_llvm_type= GetFundamentalLLVMType( result_fundamental_type );
+			var LLVMValueRef zero= LLVMConstInt( result_llvm_type, 0u64, LLVMBool::True );
+			var LLVMValueRef plus_one= LLVMConstInt( result_llvm_type, 1u64, LLVMBool::True );
+			var LLVMValueRef minus_one= LLVMConstInt( result_llvm_type, ~0u64, LLVMBool::True );
+
+			res.llvm_value=
+				LLVMBuildSelect(
+					function_context.llvm_ir_builder,
+					less,
+					minus_one,
+					LLVMBuildSelect( function_context.llvm_ir_builder, greater, plus_one, zero, "\0"[0] ),
+					"\0"[0] );
+
+			res.t= FundamentalType( result_fundamental_type, result_llvm_type );
+		}
+	}
 	else{ halt; }
 
 	unsafe
