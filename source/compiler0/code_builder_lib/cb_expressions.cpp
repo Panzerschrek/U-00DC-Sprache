@@ -591,22 +591,25 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				IsSignedInteger( variable->type.GetFundamentalType()->fundamental_type ) )
 			{
 				const auto value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
-				const auto zero= llvm::Constant::getNullValue( variable->type.GetLLVMType() );
 
 				if( binary_operator.operator_type_ == BinaryOperatorType::CompareOrder )
 					variable->llvm_value= value_in_register;
-				else if( binary_operator.operator_type_ == BinaryOperatorType::Less )
-					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( value_in_register, zero );
-				else if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
-					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( value_in_register, zero );
-				else if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
-					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( value_in_register, zero );
-				else if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
-					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( value_in_register, zero );
-				else U_ASSERT(false);
+				else
+				{
+					const auto zero= llvm::Constant::getNullValue( variable->type.GetLLVMType() );
+					if( binary_operator.operator_type_ == BinaryOperatorType::Less )
+						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( value_in_register, zero );
+					else if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
+						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( value_in_register, zero );
+					else if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
+						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( value_in_register, zero );
+					else if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
+						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( value_in_register, zero );
+					else U_ASSERT(false);
+					variable->type= bool_type_;
+				}
 
 				variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
-				variable->type= bool_type_;
 				variable->location= Variable::Location::LLVMRegister;
 			}
 		}

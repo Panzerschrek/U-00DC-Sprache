@@ -751,6 +751,10 @@ U_TEST( OperatorsOverloadingTest_EqualityOperators )
 			halt if( b > a );
 			halt if( b >= a );
 			halt if( !( b >= b ) );
+			halt if( a <=> b != +1 );
+			halt if( b <=> a != -1 );
+			halt if( 0 != a <=> a );
+			halt if( 0 != b <=> b );
 		}
 	)";
 
