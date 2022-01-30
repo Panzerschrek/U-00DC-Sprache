@@ -54,7 +54,7 @@ fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8
 	if( o == BinaryOperatorType::NotEqual		){ return "!="; }
 	if( o == BinaryOperatorType::Less			){ return "<" ; }
 	if( o == BinaryOperatorType::LessEqual		){ return "<="; }
-	if( o == BinaryOperatorType::Greater		){ return "<" ; }
+	if( o == BinaryOperatorType::Greater		){ return ">" ; }
 	if( o == BinaryOperatorType::GreaterEqual	){ return ">="; }
 	if( o == BinaryOperatorType::CompareOrder	){ return "<=>"; }
 
