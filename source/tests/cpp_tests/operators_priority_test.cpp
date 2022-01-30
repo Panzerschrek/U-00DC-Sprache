@@ -452,6 +452,130 @@ U_TEST( OperatorsPriorityTest11 )
 	DoTest( c_program_text, expected, args );
 }
 
+U_TEST( OperatorsPriorityTest12 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Execute addition first, than compare.
+		fn Foo( i32 a, i32 b, i32 c ) : i32
+		{
+			return a <=> b + c;
+		}
+	)";
+
+	const auto expected=
+	[]( const std::vector<int>& args ) -> int
+	{
+		U_TEST_ASSERT( args.size() == 3u );
+
+		const int sum= args[1] + args[2];
+		if( args[0] < sum ) return -1;
+		if( args[0] > sum ) return +1;
+		return 0;
+	};
+
+	const std::vector< std::vector<int> > args
+	{
+		{ 7, 33, 11 },
+		{ 999, 2, 3 },
+		{ 10, 7, 3 },
+	};
+
+	DoTest( c_program_text, expected, args );
+}
+
+U_TEST( OperatorsPriorityTest13 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Execute "<=>" before ">"
+		fn Foo( i32 a, i32 b, i32 c, i32 d, i32 e ) : i32
+		{
+			if ( a <=>b > c ){ return d; }
+			else { return e; }
+		}
+	)";
+
+	const auto expected=
+	[]( const std::vector<int>& args ) -> int
+	{
+		U_TEST_ASSERT( args.size() == 5u );
+
+		int cmp= 0;
+		if( args[0] < args[1] ) cmp= -1;
+		if( args[0] > args[1] ) cmp= +1;
+
+		return cmp > args[2] ? args[3] : args[4];
+	};
+
+	const std::vector< std::vector<int> > args
+	{
+		{ 5, 10,  0, 44, 77 },
+		{ 5, 10, -1, 44, 77 },
+		{ 5, 10, +1, 44, 77 },
+		{ 5, 10, -2, 44, 77 },
+		{ 5, 10, +2, 44, 77 },
+		{ 10, 5,  0, 44, 77 },
+		{ 10, 5, -1, 44, 77 },
+		{ 10, 5, +1, 44, 77 },
+		{ 10, 5, -2, 44, 77 },
+		{ 10, 5, +2, 44, 77 },
+		{ 7, 7,  0, 44, 77 },
+		{ 7, 7, -1, 44, 77 },
+		{ 7, 7, +1, 44, 77 },
+		{ 7, 7, -2, 44, 77 },
+		{ 7, 7, +2, 44, 77 },
+	};
+
+	DoTest( c_program_text, expected, args );
+}
+
+U_TEST( OperatorsPriorityTest14 )
+{
+	static const char c_program_text[]=
+	R"(
+		// Execute "<=>" before "<"
+		fn Foo( i32 a, i32 b, i32 c, i32 d, i32 e ) : i32
+		{
+			if ( c < a <=> b ){ return d; }
+			else { return e; }
+		}
+	)";
+
+	const auto expected=
+	[]( const std::vector<int>& args ) -> int
+	{
+		U_TEST_ASSERT( args.size() == 5u );
+
+		int cmp= 0;
+		if( args[0] < args[1] ) cmp= -1;
+		if( args[0] > args[1] ) cmp= +1;
+
+		return args[2] < cmp ? args[3] : args[4];
+	};
+
+	const std::vector< std::vector<int> > args
+	{
+		{ 5, 10,  0, 44, 77 },
+		{ 5, 10, -1, 44, 77 },
+		{ 5, 10, +1, 44, 77 },
+		{ 5, 10, -2, 44, 77 },
+		{ 5, 10, +2, 44, 77 },
+		{ 10, 5,  0, 44, 77 },
+		{ 10, 5, -1, 44, 77 },
+		{ 10, 5, +1, 44, 77 },
+		{ 10, 5, -2, 44, 77 },
+		{ 10, 5, +2, 44, 77 },
+		{ 7, 7,  0, 44, 77 },
+		{ 7, 7, -1, 44, 77 },
+		{ 7, 7, +1, 44, 77 },
+		{ 7, 7, -2, 44, 77 },
+		{ 7, 7, +2, 44, 77 },
+	};
+
+	DoTest( c_program_text, expected, args );
+}
+
 } // namespace
 
 } // namespace U

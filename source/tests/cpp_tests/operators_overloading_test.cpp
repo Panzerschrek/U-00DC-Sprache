@@ -736,7 +736,7 @@ U_TEST( OperatorsOverloadingTest_EqualityOperators )
 			}
 			op<=>( MyInt &imut a, MyInt &imut b ) : i32
 			{
-				return a.x - b.x;
+				return a.x <=> b.x;
 			}
 		}
 

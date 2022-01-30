@@ -80,6 +80,8 @@ int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
 	case BinaryOperatorType::ShiftLeft :
 	case BinaryOperatorType::ShiftRight:
 		return PRIORITY;
+	case BinaryOperatorType::CompareOrder:
+		return PRIORITY;
 	case BinaryOperatorType::Equal:
 	case BinaryOperatorType::NotEqual:
 	case BinaryOperatorType::Less:
@@ -116,6 +118,7 @@ std::optional<BinaryOperatorType> LexemToBinaryOperator( const Lexem& lexem )
 		case Lexem::Type::CompareLessOrEqual: return BinaryOperatorType::LessEqual;
 		case Lexem::Type::CompareGreater: return BinaryOperatorType::Greater;
 		case Lexem::Type::CompareGreaterOrEqual: return BinaryOperatorType::GreaterEqual;
+		case Lexem::Type::CompareOrder: return BinaryOperatorType::CompareOrder;
 
 		case Lexem::Type::And: return BinaryOperatorType::And;
 		case Lexem::Type::Or: return BinaryOperatorType::Or;

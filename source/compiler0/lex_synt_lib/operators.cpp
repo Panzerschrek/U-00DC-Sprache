@@ -21,6 +21,7 @@ std::string BinaryOperatorToString( const BinaryOperatorType op )
 	case BinaryOperatorType::LessEqual: return "<=";
 	case BinaryOperatorType::Greater: return ">";
 	case BinaryOperatorType::GreaterEqual: return ">=";
+	case BinaryOperatorType::CompareOrder: return "<=>";
 
 	case BinaryOperatorType::And: return "&";
 	case BinaryOperatorType::Or: return "|";
@@ -106,6 +107,7 @@ OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorT
 	case BinaryOperatorType::LessEqual:
 	case BinaryOperatorType::Greater:
 	case BinaryOperatorType::GreaterEqual:
+	case BinaryOperatorType::CompareOrder:
 		return OverloadedOperator::CompareOrder;
 	case BinaryOperatorType::ShiftLeft : return OverloadedOperator::ShiftLeft ;
 	case BinaryOperatorType::ShiftRight: return OverloadedOperator::ShiftRight;

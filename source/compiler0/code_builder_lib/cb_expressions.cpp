@@ -593,14 +593,17 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				const auto value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 				const auto zero= llvm::Constant::getNullValue( variable->type.GetLLVMType() );
 
-				if( binary_operator.operator_type_ == BinaryOperatorType::Less )
+				if( binary_operator.operator_type_ == BinaryOperatorType::CompareOrder )
+					variable->llvm_value= value_in_register;
+				else if( binary_operator.operator_type_ == BinaryOperatorType::Less )
 					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( value_in_register, zero );
-				if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
+				else if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
 					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( value_in_register, zero );
-				if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
+				else if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
 					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( value_in_register, zero );
-				if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
+				else if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
 					variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( value_in_register, zero );
+				else U_ASSERT(false);
 
 				variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
 				variable->type= bool_type_;
@@ -1964,6 +1967,66 @@ Value CodeBuilder::BuildBinaryOperator(
 			};
 
 			result.type= bool_type_;
+		}
+		break;
+
+	case BinaryOperatorType::CompareOrder:
+		{
+			if( r_var.type != l_var.type )
+			{
+				REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names.GetErrors(), src_loc, r_var.type, l_var.type, BinaryOperatorToString( binary_operator ) );
+				return ErrorValue();
+			}
+			// TODO - maybe allow order compare for enums?
+			if( !( l_fundamental_type != nullptr || l_type.GetRawPointerType() != nullptr ) )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_type );
+				return ErrorValue();
+			}
+
+			bool is_float= false, is_signed= false;
+			if( l_fundamental_type != nullptr )
+			{
+				const auto t= l_fundamental_type->fundamental_type;
+				is_float= IsFloatingPoint( t );
+				is_signed= IsSignedInteger( t );
+				if( !( IsInteger(t) || IsChar(t) || is_float ) )
+				{
+					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_type );
+					return ErrorValue();
+				}
+			}
+
+			llvm::Value* less= nullptr;
+			llvm::Value* greater= nullptr;
+
+			if( is_float )
+				less= function_context.llvm_ir_builder.CreateFCmpOLT( l_value_for_op, r_value_for_op );
+			else if( is_signed )
+				less= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
+			else
+				less= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
+
+			if( is_float )
+				greater= function_context.llvm_ir_builder.CreateFCmpOGT( l_value_for_op, r_value_for_op );
+			else if( is_signed )
+				greater= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
+			else
+				greater= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
+
+			const auto result_fundamental_type= U_FundamentalType::i32;
+			const auto result_llvm_type= GetFundamentalLLVMType( result_fundamental_type );
+			const auto zero= llvm::ConstantInt::get( result_llvm_type, uint64_t(0), true );
+			const auto plus_one= llvm::ConstantInt::get( result_llvm_type, uint64_t(1), true );
+			const auto minus_one= llvm::ConstantInt::get( result_llvm_type, uint64_t(int64_t(-1)), true );
+
+			result.llvm_value=
+				function_context.llvm_ir_builder.CreateSelect(
+					less,
+					minus_one,
+					function_context.llvm_ir_builder.CreateSelect( greater, plus_one, zero ) );
+
+			result.type= FundamentalType( result_fundamental_type, result_llvm_type );
 		}
 		break;
 

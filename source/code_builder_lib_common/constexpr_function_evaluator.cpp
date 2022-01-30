@@ -184,6 +184,13 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 				return res;
 			}
 
+		case llvm::Instruction::Select:
+			{
+				const llvm::GenericValue bool_val= GetVal(instruction->getOperand(0u));
+				instructions_map_[instruction]= GetVal( instruction->getOperand( bool_val.IntVal.getBoolValue() ? 1u : 2u ) );
+			}
+			break;
+
 		case llvm::Instruction::Unreachable:
 			errors_.push_back( "executing Unreachable instruction" );
 			return llvm::GenericValue();

@@ -292,7 +292,7 @@ U_TEST( OperatorsManglingTest )
 			}
 			op<=>( Box &imut a, Box &imut b ) : i32
 			{
-				return i32(a.x) - i32(b.x);
+				return a.x <=> b.x;
 			}
 
 			op&( Box &imut a, Box &imut b ) : Box
