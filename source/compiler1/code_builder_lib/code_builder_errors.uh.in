@@ -28,8 +28,7 @@ struct CodeBuilderError
 	ust::shared_ptr_nullable_mut</TemplateErrorsContext/> errors_context;
 
 	op==(CodeBuilderError& l, CodeBuilderError& r) : bool;
-	op!=(CodeBuilderError& l, CodeBuilderError& r) : bool;
-	op<(CodeBuilderError& l, CodeBuilderError& r) : bool;
+	op<=>(CodeBuilderError& l, CodeBuilderError& r) : i32;
 }
 
 type ErrorsContainer= ust::vector</ CodeBuilderError />;

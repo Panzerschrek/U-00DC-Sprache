@@ -159,9 +159,9 @@ struct ClassFieldForTypeinfo
 	ust::shared_ptr_imut</ClassField/> class_field;
 	ust::string8 name;
 
-	op<( ClassFieldForTypeinfo& l, ClassFieldForTypeinfo& r ) : bool
+	op<=>( ClassFieldForTypeinfo& l, ClassFieldForTypeinfo& r ) : i32
 	{
-		return l.name < r.name;
+		return l.name <=> r.name;
 	}
 }
 
@@ -171,9 +171,9 @@ struct ClassFunctionForTypeinfo
 	ust::string8 name;
 	ust::string8 mangled_name;
 
-	op<( ClassFunctionForTypeinfo& l, ClassFunctionForTypeinfo& r ) : bool
+	op<=>( ClassFunctionForTypeinfo& l, ClassFunctionForTypeinfo& r ) : i32
 	{
-		return l.mangled_name < r.mangled_name;
+		return l.mangled_name <=> r.mangled_name;
 	}
 }
 
@@ -182,9 +182,9 @@ struct ClassInnerTypeForTypeinfo
 	Type t;
 	ust::string8 name;
 
-	op<( ClassInnerTypeForTypeinfo& l, ClassInnerTypeForTypeinfo& r ) : bool
+	op<=>( ClassInnerTypeForTypeinfo& l, ClassInnerTypeForTypeinfo& r ) : i32
 	{
-		return l.name < r.name;
+		return l.name <=> r.name;
 	}
 }
 

@@ -456,11 +456,6 @@ op Lexem::==( Lexem& l, Lexem& r ) : bool
 	return l.text == r.text && l.src_loc == r.src_loc && l.lexem_type == r.lexem_type;
 }
 
-op Lexem::!=( Lexem& l, Lexem& r ) : bool
-{
-	return !(l == r );
-}
-
 fn DiffUTF8Chars( Iterator mut start, Iterator end ) : size_type
 {
 	auto mut r= 0s;

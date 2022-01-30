@@ -1323,7 +1323,6 @@ U_TEST(OrderCompare_Test0)
 	engine->runFunction( function, {} );
 }
 
-
 U_TEST(OrderCompare_Test1)
 {
 	static const char c_program_text[]=

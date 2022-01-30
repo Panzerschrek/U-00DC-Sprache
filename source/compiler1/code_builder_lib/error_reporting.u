@@ -13,24 +13,20 @@ op CodeBuilderError::==(CodeBuilderError& l, CodeBuilderError& r) : bool
 		l.errors_context == r.errors_context;
 }
 
-op CodeBuilderError::!=(CodeBuilderError& l, CodeBuilderError& r) : bool
-{
-	return !(l == r);
-}
 
-op CodeBuilderError::<(CodeBuilderError& l, CodeBuilderError& r) : bool
+op CodeBuilderError::<=>(CodeBuilderError& l, CodeBuilderError& r) : i32
 {
 	// Sort by position in file, then, by code, then, by text.
 	if( l.src_loc != r.src_loc )
 	{
-		return l.src_loc < r.src_loc;
+		return l.src_loc <=> r.src_loc;
 	}
 	if( l.code != r.code )
 	{
-		return u32(l.code) < u32(r.code);
+		return u32(l.code) <=> u32(r.code);
 	}
 
-	return l.text < r.text;
+	return l.text <=> r.text;
 }
 
 fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_imut</ust::string8/> format_args ) : CodeBuilderError

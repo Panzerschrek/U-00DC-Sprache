@@ -40,7 +40,6 @@ struct FundamentalType
 	fn constructor( U_FundamentalType in_fundamental_type, LLVMTypeRef in_llvm_type );
 
 	op==( FundamentalType& l, FundamentalType& r ) : bool;
-	op!=( FundamentalType& l, FundamentalType& r ) : bool;
 
 	fn GetSize(this) : size_type;
 }
@@ -52,7 +51,6 @@ struct ArrayType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	op==( ArrayType& l, ArrayType& r ) : bool;
-	op!=( ArrayType& l, ArrayType& r ) : bool;
 }
 
 struct TupleType
@@ -61,7 +59,6 @@ struct TupleType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	op==( TupleType& l, TupleType& r ) : bool;
-	op!=( TupleType& l, TupleType& r ) : bool;
 }
 
 struct RawPointerType
@@ -70,7 +67,6 @@ struct RawPointerType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	op==( RawPointerType& l, RawPointerType& r ) : bool;
-	op!=( RawPointerType& l, RawPointerType& r ) : bool;
 }
 
 struct FunctionType
@@ -83,8 +79,7 @@ struct FunctionType
 		u8 reference_index; // ~0 for param reference, 0 for inner reference
 
 		op==(ParamReference& l, ParamReference& r) : bool;
-		op!=(ParamReference& l, ParamReference& r) : bool;
-		op<(ParamReference& l, ParamReference& r) : bool;
+		op<=>(ParamReference& l, ParamReference& r) : i32;
 	}
 	var u8 c_param_reference_number= ~0u8;
 
@@ -94,8 +89,7 @@ struct FunctionType
 		ParamReference src;
 
 		op==(ReferencePollution& l, ReferencePollution& r) : bool;
-		op!=(ReferencePollution& l, ReferencePollution& r) : bool;
-		op<(ReferencePollution& l, ReferencePollution& r) : bool;
+		op<=>(ReferencePollution& l, ReferencePollution& r) : i32;
 	}
 
 	ust::vector</Param/> params;
@@ -114,7 +108,6 @@ struct FunctionType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	op==( FunctionType& l, FunctionType& r ) : bool;
-	op!=( FunctionType& l, FunctionType& r ) : bool;
 
 	fn PointerCanBeConvertedTo( this, FunctionType& dst ) : bool;
 	fn IsStructRet( this ) : bool;
@@ -128,7 +121,6 @@ struct FunctionPointerType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	op==( FunctionPointerType& l, FunctionPointerType& r ) : bool;
-	op!=( FunctionPointerType& l, FunctionPointerType& r ) : bool;
 }
 
 struct ClassType
@@ -254,7 +246,6 @@ public:
 	fn ToString( this ) : ust::string8;
 
 	op==( Type& l, Type& r ) : bool;
-	op!=( Type& l, Type& r ) : bool;
 
 private:
 	ust::variant</ tup[
@@ -305,7 +296,6 @@ struct VariableTypeExtended
 	ValueType value_type;
 
 	op==(VariableTypeExtended& l, VariableTypeExtended& r) : bool;
-	op!=(VariableTypeExtended& l, VariableTypeExtended& r) : bool;
 }
 
 struct FunctionVariable
@@ -694,7 +684,6 @@ public:
 
 	// Compare shared pointers
 	op==( NamesScopeValue&l, NamesScopeValue& r ) : bool;
-	op!=( NamesScopeValue&l, NamesScopeValue& r ) : bool;
 
 private:
 	template</type T/> struct IsSharedPtr{ auto value= false; }
