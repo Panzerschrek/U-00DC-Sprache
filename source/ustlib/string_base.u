@@ -286,36 +286,8 @@ public:
 		return r == l;
 	}
 
-	op!=( this_type& l, this_type& r ) : bool
-	{
-		return !( l == r );
-	}
-
-	template</ size_type array_size />
-	op!=( this_type& l, [ char_type, array_size ]& array ) : bool
-	{
-		return !( l == array );
-	}
-
-	template</ size_type array_size />
-	op!=( [ char_type, array_size ]& array, this_type& r ) : bool
-	{
-		return !( array == r );
-	}
-
-	op!=( this_type& l, range_imut r ) : bool
-	{
-		return !( l == r );
-	}
-
-	op!=( range_imut l, this_type& r ) : bool
-	{
-		return !( l == r );
-	}
-
 	// order compare
-
-	op< ( this_type& l, this_type& r ) : bool
+	op<=>( this_type& l, this_type& r ) : i32
 	{
 		for( var size_type mut i= 0s, min_s= ust::min( l.size(), r.size() ); i < min_s; ++i )
 		{
@@ -323,40 +295,13 @@ public:
 			{
 				if( $>(l.ptr_ + i) != $>(r.ptr_ + i) )
 				{
-					return $>(l.ptr_ + i) < $>(r.ptr_ + i);
+					return $>(l.ptr_ + i) <=> $>(r.ptr_ + i);
 				}
 			}
 		}
 
 		// In case if one string is substring of another, shorter string is less.
-		return l.size() <  r.size();
-	}
-
-	op<=( this_type& l, this_type& r ) : bool
-	{
-		for( var size_type mut i= 0s, min_s= ust::min( l.size(), r.size() ); i < min_s; ++i )
-		{
-			unsafe
-			{
-				if( $>(l.ptr_ + i) != $>(r.ptr_ + i) )
-				{
-					return $>(l.ptr_ + i) < $>(r.ptr_ + i);
-				}
-			}
-		}
-
-		// In case if one string is substring of another, shorter string is less.
-		return l.size() <= r.size();
-	}
-
-	op> ( this_type& l, this_type& r ) : bool
-	{
-		return r <  l;
-	}
-
-	op>=( this_type& l, this_type& r ) : bool
-	{
-		return r <= l;
+		return l.size() <=> r.size();
 	}
 
 	// modificators
