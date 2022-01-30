@@ -1590,7 +1590,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				{ &left_expr, &right_expr },
 				evaluate_args_in_reverse_order,
 				names,
-				function_context );
+				function_context,
+				overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete );
 	}
 
 	return std::nullopt;
