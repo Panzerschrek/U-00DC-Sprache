@@ -17,6 +17,7 @@ enum BinaryOperatorType : u8
 	LessEqual,
 	Greater,
 	GreaterEqual,
+	CompareOrder,
 
 	And,
 	Or,
@@ -39,12 +40,8 @@ enum OverloadedOperator : u8
 	Div,
 	Rem,
 
-	Equal,
-	NotEqual,
-	Less,
-	LessEqual,
-	Greater,
-	GreaterEqual,
+	CompareEqual,
+	CompareOrder,
 
 	And,
 	Or,

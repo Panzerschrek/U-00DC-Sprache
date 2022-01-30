@@ -29,12 +29,12 @@ fn GetOverloadedOperatorForBinaryOperator( BinaryOperatorType o ) : OverloadedOp
 	if( o == BinaryOperatorType::And ) { return OverloadedOperator::And; }
 	if( o == BinaryOperatorType::Or  ) { return OverloadedOperator::Or ; }
 	if( o == BinaryOperatorType::Xor ) { return OverloadedOperator::Xor; }
-	if( o == BinaryOperatorType::Equal        ) { return OverloadedOperator::Equal       ; }
-	if( o == BinaryOperatorType::NotEqual     ) { return OverloadedOperator::NotEqual    ; }
-	if( o == BinaryOperatorType::Less         ) { return OverloadedOperator::Less        ; }
-	if( o == BinaryOperatorType::LessEqual    ) { return OverloadedOperator::LessEqual   ; }
-	if( o == BinaryOperatorType::Greater      ) { return OverloadedOperator::Greater     ; }
-	if( o == BinaryOperatorType::GreaterEqual ) { return OverloadedOperator::GreaterEqual; }
+	if( o == BinaryOperatorType::Equal        ) { return OverloadedOperator::CompareEqual; }
+	if( o == BinaryOperatorType::NotEqual     ) { return OverloadedOperator::CompareEqual; }
+	if( o == BinaryOperatorType::Less         ) { return OverloadedOperator::CompareOrder; }
+	if( o == BinaryOperatorType::LessEqual    ) { return OverloadedOperator::CompareOrder; }
+	if( o == BinaryOperatorType::Greater      ) { return OverloadedOperator::CompareOrder; }
+	if( o == BinaryOperatorType::GreaterEqual ) { return OverloadedOperator::CompareOrder; }
 	if( o == BinaryOperatorType::ShiftLeft  ) { return OverloadedOperator::ShiftLeft ; }
 	if( o == BinaryOperatorType::ShiftRight ) { return OverloadedOperator::ShiftRight; }
 
@@ -55,6 +55,7 @@ fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8
 	if( o == BinaryOperatorType::LessEqual		){ return "<="; }
 	if( o == BinaryOperatorType::Greater		){ return "<" ; }
 	if( o == BinaryOperatorType::GreaterEqual	){ return ">="; }
+	if( o == BinaryOperatorType::CompareOrder	){ return "<=>"; }
 
 	if( o == BinaryOperatorType::And ){ return "&"; }
 	if( o == BinaryOperatorType::Or  ){ return "|"; }
@@ -79,12 +80,8 @@ fn OverloadedOperatorToString( OverloadedOperator o ) : ust::array_view_imut</ c
 	if( o == OverloadedOperator::Div ) { return "/"; }
 	if( o == OverloadedOperator::Rem ) { return "%"; }
 
-	if( o == OverloadedOperator::Equal        ) { return "=="; }
-	if( o == OverloadedOperator::NotEqual     ) { return "!="; }
-	if( o == OverloadedOperator::Less         ) { return "<"; }
-	if( o == OverloadedOperator::LessEqual    ) { return "<="; }
-	if( o == OverloadedOperator::Greater      ) { return ">"; }
-	if( o == OverloadedOperator::GreaterEqual ) { return ">="; }
+	if( o == OverloadedOperator::CompareEqual ) { return "=="; }
+	if( o == OverloadedOperator::CompareOrder ) { return "<=>"; }
 
 	if( o == OverloadedOperator::And ) { return "&"; }
 	if( o == OverloadedOperator::Or  ) { return "|"; }

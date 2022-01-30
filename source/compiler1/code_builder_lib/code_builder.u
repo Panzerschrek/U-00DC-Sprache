@@ -1359,13 +1359,7 @@ fn CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, src_loc, void_type_ )
 		}
 	}
-	else
-	if( operator == OverloadedOperator::Equal     ||
-		operator == OverloadedOperator::NotEqual  ||
-		operator == OverloadedOperator::Less      ||
-		operator == OverloadedOperator::LessEqual ||
-		operator == OverloadedOperator::Greater   ||
-		operator == OverloadedOperator::GreaterEqual )
+	else if( operator == OverloadedOperator::CompareEqual )
 	{
 		if( func_type.params.size() != 2s )
 		{
@@ -1374,6 +1368,20 @@ fn CodeBuilder::CheckOverloadedOperator(
 		if( !( func_type.return_type == bool_type_ && func_type.return_value_type == ValueType::Value ) )
 		{
 			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, src_loc, void_type_ )
+		}
+	}
+	else if( operator == OverloadedOperator::CompareOrder )
+	{
+		if( func_type.params.size() != 2s )
+		{
+			REPORT_ERROR( InvalidArgumentCountForOperator, names_scope, src_loc )
+		}
+		if( !(
+			!func_type.return_type.GetFundamentalType().empty() &&
+			func_type.return_type.GetFundamentalType().try_deref().fundamental_type == U_FundamentalType::i32_ &&
+			func_type.return_value_type == ValueType::Value ) )
+		{
+			REPORT_ERROR( InvalidReturnTypeForOperator, names_scope, src_loc, GetFundamentalTypeName( U_FundamentalType::i32_ ) )
 		}
 	}
 	else

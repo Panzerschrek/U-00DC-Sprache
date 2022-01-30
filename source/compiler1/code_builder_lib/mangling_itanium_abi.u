@@ -776,11 +776,7 @@ fn DecodeOperator( ust::string8& o ) : ust::array_view_imut</ char8 />
 	if( o == "%" ){ return "rm"; }
 
 	if( o == "==" ){ return "eq"; }
-	if( o == "!=" ){ return "ne"; }
-	if( o == ">"  ){ return "gt"; }
-	if( o == ">=" ){ return "ge"; }
-	if( o == "<"  ){ return "lt"; }
-	if( o == "<=" ){ return "le"; }
+	if( o == "<=>" ){ return "ss"; } // C++ spaceship operator
 
 	if( o == "&" ){ return "an"; }
 	if( o == "|" ){ return "or"; }

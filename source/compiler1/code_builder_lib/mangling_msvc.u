@@ -726,11 +726,7 @@ fn GetOperatorNameMSVC( ust::string8& o ) : ust::array_view_imut</ char8 />
 	if( o == "%" ){ return "?L"; }
 
 	if( o == "==" ){ return "?8"; }
-	if( o == "!=" ){ return "?9"; }
-	if( o == ">"  ){ return "?O"; }
-	if( o == ">=" ){ return "?P"; }
-	if( o == "<"  ){ return "?M"; }
-	if( o == "<=" ){ return "?N"; }
+	if( o == "<=>" ){ return "?__M"; } // C++ spaceship operator
 
 	if( o == "&" ){ return "?I"; }
 	if( o == "|" ){ return "?U"; }
