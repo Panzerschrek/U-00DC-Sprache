@@ -139,11 +139,6 @@ public:
 		return l.ptr_ == r.ptr_;
 	}
 
-	op!=( this_type& l, this_type& r ) : bool
-	{
-		return l.ptr_ != r.ptr_;
-	}
-
 public: // Methods for internal usage.
 	fn get_ptr( this ) unsafe : $(storage)
 	{

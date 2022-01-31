@@ -21,6 +21,7 @@ std::string BinaryOperatorToString( const BinaryOperatorType op )
 	case BinaryOperatorType::LessEqual: return "<=";
 	case BinaryOperatorType::Greater: return ">";
 	case BinaryOperatorType::GreaterEqual: return ">=";
+	case BinaryOperatorType::CompareOrder: return "<=>";
 
 	case BinaryOperatorType::And: return "&";
 	case BinaryOperatorType::Or: return "|";
@@ -49,12 +50,8 @@ std::string OverloadedOperatorToString( const OverloadedOperator op )
 	case OverloadedOperator::Div: return "/";
 	case OverloadedOperator::Rem: return "%";
 
-	case OverloadedOperator::Equal: return "==";
-	case OverloadedOperator::NotEqual: return "!=";
-	case OverloadedOperator::Less: return "<";
-	case OverloadedOperator::LessEqual: return "<=";
-	case OverloadedOperator::Greater: return ">";
-	case OverloadedOperator::GreaterEqual: return ">=";
+	case OverloadedOperator::CompareEqual: return "==";
+	case OverloadedOperator::CompareOrder: return "<=>";
 
 	case OverloadedOperator::And: return "&";
 	case OverloadedOperator::Or : return "|";
@@ -103,12 +100,15 @@ OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorT
 	case BinaryOperatorType::And: return OverloadedOperator::And;
 	case BinaryOperatorType::Or : return OverloadedOperator::Or ;
 	case BinaryOperatorType::Xor: return OverloadedOperator::Xor;
-	case BinaryOperatorType::Equal: return OverloadedOperator::Equal;
-	case BinaryOperatorType::NotEqual: return OverloadedOperator::NotEqual;
-	case BinaryOperatorType::Less: return OverloadedOperator::Less;
-	case BinaryOperatorType::LessEqual: return OverloadedOperator::LessEqual;
-	case BinaryOperatorType::Greater: return OverloadedOperator::Greater;
-	case BinaryOperatorType::GreaterEqual: return OverloadedOperator::GreaterEqual;
+	case BinaryOperatorType::Equal:
+	case BinaryOperatorType::NotEqual:
+		return OverloadedOperator::CompareEqual;
+	case BinaryOperatorType::Less:
+	case BinaryOperatorType::LessEqual:
+	case BinaryOperatorType::Greater:
+	case BinaryOperatorType::GreaterEqual:
+	case BinaryOperatorType::CompareOrder:
+		return OverloadedOperator::CompareOrder;
 	case BinaryOperatorType::ShiftLeft : return OverloadedOperator::ShiftLeft ;
 	case BinaryOperatorType::ShiftRight: return OverloadedOperator::ShiftRight;
 	default: U_ASSERT(false); return OverloadedOperator::None;

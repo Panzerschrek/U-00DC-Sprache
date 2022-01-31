@@ -1261,6 +1261,153 @@ U_TEST(ComparisonFloatOperatorsTest)
 	}
 }
 
+U_TEST(OrderCompare_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		// Result of "<=>" is always "i32".
+		// Use functions to avoid "constexpr" folding.
+		fn CompareOrder(i32 a, i32 b) : i32
+		{
+			return a <=> b;
+		}
+		fn CompareOrder(u64 a, u64 b) : i32
+		{
+			return a <=> b;
+		}
+		fn CompareOrder(f32 a, f32 b) : i32
+		{
+			return a <=> b;
+		}
+		fn CompareOrder(char16 a, char16 b) : i32
+		{
+			return a <=> b;
+		}
+		fn CompareOrder($(i32) a, $(i32) b) : i32
+		{
+			return a <=> b;
+		}
+
+		fn Foo()
+		{
+			halt if( CompareOrder( 34, 764 ) != -1 );
+			halt if( CompareOrder( 764, 34 ) != +1 );
+			halt if( CompareOrder( -644, -2 ) != -1 );
+			halt if( CompareOrder( -2, -644 ) != +1 );
+			halt if( CompareOrder( -77, -77 ) != 0 );
+			halt if( CompareOrder( 123, 123 ) != 0 );
+
+			halt if( CompareOrder( 34u64, 764u64 ) != -1 );
+			halt if( CompareOrder( 764u64, 34u64 ) != +1 );
+			halt if( CompareOrder( 1u64, ~0u64 ) != -1 );
+			halt if( CompareOrder( ~0u64, 1u64 ) != +1 );
+			halt if( CompareOrder( ~0u64, ~0u64 ) != 0 );
+			halt if( CompareOrder( 0u64, 0u64 ) != 0 );
+
+			halt if( CompareOrder( 64.43f, 785.1f ) != -1 );
+			halt if( CompareOrder( 785.1f, 64.43f ) != +1 );
+			halt if( CompareOrder( -0.1f, +0.1f ) != -1 );
+			halt if( CompareOrder( +0.1f, -0.1f ) != +1 );
+			halt if( CompareOrder( 1.718281828f, 1.718281828f ) != 0 );
+			halt if( CompareOrder( +0.0f, -0.0f ) != 0 );
+			auto nan= 0.0f / 0.0f;
+			halt if( CompareOrder( nan, +100.0f ) != 0 );
+			halt if( CompareOrder( +100.0f, nan ) != 0 );
+			halt if( CompareOrder( nan, -100.0f ) != 0 );
+			halt if( CompareOrder( -100.0f, nan ) != 0 );
+			halt if( CompareOrder( nan, 0.0f ) != 0 );
+			halt if( CompareOrder( 0.0f, nan ) != 0 );
+			halt if( CompareOrder( nan, nan ) != 0 );
+			var f32 plus_inf = (+1.0f) / 0.0f, minus_inf= (-1.0f) / 0.0f;
+			halt if( CompareOrder( plus_inf, 0.0f ) != +1 );
+			halt if( CompareOrder( 0.0f, plus_inf ) != -1 );
+			halt if( CompareOrder( minus_inf, 0.0f ) != -1 );
+			halt if( CompareOrder( 0.0f, minus_inf ) != +1 );
+			halt if( CompareOrder( plus_inf, minus_inf ) != +1 );
+			halt if( CompareOrder( minus_inf, plus_inf ) != -1 );
+			halt if( CompareOrder( plus_inf, nan ) != 0 );
+			halt if( CompareOrder( nan, plus_inf ) != 0 );
+			halt if( CompareOrder( minus_inf, nan ) != 0 );
+			halt if( CompareOrder( nan, minus_inf ) != 0 );
+
+			halt if( CompareOrder( "g"c16, "x"c16 ) != -1 );
+			halt if( CompareOrder( "x"c16, "g"c16 ) != +1 );
+			halt if( CompareOrder( "Я"c16, "Я"c16 ) != 0 );
+
+			var [ i32, 3 ] mut arr= zero_init;
+			halt if( CompareOrder( $<(arr[0]), $<(arr[2]) ) != -1 );
+			halt if( CompareOrder( $<(arr[2]), $<(arr[0]) ) != +1 );
+			halt if( CompareOrder( $<(arr[1]), $<(arr[1]) ) != 0 );
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	const auto function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+}
+
+U_TEST(OrderCompare_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		// Result of "<=>" is always "i32".
+		template</type T/>
+		fn CompareOrder(T a, T b) : i32
+		{
+			return a <=> b;
+		}
+
+		static_assert( CompareOrder( 34, 764 ) == -1 );
+		static_assert( CompareOrder( 764, 34 ) == +1 );
+		static_assert( CompareOrder( -644, -2 ) == -1 );
+		static_assert( CompareOrder( -2, -644 ) == +1 );
+		static_assert( CompareOrder( -77, -77 ) == 0 );
+		static_assert( CompareOrder( 123, 123 ) == 0 );
+
+		static_assert( CompareOrder( 34u64, 764u64 ) == -1 );
+		static_assert( CompareOrder( 764u64, 34u64 ) == +1 );
+		static_assert( CompareOrder( 1u64, ~0u64 ) == -1 );
+		static_assert( CompareOrder( ~0u64, 1u64 ) == +1 );
+		static_assert( CompareOrder( ~0u64, ~0u64 ) == 0 );
+		static_assert( CompareOrder( 0u64, 0u64 ) == 0 );
+
+		static_assert( CompareOrder( 64.43f, 785.1f ) == -1 );
+		static_assert( CompareOrder( 785.1f, 64.43f ) == +1 );
+		static_assert( CompareOrder( -0.1f, +0.1f ) == -1 );
+		static_assert( CompareOrder( +0.1f, -0.1f ) == +1 );
+		static_assert( CompareOrder( 1.718281828f, 1.718281828f ) == 0 );
+		static_assert( CompareOrder( +0.0f, -0.0f ) == 0 );
+		auto nan= 0.0f / 0.0f;
+		static_assert( CompareOrder( nan, +100.0f ) == 0 );
+		static_assert( CompareOrder( +100.0f, nan ) == 0 );
+		static_assert( CompareOrder( nan, -100.0f ) == 0 );
+		static_assert( CompareOrder( -100.0f, nan ) == 0 );
+		static_assert( CompareOrder( nan, 0.0f ) == 0 );
+		static_assert( CompareOrder( 0.0f, nan ) == 0 );
+		static_assert( CompareOrder( nan, nan ) == 0 );
+		var f32 plus_inf = (+1.0f) / 0.0f, minus_inf= (-1.0f) / 0.0f;
+		static_assert( CompareOrder( plus_inf, 0.0f ) == +1 );
+		static_assert( CompareOrder( 0.0f, plus_inf ) == -1 );
+		static_assert( CompareOrder( minus_inf, 0.0f ) == -1 );
+		static_assert( CompareOrder( 0.0f, minus_inf ) == +1 );
+		static_assert( CompareOrder( plus_inf, minus_inf ) == +1 );
+		static_assert( CompareOrder( minus_inf, plus_inf ) == -1 );
+		static_assert( CompareOrder( plus_inf, nan ) == 0 );
+		static_assert( CompareOrder( nan, plus_inf ) == 0 );
+		static_assert( CompareOrder( minus_inf, nan ) == 0 );
+		static_assert( CompareOrder( nan, minus_inf ) == 0 );
+
+		static_assert( CompareOrder( "g"c16, "x"c16 ) == -1 );
+		static_assert( CompareOrder( "x"c16, "g"c16 ) == +1 );
+		static_assert( CompareOrder( "Я"c16, "Я"c16 ) == 0 );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST(EqualityOperatorsTest)
 {
 	static const char c_program_text[]=

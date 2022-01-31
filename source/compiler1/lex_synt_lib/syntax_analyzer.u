@@ -22,15 +22,19 @@ fn GetBinaryOperatorPriority( BinaryOperatorType binary_operator ) : i32
 		binary_operator == BinaryOperatorType::Mul ||
 		binary_operator == BinaryOperatorType::Rem )
 	{
-		return 9;
+		return 10;
 	}
 	if( binary_operator == BinaryOperatorType::Add ||
 		binary_operator == BinaryOperatorType::Sub )
 	{
-		return 8;
+		return 9;
 	}
 	if( binary_operator == BinaryOperatorType::ShiftLeft ||
 		binary_operator == BinaryOperatorType::ShiftRight )
+	{
+		return 8;
+	}
+	if( binary_operator == BinaryOperatorType::CompareOrder )
 	{
 		return 7;
 	}
@@ -81,6 +85,7 @@ fn LexemToBinaryOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
 	if( lexem.lexem_type == Lexem::Type::CompareLessOrEqual		){ return BinaryOperatorType::LessEqual		; }
 	if( lexem.lexem_type == Lexem::Type::CompareGreater			){ return BinaryOperatorType::Greater		; }
 	if( lexem.lexem_type == Lexem::Type::CompareGreaterOrEqual	){ return BinaryOperatorType::GreaterEqual	; }
+	if( lexem.lexem_type == Lexem::Type::CompareOrder ){ return BinaryOperatorType::CompareOrder; }
 
 	if( lexem.lexem_type == Lexem::Type::And ){ return BinaryOperatorType::And; }
 	if( lexem.lexem_type == Lexem::Type::Or  ){ return BinaryOperatorType::Or ; }
@@ -1292,12 +1297,8 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 		else if( l == Lexem::Type::Star    ){ o= OverloadedOperator::Mul; }
 		else if( l == Lexem::Type::Slash   ){ o= OverloadedOperator::Div; }
 		else if( l == Lexem::Type::Percent ){ o= OverloadedOperator::Rem; }
-		else if( l == Lexem::Type::CompareEqual    ){ o= OverloadedOperator::Equal   ; }
-		else if( l == Lexem::Type::CompareNotEqual ){ o= OverloadedOperator::NotEqual; }
-		else if( l == Lexem::Type::CompareLess           ){ o= OverloadedOperator::Less        ; }
-		else if( l == Lexem::Type::CompareLessOrEqual    ){ o= OverloadedOperator::LessEqual   ; }
-		else if( l == Lexem::Type::CompareGreater        ){ o= OverloadedOperator::Greater     ; }
-		else if( l == Lexem::Type::CompareGreaterOrEqual ){ o= OverloadedOperator::GreaterEqual; }
+		else if( l == Lexem::Type::CompareEqual ){ o= OverloadedOperator::CompareEqual; }
+		else if( l == Lexem::Type::CompareOrder ){ o= OverloadedOperator::CompareOrder; }
 		else if( l == Lexem::Type::And ){ o= OverloadedOperator::And; }
 		else if( l == Lexem::Type::Or  ){ o= OverloadedOperator::Or ; }
 		else if( l == Lexem::Type::Xor ){ o= OverloadedOperator::Xor; }

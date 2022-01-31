@@ -734,25 +734,9 @@ U_TEST( OperatorsOverloadingTest_EqualityOperators )
 			{
 				return a.x == b.x;
 			}
-			op!=( MyInt &imut a, MyInt &imut b ) : bool
+			op<=>( MyInt &imut a, MyInt &imut b ) : i32
 			{
-				return a.x != b.x;
-			}
-			op> ( MyInt &imut a, MyInt &imut b ) : bool
-			{
-				return a.x >  b.x;
-			}
-			op>=( MyInt &imut a, MyInt &imut b ) : bool
-			{
-				return a.x >= b.x;
-			}
-			op< ( MyInt &imut a, MyInt &imut b ) : bool
-			{
-				return a.x <  b.x;
-			}
-			op<=( MyInt &imut a, MyInt &imut b ) : bool
-			{
-				return a.x <= b.x;
+				return a.x <=> b.x;
 			}
 		}
 
@@ -767,6 +751,10 @@ U_TEST( OperatorsOverloadingTest_EqualityOperators )
 			halt if( b > a );
 			halt if( b >= a );
 			halt if( !( b >= b ) );
+			halt if( a <=> b != +1 );
+			halt if( b <=> a != -1 );
+			halt if( 0 != a <=> a );
+			halt if( 0 != b <=> b );
 		}
 	)";
 
@@ -775,7 +763,48 @@ U_TEST( OperatorsOverloadingTest_EqualityOperators )
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
-	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	engine->runFunction( function, {} );
+}
+
+U_TEST( OperatorsOverloadingTest_EqualityOperatorsConstexpr )
+{
+	static const char c_program_text[]=
+	R"(
+		struct MyInt
+		{
+			i32 x;
+			op constexpr ==( MyInt& a, MyInt& b ) : bool
+			{
+				return a.x == b.x;
+			}
+			op constexpr <=>( MyInt& a, MyInt& b ) : i32
+			{
+				return a.x <=> b.x;
+			}
+		}
+
+		var MyInt a{ .x= 584 }, b{ .x= 11 };
+		static_assert( a == a );
+		static_assert( b == b );
+		static_assert( a != b );
+		static_assert( b != a );
+		static_assert( a > b );
+		static_assert( a >= b );
+		static_assert( ! ( a < b ) );
+		static_assert( ! ( a <= b ) );
+		static_assert( b < a );
+		static_assert( b <= a );
+		static_assert( ! ( b > a ) );
+		static_assert( ! ( b >= a ) );
+		static_assert( a <=> b == +1 );
+		static_assert( b <=> a == -1 );
+		static_assert( +1 == a <=> b );
+		static_assert( -1 == b <=> a );
+		static_assert( a <=> a == 0 );
+		static_assert( 0 == b <=> b );
+	)";
+
+	BuildProgram( c_program_text );
 }
 
 U_TEST( OperatorsOverloadingTest_IndexationOperator0 )

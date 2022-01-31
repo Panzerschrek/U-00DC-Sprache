@@ -18,6 +18,7 @@ enum class BinaryOperatorType : uint8_t
 	LessEqual,
 	Greater,
 	GreaterEqual,
+	CompareOrder,
 
 	And,
 	Or,
@@ -40,12 +41,8 @@ enum class OverloadedOperator : uint8_t
 	Div,
 	Rem,
 
-	Equal,
-	NotEqual,
-	Less,
-	LessEqual,
-	Greater,
-	GreaterEqual,
+	CompareEqual,
+	CompareOrder,
 
 	And,
 	Or,

@@ -76,6 +76,7 @@ struct Lexem
 		CompareNotEqual, // !=
 		CompareLessOrEqual, // <=
 		CompareGreaterOrEqual, // >=
+		CompareOrder, // <=>
 
 		Conjunction, // &&
 		Disjunction, // ||
@@ -114,7 +115,6 @@ struct Lexem
 	Type lexem_type= Type::None;
 
 	op==( Lexem& l, Lexem& r ) : bool;
-	op!=( Lexem& l, Lexem& r ) : bool;
 }
 
 type Lexems= ust::vector</Lexem/>;

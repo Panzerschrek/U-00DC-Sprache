@@ -78,6 +78,7 @@ struct Lexem
 		CompareNotEqual, // !=
 		CompareLessOrEqual, // <=
 		CompareGreaterOrEqual, // >=
+		CompareOrder, // <=>
 
 		Conjunction, // &&
 		Disjunction, // ||

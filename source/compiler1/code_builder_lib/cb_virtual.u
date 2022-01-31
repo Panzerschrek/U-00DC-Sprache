@@ -13,9 +13,9 @@ struct VirtualFunctionWithName
 	ust::string8 name;
 	ust::string8 mangled_name;
 
-	op<( VirtualFunctionWithName& l, VirtualFunctionWithName& r ) : bool
+	op<=>( VirtualFunctionWithName& l, VirtualFunctionWithName& r ) : i32
 	{
-		return l.mangled_name < r.mangled_name;
+		return l.mangled_name <=> r.mangled_name;
 	}
 }
 

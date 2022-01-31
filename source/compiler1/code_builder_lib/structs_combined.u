@@ -145,20 +145,11 @@ op FundamentalType::==( FundamentalType& l, FundamentalType& r ) : bool
 	return l.fundamental_type == r.fundamental_type;
 }
 
-op FundamentalType::!=( FundamentalType& l, FundamentalType& r ) : bool
-{
-	return !(l == r);
-}
-
 op ArrayType::==( ArrayType& l, ArrayType& r ) : bool
 {
 	return l.element_type == r.element_type && l.element_count == r.element_count;
 }
 
-op ArrayType::!=( ArrayType& l, ArrayType& r ) : bool
-{
-	return !(l == r);
-}
 
 op TupleType::==( TupleType& l, TupleType& r ) : bool
 {
@@ -178,19 +169,9 @@ op TupleType::==( TupleType& l, TupleType& r ) : bool
 	return true;
 }
 
-op TupleType::!=( TupleType& l, TupleType& r ) : bool
-{
-	return !(l == r);
-}
-
 op RawPointerType::==( RawPointerType& l, RawPointerType& r ) : bool
 {
 	return l.element_type == r.element_type;
-}
-
-op RawPointerType::!=( RawPointerType& l, RawPointerType& r ) : bool
-{
-	return !(l == r);
 }
 
 op FunctionType::ParamReference::==(ParamReference& l, ParamReference& r) : bool
@@ -200,18 +181,13 @@ op FunctionType::ParamReference::==(ParamReference& l, ParamReference& r) : bool
 		l.reference_index == r.reference_index;
 }
 
-op FunctionType::ParamReference::!=(ParamReference& l, ParamReference& r) : bool
-{
-	return !(l == r);
-}
-
-op FunctionType::ParamReference::<(ParamReference& l, ParamReference& r) : bool
+op FunctionType::ParamReference::<=>(ParamReference& l, ParamReference& r) : i32
 {
 	if( l.param_index != r.param_index )
 	{
-		return l.param_index < r.param_index;
+		return l.param_index <=> r.param_index;
 	}
-	return l.reference_index < r.reference_index;
+	return l.reference_index <=> r.reference_index;
 }
 
 op FunctionType::ReferencePollution::==(ReferencePollution& l, ReferencePollution& r) : bool
@@ -219,18 +195,13 @@ op FunctionType::ReferencePollution::==(ReferencePollution& l, ReferencePollutio
 	return l.dst == r.dst && l.src == r.src;
 }
 
-op FunctionType::ReferencePollution::!=(ReferencePollution& l, ReferencePollution& r) : bool
-{
-	return !(l == r);
-}
-
-op FunctionType::ReferencePollution::<(ReferencePollution& l, ReferencePollution& r) : bool
+op FunctionType::ReferencePollution::<=>(ReferencePollution& l, ReferencePollution& r) : i32
 {
 	if( l.dst != r.dst )
 	{
-		return l.dst < r.dst;
+		return l.dst <=> r.dst;
 	}
-	return l.src < r.src;
+	return l.src <=> r.src;
 }
 
 fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
@@ -347,10 +318,6 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 		l.is_unsafe == r.is_unsafe;
 }
 
-op FunctionType::!=( FunctionType& l, FunctionType& r ) : bool
-{
-	return !(l == r);
-}
 
 fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8
 {
@@ -381,11 +348,6 @@ fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) 
 op FunctionPointerType::==( FunctionPointerType& l, FunctionPointerType& r ) : bool
 {
 	return l.function_type == r.function_type;
-}
-
-op FunctionPointerType::!=( FunctionPointerType& l, FunctionPointerType& r ) : bool
-{
-	return !(l == r);
 }
 
 fn Type::conversion_constructor( FundamentalType mut fundamental_type )
@@ -757,11 +719,6 @@ op Type::==( Type& l, Type& r ) : bool
 	halt;
 }
 
-op Type::!=( Type& l, Type& r ) : bool
-{
-	return !(l == r);
-}
-
 //
 // ClassType
 //
@@ -864,11 +821,6 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 op VariableTypeExtended::==(VariableTypeExtended& l, VariableTypeExtended& r) : bool
 {
 	return l.t == r.t && l.value_type == r.value_type;
-}
-
-op VariableTypeExtended::!=(VariableTypeExtended& l, VariableTypeExtended& r) : bool
-{
-	return !(l == r);
 }
 
 fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
@@ -1231,11 +1183,6 @@ op NamesScopeValue::==( NamesScopeValue&l, NamesScopeValue& r ) : bool
 	}
 
 	halt;
-}
-
-op NamesScopeValue::!=( NamesScopeValue&l, NamesScopeValue& r ) : bool
-{
-	return !(l == r);
 }
 
 //

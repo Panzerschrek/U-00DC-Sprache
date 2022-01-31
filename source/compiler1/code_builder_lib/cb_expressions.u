@@ -882,16 +882,72 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return BuildLazyBinaryOperator( names_scope, function_context, binary_operator );
 	}
 
-	if_var( & res :
+	auto overloaded_operator= GetOverloadedOperatorForBinaryOperator( binary_operator.operator );
+
+	if_var( &mut res :
 		TryCallOverloadedBinaryOperator(
 			names_scope,
 			function_context,
-			GetOverloadedOperatorForBinaryOperator( binary_operator.operator ),
+			overloaded_operator,
 			binary_operator.l,
 			binary_operator.r,
 			ArgsEvaluationOrder::Direct,
 			binary_operator.src_loc ) )
 	{
+		if_var( &mut variable : res.get</Variable/>() )
+		{
+			if( binary_operator.operator == BinaryOperatorType::NotEqual && variable.t == bool_type_ )
+			{
+				// "!=" is implemented via "==", so, invert result.
+				auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+				unsafe
+				{
+					variable.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );
+					if( LLVMIsConstant( variable.llvm_value ) == LLVMBool::True ){ variable.constexpr_value= variable.llvm_value; }
+				}
+				variable.location= Variable::Location::LLVMRegister;
+			}
+
+			if( overloaded_operator == OverloadedOperator::CompareOrder &&
+				!variable.t.GetFundamentalType().empty() &&
+				IsSignedInteger( variable.t.GetFundamentalType().try_deref().fundamental_type ) )
+			{
+				auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+				if( binary_operator.operator == BinaryOperatorType::CompareOrder )
+				{
+					variable.llvm_value= value_in_register;
+				}
+				else
+				{
+					unsafe
+					{
+						auto zero= LLVMConstInt( variable.t.GetLLVMType(), 0u64, LLVMBool::False );
+						if( binary_operator.operator == BinaryOperatorType::Less )
+						{
+							variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, value_in_register, zero, "<\0"[0] );
+						}
+						else if( binary_operator.operator == BinaryOperatorType::LessEqual )
+						{
+							variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, value_in_register, zero, "<=\0"[0] );
+						}
+						else if( binary_operator.operator == BinaryOperatorType::Greater )
+						{
+							variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, value_in_register, zero, ">\0"[0] );
+						}
+						else if( binary_operator.operator == BinaryOperatorType::GreaterEqual )
+						{
+							variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, value_in_register, zero, ">=\0"[0] );
+						}
+						else { halt; }
+					}
+					variable.t= bool_type_;
+				}
+
+				unsafe{  if( LLVMIsConstant( variable.llvm_value ) == LLVMBool::True ){ variable.constexpr_value= variable.llvm_value; }  }
+				variable.location= Variable::Location::LLVMRegister;
+			}
+		}
+
 		return res;
 	}
 
@@ -2174,6 +2230,73 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, l_in_register, r_in_register, ">=\0"[0] );
 				}
 			}
+		}
+	}
+	else if( operator == BinaryOperatorType::CompareOrder )
+	{
+		if( l_type != r_type )
+		{
+			REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names_scope, src_loc, r_type, l_type, BinaryOperatorToString( operator ) )
+			return ErrorValue();
+		}
+		// TODO - maybe allow order compare for enums?
+		if( l_fundamental_type.empty() && l_raw_pointer_type.empty() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+			return ErrorValue();
+		}
+
+		if( !l_fundamental_type.empty() && !( is_integer || is_float || IsChar( l_fundamental_type.try_deref().fundamental_type ) ) )
+		{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
+				return ErrorValue();
+		}
+
+		unsafe
+		{
+			var LLVMValueRef mut less= zero_init, mut greater= zero_init;
+
+			if( is_float )
+			{
+				less= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
+			}
+			else if( is_signed )
+			{
+				less= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] );
+			}
+			else
+			{
+				less= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] );
+			}
+
+			if( is_float )
+			{
+				greater= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
+			}
+			else if( is_signed )
+			{
+				greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] );
+			}
+			else
+			{
+				greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
+			}
+
+			auto result_fundamental_type= U_FundamentalType::i32_;
+			var LLVMTypeRef result_llvm_type= GetFundamentalLLVMType( result_fundamental_type );
+			var LLVMValueRef zero= LLVMConstInt( result_llvm_type, 0u64, LLVMBool::True );
+			var LLVMValueRef plus_one= LLVMConstInt( result_llvm_type, 1u64, LLVMBool::True );
+			var LLVMValueRef minus_one= LLVMConstInt( result_llvm_type, ~0u64, LLVMBool::True );
+
+			res.llvm_value=
+				LLVMBuildSelect(
+					function_context.llvm_ir_builder,
+					less,
+					minus_one,
+					LLVMBuildSelect( function_context.llvm_ir_builder, greater, plus_one, zero, "\0"[0] ),
+					"\0"[0] );
+
+			res.t= FundamentalType( result_fundamental_type, result_llvm_type );
 		}
 	}
 	else{ halt; }

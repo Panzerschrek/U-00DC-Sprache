@@ -1087,16 +1087,21 @@ void CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		break;
 
-	case OverloadedOperator::Equal:
-	case OverloadedOperator::NotEqual:
-	case OverloadedOperator::Less:
-	case OverloadedOperator::LessEqual:
-	case OverloadedOperator::Greater:
-	case OverloadedOperator::GreaterEqual:
+	case OverloadedOperator::CompareEqual:
 		if( func_type.params.size() != 2u )
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		if( !( func_type.return_type == bool_type_ && func_type.return_value_type == ValueType::Value ) )
 			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, bool_type_ );
+		break;
+
+	case OverloadedOperator::CompareOrder:
+		if( func_type.params.size() != 2u )
+			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
+		if( !(
+				func_type.return_type.GetFundamentalType() != nullptr &&
+				func_type.return_type.GetFundamentalType()->fundamental_type == U_FundamentalType::i32 &&
+				func_type.return_value_type == ValueType::Value ) )
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, GetFundamentalTypeName( U_FundamentalType::i32 ) );
 		break;
 		
 	case OverloadedOperator::Mul:

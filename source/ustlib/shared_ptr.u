@@ -209,11 +209,6 @@ public:
 		return l.value_ == r.value_;
 	}
 
-	op!=( this_type& l, this_type& r ) : bool
-	{
-		return l.value_ != r.value_;
-	}
-
 public: // Methods for internal usage.
 	fn get_value_ptr( this ) unsafe : $(T)
 	{
