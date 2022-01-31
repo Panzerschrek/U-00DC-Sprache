@@ -1297,6 +1297,13 @@ U_TEST(OrderCompare_Test0)
 			halt if( CompareOrder( -77, -77 ) != 0 );
 			halt if( CompareOrder( 123, 123 ) != 0 );
 
+			halt if( CompareOrder( 34u64, 764u64 ) != -1 );
+			halt if( CompareOrder( 764u64, 34u64 ) != +1 );
+			halt if( CompareOrder( 1u64, ~0u64 ) != -1 );
+			halt if( CompareOrder( ~0u64, 1u64 ) != +1 );
+			halt if( CompareOrder( ~0u64, ~0u64 ) != 0 );
+			halt if( CompareOrder( 0u64, 0u64 ) != 0 );
+
 			halt if( CompareOrder( 64.43f, 785.1f ) != -1 );
 			halt if( CompareOrder( 785.1f, 64.43f ) != +1 );
 			halt if( CompareOrder( -0.1f, +0.1f ) != -1 );
@@ -1359,6 +1366,13 @@ U_TEST(OrderCompare_Test1)
 		static_assert( CompareOrder( -2, -644 ) == +1 );
 		static_assert( CompareOrder( -77, -77 ) == 0 );
 		static_assert( CompareOrder( 123, 123 ) == 0 );
+
+		static_assert( CompareOrder( 34u64, 764u64 ) == -1 );
+		static_assert( CompareOrder( 764u64, 34u64 ) == +1 );
+		static_assert( CompareOrder( 1u64, ~0u64 ) == -1 );
+		static_assert( CompareOrder( ~0u64, 1u64 ) == +1 );
+		static_assert( CompareOrder( ~0u64, ~0u64 ) == 0 );
+		static_assert( CompareOrder( 0u64, 0u64 ) == 0 );
 
 		static_assert( CompareOrder( 64.43f, 785.1f ) == -1 );
 		static_assert( CompareOrder( 785.1f, 64.43f ) == +1 );
