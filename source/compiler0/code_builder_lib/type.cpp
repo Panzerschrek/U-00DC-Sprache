@@ -289,6 +289,29 @@ bool Type::IsCopyAssignable() const
 	return false;
 }
 
+bool Type::IsEqualityComparable() const
+{
+	if( GetFundamentalType() != nullptr ||
+		GetEnumType() != nullptr ||
+		GetRawPointerType() != nullptr ||
+		GetFunctionPointerType() != nullptr )
+		return true;
+	else if( const auto class_type= GetClassType() )
+		return class_type->is_equality_comparable;
+	else if( const auto array_type= GetArrayType() )
+		return array_type->type.IsEqualityComparable();
+	else if( const auto tuple_type= GetTupleType() )
+	{
+		bool equality_comparable= true;
+		for( const Type& element : tuple_type->elements )
+			equality_comparable= equality_comparable && element.IsEqualityComparable();
+		return equality_comparable;
+	}
+	else U_ASSERT(false);
+
+	return false;
+}
+
 bool Type::HaveDestructor() const
 {
 	if( const auto class_type= GetClassType() )

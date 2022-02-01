@@ -833,6 +833,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	TryGenerateDestructor( class_type );
 	TryGenerateCopyConstructor( class_type );
 	TryGenerateCopyAssignmentOperator( class_type );
+	TryGenerateEqualityCompareOperator( class_type );
 
 	CheckClassFieldsInitializers( class_type );
 
