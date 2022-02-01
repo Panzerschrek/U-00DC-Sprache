@@ -112,3 +112,56 @@ def EqualityOperatorGeneration_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def EqualityOperatorIsNotGenerated_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32& x;
+			// "==" operator is not generated because of reference field.
+		}
+		fn Foo(S& a, S& b)
+		{
+			a == b;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+
+
+def EqualityOperatorIsNotGenerated_Test1():
+	c_program_text= """
+		class C
+		{
+			// "==" operator is not generated for classes by-default.
+		}
+		fn Foo(C& a, C& b)
+		{
+			a == b;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
+
+
+def EqualityOperatorIsNotGenerated_Test2():
+	c_program_text= """
+		class C
+		{
+			// "==" operator is not generated for classes by-default.
+		}
+		struct S
+		{
+			i32 x;
+			C c;
+			f32 z;
+			// "==" operator is not generated because one of fields is is not equality-comparable.
+		}
+		fn Foo(S& a, S& b)
+		{
+			a == b;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 15 ) )
