@@ -114,6 +114,61 @@ def EqualityOperatorGeneration_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def EqualityOperatorGeneration_Test3():
+	c_program_text= """
+	struct S
+	{
+		i32 x;
+		op==(S& l, S& r) : bool = default; // Explicitly request operator generation.
+	}
+
+	fn Foo()
+	{
+		// Use "mut" to prevent "constexpr" calls.
+		var S mut a{ .x= 0 };
+		var S mut b{ .x= 0 };
+		var S mut c{ .x= 1 };
+
+		halt if( a != a );
+		halt if( b != a );
+		halt if( !( b == a ) );
+		halt if( c == a );
+		halt if( c == b );
+		halt if( !( c != b ) );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def EqualityOperatorGeneration_Test4():
+	c_program_text= """
+	class S
+	{
+		i32 x;
+		fn constructor(i32 in_x) (x= in_x){}
+		op==(S& l, S& r) : bool = default; // Explicitly request operator generation for class. Normally "==" operator generation fro classes is disabled.
+	}
+
+	fn Foo()
+	{
+		// Use "mut" to prevent "constexpr" calls.
+		var S mut a(0);
+		var S mut b(0);
+		var S mut c(1);
+
+		halt if( a != a );
+		halt if( b != a );
+		halt if( !( b == a ) );
+		halt if( c == a );
+		halt if( c == b );
+		halt if( !( c != b ) );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def EqualityOperatorIsNotGenerated_Test0():
 	c_program_text= """
 		struct S
@@ -165,3 +220,35 @@ def EqualityOperatorIsNotGenerated_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 15 ) )
+
+
+def EqualityOperatorIsNotGenerated_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			op==(S& l, S& r) : bool = delete; // Disable "==" generation.
+		}
+		fn Foo(S& a, S& b)
+		{
+			a == b;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "AccessingDeletedMethod", 9 ) )
+
+
+def EqualityOperatorIsNotGenerated_Test4():
+	c_program_text= """
+		class C
+		{
+			i32 x;
+			op==(C& l, C& r) : bool = delete; // Disable "==" generation (unneeded for classes).
+		}
+		fn Foo(C& a, C& b)
+		{
+			a == b;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "AccessingDeletedMethod", 9 ) )

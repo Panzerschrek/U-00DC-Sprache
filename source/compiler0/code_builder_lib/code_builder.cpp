@@ -958,6 +958,8 @@ size_t CodeBuilder::PrepareFunction(
 			invalid_func= !( IsDefaultConstructor( function_type, base_class ) || IsCopyConstructor( function_type, base_class ) );
 		else if( func.overloaded_operator_ == OverloadedOperator::Assign )
 			invalid_func= !IsCopyAssignmentOperator( function_type, base_class );
+		else if( func.overloaded_operator_ == OverloadedOperator::CompareEqual )
+			invalid_func= !IsEqualityCompareOperator( function_type, base_class );
 		else
 			invalid_func= true;
 
