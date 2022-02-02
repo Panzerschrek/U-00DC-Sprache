@@ -196,6 +196,59 @@ def EqualityOperatorGeneration_Test5():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def EqualityOperatorGeneration_Test6():
+	c_program_text= """
+	struct S
+	{
+		$(i32) x;
+		// Generated "==" should compare raw pointer field.
+	}
+	fn Foo()
+	{
+		var [ i32, 3 ] mut arr= zero_init;
+		var S a{ .x= $<(arr[0]) };
+		var S a_copy{ .x= $<(arr[0]) };
+		var S b{ .x= $<(arr[1]) };
+		var S c{ .x= $<(arr[2]) };
+		var S c_copy{ .x= $<(arr[2]) };
+
+		halt if( a != a );
+		halt if( a != a_copy );
+		halt if( a == b );
+		halt if( a == c );
+		halt if( b == c );
+		halt if( c != c_copy );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def EqualityOperatorGeneration_Test7():
+	c_program_text= """
+		enum E{ A, B, C }
+		struct S
+		{
+			E e;
+			// Generated "==" should compare enum field.
+		}
+
+		var S a{ .e= E::A };
+		auto a_copy= a;
+		var S b{ .e= E::B };
+		var S c{ .e= E::C };
+		var S c_copy{ .e= E::C };
+
+		static_assert( a == a );
+		static_assert( a == a_copy );
+		static_assert( a != b );
+		static_assert( a != c );
+		static_assert( b != c );
+		static_assert( c == c_copy );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def EqualityOperatorIsNotGenerated_Test0():
 	c_program_text= """
 		struct S
