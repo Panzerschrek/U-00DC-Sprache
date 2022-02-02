@@ -169,6 +169,33 @@ def EqualityOperatorGeneration_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def EqualityOperatorGeneration_Test5():
+	c_program_text= """
+	struct S
+	{
+		i32 x;
+		op==(S& l, S& r) : bool
+		{
+			return l.x == r.x;
+		}
+	}
+	struct T { S s; } // "==" operator should be generated, which calls "==" for "S" field.
+	fn Foo()
+	{
+		// Use "mut" to prevent "constexpr" calls.
+		var T mut a{ .s{ .x= 5 } };
+		var T mut b{ .s{ .x= 5 } };
+		var T mut c{ .s{ .x= 123 } };
+		halt if( a != a );
+		halt if( a != b );
+		halt if( a == c );
+		halt if( c != c );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def EqualityOperatorIsNotGenerated_Test0():
 	c_program_text= """
 		struct S

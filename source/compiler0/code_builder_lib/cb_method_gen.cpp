@@ -1002,7 +1002,14 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 		U_ASSERT( op != nullptr );
 
 		// Call it.
-		function_context.llvm_ir_builder.CreateCall( op->llvm_function, { l_address, r_address } );
+		const auto eq= function_context.llvm_ir_builder.CreateCall( op->llvm_function, { l_address, r_address } );
+
+		const auto next_bb= llvm::BasicBlock::Create( llvm_context_ );
+
+		function_context.llvm_ir_builder.CreateCondBr( eq, next_bb, false_basic_block );
+
+		function_context.function->getBasicBlockList().push_back( next_bb );
+		function_context.llvm_ir_builder.SetInsertPoint( next_bb );
 	}
 	else U_ASSERT(false);
 }
