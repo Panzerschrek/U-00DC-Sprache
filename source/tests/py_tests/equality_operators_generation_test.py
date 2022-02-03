@@ -406,3 +406,73 @@ def EqualityOperatorIsNotGenerated_Test6():
 		static_assert( !typeinfo</S/>.is_equality_comparable );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def EqualityOperatorForCompositeValue_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			// Use "mut" to prevent "constexpr"
+			var [ i32, 3 ] mut a[5, 6, 7], mut a_copy[5, 6, 7], mut b[0, 6, 7], mut c[5, 0, 7], mut d[5, 6, 0];
+			halt if( a != a );
+			halt if( !( a == a ) );
+			halt if( a != a_copy );
+			halt if( !( a_copy == a ) );
+			halt if( a == b );
+			halt if( c == a );
+			halt if( a == d );
+			halt if( ! ( c != d ) );
+		}
+
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+
+def EqualityOperatorForCompositeValue_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			// Use "mut" to prevent "constexpr"
+			var tup[ f32, bool, i32 ] mut a[ 1.5f, true, 66 ], mut a_copy[ 1.5f, true, 66 ], mut b [ 0.0f, true, 66 ], mut c[ 1.5f, false, 66 ], mut d[ 1.5f, true, 0 ];
+			halt if( a != a );
+			halt if( !( a == a ) );
+			halt if( a != a_copy );
+			halt if( !( a_copy == a ) );
+			halt if( a == b );
+			halt if( c == a );
+			halt if( a == d );
+			halt if( ! ( c != d ) );
+		}
+
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def EqualityOperatorForCompositeValue_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn conversion_constructor(i32 in_x) ( x= in_x ) {}
+		}
+
+		fn Foo()
+		{
+			// Use "mut" to prevent "constexpr"
+			var tup[ S, [ S, 2 ] ] mut a[ 7, [ 8, 9 ] ], mut a_copy[ 7, [ 8, 9 ] ], mut b[ 0, [ 8, 9 ] ], mut c[ 7, [ 0, 9 ] ], mut d[ 7, [ 8, 0 ] ];
+			halt if( a != a );
+			halt if( !( a == a ) );
+			halt if( a != a_copy );
+			halt if( !( a_copy == a ) );
+			halt if( a == b );
+			halt if( c == a );
+			halt if( a == d );
+			halt if( ! ( c != d ) );
+		}
+
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
