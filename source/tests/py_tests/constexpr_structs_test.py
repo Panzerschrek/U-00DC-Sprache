@@ -264,3 +264,56 @@ def InvalidTypeForConstantExpressionVariable_ForStructs_Tes7():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
 	assert( errors_list[0].src_loc.line == 6 )
+
+
+def InvalidTypeForConstantExpressionVariable_ForStructs_Tes8():
+	c_program_text= """
+		struct S
+		{
+			op==(S& a, S& b) : bool { return true; }
+		}
+		var S constexpr s; // Error, 's' can not be constexpr, because it have non-default equality compare operator.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidTypeForConstantExpressionVariable" )
+	assert( errors_list[0].src_loc.line == 6 )
+
+
+def InvalidTypeForConstantExpressionVariable_ForStructs_Tes9():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			op==(S& a, S& b) : bool = default;
+		}
+		var S constexpr s{ .x = 0 }; // Ok, struct with generated "==" can be constexpr.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def InvalidTypeForConstantExpressionVariable_ForStructs_Tes10():
+	c_program_text= """
+		struct S
+		{
+			i32 x = 0;
+			fn constructor() = default;
+			fn constructor(i32 in_x) (x= in_x) {}
+		}
+		fn constexpr GetS() : S { var S s; return s; }
+		var S constexpr s = GetS(); // Ok, struct with generated default constructor can be constexpr.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def InvalidTypeForConstantExpressionVariable_ForStructs_Tes11():
+	c_program_text= """
+		struct S
+		{
+			i32 x = 0;
+			fn constructor(mut this, S& other)= default;
+			op=(mut this, S& other)= default;
+		}
+		var S constexpr s = zero_init; // Ok, struct with generated copy constructor and copy-assignment operatorcan be constexpr.
+	"""
+	tests_lib.build_program( c_program_text )

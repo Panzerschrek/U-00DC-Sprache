@@ -640,7 +640,11 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		};
 	}
 
-	// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
+	// Disable constexpr possibility for structs with:
+	// * explicit destructors
+	// * non-default copy-assignment operators
+	// * non-default copy constructors
+	// * non-default equality compare operators
 	if( const Value* const destructor_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 	{
@@ -668,6 +672,17 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		for( const FunctionVariable& op : operators->functions )
 		{
 			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) && !op.is_generated )
+				the_class.can_be_constexpr= false;
+		}
+	}
+	if( const Value* const compare_equal_value=
+		the_class.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ) )
+	{
+		const OverloadedFunctionsSet* const operators= compare_equal_value->GetFunctionsSet();
+		U_ASSERT( operators != nullptr );
+		for( const FunctionVariable& op : operators->functions )
+		{
+			if( IsEqualityCompareOperator( *op.type.GetFunctionType(), class_type ) && !op.is_generated )
 				the_class.can_be_constexpr= false;
 		}
 	}

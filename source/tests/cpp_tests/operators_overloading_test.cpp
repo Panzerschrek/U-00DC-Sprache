@@ -773,10 +773,7 @@ U_TEST( OperatorsOverloadingTest_EqualityOperatorsConstexpr )
 		struct MyInt
 		{
 			i32 x;
-			op constexpr ==( MyInt& a, MyInt& b ) : bool
-			{
-				return a.x == b.x;
-			}
+			op==( MyInt& a, MyInt& b ) : bool = default;
 			op constexpr <=>( MyInt& a, MyInt& b ) : i32
 			{
 				return a.x <=> b.x;
