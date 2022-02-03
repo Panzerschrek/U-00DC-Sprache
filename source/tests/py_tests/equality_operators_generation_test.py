@@ -392,3 +392,17 @@ def EqualityOperatorIsNotGenerated_Test5():
 		static_assert( !typeinfo</S/>.is_equality_comparable );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def EqualityOperatorIsNotGenerated_Test6():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+
+			template</type T/> op==(S& a, T& b) : bool { return false; } // Not an actual "==" operator.
+			// Real "==" is not generated because of another "==".
+		}
+		static_assert( !typeinfo</S/>.is_equality_comparable );
+	"""
+	tests_lib.build_program( c_program_text )

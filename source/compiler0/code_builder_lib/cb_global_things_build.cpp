@@ -638,6 +638,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				break;
 			}
 		};
+		// TODO - what about template constructors?
 	}
 
 	// Disable constexpr possibility for structs with:

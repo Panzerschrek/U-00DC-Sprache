@@ -637,6 +637,9 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 			else
 				contains_other_equality_compare_operators= true;
 		}
+
+		if( !operators->template_functions.empty() )
+			contains_other_equality_compare_operators= true;
 	}
 
 	if( operator_variable == nullptr )
