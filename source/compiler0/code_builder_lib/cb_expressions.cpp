@@ -1706,7 +1706,9 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		result.type= bool_type_;
 		result.location= Variable::Location::LLVMRegister;
 		result.llvm_value= phi;
-		// TODO - set "constexpr" value.
+
+		if( l_var.constexpr_value != nullptr || r_var.constexpr_value != nullptr )
+			result.llvm_value= result.constexpr_value= ConstexprCompareEqual( l_var.constexpr_value, r_var.constexpr_value, l_var.type, names, src_loc );
 
 		result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, OverloadedOperatorToString(op) );
 		RegisterTemporaryVariable( function_context, result );

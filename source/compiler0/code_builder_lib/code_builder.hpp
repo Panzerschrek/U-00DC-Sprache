@@ -387,6 +387,13 @@ private:
 		const Type& type,
 		FunctionContext& function_context );
 
+	llvm::Constant* ConstexprCompareEqual(
+		llvm::Constant* l,
+		llvm::Constant* r,
+		const Type& type,
+		NamesScope& names,
+		const SrcLoc& src_loc );
+
 	void MoveConstantToMemory(
 		llvm::Value* ptr, llvm::Constant* constant,
 		FunctionContext& function_context );

@@ -1054,6 +1054,104 @@ void CodeBuilder::CopyBytes(
 	}
 }
 
+llvm::Constant* CodeBuilder::ConstexprCompareEqual(
+	llvm::Constant* const l,
+	llvm::Constant* const  r,
+	const Type& type, NamesScope& names,
+	const SrcLoc& src_loc )
+{
+	llvm::Type* const llvm_type= type.GetLLVMType();
+	if( type == void_type_ )
+	{
+		// "void" value is always equal to other "void" values.
+		return llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(1), false );
+	}
+	else if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
+	{
+		return
+			llvm_type->isFloatingPointTy()
+				? llvm::ConstantExpr::getFCmp( llvm::FCmpInst::FCMP_OEQ, l, r )
+				: llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_EQ, l, r );
+	}
+	else if( const auto array_type= type.GetArrayType() )
+	{
+		llvm::Constant* res= llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(1), false );
+
+		for( uint64_t i= 0; i < array_type->size; ++i )
+			res=
+				llvm::ConstantExpr::getAnd(
+					res,
+					ConstexprCompareEqual(
+						l->getAggregateElement( static_cast<unsigned int>(i) ),
+						r->getAggregateElement( static_cast<unsigned int>(i) ),
+						array_type->type,
+						names,
+						src_loc ) );
+
+		return res;
+	}
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		llvm::Constant* res= llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(1), false );
+
+		for( const Type& element_type : tuple_type->elements )
+		{
+			const size_t i= size_t( &element_type - tuple_type->elements.data() );
+			res=
+				llvm::ConstantExpr::getAnd(
+					res,
+					ConstexprCompareEqual(
+						l->getAggregateElement( static_cast<unsigned int>(i) ),
+						r->getAggregateElement( static_cast<unsigned int>(i) ),
+						element_type,
+						names,
+						src_loc ) );
+		}
+
+		return res;
+	}
+	else if( const auto class_type= type.GetClassType() )
+	{
+		// Search "==" operator.
+		const Value* op_value=
+			class_type->members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) );
+		U_ASSERT( op_value != nullptr );
+		const OverloadedFunctionsSet* const operators_set= op_value->GetFunctionsSet();
+		U_ASSERT( operators_set != nullptr );
+
+		const FunctionVariable* op= nullptr;
+		for( const FunctionVariable& candidate_op : operators_set->functions )
+		{
+			if( IsEqualityCompareOperator( *candidate_op .type.GetFunctionType(), type ) )
+			{
+				op= &candidate_op;
+				break;
+			}
+		}
+		U_ASSERT( op != nullptr );
+
+		const ConstexprFunctionEvaluator::Result evaluation_result=
+			constexpr_function_evaluator_.Evaluate( op->llvm_function, { l, r } );
+
+		for( const std::string& error_text : evaluation_result.errors )
+		{
+			CodeBuilderError error;
+			error.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError;
+			error.src_loc= src_loc;
+			error.text= error_text;
+			names.GetErrors().push_back( std::move(error) );
+		}
+		if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
+			return evaluation_result.result_constant;
+		else
+			return llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(1), false );
+
+	}
+	else U_ASSERT(false);
+
+	return nullptr;
+}
+
 void CodeBuilder::MoveConstantToMemory(
 	llvm::Value* const ptr, llvm::Constant* const constant,
 	FunctionContext& function_context )

@@ -452,10 +452,18 @@ def EqualityOperatorForCompositeValue_Test0():
 			halt if( ! ( c != d ) );
 		}
 
+		var [ i32, 3 ] a[5, 6, 7], a_copy[5, 6, 7], b[0, 6, 7], c[5, 0, 7], d[5, 6, 0];
+		static_assert( a == a );
+		static_assert( !( a != a ) );
+		static_assert( a == a_copy );
+		static_assert( !( a_copy != a ) );
+		static_assert( a != b );
+		static_assert( c != a );
+		static_assert( a != d );
+		static_assert( ! ( c == d ) );
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
-
 
 
 def EqualityOperatorForCompositeValue_Test1():
@@ -474,6 +482,15 @@ def EqualityOperatorForCompositeValue_Test1():
 			halt if( ! ( c != d ) );
 		}
 
+		var tup[ f32, bool, i32 ] a[ 1.5f, true, 66 ], a_copy[ 1.5f, true, 66 ], b [ 0.0f, true, 66 ], c[ 1.5f, false, 66 ], d[ 1.5f, true, 0 ];
+		static_assert( a == a );
+		static_assert( !( a != a ) );
+		static_assert( a == a_copy );
+		static_assert( !( a_copy != a ) );
+		static_assert( a != b );
+		static_assert( c != a );
+		static_assert( a != d );
+		static_assert( ! ( c == d ) );
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
@@ -484,7 +501,7 @@ def EqualityOperatorForCompositeValue_Test2():
 		struct S
 		{
 			i32 x;
-			fn conversion_constructor(i32 in_x) ( x= in_x ) {}
+			fn constexpr conversion_constructor(i32 in_x) ( x= in_x ) {}
 		}
 
 		fn Foo()
@@ -501,6 +518,17 @@ def EqualityOperatorForCompositeValue_Test2():
 			halt if( ! ( c != d ) );
 		}
 
+		fn constexpr Q(i32 x) : S { return x; }
+
+		var tup[ S, [ S, 2 ] ] a[ Q(7), [ Q(8), Q(9) ] ], a_copy[ Q(7), [ Q(8), Q(9) ] ], b[ Q(0), [ Q(8), Q(9) ] ], c[ Q(7), [ Q(0), Q(9) ] ], d[ Q(7), [ Q(8), Q(0) ] ];
+		static_assert( a == a );
+		static_assert( !( a != a ) );
+		static_assert( a == a_copy );
+		static_assert( !( a_copy != a ) );
+		static_assert( a != b );
+		static_assert( c != a );
+		static_assert( a != d );
+		static_assert( ! ( c == d ) );
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
