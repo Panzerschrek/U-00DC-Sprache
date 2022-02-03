@@ -249,6 +249,53 @@ def EqualityOperatorGeneration_Test7():
 	tests_lib.build_program( c_program_text )
 
 
+def EqualityOperatorGeneration_Test8():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			op constexpr ==(S& l, i32 x) : bool { return l.x == x; }
+			op constexpr ==(i32 x, S& r) : bool { return x == r.x; }
+			// Request generation of "==" because implicit "==" generation is disabled because of other "==" operations.
+			op==(S& l, S& r) : bool = default;
+		}
+
+		fn Foo()
+		{
+			// Use "mut" to prevent "constexpr"
+			var S mut a{ .x=11 };
+			var S mut a_copy{ .x= 11 };
+			var S mut b{ .x= 22 };
+			var S mut c{ .x= 33 };
+			halt if( a != a );
+			halt if( a != 11 );
+			halt if( 11 != a );
+			halt if( a != a_copy );
+			halt if( a == b );
+			halt if( a == 22 );
+			halt if( b == c );
+			halt if( 33 == b );
+			halt if( 33 != c );
+		}
+
+		var S a{ .x=11 };
+		var S a_copy{ .x= 11 };
+		var S b{ .x= 22 };
+		var S c{ .x= 33 };
+		static_assert( a == a );
+		static_assert( a == 11 );
+		static_assert( 11 == a );
+		static_assert( a == a_copy );
+		static_assert( a != b );
+		static_assert( a != 22 );
+		static_assert( b != c );
+		static_assert( 33 != b );
+		static_assert( 33 == c );
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def EqualityOperatorIsNotGenerated_Test0():
 	c_program_text= """
 		struct S
@@ -332,3 +379,16 @@ def EqualityOperatorIsNotGenerated_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "AccessingDeletedMethod", 9 ) )
+
+
+def EqualityOperatorIsNotGenerated_Test5():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			op==(S& a, i32 b) : bool; // Not an actual "==" operator.
+			// Real "==" is not generated because of another "==".
+		}
+		static_assert( !typeinfo</S/>.is_equality_comparable );
+	"""
+	tests_lib.build_program( c_program_text )

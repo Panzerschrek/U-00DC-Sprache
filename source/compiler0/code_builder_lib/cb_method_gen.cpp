@@ -614,6 +614,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 
 	// Search for explicit "==" operator.
 	FunctionVariable* operator_variable= nullptr;
+	bool contains_other_equality_compare_operators= false;
 	if( Value* const assignment_operator_value= the_class.members->GetThisScopeValue( op_name ) )
 	{
 		OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
@@ -633,11 +634,18 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 					return;
 				}
 			}
+			else
+				contains_other_equality_compare_operators= true;
 		}
 	}
 
-	if( operator_variable == nullptr && the_class.kind != Class::Kind::Struct )
-		return; // Do not generate "==" operator for classes. Generate it only if "=default" explicitly specified for this operator.
+	if( operator_variable == nullptr )
+	{
+		if( the_class.kind != Class::Kind::Struct )
+			return; // Do not generate "==" operator for classes. Generate it only if "=default" explicitly specified for this operator.
+		if( contains_other_equality_compare_operators )
+			return; // Do not generate "==" if user specified "==" inside this class for other types. Do this to prevent typos/mistakes.
+	}
 
 	bool all_fields_are_equality_comparable= true;
 	for( const std::string& field_name : the_class.fields_order )
@@ -993,7 +1001,6 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 		const FunctionVariable* op= nullptr;
 		for( const FunctionVariable& candidate_op : operators_set->functions )
 		{
-			// TODO - maybe disable default "==" generation even if "==" declared for comparision against another type?
 			if( IsEqualityCompareOperator( *candidate_op .type.GetFunctionType(), type ) )
 			{
 				op= &candidate_op;
