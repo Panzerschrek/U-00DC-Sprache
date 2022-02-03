@@ -993,6 +993,7 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 		const FunctionVariable* op= nullptr;
 		for( const FunctionVariable& candidate_op : operators_set->functions )
 		{
+			// TODO - maybe disable default "==" generation even if "==" declared for comparision against another type?
 			if( IsEqualityCompareOperator( *candidate_op .type.GetFunctionType(), type ) )
 			{
 				op= &candidate_op;

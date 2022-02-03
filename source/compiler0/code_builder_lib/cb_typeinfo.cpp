@@ -217,6 +217,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	add_bool_field( "is_default_constructible", type.IsDefaultConstructible() );
 	add_bool_field( "is_copy_constructible"   , type.IsCopyConstructible()    );
 	add_bool_field( "is_copy_assignable"      , type.IsCopyAssignable()       );
+	add_bool_field( "is_equality_comparable"  , type.IsEqualityComparable()   );
 
 	if( const FundamentalType* const fundamental_type= type.GetFundamentalType() )
 	{
