@@ -296,6 +296,34 @@ def EqualityOperatorGeneration_Test8():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def EqualityOperatorGeneration_Test9():
+	c_program_text= """
+		// "==" for struct with function pointer inside.
+		struct S
+		{
+			( fn () ) ptr;
+		}
+
+		fn Bar(){}
+		fn Baz(){}
+
+		fn Foo()
+		{
+			// Use "mut" to prevent "constexpr"
+			var S mut a{ .ptr(Bar) };
+			var S mut a_copy{ .ptr(Bar) };
+			var S mut b{ .ptr(Baz) };
+			halt if( a != a );
+			halt if( ! ( a == a ) );
+			halt if( a != a_copy );
+			halt if( ! ( a_copy == a ) );
+			halt if( a == b );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def EqualityOperatorIsNotGenerated_Test0():
 	c_program_text= """
 		struct S
