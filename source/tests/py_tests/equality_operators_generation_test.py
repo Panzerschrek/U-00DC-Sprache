@@ -532,3 +532,42 @@ def EqualityOperatorForCompositeValue_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def EqualityOperatorForCompositeValue_Test3():
+	c_program_text= """
+
+		fn Foo()
+		{
+			// Use "mut" to prevent "constexpr"
+			var [ f32, 2 ] mut a[ 1.0f, 2.0f ], mut a_copy[ 1.0f, 2.0f ], mut b[ 0.0f, 2.0f ], mut c[ 1.0f, 0.0f ], mut plus_zero[ +0.0f, +0.0f ], mut minus_zero[ -0.0f, 0.0f ], mut nan [ 0.0f / 0.0f, 0.0f / 0.0f ];
+			halt if( a != a );
+			halt if( !( a == a ) );
+			halt if( a != a_copy );
+			halt if( !( a_copy == a ) );
+			halt if( a == b );
+			halt if( c == a );
+			halt if( plus_zero != minus_zero );
+			halt if( !( minus_zero == plus_zero ) );
+			halt if( nan == a );
+			halt if( plus_zero == nan );
+			halt if( nan == nan );
+			halt if( !( nan != nan ) );
+		}
+
+		var [ f32, 2 ] a[ 1.0f, 2.0f ], a_copy[ 1.0f, 2.0f ], b[ 0.0f, 2.0f ], c[ 1.0f, 0.0f ], plus_zero[ +0.0f, +0.0f ], minus_zero[ -0.0f, 0.0f ], nan [ 0.0f / 0.0f, 0.0f / 0.0f ];
+		static_assert( a == a );
+		static_assert( !( a != a ) );
+		static_assert( a == a_copy );
+		static_assert( !( a_copy != a ) );
+		static_assert( a != b );
+		static_assert( c != a );
+		static_assert( plus_zero == minus_zero );
+		static_assert( !( minus_zero != plus_zero ) );
+		static_assert( nan != a );
+		static_assert( plus_zero != nan );
+		static_assert( nan != nan );
+		static_assert( !( nan == nan ) );
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
