@@ -728,12 +728,16 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				class_.can_be_constexpr&= field.t.CanBeConstexpr() && !( field.is_mutable && field.is_reference );
 			}
 
+			// Disable constexpr possibility for structs with:
+			// * explicit destructors
+			// * non-default copy-assignment operators
+			// * non-default copy constructors
+			// * non-default equality compare operators
 			auto functions_set_ptr= member.value().Get</ NamesScopeFunctionsSet />();
 			if( !functions_set_ptr.empty() )
 			{
 				foreach( &function : functions_set_ptr.try_lock_imut().deref().functions_set.functions )
 				{
-					// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
 					if( member.key() == KeywordToString( Keyword::destructor_ ) &&
 						!function.is_generated )
 					{
@@ -746,6 +750,11 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					}
 					if( member.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) &&
 						IsCopyAssignmentOperator( function, class_type ) && !function.is_generated )
+					{
+						class_.can_be_constexpr= false;
+					}
+					if( member.key() == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) &&
+						IsEqualityCompareOperator( function, class_type ) && !function.is_generated )
 					{
 						class_.can_be_constexpr= false;
 					}

@@ -1142,6 +1142,8 @@ fn CodeBuilder::PrepareFunction(
 			{}
 			else if( function_declaration.operator == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_variable, class_type_non_null ) )
 			{}
+			else if( function_declaration.operator == OverloadedOperator::CompareEqual && IsEqualityCompareOperator( function_variable, class_type_non_null ) )
+			{}
 			else{ invalid_func= true; }
 		}
 

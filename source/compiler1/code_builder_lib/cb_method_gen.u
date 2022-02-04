@@ -112,7 +112,6 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.is_this_call= true,
 			.is_generated= true,
 			.t= function_type,
-			.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
 		};
 
 		unsafe
@@ -133,6 +132,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		constructors.functions.push_back( move(function_variable) );
 	}
 	var FunctionVariable &mut function_variable= constructors.functions[constructor_index];
+	function_variable.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
 
@@ -321,7 +321,6 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			.is_this_call= true,
 			.is_generated= true,
 			.t= function_type,
-			.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
 		};
 
 		unsafe
@@ -345,6 +344,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		constructors.functions.push_back( move(function_variable) );
 	}
 	var FunctionVariable &mut function_variable= constructors.functions[ constructor_index ];
+	function_variable.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
 
@@ -523,7 +523,6 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			.is_this_call= true,
 			.is_generated= true,
 			.t= function_type,
-			.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
 		};
 
 		unsafe
@@ -547,6 +546,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		operators.functions.push_back( move(function_variable) );
 	}
 	var FunctionVariable &mut function_variable= operators.functions[operator_index];
+	function_variable.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
 
@@ -601,6 +601,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 	auto class_members_ptr= class_type.lock_imut().deref().members;
 
 	auto mut operator_index= ~0s;
+	var bool mut contains_other_equality_compare_operators= false;
 
 	auto op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
 
@@ -632,6 +633,15 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 					return;
 				}
 			}
+			else
+			{
+				contains_other_equality_compare_operators= true;
+			}
+		}
+
+		if( !operators.function_templates.empty() )
+		{
+			contains_other_equality_compare_operators= true;
 		}
 	}
 
@@ -670,11 +680,20 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		auto mut class_lock= class_type.lock_mut();
 		auto &mut class_= class_lock.deref();
 
-		if( class_.kind != ClassType::Kind::Struct && operator_index == ~0s )
+		if( operator_index == ~0s  )
 		{
-			// By-default do not generate "==" operators for classes, generate them only for structs.
-			class_.is_equality_comparable= false;
-			return;
+			if( class_.kind != ClassType::Kind::Struct )
+			{
+				// By-default do not generate "==" operators for classes, generate them only for structs.
+				class_.is_equality_comparable= false;
+				return;
+			}
+			if( contains_other_equality_compare_operators )
+			{
+				// Do not generate "==" if user specified "==" inside this class for other types. Do this to prevent typos/mistakes.
+				class_.is_equality_comparable= false;
+				return;
+			}
 		}
 
 		class_.is_equality_comparable= true;
@@ -718,7 +737,6 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 			.is_this_call= true,
 			.is_generated= true,
 			.t= function_type,
-			.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
 		};
 
 		unsafe
@@ -744,6 +762,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 	}
 
 	var FunctionVariable &mut function_variable= operators.functions[operator_index];
+	function_variable.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
 
