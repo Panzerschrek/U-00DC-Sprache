@@ -1152,7 +1152,7 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 		{
 			var LLVMValueRef l= CreateTupleElementGEP( l_address, i, function_context );
 			var LLVMValueRef r= CreateTupleElementGEP( r_address, i, function_context );
-			BuildEqualityCompareOperatorPart( names_scope, function_context, l_address, r_address, tuple_type.element_types[i], false_basic_block, src_loc );
+			BuildEqualityCompareOperatorPart( names_scope, function_context, l, r, tuple_type.element_types[i], false_basic_block, src_loc );
 		}
 
 		return;
@@ -1165,7 +1165,6 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 			return;
 		}
 
-		// Constructors value should always exists and should always be NamesScopeFunctionsSet.
 		if_var( &operators_value : class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ) )
 		{
 			auto operators_ptr= operators_value.Get</NamesScopeFunctionsSet/>();

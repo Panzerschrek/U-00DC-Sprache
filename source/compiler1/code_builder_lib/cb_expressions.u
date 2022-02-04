@@ -2621,9 +2621,15 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			function_context.references_graph.RemoveNode( l_var_lock_node );
 		}
 
-		if( r_var.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingLinks( r_var.node_id ) )
+		if( r_var.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingMutableNodes( r_var.node_id ) )
 		{
 			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( r_var.node_id ) )
+		}
+
+		if( !l_var.t.IsEqualityComparable() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.t )
+			return ErrorValue();
 		}
 
 		unsafe
@@ -2670,6 +2676,13 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "==" ),
 				.llvm_value= phi,
 			};
+
+			if( l_var.constexpr_value != LLVMValueRef::Null && r_var.constexpr_value != LLVMValueRef::Null )
+			{
+				result.constexpr_value= ConstexprCompareEqual( names_scope, function_context, l_var.constexpr_value, r_var.constexpr_value, l_var.t, src_loc );
+				result.llvm_value= result.constexpr_value;
+			}
+
 			RegisterTemporaryVariable( function_context, result );
 
 			return move(result);

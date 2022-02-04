@@ -786,6 +786,15 @@ private:
 
 	fn CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
 
+	fn ConstexprCompareEqual(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		LLVMValueRef l,
+		LLVMValueRef r,
+		Type& t,
+		SrcLoc& src_loc ) : LLVMValueRef;
+
 	fn CreateLifetimeStart( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 	fn CreateLifetimeEnd( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 
