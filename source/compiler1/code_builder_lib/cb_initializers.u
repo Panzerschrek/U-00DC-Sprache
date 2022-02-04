@@ -112,7 +112,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			}
 
 			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
-			return LLVMValueRef::Null;
+			// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
+			return expr_result.constexpr_value;
 		}
 
 		if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, variable.t, expr_result.t, src_loc ) )
