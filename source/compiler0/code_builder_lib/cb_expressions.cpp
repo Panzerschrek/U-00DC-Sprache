@@ -1699,8 +1699,8 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.llvm_ir_builder.SetInsertPoint( end_basic_block );
 
 		const auto phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2 );
-		phi->addIncoming( llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(0), false ), false_basic_block );
-		phi->addIncoming( llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(1), false ), true_basic_block );
+		phi->addIncoming( llvm::ConstantInt::getFalse( llvm_context_ ), false_basic_block );
+		phi->addIncoming( llvm::ConstantInt::getTrue ( llvm_context_ ), true_basic_block  );
 
 		Variable result;
 		result.type= bool_type_;

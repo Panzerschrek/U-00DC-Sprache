@@ -731,19 +731,21 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 		llvm_context_,
 		operator_variable->llvm_function );
 
-	llvm::Value* const l_llvm_value= &*operator_variable->llvm_function->args().begin();
-	l_llvm_value->setName( "l" );
-	llvm::Value* const r_llvm_value= &*std::next(operator_variable->llvm_function->args().begin());
-	r_llvm_value->setName( "r" );
+	llvm::Value* const l_address= &*operator_variable->llvm_function->args().begin();
+	l_address->setName( "l" );
+	llvm::Value* const r_address= &*std::next(operator_variable->llvm_function->args().begin());
+	r_address->setName( "r" );
 
 	const auto false_basic_block= llvm::BasicBlock::Create( llvm_context_ );
 
 	if( the_class.base_class != nullptr )
 	{
+		U_ASSERT( the_class.base_class->is_equality_comparable );
+
 		llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex(  0u /*base class is allways first field */ ) };
 		BuildEqualityCompareOperatorPart(
-			function_context.llvm_ir_builder.CreateGEP( l_llvm_value, index_list ),
-			function_context.llvm_ir_builder.CreateGEP( r_llvm_value, index_list ),
+			function_context.llvm_ir_builder.CreateGEP( l_address, index_list ),
+			function_context.llvm_ir_builder.CreateGEP( r_address, index_list ),
 			the_class.base_class,
 			false_basic_block,
 			function_context );
@@ -758,22 +760,21 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 		U_ASSERT( field.type.IsEqualityComparable() );
 
 		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
-
 		BuildEqualityCompareOperatorPart(
-			function_context.llvm_ir_builder.CreateGEP( l_llvm_value, index_list ),
-			function_context.llvm_ir_builder.CreateGEP( r_llvm_value, index_list ),
+			function_context.llvm_ir_builder.CreateGEP( l_address, index_list ),
+			function_context.llvm_ir_builder.CreateGEP( r_address, index_list ),
 			field.type,
 			false_basic_block,
 			function_context );
 	}
 
 	// True branch.
-	function_context.llvm_ir_builder.CreateRet( llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(1), false ) );
+	function_context.llvm_ir_builder.CreateRet( llvm::ConstantInt::getTrue( llvm_context_ ) );
 
 	// False branch.
 	function_context.function->getBasicBlockList().push_back( false_basic_block );
 	function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
-	function_context.llvm_ir_builder.CreateRet( llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(0), false ) );
+	function_context.llvm_ir_builder.CreateRet( llvm::ConstantInt::getFalse( llvm_context_ ) );
 
 	// Finish allocations block.
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
@@ -993,7 +994,9 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{
-		// Search "==" aoperator.
+		U_ASSERT( type.IsEqualityComparable() );
+
+		// Search "==" operator.
 		const Value* op_value=
 			class_type->members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) );
 		U_ASSERT( op_value != nullptr );
@@ -1063,18 +1066,15 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 	if( type == void_type_ )
 	{
 		// "void" value is always equal to other "void" values.
-		return llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(1), false );
+		return llvm::ConstantInt::getTrue( llvm_context_ );
 	}
-	else if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
-	{
-		return
-			llvm_type->isFloatingPointTy()
-				? llvm::ConstantExpr::getFCmp( llvm::FCmpInst::FCMP_OEQ, l, r )
-				: llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_EQ, l, r );
-	}
+	else if( llvm_type->isFloatingPointTy() )
+		return llvm::ConstantExpr::getFCmp( llvm::FCmpInst::FCMP_OEQ, l, r );
+	else if( llvm_type->isIntegerTy() || llvm_type->isPointerTy() )
+		return llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_EQ, l, r );
 	else if( const auto array_type= type.GetArrayType() )
 	{
-		llvm::Constant* res= llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(1), false );
+		llvm::Constant* res= llvm::ConstantInt::getTrue( llvm_context_ );
 
 		for( uint64_t i= 0; i < array_type->size; ++i )
 			res=
@@ -1091,7 +1091,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 	}
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
-		llvm::Constant* res= llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(1), false );
+		llvm::Constant* res= llvm::ConstantInt::getTrue( llvm_context_ );
 
 		for( const Type& element_type : tuple_type->elements )
 		{
@@ -1143,7 +1143,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 		if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 			return evaluation_result.result_constant;
 		else
-			return llvm::ConstantInt::get( fundamental_llvm_types_.bool_, uint64_t(1), false );
+			return llvm::ConstantInt::getTrue( llvm_context_ );
 
 	}
 	else U_ASSERT(false);

@@ -2637,45 +2637,42 @@ fn CodeBuilder::ConstexprCompareEqual(
 			unsafe{  return LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );  }
 		}
 
-		if_var( &operators_value : class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ) )
+		// Search for "==" operator.
+		auto operators_value= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ).try_deref();
+		foreach( &op_ : operators_value.Get</NamesScopeFunctionsSet/>().try_lock_imut().deref().functions_set.functions )
 		{
-			auto operators_ptr= operators_value.Get</NamesScopeFunctionsSet/>();
-			if( !operators_ptr.empty() )
+			if( !IsEqualityCompareOperator( op_, class_type ) )
 			{
-				// Search for "==" operator.
-				foreach( &op_ : operators_ptr.try_lock_imut().deref().functions_set.functions )
+				continue;
+			}
+			// Found proper "==" operator.
+
+			// TODO - what if "==" is unsafe?
+
+			unsafe
+			{
+				auto res= constexpr_function_evaluator_.Evaluate( op_.llvm_function, ust::make_array( l, r ) );
+
+				if( res.errors.empty() )
 				{
-					if( IsEqualityCompareOperator( op_, class_type ) )
-					{
-						// Call it.
-						unsafe
-						{
-							var [ LLVMValueRef, 2 ] constexpr_args[ l, r ];
-							auto res= constexpr_function_evaluator_.Evaluate( op_.llvm_function, constexpr_args );
-
-							if( res.errors.empty() )
-							{
-								return res.constant;
-							}
-
-							auto errors_container_ptr= names_scope.lock_imut().deref().GetErrors();
-							auto mut lock= errors_container_ptr.try_lock_mut();
-							auto &mut errors_container= lock.deref();
-							foreach( &err : res.errors )
-							{
-								var CodeBuilderError mut out_error
-								{
-									.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
-									.src_loc= src_loc,
-									.text= err,
-								};
-								errors_container.push_back( move(out_error) );
-							}
-
-							return LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
-						}
-					}
+					return res.constant;
 				}
+
+				auto errors_container_ptr= names_scope.lock_imut().deref().GetErrors();
+				auto mut lock= errors_container_ptr.try_lock_mut();
+				auto &mut errors_container= lock.deref();
+				foreach( &err : res.errors )
+				{
+					var CodeBuilderError mut out_error
+					{
+						.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+						.src_loc= src_loc,
+						.text= err,
+					};
+					errors_container.push_back( move(out_error) );
+				}
+
+				return LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
 			}
 		}
 

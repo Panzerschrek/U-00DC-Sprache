@@ -1107,6 +1107,11 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 
 fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef l_address, LLVMValueRef r_address, Type& t, LLVMBasicBlockRef false_basic_block, SrcLoc& src_loc )
 {
+	if( t == void_type_ )
+	{
+		return;
+	}
+
 	if(
 		!t.GetFundamentalType().empty() ||
 		!t.GetEnumType().empty() ||
@@ -1115,33 +1120,29 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 	{
 		unsafe
 		{
-			if( t == void_type_ ) {}
-			else
-			{
-				var LLVMValueRef l= LLVMBuildLoad( function_context.llvm_ir_builder, l_address, "\0"[0] );
-				var LLVMValueRef r= LLVMBuildLoad( function_context.llvm_ir_builder, r_address, "\0"[0] );
+			var LLVMValueRef l= LLVMBuildLoad( function_context.llvm_ir_builder, l_address, "\0"[0] );
+			var LLVMValueRef r= LLVMBuildLoad( function_context.llvm_ir_builder, r_address, "\0"[0] );
 
-				var LLVMTypeKind type_kind= LLVMGetTypeKind( t.GetLLVMType() );
-				var bool is_float=
-					type_kind == LLVMTypeKind::Half ||
-					type_kind == LLVMTypeKind::Float ||
-					type_kind == LLVMTypeKind::Double ||
-					type_kind == LLVMTypeKind::X86_FP80 ||
-					type_kind == LLVMTypeKind::P128 ||
-					type_kind == LLVMTypeKind::PPC_FP128;
+			var LLVMTypeKind type_kind= LLVMGetTypeKind( t.GetLLVMType() );
+			var bool is_float=
+				type_kind == LLVMTypeKind::Half ||
+				type_kind == LLVMTypeKind::Float ||
+				type_kind == LLVMTypeKind::Double ||
+				type_kind == LLVMTypeKind::X86_FP80 ||
+				type_kind == LLVMTypeKind::P128 ||
+				type_kind == LLVMTypeKind::PPC_FP128;
 
-				var LLVMValueRef eq=
-					select( is_float
-						? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, "\0"[0] )
-						: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, "\0"[0] ) );
+			var LLVMValueRef eq=
+				select( is_float
+					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, "\0"[0] )
+					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, "\0"[0] ) );
 
-				var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+			var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 
-				LLVMBuildCondBr( function_context.llvm_ir_builder, eq, next_bb, false_basic_block );
+			LLVMBuildCondBr( function_context.llvm_ir_builder, eq, next_bb, false_basic_block );
 
-				LLVMAppendExistingBasicBlock( function_context.llvm_function, next_bb );
-				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_bb );
-			}
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, next_bb );
+			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_bb );
 		}
 		return;
 	}
@@ -1184,39 +1185,36 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 			return;
 		}
 
-		if_var( &operators_value : class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ) )
+		// Search for "==" operator.
+		auto operators_value= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ).try_deref();
+		foreach( &op_ : operators_value.Get</NamesScopeFunctionsSet/>().try_lock_imut().deref().functions_set.functions )
 		{
-			auto operators_ptr= operators_value.Get</NamesScopeFunctionsSet/>();
-			if( !operators_ptr.empty() )
+			if( !IsEqualityCompareOperator( op_, class_type ) )
 			{
-				// Search for "==" operator.
-				foreach( &op_ : operators_ptr.try_lock_imut().deref().functions_set.functions )
-				{
-					if( IsEqualityCompareOperator( op_, class_type ) )
-					{
-						// SPRACHE_TODO - maybe disallow unsafe "=="?
-						if( op_.t.is_unsafe && !function_context.is_in_unsafe_block )
-						{
-							REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
-						}
-
-						// Call it.
-						unsafe
-						{
-							var[ LLVMValueRef, 2 ] mut llvm_args[ l_address, r_address ];
-							var LLVMValueRef eq= LLVMBuildCall( function_context.llvm_ir_builder, op_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] );
-
-							var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-
-							LLVMBuildCondBr( function_context.llvm_ir_builder, eq, next_bb, false_basic_block );
-
-							LLVMAppendExistingBasicBlock( function_context.llvm_function, next_bb );
-							LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_bb );
-						}
-						return;
-					}
-				}
+				continue;
 			}
+			// Found proper "==" operator.
+
+			// SPRACHE_TODO - maybe disallow unsafe "=="?
+			if( op_.t.is_unsafe && !function_context.is_in_unsafe_block )
+			{
+				REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
+			}
+
+			unsafe
+			{
+				var[ LLVMValueRef, 2 ] mut llvm_args[ l_address, r_address ];
+				var LLVMValueRef eq= LLVMBuildCall( function_context.llvm_ir_builder, op_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] );
+
+				var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+
+				LLVMBuildCondBr( function_context.llvm_ir_builder, eq, next_bb, false_basic_block );
+
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, next_bb );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_bb );
+			}
+
+			return;
 		}
 
 		halt; // Operator not found - wtf?
