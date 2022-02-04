@@ -29,7 +29,7 @@ public:
 	}
 
 	// Copy constructor
-	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( optional</T/>& other )
+	fn enable_if( typeinfo</T/>.is_copy_constructible ) constructor( this_type& other )
 	( storage_= zero_init, has_value_= other.has_value_ ) // TODO - initialize with unsafe
 	{
 		if( other.has_value_ )
@@ -53,7 +53,7 @@ public:
 	}
 
 	// Copy assignment operator
-	op enable_if( typeinfo</T/>.is_copy_constructible ) =( mut this, optional</T/>& other )
+	op enable_if( typeinfo</T/>.is_copy_constructible ) =( mut this, this_type& other )
 	{
 		unsafe
 		{
@@ -214,8 +214,54 @@ public:
 		}
 	}
 
-	// TODO - add == and !=
-	
+	// Equality compare operator for equality comparable type.
+
+	op enable_if( typeinfo</T/>.is_equality_comparable )
+	==( this_type& l, this_type& r ) : bool
+	{
+		if( l.empty() != r.empty() )
+		{
+			return false;
+		}
+
+		if( l.empty() )
+		{
+			return true; // Two empty optionals are equal.
+		}
+
+		unsafe
+		{
+			auto& l_ref= l.deref_unchecked();
+			auto& r_ref= r.deref_unchecked();
+			safe{  return l_ref == r_ref;  }
+		}
+	}
+
+	// Imnplement also == for value and optional to avoid costly implicit value to optional conversion
+
+	op enable_if( typeinfo</T/>.is_equality_comparable )
+	==( this_type& l, T& r ) : bool
+	{
+		if_var( &l_value : l )
+		{
+			return l_value == r;
+		}
+		return false;
+	}
+
+	op enable_if( typeinfo</T/>.is_equality_comparable )
+	==( T& l, this_type& r ) : bool
+	{
+		if_var( &r_value : r )
+		{
+			return l == r_value;
+		}
+		return false;
+	}
+
+private:
+	type this_type= optional</T/>;
+
 private:
 	ContainerTag</ T /> container_tag_;
 	aligned_storage</ typeinfo</T/>.size_of, typeinfo</T/>.align_of /> storage_;

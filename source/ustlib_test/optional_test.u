@@ -156,6 +156,41 @@ fn nomangle main() : i32
 
 		halt if( opt.try_deref() != 999 );
 	}
+	{
+		var i32 one= 1, one_copy= 1, two= 2, three= 3;
+		var ust::optional</i32/> one_opt(1), one_copy_opt(1), two_opt(2), three_opt(3), empty_opt, empty_copy_opt;
+
+		// optional == optional
+		halt if( one_opt != one_copy_opt );
+		halt if( !( one_copy_opt == one_opt ) );
+		halt if( one_opt == two_opt );
+		halt if( three_opt == one_opt );
+		halt if( empty_opt != empty_opt );
+		halt if( empty_opt != empty_copy_opt );
+		halt if( !( empty_copy_opt == empty_opt ) );
+
+		// optional == value
+		halt if( one_opt != one );
+		halt if( one_copy_opt != one_copy );
+		halt if( one_opt != one_copy );
+		halt if( one_copy_opt != one );
+		halt if( two_opt != two );
+		halt if( three_opt != three );
+		halt if( two_opt == three );
+		halt if( empty_opt == one );
+		halt if( empty_copy_opt == two );
+
+		// value == optional
+		halt if( one != one_opt );
+		halt if( one_copy != one_copy_opt );
+		halt if( one_copy != one_opt );
+		halt if( one != one_copy_opt );
+		halt if( two != two_opt );
+		halt if( three != three_opt );
+		halt if( three == two_opt );
+		halt if( one == empty_opt );
+		halt if( two == empty_copy_opt );
+	}
 
 	return 0;
 }
