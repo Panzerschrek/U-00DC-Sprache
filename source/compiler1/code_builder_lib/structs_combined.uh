@@ -78,7 +78,6 @@ struct FunctionType
 		u8 param_index;
 		u8 reference_index; // ~0 for param reference, 0 for inner reference
 
-		op==(ParamReference& l, ParamReference& r) : bool;
 		op<=>(ParamReference& l, ParamReference& r) : i32;
 	}
 	var u8 c_param_reference_number= ~0u8;
@@ -88,7 +87,6 @@ struct FunctionType
 		ParamReference dst;
 		ParamReference src;
 
-		op==(ReferencePollution& l, ReferencePollution& r) : bool;
 		op<=>(ReferencePollution& l, ReferencePollution& r) : i32;
 	}
 
@@ -296,8 +294,6 @@ struct VariableTypeExtended
 {
 	Type t;
 	ValueType value_type;
-
-	op==(VariableTypeExtended& l, VariableTypeExtended& r) : bool;
 }
 
 struct FunctionVariable
@@ -450,8 +446,6 @@ class TemplateBase polymorph
 			signature_params(move(in_signature_params))
 		)
 	{}
-
-	fn SignatureParamsIsSame( TemplateBase& l, TemplateBase& r ) : bool;
 }
 
 class TypeTemplate final : TemplateBase
@@ -529,15 +523,11 @@ public:
 	struct TemplateParam
 	{
 		size_type index;
-
-		op==(TemplateParam& l, TemplateParam& r) : bool;
 	}
 
 	struct TypeParam
 	{
 		Type t;
-
-		op==(TypeParam& l, TypeParam& r) : bool;
 	}
 
 	struct VariableParam
@@ -551,22 +541,16 @@ public:
 	{
 		TemplateSignatureParam element_type;
 		TemplateSignatureParam element_count;
-
-		op==(ArrayTypeParam& l, ArrayTypeParam& r) : bool;
 	}
 
 	struct TupleTypeParam
 	{
 		ust::vector</TemplateSignatureParam/> element_types;
-
-		op==(TupleTypeParam& l, TupleTypeParam& r) : bool;
 	}
 
 	struct RawPointerTypeParam
 	{
 		TemplateSignatureParam element_type;
-
-		op==(RawPointerTypeParam& l, RawPointerTypeParam& r) : bool;
 	}
 
 	struct FunctionTypeParam
@@ -580,20 +564,14 @@ public:
 		{
 			TemplateSignatureParam t;
 			ValueType value_type;
-
-			op==(Param& l, Param& r) : bool;
 		}
 		ust::vector</Param/> params;
-
-		op==(FunctionTypeParam& l, FunctionTypeParam& r) : bool;
 	}
 
 	struct SpecializedTemplateParam
 	{
 		ust::shared_ptr_imut</ TypeTemplatesSet /> type_templates_set;
 		ust::vector</ TemplateSignatureParam /> params;
-
-		op==(SpecializedTemplateParam& l, SpecializedTemplateParam& r) : bool;
 	}
 
 	fn conversion_constructor( TemplateParam mut template_param );

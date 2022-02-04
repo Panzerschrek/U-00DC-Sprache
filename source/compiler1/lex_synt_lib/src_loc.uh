@@ -25,7 +25,7 @@ public:
 	fn SetFileIndex( mut this, u32 file_index );
 	fn SetMacroExpansionIndex( mut this, u32 macro_expansion_index );
 
-	op==( SrcLoc& l, SrcLoc& r ) : bool;
+	op==( SrcLoc& l, SrcLoc& r ) : bool = default;
 	op<=>( SrcLoc& l, SrcLoc& r ) : i32;
 
 private:
