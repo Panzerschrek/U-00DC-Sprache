@@ -1213,7 +1213,6 @@ bool CodeBuilder::IsCopyAssignmentOperator( const FunctionType& function_type, c
 
 bool CodeBuilder::IsEqualityCompareOperator( const FunctionType& function_type, const Type& base_class )
 {
-	// TODO - what about reference pollution? Shouldn't we disable it for "==" operator?
 	return
 		function_type.params.size() == 2 &&
 		function_type.params[0].type == base_class && function_type.params[0].value_type == ValueType::ReferenceImut &&

@@ -1082,6 +1082,14 @@ fn CodeBuilder::PrepareFunction(
 			};
 			function_variable.t.references_pollution.push_back( move(pollution) );
 		}
+
+		if( function_declaration.operator == OverloadedOperator::CompareEqual &&
+			IsEqualityCompareOperator( function_variable, class_type_non_null ) &&
+			!function_declaration.function_type.references_pollution.empty() )
+		{
+			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, names_scope_ptr, function_declaration.src_loc )
+			function_variable.t.references_pollution.clear();
+		}
 	}
 
 	if( function_declaration.constexpr_ )

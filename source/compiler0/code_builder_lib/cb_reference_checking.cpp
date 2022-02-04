@@ -130,6 +130,11 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		ref_pollution.src.second= 0u;
 		function_type.references_pollution.insert(ref_pollution);
 	}
+	else if( func.name_.back() == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function_type, base_class ) )
+	{
+		if( !func.type_.referecnces_pollution_list_.empty() )
+			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, errors_container, func.src_loc_ );
+	}
 	else
 		ProcessFunctionTypeReferencesPollution( errors_container, func.type_, function_type );
 }
