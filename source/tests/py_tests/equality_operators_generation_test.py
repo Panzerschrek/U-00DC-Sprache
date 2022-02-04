@@ -536,7 +536,6 @@ def EqualityOperatorForCompositeValue_Test2():
 
 def EqualityOperatorForCompositeValue_Test3():
 	c_program_text= """
-
 		fn Foo()
 		{
 			// Use "mut" to prevent "constexpr"

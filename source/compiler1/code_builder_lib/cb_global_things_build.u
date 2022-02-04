@@ -760,6 +760,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	TryGenerateDefaultConstructor( class_type );
 	TryGenerateCopyConstructor( class_type );
 	TryGenerateCopyAssignmentOperator( class_type );
+	TryGenerateEqualityCompareOperator( class_type );
 	TryGenerateDestructor( class_type );
 
 	{

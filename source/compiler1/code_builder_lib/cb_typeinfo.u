@@ -335,6 +335,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 	ADD_BOOL_FIELD( "is_default_constructible", t.IsDefaultConstructible() )
 	ADD_BOOL_FIELD( "is_copy_constructible"   , t.IsCopyConstructible()    )
 	ADD_BOOL_FIELD( "is_copy_assignable"      , t.IsCopyAssignable()       )
+	ADD_BOOL_FIELD( "is_equality_comparable"  , t.IsEqualityComparable()   )
 
 	if_var( &fundamental_type : t.GetFundamentalType() )
 	{

@@ -596,6 +596,208 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	}
 }
 
+fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& class_type )
+{
+	auto class_members_ptr= class_type.lock_imut().deref().members;
+
+	auto mut operator_index= ~0s;
+
+	auto op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+
+	var ust::shared_ptr_nullable_mut</NamesScopeFunctionsSet/> mut operators_ptr;
+	if_var( &val : class_members_ptr.lock_imut().deref().GetThisScopeValue( op_name ) )
+	{
+		operators_ptr= val.Get</NamesScopeFunctionsSet/>();
+	}
+	if( !operators_ptr.empty() )
+	{
+		auto mut operators_lock= operators_ptr.try_lock_mut();
+		auto &mut operators= operators_lock.deref().functions_set;
+
+		// Search for copy "==" operator.
+		for( auto mut i= 0s; i < operators.functions.size(); ++i )
+		{
+			auto& operator= operators.functions[i];
+			if( IsEqualityCompareOperator( operator, class_type ) )
+			{
+				if( operator.is_generated )
+				{
+					operator_index= i;
+					break;
+				}
+				else
+				{
+					auto mut class_lock= class_type.lock_mut();
+					class_lock.deref().is_equality_comparable= !operator.is_deleted;
+					return;
+				}
+			}
+		}
+	}
+
+	// Check if all fields are equality-comparable.
+	auto mut all_fields_are_equality_comparable= true;
+	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
+	{
+		auto field_lock= field_pair[1].lock_imut();
+		auto& field= field_lock.deref();
+		if( !( field.t.IsEqualityComparable() && !field.is_reference ) )
+		{
+			all_fields_are_equality_comparable= false;
+			break;
+		}
+	}
+
+	auto base_class= class_type.lock_imut().deref().base_class;
+	if( !base_class.empty() && !base_class.try_lock_imut().deref().is_equality_comparable )
+	{
+		all_fields_are_equality_comparable= false;
+	}
+
+	if( !all_fields_are_equality_comparable )
+	{
+		if( operator_index != ~0s )
+		{
+			auto operators_lock= operators_ptr.try_lock_imut();
+			auto& operators= operators_lock.deref().functions_set;
+			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, operators.functions[operator_index].prototype_syntax_element.try_deref().src_loc )
+		}
+		return;
+	}
+
+	// All ok - set equiality comparable flag.
+	{
+		auto mut class_lock= class_type.lock_mut();
+		auto &mut class_= class_lock.deref();
+
+		if( class_.kind != ClassType::Kind::Struct && operator_index == ~0s )
+		{
+			// By-default do not generate "==" operators for classes, generate them only for structs.
+			class_.is_equality_comparable= false;
+			return;
+		}
+
+		class_.is_equality_comparable= true;
+	}
+
+	if( operators_ptr.empty() )
+	{
+		auto mut class_members_lock= class_members_ptr.lock_mut();
+		auto &mut class_members= class_members_lock.deref();
+
+		var NamesScopeFunctionsSet mut functions_set;
+		operators_ptr= class_members.AddName( ust::string8(op_name), NamesScopeValue( move(functions_set) ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+	}
+	auto mut operators_lock= operators_ptr.try_lock_mut();
+	auto &mut operators= operators_lock.deref().functions_set;
+
+	if( operator_index == ~0s )
+	{
+		// Prepare function type.
+		var FunctionType mut function_type
+		{
+			.return_type( bool_type_ ),
+			.return_value_type= ValueType::Value,
+		};
+
+		for( auto mut i= 0s; i < 2s; ++i )
+		{
+			var FunctionType::Param mut param
+			{
+				.t( Type( class_type ) ),
+				.value_type= ValueType::ReferenceImut,
+			};
+			function_type.params.push_back( move(param) );
+		}
+
+		FillLLVMFunctionType( function_type );
+
+		// Prepare function variable.
+		var FunctionVariable mut function_variable
+		{
+			.is_this_call= true,
+			.is_generated= true,
+			.t= function_type,
+			.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr ),
+		};
+
+		unsafe
+		{
+			function_variable.llvm_function=
+				LLVMAddFunction(
+					module_,
+					mangler_.deref().MangleFunction(
+						class_members_ptr.lock_imut().deref(),
+						op_name,
+						function_variable.t ).front(),
+					function_variable.t.llvm_type);
+		}
+		// TODO - remove this attributes?
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "nonnull" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "noalias" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "nonnull" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "noalias" );
+		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "readonly" );
+
+		operator_index= operators.functions.size();
+		operators.functions.push_back( move(function_variable) );
+	}
+
+	var FunctionVariable &mut function_variable= operators.functions[operator_index];
+
+	SetupFunctionParamsAndRetAttributes( function_variable );
+
+	var FunctionContext mut function_context(
+		llvm_context_,
+		function_variable.llvm_function,
+		function_variable.t );
+	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
+
+	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
+
+	unsafe
+	{
+		var LLVMValueRef l_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );
+		var LLVMValueRef r_llvm_value= LLVMGetParam( function_variable.llvm_function, 1u );
+		var LLVMBasicBlockRef false_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+
+		if( !base_class.empty() )
+		{
+			var LLVMValueRef l_base= CreateBaseClassFieldGEP( l_llvm_value, function_context );
+			var LLVMValueRef r_base= CreateBaseClassFieldGEP( r_llvm_value, function_context );
+
+			BuildEqualityCompareOperatorPart( class_members_ptr, function_context, l_base, r_base, base_class.try_to_non_nullable(), false_basic_block, src_loc );
+		}
+
+		foreach( &field_pair : class_type.lock_imut().deref().fields_order )
+		{
+			auto field_lock= field_pair[1].lock_imut();
+			var ClassField & class_field= field_lock.deref();
+
+			if( class_field.index == ~0s ){ continue; } // May be in case of error
+
+			auto l_member= CreateFieldGEP( l_llvm_value, class_field, function_context );
+			auto r_member= CreateFieldGEP( r_llvm_value, class_field, function_context );
+
+			BuildEqualityCompareOperatorPart( class_members_ptr, function_context, l_member, r_member, class_field.t, false_basic_block, src_loc );
+		}
+
+		var LLVMValueRef false_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
+		var LLVMValueRef true_value = LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+
+		// True branch.
+		LLVMBuildRet( function_context.llvm_ir_builder, true_value );
+
+		// False branch.
+		LLVMAppendExistingBasicBlock( function_context.llvm_function, false_basic_block );
+		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, false_basic_block );
+		LLVMBuildRet( function_context.llvm_ir_builder, false_value );
+
+		// Finish allocations block.
+		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
+	}
+}
+
 fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_type )
 {
 	auto class_members_ptr= class_type.lock_imut().deref().members;
@@ -879,6 +1081,127 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 			}
 		}
 		return;
+	}
+
+	halt; // Unhandled type kind
+}
+
+fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef l_address, LLVMValueRef r_address, Type& t, LLVMBasicBlockRef false_basic_block, SrcLoc& src_loc )
+{
+	if(
+		!t.GetFundamentalType().empty() ||
+		!t.GetEnumType().empty() ||
+		!t.GetRawPointerType().empty() ||
+		!t.GetFunctionPointerType().empty() )
+	{
+		unsafe
+		{
+			if( t == void_type_ ) {}
+			else
+			{
+				var LLVMValueRef l= LLVMBuildLoad( function_context.llvm_ir_builder, l_address, "\0"[0] );
+				var LLVMValueRef r= LLVMBuildLoad( function_context.llvm_ir_builder, r_address, "\0"[0] );
+
+				var LLVMTypeKind type_kind= LLVMGetTypeKind( t.GetLLVMType() );
+				var bool is_float=
+					type_kind == LLVMTypeKind::Half ||
+					type_kind == LLVMTypeKind::Float ||
+					type_kind == LLVMTypeKind::Double ||
+					type_kind == LLVMTypeKind::X86_FP80 ||
+					type_kind == LLVMTypeKind::P128 ||
+					type_kind == LLVMTypeKind::PPC_FP128;
+
+				var LLVMValueRef eq=
+					select( is_float
+						? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, "\0"[0] )
+						: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, "\0"[0] ) );
+
+				var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+
+				LLVMBuildCondBr( function_context.llvm_ir_builder, eq, next_bb, false_basic_block );
+
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, next_bb );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_bb );
+			}
+		}
+		return;
+	}
+	if_var( &array_type : t.GetArrayType() )
+	{
+		CB_GENERATE_LOOP(
+			function_context,
+			array_type.element_count,
+			{
+				var LLVMValueRef mut l= zero_init, mut r= zero_init;
+				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
+
+				unsafe
+				{
+					l= LLVMBuildGEP( function_context.llvm_ir_builder, l_address, $<(indexes[0]), 2u, "[]\0"[0] );
+					r= LLVMBuildGEP( function_context.llvm_ir_builder, r_address, $<(indexes[0]), 2u, "[]\0"[0] );
+				}
+
+				BuildEqualityCompareOperatorPart( names_scope, function_context, l, r, array_type.element_type, false_basic_block, src_loc );
+			}
+		)
+		return;
+	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+		{
+			var LLVMValueRef l= CreateTupleElementGEP( l_address, i, function_context );
+			var LLVMValueRef r= CreateTupleElementGEP( r_address, i, function_context );
+			BuildEqualityCompareOperatorPart( names_scope, function_context, l_address, r_address, tuple_type.element_types[i], false_basic_block, src_loc );
+		}
+
+		return;
+	}
+	if_var( &class_type : t.GetClassType() )
+	{
+		if( !class_type.lock_imut().deref().is_equality_comparable )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, Type(class_type) )
+			return;
+		}
+
+		// Constructors value should always exists and should always be NamesScopeFunctionsSet.
+		if_var( &operators_value : class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ) )
+		{
+			auto operators_ptr= operators_value.Get</NamesScopeFunctionsSet/>();
+			if( !operators_ptr.empty() )
+			{
+				// Search for "==" operator.
+				foreach( &op_ : operators_ptr.try_lock_imut().deref().functions_set.functions )
+				{
+					if( IsEqualityCompareOperator( op_, class_type ) )
+					{
+						// SPRACHE_TODO - maybe disallow unsafe "=="?
+						if( op_.t.is_unsafe && !function_context.is_in_unsafe_block )
+						{
+							REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
+						}
+
+						// Call it.
+						unsafe
+						{
+							var[ LLVMValueRef, 2 ] mut llvm_args[ l_address, r_address ];
+							var LLVMValueRef eq= LLVMBuildCall( function_context.llvm_ir_builder, op_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] );
+
+							var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+
+							LLVMBuildCondBr( function_context.llvm_ir_builder, eq, next_bb, false_basic_block );
+
+							LLVMAppendExistingBasicBlock( function_context.llvm_function, next_bb );
+							LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_bb );
+						}
+						return;
+					}
+				}
+			}
+		}
+
+		halt; // Operator not found - wtf?
 	}
 
 	halt; // Unhandled type kind

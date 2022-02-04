@@ -575,6 +575,37 @@ fn Type::IsCopyAssignable( this ) : bool
 	return false;
 }
 
+fn Type::IsEqualityComparable( this ) : bool
+{
+	if( !GetFundamentalType().empty() |
+		!GetEnumType().empty() ||
+		!GetFunctionPointerType().empty() ||
+		!GetRawPointerType().empty() )
+	{
+		return true;
+	}
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.IsEqualityComparable();
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( !element_type.IsEqualityComparable() )
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		return class_type.lock_imut().deref().is_equality_comparable;
+	}
+	return false;
+}
+
 fn Type::CanBeConstexpr( this ) : bool
 {
 	if( !GetFundamentalType().empty() || !GetEnumType().empty() || !GetFunctionPointerType().empty() )

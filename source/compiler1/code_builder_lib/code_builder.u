@@ -2178,6 +2178,19 @@ fn CodeBuilder::IsCopyAssignmentOperator( FunctionVariable& function_variable, C
 		param_src.t == class_type && param_src.value_type == ValueType::ReferenceImut;
 }
 
+fn CodeBuilder::IsEqualityCompareOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
+{
+	if( function_variable.t.params.size() != 2s ){ return false; }
+
+	auto& param_l= function_variable.t.params.front();
+	auto& param_r= function_variable.t.params.back();
+	return
+		param_l.t == class_type && param_l.value_type == ValueType::ReferenceImut &&
+		param_r.t == class_type && param_r.value_type == ValueType::ReferenceImut &&
+		!function_variable.t.return_type.GetFundamentalType().empty() && function_variable.t.return_type.GetFundamentalType().try_deref().fundamental_type == U_FundamentalType::bool_ &&
+		function_variable.t.return_value_type == ValueType::Value;
+}
+
 fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef
 {
 	unsafe
