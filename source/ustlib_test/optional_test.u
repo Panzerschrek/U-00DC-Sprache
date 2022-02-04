@@ -157,6 +157,7 @@ fn nomangle main() : i32
 		halt if( opt.try_deref() != 999 );
 	}
 	{
+		static_assert( typeinfo</ ust::optional</i32/> />.is_equality_comparable );
 		var i32 one= 1, one_copy= 1, two= 2, three= 3;
 		var ust::optional</i32/> one_opt(1), one_copy_opt(1), two_opt(2), three_opt(3), empty_opt, empty_copy_opt;
 

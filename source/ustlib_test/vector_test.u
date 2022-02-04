@@ -372,6 +372,7 @@ fn nomangle main() : i32
 		}
 	}
 	{ // ==
+		static_assert( typeinfo</I32Vec/>.is_equality_comparable );
 		var I32Vec mut v0, mut v1, mut v2, mut v3, mut v4, mut v5, mut v6;
 
 		v0.push_back(11);
