@@ -658,7 +658,6 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 
 		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 
-
 		// It's unclear how to compare references, so, disable "==" operator generation for fields with references.
 		if( !( field.type.IsEqualityComparable() && !field.is_reference ) )
 			all_fields_are_equality_comparable= false;

@@ -307,7 +307,6 @@ bool Type::IsEqualityComparable() const
 			equality_comparable= equality_comparable && element.IsEqualityComparable();
 		return equality_comparable;
 	}
-	else U_ASSERT(false);
 
 	return false;
 }
