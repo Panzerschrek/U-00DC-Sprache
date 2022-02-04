@@ -246,6 +246,34 @@ public:
 		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
+	// ==
+	op enable_if( typeinfo</T/>.is_equality_comparable )
+	==( this_type& l, this_type& r ) : bool
+	{
+		if( l.size() != r.size() )
+		{
+			return false;
+		}
+
+		for( auto mut i= 0s; i < l.size_; ++i )
+		{
+			unsafe
+			{
+				var T& l_element= l.index_unchecked(i);
+				var T& r_element= r.index_unchecked(i);
+				safe
+				{
+					if( l_element != r_element )
+					{
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
+	}
+
 	// modificators
 
 	fn swap( mut this, size_type i0, size_type i1 )
