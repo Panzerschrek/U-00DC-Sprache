@@ -2632,61 +2632,63 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			return ErrorValue();
 		}
 
+		var Variable mut result
+		{
+			.t= bool_type_,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::LLVMRegister,
+			.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "==" ),
+		};
+
 		unsafe
 		{
-			var LLVMBasicBlockRef false_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-			var LLVMBasicBlockRef end_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-
-			BuildEqualityCompareOperatorPart(
-				names_scope,
-				function_context,
-				l_var.llvm_value,
-				r_var.llvm_value,
-				l_var.t,
-				false_basic_block,
-				src_loc );
-
-			// True branch.
-			var LLVMBasicBlockRef true_basic_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
-			LLVMBuildBr( function_context.llvm_ir_builder, end_basic_block );
-
-			// False branch.
-			LLVMAppendExistingBasicBlock( function_context.llvm_function, false_basic_block );
-			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, false_basic_block );
-			LLVMBuildBr( function_context.llvm_ir_builder, end_basic_block );
-
-			// End basic block.
-			LLVMAppendExistingBasicBlock( function_context.llvm_function, end_basic_block );
-			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_basic_block );
-
-			var LLVMValueRef phi= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, "\0"[0] );
-
-			var LLVMValueRef false_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
-			var LLVMValueRef true_value = LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
-
-			var [ LLVMValueRef, 2 ] mut values[ false_value, true_value ];
-			var [ LLVMBasicBlockRef, 2 ] mut blocks[ false_basic_block, true_basic_block ];
-			LLVMAddIncoming( phi, $<(values[0]), $<(blocks[0]), 2u );
-
-			var Variable mut result
-			{
-				.t= bool_type_,
-				.value_type= ValueType::Value,
-				.location= Variable::Location::LLVMRegister,
-				.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "==" ),
-				.llvm_value= phi,
-			};
-
 			if( l_var.constexpr_value != LLVMValueRef::Null && r_var.constexpr_value != LLVMValueRef::Null )
 			{
 				result.constexpr_value= ConstexprCompareEqual( names_scope, function_context, l_var.constexpr_value, r_var.constexpr_value, l_var.t, src_loc );
 				result.llvm_value= result.constexpr_value;
 			}
+			else
+			{
+				var LLVMBasicBlockRef false_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+				var LLVMBasicBlockRef end_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 
-			RegisterTemporaryVariable( function_context, result );
+				BuildEqualityCompareOperatorPart(
+					names_scope,
+					function_context,
+					l_var.llvm_value,
+					r_var.llvm_value,
+					l_var.t,
+					false_basic_block,
+					src_loc );
 
-			return move(result);
+				// True branch.
+				var LLVMBasicBlockRef true_basic_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+				LLVMBuildBr( function_context.llvm_ir_builder, end_basic_block );
+
+				// False branch.
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, false_basic_block );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, false_basic_block );
+				LLVMBuildBr( function_context.llvm_ir_builder, end_basic_block );
+
+				// End basic block.
+				LLVMAppendExistingBasicBlock( function_context.llvm_function, end_basic_block );
+				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_basic_block );
+
+				var LLVMValueRef phi= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, "\0"[0] );
+
+				var LLVMValueRef false_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
+				var LLVMValueRef true_value = LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+
+				var [ LLVMValueRef, 2 ] mut values[ false_value, true_value ];
+				var [ LLVMBasicBlockRef, 2 ] mut blocks[ false_basic_block, true_basic_block ];
+				LLVMAddIncoming( phi, $<(values[0]), $<(blocks[0]), 2u );
+
+				result.llvm_value= phi;
+			}
 		}
+
+		RegisterTemporaryVariable( function_context, result );
+		return move(result);
 	}
 	else
 	{

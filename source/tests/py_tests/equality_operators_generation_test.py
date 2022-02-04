@@ -461,6 +461,9 @@ def EqualityOperatorForCompositeValue_Test0():
 		static_assert( c != a );
 		static_assert( a != d );
 		static_assert( ! ( c == d ) );
+
+		// Now we can compare string literals!
+		static_assert( "qhy66  !" == "qhy66  !" );
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )

@@ -1675,40 +1675,43 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		U_ASSERT( l_var.location == Variable::Location::Pointer );
 		U_ASSERT( r_var.location == Variable::Location::Pointer );
 
-		const auto false_basic_block= llvm::BasicBlock::Create( llvm_context_ );
-		const auto end_basic_block= llvm::BasicBlock::Create( llvm_context_ );
-
-		BuildEqualityCompareOperatorPart(
-			l_var.llvm_value,
-			r_var.llvm_value,
-			l_var.type,
-			false_basic_block,
-			function_context );
-
-		// True branch.
-		const auto true_basic_block= function_context.llvm_ir_builder.GetInsertBlock();
-		function_context.llvm_ir_builder.CreateBr( end_basic_block );
-
-		// False branch.
-		function_context.function->getBasicBlockList().push_back( false_basic_block );
-		function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
-		function_context.llvm_ir_builder.CreateBr( end_basic_block );
-
-		// End basic block.
-		function_context.function->getBasicBlockList().push_back( end_basic_block );
-		function_context.llvm_ir_builder.SetInsertPoint( end_basic_block );
-
-		const auto phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2 );
-		phi->addIncoming( llvm::ConstantInt::getFalse( llvm_context_ ), false_basic_block );
-		phi->addIncoming( llvm::ConstantInt::getTrue ( llvm_context_ ), true_basic_block  );
-
 		Variable result;
 		result.type= bool_type_;
 		result.location= Variable::Location::LLVMRegister;
-		result.llvm_value= phi;
 
 		if( l_var.constexpr_value != nullptr || r_var.constexpr_value != nullptr )
 			result.llvm_value= result.constexpr_value= ConstexprCompareEqual( l_var.constexpr_value, r_var.constexpr_value, l_var.type, names, src_loc );
+		else
+		{
+			const auto false_basic_block= llvm::BasicBlock::Create( llvm_context_ );
+			const auto end_basic_block= llvm::BasicBlock::Create( llvm_context_ );
+
+			BuildEqualityCompareOperatorPart(
+				l_var.llvm_value,
+				r_var.llvm_value,
+				l_var.type,
+				false_basic_block,
+				function_context );
+
+			// True branch.
+			const auto true_basic_block= function_context.llvm_ir_builder.GetInsertBlock();
+			function_context.llvm_ir_builder.CreateBr( end_basic_block );
+
+			// False branch.
+			function_context.function->getBasicBlockList().push_back( false_basic_block );
+			function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
+			function_context.llvm_ir_builder.CreateBr( end_basic_block );
+
+			// End basic block.
+			function_context.function->getBasicBlockList().push_back( end_basic_block );
+			function_context.llvm_ir_builder.SetInsertPoint( end_basic_block );
+
+			const auto phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2 );
+			phi->addIncoming( llvm::ConstantInt::getFalse( llvm_context_ ), false_basic_block );
+			phi->addIncoming( llvm::ConstantInt::getTrue ( llvm_context_ ), true_basic_block  );
+
+			result.llvm_value= phi;
+		}
 
 		result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, OverloadedOperatorToString(op) );
 		RegisterTemporaryVariable( function_context, result );
