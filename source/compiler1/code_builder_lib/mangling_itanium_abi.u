@@ -294,9 +294,9 @@ fn ManglerState::FinalizePart( mut this, size_type start, size_type compressed_s
 	for( auto mut i= 0s; i < substitutions_.size(); ++i )
 	{
 		var Substitution substitution= substitutions_[i];
-		if( StringViewEq(
-			cast_imut(result_full_).range().subrange( start, start + size ),
-			cast_imut(result_full_).range().subrange( size_type(substitution.start), size_type(substitution.start) + size_type( substitution.size) ) ) )
+		if(
+			cast_imut(result_full_).range().subrange( start, start + size ) ==
+			cast_imut(result_full_).range().subrange( size_type(substitution.start), size_type(substitution.start) + size_type( substitution.size) ) )
 		{
 			result_compressed_.resize( compressed_start, "\0"c8 );
 			result_compressed_.push_back( "S"c8 );
@@ -342,26 +342,6 @@ fn Base36Digit( size_type mut value ) : char8
 	{
 		return char8(size_type("A"c8) + ( value - 10s ) );
 	}
-}
-
-// TODO - implement library method for range comparing.
-
-fn StringViewEq( ust::array_view_imut</char8/> s0, ust::array_view_imut</char8/> s1 ) : bool
-{
-	if( s0.size() != s1.size() )
-	{
-		return false;
-	}
-
-	for( auto mut i= 0s; i < s0.size(); ++i )
-	{
-		if( s0[i] != s1[i] )
-		{
-			return false;
-		}
-	}
-
-	return true;
 }
 
 fn EncodeNestedName( ManglerState &mut mangler_state, ust::string8& name, NamesScope& parent_scope )

@@ -654,20 +654,12 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 				{
 					continue;
 				}
+				auto check_range= it.subrange( 0u64, s );
 
 				auto mut found= false;
 				foreach( &l : lexem_size_group )
 				{
-					auto mut equals= true;
-					for( auto mut i= 0s; i < s; ++i )
-					{
-						if( it[i] != l[0][i] )
-						{
-							equals= false;
-							break;
-						}
-					}
-					if( equals )
+					if( check_range == l[0] )
 					{
 						lexem.text= l[0];
 						lexem.lexem_type= l[1];

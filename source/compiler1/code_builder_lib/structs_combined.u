@@ -150,23 +150,9 @@ op ArrayType::==( ArrayType& l, ArrayType& r ) : bool
 	return l.element_type == r.element_type && l.element_count == r.element_count;
 }
 
-
 op TupleType::==( TupleType& l, TupleType& r ) : bool
 {
-	if( l.element_types.size() != r.element_types.size() )
-	{
-		return false;
-	}
-
-	for( auto mut i= 0s; i < l.element_types.size(); ++i )
-	{
-		if( l.element_types[i] != r.element_types[i] )
-		{
-			return false;
-		}
-	}
-
-	return true;
+	return l.element_types == r.element_types;
 }
 
 op RawPointerType::==( RawPointerType& l, RawPointerType& r ) : bool
