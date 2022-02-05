@@ -348,7 +348,7 @@ def EqualityOperatorGeneration_Test10():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def EqualityOperatorGeneration_Test10():
+def EqualityOperatorGeneration_Test11():
 	c_program_text= """
 		// "==" for struct with "void" field.
 		struct S{ void v; }
