@@ -17,7 +17,6 @@ General:
 *) "Disassembly operator" - declare variables with initializer as members of
 	value of structure type.
 *) Function to function pointer assignment
-*) == and != methods generation
 *) Functions references info in "typeinfo".
 *) More float types ( 16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
