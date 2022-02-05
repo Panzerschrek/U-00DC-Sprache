@@ -680,7 +680,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		auto mut class_lock= class_type.lock_mut();
 		auto &mut class_= class_lock.deref();
 
-		if( operator_index == ~0s  )
+		if( operator_index == ~0s )
 		{
 			if( class_.kind != ClassType::Kind::Struct )
 			{
@@ -723,7 +723,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		{
 			var FunctionType::Param mut param
 			{
-				.t( Type( class_type ) ),
+				.t( class_type ),
 				.value_type= ValueType::ReferenceImut,
 			};
 			function_type.params.push_back( move(param) );
@@ -776,14 +776,14 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 
 	unsafe
 	{
-		var LLVMValueRef l_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );
-		var LLVMValueRef r_llvm_value= LLVMGetParam( function_variable.llvm_function, 1u );
+		var LLVMValueRef l_address= LLVMGetParam( function_variable.llvm_function, 0u );
+		var LLVMValueRef r_address= LLVMGetParam( function_variable.llvm_function, 1u );
 		var LLVMBasicBlockRef false_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 
 		if( !base_class.empty() )
 		{
-			var LLVMValueRef l_base= CreateBaseClassFieldGEP( l_llvm_value, function_context );
-			var LLVMValueRef r_base= CreateBaseClassFieldGEP( r_llvm_value, function_context );
+			var LLVMValueRef l_base= CreateBaseClassFieldGEP( l_address, function_context );
+			var LLVMValueRef r_base= CreateBaseClassFieldGEP( r_address, function_context );
 
 			BuildEqualityCompareOperatorPart( class_members_ptr, function_context, l_base, r_base, base_class.try_to_non_nullable(), false_basic_block, src_loc );
 		}
@@ -795,8 +795,8 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 
 			if( class_field.index == ~0s ){ continue; } // May be in case of error
 
-			auto l_member= CreateFieldGEP( l_llvm_value, class_field, function_context );
-			auto r_member= CreateFieldGEP( r_llvm_value, class_field, function_context );
+			auto l_member= CreateFieldGEP( l_address, class_field, function_context );
+			auto r_member= CreateFieldGEP( r_address, class_field, function_context );
 
 			BuildEqualityCompareOperatorPart( class_members_ptr, function_context, l_member, r_member, class_field.t, false_basic_block, src_loc );
 		}

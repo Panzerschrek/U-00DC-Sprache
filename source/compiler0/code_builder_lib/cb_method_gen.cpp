@@ -673,7 +673,6 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 		return;
 	}
 
-
 	if( operator_variable == nullptr )
 	{
 		// Generate assignment operator

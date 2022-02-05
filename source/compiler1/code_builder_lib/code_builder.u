@@ -2649,31 +2649,28 @@ fn CodeBuilder::ConstexprCompareEqual(
 
 			// TODO - what if "==" is unsafe?
 
-			unsafe
+			auto res= constexpr_function_evaluator_.Evaluate( op_.llvm_function, ust::make_array( l, r ) );
+
+			if( res.errors.empty() )
 			{
-				auto res= constexpr_function_evaluator_.Evaluate( op_.llvm_function, ust::make_array( l, r ) );
-
-				if( res.errors.empty() )
-				{
-					return res.constant;
-				}
-
-				auto errors_container_ptr= names_scope.lock_imut().deref().GetErrors();
-				auto mut lock= errors_container_ptr.try_lock_mut();
-				auto &mut errors_container= lock.deref();
-				foreach( &err : res.errors )
-				{
-					var CodeBuilderError mut out_error
-					{
-						.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
-						.src_loc= src_loc,
-						.text= err,
-					};
-					errors_container.push_back( move(out_error) );
-				}
-
-				return LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
+				return res.constant;
 			}
+
+			auto errors_container_ptr= names_scope.lock_imut().deref().GetErrors();
+			auto mut lock= errors_container_ptr.try_lock_mut();
+			auto &mut errors_container= lock.deref();
+			foreach( &err : res.errors )
+			{
+				var CodeBuilderError mut out_error
+				{
+					.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+					.src_loc= src_loc,
+					.text= err,
+				};
+				errors_container.push_back( move(out_error) );
+			}
+
+			unsafe{  return LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );  }
 		}
 
 		halt; // Operator not found - wtf?
