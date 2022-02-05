@@ -324,6 +324,30 @@ def EqualityOperatorGeneration_Test9():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def EqualityOperatorGeneration_Test10():
+	c_program_text= """
+		// "==" for empty struct.
+		struct S{}
+
+		fn Foo()
+		{
+			var S mut a{};
+			var S mut b{};
+			halt if( a != a );
+			halt if( a != b );
+			halt if( !( b == a ) );
+		}
+
+		var S a{};
+		var S b{};
+		static_assert( a == a );
+		static_assert( a == b );
+		static_assert( !( b != a ) );
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def EqualityOperatorIsNotGenerated_Test0():
 	c_program_text= """
 		struct S
@@ -570,6 +594,36 @@ def EqualityOperatorForCompositeValue_Test3():
 		static_assert( plus_zero != nan );
 		static_assert( nan != nan );
 		static_assert( !( nan == nan ) );
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def EqualityOperatorForCompositeValue_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			// Use "mut" to prevent "constexpr"
+			var [ i32, 0 ] mut empty_arr[], mut empty_arr_copy[];
+			halt if( empty_arr != empty_arr );
+			halt if( empty_arr != empty_arr_copy );
+			halt if( !( empty_arr_copy == empty_arr ) );
+
+			var tup[] mut empty_tup[], mut empty_tup_copy[];
+			halt if( empty_tup != empty_tup );
+			halt if( empty_tup != empty_tup_copy );
+			halt if( !( empty_tup_copy == empty_tup ) );
+		}
+
+		var [ i32, 0 ] empty_arr[], empty_arr_copy[];
+		static_assert( empty_arr == empty_arr );
+		static_assert( empty_arr == empty_arr_copy );
+		static_assert( !( empty_arr_copy != empty_arr ) );
+
+		var tup[] empty_tup[], empty_tup_copy[];
+		static_assert( empty_tup == empty_tup );
+		static_assert( empty_tup == empty_tup_copy );
+		static_assert( !( empty_tup_copy != empty_tup ) );
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )

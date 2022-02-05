@@ -1693,24 +1693,34 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				false_basic_block,
 				function_context );
 
-			// True branch.
-			const auto true_basic_block= function_context.llvm_ir_builder.GetInsertBlock();
-			function_context.llvm_ir_builder.CreateBr( end_basic_block );
+			if( false_basic_block->hasNPredecessorsOrMore(1) )
+			{
+				// True branch.
+				const auto true_basic_block= function_context.llvm_ir_builder.GetInsertBlock();
+				function_context.llvm_ir_builder.CreateBr( end_basic_block );
 
-			// False branch.
-			function_context.function->getBasicBlockList().push_back( false_basic_block );
-			function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
-			function_context.llvm_ir_builder.CreateBr( end_basic_block );
+				// False branch.
+				function_context.function->getBasicBlockList().push_back( false_basic_block );
+				function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
+				function_context.llvm_ir_builder.CreateBr( end_basic_block );
 
-			// End basic block.
-			function_context.function->getBasicBlockList().push_back( end_basic_block );
-			function_context.llvm_ir_builder.SetInsertPoint( end_basic_block );
+				// End basic block.
+				function_context.function->getBasicBlockList().push_back( end_basic_block );
+				function_context.llvm_ir_builder.SetInsertPoint( end_basic_block );
 
-			const auto phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2 );
-			phi->addIncoming( llvm::ConstantInt::getFalse( llvm_context_ ), false_basic_block );
-			phi->addIncoming( llvm::ConstantInt::getTrue ( llvm_context_ ), true_basic_block  );
+				const auto phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2 );
+				phi->addIncoming( llvm::ConstantInt::getFalse( llvm_context_ ), false_basic_block );
+				phi->addIncoming( llvm::ConstantInt::getTrue ( llvm_context_ ), true_basic_block  );
 
-			result.llvm_value= phi;
+				result.llvm_value= phi;
+			}
+			else
+			{
+				// Empty tuple or array.
+				delete false_basic_block;
+				delete end_basic_block;
+				result.llvm_value= llvm::ConstantInt::getTrue( llvm_context_ );
+			}
 		}
 
 		result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, OverloadedOperatorToString(op) );

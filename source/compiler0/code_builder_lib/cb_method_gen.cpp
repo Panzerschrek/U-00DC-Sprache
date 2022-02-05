@@ -771,9 +771,17 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 	function_context.llvm_ir_builder.CreateRet( llvm::ConstantInt::getTrue( llvm_context_ ) );
 
 	// False branch.
-	function_context.function->getBasicBlockList().push_back( false_basic_block );
-	function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
-	function_context.llvm_ir_builder.CreateRet( llvm::ConstantInt::getFalse( llvm_context_ ) );
+	if( false_basic_block->hasNPredecessorsOrMore(1) )
+	{
+		function_context.function->getBasicBlockList().push_back( false_basic_block );
+		function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
+		function_context.llvm_ir_builder.CreateRet( llvm::ConstantInt::getFalse( llvm_context_ ) );
+	}
+	else
+	{
+		// "false" block was not used. Probably because class contains no fields.
+		delete false_basic_block;
+	}
 
 	// Finish allocations block.
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );

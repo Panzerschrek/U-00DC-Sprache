@@ -16,6 +16,10 @@ extern "C" void U1_DropAllBasicBlockUsersReferences(const LLVMBasicBlockRef basi
 		use->dropAllReferences();
 }
 
+extern "C" bool U1_BasicBlockHasPredecessors(const LLVMBasicBlockRef basic_block)
+{
+	return llvm::unwrap(basic_block)->hasNPredecessorsOrMore(1);
+}
 
 extern "C" size_t U1_ConvertUTF8ToUTF16(
 	const char* const src_buff, const size_t src_buff_size,
