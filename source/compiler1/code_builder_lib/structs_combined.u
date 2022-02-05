@@ -1026,21 +1026,6 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 	halt;
 }
 
-op NamesScopeValue::==( NamesScopeValue&l, NamesScopeValue& r ) : bool
-{
-	if( l.something_.index() != r.something_.index() )
-	{
-		return false;
-	}
-
-	variant_visit( &el : l.something_ )
-	{
-		return el == r.something_.get</typeof(el)/>().try_deref();
-	}
-
-	halt;
-}
-
 //
 // NamesScope
 //

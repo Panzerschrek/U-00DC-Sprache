@@ -70,8 +70,6 @@ private:
 	{
 		NodeId src;
 		NodeId dst;
-
-		op==(Link& l, Link& r ) : bool;
 	}
 
 private:

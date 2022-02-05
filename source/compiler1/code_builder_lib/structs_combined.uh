@@ -663,7 +663,7 @@ public:
 	}
 
 	// Compare shared pointers
-	op==( NamesScopeValue&l, NamesScopeValue& r ) : bool;
+	op==( NamesScopeValue&l, NamesScopeValue& r ) : bool = default;
 
 private:
 	template</type T/> struct IsSharedPtr{ auto value= false; }
