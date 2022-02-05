@@ -667,7 +667,7 @@ private:
 		for( auto mut i= 0s; i < g_num_back_references; ++i )
 		{
 			var BackReference br= back_references_[i];
-			if( StringViewEq( res_.range().subrange( size_type(br.pos), size_type(br.pos + br.count) ), str ) )
+			if( res_.range().subrange( size_type(br.pos), size_type(br.pos + br.count) ) == str )
 			{
 				res_.push_back( char8(i + size_type("0"c8) ) );
 				return;
@@ -696,25 +696,6 @@ private:
 private:
 	[ BackReference, g_num_back_references ] back_references_;
 	ust::string8 res_;
-}
-
-// TODO - implement library method for range comparing.
-fn StringViewEq( ust::array_view_imut</char8/> s0, ust::array_view_imut</char8/> s1 ) : bool
-{
-	if( s0.size() != s1.size() )
-	{
-		return false;
-	}
-
-	for( auto mut i= 0s; i < s0.size(); ++i )
-	{
-		if( s0[i] != s1[i] )
-		{
-			return false;
-		}
-	}
-
-	return true;
 }
 
 fn GetOperatorNameMSVC( ust::string8& o ) : ust::array_view_imut</ char8 />

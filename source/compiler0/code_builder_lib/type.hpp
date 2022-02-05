@@ -100,6 +100,7 @@ public:
 	bool IsDefaultConstructible() const;
 	bool IsCopyConstructible() const;
 	bool IsCopyAssignable() const;
+	bool IsEqualityComparable() const;
 	bool HaveDestructor() const;
 	bool CanBeConstexpr() const;
 	bool IsAbstract() const;

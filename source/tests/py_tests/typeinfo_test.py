@@ -55,6 +55,50 @@ def TypeAdditionalCommonFields_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def EqualityComparable_TypeinfoFiled():
+	c_program_text= """
+		static_assert( typeinfo</void/>.is_equality_comparable );
+		static_assert( typeinfo</i32/>.is_equality_comparable );
+		static_assert( typeinfo</f64/>.is_equality_comparable );
+		static_assert( typeinfo</u8/>.is_equality_comparable );
+		static_assert( typeinfo</char16/>.is_equality_comparable );
+		static_assert( typeinfo</bool/>.is_equality_comparable );
+		static_assert( typeinfo</ [ char8, 4 ] />.is_equality_comparable );
+		static_assert( typeinfo</ tup[ u128, f32, i16, char32, bool ] />.is_equality_comparable );
+
+		struct A{} // Constains generated "==" operator.
+		static_assert( typeinfo</A/>.is_equality_comparable );
+
+		struct B{ i32 x; } // Constains generated "==" operator.
+		static_assert( typeinfo</B/>.is_equality_comparable );
+
+		struct C{ f32& x; } // Constains no generated "==" operator because of reference field.
+		static_assert( !typeinfo</C/>.is_equality_comparable );
+
+		struct D{ f32& x; op==(D& l, D& r) : bool; } // Contains explicit "==" operator.
+		static_assert( typeinfo</D/>.is_equality_comparable );
+
+		struct E{ f32 x; i32 y; op==(E& l, E& r) : bool = default; } // Contains explicit generated "==" operator.
+		static_assert( typeinfo</E/>.is_equality_comparable );
+
+		class F{} // Contains no generated "==" operator because this is calss.
+		static_assert( !typeinfo</F/>.is_equality_comparable );
+
+		class G{ bool x; } // Contains no generated "==" operator because this is calss.
+		static_assert( !typeinfo</G/>.is_equality_comparable );
+
+		class H{ bool x; op==(H& l, H& r) : bool = default; } // Contains requested generated "==" operator.
+		static_assert( typeinfo</H/>.is_equality_comparable );
+
+		class I{ u64  x; op==(I& l, I& r) : bool; } // Contains explicit  "==" operator.
+		static_assert( typeinfo</I/>.is_equality_comparable );
+
+		class J{ u64  x; op==(J& l, A& r) : bool; } // Contains wrong "==" operator - for comparision agains another type. This is not a proper "==" operator for this class.
+		static_assert( !typeinfo</J/>.is_equality_comparable );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def SizeAndAlignmentFields_Test0():
 	c_program_text= """
 		struct TwoInt{ i32 x; i32 y; }

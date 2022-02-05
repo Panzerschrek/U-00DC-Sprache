@@ -149,7 +149,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	// Check for redefinition.
 	foreach( &prev_template_ptr : out_templates_set.type_templates )
 	{
-		if( TypeTemplate::SignatureParamsIsSame( type_template, prev_template_ptr.deref() ) )
+		if( type_template.signature_params == prev_template_ptr.deref().signature_params )
 		{
 			REPORT_ERROR( TypeTemplateRedefinition, names_scope, syntax_element.src_loc, syntax_element.name )
 			return;

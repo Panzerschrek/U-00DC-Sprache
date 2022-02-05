@@ -27,7 +27,6 @@ struct CodeBuilderError
 	ust::string8 text;
 	ust::shared_ptr_nullable_mut</TemplateErrorsContext/> errors_context;
 
-	op==(CodeBuilderError& l, CodeBuilderError& r) : bool;
 	op<=>(CodeBuilderError& l, CodeBuilderError& r) : i32;
 }
 

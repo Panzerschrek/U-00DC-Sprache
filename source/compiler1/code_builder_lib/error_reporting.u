@@ -4,16 +4,6 @@ import "error_reporting.uh"
 namespace U1
 {
 
-op CodeBuilderError::==(CodeBuilderError& l, CodeBuilderError& r) : bool
-{
-	return
-		l.code == r.code &&
-		l.src_loc == r.src_loc &&
-		l.text == r.text &&
-		l.errors_context == r.errors_context;
-}
-
-
 op CodeBuilderError::<=>(CodeBuilderError& l, CodeBuilderError& r) : i32
 {
 	// Sort by position in file, then, by code, then, by text.

@@ -246,6 +246,13 @@ public:
 		unsafe{  return $>(ptr_ + size_ - 1s);  }
 	}
 
+	// ==
+	op enable_if( typeinfo</T/>.is_equality_comparable )
+	==( this_type& l, this_type& r ) : bool
+	{
+		return l.range() == r.range();
+	}
+
 	// modificators
 
 	fn swap( mut this, size_type i0, size_type i1 )

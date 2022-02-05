@@ -46,15 +46,6 @@ fn SrcLoc::SetMacroExpansionIndex( mut this, u32 macro_expansion_index )
 	macro_expansion_index_= u16(macro_expansion_index);
 }
 
-op SrcLoc::==( SrcLoc& l, SrcLoc& r ) : bool
-{
-	return
-		l.file_index_ == r.file_index_ &&
-		l.macro_expansion_index_ == r.macro_expansion_index_ &&
-		l.line_ == r.line_ &&
-		l.column_ == r.column_;
-}
-
 op SrcLoc::<=>( SrcLoc& l, SrcLoc& r ) : i32
 {
 	if( l.file_index_ != r.file_index_ )

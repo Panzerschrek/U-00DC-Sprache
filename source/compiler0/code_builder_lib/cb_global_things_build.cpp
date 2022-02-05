@@ -638,9 +638,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				break;
 			}
 		};
+		// TODO - what about template constructors?
 	}
 
-	// Disable constexpr possibility for structs with explicit destructors, non-default copy-assignment operators and non-default copy constructors.
+	// Disable constexpr possibility for structs with:
+	// * explicit destructors
+	// * non-default copy-assignment operators
+	// * non-default copy constructors
+	// * non-default equality compare operators
 	if( const Value* const destructor_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 	{
@@ -668,6 +673,17 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		for( const FunctionVariable& op : operators->functions )
 		{
 			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) && !op.is_generated )
+				the_class.can_be_constexpr= false;
+		}
+	}
+	if( const Value* const compare_equal_value=
+		the_class.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ) )
+	{
+		const OverloadedFunctionsSet* const operators= compare_equal_value->GetFunctionsSet();
+		U_ASSERT( operators != nullptr );
+		for( const FunctionVariable& op : operators->functions )
+		{
+			if( IsEqualityCompareOperator( *op.type.GetFunctionType(), class_type ) && !op.is_generated )
 				the_class.can_be_constexpr= false;
 		}
 	}
@@ -833,6 +849,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	TryGenerateDestructor( class_type );
 	TryGenerateCopyConstructor( class_type );
 	TryGenerateCopyAssignmentOperator( class_type );
+	TryGenerateEqualityCompareOperator( class_type );
 
 	CheckClassFieldsInitializers( class_type );
 
@@ -1021,7 +1038,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			if( variable_declaration.initializer != nullptr )
 				variable.constexpr_value= ApplyInitializer( variable, names_scope, function_context, *variable_declaration.initializer );
 			else
-				ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names_scope, function_context );
+				variable.constexpr_value= ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names_scope, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			if( !is_mutable )

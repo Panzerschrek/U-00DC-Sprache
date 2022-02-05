@@ -364,6 +364,7 @@ private:
 	void GenerateDestructorBody( const ClassPtr& class_type, FunctionVariable& destructor_function );
 	void TryGenerateDestructor( const ClassPtr& class_type );
 	void TryGenerateCopyAssignmentOperator( const ClassPtr& class_type );
+	void TryGenerateEqualityCompareOperator( const ClassPtr& class_type );
 
 	void BuildCopyConstructorPart(
 		llvm::Value* dst, llvm::Value* src,
@@ -375,10 +376,23 @@ private:
 		const Type& type,
 		FunctionContext& function_context );
 
+	void BuildEqualityCompareOperatorPart(
+		llvm::Value* l_address, llvm::Value* r_address,
+		const Type& type,
+		llvm::BasicBlock* false_basic_block,
+		FunctionContext& function_context );
+
 	void CopyBytes(
 		llvm::Value* dst, llvm::Value* src,
 		const Type& type,
 		FunctionContext& function_context );
+
+	llvm::Constant* ConstexprCompareEqual(
+		llvm::Constant* l,
+		llvm::Constant* r,
+		const Type& type,
+		NamesScope& names,
+		const SrcLoc& src_loc );
 
 	void MoveConstantToMemory(
 		llvm::Value* ptr, llvm::Constant* constant,
@@ -394,6 +408,7 @@ private:
 	bool IsDefaultConstructor( const FunctionType& function_type, const Type& base_class );
 	bool IsCopyConstructor( const FunctionType& function_type, const Type& base_class );
 	bool IsCopyAssignmentOperator( const FunctionType& function_type, const Type& base_class );
+	bool IsEqualityCompareOperator( const FunctionType& function_type, const Type& base_class );
 
 	// Generates for loop from 0 to iteration_count - 1
 	// Calls callback with argument - size_type with index
@@ -730,7 +745,7 @@ private:
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ZeroInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
 
-	void ApplyEmptyInitializer(
+	llvm::Constant* ApplyEmptyInitializer(
 		const std::string& variable_name,
 		const SrcLoc& src_loc,
 		const Variable& variable,

@@ -49,7 +49,7 @@ public:
 	[]( this'x', size_type index ) : T &'x  mut
 	{
 		halt if( empty() );
-		unsafe{  return $>(begin_ + index);  }
+		unsafe{  return index_unchecked(index);  }
 	}
 
 	op
@@ -57,6 +57,16 @@ public:
 	[]( this'x', size_type index ) : T &'x imut
 	{
 		halt if( empty() );
+		unsafe{  return index_unchecked(index);  }
+	}
+
+	fn enable_if(  is_mutable ) index_unchecked( this'x', size_type index ) unsafe : T &'x  mut
+	{
+		unsafe{  return $>(begin_ + index);  }
+	}
+
+	fn enable_if( !is_mutable ) index_unchecked( this'x', size_type index ) unsafe : T &'x imut
+	{
 		unsafe{  return $>(begin_ + index);  }
 	}
 
@@ -119,6 +129,34 @@ public:
 	fn size( this ) : size_type
 	{
 		return size_;
+	}
+
+	// ==
+	op enable_if( typeinfo</T/>.is_equality_comparable )
+	==( this_type& l, this_type& r ) : bool
+	{
+		if( l.size() != r.size() )
+		{
+			return false;
+		}
+
+		for( auto mut i= 0s; i < l.size_; ++i )
+		{
+			unsafe
+			{
+				var T& l_element= l.index_unchecked(i);
+				var T& r_element= r.index_unchecked(i);
+				safe
+				{
+					if( l_element != r_element )
+					{
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
 	}
 
 	fn drop_front( mut this )

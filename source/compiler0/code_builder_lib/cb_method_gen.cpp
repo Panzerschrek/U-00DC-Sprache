@@ -607,6 +607,189 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 	the_class.is_copy_assignable= true;
 }
 
+void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type )
+{
+	Class& the_class= *class_type;
+	const std::string op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+
+	// Search for explicit "==" operator.
+	FunctionVariable* operator_variable= nullptr;
+	bool contains_other_equality_compare_operators= false;
+	if( Value* const assignment_operator_value= the_class.members->GetThisScopeValue( op_name ) )
+	{
+		OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
+		for( FunctionVariable& op : operators->functions )
+		{
+			if( IsEqualityCompareOperator( *op.type.GetFunctionType(), class_type ) )
+			{
+				if( op.is_generated )
+				{
+					U_ASSERT( !op.have_body );
+					operator_variable= &op;
+				}
+				else
+				{
+					if( !op.is_deleted )
+						the_class.is_equality_comparable= true;
+					return;
+				}
+			}
+			else
+				contains_other_equality_compare_operators= true;
+		}
+
+		if( !operators->template_functions.empty() )
+			contains_other_equality_compare_operators= true;
+	}
+
+	if( operator_variable == nullptr )
+	{
+		if( the_class.kind != Class::Kind::Struct )
+			return; // Do not generate "==" operator for classes. Generate it only if "=default" explicitly specified for this operator.
+		if( contains_other_equality_compare_operators )
+			return; // Do not generate "==" if user specified "==" inside this class for other types. Do this to prevent typos/mistakes.
+	}
+
+	bool all_fields_are_equality_comparable= true;
+	for( const std::string& field_name : the_class.fields_order )
+	{
+		if( field_name.empty() )
+			continue;
+
+		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
+
+		// It's unclear how to compare references, so, disable "==" operator generation for fields with references.
+		if( !( field.type.IsEqualityComparable() && !field.is_reference ) )
+			all_fields_are_equality_comparable= false;
+	}
+
+	if( the_class.base_class != nullptr && !the_class.base_class->is_equality_comparable )
+		all_fields_are_equality_comparable= false;
+
+	if( !all_fields_are_equality_comparable )
+	{
+		if( operator_variable != nullptr )
+			REPORT_ERROR( MethodBodyGenerationFailed, the_class.members->GetErrors(), operator_variable->prototype_src_loc );
+		return;
+	}
+
+	if( operator_variable == nullptr )
+	{
+		// Generate assignment operator
+		FunctionType op_type;
+		op_type.params.resize(2u);
+		for( size_t i= 0; i < 2; ++i )
+		{
+			op_type.params[i].type= class_type;
+			op_type.params[i].value_type= ValueType::ReferenceImut;
+		}
+
+		op_type.return_type= bool_type_;
+		op_type.return_value_type= ValueType::Value;
+
+		op_type.llvm_type= GetLLVMFunctionType( op_type );
+
+		llvm::Function* const llvm_op_function=
+			llvm::Function::Create(
+				op_type.llvm_type,
+				llvm::Function::LinkageTypes::ExternalLinkage,
+				mangler_->MangleFunction( *the_class.members, op_name, op_type ),
+				module_.get() );
+
+		// Add generated "==" operator.
+		FunctionVariable new_op_variable;
+		new_op_variable.type= std::move( op_type );
+		new_op_variable.llvm_function= llvm_op_function;
+
+		if( Value* const operators_value= the_class.members->GetThisScopeValue( op_name ) )
+		{
+			OverloadedFunctionsSet* const operators= operators_value->GetFunctionsSet();
+			U_ASSERT( operators != nullptr );
+			operators->functions.push_back( std::move( new_op_variable ) );
+			operator_variable= &operators->functions.back();
+		}
+		else
+		{
+			OverloadedFunctionsSet operators;
+			operators.functions.push_back( std::move( new_op_variable ) );
+			Value* const inserted_value= the_class.members->AddName( op_name, std::move( operators ) );
+			operator_variable= &inserted_value->GetFunctionsSet()->functions.back();
+		}
+	}
+
+	operator_variable->have_body= true;
+	operator_variable->is_this_call= false; // TODO - is there any reason to set this flag?
+	operator_variable->is_generated= true;
+	operator_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
+
+	SetupFunctionParamsAndRetAttributes( *operator_variable );
+
+	FunctionContext function_context(
+		*operator_variable->type.GetFunctionType(),
+		bool_type_,
+		llvm_context_,
+		operator_variable->llvm_function );
+
+	llvm::Value* const l_address= &*operator_variable->llvm_function->args().begin();
+	l_address->setName( "l" );
+	llvm::Value* const r_address= &*std::next(operator_variable->llvm_function->args().begin());
+	r_address->setName( "r" );
+
+	const auto false_basic_block= llvm::BasicBlock::Create( llvm_context_ );
+
+	if( the_class.base_class != nullptr )
+	{
+		U_ASSERT( the_class.base_class->is_equality_comparable );
+
+		llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex(  0u /*base class is allways first field */ ) };
+		BuildEqualityCompareOperatorPart(
+			function_context.llvm_ir_builder.CreateGEP( l_address, index_list ),
+			function_context.llvm_ir_builder.CreateGEP( r_address, index_list ),
+			the_class.base_class,
+			false_basic_block,
+			function_context );
+	}
+
+	for( const std::string& field_name : the_class.fields_order )
+	{
+		if( field_name.empty() )
+			continue;
+
+		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
+		U_ASSERT( field.type.IsEqualityComparable() );
+
+		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
+		BuildEqualityCompareOperatorPart(
+			function_context.llvm_ir_builder.CreateGEP( l_address, index_list ),
+			function_context.llvm_ir_builder.CreateGEP( r_address, index_list ),
+			field.type,
+			false_basic_block,
+			function_context );
+	}
+
+	// True branch.
+	function_context.llvm_ir_builder.CreateRet( llvm::ConstantInt::getTrue( llvm_context_ ) );
+
+	// False branch.
+	if( false_basic_block->hasNPredecessorsOrMore(1) )
+	{
+		function_context.function->getBasicBlockList().push_back( false_basic_block );
+		function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
+		function_context.llvm_ir_builder.CreateRet( llvm::ConstantInt::getFalse( llvm_context_ ) );
+	}
+	else
+	{
+		// "false" block was not used. Probably because class contains no fields.
+		delete false_basic_block;
+	}
+
+	// Finish allocations block.
+	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+
+	// After operator generation, class is equality-comparable.
+	the_class.is_equality_comparable= true;
+}
+
 void CodeBuilder::BuildCopyConstructorPart(
 	llvm::Value* const dst, llvm::Value* const src,
 	const Type& type,
@@ -759,6 +942,98 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		U_ASSERT(false);
 }
 
+void CodeBuilder::BuildEqualityCompareOperatorPart(
+	llvm::Value* const l_address, llvm::Value* const r_address,
+	const Type& type,
+	llvm::BasicBlock* const false_basic_block,
+	FunctionContext& function_context )
+{
+	llvm::Type* const llvm_type= type.GetLLVMType();
+	if( type == void_type_ )
+	{
+		// "void" value is always equal to other "void" values.
+	}
+	else if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
+	{
+		llvm::Value* const l= function_context.llvm_ir_builder.CreateLoad( l_address );
+		llvm::Value* const r= function_context.llvm_ir_builder.CreateLoad( r_address );
+
+		llvm::Value* const eq=
+			llvm_type->isFloatingPointTy()
+				? function_context.llvm_ir_builder.CreateFCmpOEQ( l, r )
+				: function_context.llvm_ir_builder.CreateICmpEQ( l, r );
+
+		const auto next_bb= llvm::BasicBlock::Create( llvm_context_ );
+
+		function_context.llvm_ir_builder.CreateCondBr( eq, next_bb, false_basic_block );
+
+		function_context.function->getBasicBlockList().push_back( next_bb );
+		function_context.llvm_ir_builder.SetInsertPoint( next_bb );
+	}
+	else if( const auto array_type= type.GetArrayType() )
+	{
+		GenerateLoop(
+			array_type->size,
+			[&](llvm::Value* const counter_value )
+			{
+				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
+				BuildEqualityCompareOperatorPart(
+					function_context.llvm_ir_builder.CreateGEP( l_address, index_list ),
+					function_context.llvm_ir_builder.CreateGEP( r_address, index_list ),
+					array_type->type,
+					false_basic_block,
+					function_context );
+			},
+		function_context );
+	}
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		for( const Type& element_type : tuple_type->elements )
+		{
+			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( size_t(&element_type - tuple_type->elements.data()) ) };
+			BuildEqualityCompareOperatorPart(
+				function_context.llvm_ir_builder.CreateGEP( l_address, index_list ),
+				function_context.llvm_ir_builder.CreateGEP( r_address, index_list ),
+				element_type,
+				false_basic_block,
+				function_context );
+		}
+	}
+	else if( const auto class_type= type.GetClassType() )
+	{
+		U_ASSERT( type.IsEqualityComparable() );
+
+		// Search "==" operator.
+		const Value* op_value=
+			class_type->members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) );
+		U_ASSERT( op_value != nullptr );
+		const OverloadedFunctionsSet* const operators_set= op_value->GetFunctionsSet();
+		U_ASSERT( operators_set != nullptr );
+
+		const FunctionVariable* op= nullptr;
+		for( const FunctionVariable& candidate_op : operators_set->functions )
+		{
+			if( IsEqualityCompareOperator( *candidate_op .type.GetFunctionType(), type ) )
+			{
+				op= &candidate_op;
+				break;
+			}
+		}
+		U_ASSERT( op != nullptr );
+
+		// Call it.
+		const auto eq= function_context.llvm_ir_builder.CreateCall( op->llvm_function, { l_address, r_address } );
+
+		const auto next_bb= llvm::BasicBlock::Create( llvm_context_ );
+
+		function_context.llvm_ir_builder.CreateCondBr( eq, next_bb, false_basic_block );
+
+		function_context.function->getBasicBlockList().push_back( next_bb );
+		function_context.llvm_ir_builder.SetInsertPoint( next_bb );
+	}
+	else U_ASSERT(false);
+}
+
 void CodeBuilder::CopyBytes(
 	llvm::Value* const dst, llvm::Value* const src,
 	const Type& type,
@@ -786,6 +1061,101 @@ void CodeBuilder::CopyBytes(
 			src, alignment,
 			llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt(32, data_layout_.getTypeAllocSize( llvm_type ) ) ) );
 	}
+}
+
+llvm::Constant* CodeBuilder::ConstexprCompareEqual(
+	llvm::Constant* const l,
+	llvm::Constant* const  r,
+	const Type& type, NamesScope& names,
+	const SrcLoc& src_loc )
+{
+	llvm::Type* const llvm_type= type.GetLLVMType();
+	if( type == void_type_ )
+	{
+		// "void" value is always equal to other "void" values.
+		return llvm::ConstantInt::getTrue( llvm_context_ );
+	}
+	else if( llvm_type->isFloatingPointTy() )
+		return llvm::ConstantExpr::getFCmp( llvm::FCmpInst::FCMP_OEQ, l, r );
+	else if( llvm_type->isIntegerTy() || llvm_type->isPointerTy() )
+		return llvm::ConstantExpr::getICmp( llvm::CmpInst::ICMP_EQ, l, r );
+	else if( const auto array_type= type.GetArrayType() )
+	{
+		llvm::Constant* res= llvm::ConstantInt::getTrue( llvm_context_ );
+
+		for( uint64_t i= 0; i < array_type->size; ++i )
+			res=
+				llvm::ConstantExpr::getAnd(
+					res,
+					ConstexprCompareEqual(
+						l->getAggregateElement( static_cast<unsigned int>(i) ),
+						r->getAggregateElement( static_cast<unsigned int>(i) ),
+						array_type->type,
+						names,
+						src_loc ) );
+
+		return res;
+	}
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		llvm::Constant* res= llvm::ConstantInt::getTrue( llvm_context_ );
+
+		for( const Type& element_type : tuple_type->elements )
+		{
+			const size_t i= size_t( &element_type - tuple_type->elements.data() );
+			res=
+				llvm::ConstantExpr::getAnd(
+					res,
+					ConstexprCompareEqual(
+						l->getAggregateElement( static_cast<unsigned int>(i) ),
+						r->getAggregateElement( static_cast<unsigned int>(i) ),
+						element_type,
+						names,
+						src_loc ) );
+		}
+
+		return res;
+	}
+	else if( const auto class_type= type.GetClassType() )
+	{
+		// Search "==" operator.
+		const Value* op_value=
+			class_type->members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) );
+		U_ASSERT( op_value != nullptr );
+		const OverloadedFunctionsSet* const operators_set= op_value->GetFunctionsSet();
+		U_ASSERT( operators_set != nullptr );
+
+		const FunctionVariable* op= nullptr;
+		for( const FunctionVariable& candidate_op : operators_set->functions )
+		{
+			if( IsEqualityCompareOperator( *candidate_op .type.GetFunctionType(), type ) )
+			{
+				op= &candidate_op;
+				break;
+			}
+		}
+		U_ASSERT( op != nullptr );
+
+		const ConstexprFunctionEvaluator::Result evaluation_result=
+			constexpr_function_evaluator_.Evaluate( op->llvm_function, { l, r } );
+
+		for( const std::string& error_text : evaluation_result.errors )
+		{
+			CodeBuilderError error;
+			error.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError;
+			error.src_loc= src_loc;
+			error.text= error_text;
+			names.GetErrors().push_back( std::move(error) );
+		}
+		if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
+			return evaluation_result.result_constant;
+		else
+			return llvm::ConstantInt::getTrue( llvm_context_ );
+
+	}
+	else U_ASSERT(false);
+
+	return nullptr;
 }
 
 void CodeBuilder::MoveConstantToMemory(
@@ -846,6 +1216,15 @@ bool CodeBuilder::IsCopyAssignmentOperator( const FunctionType& function_type, c
 		function_type.params.size() == 2u &&
 		function_type.params[0].type == base_class && function_type.params[0].value_type == ValueType::ReferenceMut &&
 		function_type.params[1].type == base_class && function_type.params[1].value_type == ValueType::ReferenceImut;
+}
+
+bool CodeBuilder::IsEqualityCompareOperator( const FunctionType& function_type, const Type& base_class )
+{
+	return
+		function_type.params.size() == 2 &&
+		function_type.params[0].type == base_class && function_type.params[0].value_type == ValueType::ReferenceImut &&
+		function_type.params[1].type == base_class && function_type.params[1].value_type == ValueType::ReferenceImut &&
+		function_type.return_type == bool_type_ && function_type.return_value_type == ValueType::Value;
 }
 
 } //namespace U

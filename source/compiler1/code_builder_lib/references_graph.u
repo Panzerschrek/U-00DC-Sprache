@@ -19,11 +19,6 @@ struct NodeReplacement
 	ReferencesGraph::NodeId second;
 }
 
-op ReferencesGraph::Link::==(Link& l, Link& r ) : bool
-{
-	return l.src == r.src && l.dst == r.dst;
-}
-
 fn ReferencesGraph::AddNode( mut this, NodeKind kind, ust::string8 mut name ) : NodeId
 {
 	var NodeId node_id= GetNextNodeId();

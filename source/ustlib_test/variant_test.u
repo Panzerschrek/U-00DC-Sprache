@@ -1,5 +1,6 @@
 //##success_test
 import "../ustlib/variant.u"
+import "../ustlib/string.u"
 
 class S
 {
@@ -162,6 +163,87 @@ fn nomangle main() : i32
 		v0= v1;
 		halt if( v0.get</i32/>().empty() );
 		halt if( v0.get</i32/>().try_deref() != 12 );
+	}
+	{ // ==
+		static_assert( typeinfo</ ust::variant</ tup[ i32, f32, ust::string8 ] /> />.is_equality_comparable );
+		auto nan= 0.0f / 0.0f;
+		var ust::variant</ tup[ i32, f32, ust::string8 ] /> v0(5), v1(5), v2(33), v3(5.0f), v4(5.0f), v5(+0.0f), v6(-0.0f), v7(nan), v8(nan), v9(ust::string8("foo")), v10(ust::string8("foo")), v11(ust::string8("wdw"));
+
+		// variant == variant
+
+		// Self-equality
+		halt if( v0 != v0 );
+		halt if( v1 != v1 );
+		halt if( v2 != v2 );
+		halt if( v3 != v3 );
+		halt if( v4 != v4 );
+		halt if( v5 != v5 );
+		halt if( v6 != v6 );
+		halt if( v7 == v7 ); // NaN
+		halt if( v8 == v8 ); // NaN
+		halt if( v9 != v9 );
+		halt if( v10 != v10 );
+		halt if( v11 != v11 );
+
+		// i32 == i32
+		halt if( v0 != v1 );
+		halt if( v0 == v2 );
+		halt if( v2 == v1 );
+
+		// f32 == f32
+		halt if( v3 != v4 );
+		halt if( v3 == v5 );
+		halt if( v5 != v6 );
+		halt if( v7 == v8 );
+
+		// string8 == string8
+		halt if( v9 != v10 );
+		halt if( v11 == v10 );
+
+		// Different types of elements
+		halt if( v0 == v3 );
+		halt if( v1 == v9 );
+		halt if( v11 == v5 );
+
+		// variant == value
+		halt if( v0 != 5 );
+		halt if( v0 == 6 );
+		halt if( v2 != 33 );
+		halt if( v3 != 5.0f );
+		halt if( v4 == -999.0f );
+		halt if( v5 != -0.0f );
+		halt if( v6 != +0.0f );
+		halt if( v7 == nan );
+		halt if( v8 == nan );
+		halt if( v9 != ust::string8("foo") );
+		halt if( v9 == ust::string8("f00") );
+		halt if( v10 != ust::string8("foo") );
+		halt if( v11 != ust::string8("wdw") );
+		halt if( v11 == ust::string8("WDW") );
+		halt if( v11 == ust::string8("") );
+		halt if( v1 == 5.0f );
+		halt if( v5 == ust::string8() );
+		halt if( v11 == 33 );
+
+		// value == variant
+		halt if( 5 != v0 );
+		halt if( 6 == v0 );
+		halt if( 33 != v2 );
+		halt if( 5.0f != v3 );
+		halt if( -999.0f == v4 );
+		halt if( +0.0f != v5 );
+		halt if( -0.0f != v6 );
+		halt if( nan == v7 );
+		halt if( nan == v8 );
+		halt if( ust::string8("foo") != v9 );
+		halt if( ust::string8("f00") == v9 );
+		halt if( ust::string8("foo") != v10 );
+		halt if( ust::string8("wdw") != v11 );
+		halt if( ust::string8("WDW") == v11);
+		halt if( ust::string8("") == v11 );
+		halt if( 5.0f == v1 );
+		halt if( ust::string8() == v5 );
+		halt if( 33 == v11 );
 	}
 	return 0;
 }

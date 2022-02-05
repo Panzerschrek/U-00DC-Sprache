@@ -75,6 +75,7 @@ public:
 	bool is_copy_constructible= false;
 	bool have_destructor= false;
 	bool is_copy_assignable= false;
+	bool is_equality_comparable= false;
 	bool can_be_constexpr= false;
 	bool have_shared_state= false;
 

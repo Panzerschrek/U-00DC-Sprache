@@ -2549,59 +2549,168 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	ust::shared_ptr_final</Synt::Expression/>& arg_r,
 	SrcLoc& src_loc ) : Value
 {
-	// Currently only copy assignment supported for arrays and tuples.
-	if( operator != OverloadedOperator::Assign )
+	if( operator == OverloadedOperator::Assign )
+	{
+		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
+
+		// Prevent modification of r_var during l_val calculation.
+		var ReferencesGraph::NodeId mut r_var_lock_node= ReferencesGraph::c_empty_node_id;
+		if( r_var.node_id != ReferencesGraph::c_empty_node_id )
+		{
+			var ust::string8 mut node_name= function_context.references_graph.GetNodeName( r_var.node_id ) + " lock";
+			r_var_lock_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::ReferenceImut, move(node_name) );
+			if( !function_context.references_graph.TryAddLink( r_var.node_id, r_var_lock_node ) )
+			{
+				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( r_var.node_id ) )
+			}
+		}
+
+		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+		halt if( r_var.t != l_var.t ); // Checked before
+
+		if( r_var_lock_node != ReferencesGraph::c_empty_node_id )
+		{
+			function_context.references_graph.RemoveNode( r_var_lock_node );
+		}
+
+		if( !l_var.t.IsCopyAssignable() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.t )
+			return ErrorValue();
+		}
+		if( l_var.value_type != ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
+			return ErrorValue();
+		}
+		if( l_var.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingLinks( l_var.node_id ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( l_var.node_id ) )
+		}
+
+		SetupReferencesInCopyOrMove( names_scope, function_context, l_var.t, l_var.node_id, r_var.node_id, src_loc );
+
+		BuildCopyAssignmentOperatorPart( names_scope, function_context, l_var.llvm_value, r_var.llvm_value, l_var.t, src_loc );
+
+		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
+
+		var Variable mut result{ .t= void_type_ };
+		return move(result);
+	}
+	else if( operator == OverloadedOperator::CompareEqual )
+	{
+		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+
+		// Prevent modification of l_var during r_val calculation.
+		var ReferencesGraph::NodeId mut l_var_lock_node= ReferencesGraph::c_empty_node_id;
+		if( l_var.node_id != ReferencesGraph::c_empty_node_id )
+		{
+			var ust::string8 mut node_name= function_context.references_graph.GetNodeName( l_var.node_id ) + " lock";
+			l_var_lock_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::ReferenceImut, move(node_name) );
+			if( !function_context.references_graph.TryAddLink( l_var.node_id, l_var_lock_node ) )
+			{
+				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( l_var.node_id ) )
+			}
+		}
+
+		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
+		halt if( l_var.t != r_var.t ); // Checked before
+
+		if( l_var_lock_node != ReferencesGraph::c_empty_node_id )
+		{
+			function_context.references_graph.RemoveNode( l_var_lock_node );
+		}
+
+		if( r_var.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingMutableNodes( r_var.node_id ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( r_var.node_id ) )
+		}
+
+		if( !l_var.t.IsEqualityComparable() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.t )
+			return ErrorValue();
+		}
+
+		var Variable mut result
+		{
+			.t= bool_type_,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::LLVMRegister,
+			.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "==" ),
+		};
+
+		unsafe
+		{
+			if( l_var.constexpr_value != LLVMValueRef::Null && r_var.constexpr_value != LLVMValueRef::Null )
+			{
+				result.constexpr_value= ConstexprCompareEqual( names_scope, function_context, l_var.constexpr_value, r_var.constexpr_value, l_var.t, src_loc );
+				result.llvm_value= result.constexpr_value;
+			}
+			else
+			{
+				var LLVMBasicBlockRef false_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+				var LLVMBasicBlockRef end_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+
+				BuildEqualityCompareOperatorPart(
+					names_scope,
+					function_context,
+					l_var.llvm_value,
+					r_var.llvm_value,
+					l_var.t,
+					false_basic_block,
+					src_loc );
+
+				if( U1_BasicBlockHasPredecessors( false_basic_block ) )
+				{
+					// True branch.
+					var LLVMBasicBlockRef true_basic_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+					LLVMBuildBr( function_context.llvm_ir_builder, end_basic_block );
+
+					// False branch.
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, false_basic_block );
+					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, false_basic_block );
+					LLVMBuildBr( function_context.llvm_ir_builder, end_basic_block );
+
+					// End basic block.
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, end_basic_block );
+					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_basic_block );
+
+					var LLVMValueRef phi= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, "\0"[0] );
+
+					var LLVMValueRef false_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
+					var LLVMValueRef true_value = LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+
+					var [ LLVMValueRef, 2 ] mut values[ false_value, true_value ];
+					var [ LLVMBasicBlockRef, 2 ] mut blocks[ false_basic_block, true_basic_block ];
+					LLVMAddIncoming( phi, $<(values[0]), $<(blocks[0]), 2u );
+
+					result.llvm_value= phi;
+				}
+				else
+				{
+					// Empty tuple or array.
+
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, false_basic_block );
+					LLVMDeleteBasicBlock( false_basic_block );
+
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, end_basic_block );
+					LLVMDeleteBasicBlock( end_basic_block );
+
+					result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+				}
+			}
+		}
+
+		RegisterTemporaryVariable( function_context, result );
+		return move(result);
+	}
+	else
 	{
 		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.t )
 		return ErrorValue();
 	}
-
-	var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
-
-	// Prevent modification of r_var during l_val calculation.
-	var ReferencesGraph::NodeId mut r_var_lock_node= ReferencesGraph::c_empty_node_id;
-	if( r_var.node_id != ReferencesGraph::c_empty_node_id )
-	{
-		var ust::string8 mut node_name= function_context.references_graph.GetNodeName( r_var.node_id ) + " lock";
-		r_var_lock_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::ReferenceImut, move(node_name) );
-		if( !function_context.references_graph.TryAddLink( r_var.node_id, r_var_lock_node ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( r_var.node_id ) )
-		}
-	}
-
-	var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
-	halt if( r_var.t != l_var.t ); // Checked before
-
-	if( r_var_lock_node != ReferencesGraph::c_empty_node_id )
-	{
-		function_context.references_graph.RemoveNode( r_var_lock_node );
-	}
-
-	if( !l_var.t.IsCopyAssignable() )
-	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_var.t )
-		return ErrorValue();
-	}
-	if( l_var.value_type != ValueType::ReferenceMut )
-	{
-		REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
-		return ErrorValue();
-	}
-	if( l_var.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingLinks( l_var.node_id ) )
-	{
-		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( l_var.node_id ) )
-	}
-
-	SetupReferencesInCopyOrMove( names_scope, function_context, l_var.t, l_var.node_id, r_var.node_id, src_loc );
-
-	BuildCopyAssignmentOperatorPart( names_scope, function_context, l_var.llvm_value, r_var.llvm_value, l_var.t, src_loc );
-
-	DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
-
-	var Variable mut result{ .t= void_type_ };
-	return move(result);
 }
 
 fn CodeBuilder::TryCallOverloadedUnaryOperator(

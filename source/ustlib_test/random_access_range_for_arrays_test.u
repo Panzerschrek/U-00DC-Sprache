@@ -120,5 +120,43 @@ fn nomangle main() : i32
 		}
 		halt if( arr[0] != 654 );
 	}
+	{ // ==
+		var [ i32, 3 ] v0[ 11, 22, 33 ];
+		var [ i32, 3 ] v1[ 11, 22, 33 ];
+		var [ i32, 3 ] v2[ 0 , 22, 33 ];
+		var [ i32, 3 ] v3[ 11,  0, 33 ];
+		var [ i32, 3 ] v4[ 11, 22,  0 ];
+		var [ i32, 2 ] v5[ 11, 22 ];
+		var [ i32, 0 ] v6[];
+
+		static_assert( typeinfo</IntRangeImut/>.is_equality_comparable );
+		var IntRangeImut r0(v0), r1(v1), r2(v2), r3(v3), r4(v4), r5(v5), r6(v6);
+
+		halt if( r0 != r0 );
+		halt if( r1 != r1 );
+		halt if( r2 != r2 );
+		halt if( r3 != r3 );
+		halt if( r4 != r4 );
+		halt if( r5 != r5 );
+		halt if( r6 != r6 );
+
+		halt if( r0 != r1 );
+		halt if( r1 != r0 );
+
+		halt if( r0 == r2 );
+		halt if( r0 == r3 );
+		halt if( r0 == r4 );
+		halt if( r0 == r5 );
+		halt if( r0 == r6 );
+
+		// == for array and range must work too.
+		halt if( r0 != v0 );
+		halt if( r1 != v1 );
+		halt if( v0 != r1 );
+		halt if( v1 != r0 );
+
+		halt if( v4 == r6 );
+		halt if( r5 == v3 );
+	}
 	return 0;
 }

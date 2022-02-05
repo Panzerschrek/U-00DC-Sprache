@@ -13,6 +13,8 @@ struct RM
 	fn constructor( this'a', i32&'b mut in_r ) ' a <- b ' ( r= in_r ) {}
 }
 
+class C{}
+
 fn nomangle main() : i32
 {
 	{ // constructor does reference-pollution.
@@ -50,6 +52,19 @@ fn nomangle main() : i32
 		var ust::optional</ i32 /> opt(14);
 
 		opt.try_take(); //##expect_error CouldNotSelectOverloadedFunction
+	}
+	{ // == for non-equality-comarable type.
+		var C c;
+		var ust::optional</C/> c_opt(c), empty_opt;
+
+		c_opt == empty_opt; //##expect_error OperationNotSupportedForThisType
+		empty_opt != c_opt; //##expect_error OperationNotSupportedForThisType
+
+		c == c_opt; //##expect_error NoMatchBinaryOperatorForGivenTypes
+		c != empty_opt; //##expect_error NoMatchBinaryOperatorForGivenTypes
+
+		c_opt == c; //##expect_error NoMatchBinaryOperatorForGivenTypes
+		empty_opt != c; //##expect_error NoMatchBinaryOperatorForGivenTypes
 	}
 
 	return 0;

@@ -1646,6 +1646,88 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		result.type= void_type_;
 		return Value( std::move(result), src_loc );
 	}
+	else if( op == OverloadedOperator::CompareEqual )
+	{
+		const Variable l_var= BuildExpressionCodeEnsureVariable(  left_expr, names, function_context );
+		std::optional<ReferencesGraphNodeHolder> l_var_lock;
+		if( l_var.node != nullptr )
+		{
+			l_var_lock.emplace(
+				function_context,
+				ReferencesGraphNode::Kind::ReferenceImut,
+				l_var.node->name + " lock" );
+			if( !function_context.variables_state.TryAddLink( l_var.node, l_var_lock->Node() ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, l_var.node->name );
+		}
+
+		const Variable r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
+		if( r_var.node != nullptr && function_context.variables_state.HaveOutgoingMutableNodes( r_var.node ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var.node->name );
+
+		U_ASSERT( r_var.type == l_var.type ); // Checked before.
+
+		if( !l_var.type.IsEqualityComparable() )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_var.type );
+			return ErrorValue();
+		}
+
+		U_ASSERT( l_var.location == Variable::Location::Pointer );
+		U_ASSERT( r_var.location == Variable::Location::Pointer );
+
+		Variable result;
+		result.type= bool_type_;
+		result.location= Variable::Location::LLVMRegister;
+
+		if( l_var.constexpr_value != nullptr || r_var.constexpr_value != nullptr )
+			result.llvm_value= result.constexpr_value= ConstexprCompareEqual( l_var.constexpr_value, r_var.constexpr_value, l_var.type, names, src_loc );
+		else
+		{
+			const auto false_basic_block= llvm::BasicBlock::Create( llvm_context_ );
+			const auto end_basic_block= llvm::BasicBlock::Create( llvm_context_ );
+
+			BuildEqualityCompareOperatorPart(
+				l_var.llvm_value,
+				r_var.llvm_value,
+				l_var.type,
+				false_basic_block,
+				function_context );
+
+			if( false_basic_block->hasNPredecessorsOrMore(1) )
+			{
+				// True branch.
+				const auto true_basic_block= function_context.llvm_ir_builder.GetInsertBlock();
+				function_context.llvm_ir_builder.CreateBr( end_basic_block );
+
+				// False branch.
+				function_context.function->getBasicBlockList().push_back( false_basic_block );
+				function_context.llvm_ir_builder.SetInsertPoint( false_basic_block );
+				function_context.llvm_ir_builder.CreateBr( end_basic_block );
+
+				// End basic block.
+				function_context.function->getBasicBlockList().push_back( end_basic_block );
+				function_context.llvm_ir_builder.SetInsertPoint( end_basic_block );
+
+				const auto phi= function_context.llvm_ir_builder.CreatePHI( fundamental_llvm_types_.bool_, 2 );
+				phi->addIncoming( llvm::ConstantInt::getFalse( llvm_context_ ), false_basic_block );
+				phi->addIncoming( llvm::ConstantInt::getTrue ( llvm_context_ ), true_basic_block  );
+
+				result.llvm_value= phi;
+			}
+			else
+			{
+				// Empty tuple or array.
+				delete false_basic_block;
+				delete end_basic_block;
+				result.llvm_value= llvm::ConstantInt::getTrue( llvm_context_ );
+			}
+		}
+
+		result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, OverloadedOperatorToString(op) );
+		RegisterTemporaryVariable( function_context, result );
+
+		return Value( std::move(result), src_loc );
+	}
 	else
 	{
 		const Variable l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );

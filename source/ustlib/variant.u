@@ -188,6 +188,59 @@ public:
 		return res;
 	}
 
+	// "==" operators
+	// Use aslo "==" for value to variant comparison to avoid constly conversions to variant.
+
+	op
+	enable_if( variant_impl::all_tuple_elements_are_equality_comparable</Y/>() )
+	==( this_type& l, this_type& r ) : bool
+	{
+		if( l.index_ != r.index_ )
+		{
+			return false;
+		}
+
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			if( cur_index == size_type(l.index_) )
+			{
+				unsafe
+				{
+					auto& l_element= cast_ref_unsafe</ typeof(element.type)::src_type />(l.storage_);
+					auto& r_element= cast_ref_unsafe</ typeof(element.type)::src_type />(r.storage_);
+					safe{  return l_element == r_element;  }
+				}
+			}
+			++cur_index;
+		}
+		halt;
+	}
+
+	template</ type T />
+	op
+	enable_if( variant_impl::all_tuple_elements_are_equality_comparable</Y/>() && variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	==( this_type& l, T& r ) : bool
+	{
+		if_var( &l_value : l.get</T/>() )
+		{
+			return l_value == r;
+		}
+		return false;
+	}
+
+	template</ type T />
+	op
+	enable_if( variant_impl::all_tuple_elements_are_equality_comparable</Y/>() && variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	==( T& l, this_type& r ) : bool
+	{
+		if_var( &r_value : r.get</T/>() )
+		{
+			return l == r_value;
+		}
+		return false;
+	}
+
 private:
 	type element_type_for_shared_check= Y;
 
@@ -230,6 +283,19 @@ fn constexpr all_tuple_elements_are_copy_constructible() : bool
 	for( & element : typeinfo</T/>.elements_list )
 	{
 		if( !element.type.is_copy_constructible )
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+template</ type T />
+fn constexpr all_tuple_elements_are_equality_comparable() : bool
+{
+	for( & element : typeinfo</T/>.elements_list )
+	{
+		if( !element.type.is_equality_comparable )
 		{
 			return false;
 		}

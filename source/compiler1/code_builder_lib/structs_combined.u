@@ -150,35 +150,14 @@ op ArrayType::==( ArrayType& l, ArrayType& r ) : bool
 	return l.element_type == r.element_type && l.element_count == r.element_count;
 }
 
-
 op TupleType::==( TupleType& l, TupleType& r ) : bool
 {
-	if( l.element_types.size() != r.element_types.size() )
-	{
-		return false;
-	}
-
-	for( auto mut i= 0s; i < l.element_types.size(); ++i )
-	{
-		if( l.element_types[i] != r.element_types[i] )
-		{
-			return false;
-		}
-	}
-
-	return true;
+	return l.element_types == r.element_types;
 }
 
 op RawPointerType::==( RawPointerType& l, RawPointerType& r ) : bool
 {
 	return l.element_type == r.element_type;
-}
-
-op FunctionType::ParamReference::==(ParamReference& l, ParamReference& r) : bool
-{
-	return
-		l.param_index == r.param_index &&
-		l.reference_index == r.reference_index;
 }
 
 op FunctionType::ParamReference::<=>(ParamReference& l, ParamReference& r) : i32
@@ -188,11 +167,6 @@ op FunctionType::ParamReference::<=>(ParamReference& l, ParamReference& r) : i32
 		return l.param_index <=> r.param_index;
 	}
 	return l.reference_index <=> r.reference_index;
-}
-
-op FunctionType::ReferencePollution::==(ReferencePollution& l, ReferencePollution& r) : bool
-{
-	return l.dst == r.dst && l.src == r.src;
 }
 
 op FunctionType::ReferencePollution::<=>(ReferencePollution& l, ReferencePollution& r) : i32
@@ -276,48 +250,14 @@ fn FunctionType::IsStructRet( this ) : bool
 
 op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 {
-	if( l.params.size() != r.params.size() )
-	{
-		return false;
-	}
-	for( auto mut i= 0s; i < l.params.size(); ++i )
-	{
-		if( l.params[i] != r.params[i] )
-		{
-			return false;
-		}
-	}
-
-	if( l.return_references.size() != r.return_references.size() )
-	{
-		return false;
-	}
-	for( auto mut i= 0s; i < l.return_references.size(); ++i )
-	{
-		if( l.return_references[i] != r.return_references[i] )
-		{
-			return false;
-		}
-	}
-
-	if( l.references_pollution.size() != r.references_pollution.size() )
-	{
-		return false;
-	}
-	for( auto mut i= 0s; i < l.references_pollution.size(); ++i )
-	{
-		if( l.references_pollution[i] != r.references_pollution[i] )
-		{
-			return false;
-		}
-	}
-
 	return
+		l.params == r.params &&
+		l.return_references == r.return_references &&
+		l.references_pollution == r.references_pollution &&
 		l.return_type == r.return_type &&
 		l.return_value_type == r.return_value_type &&
 		l.is_unsafe == r.is_unsafe;
 }
-
 
 fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8
 {
@@ -575,6 +515,37 @@ fn Type::IsCopyAssignable( this ) : bool
 	return false;
 }
 
+fn Type::IsEqualityComparable( this ) : bool
+{
+	if( !GetFundamentalType().empty() |
+		!GetEnumType().empty() ||
+		!GetFunctionPointerType().empty() ||
+		!GetRawPointerType().empty() )
+	{
+		return true;
+	}
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.IsEqualityComparable();
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( !element_type.IsEqualityComparable() )
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+	if_var( &class_type : GetClassType() )
+	{
+		return class_type.lock_imut().deref().is_equality_comparable;
+	}
+	return false;
+}
+
 fn Type::CanBeConstexpr( this ) : bool
 {
 	if( !GetFundamentalType().empty() || !GetEnumType().empty() || !GetFunctionPointerType().empty() )
@@ -818,11 +789,6 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 	return "";
 }
 
-op VariableTypeExtended::==(VariableTypeExtended& l, VariableTypeExtended& r) : bool
-{
-	return l.t == r.t && l.value_type == r.value_type;
-}
-
 fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 {
 	halt if( !( this.is_this_call && other.is_this_call ) );
@@ -837,8 +803,8 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		tl.params.size() == tr.params.size() &&
 		tl.params.size() > 0s &&
 		tl.params.front().value_type == tr.params.front().value_type &&
-		tl.return_references.size() == tr.return_references.size() &&
-		tl.references_pollution.size() == tr.references_pollution.size()
+		tl.return_references == tr.return_references &&
+		tl.references_pollution == tr.references_pollution
 		) )
 	{
 		return false;
@@ -848,26 +814,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 	{
 		auto& param_l= tl.params[i];
 		auto& param_r= tr.params[i];
-		if( !(
-			param_l.t == param_r.t &&
-			param_l.value_type == param_r.value_type
-			) )
-		{
-			return false;
-		}
-	}
-
-	for( auto mut i= 0s; i < tl.return_references.size(); ++i )
-	{
-		if( tl.return_references[i] != tr.return_references[i] )
-		{
-			return false;
-		}
-	}
-
-	for( auto mut i= 0s; i < tl.references_pollution.size(); ++i )
-	{
-		if( tl.references_pollution[i] != tr.references_pollution[i] )
+		if( param_l != param_r )
 		{
 			return false;
 		}
@@ -924,25 +871,6 @@ fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />
 //
 // Templates
 //
-
-fn TypeTemplate::SignatureParamsIsSame( TemplateBase& l, TemplateBase& r ) : bool
-{
-	// TODO - implement "op==" for vectors.
-	if( l.signature_params.size() != r.signature_params.size() )
-	{
-		return false;
-	}
-
-	for( auto mut i= 0s; i < l.signature_params.size(); ++i )
-	{
-		if( !( l.signature_params[i] == r.signature_params[i] ) )
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
 
 fn TemplateSignatureParam::conversion_constructor( TemplateParam mut template_param )
 	( something_( move(template_param) ) )
@@ -1042,16 +970,6 @@ fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref
 	return ust::optional_ref_imut</ SpecializedTemplateParam />();
 }
 
-op TemplateSignatureParam::TemplateParam::==(TemplateParam& l, TemplateParam& r) : bool
-{
-	return l.index == r.index;
-}
-
-op TemplateSignatureParam::TypeParam::==(TypeParam& l, TypeParam& r) : bool
-{
-	return l.t == r.t;
-}
-
 op TemplateSignatureParam::VariableParam::==(VariableParam& l, VariableParam& r) : bool
 {
 	if( l.v.t != r.v.t )
@@ -1065,82 +983,6 @@ op TemplateSignatureParam::VariableParam::==(VariableParam& l, VariableParam& r)
 			LLVMConstIntGetZExtValue(l.v.constexpr_value) ==
 			LLVMConstIntGetZExtValue(r.v.constexpr_value);
 	}
-}
-
-op TemplateSignatureParam::ArrayTypeParam::==(ArrayTypeParam& l, ArrayTypeParam& r) : bool
-{
-	return l.element_type == r.element_type && l.element_count == r.element_count;
-}
-
-op TemplateSignatureParam::TupleTypeParam::==(TupleTypeParam& l, TupleTypeParam& r) : bool
-{
-	if( l.element_types.size() != r.element_types.size() )
-	{
-		return false;
-	}
-
-	// TODO - implement "op==" for vectors.
-	for( auto mut i= 0s; i < l.element_types.size(); ++i )
-	{
-		if( !(l.element_types[i] == r.element_types[i]) )
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-op TemplateSignatureParam::RawPointerTypeParam::==(RawPointerTypeParam& l, RawPointerTypeParam& r) : bool
-{
-	return l.element_type == r.element_type;
-}
-
-op TemplateSignatureParam::FunctionTypeParam::Param::==(Param& l, Param& r) : bool
-{
-	return l.t == r.t && l.value_type == r.value_type;
-}
-
-op TemplateSignatureParam::FunctionTypeParam::==(FunctionTypeParam& l, FunctionTypeParam& r) : bool
-{
-	if( !(l.return_type == r.return_type) ||
-		l.return_value_type != r.return_value_type ||
-		l.is_unsafe != r.is_unsafe ||
-		l.params.size() != r.params.size() )
-	{
-		return false;
-	}
-
-	// TODO - implement "op==" for vectors.
-	for( auto mut i= 0s; i < l.params.size(); ++i )
-	{
-		if( !(l.params[i] == r.params[i]) )
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
-op TemplateSignatureParam::SpecializedTemplateParam::==(SpecializedTemplateParam& l, SpecializedTemplateParam& r) : bool
-{
-	if( l.type_templates_set != r.type_templates_set ||
-		l.params.size() != r.params.size() )
-	{
-		return false;
-	}
-
-	// TODO - implement "op==" for vectors.
-	for( auto mut i= 0s; i < l.params.size(); ++i )
-	{
-		if( !(l.params[i] == r.params[i]) )
-		{
-			return false;
-		}
-	}
-
-	return true;
 }
 
 op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool
@@ -1165,21 +1007,6 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 		{
 			return l_t == r.something_.get</ typeof(l_t) />().try_deref();
 		}
-	}
-
-	halt;
-}
-
-op NamesScopeValue::==( NamesScopeValue&l, NamesScopeValue& r ) : bool
-{
-	if( l.something_.index() != r.something_.index() )
-	{
-		return false;
-	}
-
-	variant_visit( &el : l.something_ )
-	{
-		return el == r.something_.get</typeof(el)/>().try_deref();
 	}
 
 	halt;

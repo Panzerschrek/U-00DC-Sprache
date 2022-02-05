@@ -1082,6 +1082,14 @@ fn CodeBuilder::PrepareFunction(
 			};
 			function_variable.t.references_pollution.push_back( move(pollution) );
 		}
+
+		if( function_declaration.operator == OverloadedOperator::CompareEqual &&
+			IsEqualityCompareOperator( function_variable, class_type_non_null ) &&
+			!function_declaration.function_type.references_pollution.empty() )
+		{
+			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, names_scope_ptr, function_declaration.src_loc )
+			function_variable.t.references_pollution.clear();
+		}
 	}
 
 	if( function_declaration.constexpr_ )
@@ -1141,6 +1149,8 @@ fn CodeBuilder::PrepareFunction(
 			if( is_constructor && ( IsDefaultConstructor( function_variable, class_type_non_null ) || IsCopyConstructor( function_variable, class_type_non_null ) ) )
 			{}
 			else if( function_declaration.operator == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_variable, class_type_non_null ) )
+			{}
+			else if( function_declaration.operator == OverloadedOperator::CompareEqual && IsEqualityCompareOperator( function_variable, class_type_non_null ) )
 			{}
 			else{ invalid_func= true; }
 		}
@@ -2178,6 +2188,19 @@ fn CodeBuilder::IsCopyAssignmentOperator( FunctionVariable& function_variable, C
 		param_src.t == class_type && param_src.value_type == ValueType::ReferenceImut;
 }
 
+fn CodeBuilder::IsEqualityCompareOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool
+{
+	if( function_variable.t.params.size() != 2s ){ return false; }
+
+	auto& param_l= function_variable.t.params.front();
+	auto& param_r= function_variable.t.params.back();
+	return
+		param_l.t == class_type && param_l.value_type == ValueType::ReferenceImut &&
+		param_r.t == class_type && param_r.value_type == ValueType::ReferenceImut &&
+		!function_variable.t.return_type.GetFundamentalType().empty() && function_variable.t.return_type.GetFundamentalType().try_deref().fundamental_type == U_FundamentalType::bool_ &&
+		function_variable.t.return_value_type == ValueType::Value;
+}
+
 fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef
 {
 	unsafe
@@ -2533,6 +2556,127 @@ fn CodeBuilder::CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, Fu
 				LLVMConstInt( fundamental_llvm_types_.u64_, size, LLVMBool::False ) );
 		}
 	}
+}
+
+fn CodeBuilder::ConstexprCompareEqual(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	LLVMValueRef l,
+	LLVMValueRef r,
+	Type& t,
+	SrcLoc& src_loc ) : LLVMValueRef
+{
+	if(
+		!t.GetFundamentalType().empty() ||
+		!t.GetEnumType().empty() ||
+		!t.GetRawPointerType().empty() ||
+		!t.GetFunctionPointerType().empty() )
+	{
+		unsafe
+		{
+			if( t == void_type_ )
+			{
+				return LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+			}
+
+			var LLVMTypeKind type_kind= LLVMGetTypeKind( t.GetLLVMType() );
+			var bool is_float=
+				type_kind == LLVMTypeKind::Half ||
+				type_kind == LLVMTypeKind::Float ||
+				type_kind == LLVMTypeKind::Double ||
+				type_kind == LLVMTypeKind::X86_FP80 ||
+				type_kind == LLVMTypeKind::P128 ||
+				type_kind == LLVMTypeKind::PPC_FP128;
+
+			return
+				select( is_float
+					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, "\0"[0] )
+					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, "\0"[0] ) );
+		}
+	}
+	if_var( &array_type : t.GetArrayType() )
+	{
+		unsafe
+		{
+			var LLVMValueRef mut res= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+			for( auto mut i= 0u64; i < array_type.element_count; ++i )
+			{
+				var u32 index(i);
+				var LLVMValueRef l_element= LLVMConstExtractValue( l, index, 1u );
+				var LLVMValueRef r_element= LLVMConstExtractValue( r, index, 1u );
+				var LLVMValueRef element_res= ConstexprCompareEqual( names_scope, function_context, l_element, r_element, array_type.element_type, src_loc );
+				res= LLVMBuildAnd( function_context.llvm_ir_builder, res, element_res, "\0"[0] );
+			}
+
+			return res;
+		}
+	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		unsafe
+		{
+			var LLVMValueRef mut res= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
+			for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
+			{
+				var u32 index(i);
+				var LLVMValueRef l_element= LLVMConstExtractValue( l, index, 1u );
+				var LLVMValueRef r_element= LLVMConstExtractValue( r, index, 1u );
+				var LLVMValueRef element_res= ConstexprCompareEqual( names_scope, function_context, l_element, r_element, tuple_type.element_types[i], src_loc );
+				res= LLVMBuildAnd( function_context.llvm_ir_builder, res, element_res, "\0"[0] );
+			}
+
+			return res;
+		}
+	}
+	if_var( &class_type : t.GetClassType() )
+	{
+		if( !class_type.lock_imut().deref().is_equality_comparable )
+		{
+			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, Type(class_type) )
+			unsafe{  return LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );  }
+		}
+
+		// Search for "==" operator.
+		auto operators_value= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ).try_deref();
+		foreach( &op_ : operators_value.Get</NamesScopeFunctionsSet/>().try_lock_imut().deref().functions_set.functions )
+		{
+			if( !IsEqualityCompareOperator( op_, class_type ) )
+			{
+				continue;
+			}
+			// Found proper "==" operator.
+
+			// TODO - what if "==" is unsafe?
+
+			auto res= constexpr_function_evaluator_.Evaluate( op_.llvm_function, ust::make_array( l, r ) );
+
+			if( res.errors.empty() )
+			{
+				return res.constant;
+			}
+
+			auto errors_container_ptr= names_scope.lock_imut().deref().GetErrors();
+			auto mut lock= errors_container_ptr.try_lock_mut();
+			auto &mut errors_container= lock.deref();
+			foreach( &err : res.errors )
+			{
+				var CodeBuilderError mut out_error
+				{
+					.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+					.src_loc= src_loc,
+					.text= err,
+				};
+				errors_container.push_back( move(out_error) );
+			}
+
+			unsafe{  return LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );  }
+		}
+
+		halt; // Operator not found - wtf?
+	}
+
+	halt; // Unhandled type kind
 }
 
 fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_context, LLVMValueRef llvm_value )

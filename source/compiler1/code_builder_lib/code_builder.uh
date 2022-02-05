@@ -211,7 +211,7 @@ private:
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef;
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef;
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
-	fn BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, SrcLoc& src_loc );
+	fn BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef;
 	fn BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef;
 
 	fn InitializeFunctionPointer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& initializer_expression ) : LLVMValueRef;
@@ -713,11 +713,13 @@ private:
 	fn TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type );
 	fn TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class_type );
+	fn TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& class_type );
 	fn TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_type );
 	fn TryGenerateDestructor( mut this, ClassTypePtr& class_type );
 
 	fn BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc );
 	fn BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc );
+	fn BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef l_address, LLVMValueRef r_address, Type& t, LLVMBasicBlockRef false_basic_block, SrcLoc& src_loc );
 	fn BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, SrcLoc& src_loc );
 	fn BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type );
 
@@ -759,6 +761,7 @@ private:
 	fn IsDefaultConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
 	fn IsCopyConstructor( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
 	fn IsCopyAssignmentOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
+	fn IsEqualityCompareOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
 
 	fn AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef;
 	fn AddGlobalMutableVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type ) : LLVMValueRef;
@@ -782,6 +785,15 @@ private:
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 
 	fn CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
+
+	fn ConstexprCompareEqual(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		LLVMValueRef l,
+		LLVMValueRef r,
+		Type& t,
+		SrcLoc& src_loc ) : LLVMValueRef;
 
 	fn CreateLifetimeStart( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 	fn CreateLifetimeEnd( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );

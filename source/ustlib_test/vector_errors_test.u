@@ -69,5 +69,9 @@ fn nomangle main() : i32
 		var ust::vector</C/> vec;
 		vec.push_back( size_type(10), c ); //##expect_error CouldNotSelectOverloadedFunction
 	}
+	{ // Operator == doesn't exists for non-equality-comparable types
+		var ust::vector</C/> a, b;
+		a == b; //##expect_error OperationNotSupportedForThisType
+	}
 	return 0;
 }
