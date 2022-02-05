@@ -415,7 +415,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				continue;
 			}
 
-			BuildEmptyInitializer( names_scope, function_context, member_variable, field_name, struct_named_initializer.src_loc );
+			constexpr_initializer= BuildEmptyInitializer( names_scope, function_context, member_variable, field_name, struct_named_initializer.src_loc );
 		}
 		else
 		{
@@ -577,18 +577,18 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, SrcLoc& src_loc )
+fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef
 {
 	if( !variable.t.IsDefaultConstructible() )
 	{
 		REPORT_ERROR( ExpectedInitializer, names_scope, src_loc, variable_name )
-		return;
+		return LLVMValueRef::Null;
 	}
 
 	if_var( &fundamental_type : variable.t.GetFundamentalType() )
 	{
 		// This is void type.
-		return;
+		unsafe{  return LLVMConstNull( fundamental_llvm_types_.void_ );  }
 	}
 
 	if_var( &array_type : variable.t.GetArrayType() )
@@ -597,6 +597,8 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		{
 			.t= array_type.element_type
 		};
+
+		var LLVMValueRef mut constant_initializer = LLVMValueRef::Null;
 
 		CB_GENERATE_LOOP(
 			function_context,
@@ -608,12 +610,20 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 					element_variable.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] );
 				}
 
-				BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, src_loc );
+				constant_initializer = BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, src_loc );
 			} )
-		return;
+
+		if( constant_initializer != LLVMValueRef::Null )
+		{
+			var ust::vector</LLVMValueRef/> mut initializers( array_type.element_count, constant_initializer );
+			unsafe{  return LLVMConstArray( array_type.element_type.GetLLVMType(), initializers.data(), u32(initializers.size()) );  }
+		}
+		return LLVMValueRef::Null;
 	}
 	if_var( &tuple_type : variable.t.GetTupleType() )
 	{
+		var ust::vector</LLVMValueRef/> mut constant_initializers;
+
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
 			var NamesScopeVariable element_variable
@@ -622,9 +632,18 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 				.llvm_value= CreateTupleElementGEP( variable.llvm_value, i, function_context ),
 			};
 
-			BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, src_loc );
+			var LLVMValueRef constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, src_loc );
+			if( constant_initializer != LLVMValueRef::Null )
+			{
+				constant_initializers.push_back( constant_initializer );
+			}
 		}
-		return;
+
+		if( constant_initializers.size() == tuple_type.element_types.size() )
+		{
+			unsafe{  return LLVMConstStructInContext( llvm_context_, constant_initializers.data(), u32(constant_initializers.size()), LLVMBool::False );  }
+		}
+		return LLVMValueRef::Null;
 	}
 	if_var( &class_type_ptr : variable.t.GetClassType() )
 	{
@@ -635,7 +654,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		if( member.empty() )
 		{
 			// May be in case of error
-			return;
+			return LLVMValueRef::Null;
 		}
 
 		auto constructors_ptr= member.try_deref().Get</NamesScopeFunctionsSet/>();
@@ -657,7 +676,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			src_loc );
 
-		return;
+		return LLVMValueRef::Null;
 	}
 
 	halt;

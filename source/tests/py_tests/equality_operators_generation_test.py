@@ -348,6 +348,30 @@ def EqualityOperatorGeneration_Test10():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def EqualityOperatorGeneration_Test10():
+	c_program_text= """
+		// "==" for struct with "void" field.
+		struct S{ void v; }
+
+		fn Foo()
+		{
+			var S mut a;
+			var S mut b;
+			halt if( a != a );
+			halt if( a != b );
+			halt if( !( b == a ) );
+		}
+
+		var S a{};
+		var S b{};
+		static_assert( a == a );
+		static_assert( a == b );
+		static_assert( !( b != a ) );
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def EqualityOperatorIsNotGenerated_Test0():
 	c_program_text= """
 		struct S

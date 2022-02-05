@@ -244,7 +244,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				constant_initializer=
 					InitializeClassFieldWithInClassIninitalizer( struct_member, field, function_context );
 			else
-				ApplyEmptyInitializer( field_name, initializer.src_loc_, struct_member, names, function_context );
+				constant_initializer=
+					ApplyEmptyInitializer( field_name, initializer.src_loc_, struct_member, names, function_context );
 		}
 
 		if( constant_initializer == nullptr )
@@ -510,7 +511,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	return nullptr;
 }
 
-void CodeBuilder::ApplyEmptyInitializer(
+llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 	const std::string& variable_name,
 	const SrcLoc& src_loc,
 	const Variable& variable,
@@ -520,23 +521,27 @@ void CodeBuilder::ApplyEmptyInitializer(
 	if( !variable.type.IsDefaultConstructible() )
 	{
 		REPORT_ERROR( ExpectedInitializer, block_names.GetErrors(), src_loc, variable_name );
-		return;
+		return nullptr;
 	}
 
 	if( variable.type.GetFundamentalType() != nullptr )
 	{
 		U_ASSERT( variable.type == void_type_ ); // "void" is only default-constructible fundamental type.
+		return llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
 	}
 	else if( variable.type.GetEnumType() != nullptr || variable.type.GetRawPointerType() != nullptr || variable.type.GetFunctionPointerType() != nullptr )
 	{
 		// This type is not default-constructible, we should generate error about it before.
 		U_ASSERT( false );
+		return nullptr;
 	}
 	else if( const ArrayType* const array_type= variable.type.GetArrayType() )
 	{
 		Variable array_member= variable;
 		array_member.type= array_type->type;
 		array_member.location= Variable::Location::Pointer;
+
+		llvm::Constant* constant_initializer= nullptr;
 
 		GenerateLoop(
 			array_type->size,
@@ -545,14 +550,24 @@ void CodeBuilder::ApplyEmptyInitializer(
 				array_member.llvm_value=
 					function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), counter_value } );
 
-				ApplyEmptyInitializer( variable_name, src_loc, array_member, block_names, function_context );
+				constant_initializer= ApplyEmptyInitializer( variable_name, src_loc, array_member, block_names, function_context );
 			},
-			function_context);
+			function_context );
+
+		if( constant_initializer != nullptr )
+		{
+			std::vector<llvm::Constant*> array_initializers;
+			array_initializers.resize( array_type->size, constant_initializer );
+			return llvm::ConstantArray::get( array_type->llvm_type, array_initializers );
+		}
+		return nullptr;
 	}
 	else if( const TupleType* const tuple_type= variable.type.GetTupleType() )
 	{
 		Variable tuple_member= variable;
 		tuple_member.location= Variable::Location::Pointer;
+
+		std::vector<llvm::Constant*> constant_initializers;
 
 		for( const Type& element_type : tuple_type->elements )
 		{
@@ -560,8 +575,16 @@ void CodeBuilder::ApplyEmptyInitializer(
 			tuple_member.type= element_type;
 			tuple_member.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(i) } );
 
-			ApplyEmptyInitializer( variable_name, src_loc, tuple_member, block_names, function_context );
+			llvm::Constant* const constant_initializer=
+				ApplyEmptyInitializer( variable_name, src_loc, tuple_member, block_names, function_context );
+
+			if( constant_initializer != nullptr )
+				constant_initializers.push_back( constant_initializer );
 		}
+
+		if( constant_initializers.size() == tuple_type->elements.size() )
+			return llvm::ConstantStruct::get( tuple_type->llvm_type, constant_initializers );
+		return nullptr;
 	}
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
@@ -578,8 +601,12 @@ void CodeBuilder::ApplyEmptyInitializer(
 		this_overloaded_methods_set.GetOverloadedFunctionsSet()= *constructors_set;
 
 		CallFunction( std::move(this_overloaded_methods_set), {}, src_loc, block_names, function_context );
+
+		return nullptr;
 	}
 	else U_ASSERT(false);
+
+	return nullptr;
 }
 
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(

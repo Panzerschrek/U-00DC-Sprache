@@ -1093,7 +1093,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 		{
-			BuildEmptyInitializer( names_scope_ptr, function_context, variable, variable_declaration.name, variable_declaration.src_loc );
+			variable.constexpr_value= BuildEmptyInitializer( names_scope_ptr, function_context, variable, variable_declaration.name, variable_declaration.src_loc );
 		}
 		else
 		{

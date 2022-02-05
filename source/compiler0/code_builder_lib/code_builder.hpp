@@ -745,7 +745,7 @@ private:
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ZeroInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
 
-	void ApplyEmptyInitializer(
+	llvm::Constant* ApplyEmptyInitializer(
 		const std::string& variable_name,
 		const SrcLoc& src_loc,
 		const Variable& variable,

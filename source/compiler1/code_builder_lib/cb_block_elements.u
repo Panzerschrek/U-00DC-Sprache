@@ -132,7 +132,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 			{
-				BuildEmptyInitializer( names_scope, function_context, out_variable, variable_declaration.name, variable_declaration.src_loc );
+				out_variable.constexpr_value= BuildEmptyInitializer( names_scope, function_context, out_variable, variable_declaration.name, variable_declaration.src_loc );
 			}
 			else
 			{
