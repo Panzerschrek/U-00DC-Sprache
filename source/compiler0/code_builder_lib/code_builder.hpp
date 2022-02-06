@@ -366,6 +366,9 @@ private:
 	void TryGenerateCopyAssignmentOperator( const ClassPtr& class_type );
 	void TryGenerateEqualityCompareOperator( const ClassPtr& class_type );
 
+	// Sets "constexpr" flag for method and checks for errors.
+	void ProcessGeneratedMethodConstexprFlag( const ClassPtr& class_type, FunctionContext& function_context_after_body_generation, FunctionVariable& method );
+
 	void BuildCopyConstructorPart(
 		llvm::Value* dst, llvm::Value* src,
 		const Type& type,

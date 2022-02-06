@@ -181,14 +181,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 	// After default constructor generation, class is default-constructible.
 	the_class.is_default_constructible= true;
 
-	const bool is_constexpr= the_class.can_be_constexpr && !function_context.have_non_constexpr_operations_inside;
-	constructor_variable->constexpr_kind= is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
-
-	if( !is_constexpr && constructor_variable->syntax_element != nullptr && constructor_variable->syntax_element->constexpr_ )
-	{
-		// User requested method generation with "constexpr" flag, but result is not "constexpr".
-		REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, the_class.members->GetErrors(), constructor_variable->syntax_element->src_loc_ );
-	}
+	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *constructor_variable );
 }
 
 void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
@@ -302,7 +295,6 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 	constructor_variable->is_this_call= true;
 	constructor_variable->is_generated= true;
 	constructor_variable->is_constructor= true;
-	constructor_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	SetupFunctionParamsAndRetAttributes( *constructor_variable );
 
@@ -358,6 +350,8 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 
 	// After default constructor generation, class is copy-constructible.
 	the_class.is_copy_constructible= true;
+
+	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *constructor_variable );
 }
 
 FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr& class_type )
@@ -567,7 +561,6 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 	operator_variable->have_body= true;
 	operator_variable->is_this_call= true;
 	operator_variable->is_generated= true;
-	operator_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	SetupFunctionParamsAndRetAttributes( *operator_variable );
 
@@ -613,6 +606,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 
 	// After operator generation, class is copy-assignable.
 	the_class.is_copy_assignable= true;
+
+	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *operator_variable );
 }
 
 void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type )
@@ -728,7 +723,6 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 	operator_variable->have_body= true;
 	operator_variable->is_this_call= false; // TODO - is there any reason to set this flag?
 	operator_variable->is_generated= true;
-	operator_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	SetupFunctionParamsAndRetAttributes( *operator_variable );
 
@@ -796,6 +790,20 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 
 	// After operator generation, class is equality-comparable.
 	the_class.is_equality_comparable= true;
+
+	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *operator_variable );
+}
+
+void CodeBuilder::ProcessGeneratedMethodConstexprFlag( const ClassPtr& class_type, FunctionContext& function_context_after_body_generation, FunctionVariable& method )
+{
+	const bool is_constexpr= class_type->can_be_constexpr && !function_context_after_body_generation.have_non_constexpr_operations_inside;
+	method.constexpr_kind= is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
+
+	if( !is_constexpr && method.syntax_element != nullptr && method.syntax_element->constexpr_ )
+	{
+		// User requested method generation with "constexpr" flag, but result is not "constexpr".
+		REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, class_type->members->GetErrors(), method.syntax_element->src_loc_ );
+	}
 }
 
 void CodeBuilder::BuildCopyConstructorPart(

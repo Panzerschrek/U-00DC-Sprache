@@ -154,7 +154,7 @@ def GeneratedDefaultConstructorConstexprFlagDependsOnFieldDefaultConstructor_Tes
 	assert( errors_list[0].src_loc.line == 12 )
 
 
-def GeneratedMethodIsNotConstexprAsExpected_Test0():
+def GeneratedMethodIsNotConstexprAsExpected_ForDefaultConstructor_Test0():
 	c_program_text= """
 		fn GetX() : i32;
 		struct S
@@ -169,7 +169,7 @@ def GeneratedMethodIsNotConstexprAsExpected_Test0():
 	assert( errors_list[0].src_loc.line == 6 )
 
 
-def GeneratedMethodIsNotConstexprAsExpected_Test1():
+def GeneratedMethodIsNotConstexprAsExpected_ForDefaultConstructor_Test1():
 	c_program_text= """
 		struct A
 		{
@@ -188,11 +188,158 @@ def GeneratedMethodIsNotConstexprAsExpected_Test1():
 	assert( errors_list[0].src_loc.line == 10 )
 
 
-def GeneratedMethodIsNotConstexprAsExpected_Test2():
+def GeneratedMethodIsNotConstexprAsExpected_ForDefaultConstructor_Test2():
 	c_program_text= """
 		class C
 		{
 			fn constexpr constructor() = default; // This constructor can't be "constexpr", because "this" param is not "constexpr", because class can't be "constexpr".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 4 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_ForCopyConstructor_Test0():
+	c_program_text= """
+		struct A
+		{
+			fn constructor(mut this, A& other){} // Non-constexpr copy constructor.
+		}
+		struct B
+		{
+			A a;
+			fn constexpr constructor(mut this, B& other) = default; // This constructor can't be "constexpr", because copy construtor for struct field is not "constexpr".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 9 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_ForCopyConstructor_Test1():
+	c_program_text= """
+		struct A
+		{
+			fn destructor(){}
+		}
+		struct B
+		{
+			A a;
+			fn constexpr constructor(mut this, B& other) = default; // This constructor can't be "constexpr", because class field is not "constexpr", because it contains non-trivial destrutor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 9 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_ForCopyConstructor_Test2():
+	c_program_text= """
+		class C
+		{
+			fn constexpr constructor(mut this, C& other) = default; // This constructor can't be "constexpr", because "this" param is not "constexpr", because class can't be "constexpr".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 4 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_ForCopyAssignmentOperator_Test0():
+	c_program_text= """
+		struct A
+		{
+			op=(mut this, A& other){} // Non-constexpr copy-assignment operator.
+		}
+		struct B
+		{
+			A a;
+			op constexpr =(mut this, B& other) = default; // This copy-assignment operator can't be "constexpr", because copy-assignment operator for struct field is not "constexpr".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 9 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_ForCopyAssignmentOperator_Test1():
+	c_program_text= """
+		struct A
+		{
+			fn destructor(){}
+		}
+		struct B
+		{
+			A a;
+			op constexpr =(mut this, B& other) = default; // This copy-assignment operator can't be "constexpr", because copy-assignment operator for struct field is not "constexpr".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 9 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_ForCopyAssignmentOperator_Test2():
+	c_program_text= """
+		class C
+		{
+			op constexpr =(mut this, C& other) = default; // This copy-assignment operator can't be "constexpr", because "this" param is not "constexpr", because class can't be "constexpr".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 4 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_ForEqualityCompareOperator_Test0():
+	c_program_text= """
+		struct A
+		{
+			op==(A& l, A& r) : bool { return true; } // Non-constexpr "==" operator.
+		}
+		struct B
+		{
+			A a;
+			op constexpr ==(B& l, B& r) : bool = default; // This equality compare operator can't be "constexpr", because equality compare operator for struct field is not "constexpr".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 9 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_EqualityCompareOperator_Test1():
+	c_program_text= """
+		struct A
+		{
+			fn destructor(){}
+		}
+		struct B
+		{
+			A a;
+			op constexpr ==(B& l, B& r) : bool = default; // This equality compare operator can't be "constexpr", because copy-assignment operator for struct field is not "constexpr".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 9 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_EqualityCompareOperator_Test2():
+	c_program_text= """
+		class C
+		{
+			op constexpr ==(C& l, C& r) : bool = default;  // This copy-assignment operator can't be "constexpr", because "this" param is not "constexpr", because class can't be "constexpr".
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

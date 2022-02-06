@@ -205,20 +205,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		LLVMBuildRetVoid( function_context.llvm_ir_builder );
 	}
 
-	var bool is_constexpr= class_type.lock_imut().deref().can_be_constexpr && !function_context.have_non_constexpr_operations_inside;
-	function_variable.constexpr_kind= select( is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
-
-	if( !is_constexpr )
-	{
-		if( !function_variable.prototype_syntax_element.empty() && function_variable.prototype_syntax_element.try_deref().constexpr_ )
-		{
-			REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, class_members_ptr, function_variable.prototype_syntax_element.try_deref().src_loc )
-		}
-		if( !function_variable.body_syntax_element.empty() && function_variable.body_syntax_element.try_deref().constexpr_ )
-		{
-			REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, class_members_ptr, function_variable.body_syntax_element.try_deref().src_loc )
-		}
-	}
+	ProcessGeneratedMethodConstexprFlag( class_type, function_context, function_variable );
 }
 
 fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
@@ -358,7 +345,6 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		constructors.functions.push_back( move(function_variable) );
 	}
 	var FunctionVariable &mut function_variable= constructors.functions[ constructor_index ];
-	function_variable.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
 
@@ -421,6 +407,8 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
 		LLVMBuildRetVoid( function_context.llvm_ir_builder );
 	}
+
+	ProcessGeneratedMethodConstexprFlag( class_type, function_context, function_variable );
 }
 
 fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class_type )
@@ -560,7 +548,6 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		operators.functions.push_back( move(function_variable) );
 	}
 	var FunctionVariable &mut function_variable= operators.functions[operator_index];
-	function_variable.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
 
@@ -608,6 +595,8 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
 		LLVMBuildRetVoid( function_context.llvm_ir_builder );
 	}
+
+	ProcessGeneratedMethodConstexprFlag( class_type, function_context, function_variable );
 }
 
 fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& class_type )
@@ -776,7 +765,6 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 	}
 
 	var FunctionVariable &mut function_variable= operators.functions[operator_index];
-	function_variable.constexpr_kind= select( class_type.lock_imut().deref().can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
 
@@ -837,6 +825,8 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		// Finish allocations block.
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
 	}
+
+	ProcessGeneratedMethodConstexprFlag( class_type, function_context, function_variable );
 }
 
 fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_type )
@@ -936,6 +926,25 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 	{
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
 		LLVMBuildRetVoid( function_context.llvm_ir_builder );
+	}
+}
+
+fn CodeBuilder::ProcessGeneratedMethodConstexprFlag( ClassTypePtr& class_type, FunctionContext& function_context_after_body_generation, FunctionVariable &mut method )
+{
+	var bool is_constexpr= class_type.lock_imut().deref().can_be_constexpr && !function_context_after_body_generation.have_non_constexpr_operations_inside;
+	method.constexpr_kind= select( is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
+
+	if( !is_constexpr )
+	{
+		auto class_members_ptr= class_type.lock_imut().deref().members;
+		if( !method.prototype_syntax_element.empty() && method.prototype_syntax_element.try_deref().constexpr_ )
+		{
+			REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, class_members_ptr, method.prototype_syntax_element.try_deref().src_loc )
+		}
+		if( !method.body_syntax_element.empty() && method.body_syntax_element.try_deref().constexpr_ )
+		{
+			REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, class_members_ptr, method.body_syntax_element.try_deref().src_loc )
+		}
 	}
 }
 
