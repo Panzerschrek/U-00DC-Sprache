@@ -115,7 +115,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 	constructor_variable->is_this_call= true;
 	constructor_variable->is_generated= true;
 	constructor_variable->is_constructor= true;
-	constructor_variable->constexpr_kind= the_class.can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 
 	SetupFunctionParamsAndRetAttributes( *constructor_variable );
 
@@ -181,6 +180,9 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 
 	// After default constructor generation, class is default-constructible.
 	the_class.is_default_constructible= true;
+
+	const bool should_be_constexpr= the_class.can_be_constexpr && !function_context.have_non_constexpr_operations_inside;
+	constructor_variable->constexpr_kind= should_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
 }
 
 void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )

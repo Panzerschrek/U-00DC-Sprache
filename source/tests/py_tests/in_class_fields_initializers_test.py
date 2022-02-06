@@ -426,38 +426,3 @@ def InClassFieldInitializer_EvaluatesInClassScope_Test3():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 999 )
-
-
-def GeneratedDefaultConstructorConstexprFlagDependsOnInClassFieldInitializer_Test0():
-	c_program_text= """
-		fn constexpr GetX() : i32 { return 0; }
-		struct S
-		{
-			i32 x= GetX(); // Constexpr initializer.
-		}
-
-		fn constexpr Foo()
-		{
-			var S s; // Call here generated default constructor. It is "constexpr", because all fields initializers are constexpr.
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def GeneratedDefaultConstructorConstexprFlagDependsOnInClassFieldInitializer_Test1():
-	c_program_text= """
-		fn GetX() : i32;
-		struct S
-		{
-			i32 x= GetX(); // Non-constexpr initializer.
-		}
-
-		fn constexpr Foo()
-		{
-			var S s; // Call here generated default constructor. It is not "constexpr", because one of fields initializers is not "constexpr".
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
-	assert( errors_list[0].src_loc.line == 8 )
