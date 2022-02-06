@@ -181,8 +181,14 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 	// After default constructor generation, class is default-constructible.
 	the_class.is_default_constructible= true;
 
-	const bool should_be_constexpr= the_class.can_be_constexpr && !function_context.have_non_constexpr_operations_inside;
-	constructor_variable->constexpr_kind= should_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
+	const bool is_constexpr= the_class.can_be_constexpr && !function_context.have_non_constexpr_operations_inside;
+	constructor_variable->constexpr_kind= is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;
+
+	if( !is_constexpr && constructor_variable->syntax_element != nullptr && constructor_variable->syntax_element->constexpr_ )
+	{
+		// User requested method generation with "constexpr" flag, but result is not "constexpr".
+		REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, the_class.members->GetErrors(), constructor_variable->syntax_element->src_loc_ );
+	}
 }
 
 void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )

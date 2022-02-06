@@ -152,3 +152,50 @@ def GeneratedDefaultConstructorConstexprFlagDependsOnFieldDefaultConstructor_Tes
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
 	assert( errors_list[0].src_loc.line == 12 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_Test0():
+	c_program_text= """
+		fn GetX() : i32;
+		struct S
+		{
+			i32 x= GetX();
+			fn constexpr constructor() = default; // In-class field initializer is not "constexpr", result default constructor will not be "constexpr", as user requested.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 6 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_Test1():
+	c_program_text= """
+		struct A
+		{
+			i32 x;
+			fn constructor() ( x= 12345 ) {} // Non-constexpr constructor
+		}
+		struct B
+		{
+			A a;
+			fn constexpr constructor() = default; // Field initializer is not "constexpr", result default constructor will not be "constexpr", as user requested.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 10 )
+
+
+def GeneratedMethodIsNotConstexprAsExpected_Test2():
+	c_program_text= """
+		class C
+		{
+			fn constexpr constructor() = default; // This constructor can't be "constexpr", because "this" param is not "constexpr", because class can't be "constexpr".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "ConstexprFunctionContainsUnallowedOperations" )
+	assert( errors_list[0].src_loc.line == 4 )

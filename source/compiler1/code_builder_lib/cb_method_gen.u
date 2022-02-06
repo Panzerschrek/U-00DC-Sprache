@@ -205,8 +205,20 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		LLVMBuildRetVoid( function_context.llvm_ir_builder );
 	}
 
-	var bool shoud_be_constexpr= class_type.lock_imut().deref().can_be_constexpr && !function_context.have_non_constexpr_operations_inside;
-	function_variable.constexpr_kind= select( shoud_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
+	var bool is_constexpr= class_type.lock_imut().deref().can_be_constexpr && !function_context.have_non_constexpr_operations_inside;
+	function_variable.constexpr_kind= select( is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr );
+
+	if( !is_constexpr )
+	{
+		if( !function_variable.prototype_syntax_element.empty() && function_variable.prototype_syntax_element.try_deref().constexpr_ )
+		{
+			REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, class_members_ptr, function_variable.prototype_syntax_element.try_deref().src_loc )
+		}
+		if( !function_variable.body_syntax_element.empty() && function_variable.body_syntax_element.try_deref().constexpr_ )
+		{
+			REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, class_members_ptr, function_variable.body_syntax_element.try_deref().src_loc )
+		}
+	}
 }
 
 fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
