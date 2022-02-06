@@ -1219,6 +1219,8 @@ Type CodeBuilder::BuildFuncCode(
 	if( function_type.return_value_type == ValueType::Value && !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
 
+	SetupCompleteFunctionParamsAndRetAttributes( func_variable );
+
 	NamesScope function_names( "", &parent_names_scope );
 	FunctionContext function_context(
 		function_type,
@@ -2063,6 +2065,41 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+}
+
+void CodeBuilder::SetupCompleteFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
+{
+	const auto llvm_function= function_variable.llvm_function;
+	const FunctionType& function_type= *function_variable.type.GetFunctionType();
+
+	const bool first_arg_is_sret= function_type.IsStructRet();
+
+	for( size_t i= 0u; i < function_type.params.size(); i++ )
+	{
+		const auto arg_attr_index=
+			static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
+		const FunctionType::Param& param= function_type.params[i];
+
+		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
+		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
+		if( param.value_type != ValueType::Value || param_is_composite )
+		{
+			const auto llvm_type= param.type.GetLLVMType();
+			if( !llvm_type->isSized() )
+				continue; // May be in case of error.
+
+			llvm_function->addDereferenceableAttr( arg_attr_index, data_layout_.getTypeAllocSize( llvm_type ) );
+		}
+	}
+
+	if( first_arg_is_sret )
+	{
+		const auto llvm_type= function_type.return_type.GetLLVMType();
+		if( !llvm_type->isSized() )
+			return; // May be in case of error.
+
+		llvm_function->addDereferenceableAttr( llvm::AttributeList::FirstArgIndex, data_layout_.getTypeAllocSize( llvm_type ) );
+	}
 }
 
 void CodeBuilder::CreateLifetimeStart( FunctionContext& function_context, llvm::Value* const address )
