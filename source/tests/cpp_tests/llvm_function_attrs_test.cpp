@@ -716,6 +716,16 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
 	}
+	{
+		const llvm::Function* const destructor= module->getFunction( "_ZN1S10destructorERS_" );
+		U_TEST_ASSERT( destructor != nullptr );
+		U_TEST_ASSERT( destructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	}
 }
 
 } // namespace

@@ -125,8 +125,6 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 						function_variable.t ).front(),
 					function_variable.t.llvm_type );
 		}
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "nonnull" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
 
 		constructor_index= constructors.functions.size();
 		constructors.functions.push_back( move(function_variable) );
@@ -334,11 +332,6 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 						function_variable.t ).front(),
 					function_variable.t.llvm_type );
 		}
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "nonnull" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "noalias" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "nonnull" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "noalias" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "readonly" );
 
 		constructor_index= constructors.functions.size();
 		constructors.functions.push_back( move(function_variable) );
@@ -536,11 +529,6 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 						function_variable.t ).front(),
 					function_variable.t.llvm_type);
 		}
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "nonnull" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "noalias" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "nonnull" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "noalias" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "readonly" );
 
 		operator_index= operators.functions.size();
 		operators.functions.push_back( move(function_variable) );
@@ -750,12 +738,6 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 						function_variable.t ).front(),
 					function_variable.t.llvm_type);
 		}
-		// TODO - remove this attributes?
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "nonnull" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 0u, "noalias" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "nonnull" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "noalias" );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex + 1u, "readonly" );
 
 		operator_index= operators.functions.size();
 		operators.functions.push_back( move(function_variable) );
@@ -877,8 +859,8 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 					function_variable.t ).front(),
 				function_variable.t.llvm_type );
 	}
-	AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "nonnull" );
-	AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
+
+	SetupFunctionParamsAndRetAttributes( function_variable );
 
 	destructors.functions.push_back( move(function_variable) );
 }
@@ -902,8 +884,6 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 
 	// Generate body for previously generated prototype.
 	var FunctionVariable &mut function_variable= destructors.functions.back();
-
-	SetupFunctionParamsAndRetAttributes( function_variable );
 
 	// Build code itself.
 
