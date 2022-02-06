@@ -553,6 +553,9 @@ void CodeBuilder::TryCallCopyConstructor(
 		}
 	}
 
+	if( !( constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete || constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete ) )
+		function_context.have_non_constexpr_operations_inside= true;
+
 	// Call it
 	U_ASSERT(constructor != nullptr);
 	function_context.llvm_ir_builder.CreateCall( constructor->llvm_function, { this_, src } );

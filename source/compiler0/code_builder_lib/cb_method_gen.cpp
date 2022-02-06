@@ -875,6 +875,9 @@ void CodeBuilder::BuildCopyConstructorPart(
 		}
 		U_ASSERT( constructor != nullptr );
 
+		if( !( constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete || constructor->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete ) )
+			function_context.have_non_constexpr_operations_inside= true;
+
 		// Call it.
 		function_context.llvm_ir_builder.CreateCall(constructor->llvm_function, { dst, src } );
 	}
@@ -950,6 +953,9 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 			}
 		}
 		U_ASSERT( op != nullptr );
+
+		if( !( op->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete || op->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete ) )
+			function_context.have_non_constexpr_operations_inside= true;
 
 		// Call it.
 		function_context.llvm_ir_builder.CreateCall( op->llvm_function, { dst, src } );
@@ -1036,6 +1042,9 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 			}
 		}
 		U_ASSERT( op != nullptr );
+
+		if( !( op->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete || op->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete ) )
+			function_context.have_non_constexpr_operations_inside= true;
 
 		// Call it.
 		const auto eq= function_context.llvm_ir_builder.CreateCall( op->llvm_function, { l_address, r_address } );

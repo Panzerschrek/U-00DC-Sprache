@@ -2910,7 +2910,7 @@ fn CodeBuilder::DoCallFunction(
 	ArgsEvaluationOrder args_evaluation_order,
 	SrcLoc& src_loc ) : Value
 {
-	if( function.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
+	if( !( function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 	{
 		function_context.have_non_constexpr_operations_inside= true;
 	}
