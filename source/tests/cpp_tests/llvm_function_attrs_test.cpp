@@ -151,6 +151,7 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnValueAttrs )
 
 	U_TEST_ASSERT( function->getFunctionType()->getReturnType()->isIntegerTy() );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnReferenceAttrs )
@@ -169,12 +170,16 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnReferenceAttrs )
 
 	U_TEST_ASSERT( foo->getFunctionType()->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 4 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
 
 	U_TEST_ASSERT( bar->getFunctionType()->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 4 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeImutReferenceParamsAttrs )
@@ -374,8 +379,8 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
 	R"(
 		struct S{ i32 x; f32 y; }
 		struct E{}
-		fn Foo() : S;
-		fn Bar() : E;
+		fn Foo() : S { halt; }
+		fn Bar() : E { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -386,10 +391,13 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( foo->getReturnType()->isVoidTy() );
 	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
@@ -397,10 +405,12 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) || bar->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 0 );
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
 	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
@@ -410,8 +420,8 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; }
-		fn Foo() : S & mut;
-		fn Bar() : S &imut;
+		fn Foo() : S & mut { halt; }
+		fn Bar() : S &imut { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -422,6 +432,8 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 0 );
 	U_TEST_ASSERT( foo->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 8 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
@@ -429,6 +441,8 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 0 );
 	U_TEST_ASSERT( bar->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 8 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
@@ -530,8 +544,8 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
 	// For functions, returning composite type values, create hidden pointer param, where returned value placed.
 	static const char c_program_text[]=
 	R"(
-		fn Foo() : [ f32, 16 ];
-		fn Bar() : tup[ bool, [ i32, 2 ], f32 ];
+		fn Foo() : [ f32, 16 ] { halt; }
+		fn Bar() : tup[ bool, [ i32, 2 ], f32 ] { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -542,10 +556,13 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 64 );
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( foo->getReturnType()->isVoidTy() );
 	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
@@ -553,10 +570,13 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 16 );
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
 	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
@@ -564,8 +584,8 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
 	// For functions, returning references to composite types, return just pointer.
 	static const char c_program_text[]=
 	R"(
-		fn Foo() : [ f32, 16 ] &mut;
-		fn Bar() : tup[ bool, [ i32, 2 ], f32 ] &imut;
+		fn Foo() : [ f32, 16 ] &mut { halt; }
+		fn Bar() : tup[ bool, [ i32, 2 ], f32 ] &imut { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -576,6 +596,8 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 0 );
 	U_TEST_ASSERT( foo->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 64 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
@@ -583,6 +605,8 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 0 );
 	U_TEST_ASSERT( bar->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 16 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_RawPointerTypeValueParamsAttrs )
@@ -623,7 +647,7 @@ U_TEST( LLVMFunctionAttrsTest_RawPointerReturnValueAttrs )
 	// Raw pointer may be null. It should not have non-null attribute.
 	static const char c_program_text[]=
 	R"(
-		fn Foo() : $(i32);
+		fn Foo() : $(i32) { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -633,6 +657,7 @@ U_TEST( LLVMFunctionAttrsTest_RawPointerReturnValueAttrs )
 
 	U_TEST_ASSERT( function->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )

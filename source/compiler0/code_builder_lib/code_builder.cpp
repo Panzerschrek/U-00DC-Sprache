@@ -2092,14 +2092,14 @@ void CodeBuilder::SetupCompleteFunctionParamsAndRetAttributes( FunctionVariable&
 		}
 	}
 
-	if( first_arg_is_sret )
-	{
-		const auto llvm_type= function_type.return_type.GetLLVMType();
-		if( !llvm_type->isSized() )
-			return; // May be in case of error.
+	const auto llvm_ret_type= function_type.return_type.GetLLVMType();
+	if( !llvm_ret_type->isSized() )
+		return; // May be in case of error.
 
-		llvm_function->addDereferenceableAttr( llvm::AttributeList::FirstArgIndex, data_layout_.getTypeAllocSize( llvm_type ) );
-	}
+	if( first_arg_is_sret )
+		llvm_function->addDereferenceableAttr( llvm::AttributeList::FirstArgIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
+	else if( function_type.return_value_type != ValueType::Value )
+		llvm_function->addDereferenceableAttr( llvm::AttributeList::ReturnIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
 }
 
 void CodeBuilder::CreateLifetimeStart( FunctionContext& function_context, llvm::Value* const address )
