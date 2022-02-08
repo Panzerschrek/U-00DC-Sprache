@@ -9,6 +9,8 @@ fn nomangle U1_DropAllBasicBlockUsersReferences(LLVMBasicBlockRef basic_block) u
 
 fn nomangle U1_BasicBlockHasPredecessors(LLVMBasicBlockRef basic_block) unsafe : bool;
 
+fn nomangle U1_FunctionAddDereferenceableAttr(LLVMValueRef function, u32 index, u64 bytes) unsafe;
+
 // Returns number of elements.
 fn nomangle U1_ConvertUTF8ToUTF16(
 	$(char8) src_buff, size_type src_buff_size,

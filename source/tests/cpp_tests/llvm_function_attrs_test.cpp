@@ -141,7 +141,7 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnValueAttrs )
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() : i32;
+		fn Foo() : i32 { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );

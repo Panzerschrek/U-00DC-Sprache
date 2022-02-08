@@ -132,6 +132,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	var FunctionVariable &mut function_variable= constructors.functions[constructor_index];
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
+	SetupCompleteFunctionParamsAndRetAttributes( function_variable );
 
 	// Build code itself.
 
@@ -340,6 +341,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	var FunctionVariable &mut function_variable= constructors.functions[ constructor_index ];
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
+	SetupCompleteFunctionParamsAndRetAttributes( function_variable );
 
 	// Build code itself.
 
@@ -538,6 +540,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	var FunctionVariable &mut function_variable= operators.functions[operator_index];
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
+	SetupCompleteFunctionParamsAndRetAttributes( function_variable );
 
 	// Build code itself.
 
@@ -749,6 +752,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 	var FunctionVariable &mut function_variable= operators.functions[operator_index];
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
+	SetupCompleteFunctionParamsAndRetAttributes( function_variable );
 
 	var FunctionContext mut function_context(
 		llvm_context_,
@@ -907,6 +911,8 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 		LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
 		LLVMBuildRetVoid( function_context.llvm_ir_builder );
 	}
+
+	SetupCompleteFunctionParamsAndRetAttributes( function_variable );
 }
 
 fn CodeBuilder::ProcessGeneratedMethodConstexprFlag( ClassTypePtr& class_type, FunctionContext& function_context_after_body_generation, FunctionVariable &mut method )
