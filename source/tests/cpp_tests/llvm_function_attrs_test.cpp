@@ -110,7 +110,7 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeValueParamsAttrs )
 
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 x, f32 mut y, bool z );
+		fn Foo( i32 x, f32 mut y, bool z ) {}
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -122,16 +122,19 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeValueParamsAttrs )
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
 
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::Dereferenceable ) );
 
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnValueAttrs )
@@ -155,8 +158,8 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnReferenceAttrs )
 	// Return reference has nonnull attribute.
 	static const char c_program_text[]=
 	R"(
-		fn Foo() : i32 & mut;
-		fn Bar() : i32 &imut;
+		fn Foo() : i32 & mut { halt; }
+		fn Bar() : i32 &imut { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -176,11 +179,11 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnReferenceAttrs )
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeImutReferenceParamsAttrs )
 {
-	// Immutable reference params should have "nonnull", "readonly", "noalias" attrs.
+	// Immutable reference params should have "nonnull", "readonly", "noalias" attrs. "dereferenceable" should be equal to type size.
 
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32& x, f32& y, bool& z );
+		fn Foo( i32& x, f32& y, bool& z ){}
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -192,26 +195,32 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeImutReferenceParamsAttrs )
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 4 );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 4 );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 2 ) == 1 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeMutReferenceParamsAttrs )
 {
-	// Mutable reference params should have "nonnull" and "noalias" attrs, but non "readonly".
+	// Mutable reference params should have "nonnull" and "noalias" attrs, but non "readonly". "dereferenceable" should be equal to type size.
 	// Add "noalias" because it is forbidden by reference checking to create two mutable references to same data.
 
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 &mut x, f32 &mut y, bool &mut z );
+		fn Foo( i32 &mut x, f32 &mut y, bool &mut z ){}
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -223,16 +232,22 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeMutReferenceParamsAttrs )
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 4 );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 4 );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 2 ) == 1 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
@@ -240,13 +255,14 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	// Structs (and other composite types) passed by pointer.
 	// This pointer is non-null and actual storage is unique for each arg, so "noalias" must present.
 	// "readonly" should not be set since it's possible to mutate arg in its destructor.
+	// "dereferenceable" should be equal to type size.
 	// "nocapture" should be used since there is no legal way to capture address of passed variable (because of some kind of "ReferenceProtectionError").
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; }
 		struct E{}
-		fn Foo( S  mut s, E  mut e );
-		fn Bar( S imut s, E imut e );
+		fn Foo( S  mut s, E  mut e ) {}
+		fn Bar( E imut e, S imut s ) {}
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -259,14 +275,17 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
 
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) || foo->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 0  );
 
-	const llvm::Function* bar= module->getFunction( "_Z3Bar1S1E" );
+	const llvm::Function* bar= module->getFunction( "_Z3Bar1E1S" );
 	U_TEST_ASSERT( bar != nullptr );
 
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
@@ -274,22 +293,25 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) || bar->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 0 );
 
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 8 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeImutReferenceParamsAttrs )
 {
-	// Immutalbe reference params of struct type marked as "nonnull", "readonly", "noalias".
+	// Immutalbe reference params of struct type marked as "nonnull", "readonly", "noalias". "dereferenceable" should be equal to type size.
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; }
 		struct E{}
-		fn Foo( S &imut s, E &imut e );
+		fn Foo( S &imut s, E &imut e ) {}
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -302,22 +324,25 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeImutReferenceParamsAttrs )
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() );
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) || function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 0 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeMutReferenceParamsAttrs )
 {
-	// Mutable reference params of struct type marked both as "nonnull"and "noalias", but not as "readonly".
+	// Mutable reference params of struct type marked both as "nonnull"and "noalias", but not as "readonly". "dereferenceable" should be equal to type size.
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; }
 		struct E{}
-		fn Foo( S &mut s, E &mut e );
+		fn Foo( S &mut s, E &mut e ){}
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -330,13 +355,15 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeMutReferenceParamsAttrs )
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() );
-
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) || function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 0 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
@@ -409,10 +436,11 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
 	// Composite type value-arguments passed by pointer.
 	// This pointer is non-null and actual storage is unique for each arg, so "noalias" must present.
 	// "readonly" should not be set since it's possible to mutate arg in its destructor.
+	// "dereferenceable" should be equal to type size.
 	// "nocapture" should be used since there is no legal way to capture address of passed variable (because of some kind of "ReferenceProtectionError").
 	static const char c_program_text[]=
 	R"(
-		fn Foo( [ i32, 2 ] mut a, tup[ bool, f64 ] imut b );
+		fn Foo( [ i32, 2 ] mut a, tup[ bool, f64 ] imut b ){}
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -425,20 +453,24 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 16 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeImutReferenceParamsAttrs )
 {
-	// Immutalbe reference params of composite types marked as "nonnull", "readonly", "noalias".
+	// Immutalbe reference params of composite types marked as "nonnull", "readonly", "noalias". "dereferenceable" should be equal to type size.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( [ i32, 2 ] &imut a, tup[ bool, f64 ] &imut b );
+		fn Foo( [ i32, 2 ] &imut a, tup[ bool, f64 ] &imut b ){}
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -451,20 +483,24 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeImutReferenceParamsAttrs )
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 16 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeMutReferenceParamsAttrs )
 {
-	// Mutable reference params of composite types marked both as "nonnull"and "noalias", but not as "readonly".
+	// Mutable reference params of composite types marked both as "nonnull"and "noalias", but not as "readonly". "dereferenceable" should be equal to type size.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( [ i32, 2 ] &mut a, tup[ bool, f64 ] &mut b );
+		fn Foo( [ i32, 2 ] &mut a, tup[ bool, f64 ] &mut b ){}
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -477,12 +513,16 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeMutReferenceParamsAttrs )
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
 
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
+	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 16 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
@@ -551,7 +591,7 @@ U_TEST( LLVMFunctionAttrsTest_RawPointerTypeValueParamsAttrs )
 	// Raw pointers may alias, may be null, may be captured and pointed values may be changed.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( $(i32) x, $(f32) mut y, $(bool) z );
+		fn Foo( $(i32) x, $(f32) mut y, $(bool) z ) {}
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -563,16 +603,19 @@ U_TEST( LLVMFunctionAttrsTest_RawPointerTypeValueParamsAttrs )
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
 
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
 
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
 	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_RawPointerReturnValueAttrs )
@@ -597,13 +640,14 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 	static const char c_program_text[]=
 	R"(
 		// Default constructor, copy constructor, copy-assignment operator, destructor should be generated.
-		struct S{}
+		struct S{ i16 x= zero_init; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
 
 	// "this" as mutable reference param should be marked with "nonnull" and "noalias".
 	// "src" (for copy methods) should be marked as "nonnull", "noalias", "readonly", as any other immutable reference param.
+	// "Dereferenceable" should be used for references.
 	// All methods must have private linkage because they are generated.
 
 	{
@@ -615,6 +659,8 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( !default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( default_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 2 );
 	}
 	{
 		const llvm::Function* const copy_constructor= module->getFunction( "_ZN1S11constructorERS_RKS_" );
@@ -625,11 +671,15 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 2 );
 
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 2 );
 	}
 	{
 		const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN1SaSERS_RKS_" );
@@ -640,11 +690,15 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_assignment_operator->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 2 );
 
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_assignment_operator->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 2 );
 	}
 	{
 		const llvm::Function* const destructor= module->getFunction( "_ZN1S10destructorERS_" );
@@ -655,6 +709,8 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( destructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 2 );
 	}
 }
 
@@ -664,6 +720,8 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 	R"(
 		struct S
 		{
+			[ f32, 3] arr= zero_init;
+
 			fn constructor()= default;
 			fn constructor( S &imut other )= default;
 			op=( mut this, S &imut other )= default;
@@ -685,6 +743,8 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( !default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( default_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 12 );
 	}
 	{
 		const llvm::Function* const copy_constructor= module->getFunction( "_ZN1S11constructorERS_RKS_" );
@@ -695,11 +755,15 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 12 );
 
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 12 );
 	}
 	{
 		const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN1SaSERS_RKS_" );
@@ -710,11 +774,15 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_assignment_operator->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 12 );
 
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_assignment_operator->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 12 );
 	}
 	{
 		const llvm::Function* const destructor= module->getFunction( "_ZN1S10destructorERS_" );
@@ -725,6 +793,8 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
 		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
 		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( destructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 12 );
 	}
 }
 
