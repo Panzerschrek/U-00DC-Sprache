@@ -110,7 +110,7 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeValueParamsAttrs )
 
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 x, f32 mut y, bool z ) {}
+		fn Foo( i32 x, f32 mut y, bool z );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -141,7 +141,7 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnValueAttrs )
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() : i32 { halt; }
+		fn Foo() : i32;
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -159,8 +159,8 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnReferenceAttrs )
 	// Return reference has nonnull attribute.
 	static const char c_program_text[]=
 	R"(
-		fn Foo() : i32 & mut { halt; }
-		fn Bar() : i32 &imut { halt; }
+		fn Foo() : i32 & mut;
+		fn Bar() : i32 &imut;
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -188,7 +188,7 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeImutReferenceParamsAttrs )
 
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32& x, f32& y, bool& z ){}
+		fn Foo( i32& x, f32& y, bool& z );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -225,7 +225,7 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeMutReferenceParamsAttrs )
 
 	static const char c_program_text[]=
 	R"(
-		fn Foo( i32 &mut x, f32 &mut y, bool &mut z ){}
+		fn Foo( i32 &mut x, f32 &mut y, bool &mut z );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -266,8 +266,8 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	R"(
 		struct S{ i32 x; f32 y; }
 		struct E{}
-		fn Foo( S  mut s, E  mut e ) {}
-		fn Bar( E imut e, S imut s ) {}
+		fn Foo( S  mut s, E  mut e );
+		fn Bar( E imut e, S imut s );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -316,7 +316,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeImutReferenceParamsAttrs )
 	R"(
 		struct S{ i32 x; f32 y; }
 		struct E{}
-		fn Foo( S &imut s, E &imut e ) {}
+		fn Foo( S &imut s, E &imut e );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -347,7 +347,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeMutReferenceParamsAttrs )
 	R"(
 		struct S{ i32 x; f32 y; }
 		struct E{}
-		fn Foo( S &mut s, E &mut e ){}
+		fn Foo( S &mut s, E &mut e );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -379,8 +379,8 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
 	R"(
 		struct S{ i32 x; f32 y; }
 		struct E{}
-		fn Foo() : S { halt; }
-		fn Bar() : E { halt; }
+		fn Foo() : S;
+		fn Bar() : E;
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -420,8 +420,8 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
 	static const char c_program_text[]=
 	R"(
 		struct S{ i32 x; f32 y; }
-		fn Foo() : S & mut { halt; }
-		fn Bar() : S &imut { halt; }
+		fn Foo() : S & mut;
+		fn Bar() : S &imut;
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -454,7 +454,7 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
 	// "nocapture" should be used since there is no legal way to capture address of passed variable (because of some kind of "ReferenceProtectionError").
 	static const char c_program_text[]=
 	R"(
-		fn Foo( [ i32, 2 ] mut a, tup[ bool, f64 ] imut b ){}
+		fn Foo( [ i32, 2 ] mut a, tup[ bool, f64 ] imut b );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -484,7 +484,7 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeImutReferenceParamsAttrs )
 	// Immutalbe reference params of composite types marked as "nonnull", "readonly", "noalias". "dereferenceable" should be equal to type size.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( [ i32, 2 ] &imut a, tup[ bool, f64 ] &imut b ){}
+		fn Foo( [ i32, 2 ] &imut a, tup[ bool, f64 ] &imut b );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -514,7 +514,7 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeMutReferenceParamsAttrs )
 	// Mutable reference params of composite types marked both as "nonnull"and "noalias", but not as "readonly". "dereferenceable" should be equal to type size.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( [ i32, 2 ] &mut a, tup[ bool, f64 ] &mut b ){}
+		fn Foo( [ i32, 2 ] &mut a, tup[ bool, f64 ] &mut b );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -544,8 +544,8 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
 	// For functions, returning composite type values, create hidden pointer param, where returned value placed.
 	static const char c_program_text[]=
 	R"(
-		fn Foo() : [ f32, 16 ] { halt; }
-		fn Bar() : tup[ bool, [ i32, 2 ], f32 ] { halt; }
+		fn Foo() : [ f32, 16 ];
+		fn Bar() : tup[ bool, [ i32, 2 ], f32 ];
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -584,8 +584,8 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
 	// For functions, returning references to composite types, return just pointer.
 	static const char c_program_text[]=
 	R"(
-		fn Foo() : [ f32, 16 ] &mut { halt; }
-		fn Bar() : tup[ bool, [ i32, 2 ], f32 ] &imut { halt; }
+		fn Foo() : [ f32, 16 ] &mut;
+		fn Bar() : tup[ bool, [ i32, 2 ], f32 ] &imut;
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -615,7 +615,7 @@ U_TEST( LLVMFunctionAttrsTest_RawPointerTypeValueParamsAttrs )
 	// Raw pointers may alias, may be null, may be captured and pointed values may be changed.
 	static const char c_program_text[]=
 	R"(
-		fn Foo( $(i32) x, $(f32) mut y, $(bool) z ) {}
+		fn Foo( $(i32) x, $(f32) mut y, $(bool) z );
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -647,7 +647,7 @@ U_TEST( LLVMFunctionAttrsTest_RawPointerReturnValueAttrs )
 	// Raw pointer may be null. It should not have non-null attribute.
 	static const char c_program_text[]=
 	R"(
-		fn Foo() : $(i32) { halt; }
+		fn Foo() : $(i32);
 	)";
 
 	const auto module= BuildProgram( c_program_text );

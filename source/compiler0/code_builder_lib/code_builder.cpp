@@ -220,6 +220,13 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	compiled_sources_.resize( source_graph.nodes_storage.size() );
 	BuildSourceGraphNode( source_graph, 0u );
 
+	// Finalize "defererenceable" attributes.
+	// Do this at end because we needs complete types for params/return values even for only prototypes.
+	SetupDereferenceableFunctionParamsAndRetAttributes_r( *compiled_sources_.front().names_map );
+	for( auto& name_value_pair : generated_template_things_storage_ )
+		if( const auto names_scope= name_value_pair.second.GetNamespace() )
+			SetupDereferenceableFunctionParamsAndRetAttributes_r( *names_scope );
+
 	global_function->eraseFromParent(); // Kill global function.
 
 	// Fix incomplete typeinfo.
@@ -1219,8 +1226,6 @@ Type CodeBuilder::BuildFuncCode(
 	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
 
-	SetupCompleteFunctionParamsAndRetAttributes( func_variable );
-
 	NamesScope function_names( "", &parent_names_scope );
 	FunctionContext function_context(
 		function_type,
@@ -2067,7 +2072,7 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
 }
 
-void CodeBuilder::SetupCompleteFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
+void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
 {
 	const auto llvm_function= function_variable.llvm_function;
 	const FunctionType& function_type= *function_variable.type.GetFunctionType();
@@ -2100,6 +2105,32 @@ void CodeBuilder::SetupCompleteFunctionParamsAndRetAttributes( FunctionVariable&
 		llvm_function->addDereferenceableAttr( llvm::AttributeList::FirstArgIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
 	else if( function_type.return_value_type != ValueType::Value )
 		llvm_function->addDereferenceableAttr( llvm::AttributeList::ReturnIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
+}
+
+void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesScope& names_scope )
+{
+	names_scope.ForEachValueInThisScope(
+		[&]( Value& value )
+		{
+			if( const NamesScopePtr inner_namespace= value.GetNamespace() )
+				SetupDereferenceableFunctionParamsAndRetAttributes_r( *inner_namespace );
+			else if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
+			{
+				for( FunctionVariable& function_variable : functions_set->functions )
+					SetupDereferenceableFunctionParamsAndRetAttributes( function_variable );
+			}
+
+			else if( const Type* const type= value.GetTypeName() )
+			{
+				if( const ClassPtr class_type= type->GetClassType() )
+				{
+					// Build classes only from parent namespace.
+					// Otherwise we can get loop, using typedef.
+					if( class_type->members->GetParent() == &names_scope )
+						SetupDereferenceableFunctionParamsAndRetAttributes_r( *class_type->members );
+				}
+			}
+		});
 }
 
 void CodeBuilder::CreateLifetimeStart( FunctionContext& function_context, llvm::Value* const address )

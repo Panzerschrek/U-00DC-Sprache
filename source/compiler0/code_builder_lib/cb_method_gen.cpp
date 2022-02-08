@@ -117,7 +117,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 	constructor_variable->is_constructor= true;
 
 	SetupFunctionParamsAndRetAttributes( *constructor_variable );
-	SetupCompleteFunctionParamsAndRetAttributes( *constructor_variable );
 
 	FunctionContext function_context(
 		*constructor_variable->type.GetFunctionType(),
@@ -298,7 +297,6 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 	constructor_variable->is_constructor= true;
 
 	SetupFunctionParamsAndRetAttributes( *constructor_variable );
-	SetupCompleteFunctionParamsAndRetAttributes( *constructor_variable );
 
 	FunctionContext function_context(
 		*constructor_variable->type.GetFunctionType(),
@@ -410,8 +408,6 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 	CallMembersDestructors( function_context, the_class.members->GetErrors(), the_class.body_src_loc );
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
-
-	SetupCompleteFunctionParamsAndRetAttributes( destructor_function );
 
 	destructor_function.have_body= true;
 }
@@ -567,7 +563,6 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 	operator_variable->is_generated= true;
 
 	SetupFunctionParamsAndRetAttributes( *operator_variable );
-	SetupCompleteFunctionParamsAndRetAttributes( *operator_variable );
 
 	FunctionContext function_context(
 		*operator_variable->type.GetFunctionType(),
@@ -730,7 +725,6 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 	operator_variable->is_generated= true;
 
 	SetupFunctionParamsAndRetAttributes( *operator_variable );
-	SetupCompleteFunctionParamsAndRetAttributes( *operator_variable );
 
 	FunctionContext function_context(
 		*operator_variable->type.GetFunctionType(),

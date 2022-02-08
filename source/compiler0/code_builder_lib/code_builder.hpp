@@ -919,7 +919,9 @@ private:
 
 	void SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
 	// Requires complete types
-	void SetupCompleteFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
+	void SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
+
+	void SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesScope& names_scope );
 
 	void CreateLifetimeStart( FunctionContext& function_context, llvm::Value* address );
 	void CreateLifetimeEnd( FunctionContext& function_context, llvm::Value* address );
