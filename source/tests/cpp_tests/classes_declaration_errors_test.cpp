@@ -264,12 +264,11 @@ U_TEST( UsingIncompleteTypeTest13 )
 
 U_TEST( UsingIncompleteTypeTest14 )
 {
-	// Returning reference to incomplete type must be ok for functions with and without body.
+	// Returning reference to incomplete type must be ok for functions without body.
 	static const char c_program_text[]=
 	R"(
 		struct X;
 		fn Foo() : X&;
-		fn Bar() : X& { return Foo(); }
 	)";
 
 	BuildProgram( c_program_text );
@@ -296,6 +295,24 @@ U_TEST( UsingIncompleteTypeTest15 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
+}
+
+U_TEST( UsingIncompleteTypeTest16 )
+{
+	// Returning reference to incomplete type must be not ok for functions with body.
+	static const char c_program_text[]=
+	R"(
+		struct X;
+		fn Foo() : X& { halt; }
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UsingIncompleteType );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 } // namespace

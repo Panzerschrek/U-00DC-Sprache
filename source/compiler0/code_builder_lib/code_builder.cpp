@@ -1216,7 +1216,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc_, arg.type );
 	}
-	if( function_type.return_value_type == ValueType::Value && !EnsureTypeComplete( function_type.return_type ) )
+	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
 
 	SetupCompleteFunctionParamsAndRetAttributes( func_variable );

@@ -1496,8 +1496,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	var VariablesFrameHolder args_variables_frame_hodler(function_context_value);
 	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
-	// TODO - maybe forbid incomplete types even for references?
-	if( func_variable.t.return_value_type == ValueType::Value && !EnsureTypeComplete( func_variable.t.return_type ) )
+	if( !EnsureTypeComplete( func_variable.t.return_type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
