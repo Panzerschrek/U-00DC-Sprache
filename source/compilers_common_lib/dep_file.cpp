@@ -124,7 +124,7 @@ void Write(
 	}
 
 	std::error_code file_error_code;
-	llvm::raw_fd_ostream out_file_stream( out_file_path + c_file_prefix, file_error_code, llvm::sys::fs::F_None );
+	llvm::raw_fd_ostream out_file_stream( out_file_path + c_file_prefix, file_error_code );
 
 	out_file_stream << llvm::json::Value(std::move(doc));
 	out_file_stream.flush();

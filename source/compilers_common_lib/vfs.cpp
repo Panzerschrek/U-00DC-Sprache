@@ -67,7 +67,7 @@ public: // IVfs
 			result_path= fsp::parent_path( full_parent_file_path );
 			fsp::append( result_path, file_path_r );
 		}
-		return NormalizePath( result_path ).str();
+		return std::string( NormalizePath( result_path ) );
 	}
 
 private:
