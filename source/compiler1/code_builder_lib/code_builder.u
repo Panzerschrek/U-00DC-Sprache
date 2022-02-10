@@ -201,6 +201,14 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	compiled_sources_cache_.resize( source_graph.nodes.size() );
 	BuildSourceGraphNode( source_graph, 0s );
 
+	// Finalize "defererenceable" attributes.
+	// Do this at end because we needs complete types for params/return values even for only prototypes.
+	SetupDereferenceableFunctionParamsAndRetAttributes_r( cast_imut(compiled_sources_cache_).front().names_scope.try_lock_imut().deref() );
+	foreach( &name_value_pair : cast_imut(generated_template_things_) )
+	{
+		SetupDereferenceableFunctionParamsAndRetAttributes_r( name_value_pair.value().lock_imut().deref() );
+	}
+
 	// Finalize incomplete typeinfo.
 	for( auto mut i= 0s; i < typeinfo_cache_.size(); ++i )
 	{
@@ -1511,8 +1519,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
 
-	SetupCompleteFunctionParamsAndRetAttributes( func_variable );
-
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.deref();
@@ -2319,7 +2325,7 @@ fn CodeBuilder::SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable&
 	}
 }
 
-fn CodeBuilder::SetupCompleteFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable )
+fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, FunctionVariable& mut function_variable )
 {
 	var bool is_s_ret= function_variable.t.IsStructRet();
 
@@ -2360,6 +2366,30 @@ fn CodeBuilder::SetupCompleteFunctionParamsAndRetAttributes( mut this, FunctionV
 		else if( function_variable.t.return_value_type != ValueType::Value )
 		{
 			U1_FunctionAddDereferenceableAttr( function_variable.llvm_function, LLVMAttributeReturnIndex, LLVMABISizeOfType( data_layout_, llvm_type ) );
+		}
+	}
+}
+
+fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope )
+{
+	foreach( &el : names_scope )
+	{
+		var NamesScopeValue& value = el.value();
+		if_var( &child_names_scope : value.something_.get</NamesScopeMutPtr/>() )
+		{
+			SetupDereferenceableFunctionParamsAndRetAttributes_r( child_names_scope.lock_imut().deref() );
+		}
+		if_var( &class_type : value.something_.get</ClassTypePtr/>() )
+		{
+			SetupDereferenceableFunctionParamsAndRetAttributes_r( class_type.lock_imut().deref().members.lock_imut().deref() );
+		}
+		if_var( &functions_set_ptr : value.something_.get</ ust::shared_ptr_mut</NamesScopeFunctionsSet/> />() )
+		{
+			auto mut lock= functions_set_ptr.lock_mut();
+			foreach( &mut function : lock.deref().functions_set.functions )
+			{
+				SetupDereferenceableFunctionParamsAndRetAttributes( function );
+			}
 		}
 	}
 }

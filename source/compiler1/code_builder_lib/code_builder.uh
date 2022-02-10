@@ -773,7 +773,9 @@ private:
 
 	fn SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable );
 	// Requires complete types
-	fn SetupCompleteFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variabl );
+	fn SetupDereferenceableFunctionParamsAndRetAttributes( this, FunctionVariable& mut function_variable );
+
+	fn SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope );
 
 	fn MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction );
 
