@@ -833,9 +833,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				// SPARCHE_TODO - maybe also skip additive-assignment operators?
 				if( member_value.key() == KeywordToString( Keyword::constructor_ ) ||
 					member_value.key() == KeywordToString( Keyword::destructor_ ) ||
-					member_value.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) )
+					member_value.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+					member_value.key() == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) )
 				{
-					continue; // Did not inherit constructors, destructors, assignment operators.
+					continue; // Did not inherit constructors, destructors, assignment operators, equality-compare operators.
 				}
 
 				if( dst_members_.GetThisScopeValue( member_value.key() ).empty() )

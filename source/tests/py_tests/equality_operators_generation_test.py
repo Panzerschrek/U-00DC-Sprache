@@ -651,19 +651,3 @@ def EqualityOperatorForCompositeValue_Test4():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
-
-
-def EqualityOperatorIsNotInherited_Test0():
-	c_program_text= """
-		class Base polymorph
-		{
-			op==(Base& l, Base& r) : bool = default;
-		}
-		class Derived : Base {} // Should not inherit "==" from base class. So, fetch of "==" from this class will find nothing.
-		fn Foo(Derived& l, Derived& r)
-		{
-			l == r; // Should get error here and avoid call of "==" of "Base" class (with references cast).
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )

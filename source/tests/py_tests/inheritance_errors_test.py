@@ -877,3 +877,35 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test6(
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionOverridingWithReferencesNotationChange" )
 	assert( errors_list[0].src_loc.line == 10 )
+
+
+def EqualityOperatorIsNotInherited_Test0():
+	c_program_text= """
+		class Base polymorph
+		{
+			op==(Base& l, Base& r) : bool = default;
+		}
+		class Derived : Base {} // Should not inherit "==" from base class. So, fetch of "==" from this class will find nothing.
+		fn Foo(Derived& l, Derived& r)
+		{
+			l == r; // Should get error here and avoid call of "==" of "Base" class (with references cast).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+
+
+def EqualityOperatorIsNotInherited_Test1():
+	c_program_text= """
+		class Base polymorph
+		{
+			op==(Base& l, i32 x) : bool { return false; }
+		}
+		class Derived : Base {} // Should not inherit "==" from base class. So, fetch of "==" from this class will find nothing.
+		fn Foo(Derived& l)
+		{
+			l == 0;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 9 ) )
