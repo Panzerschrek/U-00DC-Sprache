@@ -29,10 +29,10 @@ import "structs_combined.uh"
 			LLVMPositionBuilderAtEnd( ?function_context.llvm_ir_builder, loop_block );
 
 			auto counter_value= LLVMBuildPhi( ?function_context.llvm_ir_builder, fundamental_llvm_types_.int_ptr, "\0"[0] );
+			auto counter_value_plus_one= LLVMBuildAdd( ?function_context.llvm_ir_builder, counter_value, one_value, "\0"[0] );
 
 			safe{ ?b }
 
-			auto counter_value_plus_one= LLVMBuildAdd( ?function_context.llvm_ir_builder, counter_value, one_value, "\0"[0] );
 			auto counter_test= LLVMBuildICmp( ?function_context.llvm_ir_builder, LLVMIntPredicate::ULT, counter_value_plus_one, loop_count_value, "\0"[0] );
 			LLVMBuildCondBr( ?function_context.llvm_ir_builder, counter_test, loop_block, block_after_loop );
 

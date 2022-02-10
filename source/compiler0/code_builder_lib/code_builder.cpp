@@ -590,9 +590,10 @@ void CodeBuilder::GenerateLoop(
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
 	llvm::PHINode* const counter_value= function_context.llvm_ir_builder.CreatePHI( size_type_llvm, 2u );
+	llvm::Value* const counter_value_plus_one= function_context.llvm_ir_builder.CreateAdd( counter_value, one_value );
+
 	loop_body( counter_value );
 
-	llvm::Value* const counter_value_plus_one= function_context.llvm_ir_builder.CreateAdd( counter_value, one_value );
 	llvm::Value* const counter_test= function_context.llvm_ir_builder.CreateICmpULT( counter_value_plus_one, loop_count_value );
 	function_context.llvm_ir_builder.CreateCondBr( counter_test, loop_block, block_after_loop );
 
