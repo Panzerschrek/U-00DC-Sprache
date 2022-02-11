@@ -152,9 +152,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		}
 
 		// Make first index = 0 for array to pointer conversion.
-		llvm::Value* index_list[2];
-		index_list[0]= GetZeroGEPIndex();
-		index_list[1]= CreateMoveToLLVMRegisterInstruction( index, function_context );
+		llvm::Value* index_value= CreateMoveToLLVMRegisterInstruction( index, function_context );
 
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc_ ); // Destroy temporaries of index expression.
 
@@ -170,7 +168,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// If index is not constant - check bounds.
 		if( index.constexpr_value == nullptr )
 		{
-			llvm::Value* index_value= index_list[1];
 			const uint64_t index_size= index_fundamental_type->GetSize();
 			const uint64_t size_type_size= size_type_.GetFundamentalType()->GetSize();
 			if( index_size > size_type_size )
@@ -196,7 +193,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
 
-		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, index_list );
+		result.llvm_value= CreateArrayElementGEP( function_context, variable.llvm_value, index_value );
 
 		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
@@ -247,8 +244,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result.location= Variable::Location::Pointer;
 		result.value_type= variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		result.node= variable_lock.TakeNode();
-		result.type= tuple_type->elements[static_cast<size_t>(index_value)];
-		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( variable.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(index_value) } );
+		result.type= tuple_type->elements[size_t(index_value)];
+		result.llvm_value= CreateTupleElementGEP( function_context, variable.llvm_value, index_value );
 
 		if( variable.constexpr_value != nullptr )
 			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
@@ -334,10 +331,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	// Make first index = 0 for array to pointer conversion.
-	llvm::Value* index_list[2];
-	index_list[0]= GetZeroGEPIndex();
-
 	llvm::Value* actual_field_class_ptr= nullptr;
 	if( field->class_ == variable.type.GetClassType() )
 		actual_field_class_ptr= variable.llvm_value;
@@ -348,16 +341,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		actual_field_class_ptr= variable.llvm_value;
 		while( actual_field_class != field->class_ )
 		{
-			index_list[1]= GetFieldGEPIndex( 0u /* base class is allways first field */ );
-			actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
-
+			actual_field_class_ptr= CreateBaseClassGEP( function_context, actual_field_class_ptr );
 			actual_field_class= actual_field_class->base_class;
 			U_ASSERT(actual_field_class != nullptr );
 		}
 	}
 
-	index_list[1]= GetFieldGEPIndex( field->index );
-	llvm::Value* const gep_result= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
+	llvm::Value* const gep_result= CreateClassFiledGEP( function_context, actual_field_class_ptr, field->index );
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
@@ -703,11 +693,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const ClassPtr class_= field->class_;
 		U_ASSERT( class_ != nullptr && "Class is dead? WTF?" );
 
-		// Make first index = 0 for array to pointer conversion.
-		llvm::Value* index_list[2];
-		index_list[0]= GetZeroGEPIndex();
-
-
 		llvm::Value* actual_field_class_ptr= nullptr;
 		if( class_ == function_context.this_->type.GetClassType() )
 			actual_field_class_ptr= function_context.this_->llvm_value;
@@ -724,8 +709,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					return ErrorValue();
 				}
 
-				index_list[1]= GetFieldGEPIndex( 0u /* base class is allways first field */ );
-				actual_field_class_ptr= function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
+				actual_field_class_ptr= CreateBaseClassGEP( function_context, actual_field_class_ptr );
 				actual_field_class= actual_field_class->base_class;
 			}
 		}
@@ -750,9 +734,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		field_variable.value_type= ( function_context.this_->value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		field_variable.node= function_context.this_->node;
 
-		index_list[1]= GetFieldGEPIndex( field->index );
-		field_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( actual_field_class_ptr, index_list );
+		field_variable.llvm_value= CreateClassFiledGEP( function_context, actual_field_class_ptr, field->index );
 
 		if( field->is_reference )
 		{

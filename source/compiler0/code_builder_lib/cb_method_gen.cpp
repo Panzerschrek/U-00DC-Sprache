@@ -133,10 +133,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		base_variable.type= the_class.base_class;
 		base_variable.value_type= ValueType::ReferenceMut;
 
-		base_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP(
-				this_llvm_value,
-				{ GetZeroGEPIndex(), GetFieldGEPIndex( 0u /*base class is allways first field */ ) } );
+		base_variable.llvm_value= CreateBaseClassGEP( function_context, this_llvm_value );
 
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), SrcLoc()/*TODO*/, base_variable, *the_class.members, function_context );
 	}
@@ -163,8 +160,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 			field_variable.type= field.type;
 			field_variable.value_type= ValueType::ReferenceMut;
 
-			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
+			field_variable.llvm_value= CreateClassFiledGEP( function_context, this_llvm_value, field.index );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
@@ -311,10 +307,9 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 
 	if( the_class.base_class != nullptr )
 	{
-		llvm::Value* const index_list[2] { GetZeroGEPIndex(),  GetFieldGEPIndex(  0u /*base class is allways first field */ ) };
 		BuildCopyConstructorPart(
-			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
-			function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
+			CreateBaseClassGEP( function_context, this_llvm_value ),
+			CreateBaseClassGEP( function_context, src_llvm_value  ),
 			the_class.base_class,
 			function_context );
 	}
@@ -326,9 +321,8 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 
 		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 
-		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
-		llvm::Value* const dst= function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list );
-		llvm::Value* const src= function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list );
+		const auto dst= CreateClassFiledGEP( function_context, this_llvm_value, field.index );
+		const auto src= CreateClassFiledGEP( function_context, src_llvm_value,  field.index );
 
 		if( field.is_reference )
 		{
@@ -577,10 +571,9 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 
 	if( the_class.base_class != nullptr )
 	{
-		llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex(  0u /*base class is allways first field */ ) };
 		BuildCopyAssignmentOperatorPart(
-			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
-			function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
+			CreateBaseClassGEP( function_context, this_llvm_value ),
+			CreateBaseClassGEP( function_context, src_llvm_value  ),
 			the_class.base_class,
 			function_context );
 	}
@@ -593,10 +586,9 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 		U_ASSERT( field.type.IsCopyAssignable() );
 
-		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
 		BuildCopyAssignmentOperatorPart(
-			function_context.llvm_ir_builder.CreateGEP( this_llvm_value, index_list ),
-			function_context.llvm_ir_builder.CreateGEP( src_llvm_value , index_list ),
+			CreateClassFiledGEP( function_context, this_llvm_value, field.index ),
+			CreateClassFiledGEP( function_context, src_llvm_value,  field.index ),
 			field.type,
 			function_context );
 	}
@@ -743,10 +735,9 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 	{
 		U_ASSERT( the_class.base_class->is_equality_comparable );
 
-		llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex(  0u /*base class is allways first field */ ) };
 		BuildEqualityCompareOperatorPart(
-			function_context.llvm_ir_builder.CreateGEP( l_address, index_list ),
-			function_context.llvm_ir_builder.CreateGEP( r_address, index_list ),
+			CreateBaseClassGEP( function_context, l_address ),
+			CreateBaseClassGEP( function_context, r_address ),
 			the_class.base_class,
 			false_basic_block,
 			function_context );
@@ -760,10 +751,9 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 		U_ASSERT( field.type.IsEqualityComparable() );
 
-		llvm::Value* const index_list[2] { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) };
 		BuildEqualityCompareOperatorPart(
-			function_context.llvm_ir_builder.CreateGEP( l_address, index_list ),
-			function_context.llvm_ir_builder.CreateGEP( r_address, index_list ),
+			CreateClassFiledGEP( function_context, l_address, field.index ),
+			CreateClassFiledGEP( function_context, r_address, field.index ),
 			field.type,
 			false_basic_block,
 			function_context );
@@ -832,10 +822,9 @@ void CodeBuilder::BuildCopyConstructorPart(
 			array_type.size,
 			[&](llvm::Value* const counter_value)
 			{
-				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
 				BuildCopyConstructorPart(
-					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+					CreateArrayElementGEP( function_context, dst, counter_value ),
+					CreateArrayElementGEP( function_context, src, counter_value ),
 					array_type.type,
 					function_context );
 			},
@@ -845,10 +834,10 @@ void CodeBuilder::BuildCopyConstructorPart(
 	{
 		for( const Type& element_type : tuple_type->elements )
 		{
-			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( size_t(&element_type - tuple_type->elements.data()) ) };
+			const auto index= size_t(&element_type - tuple_type->elements.data());
 			BuildCopyConstructorPart(
-				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+				CreateTupleElementGEP( function_context, dst, index ),
+				CreateTupleElementGEP( function_context, src, index ),
 				element_type,
 				function_context );
 		}
@@ -911,10 +900,9 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 			array_type.size,
 			[&](llvm::Value* const counter_value)
 			{
-				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
 				BuildCopyAssignmentOperatorPart(
-					function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-					function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+					CreateArrayElementGEP( function_context, dst, counter_value ),
+					CreateArrayElementGEP( function_context, src, counter_value ),
 					array_type.type,
 					function_context );
 			},
@@ -924,10 +912,10 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 	{
 		for( const Type& element_type : tuple_type->elements )
 		{
-			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( size_t(&element_type - tuple_type->elements.data()) ) };
+			const auto index= size_t(&element_type - tuple_type->elements.data());
 			BuildCopyAssignmentOperatorPart(
-				function_context.llvm_ir_builder.CreateGEP( dst, index_list ),
-				function_context.llvm_ir_builder.CreateGEP( src, index_list ),
+				CreateTupleElementGEP( function_context, dst, index ),
+				CreateTupleElementGEP( function_context, src, index ),
 				element_type,
 				function_context );
 		}
@@ -998,10 +986,9 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 			array_type->size,
 			[&](llvm::Value* const counter_value )
 			{
-				llvm::Value* const index_list[2]{ GetZeroGEPIndex(), counter_value };
 				BuildEqualityCompareOperatorPart(
-					function_context.llvm_ir_builder.CreateGEP( l_address, index_list ),
-					function_context.llvm_ir_builder.CreateGEP( r_address, index_list ),
+					CreateArrayElementGEP( function_context, l_address, counter_value ),
+					CreateArrayElementGEP( function_context, r_address, counter_value ),
 					array_type->type,
 					false_basic_block,
 					function_context );
@@ -1012,10 +999,10 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 	{
 		for( const Type& element_type : tuple_type->elements )
 		{
-			llvm::Value* const index_list[2]{ GetZeroGEPIndex(), GetFieldGEPIndex( size_t(&element_type - tuple_type->elements.data()) ) };
+			const auto index= size_t(&element_type - tuple_type->elements.data());
 			BuildEqualityCompareOperatorPart(
-				function_context.llvm_ir_builder.CreateGEP( l_address, index_list ),
-				function_context.llvm_ir_builder.CreateGEP( r_address, index_list ),
+				CreateTupleElementGEP( function_context, l_address, index ),
+				CreateTupleElementGEP( function_context, r_address, index ),
 				element_type,
 				false_basic_block,
 				function_context );
@@ -1187,18 +1174,14 @@ void CodeBuilder::MoveConstantToMemory(
 	llvm::Value* const ptr, llvm::Constant* const constant,
 	FunctionContext& function_context )
 {
-	llvm::Value* index_list[2];
-	index_list[0]= GetZeroGEPIndex();
-
 	llvm::Type* const type= constant->getType();
 	if( type->isStructTy() )
 	{
 		llvm::StructType* const struct_type= llvm::dyn_cast<llvm::StructType>(type);
 		for( unsigned int i= 0u; i < struct_type->getNumElements(); ++i )
 		{
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, i ) );
 			MoveConstantToMemory(
-				function_context.llvm_ir_builder.CreateGEP( ptr, index_list ),
+				CreateClassFiledGEP( function_context, ptr, i ),
 				constant->getAggregateElement(i),
 				function_context );
 		}
@@ -1208,9 +1191,8 @@ void CodeBuilder::MoveConstantToMemory(
 		llvm::ArrayType* const array_type= llvm::dyn_cast<llvm::ArrayType>(type);
 		for( unsigned int i= 0u; i < array_type->getNumElements(); ++i )
 		{
-			index_list[1]= llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, i ) );
 			MoveConstantToMemory(
-				function_context.llvm_ir_builder.CreateGEP( ptr, index_list ),
+				CreateArrayElementGEP( function_context, ptr, i ),
 				constant->getAggregateElement(i),
 				function_context );
 		}
