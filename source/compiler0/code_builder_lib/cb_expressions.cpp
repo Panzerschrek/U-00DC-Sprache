@@ -396,7 +396,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		else
 		{
 			// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
-			const auto load_res= function_context.llvm_ir_builder.CreateLoad( gep_result );
+			const auto load_res= function_context.llvm_ir_builder.CreateLoad( field->type.GetLLVMType()->getPointerTo(), gep_result );
 			load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
 			result.llvm_value= load_res;
 		}
@@ -757,7 +757,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( field->is_reference )
 		{
 			field_variable.value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-			field_variable.llvm_value= function_context.llvm_ir_builder.CreateLoad( field_variable.llvm_value );
+			field_variable.llvm_value= function_context.llvm_ir_builder.CreateLoad( field->type.GetLLVMType()->getPointerTo(), field_variable.llvm_value );
 
 			if( function_context.this_->node != nullptr )
 			{

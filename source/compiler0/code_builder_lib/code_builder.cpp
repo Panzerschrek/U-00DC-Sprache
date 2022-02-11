@@ -1932,7 +1932,7 @@ llvm::Value* CodeBuilder::CreateMoveToLLVMRegisterInstruction( const Variable& v
 		if( variable.type == void_type_ )
 			return llvm::UndefValue::get(fundamental_llvm_types_.void_);
 		else
-			return function_context.llvm_ir_builder.CreateLoad( variable.llvm_value );
+			return function_context.llvm_ir_builder.CreateLoad( variable.type.GetLLVMType(), variable.llvm_value );
 	};
 
 	U_ASSERT(false);
