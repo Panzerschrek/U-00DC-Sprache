@@ -344,7 +344,7 @@ void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class
 		llvm::Value* const gep_indices[]{ GetZeroGEPIndex(), GetZeroGEPIndex() };
 		const auto first_element_address=
 			llvm::ConstantExpr::getGetElementPtr(
-				nullptr,
+				parent.class_->polymorph_type_id_table->getType()->getPointerElementType(),
 				parent.class_->polymorph_type_id_table,
 				gep_indices );
 
@@ -409,7 +409,7 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_cla
 		llvm::Value* const gep_indices[]{ GetZeroGEPIndex(), GetZeroGEPIndex() };
 		const auto address=
 			llvm::ConstantExpr::getGetElementPtr(
-				nullptr,
+				dst_class.polymorph_type_id_table->getType()->getPointerElementType(),
 				dst_class.polymorph_type_id_table,
 				gep_indices );
 		initializer_values.push_back( address );
