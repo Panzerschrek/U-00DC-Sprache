@@ -220,6 +220,13 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	compiled_sources_.resize( source_graph.nodes_storage.size() );
 	BuildSourceGraphNode( source_graph, 0u );
 
+	// Finalize "defererenceable" attributes.
+	// Do this at end because we needs complete types for params/return values even for only prototypes.
+	SetupDereferenceableFunctionParamsAndRetAttributes_r( *compiled_sources_.front().names_map );
+	for( auto& name_value_pair : generated_template_things_storage_ )
+		if( const auto names_scope= name_value_pair.second.GetNamespace() )
+			SetupDereferenceableFunctionParamsAndRetAttributes_r( *names_scope );
+
 	global_function->eraseFromParent(); // Kill global function.
 
 	// Fix incomplete typeinfo.
@@ -1217,7 +1224,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc_, arg.type );
 	}
-	if( function_type.return_value_type == ValueType::Value && !EnsureTypeComplete( function_type.return_type ) )
+	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
 
 	NamesScope function_names( "", &parent_names_scope );
@@ -2064,6 +2071,67 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+}
+
+void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
+{
+	const auto llvm_function= function_variable.llvm_function;
+	const FunctionType& function_type= *function_variable.type.GetFunctionType();
+
+	const bool first_arg_is_sret= function_type.IsStructRet();
+
+	for( size_t i= 0u; i < function_type.params.size(); i++ )
+	{
+		const auto arg_attr_index=
+			static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
+		const FunctionType::Param& param= function_type.params[i];
+
+		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
+		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
+		if( param.value_type != ValueType::Value || param_is_composite )
+		{
+			const auto llvm_type= param.type.GetLLVMType();
+			if( !llvm_type->isSized() )
+				continue; // May be in case of error.
+
+			llvm_function->addDereferenceableAttr( arg_attr_index, data_layout_.getTypeAllocSize( llvm_type ) );
+		}
+	}
+
+	const auto llvm_ret_type= function_type.return_type.GetLLVMType();
+	if( !llvm_ret_type->isSized() )
+		return; // May be in case of error.
+
+	if( first_arg_is_sret )
+		llvm_function->addDereferenceableAttr( llvm::AttributeList::FirstArgIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
+	else if( function_type.return_value_type != ValueType::Value )
+		llvm_function->addDereferenceableAttr( llvm::AttributeList::ReturnIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
+}
+
+void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesScope& names_scope )
+{
+	names_scope.ForEachValueInThisScope(
+		[&]( Value& value )
+		{
+			if( const NamesScopePtr inner_namespace= value.GetNamespace() )
+				SetupDereferenceableFunctionParamsAndRetAttributes_r( *inner_namespace );
+			else if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
+			{
+				for( FunctionVariable& function_variable : functions_set->functions )
+					SetupDereferenceableFunctionParamsAndRetAttributes( function_variable );
+			}
+
+			else if( const Type* const type= value.GetTypeName() )
+			{
+				if( const ClassPtr class_type= type->GetClassType() )
+				{
+					// Build classes only from parent namespace.
+					// Otherwise we can get loop, using typedef.
+					if( class_type->members->GetParent() == &names_scope )
+						SetupDereferenceableFunctionParamsAndRetAttributes_r( *class_type->members );
+				}
+			}
+		});
 }
 
 void CodeBuilder::CreateLifetimeStart( FunctionContext& function_context, llvm::Value* const address )

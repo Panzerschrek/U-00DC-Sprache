@@ -201,6 +201,14 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	compiled_sources_cache_.resize( source_graph.nodes.size() );
 	BuildSourceGraphNode( source_graph, 0s );
 
+	// Finalize "defererenceable" attributes.
+	// Do this at end because we needs complete types for params/return values even for only prototypes.
+	SetupDereferenceableFunctionParamsAndRetAttributes_r( cast_imut(compiled_sources_cache_).front().names_scope.try_lock_imut().deref() );
+	foreach( &name_value_pair : cast_imut(generated_template_things_) )
+	{
+		SetupDereferenceableFunctionParamsAndRetAttributes_r( name_value_pair.value().lock_imut().deref() );
+	}
+
 	// Finalize incomplete typeinfo.
 	for( auto mut i= 0s; i < typeinfo_cache_.size(); ++i )
 	{
@@ -1496,8 +1504,17 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	var VariablesFrameHolder args_variables_frame_hodler(function_context_value);
 	auto& mut function_context= args_variables_frame_hodler.GetFunctionContext();
 
-	// TODO - maybe forbid incomplete types even for references?
-	if( func_variable.t.return_value_type == ValueType::Value && !EnsureTypeComplete( func_variable.t.return_type ) )
+	// Ensure type completness even for reference args because of reference checking.
+	foreach( &param : func_variable.t.params )
+	{
+		if( !EnsureTypeComplete( param.t ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, param.t )
+			return;
+		}
+	}
+
+	if( !EnsureTypeComplete( func_variable.t.return_type ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
@@ -1531,13 +1548,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				.t= type_param.t,
 				.is_mutable= in_param.mutability_modifier == Synt::MutabilityModifier::Mutable,
 			};
-
-			// Ensure type completness even for reference args because of reference checking.
-			if( !EnsureTypeComplete( out_arg.t ) )
-			{
-				REPORT_ERROR( UsingIncompleteType, names_scope, in_param.src_loc, out_arg.t )
-				return;
-			}
 
 			var ReferencesGraph::NodeId mut inner_reference_variable_node_id= ReferencesGraph::c_empty_node_id;
 			if( type_param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
@@ -2312,6 +2322,75 @@ fn CodeBuilder::SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable&
 	if( function_variable.is_generated )
 	{
 		unsafe{  LLVMSetLinkage( function_variable.llvm_function, LLVMLinkage::Private );  }
+	}
+}
+
+fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, FunctionVariable& mut function_variable )
+{
+	var bool is_s_ret= function_variable.t.IsStructRet();
+
+	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
+	{
+		var FunctionType::Param& param= function_variable.t.params[i];
+		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + select( is_s_ret ? 1u : 0u ) + u32(i);
+
+		var bool param_type_is_composite= !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty();
+		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
+		if( param.value_type != ValueType::Value || param_type_is_composite )
+		{
+			var LLVMTypeRef llvm_type= param.t.GetLLVMType();
+			unsafe
+			{
+				if( LLVMTypeIsSized( llvm_type ) != LLVMBool::True )
+				{
+					continue; // May be in case of error.
+				}
+
+				U1_FunctionAddDereferenceableAttr( function_variable.llvm_function, llvm_param_n, LLVMABISizeOfType( data_layout_, llvm_type ) );
+			}
+		}
+	}
+
+	unsafe
+	{
+		var LLVMTypeRef llvm_type= function_variable.t.return_type.GetLLVMType();
+		if( LLVMTypeIsSized( llvm_type ) != LLVMBool::True )
+		{
+			return; // May be in case of error.
+		}
+
+		if( is_s_ret )
+		{
+			U1_FunctionAddDereferenceableAttr( function_variable.llvm_function, LLVMAttributeFirstParamIndex, LLVMABISizeOfType( data_layout_, llvm_type ) );
+		}
+		else if( function_variable.t.return_value_type != ValueType::Value )
+		{
+			U1_FunctionAddDereferenceableAttr( function_variable.llvm_function, LLVMAttributeReturnIndex, LLVMABISizeOfType( data_layout_, llvm_type ) );
+		}
+	}
+}
+
+fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope )
+{
+	foreach( &el : names_scope )
+	{
+		var NamesScopeValue& value = el.value();
+		if_var( &child_names_scope : value.something_.get</NamesScopeMutPtr/>() )
+		{
+			SetupDereferenceableFunctionParamsAndRetAttributes_r( child_names_scope.lock_imut().deref() );
+		}
+		if_var( &class_type : value.something_.get</ClassTypePtr/>() )
+		{
+			SetupDereferenceableFunctionParamsAndRetAttributes_r( class_type.lock_imut().deref().members.lock_imut().deref() );
+		}
+		if_var( &functions_set_ptr : value.something_.get</ ust::shared_ptr_mut</NamesScopeFunctionsSet/> />() )
+		{
+			auto mut lock= functions_set_ptr.lock_mut();
+			foreach( &mut function : lock.deref().functions_set.functions )
+			{
+				SetupDereferenceableFunctionParamsAndRetAttributes( function );
+			}
+		}
 	}
 }
 

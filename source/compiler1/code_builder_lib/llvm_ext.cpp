@@ -2,6 +2,7 @@
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Function.h>
 #include <llvm/Support/ConvertUTF.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
@@ -19,6 +20,11 @@ extern "C" void U1_DropAllBasicBlockUsersReferences(const LLVMBasicBlockRef basi
 extern "C" bool U1_BasicBlockHasPredecessors(const LLVMBasicBlockRef basic_block)
 {
 	return llvm::unwrap(basic_block)->hasNPredecessorsOrMore(1);
+}
+
+extern "C" void U1_FunctionAddDereferenceableAttr(const LLVMValueRef function, const uint32_t index, const uint64_t bytes)
+{
+	llvm::dyn_cast<llvm::Function>(llvm::unwrap(function))->addDereferenceableAttr(index, bytes);
 }
 
 extern "C" size_t U1_ConvertUTF8ToUTF16(

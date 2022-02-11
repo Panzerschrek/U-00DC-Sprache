@@ -918,6 +918,10 @@ private:
 	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name );
 
 	void SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
+	// Requires complete types
+	void SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
+
+	void SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesScope& names_scope );
 
 	void CreateLifetimeStart( FunctionContext& function_context, llvm::Value* address );
 	void CreateLifetimeEnd( FunctionContext& function_context, llvm::Value* address );
