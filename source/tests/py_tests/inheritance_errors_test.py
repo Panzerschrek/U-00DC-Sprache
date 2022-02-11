@@ -909,3 +909,21 @@ def EqualityOperatorIsNotInherited_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 9 ) )
+
+
+def EqualityOperatorIsNotInherited_Test2():
+	c_program_text= """
+		class Base polymorph
+		{
+			op==(Base& l, Base& r) : bool = default;
+		}
+		class Derived : Base
+		{
+			op==(Derived& l, Derived& r) : bool = default; // Introduce our own "==".
+		}
+		fn Foo(Derived& l, Derived& r)
+		{
+			l == r; // Ok, call "Derived::=="
+		}
+	"""
+	tests_lib.build_program( c_program_text )
