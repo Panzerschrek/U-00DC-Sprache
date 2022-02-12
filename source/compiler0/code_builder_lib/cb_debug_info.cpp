@@ -31,7 +31,7 @@ void CodeBuilder::CreateVariableDebugInfo(
 		variable.llvm_value,
 		di_local_variable,
 		debug_info_.builder->createExpression(),
-		llvm::DebugLoc::get(src_loc.GetLine(), src_loc.GetColumn(), function_context.current_debug_info_scope),
+		llvm::DILocation::get(llvm_context_, src_loc.GetLine(), src_loc.GetColumn(), function_context.current_debug_info_scope),
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
@@ -60,7 +60,7 @@ void CodeBuilder::CreateReferenceVariableDebugInfo(
 		address_for_ref,
 		di_local_variable,
 		debug_info_.builder->createExpression(),
-		llvm::DebugLoc::get(src_loc.GetLine(), src_loc.GetColumn(), function_context.current_debug_info_scope),
+		llvm::DILocation::get(llvm_context_, src_loc.GetLine(), src_loc.GetColumn(), function_context.current_debug_info_scope),
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
@@ -92,7 +92,8 @@ void CodeBuilder::SetCurrentDebugLocation(
 		return;
 
 	function_context.llvm_ir_builder.SetCurrentDebugLocation(
-		llvm::DebugLoc::get(
+		llvm::DILocation::get(
+			llvm_context_,
 			src_loc.GetLine(),
 			src_loc.GetColumn(),
 			function_context.current_debug_info_scope ) );

@@ -641,7 +641,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					continue;
 				}
 
-				variable.llvm_value= function_context.llvm_ir_builder.CreateGEP( sequence_expression.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } );
+				variable.llvm_value= CreateTupleElementGEP( function_context, sequence_expression.llvm_value, element_index );
 
 				CreateReferenceVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
 
@@ -675,7 +675,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				BuildCopyConstructorPart(
 					variable.llvm_value,
-					function_context.llvm_ir_builder.CreateGEP( sequence_expression.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } ),
+					CreateTupleElementGEP( function_context, sequence_expression.llvm_value, element_index ),
 					element_type,
 					function_context );
 			}
@@ -1728,7 +1728,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 
 		llvm::Value* const ptr_value= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 		llvm::Value* const one= llvm::ConstantInt::get( fundamental_llvm_types_.int_ptr, positive ? uint64_t(1u) : ~uint64_t(0), true );
-		llvm::Value* const new_value= function_context.llvm_ir_builder.CreateGEP( ptr_value, one );
+		llvm::Value* const new_value= function_context.llvm_ir_builder.CreateGEP( raw_poiter_type->type.GetLLVMType(), ptr_value, one );
 
 		U_ASSERT( variable->location == Variable::Location::Pointer );
 		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );

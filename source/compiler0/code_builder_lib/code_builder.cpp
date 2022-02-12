@@ -679,7 +679,7 @@ void CodeBuilder::CallDestructor(
 			[&]( llvm::Value* const index )
 			{
 				CallDestructor(
-					function_context.llvm_ir_builder.CreateGEP( ptr, { GetZeroGEPIndex(), index } ),
+					CreateArrayElementGEP( function_context, ptr, index ),
 					array_type->type,
 					function_context,
 					errors_container,
@@ -693,7 +693,7 @@ void CodeBuilder::CallDestructor(
 		{
 			if( element_type.HaveDestructor() )
 				CallDestructor(
-					function_context.llvm_ir_builder.CreateGEP( ptr, { GetZeroGEPIndex(), GetFieldGEPIndex( size_t(&element_type - tuple_type->elements.data()) ) } ),
+					CreateTupleElementGEP( function_context, ptr, size_t(&element_type - tuple_type->elements.data()) ),
 					element_type,
 					function_context,
 					errors_container,
@@ -736,9 +736,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 	{
 		U_ASSERT( class_->parents[i].class_->have_destructor ); // Parents are polymorph, polymorph classes always have destructors.
 		CallDestructor(
-			function_context.llvm_ir_builder.CreateGEP(
-				function_context.this_->llvm_value,
-				{ GetZeroGEPIndex(), GetFieldGEPIndex( class_->parents[i].field_number ) } ),
+			CreateClassFiledGEP( function_context, function_context.this_->llvm_value, class_->parents[i].field_number ),
 			class_->parents[i].class_,
 			function_context,
 			errors_container,
@@ -755,9 +753,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 			continue;
 
 		CallDestructor(
-			function_context.llvm_ir_builder.CreateGEP(
-				function_context.this_->llvm_value,
-				{ GetZeroGEPIndex(), GetFieldGEPIndex(field.index) } ),
+			CreateClassFiledGEP( function_context, function_context.this_->llvm_value, field.index ),
 			field.type,
 			function_context,
 			errors_container,
@@ -1599,8 +1595,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.location= Variable::Location::Pointer;
 			field_variable.value_type= ValueType::ReferenceMut;
 
-			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( field.index ) } );
+			field_variable.llvm_value= CreateClassFiledGEP( function_context, this_.llvm_value, field.index );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
@@ -1619,8 +1614,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		base_variable.location= Variable::Location::Pointer;
 		base_variable.value_type= ValueType::ReferenceMut;
 
-		base_variable.llvm_value=
-			function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex( 0u /* base class is allways first field */ ) } );
+		base_variable.llvm_value= CreateBaseClassGEP( function_context, this_.llvm_value );
 
 		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
@@ -1643,10 +1637,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			base_variable.value_type= ValueType::ReferenceMut;
 			base_variable.node= this_.node;
 
-			base_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP(
-					this_.llvm_value,
-					{ GetZeroGEPIndex(), GetFieldGEPIndex( 0u /* base class is allways first field */ ) } );
+			base_variable.llvm_value= CreateBaseClassGEP( function_context, this_.llvm_value );
 
 			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );
 			function_context.base_initialized= true;
@@ -1669,8 +1660,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.value_type= ValueType::ReferenceMut;
 			field_variable.node= this_.node;
 
-			field_variable.llvm_value=
-				function_context.llvm_ir_builder.CreateGEP( this_.llvm_value, { GetZeroGEPIndex(), GetFieldGEPIndex(field->index) } );
+			field_variable.llvm_value= CreateClassFiledGEP( function_context, this_.llvm_value, field->index );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
 		}
@@ -1932,7 +1922,7 @@ llvm::Value* CodeBuilder::CreateMoveToLLVMRegisterInstruction( const Variable& v
 		if( variable.type == void_type_ )
 			return llvm::UndefValue::get(fundamental_llvm_types_.void_);
 		else
-			return function_context.llvm_ir_builder.CreateLoad( variable.llvm_value );
+			return function_context.llvm_ir_builder.CreateLoad( variable.type.GetLLVMType(), variable.llvm_value );
 	};
 
 	U_ASSERT(false);
@@ -1949,6 +1939,42 @@ llvm::Constant* CodeBuilder::GetFieldGEPIndex( const uint64_t field_index )
 	return llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, field_index ) );
 }
 
+llvm::Value*CodeBuilder:: CreateBaseClassGEP( FunctionContext& function_context, llvm::Value* const class_ptr )
+{
+	return CreateClassFiledGEP( function_context, class_ptr, 0 /* base class is allways first field */ );
+}
+
+llvm::Value*CodeBuilder:: CreateVirtualTablePointerGEP( FunctionContext& function_context, llvm::Value* const class_ptr )
+{
+	return CreateClassFiledGEP( function_context, class_ptr, 0 /* virtual table pointer is allways first field */ );
+}
+
+llvm::Value* CodeBuilder::CreateClassFiledGEP( FunctionContext& function_context, llvm::Value* const class_ptr, const uint64_t field_index )
+{
+	return function_context.llvm_ir_builder.CreateGEP(
+		class_ptr->getType()->getPointerElementType(),
+		class_ptr,
+		{ GetZeroGEPIndex(), GetFieldGEPIndex( field_index ) } );
+}
+
+llvm::Value* CodeBuilder::CreateTupleElementGEP( FunctionContext& function_context, llvm::Value* tuple_ptr, const uint64_t element_index )
+{
+	return CreateClassFiledGEP( function_context, tuple_ptr, element_index );
+}
+
+llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* const array_ptr, const uint64_t element_index )
+{
+	return CreateArrayElementGEP( function_context, array_ptr, llvm::ConstantInt::get( fundamental_llvm_types_.u64, element_index ) );
+}
+
+llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* const array_ptr, llvm::Value* const index )
+{
+	return function_context.llvm_ir_builder.CreateGEP(
+		array_ptr->getType()->getPointerElementType(),
+		array_ptr,
+		{ GetZeroGEPIndex(), index } );
+}
+
 llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context )
 {
 	U_ASSERT( src_type.ReferenceIsConvertibleTo( dst_type ) );
@@ -1961,10 +1987,7 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 
 	for( const Class::Parent& src_parent_class : src_class_type->parents )
 	{
-		llvm::Value* const sub_ref=
-			function_context.llvm_ir_builder.CreateGEP(
-				ref,
-				{ GetZeroGEPIndex(), GetFieldGEPIndex( src_parent_class.field_number ) } );
+		llvm::Value* const sub_ref= CreateClassFiledGEP( function_context, ref, src_parent_class.field_number );
 
 		if( src_parent_class.class_ == dst_type )
 			return sub_ref;

@@ -912,6 +912,13 @@ private:
 	llvm::Constant* GetZeroGEPIndex();
 	llvm::Constant* GetFieldGEPIndex( uint64_t field_index );
 
+	llvm::Value* CreateBaseClassGEP( FunctionContext& function_context, llvm::Value* class_ptr );
+	llvm::Value* CreateVirtualTablePointerGEP( FunctionContext& function_context, llvm::Value* class_ptr );
+	llvm::Value* CreateClassFiledGEP( FunctionContext& function_context, llvm::Value* class_ptr, uint64_t field_index );
+	llvm::Value* CreateTupleElementGEP( FunctionContext& function_context, llvm::Value* tuple_ptr, uint64_t element_index );
+	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* array_ptr, uint64_t element_index );
+	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* array_ptr, llvm::Value* index );
+
 	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );
