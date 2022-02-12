@@ -783,8 +783,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					// SPARCHE_TODO - maybe also skip additive-assignment operators?
 					if( name == Keyword( Keywords::constructor_ ) ||
 						name == Keyword( Keywords::destructor_ ) ||
-						name == OverloadedOperatorToString( OverloadedOperator::Assign ) )
-						return; // Did not inherit constructors, destructors, assignment operators.
+						name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+						name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
+						name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
+						return; // Did not inherit constructors, destructors, assignment operators, compare operators.
 
 					if( result_class_value != nullptr )
 					{
