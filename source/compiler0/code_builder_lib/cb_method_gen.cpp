@@ -1069,8 +1069,8 @@ void CodeBuilder::CopyBytes(
 		// Create memcpy for aggregate types.
 		const auto alignment= data_layout_.getABITypeAlignment( llvm_type ); // TODO - is this right alignment?
 		function_context.llvm_ir_builder.CreateMemCpy(
-			dst, alignment,
-			src, alignment,
+			dst, llvm::MaybeAlign(alignment),
+			src, llvm::MaybeAlign(alignment),
 			llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt(32, data_layout_.getTypeAllocSize( llvm_type ) ) ) );
 	}
 }
