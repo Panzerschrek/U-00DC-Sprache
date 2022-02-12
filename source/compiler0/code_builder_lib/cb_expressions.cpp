@@ -2979,13 +2979,13 @@ Value CodeBuilder::DoCallFunction(
 			call_result= constant_call_result;
 		else
 		{
-			call_result= function_context.llvm_ir_builder.CreateCall( function, llvm_args );
+			call_result= function_context.llvm_ir_builder.CreateCall( function_type.llvm_type, function, llvm_args );
 			if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 				call_result= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 		}
 	}
 	else
-		call_result= llvm::UndefValue::get( llvm::dyn_cast<llvm::FunctionType>(function->getType())->getReturnType() );
+		call_result= llvm::UndefValue::get( function_type.llvm_type->getReturnType() );
 
 	// Clear inner references locks. Do this BEFORE result references management.
 	locked_args_inner_references.clear();
