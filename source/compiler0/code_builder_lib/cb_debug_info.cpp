@@ -414,7 +414,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 			elements.push_back(
 				debug_info_.builder->createEnumerator(
 					name,
-					int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()),
+					variable->constexpr_value->getUniqueInteger().getLimitedValue(),
 					true ) );
 		} );
 
