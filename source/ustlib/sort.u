@@ -6,13 +6,13 @@ namespace ust
 template</type T/>
 fn sort( random_access_range</T, true/> range )
 {
-	sort_impl::do_sort( range, sort_impl::default_compare</T/>() );
+	unsafe{  sort_impl::do_sort( range.data(), range.size(), sort_impl::default_compare</T/>() );  }
 }
 
 template</type T, type Compare/>
 fn sort( random_access_range</T, true/> range, Compare& comp )
 {
-	sort_impl::do_sort( range, comp );
+	unsafe{  sort_impl::do_sort( range.data(), range.size(), comp );  }
 }
 
 namespace sort_impl
@@ -27,65 +27,96 @@ struct default_compare
 	}
 }
 
+template</type T/>
+fn swap( $(T) ptr0, $(T) ptr1 ) unsafe
+{
+	unsafe
+	{
+		auto c_element_size= typeinfo</T/>.size_of;
+		auto c_element_alignment= typeinfo</T/>.align_of;
+		var aligned_storage</ c_element_size, typeinfo</T/>.align_of /> mut temp= uninitialized;
+		memory_copy_aligned( c_element_alignment, cast_ref_unsafe</void/>( temp )    , cast_ref_unsafe</void/>( $>(ptr0) ), c_element_size );
+		memory_copy_aligned( c_element_alignment, cast_ref_unsafe</void/>( $>(ptr0) ), cast_ref_unsafe</void/>( $>(ptr1) ), c_element_size );
+		memory_copy_aligned( c_element_alignment, cast_ref_unsafe</void/>( $>(ptr1) ), cast_ref_unsafe</void/>( temp )    , c_element_size );
+	}
+}
+
 /*
 Simple quicksort implementation. Average complexity - O(log(n)), worst case complexity - O(n^2).
  TODO:
- * Use raw pointers instead of random_access_range.
- * Remove unnecessary bounds checks (inside "swap" and "[]" methods).
  * Use more simple sorting algorithm for small number of elements.
- * Select median element smartely.
- * Prevent stack overflow in worst case (O(n^2)) and large number of elements.
+ * Select median element wisely.
 */
 
 template</type T, type Compare/>
-fn do_sort( random_access_range</T, true/> range, Compare& comp )
+fn do_sort( $(T) mut start, size_type mut size, Compare& comp ) unsafe
 {
-	if( range.size() <= 1s )
+	while(true)
 	{
-		return;
-	}
-	if( range.size() == 2s )
-	{
-		var bool mut c= false;
+		if( size <= 1s )
 		{
-			var random_access_range_imut</T/> range_copy= range;
-			c= comp( range_copy.front(), range_copy.back() );
+			return;
 		}
-		if( !c )
+		if( size == 2s )
 		{
-			range.swap( 0s, 1s );
-		}
-		return;
-	}
-
-	var size_type s= range.size(), last= s - 1s, mut lo= 0s, mut hi= last;
-
-	while( lo < hi )
-	{
-		var bool mut c= false;
-		{
-			var random_access_range_imut</T/> range_copy= range;
-			c= comp( range_copy[lo], range_copy[last] );
+			var bool mut c= false;
+			unsafe
+			{
+				var T& l= $>(start);
+				var T& r= $>(start + 1);
+				safe{  c= comp( l, r );  }
+			}
+			if( !c )
+			{
+				unsafe{  swap( start, start + 1 );  }
+			}
+			return;
 		}
 
-		if( c )
+		var size_type last= size - 1s, mut lo= 0s, mut hi= last;
+
+		while( lo < hi )
 		{
-			++lo;
+			var bool mut c= false;
+			unsafe
+			{
+				var T& l= $>(start + lo);
+				var T& r= $>(start + last);
+				safe{  c= comp( l, r );  }
+			}
+
+			if( c )
+			{
+				++lo;
+			}
+			else
+			{
+				--hi;
+				unsafe{  swap( start + lo, start + hi );  }
+			}
+		}
+
+		if( hi < last )
+		{
+			unsafe{  swap( start + hi, start + last );  }
+		}
+
+		// Avoid deep recursion. Perform recursive call for smaller range, perform next loop interation for larger range.
+		auto hi1= hi + 1s;
+		auto size_lo= hi;
+		auto size_hi= size - hi1;
+		if( size_lo < size_hi )
+		{
+			unsafe{  do_sort( start, hi, comp );  }
+			start+= hi1;
+			size-= hi1;
 		}
 		else
 		{
-			--hi;
-			range.swap( lo, hi );
+			unsafe{  do_sort( start + hi1, size_hi, comp );  }
+			size= size_lo;
 		}
 	}
-
-	if( hi < last )
-	{
-		range.swap( hi, last );
-	}
-
-	do_sort( range.subrange( 0s, hi ), comp );
-	do_sort( range.subrange( hi + 1s, s ), comp );
 }
 
 } // namespace sort_impl
