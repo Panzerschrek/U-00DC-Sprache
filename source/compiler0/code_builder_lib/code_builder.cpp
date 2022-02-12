@@ -1952,6 +1952,7 @@ llvm::Value*CodeBuilder:: CreateVirtualTablePointerGEP( FunctionContext& functio
 llvm::Value* CodeBuilder::CreateClassFiledGEP( FunctionContext& function_context, llvm::Value* const class_ptr, const uint64_t field_index )
 {
 	return function_context.llvm_ir_builder.CreateGEP(
+		class_ptr->getType()->getPointerElementType(),
 		class_ptr,
 		{ GetZeroGEPIndex(), GetFieldGEPIndex( field_index ) } );
 }
@@ -1969,6 +1970,7 @@ llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_conte
 llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* const array_ptr, llvm::Value* const index )
 {
 	return function_context.llvm_ir_builder.CreateGEP(
+		array_ptr->getType()->getPointerElementType(),
 		array_ptr,
 		{ GetZeroGEPIndex(), index } );
 }

@@ -1728,7 +1728,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 
 		llvm::Value* const ptr_value= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 		llvm::Value* const one= llvm::ConstantInt::get( fundamental_llvm_types_.int_ptr, positive ? uint64_t(1u) : ~uint64_t(0), true );
-		llvm::Value* const new_value= function_context.llvm_ir_builder.CreateGEP( ptr_value, one );
+		llvm::Value* const new_value= function_context.llvm_ir_builder.CreateGEP( raw_poiter_type->type.GetLLVMType(), ptr_value, one );
 
 		U_ASSERT( variable->location == Variable::Location::Pointer );
 		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );

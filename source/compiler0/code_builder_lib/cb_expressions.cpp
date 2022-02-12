@@ -2284,7 +2284,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 			else
 				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
 		}
-		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_value, index_value );
+		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_value->getType()->getPointerElementType(), ptr_value, index_value );
 	}
 	else if( binary_operator == BinaryOperatorType::Sub )
 	{
@@ -2354,7 +2354,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
 			}
 			llvm::Value* const index_value_negative= function_context.llvm_ir_builder.CreateNeg( index_value );
-			result.llvm_value= function_context.llvm_ir_builder.CreateGEP( l_value_for_op, index_value_negative );
+			result.llvm_value= function_context.llvm_ir_builder.CreateGEP( l_value_for_op->getType()->getPointerElementType(), l_value_for_op, index_value_negative );
 		}
 		else
 		{
