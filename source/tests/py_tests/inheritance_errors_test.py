@@ -879,7 +879,7 @@ def FunctionOverridingWithReferencesNotationChange_ForReferencesPollution_Test6(
 	assert( errors_list[0].src_loc.line == 10 )
 
 
-def EqualityOperatorIsNotInherited_Test0():
+def EqualityCompareOperatorIsNotInherited_Test0():
 	c_program_text= """
 		class Base polymorph
 		{
@@ -895,7 +895,7 @@ def EqualityOperatorIsNotInherited_Test0():
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
 
 
-def EqualityOperatorIsNotInherited_Test1():
+def EqualityCompareOperatorIsNotInherited_Test1():
 	c_program_text= """
 		class Base polymorph
 		{
@@ -911,7 +911,7 @@ def EqualityOperatorIsNotInherited_Test1():
 	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 9 ) )
 
 
-def EqualityOperatorIsNotInherited_Test2():
+def EqualityCompareOperatorIsNotInherited_Test2():
 	c_program_text= """
 		class Base polymorph
 		{
@@ -926,4 +926,55 @@ def EqualityOperatorIsNotInherited_Test2():
 			l == r; // Ok, call "Derived::=="
 		}
 	"""
+	tests_lib.build_program( c_program_text )
+
+
+def OrderCompareOperatorIsNotInherited_Test0():
+	c_program_text= """
+		class Base polymorph
+		{
+			op<=>(Base& l, Base& r) : i32 { return 0; }
+		}
+		class Derived : Base {} // Should not inherit "<=>" from base class. So, fetch of "<=>" from this class will find nothing.
+		fn Foo(Derived& l, Derived& r)
+		{
+			l <=> r; // Should get error here and avoid call of "<=>" of "Base" class (with references cast).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+
+
+def OrderCompareOperatorIsNotInherited_Test1():
+	c_program_text= """
+		class Base polymorph
+		{
+			op<=>( Base& l, i32 x ) : i32 { return 0; }
+		}
+		class Derived : Base {} // Should not inherit "<=>" from base class. So, fetch of "<=>" from this class will find nothing.
+		fn Foo(Derived& l)
+		{
+			l <=> 0; // Should get error here and avoid call of "<=>" of "Base" class (with references cast).
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "NoMatchBinaryOperatorForGivenTypes", 9 ) )
+
+
+def OrderCompareOperatorIsNotInherited_Test2():
+	c_program_text= """
+		class Base polymorph
+		{
+			op<=>(Base& l, Base& r) : i32 { return 0; }
+		}
+		class Derived : Base
+		{
+			op<=>(Derived& l, Derived& r) : i32 { return cast_ref</Base/>(l) <=> cast_ref</Base/>(r); }
+		}
+		fn Foo(Derived& l, Derived& r)
+		{
+			l <=> r; // Ok, call Derived::<=>
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	tests_lib.build_program( c_program_text )

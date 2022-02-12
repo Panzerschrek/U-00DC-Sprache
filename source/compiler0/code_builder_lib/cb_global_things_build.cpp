@@ -784,8 +784,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					if( name == Keyword( Keywords::constructor_ ) ||
 						name == Keyword( Keywords::destructor_ ) ||
 						name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
-						name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) )
-						return; // Did not inherit constructors, destructors, assignment operators, equality-compare operators.
+						name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
+						name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
+						return; // Did not inherit constructors, destructors, assignment operators, compare operators.
 
 					if( result_class_value != nullptr )
 					{
