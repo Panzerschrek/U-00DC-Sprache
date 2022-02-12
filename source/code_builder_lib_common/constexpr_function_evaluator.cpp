@@ -444,7 +444,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 	}
 	else if( const auto constant_zero= llvm::dyn_cast<llvm::ConstantAggregateZero>( val ) )
 	{
-		res.AggregateVal.resize( size_t(constant_zero->getNumElements()) );
+		res.AggregateVal.resize( size_t(constant_zero->getElementCount().getFixedValue()) );
 		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
 			res.AggregateVal[i]= GetVal( constant_zero->getElementValue(i) );
 	}
