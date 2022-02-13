@@ -313,6 +313,32 @@ def InvalidMethodForBodyGeneration_Test4():
 	assert( errors_list[0].src_loc.line == 4 )
 
 
+def InvalidMethodForBodyGeneration_Test5():
+	c_program_text= """
+		class A
+		{
+			fn destructor()= default; // There is no reason to set "=default" for destructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidMethodForBodyGeneration" )
+	assert( errors_list[0].src_loc.line == 4 )
+
+
+def InvalidMethodForBodyGeneration_Test6():
+	c_program_text= """
+		class A
+		{
+			fn destructor()= delete; // There is no reason to set "=delete" for destructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "InvalidMethodForBodyGeneration" )
+	assert( errors_list[0].src_loc.line == 4 )
+
+
 def MethodBodyGenerationFailed_Test0():
 	c_program_text= """
 		class Noncopyable{}
@@ -376,7 +402,7 @@ def MethodBodyGenerationFailed_Test4():
 		class A
 		{
 			i32 x;
-			fn constructor()= default; // Error, can not generate default destructor, because class contains non-default-constructible fields.
+			fn constructor()= default; // Error, can not generate default constructor, because class contains non-default-constructible fields.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
