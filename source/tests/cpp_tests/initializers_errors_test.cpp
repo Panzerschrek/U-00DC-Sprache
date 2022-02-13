@@ -450,6 +450,31 @@ U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest1)
 	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
+U_TEST(InitializerDisabledBecauseClassHaveExplicitNoncopyConstructorsTest2)
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			template</type T/> fn constructor( T a ) ( x(a) ) {}
+		}
+		fn Foo()
+		{
+			// Template constructor existis in this class, so, struct named initializer must be disabled.
+			var S point{ .x= 0 };
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 10u );
+}
+
 U_TEST( InitializerForInvalidType_Test0 )
 {
 	// Type is invalid, because name of type not found.

@@ -638,7 +638,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				break;
 			}
 		};
-		// TODO - what about template constructors?
+		the_class.have_explicit_noncopy_constructors |= !constructors->template_functions.empty();
 	}
 
 	// Disable constexpr possibility for structs with:

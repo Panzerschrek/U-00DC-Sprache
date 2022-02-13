@@ -780,8 +780,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		if_var( constructors : class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ) )
 		{
 			auto functions_set_ptr= constructors.Get</NamesScopeFunctionsSet/>();
+			auto lock= functions_set_ptr.try_lock_imut();
+			var FunctionsSet& functions_set= lock.deref().functions_set;
 			// Should be functions set 100%
-			foreach( &function_variable : functions_set_ptr.try_lock_imut().deref().functions_set.functions )
+			foreach( &function_variable : functions_set.functions )
 			{
 				if( function_variable.is_generated )
 				{
@@ -798,6 +800,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					class_.have_explicit_noncopy_constructors= true;
 				}
 			}
+			class_.have_explicit_noncopy_constructors |= !functions_set.function_templates.empty();
 		}
 	}
 
