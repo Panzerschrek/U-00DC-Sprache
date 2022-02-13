@@ -607,6 +607,16 @@ int Main( int argc, const char* argv[] )
 				have_some_errors= true;
 				continue;
 			}
+			{
+				std::string err_stream_str;
+				llvm::raw_string_ostream err_stream( err_stream_str );
+				if( llvm::verifyModule( *module.get(), &err_stream ) )
+				{
+					std::cerr << "Module verify error for file \"" << input_file << "\":\n" << err_stream.str() << std::endl;
+					have_some_errors= true;
+					continue;
+				}
+			}
 
 			deps_list.push_back( input_file );
 
@@ -642,6 +652,16 @@ int Main( int argc, const char* argv[] )
 				diagnostic.print( "", stream );
 				have_some_errors= true;
 				continue;
+			}
+			{
+				std::string err_stream_str;
+				llvm::raw_string_ostream err_stream( err_stream_str );
+				if( llvm::verifyModule( *module, &err_stream ) )
+				{
+					std::cerr << "Module verify error for file \"" << input_file << "\":\n" << err_stream.str() << std::endl;
+					have_some_errors= true;
+					continue;
+				}
 			}
 
 			deps_list.push_back( input_file );
