@@ -13,6 +13,7 @@
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_os_ostream.h>
+#include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
@@ -232,14 +233,15 @@ cl::list<std::string> input_files(
 	cl::OneOrMore,
 	cl::cat(options_category) );
 
-enum class InputFileType{ Source, BC };
+enum class InputFileType{ Source, BC, LL };
 cl::opt< InputFileType > input_files_type(
 	"input-filetype",
 	cl::init(InputFileType::Source),
 	cl::desc("Choose a input files type:"),
 	cl::values(
 		clEnumValN( InputFileType::Source, "source", "Reead Ü source files" ),
-		clEnumValN( InputFileType::BC, "bc", "Read an llvm bitcode ('.bc') files" )),
+		clEnumValN( InputFileType::BC, "bc", "Read an llvm bitcode ('.bc') files" ),
+		clEnumValN( InputFileType::LL, "ll", "Read an llvm asm ('.ll') files" )),
 	cl::cat(options_category) );
 
 cl::opt<std::string> output_file_name(
@@ -602,7 +604,8 @@ int Main( int argc, const char* argv[] )
 			if( !module )
 			{
 				std::cerr << "Failed to parse BC module for file \"" << input_file << "\"" << std::endl;
-				return 1;
+				have_some_errors= true;
+				continue;
 			}
 
 			deps_list.push_back( input_file );
@@ -612,6 +615,42 @@ int Main( int argc, const char* argv[] )
 			else
 			{
 				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(*module) );
+				if( not_ok )
+				{
+					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
+					have_some_errors= true;
+				}
+			}
+		}
+
+		if( have_some_errors )
+			return 1;
+	}
+	else if( Options::input_files_type == Options::InputFileType::LL )
+	{
+		// Load and link together multiple LL files.
+
+		bool have_some_errors= false;
+		for( const std::string& input_file : Options::input_files )
+		{
+			llvm::SMDiagnostic diagnostic( input_file, llvm::SourceMgr::DK_Error, "" );
+			std::unique_ptr<llvm::Module> module= llvm::parseAssemblyFile( input_file, diagnostic, llvm_context );
+
+			if( module == nullptr )
+			{
+				llvm::raw_os_ostream stream( std::cerr );
+				diagnostic.print( "", stream );
+				have_some_errors= true;
+				continue;
+			}
+
+			deps_list.push_back( input_file );
+
+			if( result_module == nullptr )
+				result_module= std::move( module );
+			else
+			{
+				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(module) );
 				if( not_ok )
 				{
 					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
