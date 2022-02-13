@@ -617,6 +617,12 @@ int Main( int argc, const char* argv[] )
 					continue;
 				}
 			}
+			if( (*module)->getDataLayout() != data_layout )
+			{
+				std::cerr << "Unexpected data layout of file \"" << input_file << "\"" << std::endl;
+				have_some_errors= true;
+				continue;
+			}
 
 			deps_list.push_back( input_file );
 
@@ -662,6 +668,12 @@ int Main( int argc, const char* argv[] )
 					have_some_errors= true;
 					continue;
 				}
+			}
+			if( module->getDataLayout() != data_layout )
+			{
+				std::cerr << "Unexpected data layout of file \"" << input_file << "\"" << std::endl;
+				have_some_errors= true;
+				continue;
 			}
 
 			deps_list.push_back( input_file );
