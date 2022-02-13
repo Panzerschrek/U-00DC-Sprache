@@ -607,6 +607,18 @@ int Main( int argc, const char* argv[] )
 				have_some_errors= true;
 				continue;
 			}
+			if( (*module)->getDataLayout() != data_layout )
+			{
+				std::cerr << "Unexpected data layout of file \"" << input_file << "\": " << (*module)->getDataLayoutStr() << ", expected: " << data_layout.getStringRepresentation() << std::endl;
+				have_some_errors= true;
+				continue;
+			}
+			if( (*module)->getTargetTriple() != target_triple_str )
+			{
+				std::cerr << "Unexpected target triple of file \"" << input_file << "\": " << (*module)->getTargetTriple() << ", expected: " << target_triple_str << std::endl;
+				have_some_errors= true;
+				continue;
+			}
 			{
 				std::string err_stream_str;
 				llvm::raw_string_ostream err_stream( err_stream_str );
@@ -616,12 +628,6 @@ int Main( int argc, const char* argv[] )
 					have_some_errors= true;
 					continue;
 				}
-			}
-			if( (*module)->getDataLayout() != data_layout )
-			{
-				std::cerr << "Unexpected data layout of file \"" << input_file << "\"" << std::endl;
-				have_some_errors= true;
-				continue;
 			}
 
 			deps_list.push_back( input_file );
@@ -659,6 +665,18 @@ int Main( int argc, const char* argv[] )
 				have_some_errors= true;
 				continue;
 			}
+			if( module->getDataLayout() != data_layout )
+			{
+				std::cerr << "Unexpected data layout of file \"" << input_file << "\": " << module->getDataLayoutStr() << ", expected: " << data_layout.getStringRepresentation() << std::endl;
+				have_some_errors= true;
+				continue;
+			}
+			if( module->getTargetTriple() != target_triple_str )
+			{
+				std::cerr << "Unexpected target triple of file \"" << input_file << "\": " << module->getTargetTriple() << ", expected: " << target_triple_str << std::endl;
+				have_some_errors= true;
+				continue;
+			}
 			{
 				std::string err_stream_str;
 				llvm::raw_string_ostream err_stream( err_stream_str );
@@ -668,12 +686,6 @@ int Main( int argc, const char* argv[] )
 					have_some_errors= true;
 					continue;
 				}
-			}
-			if( module->getDataLayout() != data_layout )
-			{
-				std::cerr << "Unexpected data layout of file \"" << input_file << "\"" << std::endl;
-				have_some_errors= true;
-				continue;
 			}
 
 			deps_list.push_back( input_file );
