@@ -117,6 +117,12 @@ fn nullptr() : $(T)
 }
 
 template</type T/>
+fn ref_cmp( T& l, T& r ) : i32
+{
+	unsafe{ return $<(cast_mut(l)) <=> $<(cast_mut(r)); }
+}
+
+template</type T/>
 fn ref_cmp_eq( T& l, T& r ) : bool
 {
 	unsafe{ return $<(cast_mut(l)) == $<(cast_mut(r)); }
