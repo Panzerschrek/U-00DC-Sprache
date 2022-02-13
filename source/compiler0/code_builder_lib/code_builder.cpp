@@ -566,9 +566,6 @@ void CodeBuilder::TryCallCopyConstructor(
 	// Call it
 	U_ASSERT(constructor != nullptr);
 	function_context.llvm_ir_builder.CreateCall( constructor->llvm_function, { this_, src } );
-
-	if( constructor->type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
-		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, errors_container, src_loc );
 }
 
 void CodeBuilder::GenerateLoop(
@@ -667,9 +664,6 @@ void CodeBuilder::CallDestructor(
 
 		const FunctionVariable& destructor= destructors->functions.front();
 		function_context.llvm_ir_builder.CreateCall( destructor.llvm_function, { ptr } );
-
-		if( destructor.type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
-			REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, errors_container, src_loc );
 	}
 	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
@@ -895,6 +889,20 @@ size_t CodeBuilder::PrepareFunction(
 		} // for arguments
 
 		function_type.unsafe= func.type_.unsafe_;
+
+		if (function_type.unsafe && base_class != nullptr )
+		{
+			// Calls to such methods are produced by compiler itself, used in other methods generation, etc.
+			// So, to avoid problems with generated unsafe calls just forbid some methods to be unsafe.
+			if( is_destructor ||
+				( is_constructor && ( IsDefaultConstructor( function_type, base_class ) || IsCopyConstructor( function_type, base_class ) ) ) ||
+				( func.overloaded_operator_ == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_type, base_class ) ) ||
+				( func.overloaded_operator_ == OverloadedOperator::CompareEqual && IsEqualityCompareOperator( function_type, base_class ) ) )
+			{
+				REPORT_ERROR( ThisMethodCanNotBeUnsafe, names_scope.GetErrors(), func.src_loc_ );
+				function_type.unsafe= false;
+			}
+		}
 
 		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type_, function_type );
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );

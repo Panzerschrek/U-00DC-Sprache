@@ -67,23 +67,6 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test2():
 	assert( errors_list[0].src_loc.line == 7 )
 
 
-def UnsafeFunctionCallOutsideUnsafeBlock_Test3():
-	c_program_text= """
-		struct S
-		{
-			fn constructor() unsafe {}
-		}
-		fn Foo()
-		{
-			var S s; // Error, implicitly calling unsafe constructor
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].src_loc.line == 8 )
-
-
 def UnsafeFunctionCallOutsideUnsafeBlock_Test4():
 	c_program_text= """
 		struct S
@@ -99,42 +82,6 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test4():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
 	assert( errors_list[0].src_loc.line == 8 )
-
-
-def UnsafeFunctionCallOutsideUnsafeBlock_Test5():
-	c_program_text= """
-		struct S
-		{
-			fn constructor( S& other ) unsafe {}  // unsafe copy constructor
-		}
-		fn Foo()
-		{
-			var S s0;
-			var S s1= s0; // Error, calling unsafe copy-constructor
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].src_loc.line == 9 )
-
-
-def UnsafeFunctionCallOutsideUnsafeBlock_Test6():
-	c_program_text= """
-		struct S
-		{
-			op= ( mut this, S& other ) unsafe {}
-		}
-		fn Foo()
-		{
-			var S s0, mut s1;
-			s1= s0; // Error, calling unsafe copy assignment operator
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].src_loc.line == 9 )
 
 
 def UnsafeFunctionCallOutsideUnsafeBlock_Test7():
@@ -205,40 +152,6 @@ def UnsafeFunctionCallOutsideUnsafeBlock_Test10():
 	assert( errors_list[0].src_loc.line == 5 )
 
 
-def UnsafeFunctionCallOutsideUnsafeBlock_Test11():
-	c_program_text= """
-		struct S
-		{
-			fn destructor() unsafe {}
-		}
-		fn Foo()
-		{
-			var S s;
-		} // Error, calling unsafe destructor here
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].src_loc.line == 9 )
-
-
-def UnsafeFunctionCallOutsideUnsafeBlock_Test12():
-	c_program_text= """
-		struct S
-		{
-			fn destructor() unsafe {}
-		}
-		struct B  // Error, while generating default-destructor. Currently, classes with unsafe destructor can not be members of other classes.
-		{
-			S s;
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UnsafeFunctionCallOutsideUnsafeBlock" )
-	assert( errors_list[0].src_loc.line == 6 )
-
-
 def UnsafeFunctionCallInsideUnsafeBlock_Test0():
 	c_program_text= """
 		fn Bar() unsafe;
@@ -247,23 +160,6 @@ def UnsafeFunctionCallInsideUnsafeBlock_Test0():
 			unsafe
 			{
 				Bar(); // Ok, we are inside unsafe block
-			}
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def UnsafeFunctionCallInsideUnsafeBlock_Test1():
-	c_program_text= """
-		struct S
-		{
-			fn constructor() unsafe {}
-		}
-		fn Foo()
-		{
-			unsafe
-			{
-				var S s; // Ok, implicitly call here unsafe constructor
 			}
 		}
 	"""
@@ -316,20 +212,6 @@ def UnsafeFunctionCallInsideUnsafeBlock_Test4():
 					break;
 				}
 			}
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def UnsafeFunctionCallInsideUnsafeBlock_Test5():
-	c_program_text= """
-		struct S { fn destructor() unsafe {} }
-		fn Foo()
-		{
-			unsafe
-			{
-				var S s;
-			} // Ok, call unsafe destructor at end of unsafe block.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -491,6 +373,149 @@ def UnsafeInsideUnsafe_Test():
 					}
 				}
 			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThisMethodCanNotBeUnsafe_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn constructor() unsafe; // Unsafe default constructor
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+
+
+def ThisMethodCanNotBeUnsafe_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn constructor() unsafe = default; // Unsafe generated default constructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+
+
+def ThisMethodCanNotBeUnsafe_Test2():
+	c_program_text= """
+		struct S
+		{
+			fn constructor() unsafe = delete; // Unsafe deleted default constructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+
+
+def ThisMethodCanNotBeUnsafe_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn constructor(S& other) unsafe; // Unsafe copy constructor
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+
+
+def ThisMethodCanNotBeUnsafe_Test4():
+	c_program_text= """
+		struct S
+		{
+			fn constructor(i32 x) unsafe {} // Ok - other unsafe constructor
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThisMethodCanNotBeUnsafe_Test5():
+	c_program_text= """
+		struct S
+		{
+			template</type T/> fn constructor(T x) unsafe {} // Ok - other template unsafe constructor
+		}
+		fn Foo()
+		{
+			unsafe{  var S s( 0.25f );  }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThisMethodCanNotBeUnsafe_Test6():
+	c_program_text= """
+		struct S
+		{
+			op=(mut this, S& other) unsafe; // Unsafe copy-assignment operator
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+
+
+def ThisMethodCanNotBeUnsafe_Test7():
+	c_program_text= """
+		struct S
+		{
+			op=(mut this, i32 x) unsafe; // Ok, unsafe other assignment operator
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ThisMethodCanNotBeUnsafe_Test8():
+	c_program_text= """
+		struct S
+		{
+			fn destructor() unsafe; // Unsafe destructor
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+
+
+def ThisMethodCanNotBeUnsafe_Test9():
+	c_program_text= """
+		struct S
+		{
+			fn destructor() unsafe= default; // Unsafe generated destructor
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+
+
+def ThisMethodCanNotBeUnsafe_Test10():
+	c_program_text= """
+		struct S
+		{
+			op==(S& l, S&r) unsafe : bool; // Unsafe equality compare operator
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+
+
+def ThisMethodCanNotBeUnsafe_Test11():
+	c_program_text= """
+		struct S
+		{
+			op==(S& l, S&r) unsafe : bool = default; // Unsafe generated equality compare operator
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ThisMethodCanNotBeUnsafe", 4 ) )
+
+
+def ThisMethodCanNotBeUnsafe_Test12():
+	c_program_text= """
+		struct S
+		{
+			op==(this, i32 x) unsafe : bool; // Ok, unsafe other compare operator
 		}
 	"""
 	tests_lib.build_program( c_program_text )
