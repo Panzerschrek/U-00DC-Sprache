@@ -894,7 +894,9 @@ size_t CodeBuilder::PrepareFunction(
 			ProcessFunctionParamReferencesTags( func.type_, function_type, in_param, out_param, function_type.params.size() - 1u );
 		} // for arguments
 
-		if (func.type_.unsafe_ )
+		function_type.unsafe= func.type_.unsafe_;
+
+		if (function_type.unsafe && base_class != nullptr )
 		{
 			// Calls to such methods are produced by compiler itself, used in other methods generation, etc.
 			// So, to avoid problems with generated unsafe calls just forbid some methods to be unsafe.
@@ -902,9 +904,10 @@ size_t CodeBuilder::PrepareFunction(
 				( is_constructor && ( IsDefaultConstructor( function_type, base_class ) || IsCopyConstructor( function_type, base_class ) ) ) ||
 				( func.overloaded_operator_ == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_type, base_class ) ) ||
 				( func.overloaded_operator_ == OverloadedOperator::CompareEqual && IsEqualityCompareOperator( function_type, base_class ) ) )
+			{
 				REPORT_ERROR( ThisMethodCanNotBeUnsafe, names_scope.GetErrors(), func.src_loc_ );
-			else
-				function_type.unsafe= true;
+				function_type.unsafe= false;
+			}
 		}
 
 		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type_, function_type );
