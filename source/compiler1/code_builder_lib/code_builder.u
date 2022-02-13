@@ -1063,6 +1063,21 @@ fn CodeBuilder::PrepareFunction(
 		}
 	}
 
+	// Check unsafe for special methods.
+	if( function_variable.t.is_unsafe && !class_type.empty() )
+	{
+		auto class_type_non_null= class_type.try_to_non_nullable();
+		// Calls to such methods are produced by compiler itself, used in other methods generation, etc.
+		// So, to avoid problems with generated unsafe calls just forbid some methods to be unsafe.
+		if( is_destructor ||
+			( is_constructor && ( IsDefaultConstructor( function_variable, class_type_non_null ) || IsCopyConstructor( function_variable, class_type_non_null ) ) ) ||
+			( function_declaration.operator == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_variable, class_type_non_null ) ) ||
+			( function_declaration.operator == OverloadedOperator::CompareEqual && IsEqualityCompareOperator( function_variable, class_type_non_null ) ) )
+		{
+			REPORT_ERROR( ThisMethodCanNotBeUnsafe, names_scope_ptr, function_declaration.src_loc )
+		}
+	}
+
 	// Setup references pollution for copy methods.
 	if( !class_type.empty() )
 	{
