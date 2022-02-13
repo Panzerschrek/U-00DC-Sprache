@@ -1001,12 +1001,6 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 		{
 			if( IsCopyConstructor( constructor_, class_type ) )
 			{
-				// SPRACHE_TODO - maybe disallow unsafe copy constructors?
-				if( constructor_.t.is_unsafe && !function_context.is_in_unsafe_block )
-				{
-					REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
-				}
-
 				if( !( constructor_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || constructor_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 				{
 					function_context.have_non_constexpr_operations_inside= true;
@@ -1100,12 +1094,6 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 		{
 			if( IsCopyAssignmentOperator( operator_, class_type ) )
 			{
-				// SPRACHE_TODO - maybe disallow unsafe copy assignment operators?
-				if( operator_.t.is_unsafe && !function_context.is_in_unsafe_block )
-				{
-					REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
-				}
-
 				if( !( operator_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || operator_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 				{
 					function_context.have_non_constexpr_operations_inside= true;
@@ -1215,13 +1203,6 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 				continue;
 			}
 			// Found proper "==" operator.
-
-			// SPRACHE_TODO - maybe disallow unsafe "=="?
-			if( op_.t.is_unsafe && !function_context.is_in_unsafe_block )
-			{
-				REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
-			}
-
 			if( !( op_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || op_.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 			{
 				function_context.have_non_constexpr_operations_inside= true;
@@ -1285,12 +1266,6 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 		// Destructors set should contain exactly one function.
 		auto destructors_lock= destructors_ptr.try_lock_imut();
 		auto& destructor_= destructors_lock.deref().functions_set.functions.front();
-
-		// SPRACHE_TODO - maybe disallow unsafe destructors?
-		if( destructor_.t.is_unsafe && !function_context.is_in_unsafe_block )
-		{
-			REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, names_scope, src_loc )
-		}
 
 		// Call it.
 		unsafe

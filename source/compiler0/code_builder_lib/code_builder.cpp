@@ -566,9 +566,6 @@ void CodeBuilder::TryCallCopyConstructor(
 	// Call it
 	U_ASSERT(constructor != nullptr);
 	function_context.llvm_ir_builder.CreateCall( constructor->llvm_function, { this_, src } );
-
-	if( constructor->type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
-		REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, errors_container, src_loc );
 }
 
 void CodeBuilder::GenerateLoop(
@@ -667,9 +664,6 @@ void CodeBuilder::CallDestructor(
 
 		const FunctionVariable& destructor= destructors->functions.front();
 		function_context.llvm_ir_builder.CreateCall( destructor.llvm_function, { ptr } );
-
-		if( destructor.type.GetFunctionType()->unsafe && !function_context.is_in_unsafe_block )
-			REPORT_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, errors_container, src_loc );
 	}
 	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
