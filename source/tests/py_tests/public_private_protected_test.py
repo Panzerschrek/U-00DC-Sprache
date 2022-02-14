@@ -428,6 +428,28 @@ def AccessingProtectedMember_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def AccessingProtectedMember_Test4():
+	c_program_text= """
+		class A polymorph
+		{
+		protected:
+			i32 x;
+		}
+		class B : A
+		{
+			// "B" inherits "x" as private
+		}
+		fn Foo(B& b)
+		{
+			b.x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].src_loc.line == 13 )
+
+
 def AccessingPrivateMemberOutsideClass_ViaMemberAccessOperator_Test0():
 	c_program_text= """
 		class A
