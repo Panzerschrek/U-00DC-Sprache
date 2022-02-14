@@ -654,7 +654,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 				{
 					continue;
 				}
-				auto check_range= it.subrange( 0u64, s );
+				auto check_range= it.subrange( 0s, s );
 
 				auto mut found= false;
 				foreach( &l : lexem_size_group )

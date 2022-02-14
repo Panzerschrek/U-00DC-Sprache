@@ -543,7 +543,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		if( constant_initializer != nullptr )
 		{
 			std::vector<llvm::Constant*> array_initializers;
-			array_initializers.resize( array_type->size, constant_initializer );
+			array_initializers.resize( size_t(array_type->size), constant_initializer );
 			return llvm::ConstantArray::get( array_type->llvm_type, array_initializers );
 		}
 		return nullptr;
