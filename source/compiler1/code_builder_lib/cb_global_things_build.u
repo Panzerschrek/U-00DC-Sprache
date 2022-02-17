@@ -389,6 +389,12 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		{
 			BuildTypeAlias( class_members, type_alias_ptr.try_to_non_nullable() );
 		}
+
+		auto type_templates_set_ptr= member.value().Get</ TypeTemplatesSet />();
+		if( !type_templates_set_ptr.empty() )
+		{
+			BuiltTypeTemplatesSet( class_members, type_templates_set_ptr.try_to_non_nullable() );
+		}
 	}
 
 	// Allocate virtual table pointer, if class have no parents.
@@ -888,8 +894,48 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						}
 					}
 				} // if function set
+				auto src_type_templates_set_ptr= member_value.value().Get</TypeTemplatesSet/>();
+				if( !src_type_templates_set_ptr.empty() && has_name )
+				{
+					auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
+					auto result_type_templates_set_ptr= result_class_value.try_deref().Get</TypeTemplatesSet/>();
+					if( !result_type_templates_set_ptr.empty() )
+					{
+						// Merge type template sets.
+						auto src_type_templates_set_lock= src_type_templates_set_ptr.try_lock_imut();
+						auto& src_type_templates_set= src_type_templates_set_lock.deref();
 
-				// TODO - merge type templates sets?
+						auto mut result_type_templates_set_lock= result_type_templates_set_ptr.try_lock_mut();
+						auto &mut result_type_templates_set= result_type_templates_set_lock.deref();
+
+						if( parent_member_visibility != class_type.lock_imut().deref().GetMemberVisibility( member_value.key() ) )
+						{
+							var SrcLoc mut src_loc;
+							if( !result_type_templates_set.type_templates.empty() )
+							{
+								src_loc= result_type_templates_set.type_templates.front().deref().syntax_element.deref().src_loc;
+							}
+							REPORT_ERROR( TypeTemplatesVisibilityMismatch, names_scope_ptr, src_loc, member_value.key() )
+						}
+
+						foreach( &src_type_template : src_type_templates_set.type_templates )
+						{
+							var bool mut overrides= false;
+							foreach( &result_type_template : result_type_templates_set.type_templates )
+							{
+								if( src_type_template.deref().signature_params == result_type_template.deref().signature_params )
+								{
+									overrides= true;
+									break;
+								}
+							}
+							if( !overrides )
+							{
+								result_type_templates_set.type_templates.push_back( src_type_template );
+							}
+						}
+					}
+				} // if type templates set
 
 				if( !has_name )
 				{

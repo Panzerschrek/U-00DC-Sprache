@@ -591,7 +591,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		} );
 
 	// Complete another body elements.
-	// For class completeness we needs only fields, functions. Constants, types and type templates dones not needed.
+	// For class completeness we needs only fields, functions. Constants, types are not needed.
 	the_class.members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
@@ -603,7 +603,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			else if( value.GetErrorValue() != nullptr ){}
 			else if( value.GetStaticAssert() != nullptr ){}
 			else if( value.GetTypedef() != nullptr ) {}
-			else if( value.GetTypeTemplatesSet() != nullptr ) {}
+			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+				GlobalThingBuildTypeTemplatesSet( *the_class.members, *type_templates_set );
 			else if( value.GetIncompleteGlobalVariable() != nullptr ) {}
 			else if( value.GetNamespace() != nullptr ) {} // Can be in case of type template parameters namespace.
 			else U_ASSERT(false);
@@ -779,7 +780,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 				Value* const result_class_value= the_class.members->GetThisScopeValue(name);
 
-				if( const OverloadedFunctionsSet* const functions= value.GetFunctionsSet() )
+				if( const auto functions= value.GetFunctionsSet() )
 				{
 					// SPARCHE_TODO - maybe also skip additive-assignment operators?
 					if( name == Keyword( Keywords::constructor_ ) ||
@@ -791,7 +792,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 					if( result_class_value != nullptr )
 					{
-						if( OverloadedFunctionsSet* const result_class_functions= result_class_value->GetFunctionsSet() )
+						if( const auto result_class_functions= result_class_value->GetFunctionsSet() )
 						{
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 							{
@@ -821,7 +822,32 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						}
 					}
 				}
-				// TODO - merge type templates set.
+				if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+				{
+					if( result_class_value != nullptr )
+					{
+						if( const auto result_type_templates_set= result_class_value->GetTypeTemplatesSet() )
+						{
+							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
+								REPORT_ERROR( TypeTemplatesVisibilityMismatch, the_class.members->GetErrors(), result_class_value->GetSrcLoc(), name );
+
+							for( const TypeTemplatePtr& parent_type_template : type_templates_set->type_templates )
+							{
+								bool overrides= false;
+								for( const TypeTemplatePtr& result_type_template : result_type_templates_set->type_templates )
+								{
+									if( result_type_template->signature_params == parent_type_template->signature_params )
+									{
+										overrides= true;
+										break;
+									}
+								}
+								if( !overrides )
+									result_type_templates_set->type_templates.push_back( parent_type_template );
+							}
+						}
+					}
+				}
 
 				// Just override other kinds of symbols.
 				if( result_class_value == nullptr )

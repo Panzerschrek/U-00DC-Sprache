@@ -434,7 +434,9 @@ class TemplateBase polymorph
 
 	ust::vector</ TemplateSignatureParam /> signature_params;
 
-	ust::weak_ptr_imut</NamesScope/> parent_names_scope; // Needed because template should see names scope of original file.
+	// Needed because template should see names scope of original file.
+	// Also needed in case of inheritance.
+	ust::weak_ptr_imut</NamesScope/> parent_names_scope;
 
 	fn constructor(
 		ust::vector</Param/> mut in_params,
