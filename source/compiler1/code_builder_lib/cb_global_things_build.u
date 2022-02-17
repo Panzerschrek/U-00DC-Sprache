@@ -805,105 +805,117 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 
 	// Merge namespaces of parents.
-	foreach( &parent : class_type.lock_imut().deref().parents )
+	with( parents : class_type.lock_imut().deref().parents )
 	{
-		auto parent_members= parent.class_.lock_imut().deref().members;
-		foreach( &member_value : parent_members.lock_imut().deref() )
+		foreach( &parent : parents )
 		{
-			auto parent_member_visibility= parent.class_.lock_imut().deref().GetMemberVisibility( member_value.key() );
-			if( parent_member_visibility == Synt::ClassVisibility::Private )
+			auto parent_members= parent.class_.lock_imut().deref().members;
+			foreach( &member_value : parent_members.lock_imut().deref() )
 			{
-				continue; // Do not inherit private members.
-			}
-
-			auto mut dst_members_lock= class_members.lock_mut();
-			auto &mut dst_members_= dst_members_lock.deref();
-
-			if( !member_value.value().Get</ClassType/>().empty() ||
-				!member_value.value().Get</ClassField/>().empty() ||
-				!member_value.value().Get</Enum/>().empty() ||
-				!member_value.value().Get</TypeAlias/>().empty() ||
-				!member_value.value().Get</GlobalVariable/>().empty() ||
-				!member_value.value().Get</GlobalAutoVariable/>().empty() )
-			{
-				// TODO - set visibility?
-				dst_members_.AddName( member_value.key(), member_value.value() );
-			}
-
-			auto src_functions_set_ptr= member_value.value().Get</NamesScopeFunctionsSet/>();
-			if( !src_functions_set_ptr.empty() )
-			{
-				// SPARCHE_TODO - maybe also skip additive-assignment operators?
-				if( member_value.key() == KeywordToString( Keyword::constructor_ ) ||
-					member_value.key() == KeywordToString( Keyword::destructor_ ) ||
-					member_value.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
-					member_value.key() == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
-					member_value.key() == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
+				auto parent_member_visibility= parent.class_.lock_imut().deref().GetMemberVisibility( member_value.key() );
+				if( parent_member_visibility == Synt::ClassVisibility::Private )
 				{
-					continue; // Did not inherit constructors, destructors, assignment operators, compare operators.
+					continue; // Do not inherit private members.
 				}
 
-				if( dst_members_.GetThisScopeValue( member_value.key() ).empty() )
+				auto mut dst_members_lock= class_members.lock_mut();
+				auto &mut dst_members_= dst_members_lock.deref();
+
+				var bool has_name = !dst_members_.GetThisScopeValue( member_value.key() ).empty();
+
+				if( !member_value.value().Get</ClassType/>().empty() ||
+					!member_value.value().Get</ClassField/>().empty() ||
+					!member_value.value().Get</Enum/>().empty() ||
+					!member_value.value().Get</TypeAlias/>().empty() ||
+					!member_value.value().Get</GlobalVariable/>().empty() ||
+					!member_value.value().Get</GlobalAutoVariable/>().empty() )
 				{
-					// Just add new functions set.
-					dst_members_.AddName( member_value.key(), member_value.value() );
-					continue;
-				}
-
-				auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
-				auto result_functions_set_ptr= result_class_value.try_deref().Get</NamesScopeFunctionsSet/>();
-				if( result_functions_set_ptr.empty() )
-				{
-					continue; // Name in new class shadows name with different kind in parent class.
-				}
-				// Merge functions sets.
-
-				auto src_functions_set_lock= src_functions_set_ptr.try_lock_imut();
-				auto& src_functions_set= src_functions_set_lock.deref();
-
-				auto mut result_functions_set_lock= result_functions_set_ptr.try_lock_mut();
-				auto &mut result_functions_set= result_functions_set_lock.deref();
-
-				if( parent_member_visibility != class_type.lock_imut().deref().GetMemberVisibility( member_value.key() ) )
-				{
-					var SrcLoc mut src_loc= syntax_element.src_loc;
-					if( !result_functions_set.functions_set.functions.empty() )
+					if( !has_name )
 					{
-						auto& f= result_functions_set.functions_set.functions.front();
-						if_var( &prototype_syntax_element : f.prototype_syntax_element )
+						dst_members_.AddName( member_value.key(), member_value.value() );
+						auto mut lock= class_type.lock_mut();
+						lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
+					}
+				}
+
+				auto src_functions_set_ptr= member_value.value().Get</NamesScopeFunctionsSet/>();
+				if( !src_functions_set_ptr.empty() )
+				{
+					// SPARCHE_TODO - maybe also skip additive-assignment operators?
+					if( member_value.key() == KeywordToString( Keyword::constructor_ ) ||
+						member_value.key() == KeywordToString( Keyword::destructor_ ) ||
+						member_value.key() == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+						member_value.key() == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
+						member_value.key() == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
+					{
+						continue; // Did not inherit constructors, destructors, assignment operators, compare operators.
+					}
+
+					if( !has_name )
+					{
+						// Just add new functions set.
+						dst_members_.AddName( member_value.key(), member_value.value() );
+						auto mut lock= class_type.lock_mut();
+						lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
+						continue;
+					}
+
+					auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
+					auto result_functions_set_ptr= result_class_value.try_deref().Get</NamesScopeFunctionsSet/>();
+					if( result_functions_set_ptr.empty() )
+					{
+						continue; // Name in new class shadows name with different kind in parent class.
+					}
+					// Merge functions sets.
+
+					auto src_functions_set_lock= src_functions_set_ptr.try_lock_imut();
+					auto& src_functions_set= src_functions_set_lock.deref();
+
+					auto mut result_functions_set_lock= result_functions_set_ptr.try_lock_mut();
+					auto &mut result_functions_set= result_functions_set_lock.deref();
+
+					if( parent_member_visibility != class_type.lock_imut().deref().GetMemberVisibility( member_value.key() ) )
+					{
+						var SrcLoc mut src_loc= syntax_element.src_loc;
+						if( !result_functions_set.functions_set.functions.empty() )
 						{
-							src_loc= prototype_syntax_element.src_loc;
+							auto& f= result_functions_set.functions_set.functions.front();
+							if_var( &prototype_syntax_element : f.prototype_syntax_element )
+							{
+								src_loc= prototype_syntax_element.src_loc;
+							}
+							if_var( &body_syntax_element : f.body_syntax_element )
+							{
+								src_loc= body_syntax_element.src_loc;
+							}
 						}
-						if_var( &body_syntax_element : f.body_syntax_element )
+						else if( !result_functions_set.functions_set.function_templates.empty() )
 						{
-							src_loc= body_syntax_element.src_loc;
+							src_loc= result_functions_set.functions_set.function_templates.front().deref().syntax_element.deref().src_loc;
 						}
+						REPORT_ERROR( FunctionsVisibilityMismatch, names_scope_ptr, src_loc, member_value.key() )
 					}
-					else if( !result_functions_set.functions_set.function_templates.empty() )
+
+					foreach( &src_function : src_functions_set.functions_set.functions )
 					{
-						src_loc= result_functions_set.functions_set.function_templates.front().deref().syntax_element.deref().src_loc;
+						if( !GetFunctionWithSameType( result_functions_set.functions_set, src_function.t ).empty() )
+						{
+							continue; // New class function shadows function with same type in source class, so, skip it.
+						}
+						ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.src_loc );
 					}
-					REPORT_ERROR( FunctionsVisibilityMismatch, names_scope_ptr, src_loc, member_value.key() )
-				}
 
-				foreach( &src_function : src_functions_set.functions_set.functions )
-				{
-					if( !GetFunctionWithSameType( result_functions_set.functions_set, src_function.t ).empty() )
+					// TODO - merge function templates smarter.
+					foreach( &function_template : src_functions_set.functions_set.function_templates )
 					{
-						continue; // New class function shadows function with same type in source class, so, skip it.
+						result_functions_set.functions_set.function_templates.push_back( function_template );
 					}
-					ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.src_loc );
-				}
+				} // if function set
 
-				// TODO - merge function templates smarter.
-				foreach( &function_template : src_functions_set.functions_set.function_templates )
-				{
-					result_functions_set.functions_set.function_templates.push_back( function_template );
-				}
-			} // if function set
-		} // for parent members
-	} // for parents
-
+				// TODO - merge type templates sets?
+			} // for parent members
+		} // for parents
+	}
 
 	// Finally, make class complete.
 	{
