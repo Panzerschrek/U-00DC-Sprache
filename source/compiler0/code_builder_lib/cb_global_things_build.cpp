@@ -820,21 +820,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 								result_class_functions->template_functions.push_back(function_template);
 						}
 					}
-					else
-					{
-						// Result class have no functions with this name. Inherit all functions from parent calass.
-						the_class.members->AddName( name, value );
-						the_class.SetMemberVisibility( name, parent_member_visibility );
-					}
 				}
-				else
+				// TODO - merge type templates set.
+
+				// Just override other kinds of symbols.
+				if( result_class_value == nullptr )
 				{
-					// Just override other kinds of symbols.
-					if( result_class_value == nullptr )
-					{
-						the_class.members->AddName( name, value );
-						the_class.SetMemberVisibility( name, parent_member_visibility );
-					}
+					the_class.members->AddName( name, value );
+					the_class.SetMemberVisibility( name, parent_member_visibility );
 				}
 			});
 	}
