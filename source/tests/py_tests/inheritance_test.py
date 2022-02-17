@@ -286,6 +286,20 @@ def InheritanceTest_TypeTemplateShadowed_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+
+def InheritanceTest_TypeTemplateShadowed_Test2():
+	c_program_text= """
+		class A interface
+		{
+			template</ type T /> struct S{ auto x= 12345; }
+		}
+		class B : A{}
+		class C : A, B {} // Get here two copies of same type template.
+		static_assert( C::S</ f32 />::x == 12345 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def InheritanceTest_ParentClassFieldAccess_Test0():
 	c_program_text= """
 		class A polymorph

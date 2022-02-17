@@ -939,7 +939,20 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 				if( !has_name )
 				{
-					dst_members_.AddName( member_value.key(), member_value.value() );
+					// Copy some values, not just take copy of shared pointer to avoid value mutation.
+					var NamesScopeValue mut value_for_copy= member_value.value();
+					if( !src_functions_set_ptr.empty() )
+					{
+						value_for_copy= src_functions_set_ptr.try_lock_imut().deref();
+					}
+					if( !src_type_templates_set_ptr.empty() )
+					{
+						value_for_copy= src_type_templates_set_ptr.try_lock_imut().deref();
+					}
+					// TODO - what about type aliases, global variables, etc.
+					// We can't just put these values into this class because we need to build these values inside original class.
+
+					dst_members_.AddName( member_value.key(), move(value_for_copy) );
 					auto mut lock= class_type.lock_mut();
 					lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
 				}
