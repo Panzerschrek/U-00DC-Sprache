@@ -24,7 +24,8 @@ struct TemplateBase
 	std::vector<TemplateParameter> template_params;
 	std::vector<TemplateSignatureParam> signature_params; // Function params for function templates.
 
-	NamesScope* parent_namespace= nullptr; // NamesScope, where defined. NOT changed after import.
+	// NamesScope, where defined. NOT changed after import or inheritance.
+	NamesScope* parent_namespace= nullptr;
 
 	SrcLoc src_loc;
 };

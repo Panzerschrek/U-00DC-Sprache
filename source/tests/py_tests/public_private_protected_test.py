@@ -428,6 +428,47 @@ def AccessingProtectedMember_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def AccessingProtectedMember_Test4():
+	c_program_text= """
+		class A polymorph
+		{
+		protected:
+			i32 x;
+		}
+		class B : A
+		{
+			// "B" inherits "x" as protected
+		}
+		fn Foo(B& b)
+		{
+			b.x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "AccessingNonpublicClassMember" )
+	assert( errors_list[0].src_loc.line == 13 )
+
+
+def AccessingProtectedMember_Test5():
+	c_program_text= """
+		class A polymorph
+		{
+		protected:
+			i32 x;
+		}
+		class B : A
+		{
+			// "B" inherits "x" as protected
+		}
+		class C : B
+		{
+			fn Zero( mut this ) { A::x= 0; }  // Ok, "x" is still protected, not private.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def AccessingPrivateMemberOutsideClass_ViaMemberAccessOperator_Test0():
 	c_program_text= """
 		class A
@@ -607,6 +648,25 @@ def TypeTemplatesVisibilityMismatch_Test0():
 	assert( errors_list[0].src_loc.line == 7 )
 
 
+def TypeTemplatesVisibilityMismatch_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+		public:
+			template</ type T /> struct S{}
+		}
+		class B : A
+		{
+		protected:
+			template</ type T /> struct S</ $(T) />{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "TypeTemplatesVisibilityMismatch" )
+	assert( errors_list[0].src_loc.line == 10 )
+
+
 def FunctionBodyVisibilityIsUnsignificant_Test1():
 	c_program_text= """
 		class A
@@ -697,6 +757,26 @@ def PrivateMembersNotInherited_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "NameNotFound", 12 ) )
+
+
+def PrivateMembersNotInherited_Test4():
+	c_program_text= """
+		class A polymorph
+		{
+		private:
+			template</type T/> struct S{ auto x= 44; }
+		}
+		class B : A
+		{
+			template<//> struct S</ i32 /> { auto x= 99; }
+
+			fn Foo()
+			{
+				static_assert( S</ i32 />::x == 99 );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
 
 
 def ChildClassNameOverridesParentClassNameAndVisibility_Test0():

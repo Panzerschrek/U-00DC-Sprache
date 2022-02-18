@@ -976,5 +976,17 @@ def OrderCompareOperatorIsNotInherited_Test2():
 			l <=> r; // Ok, call Derived::<=>
 		}
 	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	tests_lib.build_program( c_program_text )
+
+
+def FunctionDeclarationOutsideItsScope_ForInheritance_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn Foo();
+		}
+		class B : A {}
+		fn B::Foo() {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "FunctionDeclarationOutsideItsScope", 7 ) or HaveError( errors_list, "NameNotFound", 7 ) )

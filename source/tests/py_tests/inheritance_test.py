@@ -254,6 +254,52 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test5():
 	assert( call_result == 66541211 )
 
 
+def InheritanceTest_TypeTemplateShadowed_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			template</ type T /> struct S{ auto x= 9999; }
+		}
+		class B : A
+		{
+			// Template with exact signature shadows template from parent class
+			template</ type T /> struct S{ auto x= 1111; }
+		}
+		static_assert( B::S</ f32 />::x == 1111 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def InheritanceTest_TypeTemplateShadowed_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			template</ /> struct S</ u64 /> { auto x= 9999; }
+		}
+		class B : A
+		{
+			// Template with different, but less specialized signature. Use both type templates.
+			template</ type T /> struct S{ auto x= 1111; }
+		}
+		static_assert( B::S</ u64 />::x == 9999 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+
+def InheritanceTest_TypeTemplateShadowed_Test2():
+	c_program_text= """
+		class A interface
+		{
+			template</ type T /> struct S{ auto x= 12345; }
+		}
+		class B : A{}
+		class C : A, B {} // Get here two copies of same type template.
+		static_assert( C::S</ f32 />::x == 12345 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def InheritanceTest_ParentClassFieldAccess_Test0():
 	c_program_text= """
 		class A polymorph
