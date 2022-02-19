@@ -119,6 +119,20 @@ def InheritanceTest_ParentClassNameVisibleInChild_Test0():
 	assert( call_result == 5652111 )
 
 
+def InheritanceTest_ParentClassNameVisibleInChild_Test1():
+	c_program_text= """
+	class A polymorph
+	{
+		type I= i32;
+	}
+	class B : A
+	{
+		fn Foo(I i); // A::I must be visible here
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def InheritanceTest_ChildClassNameOverridesParentClassName_Test0():
 	c_program_text= """
 		class A polymorph
