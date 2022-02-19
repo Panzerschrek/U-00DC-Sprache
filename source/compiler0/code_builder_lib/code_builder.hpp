@@ -914,6 +914,7 @@ private:
 
 	llvm::Value* CreateBaseClassGEP( FunctionContext& function_context, llvm::Value* class_ptr );
 	llvm::Value* CreateVirtualTablePointerGEP( FunctionContext& function_context, llvm::Value* class_ptr );
+	llvm::Value* CreateClassFiledGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field );
 	llvm::Value* CreateClassFiledGEP( FunctionContext& function_context, llvm::Value* class_ptr, uint64_t field_index );
 	llvm::Value* CreateTupleElementGEP( FunctionContext& function_context, llvm::Value* tuple_ptr, uint64_t element_index );
 	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* array_ptr, uint64_t element_index );

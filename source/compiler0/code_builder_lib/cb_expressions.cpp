@@ -331,23 +331,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	llvm::Value* actual_field_class_ptr= nullptr;
-	if( field->class_ == variable.type.GetClassType() )
-		actual_field_class_ptr= variable.llvm_value;
-	else
-	{
-		// For parent field we needs make several GEP isntructions.
-		ClassPtr actual_field_class= variable.type.GetClassType();
-		actual_field_class_ptr= variable.llvm_value;
-		while( actual_field_class != field->class_ )
-		{
-			actual_field_class_ptr= CreateBaseClassGEP( function_context, actual_field_class_ptr );
-			actual_field_class= actual_field_class->base_class;
-			U_ASSERT(actual_field_class != nullptr );
-		}
-	}
-
-	llvm::Value* const gep_result= CreateClassFiledGEP( function_context, actual_field_class_ptr, field->index );
+	llvm::Value* const gep_result= CreateClassFiledGEP( function_context, variable, *field );
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
@@ -693,27 +677,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const ClassPtr class_= field->class_;
 		U_ASSERT( class_ != nullptr && "Class is dead? WTF?" );
 
-		llvm::Value* actual_field_class_ptr= nullptr;
-		if( class_ == function_context.this_->type.GetClassType() )
-			actual_field_class_ptr= function_context.this_->llvm_value;
-		else
-		{
-			// For parent field we needs make several GEP isntructions.
-			ClassPtr actual_field_class= function_context.this_->type.GetClassType();
-			actual_field_class_ptr= function_context.this_->llvm_value;
-			while( actual_field_class != class_ )
-			{
-				if( actual_field_class->base_class == nullptr )
-				{
-					REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
-					return ErrorValue();
-				}
-
-				actual_field_class_ptr= CreateBaseClassGEP( function_context, actual_field_class_ptr );
-				actual_field_class= actual_field_class->base_class;
-			}
-		}
-
 		if( function_context.whole_this_is_unavailable &&
 			function_context.uninitialized_this_fields.find( field->syntax_element->name ) != function_context.uninitialized_this_fields.end() )
 		{
@@ -734,7 +697,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		field_variable.value_type= ( function_context.this_->value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		field_variable.node= function_context.this_->node;
 
-		field_variable.llvm_value= CreateClassFiledGEP( function_context, actual_field_class_ptr, field->index );
+		field_variable.llvm_value= CreateClassFiledGEP( function_context, *function_context.this_, *field );
+		if( field_variable.llvm_value == nullptr )
+		{
+			REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
+			return ErrorValue();
+		}
 
 		if( field->is_reference )
 		{

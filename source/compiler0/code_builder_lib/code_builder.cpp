@@ -1957,6 +1957,21 @@ llvm::Value*CodeBuilder:: CreateVirtualTablePointerGEP( FunctionContext& functio
 	return CreateClassFiledGEP( function_context, class_ptr, 0 /* virtual table pointer is allways first field */ );
 }
 
+llvm::Value* CodeBuilder::CreateClassFiledGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field )
+{
+	ClassPtr actual_field_class= class_variable.type.GetClassType();
+	llvm::Value* actual_field_class_ptr= class_variable.llvm_value;
+	while( actual_field_class != class_field.class_ )
+	{
+		if( actual_field_class->base_class == nullptr )
+			return nullptr;
+		actual_field_class_ptr= CreateBaseClassGEP( function_context, actual_field_class_ptr );
+		actual_field_class= actual_field_class->base_class;
+	}
+
+	return CreateClassFiledGEP( function_context, actual_field_class_ptr, class_field.index );
+}
+
 llvm::Value* CodeBuilder::CreateClassFiledGEP( FunctionContext& function_context, llvm::Value* const class_ptr, const uint64_t field_index )
 {
 	return function_context.llvm_ir_builder.CreateGEP(
