@@ -990,3 +990,29 @@ def FunctionDeclarationOutsideItsScope_ForInheritance_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( HaveError( errors_list, "FunctionDeclarationOutsideItsScope", 7 ) or HaveError( errors_list, "NameNotFound", 7 ) )
+
+
+def FunctionDeclarationOutsideItsScope_ForInheritance_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			fn Foo() : i32;
+		}
+		class B : A
+		{
+			// This is actually a new function declaration (A::Foo is shadowed).
+			fn Foo() : i32
+			{
+				return 678;
+			}
+
+			fn CallFoo() : i32 { return Foo(); }
+		}
+		fn Bar() : i32
+		{
+			return B::CallFoo();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Barv" )
+	assert( call_result == 678 )

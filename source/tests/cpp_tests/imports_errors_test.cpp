@@ -854,6 +854,34 @@ U_TEST( TypeTemplateRedefinition_ForImports_Test2 )
 		"root" );
 }
 
+U_TEST( DefineBodyForFunction_UsingChildClassName_Test0 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		class A polymorph
+		{
+			fn Foo();
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		class B : A {}
+
+		fn B::Foo(){} // Error, no native function named "Foo" in "B".
+	)";
+
+	const ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a", c_program_text_a },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( HaveError( result.errors, CodeBuilderErrorCode::NameNotFound, 4u ) );
+}
+
 } // namespace
 
 } // namespace U
