@@ -1876,6 +1876,12 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( ClassPt
 		name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
 		name == OverloadedOperatorToString( OverloadedOperator::CompareOrder );
 
+	if( is_special_method )
+	{
+		// Special methods may be generated during class build. So, require complete type to access these methods.
+		GlobalThingBuildClass( class_type ); // Functions set changed in this call.
+	}
+
 	if( const auto value= class_type->members->GetThisScopeValue( name ) )
 	{
 		const auto visibility= class_type->GetMemberVisibility( name );
@@ -1891,10 +1897,9 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( ClassPt
 		else if( const auto functions_set= value->GetFunctionsSet() )
 		{
 			GlobalThingPrepareClassParentsList( class_type );
-			if( class_type->is_complete && ( is_special_method || !class_type->parents.empty() ) )
+			if( !class_type->is_complete && !class_type->parents.empty() )
 			{
 				// Request class build in order to merge functions from parent classes into this functions set.
-				// Special methods may be generated during class build. So, require complete type to access these methods.
 				GlobalThingBuildClass( class_type ); // Functions set changed in this call.
 			}
 			GlobalThingBuildFunctionsSet( *class_type->members, *functions_set, false );
