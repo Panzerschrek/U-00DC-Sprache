@@ -1906,6 +1906,12 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( ClassPt
 		}
 		else if( const auto type_templates_set= value->GetTypeTemplatesSet() )
 		{
+			GlobalThingPrepareClassParentsList( class_type );
+			if( !class_type->is_complete && !class_type->parents.empty() )
+			{
+				// Request class build in order to merge type templaes from parent classes into this type templates set.
+				GlobalThingBuildClass( class_type ); // Type templates set changed in this call.
+			}
 			GlobalThingBuildTypeTemplatesSet( *class_type->members, *type_templates_set );
 		}
 		else if( value->GetTypedef() != nullptr )
