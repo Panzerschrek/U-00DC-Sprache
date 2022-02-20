@@ -133,6 +133,57 @@ def InheritanceTest_ParentClassNameVisibleInChild_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def InheritanceTest_ParentClassNameVisibleInChild_Test2():
+	c_program_text= """
+	class A interface
+	{
+		fn Foo(i32 x);
+	}
+	class B interface
+	{
+		fn Foo(f32 x);
+	}
+	class C : B, A
+	{
+		// Should inherit both "Foo" variants.
+	}
+	fn Bar()
+	{
+		C::Foo( 66 );
+		C::Foo( 3.5f );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def InheritanceTest_ParentClassNameVisibleInChild_Test3():
+	c_program_text= """
+	class A interface
+	{
+		fn Foo();
+	}
+	class B interface : A
+	{
+		fn Foo(i32 x);
+	}
+	class C interface : A
+	{
+		fn Foo(f32 x);
+	}
+	class D : B, C
+	{
+		// Should inherit all "Foo" variants.
+	}
+	fn Bar()
+	{
+		D::Foo();
+		D::Foo( 66 );
+		D::Foo( 3.5f );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def InheritanceTest_ChildClassNameOverridesParentClassName_Test0():
 	c_program_text= """
 		class A polymorph
