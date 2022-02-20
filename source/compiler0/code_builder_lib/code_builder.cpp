@@ -1728,8 +1728,10 @@ Value CodeBuilder::ResolveValue(
 		{
 			if( const auto class_type= last_space->GetClass() )
 			{
-				// TODO - check for access to private member.
-				value= ResolveClassValue( class_type, *simple_name ).first;
+				const auto class_value= ResolveClassValue( class_type, *simple_name );
+				value= class_value.first;
+				if( names_scope.GetAccessFor( class_type ) < class_value.second )
+					REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, *simple_name, last_space->GetThisNamespaceName() );
 			}
 			else
 				value= last_space->GetThisScopeValue( *simple_name );
