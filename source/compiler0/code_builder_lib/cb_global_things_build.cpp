@@ -401,6 +401,10 @@ void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type 
 
 		class_type->parents.emplace_back();
 		class_type->parents.back().class_= parent_class;
+
+		GlobalThingPrepareClassParentsList( parent_class );
+		AddAncestorsAccessRights_r( *class_type, parent_class );
+
 	} // for parents
 
 	class_type->parents_list_prepared= true;
@@ -456,8 +460,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			}
 			the_class.base_class= parent.class_;
 		}
-
-		AddAncestorsAccessRights_r( the_class, parent.class_ );
 	}
 
 	// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
