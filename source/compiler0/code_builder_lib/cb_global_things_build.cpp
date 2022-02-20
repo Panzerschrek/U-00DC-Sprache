@@ -790,7 +790,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		break;
 	};
 
-	// Merge namespaces of parents into result class.
+	// Merge functions sets of parents into functions sets of this class.
+	// Do the same for type templates sets.
 	for( const Class::Parent& parent : the_class.parents )
 	{
 		const auto parent_class= parent.class_;
@@ -870,13 +871,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 							}
 						}
 					}
-				}
-
-				// Just override other kinds of symbols.
-				if( result_class_value == nullptr )
-				{
-					the_class.members->AddName( name, value );
-					the_class.SetMemberVisibility( name, parent_member_visibility );
 				}
 			});
 	}
