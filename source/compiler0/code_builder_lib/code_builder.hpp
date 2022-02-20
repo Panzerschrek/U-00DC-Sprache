@@ -856,6 +856,7 @@ private:
 
 	void GlobalThingBuildNamespace( NamesScope& names_scope );
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
+	void GlobalThingPrepareClassParentsList( ClassPtr class_type );
 	void GlobalThingBuildClass( ClassPtr class_type );
 	void GlobalThingBuildEnum( const EnumPtr enum_ );
 	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );

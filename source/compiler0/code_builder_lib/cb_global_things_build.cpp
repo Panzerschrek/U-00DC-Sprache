@@ -360,29 +360,18 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 	}
 }
 
-void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
+void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type )
 {
-	Class& the_class= *class_type;
-
-	if( the_class.is_complete ||
-		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
+	if( class_type->parents_list_prepared || class_type->syntax_element == nullptr )
 		return;
 
-	if( the_class.typeinfo_type != std::nullopt )
-	{
-		const Type& type= *the_class.typeinfo_type;
-		BuildFullTypeinfo( type, typeinfo_cache_[type], *the_class.members->GetRoot() );
-		return;
-	}
+	DETECT_GLOBALS_LOOP( &class_type, class_type->members->GetThisNamespaceName(), class_type->body_src_loc );
 
-	const Synt::Class& class_declaration= *the_class.syntax_element;
-	const std::string& class_name= class_declaration.name_;
+	const Synt::Class& class_declaration= *class_type->syntax_element;
 
-	DETECT_GLOBALS_LOOP( &the_class, the_class.members->GetThisNamespaceName(), the_class.body_src_loc );
-
-	the_class.have_shared_state= class_declaration.have_shared_state_;
-
-	NamesScope& class_parent_namespace= *the_class.members->GetParent();
+	// Perform only steps necessary to build parents list.
+	// Do not even require completeness of parent class.
+	NamesScope& class_parent_namespace= *class_type->members->GetParent();
 	for( const Synt::ComplexName& parent : class_declaration.parents_ )
 	{
 		const Value parent_value= ResolveValue( class_parent_namespace, *global_function_context_, parent );
@@ -400,14 +389,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
 			continue;
 		}
-		if( !EnsureTypeComplete( *type_name ) )
-		{
-			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
-			continue;
-		}
 
 		bool duplicated= false;
-		for( const Class::Parent& parent : the_class.parents )
+		for( const Class::Parent& parent : class_type->parents )
 			duplicated= duplicated || parent.class_ == parent_class;
 		if( duplicated )
 		{
@@ -415,27 +399,66 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			continue;
 		}
 
-		const auto parent_kind= parent_class->kind;
+		class_type->parents.emplace_back();
+		class_type->parents.back().class_= parent_class;
+	} // for parents
+
+	class_type->parents_list_prepared= true;
+}
+
+void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
+{
+	Class& the_class= *class_type;
+
+	if( the_class.is_complete ||
+		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
+		return;
+
+	if( the_class.typeinfo_type != std::nullopt )
+	{
+		const Type& type= *the_class.typeinfo_type;
+		BuildFullTypeinfo( type, typeinfo_cache_[type], *the_class.members->GetRoot() );
+		return;
+	}
+
+	GlobalThingPrepareClassParentsList( class_type );
+
+	const Synt::Class& class_declaration= *the_class.syntax_element;
+	const std::string& class_name= class_declaration.name_;
+
+	DETECT_GLOBALS_LOOP( &the_class, the_class.members->GetThisNamespaceName(), the_class.body_src_loc );
+
+	the_class.have_shared_state= class_declaration.have_shared_state_;
+
+	NamesScope& class_parent_namespace= *the_class.members->GetParent();
+	// Perform remaining check of parents.
+	for( Class::Parent& parent : the_class.parents )
+	{
+		if( !EnsureTypeComplete( parent.class_ ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, parent.class_ );
+			return;
+		}
+
+		const auto parent_kind= parent.class_->kind;
 		if( !( parent_kind == Class::Kind::Abstract || parent_kind == Class::Kind::Interface || parent_kind == Class::Kind::PolymorphNonFinal ) )
 		{
-			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
-			continue;
+			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, parent.class_ );
+			return;
 		}
 
 		if( parent_kind != Class::Kind::Interface ) // not interface=base
 		{
 			if( the_class.base_class != nullptr )
 			{
-				REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
-				continue;
+				REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.src_loc_, parent.class_ );
+				return;
 			}
-			the_class.base_class= parent_class;
+			the_class.base_class= parent.class_;
 		}
 
-		the_class.parents.emplace_back();
-		the_class.parents.back().class_= parent_class;
-		AddAncestorsAccessRights_r( the_class, parent_class );
-	} // for parents
+		AddAncestorsAccessRights_r( the_class, parent.class_ );
+	}
 
 	// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
 	if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||

@@ -69,6 +69,7 @@ public:
 	InnerReferenceType inner_reference_type= InnerReferenceType::None;
 	Kind kind= Kind::Struct;
 
+	bool parents_list_prepared= false;
 	bool is_complete= false;
 	bool have_explicit_noncopy_constructors= false;
 	bool is_default_constructible= false;
