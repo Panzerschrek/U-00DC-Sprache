@@ -1726,7 +1726,13 @@ Value CodeBuilder::ResolveValue(
 	{
 		do
 		{
-			value= last_space->GetThisScopeValue( *simple_name );
+			if( const auto class_type= last_space->GetClass() )
+			{
+				// TODO - check for access to private member.
+				value= ResolveClassValue( class_type, *simple_name ).first;
+			}
+			else
+				value= last_space->GetThisScopeValue( *simple_name );
 			if( value != nullptr )
 				break;
 			last_space= last_space->GetParent();
@@ -1761,21 +1767,14 @@ Value CodeBuilder::ResolveValue(
 			{
 				if( ClassPtr class_= type->GetClassType() )
 				{
-					if( class_->syntax_element != nullptr && class_->syntax_element->is_forward_declaration_ )
-					{
-						REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), src_loc, *type );
-						return ErrorValue();
-					}
-
-					GlobalThingBuildClass( class_ );
-
-					if( names_scope.GetAccessFor( class_ ) < class_->GetMemberVisibility( *component_name ) )
+					const auto class_value= ResolveClassValue( class_, *component_name );
+					if( names_scope.GetAccessFor( class_ ) < class_value.second )
 						REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, *component_name, class_->members->GetThisNamespaceName() );
 
 					if( ( *component_name == Keywords::constructor_ || *component_name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
 						REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), src_loc, *component_name );
 
-					value= class_->members->GetThisScopeValue( *component_name );
+					value= class_value.first;
 					last_space= class_->members.get();
 				}
 				else if( EnumPtr const enum_= type->GetEnumType() )
@@ -1865,6 +1864,88 @@ Value CodeBuilder::ResolveValue(
 	}
 
 	return value == nullptr ? ErrorValue() : *value;
+}
+
+
+std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( ClassPtr class_type, const std::string& name )
+{
+	const bool is_special_method=
+		name == Keyword( Keywords::constructor_ ) ||
+		name == Keyword( Keywords::destructor_ ) ||
+		name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+		name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
+		name == OverloadedOperatorToString( OverloadedOperator::CompareOrder );
+
+	if( const auto value= class_type->members->GetThisScopeValue( name ) )
+	{
+		const auto visibility= class_type->GetMemberVisibility( name );
+
+		if( value->GetClassField() != nullptr )
+		{
+			if( !class_type->is_complete )
+			{
+				// We can't just return class field value if class is incomplete. So, request class build to fill class field properly.
+				GlobalThingBuildClass( class_type ); // Class field value changed in this call.
+			}
+		}
+		else if( const auto functions_set= value->GetFunctionsSet() )
+		{
+			GlobalThingPrepareClassParentsList( class_type );
+			if( class_type->is_complete && ( is_special_method || !class_type->parents.empty() ) )
+			{
+				// Request class build in order to merge functions from parent classes into this functions set.
+				// Special methods may be generated during class build. So, require complete type to access these methods.
+				GlobalThingBuildClass( class_type ); // Functions set changed in this call.
+			}
+			GlobalThingBuildFunctionsSet( *class_type->members, *functions_set, false );
+		}
+		else if( const auto type_templates_set= value->GetTypeTemplatesSet() )
+		{
+			GlobalThingBuildTypeTemplatesSet( *class_type->members, *type_templates_set );
+		}
+		else if( value->GetTypedef() != nullptr )
+		{
+			GlobalThingBuildTypedef( *class_type->members, *value );
+		}
+		else if( value->GetIncompleteGlobalVariable() != nullptr )
+		{
+			GlobalThingBuildVariable( *class_type->members, *value );
+		}
+		else if( const auto type= value->GetTypeName() )
+		{
+			if( const auto enum_= type->GetEnumType() )
+				GlobalThingBuildEnum( enum_ );
+		}
+		else if(
+			value->GetVariable() != nullptr ||
+			value->GetStaticAssert() != nullptr ||
+			value->GetYetNotDeducedTemplateArg() != nullptr )
+		{}
+		else U_ASSERT(false);
+
+		return std::make_pair( value, visibility );
+	}
+
+	// Do not try to fetch special methods from parent.
+	if( is_special_method )
+		return std::make_pair( nullptr, ClassMemberVisibility::Public );
+
+	// Value not found in this class. Try to fetch value from parents.
+	GlobalThingPrepareClassParentsList( class_type );
+
+	// TODO - what if name found more than in one parent>
+	for( const Class::Parent& parent : class_type->parents )
+	{
+		const auto parent_class_value= ResolveClassValue( parent.class_, name );
+		if( parent_class_value.first != nullptr )
+		{
+			// Return public class member as public, protected as protected. Do not return parent class private members.
+			if( parent_class_value.second != ClassMemberVisibility::Private )
+				return parent_class_value;
+		}
+	}
+
+	return std::make_pair( nullptr, ClassMemberVisibility::Public );
 }
 
 llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )

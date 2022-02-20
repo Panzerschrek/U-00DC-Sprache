@@ -280,7 +280,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	const Value* const class_member= class_type->members->GetThisScopeValue( member_access_operator.member_name_ );
+	const auto class_value= ResolveClassValue( class_type, member_access_operator.member_name_ );
+	const Value* const class_member= class_value.first;
 	if( class_member == nullptr )
 	{
 		REPORT_ERROR( NameNotFound, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_ );
@@ -291,7 +292,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		( member_access_operator.member_name_ == Keywords::constructor_ || member_access_operator.member_name_ == Keywords::destructor_ ) )
 		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names.GetErrors(), member_access_operator.src_loc_,  member_access_operator.member_name_ );
 
-	if( names.GetAccessFor( variable.type.GetClassType() ) < class_type->GetMemberVisibility( member_access_operator.member_name_ ) )
+	if( names.GetAccessFor( variable.type.GetClassType() ) < class_value.second )
 		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_, class_type->members->GetThisNamespaceName() );
 
 	if( const OverloadedFunctionsSet* functions_set= class_member->GetFunctionsSet() )

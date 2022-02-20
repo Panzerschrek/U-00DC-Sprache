@@ -699,6 +699,8 @@ private:
 		const Synt::ComplexName& complex_name,
 		ResolveMode resolve_mode= ResolveMode::Regular );
 
+	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, const std::string& name );
+
 	// Functions
 
 	FunctionVariable* GetFunctionWithSameType(
