@@ -796,88 +796,79 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// Do the same for type templates sets.
 	for( const Class::Parent& parent : the_class.parents )
 	{
-		const auto parent_class= parent.class_;
-		parent_class->members->ForEachInThisScope(
-			[&]( const std::string& name, const Value& value )
+		the_class.members->ForEachInThisScope(
+			[&]( const std::string& name, Value& value )
 			{
-				const auto parent_member_visibility= parent_class->GetMemberVisibility( name );
-				if( parent_member_visibility == ClassMemberVisibility::Private )
+				if( name == Keyword( Keywords::constructor_ ) ||
+					name == Keyword( Keywords::destructor_ ) ||
+					name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+					name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
+					name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
+				return; // Do not inherit constructors, destructors, assignment operators, compare operators.
+
+				const auto parent_value= ResolveClassValue( parent.class_, name ); // Extract values from direct or undirect uncestors.
+				if( parent_value.first == nullptr || parent_value.second == ClassMemberVisibility::Private )
 					return; // Do not inherit private members.
 
-				Value* const result_class_value= the_class.members->GetThisScopeValue(name);
-
-				if( const auto functions= value.GetFunctionsSet() )
+				if( const auto functions= parent_value.first->GetFunctionsSet() )
 				{
-					// SPARCHE_TODO - maybe also skip additive-assignment operators?
-					if( name == Keyword( Keywords::constructor_ ) ||
-						name == Keyword( Keywords::destructor_ ) ||
-						name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
-						name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
-						name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
-						return; // Did not inherit constructors, destructors, assignment operators, compare operators.
-
-					if( result_class_value != nullptr )
+					if( const auto result_class_functions= value.GetFunctionsSet() )
 					{
-						if( const auto result_class_functions= result_class_value->GetFunctionsSet() )
+						if( the_class.GetMemberVisibility( name ) != parent_value.second )
 						{
-							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
+							const auto& src_loc= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->src_loc : result_class_functions->functions.front().prototype_src_loc;
+							REPORT_ERROR( FunctionsVisibilityMismatch, the_class.members->GetErrors(), src_loc, name );
+						}
+
+						// Merge function sets, if result class have functions set with given name.
+						for( const FunctionVariable& parent_function : functions->functions )
+						{
+							bool overrides= false;
+							for( FunctionVariable& result_class_function : result_class_functions->functions )
 							{
-								const auto& src_loc= result_class_functions->functions.empty() ? result_class_functions->template_functions.front()->src_loc : result_class_functions->functions.front().prototype_src_loc;
-								REPORT_ERROR( FunctionsVisibilityMismatch, the_class.members->GetErrors(), src_loc, name );
+								if( parent_function.type == result_class_function.type )
+								{
+									overrides= true; // Ok, result class function overrides parent clas function.
+									break;
+								}
 							}
-
-							// Merge function sets, if result class have functions set with given name.
-							for( const FunctionVariable& parent_function : functions->functions )
+							if( !overrides )
 							{
-								bool overrides= false;
-								for( FunctionVariable& result_class_function : result_class_functions->functions )
-								{
-									if( parent_function.type == result_class_function.type )
-									{
-										overrides= true; // Ok, result class function overrides parent clas function.
-										break;
-									}
-								}
-								if( !overrides )
-								{
-									if( ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members->GetErrors(), class_declaration.src_loc_ ) )
-										result_class_functions->functions.back().is_inherited= true;
-								}
-							} // for parent functions
+								if( ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members->GetErrors(), class_declaration.src_loc_ ) )
+									result_class_functions->functions.back().is_inherited= true;
+							}
+						} // for parent functions
 
-							// TODO - merge function templates smarter.
-							for( const FunctionTemplatePtr& function_template : functions->template_functions )
-								result_class_functions->template_functions.push_back(function_template);
+						// TODO - merge function templates smarter.
+						for( const FunctionTemplatePtr& function_template : functions->template_functions )
+							result_class_functions->template_functions.push_back(function_template);
+					}
+				}
+				if( const auto type_templates_set= parent_value.first->GetTypeTemplatesSet() )
+				{
+					if( const auto result_type_templates_set= value.GetTypeTemplatesSet() )
+					{
+						if( the_class.GetMemberVisibility( name ) != parent_value.second )
+							REPORT_ERROR( TypeTemplatesVisibilityMismatch, the_class.members->GetErrors(), value.GetSrcLoc(), name );
+
+						for( const TypeTemplatePtr& parent_type_template : type_templates_set->type_templates )
+						{
+							bool overrides= false;
+							for( const TypeTemplatePtr& result_type_template : result_type_templates_set->type_templates )
+							{
+								if( result_type_template->signature_params == parent_type_template->signature_params )
+								{
+									overrides= true;
+									break;
+								}
+							}
+							if( !overrides )
+								result_type_templates_set->type_templates.push_back( parent_type_template );
 						}
 					}
 				}
-				if( const auto type_templates_set= value.GetTypeTemplatesSet() )
-				{
-					if( result_class_value != nullptr )
-					{
-						if( const auto result_type_templates_set= result_class_value->GetTypeTemplatesSet() )
-						{
-							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
-								REPORT_ERROR( TypeTemplatesVisibilityMismatch, the_class.members->GetErrors(), result_class_value->GetSrcLoc(), name );
 
-							for( const TypeTemplatePtr& parent_type_template : type_templates_set->type_templates )
-							{
-								bool overrides= false;
-								for( const TypeTemplatePtr& result_type_template : result_type_templates_set->type_templates )
-								{
-									if( result_type_template->signature_params == parent_type_template->signature_params )
-									{
-										overrides= true;
-										break;
-									}
-								}
-								if( !overrides )
-									result_type_templates_set->type_templates.push_back( parent_type_template );
-							}
-						}
-					}
-				}
-			});
+			} );
 	}
 
 	PrepareClassVirtualTableType( class_type );

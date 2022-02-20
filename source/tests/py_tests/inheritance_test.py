@@ -268,6 +268,28 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test5():
 	assert( call_result == 66541211 )
 
 
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test6():
+	c_program_text= """
+		class A polymorph
+		{
+			fn foo() : i32 { return 58585858; }
+		}
+		class B : A {}
+		class C : B
+		{
+			fn foo( i32 x ) : i32 { return x; }   // Merge this function into one set with "foo" from undirect ancestor.
+		}
+
+		fn Foo() : i32
+		{
+			return C::foo();  // A::foo must be called
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 58585858 )
+
+
 def InheritanceTest_TypeTemplateShadowed_Test0():
 	c_program_text= """
 		class A polymorph
