@@ -1024,6 +1024,9 @@ size_t CodeBuilder::PrepareFunction(
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
 			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc_ );
 
+		if( prev_function->is_inherited )
+			REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.src_loc_ );
+
 		return size_t(prev_function - functions_set.functions.data());
 	}
 	else
@@ -1946,7 +1949,7 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( ClassPt
 	// Value not found in this class. Try to fetch value from parents.
 	GlobalThingPrepareClassParentsList( class_type );
 
-	// TODO - what if name found more than in one parent>
+	// TODO - what if name found more than in one parent?
 	for( const Class::Parent& parent : class_type->parents )
 	{
 		const auto parent_class_value= ResolveClassValue( parent.class_, name );

@@ -326,7 +326,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 		for( FunctionVariable& function_variable : functions_set.functions )
 		{
 			if( function_variable.syntax_element != nullptr && function_variable.syntax_element->block_ != nullptr &&
-				!function_variable.have_body && !function_variable.return_type_is_auto )
+				!function_variable.have_body && !function_variable.return_type_is_auto && !function_variable.is_inherited )
 			{
 				BuildFuncCode(
 					function_variable,
@@ -839,7 +839,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 									}
 								}
 								if( !overrides )
-									ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members->GetErrors(), class_declaration.src_loc_ );
+								{
+									if( ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members->GetErrors(), class_declaration.src_loc_ ) )
+										result_class_functions->functions.back().is_inherited= true;
+								}
 							} // for parent functions
 
 							// TODO - merge function templates smarter.
