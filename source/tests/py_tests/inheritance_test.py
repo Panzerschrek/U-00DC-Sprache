@@ -341,6 +341,50 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test6():
 	assert( call_result == 58585858 )
 
 
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test7():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this);
+		}
+		class B : A
+		{
+			// Inherit virtual A::Foo two times, override it.
+			fn virtual override Foo(this);
+		}
+		class C : A, B
+		{
+			// Inherit both B::Foo and A::Foo
+		}
+		fn Bar(C& c)
+		{
+			c.Foo(); // Call virtual function.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test8():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this);
+		}
+		class B interface : A {}
+		class C interface : A {}
+		class D : B, C
+		{
+			// Inherit virtual A::Foo two times, override it.
+			fn virtual override Foo(this);
+		}
+		fn Bar(D& d)
+		{
+			d.Foo(); // Call virtual function.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def InheritanceTest_TypeTemplateShadowed_Test0():
 	c_program_text= """
 		class A polymorph

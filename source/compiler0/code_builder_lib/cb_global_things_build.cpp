@@ -815,7 +815,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
 						name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
 						name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
-					return; // Do not inherit constructors, destructors, assignment operators, compare operators.
+						return; // Do not inherit constructors, destructors, assignment operators, compare operators.
 
 					if( result_class_value != nullptr )
 					{

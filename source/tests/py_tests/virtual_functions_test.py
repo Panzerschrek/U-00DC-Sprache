@@ -246,6 +246,44 @@ def VirtualFunctionCallTest6():
 	assert( call_result == 666 )
 
 
+def VirtualFunctionCallTest7():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Bar( this ) : i32 { return 123; }
+		}
+		class B : A
+		{
+			fn virtual override Bar( this ) : i32 { return 456; }
+		}
+		fn Foo() : i32
+		{
+			var B b;
+			return A::Bar(b); // Perform non-vitual call of virtual function. Should call "A::Bar" directly, without virtual dispatch.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 123 )
+
+
+def VirtualFunctionCallTest8():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Bar( this ) : i32;
+		}
+		fn CalLBar(A& a)
+		{
+			// Call virtual pure function, passing "this" as non-this.
+			// In such call no virtual call be performed, but call to A::Bar itself.
+			// This code compiles, but linking should fail beause virtual pure function has no definition.
+			A::Bar(a);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def VirtualOperatorCall_Test0():
 	c_program_text= """
 		class A abstract
