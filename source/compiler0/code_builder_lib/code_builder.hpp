@@ -700,6 +700,7 @@ private:
 		ResolveMode resolve_mode= ResolveMode::Regular );
 
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, const std::string& name );
+	std::pair<Value*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, const std::string& name, bool recursive_call= false );
 
 	// Functions
 

@@ -1871,8 +1871,12 @@ Value CodeBuilder::ResolveValue(
 	return value == nullptr ? ErrorValue() : *value;
 }
 
+std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( const ClassPtr class_type, const std::string& name )
+{
+	return ResolveClassValueImpl( class_type, name );
+}
 
-std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( ClassPtr class_type, const std::string& name )
+std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( ClassPtr class_type, const std::string& name, const bool recursive_call )
 {
 	const bool is_special_method=
 		name == Keyword( Keywords::constructor_ ) ||
@@ -1949,19 +1953,33 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( ClassPt
 	// Value not found in this class. Try to fetch value from parents.
 	GlobalThingPrepareClassParentsList( class_type );
 
-	// TODO - what if name found more than in one parent?
+	// TODO - maybe produce some kind of error if name found more than in one parents?
+	std::pair<Value*, ClassMemberVisibility> parent_class_value;
+	bool has_mergable_thing= false;
 	for( const Class::Parent& parent : class_type->parents )
 	{
-		const auto parent_class_value= ResolveClassValue( parent.class_, name );
-		if( parent_class_value.first != nullptr )
+		const auto current_parent_class_value= ResolveClassValue( parent.class_, name );
+		if( current_parent_class_value.first != nullptr && current_parent_class_value.second != ClassMemberVisibility::Private )
 		{
-			// Return public class member as public, protected as protected. Do not return parent class private members.
-			if( parent_class_value.second != ClassMemberVisibility::Private )
-				return parent_class_value;
+			const bool current_thing_is_mergable=
+				current_parent_class_value.first->GetFunctionsSet() != nullptr ||
+				current_parent_class_value.first->GetTypeTemplatesSet() != nullptr;
+
+			if( current_thing_is_mergable && has_mergable_thing && !class_type->is_complete && !recursive_call )
+			{
+				// If we found more than one functions sets or template sets - trigger class build and perform resolve again.
+				// Mergable thisngs will be merged during class build and added into class namespace.
+				GlobalThingBuildClass( class_type );
+				return ResolveClassValueImpl( class_type, name, true );
+			}
+
+			parent_class_value= current_parent_class_value;
+			has_mergable_thing|= current_thing_is_mergable;
 		}
 	}
 
-	return std::make_pair( nullptr, ClassMemberVisibility::Public );
+	// Return public class member as public, protected as protected. Do not return parent class private members.
+	return parent_class_value;
 }
 
 llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundmantal_type )
