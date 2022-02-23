@@ -785,23 +785,26 @@ fn CodeBuilder::ResolveValue(
 			if( !class_.empty() )
 			{
 				auto class_non_null= class_.try_to_non_nullable();
+				auto class_value_opt= ResolveClassValue( class_, name_component_name );
 
-				// We need to build class here, because class internal namespace may be filled in build process in case of inheritance.
-				// TODO - maybe not build it here if class have no parents?
-				BuildClass( current_scope.try_to_non_nullable(), class_non_null );
-
-				auto class_lock= class_.try_lock_imut();
-				auto& class_ref= class_lock.deref();
-				namespace_= class_ref.members;
-
-				if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) <
-					u32( class_ref.GetMemberVisibility( name_component_name ) ) )
+				if( !class_value_opt.empty() )
 				{
-					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, complex_name.src_loc, name_component_name, Type(class_non_null).ToString() )
+					current_value.try_deref()= class_value_opt.try_deref()[0];
+					current_scope= class_non_null.lock_imut().deref().members;
+
+					if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) <
+						u32( class_value_opt.try_deref()[1] ) )
+					{
+						REPORT_ERROR( AccessingNonpublicClassMember, names_scope, complex_name.src_loc, name_component_name, Type(class_non_null).ToString() )
+					}
+				}
+				else
+				{
+					REPORT_ERROR( NameNotFound, names_scope, complex_name.src_loc, name_component_name )
+					return ErrorValue();
 				}
 			}
-
-			if( !namespace_.empty() )
+			else if( !namespace_.empty() )
 			{
 				auto namespace_lock= namespace_.try_lock_imut();
 				auto new_value= namespace_lock.deref().GetThisScopeValue( name_component_name );
@@ -938,6 +941,82 @@ fn CodeBuilder::ResolveValue(
 	}
 
 	return NamesScopeValueToValue( current_scope.try_to_non_nullable(), function_context, current_value.try_deref(), complex_name.src_loc );
+}
+
+fn CodeBuilder::ResolveClassValue( mut this, ClassTypePtr& class_type, ust::string8& name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility ] />
+{
+	return ResolveClassValueImpl( class_type, name, false );
+}
+
+fn CodeBuilder::ResolveClassValueImpl( mut this, ClassTypePtr& class_type, ust::string8& name, bool recursive_call ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility ] />
+{
+	var bool is_special_method=
+		name == KeywordToString( Keyword::constructor_ ) ||
+		name == KeywordToString( Keyword::destructor_ ) ||
+		name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+		name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
+		name == OverloadedOperatorToString( OverloadedOperator::CompareOrder );
+
+	if( is_special_method )
+	{
+		// Special methods may be generated during class build. So, require complete type to access these methods.
+		EnsureTypeComplete( class_type );
+	}
+
+	var ust::optional</ NamesScopeValue /> mut value_opt;
+	if_var( &this_class_value : class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( name ) )
+	{
+		value_opt= this_class_value;
+	}
+
+	if_var( &value : value_opt )
+	{
+		auto visibility= class_type.lock_imut().deref().GetMemberVisibility( name );
+
+		if( !value.Get</NamesScopeFunctionsSet/>().empty() ||
+			!value.Get</TypeTemplatesSet/>().empty() )
+		{
+			if( !class_type.lock_imut().deref().is_complete )
+			{
+				PrepareClassParentsList( class_type );
+				if( !class_type.lock_imut().deref().parents.empty() )
+				{
+					// Request class build in order to merge functions from parent classes into this functions set.
+					EnsureTypeComplete( class_type );
+				}
+			}
+		}
+		else if( !value.Get</ClassField/>().empty() )
+		{
+			// We can't just return class field value if class is incomplete. So, request class build to fill class field properly.
+			EnsureTypeComplete( class_type );
+		}
+
+		return ust::make_tuple( value, visibility );
+	}
+
+	// Do not try to fetch special methods from parents.
+	if( is_special_method )
+	{
+		return ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility ] />();
+	}
+
+	// Value not found in this class. Try to fetch value from parents.
+	PrepareClassParentsList( class_type );
+
+	auto parents= class_type.lock_imut().deref().parents; // Take copy to avoid holding lock during deep calls.
+	foreach( &parent : parents )
+	{
+		if_var( &current_parent_class_value : ResolveClassValue( parent.class_, name ) )
+		{
+			if( current_parent_class_value[1] != Synt::ClassVisibility::Private )
+			{
+				return current_parent_class_value;
+			}
+		}
+	}
+
+	return ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility ] />();
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
