@@ -771,7 +771,7 @@ fn CodeBuilder::ResolveValue(
 			}
 			if( !type_alias.empty() )
 			{
-				BuildTypeAlias( names_scope, type_alias.try_to_non_nullable() );
+				BuildTypeAlias( current_scope.try_to_non_nullable(), type_alias.try_to_non_nullable() );
 
 				if_var( &t : type_alias.try_lock_imut().deref().t )
 				{
@@ -808,10 +808,9 @@ fn CodeBuilder::ResolveValue(
 				if( !class_value_opt.empty() )
 				{
 					current_value.try_deref()= class_value_opt.try_deref()[0];
-					current_scope= class_non_null.lock_imut().deref().members;
+					current_scope= class_non_null.lock_imut().deref().members; // TODO - is this correct to use this class scope if name found in parent class?
 
-					if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) <
-						u32( class_value_opt.try_deref()[1] ) )
+					if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) < u32( class_value_opt.try_deref()[1] ) )
 					{
 						REPORT_ERROR( AccessingNonpublicClassMember, names_scope, complex_name.src_loc, name_component_name, Type(class_non_null).ToString() )
 					}
