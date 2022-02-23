@@ -236,6 +236,65 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	}
 }
 
+fn CodeBuilder::PrepareClassParentsList( mut this, ClassTypePtr& class_type )
+{
+	if( class_type.lock_imut().deref().parents_list_prepared )
+	{
+		return;
+	}
+
+	GLOBALS_LOOP_DETECT( class_type )
+
+	var ust::vector</ClassType::Parent/> mut parents;
+
+	auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
+	if( !syntax_element_ptr.empty() )
+	{
+		auto& syntax_element= syntax_element_ptr.try_deref();
+
+		var NamesScopeMutPtr class_members= class_type.lock_imut().deref().members;
+		var NamesScopePtr names_scope_ptr= class_members.lock_imut().deref().GetParent().try_to_non_nullable();
+
+		auto mut global_function_context= CreateGlobalFunctionContext();
+
+		foreach( &parent_name : syntax_element.parents )
+		{
+			auto parent_type= PrepareType( names_scope_ptr, global_function_context, parent_name );
+			if( parent_type.GetClassType().empty() )
+			{
+				REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
+				continue;
+			}
+
+			var ClassTypePtr parent_class= parent_type.GetClassType().try_deref();
+
+			auto mut duplicated= false;
+			foreach( &prev_parent : parents )
+			{
+				duplicated|= prev_parent.class_ == parent_class;
+			}
+			if( duplicated )
+			{
+				REPORT_ERROR( DuplicatedParentClass, names_scope_ptr, syntax_element.src_loc, parent_type )
+				continue;
+			}
+
+			{ // Give access from this class to protected members of all ancestor classes.
+				auto mut members_lock= class_members.lock_mut();
+				AddAncestorsAccessRights_r( members_lock.deref(), parent_class );
+			}
+
+			var ClassType::Parent mut parent{ .class_= parent_class };
+			parents.push_back( move(parent) );
+		}
+	}
+
+	auto mut lock= class_type.lock_mut();
+	var ClassType& mut class_= lock.deref();
+	class_.parents_list_prepared= true;
+	class_.parents= move(parents);
+}
+
 fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
 {
 	if( class_type.lock_imut().deref().is_complete )
@@ -255,6 +314,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		return;
 	}
 
+	PrepareClassParentsList( class_type );
+
 	GLOBALS_LOOP_DETECT( class_type )
 
 	auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
@@ -262,62 +323,43 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 	auto mut global_function_context= CreateGlobalFunctionContext();
 
-	// Fill parents
-	foreach( &parent_name : syntax_element.parents )
+	// Perform remaining check of parents.
 	{
-		auto parent_type= PrepareType( names_scope_ptr, global_function_context, parent_name );
-		if( parent_type.GetClassType().empty() )
-		{
-			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
-			continue;
-		}
+		auto parents= class_type.lock_imut().deref().parents;
 
-		if( !EnsureTypeComplete( parent_type ) )
+		var ust::shared_ptr_nullable_mut</ClassType/> mut base_class;
+		foreach( &parent : parents )
 		{
-			REPORT_ERROR( UsingIncompleteType, names_scope_ptr, syntax_element.src_loc, parent_type )
-			continue;
-		}
+			var ClassTypePtr& parent_class= parent.class_;
+			var Type parent_type= parent_class;
 
-		var ClassTypePtr parent_class= parent_type.GetClassType().try_deref();
+			if( !EnsureTypeComplete( parent_class ) )
+			{
+				REPORT_ERROR( UsingIncompleteType, names_scope_ptr, syntax_element.src_loc, parent_type )
+				return;
+			}
+
+			auto parent_kind= parent_class.lock_imut().deref().kind;
+			if( !( parent_kind == ClassType::Kind::Abstract || parent_kind == ClassType::Kind::Interface || parent_kind == ClassType::Kind::PolymorphNonFinal ) )
+			{
+				REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
+				return;
+			}
+
+			if( parent_kind != ClassType::Kind::Interface ) // not interface=base
+			{
+				if( !base_class.empty() )
+				{
+					REPORT_ERROR( DuplicatedBaseClass, names_scope_ptr, syntax_element.src_loc, parent_type )
+					return;
+				}
+				base_class= parent_class;
+			}
+		}
 
 		auto mut class_lock= class_type.lock_mut();
 		auto &mut class_= class_lock.deref();
-
-		auto mut duplicated= false;
-		foreach( &prev_parent : class_.parents )
-		{
-			duplicated|= prev_parent.class_ == parent_class;
-		}
-		if( duplicated )
-		{
-			REPORT_ERROR( DuplicatedParentClass, names_scope_ptr, syntax_element.src_loc, parent_type )
-			continue;
-		}
-
-		auto parent_kind= parent_class.lock_imut().deref().kind;
-		if( !( parent_kind == ClassType::Kind::Abstract || parent_kind == ClassType::Kind::Interface || parent_kind == ClassType::Kind::PolymorphNonFinal ) )
-		{
-			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
-			continue;
-		}
-
-		if( parent_kind != ClassType::Kind::Interface ) // not interface=base
-		{
-			if( !class_.base_class.empty() )
-			{
-				REPORT_ERROR( DuplicatedBaseClass, names_scope_ptr, syntax_element.src_loc, parent_type )
-				continue;
-			}
-			class_.base_class= parent_class;
-		}
-
-		{ // Give access from this class to protected members of all ancestor classes.
-			auto mut members_lock= class_.members.lock_mut();
-			AddAncestorsAccessRights_r( members_lock.deref(), parent_class );
-		}
-
-		var ClassType::Parent mut parent{ .class_= parent_class };
-		class_.parents.push_back( move(parent) );
+		class_.base_class= move(base_class);
 	}
 
 	{ // Pre-mark class as polymorph, because it's needed for functions checks. Exact kind of class we will known later.

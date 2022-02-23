@@ -165,6 +165,7 @@ private:
 	fn DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool;
 
 	fn BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set, bool build_body );
+	fn PrepareClassParentsList( mut this, ClassTypePtr& class_type );
 	fn BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
 	fn BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type );
 	fn BuildTypeAlias( mut this, NamesScopePtr& names_scope, ust::shared_ptr_mut</TypeAlias/>& type_alias_ptr );

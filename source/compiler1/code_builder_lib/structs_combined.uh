@@ -174,6 +174,7 @@ struct ClassType
 	}
 	ust::shared_ptr_nullable_mut</ClassType/> base_class;
 	ust::vector</Parent/> parents; // Parents, include base class.
+	bool parents_list_prepared = false;
 
 	struct VirtualTableEntry
 	{
