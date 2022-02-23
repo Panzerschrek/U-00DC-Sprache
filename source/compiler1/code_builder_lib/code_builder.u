@@ -707,6 +707,7 @@ fn CodeBuilder::ResolveValue(
 				if_var( &class_value : ResolveClassValue( class_non_null, start_name ) )
 				{
 					current_value= class_value[0];
+					current_scope= class_value[2];
 
 					if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) < u32( class_value[1] ) )
 					{
@@ -807,10 +808,11 @@ fn CodeBuilder::ResolveValue(
 
 				if( !class_value_opt.empty() )
 				{
-					current_value.try_deref()= class_value_opt.try_deref()[0];
-					current_scope= class_non_null.lock_imut().deref().members; // TODO - is this correct to use this class scope if name found in parent class?
+					auto& class_value= class_value_opt.try_deref();
+					current_value.try_deref()= class_value[0];
+					current_scope= class_value[2];
 
-					if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) < u32( class_value_opt.try_deref()[1] ) )
+					if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) < u32( class_value[1] ) )
 					{
 						REPORT_ERROR( AccessingNonpublicClassMember, names_scope, complex_name.src_loc, name_component_name, Type(class_non_null).ToString() )
 					}
@@ -960,12 +962,18 @@ fn CodeBuilder::ResolveValue(
 	return NamesScopeValueToValue( current_scope.try_to_non_nullable(), function_context, current_value.try_deref(), complex_name.src_loc );
 }
 
-fn CodeBuilder::ResolveClassValue( mut this, ClassTypePtr& class_type, ust::string8& name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility ] />
+fn CodeBuilder::ResolveClassValue(
+	mut this,
+	ClassTypePtr& class_type,
+	ust::string8& name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />
 {
 	return ResolveClassValueImpl( class_type, name, false );
 }
 
-fn CodeBuilder::ResolveClassValueImpl( mut this, ClassTypePtr& class_type, ust::string8& name, bool recursive_call ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility ] />
+fn CodeBuilder::ResolveClassValueImpl(
+	mut this,
+	ClassTypePtr& class_type,
+	ust::string8& name, bool recursive_call ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />
 {
 	var bool is_special_method=
 		name == KeywordToString( Keyword::constructor_ ) ||
@@ -980,8 +988,10 @@ fn CodeBuilder::ResolveClassValueImpl( mut this, ClassTypePtr& class_type, ust::
 		EnsureTypeComplete( class_type );
 	}
 
+	var NamesScopePtr class_members= class_type.lock_imut().deref().members;
+
 	var ust::optional</ NamesScopeValue /> mut value_opt;
-	if_var( &this_class_value : class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( name ) )
+	if_var( &this_class_value : class_members.lock_imut().deref().GetThisScopeValue( name ) )
 	{
 		value_opt= this_class_value;
 	}
@@ -1009,13 +1019,13 @@ fn CodeBuilder::ResolveClassValueImpl( mut this, ClassTypePtr& class_type, ust::
 			EnsureTypeComplete( class_type );
 		}
 
-		return ust::make_tuple( value, visibility );
+		return ust::make_tuple( value, visibility, class_members );
 	}
 
 	// Do not try to fetch special methods from parents.
 	if( is_special_method )
 	{
-		return ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility ] />();
+		return ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />();
 	}
 
 	// Value not found in this class. Try to fetch value from parents.
@@ -1033,7 +1043,7 @@ fn CodeBuilder::ResolveClassValueImpl( mut this, ClassTypePtr& class_type, ust::
 		}
 	}
 
-	return ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility ] />();
+	return ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />();
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )

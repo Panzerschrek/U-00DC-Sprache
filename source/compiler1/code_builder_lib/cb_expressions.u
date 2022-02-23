@@ -1391,7 +1391,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			auto functions_set_ptr= class_member[0].Get</NamesScopeFunctionsSet/>();
 			if( !functions_set_ptr.empty() )
 			{
-				BuildFunctionsSet( class_type.lock_imut().deref().members, functions_set_ptr.try_to_non_nullable(), false );
+				BuildFunctionsSet( class_member[2], functions_set_ptr.try_to_non_nullable(), false );
 
 				var ThisMethodsSet mut this_methods_set{ .this_= variable };
 

@@ -95,8 +95,16 @@ private:
 		Synt::ComplexName& complex_name,
 		bool skip_last_template_args ) : Value;
 
-	fn ResolveClassValue( mut this, ClassTypePtr& class_type, ust::string8& name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility ] />;
-	fn ResolveClassValueImpl( mut this, ClassTypePtr& class_type, ust::string8& name, bool recursive_call ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility ] />;
+	// Returns value itself, visibility label, namespace of class where this value was found (class itself or one of parents).
+	fn ResolveClassValue(
+		mut this,
+		ClassTypePtr& class_type,
+		ust::string8& name ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />;
+	fn ResolveClassValueImpl(
+		mut this,
+		ClassTypePtr& class_type,
+		ust::string8& name,
+		bool recursive_call ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />;
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
