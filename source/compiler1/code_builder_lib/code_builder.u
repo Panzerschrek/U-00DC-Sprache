@@ -1022,28 +1022,42 @@ fn CodeBuilder::ResolveClassValueImpl(
 		return ust::make_tuple( value, visibility, class_members );
 	}
 
-	// Do not try to fetch special methods from parents.
+	var ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] /> mut parent_class_value;
 	if( is_special_method )
 	{
-		return ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />();
+		return parent_class_value; 	// Do not try to fetch special methods from parents.
 	}
 
 	// Value not found in this class. Try to fetch value from parents.
 	PrepareClassParentsList( class_type );
 
 	auto parents= class_type.lock_imut().deref().parents; // Take copy to avoid holding lock during deep calls.
+	var bool mut has_mergable_thing= false;
 	foreach( &parent : parents )
 	{
 		if_var( &current_parent_class_value : ResolveClassValue( parent.class_, name ) )
 		{
 			if( current_parent_class_value[1] != Synt::ClassVisibility::Private )
 			{
-				return current_parent_class_value;
+				var bool current_thing_is_mergable=
+					!current_parent_class_value[0].Get</NamesScopeFunctionsSet/>().empty() ||
+					!current_parent_class_value[0].Get</TypeTemplatesSet/>().empty();
+
+				if( current_thing_is_mergable && has_mergable_thing && !class_type.lock_imut().deref().is_complete && !recursive_call )
+				{
+					// If we found more than one functions sets or template sets - trigger class build and perform resolve again.
+					// Mergable things will be merged during class build and added into class namespace.
+					EnsureTypeComplete( class_type );
+					return ResolveClassValueImpl( class_type, name, true );
+				}
+
+				parent_class_value= current_parent_class_value;
+				has_mergable_thing|= current_thing_is_mergable;
 			}
 		}
 	}
 
-	return ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />();
+	return parent_class_value;
 }
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
