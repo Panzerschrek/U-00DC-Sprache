@@ -1780,6 +1780,9 @@ Value CodeBuilder::ResolveValue(
 						REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), src_loc, *component_name );
 
 					value= class_value.first;
+					// This is wrong for name fetched from parent space.
+					// But it is fine until we perform real build of global things, using this space.
+					// "ResolveClassValue" function should build resolved global things, using correct namespace.
 					last_space= class_->members.get();
 				}
 				else if( EnumPtr const enum_= type->GetEnumType() )
@@ -1894,6 +1897,8 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( Cla
 	if( const auto value= class_type->members->GetThisScopeValue( name ) )
 	{
 		const auto visibility= class_type->GetMemberVisibility( name );
+
+		// We need to build some things right now (typedefs, global variables, etc.) in order to do this in correct namespace - namespace of class itself but not namespace of one of its child.
 
 		if( value->GetClassField() != nullptr )
 		{
