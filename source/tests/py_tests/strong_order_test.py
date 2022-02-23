@@ -273,27 +273,18 @@ def TypeinfoClassFieldsList_Order_Test1():
 			bool d;
 			tup[] f;
 		}
-		// Order should be "a", "b", "c", "d", "e", "f"
+		// Order should be "b", "d", f" (parents fields are not listed )
 
 		auto& ti= typeinfo</Derived/>;
 
-		static_assert( ti.fields_list[0].type.is_signed_integer );
-		static_assert( ti.fields_list[0].name[0] == "a"c8 );
+		static_assert( ti.fields_list[0].type.is_unsigned_integer );
+		static_assert( ti.fields_list[0].name[0] == "b"c8 );
 
-		static_assert( ti.fields_list[1].type.is_unsigned_integer );
-		static_assert( ti.fields_list[1].name[0] == "b"c8 );
+		static_assert( ti.fields_list[1].type.is_bool );
+		static_assert( ti.fields_list[1].name[0] == "d"c8 );
 
-		static_assert( ti.fields_list[2].type.is_float );
-		static_assert( ti.fields_list[2].name[0] == "c"c8 );
-
-		static_assert( ti.fields_list[3].type.is_bool );
-		static_assert( ti.fields_list[3].name[0] == "d"c8 );
-
-		static_assert( ti.fields_list[4].type.is_array );
-		static_assert( ti.fields_list[4].name[0] == "e"c8 );
-
-		static_assert( ti.fields_list[5].type.is_tuple );
-		static_assert( ti.fields_list[5].name[0] == "f"c8 );
+		static_assert( ti.fields_list[2].type.is_tuple );
+		static_assert( ti.fields_list[2].name[0] == "f"c8 );
 	"""
 	tests_lib.build_program( c_program_text )
 
@@ -343,21 +334,15 @@ def TypeinfoClassTypesList_Order_Test1():
 			type A= [ f32, 16 ];
 			type O= void;
 		}
-		// Order should be "A", "B", "Q", "O"
+		// Order should be "A", "O" (parent types are not listed).
 
 		auto& ti= typeinfo</Derived/>;
 
 		static_assert( ti.types_list[0].type.is_array );
 		static_assert( ti.types_list[0].name[0] == "A"c8 );
 
-		static_assert( ti.types_list[1].type.is_bool );
-		static_assert( ti.types_list[1].name[0] == "B"c8 );
-
-		static_assert( ti.types_list[2].type.is_void );
-		static_assert( ti.types_list[2].name[0] == "O"c8 );
-
-		static_assert( ti.types_list[3].type.is_signed_integer );
-		static_assert( ti.types_list[3].name[0] == "Q"c8 );
+		static_assert( ti.types_list[1].type.is_void );
+		static_assert( ti.types_list[1].name[0] == "O"c8 );
 	"""
 	tests_lib.build_program( c_program_text )
 

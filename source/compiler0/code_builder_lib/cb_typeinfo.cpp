@@ -515,12 +515,6 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& class_type, 
 
 	class_type->members->ForEachInThisScope( process_class_member );
 
-	// TODO - do we really need to merge parents fields?
-	for( const Class::Parent& parent : class_type->parents )
-	{
-		parent.class_->members->ForEachInThisScope( process_class_member );
-	}
-
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
@@ -565,12 +559,6 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr& class_type, N
 		};
 
 	class_type->members->ForEachInThisScope( process_class_member );
-
-	// TODO - do we really need to merge parents types?
-	for( const Class::Parent& parent : class_type->parents )
-	{
-		parent.class_->members->ForEachInThisScope( process_class_member );
-	}
 
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
@@ -644,12 +632,6 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr& class_typ
 		};
 
 	class_type->members->ForEachInThisScope( process_class_member );
-
-	// TODO - do we really need to merge parents types?
-	for( const Class::Parent& parent : class_type->parents )
-	{
-		parent.class_->members->ForEachInThisScope( process_class_member );
-	}
 
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
