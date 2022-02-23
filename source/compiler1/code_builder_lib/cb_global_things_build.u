@@ -852,7 +852,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
-	// Merge namespaces of parents.
+	// Merge functions sets of parents into functions sets of this class.
+	// Do the same for type templates sets.
+	// Merge functions sets in order to have possibility to fetch functions sets, combined from sets of multiple parents.
+	// Do not borrow other kinds of symbols (type aliases, variables, etc.) in order to avoid global things build inside wrong namespace.
 	with( parents : class_type.lock_imut().deref().parents )
 	{
 		foreach( &parent : parents )
@@ -884,6 +887,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						continue; // Did not inherit constructors, destructors, assignment operators, compare operators.
 					}
 
+					auto src_functions_set_lock= src_functions_set_ptr.try_lock_imut();
+					auto& src_functions_set= src_functions_set_lock.deref();
 					if( has_name )
 					{
 						auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
@@ -891,9 +896,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						if( !result_functions_set_ptr.empty() )
 						{
 							// Merge functions sets.
-							auto src_functions_set_lock= src_functions_set_ptr.try_lock_imut();
-							auto& src_functions_set= src_functions_set_lock.deref();
-
 							auto mut result_functions_set_lock= result_functions_set_ptr.try_lock_mut();
 							auto &mut result_functions_set= result_functions_set_lock.deref();
 
@@ -935,18 +937,29 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 							}
 						}
 					}
+					else
+					{
+						// Copy functions set value itself, not just shared_ptr.
+						// TODO - set "inherited" flag.
+						var NamesScopeValue mut value_for_copy(src_functions_set);
+
+						dst_members_.AddName( member_value.key(), move(value_for_copy) );
+						auto mut lock= class_type.lock_mut();
+						lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
+					}
 				} // if function set
 				auto src_type_templates_set_ptr= member_value.value().Get</TypeTemplatesSet/>();
-				if( !src_type_templates_set_ptr.empty() && has_name )
+				if( !src_type_templates_set_ptr.empty() )
 				{
-					auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
-					auto result_type_templates_set_ptr= result_class_value.try_deref().Get</TypeTemplatesSet/>();
-					if( !result_type_templates_set_ptr.empty() )
-					{
-						// Merge type template sets.
-						auto src_type_templates_set_lock= src_type_templates_set_ptr.try_lock_imut();
-						auto& src_type_templates_set= src_type_templates_set_lock.deref();
+					auto src_type_templates_set_lock= src_type_templates_set_ptr.try_lock_imut();
+					auto& src_type_templates_set= src_type_templates_set_lock.deref();
 
+					if( has_name )
+					{
+						auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
+						auto result_type_templates_set_ptr= result_class_value.try_deref().Get</TypeTemplatesSet/>();
+
+						// Merge type template sets.
 						auto mut result_type_templates_set_lock= result_type_templates_set_ptr.try_lock_mut();
 						auto &mut result_type_templates_set= result_type_templates_set_lock.deref();
 
@@ -977,27 +990,17 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 							}
 						}
 					}
+					else
+					{
+						// Copy type templates set value itself, not just shared_ptr.
+						// TODO - set "inherited" flag.
+						var NamesScopeValue mut value_for_copy(src_type_templates_set);
+
+						dst_members_.AddName( member_value.key(), move(value_for_copy) );
+						auto mut lock= class_type.lock_mut();
+						lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
+					}
 				} // if type templates set
-
-				if( !has_name )
-				{
-					// Copy some values, not just take copy of shared pointer to avoid value mutation.
-					var NamesScopeValue mut value_for_copy= member_value.value();
-					if( !src_functions_set_ptr.empty() )
-					{
-						value_for_copy= src_functions_set_ptr.try_lock_imut().deref();
-					}
-					if( !src_type_templates_set_ptr.empty() )
-					{
-						value_for_copy= src_type_templates_set_ptr.try_lock_imut().deref();
-					}
-					// TODO - what about type aliases, global variables, etc.
-					// We can't just put these values into this class because we need to build these values inside original class.
-
-					dst_members_.AddName( member_value.key(), move(value_for_copy) );
-					auto mut lock= class_type.lock_mut();
-					lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
-				}
 			} // for parent members
 		} // for parents
 	}
