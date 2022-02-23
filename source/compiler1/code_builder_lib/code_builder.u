@@ -1370,6 +1370,11 @@ fn CodeBuilder::PrepareFunction(
 			return false;
 		}
 
+		if( prev_function.is_inherited )
+		{
+			REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope_ptr, function_declaration.src_loc )
+		}
+
 		return true;
 	}
 

@@ -927,7 +927,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 								{
 									continue; // New class function shadows function with same type in source class, so, skip it.
 								}
-								ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.src_loc );
+								if( ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.src_loc ) )
+								{
+									result_functions_set.functions_set.functions.back().is_inherited= true;
+								}
 							}
 
 							// TODO - merge function templates smarter.
@@ -940,10 +943,13 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					else
 					{
 						// Copy functions set value itself, not just shared_ptr.
-						// TODO - set "inherited" flag.
-						var NamesScopeValue mut value_for_copy(src_functions_set);
+						var NamesScopeFunctionsSet mut functions_set_copy= src_functions_set;
+						foreach( &mut function : functions_set_copy.functions_set.functions )
+						{
+							function.is_inherited= true;
+						}
 
-						dst_members_.AddName( member_value.key(), move(value_for_copy) );
+						dst_members_.AddName( member_value.key(), NamesScopeValue( move(functions_set_copy) ) );
 						auto mut lock= class_type.lock_mut();
 						lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
 					}
