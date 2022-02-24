@@ -60,9 +60,12 @@ def main():
 		"raw_pointers_test",
 		"reference_cast_operators_test",
 		"reference_check_for_templates_test",
+		"references_graph_test",
+		"static_if_test",
 		"stack_variables_move_errors_test",
 		"stack_variables_move_test",
 		"string_literals_test",
+		"strong_order_test",
 		"syntax_errors_test",
 		"take_operator_test",
 		"tuples_test",
@@ -72,14 +75,11 @@ def main():
 		"type_conversions_test",
 		"typeinfo_test",
 		"typeof_test",
-		"static_if_test",
-		"strong_order_test",
 		"uninitialized_initializer_test",
 		"unsafe_test",
 		"virtual_functions_test",
 		"void_test",
-		"with_operator_test",
-		"references_graph_test"
+		"with_operator_test"
 		]
 
 	tests_list= GetTestsList( tests_modules_list )
