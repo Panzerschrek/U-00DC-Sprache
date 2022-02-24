@@ -1244,27 +1244,21 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	var ClassTypePtr class_type= class_type_ref.try_deref();
 
-	var ust::optional</NamesScopeValue/> mut class_member;
-	auto class_members= class_type.lock_imut().deref().members;
-	if_var( &member : class_members.lock_imut().deref().GetThisScopeValue( member_access_operator.member_name ) )
-	{
-		class_member= member;
-	}
-
-	if( class_member.empty() )
+	auto mut class_member_opt= ResolveClassValue( class_type, member_access_operator.member_name );
+	if( class_member_opt.empty() )
 	{
 		REPORT_ERROR( NameNotFound, names_scope, member_access_operator.src_loc, member_access_operator.member_name )
 		return ErrorValue();
 	}
+	auto& class_member= class_member_opt.try_deref();
 
-	if( u32( names_scope.lock_imut().deref().GetAccessFor( class_type ) ) <
-		u32( class_type.lock_imut().deref().GetMemberVisibility( member_access_operator.member_name ) ) )
+	if( u32( names_scope.lock_imut().deref().GetAccessFor( class_type ) ) < u32( class_member[1] ) )
 	{
 		REPORT_ERROR( AccessingNonpublicClassMember, names_scope, member_access_operator.src_loc, member_access_operator.member_name, variable.t.ToString() )
 	}
 
 	{
-		auto field_ptr= class_member.try_deref().Get</ClassField/>();
+		auto field_ptr= class_member[0].Get</ClassField/>();
 		if( !field_ptr.empty() )
 		{
 			if( !member_access_operator.template_args.empty() )
@@ -1394,10 +1388,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return move(result);
 		}
 		{
-			auto functions_set_ptr= class_member.try_deref().Get</NamesScopeFunctionsSet/>();
+			auto functions_set_ptr= class_member[0].Get</NamesScopeFunctionsSet/>();
 			if( !functions_set_ptr.empty() )
 			{
-				BuildFunctionsSet( class_type.lock_imut().deref().members, functions_set_ptr.try_to_non_nullable(), false );
+				BuildFunctionsSet( class_member[2], functions_set_ptr.try_to_non_nullable(), false );
 
 				var ThisMethodsSet mut this_methods_set{ .this_= variable };
 

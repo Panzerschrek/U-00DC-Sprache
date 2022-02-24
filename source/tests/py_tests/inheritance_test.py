@@ -119,6 +119,71 @@ def InheritanceTest_ParentClassNameVisibleInChild_Test0():
 	assert( call_result == 5652111 )
 
 
+def InheritanceTest_ParentClassNameVisibleInChild_Test1():
+	c_program_text= """
+	class A polymorph
+	{
+		type I= i32;
+	}
+	class B : A
+	{
+		fn Foo(I i); // A::I must be visible here
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def InheritanceTest_ParentClassNameVisibleInChild_Test2():
+	c_program_text= """
+	class A interface
+	{
+		fn Foo(i32 x);
+	}
+	class B interface
+	{
+		fn Foo(f32 x);
+	}
+	class C : B, A
+	{
+		// Should inherit both "Foo" variants.
+	}
+	fn Bar()
+	{
+		C::Foo( 66 );
+		C::Foo( 3.5f );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def InheritanceTest_ParentClassNameVisibleInChild_Test3():
+	c_program_text= """
+	class A interface
+	{
+		fn Foo();
+	}
+	class B interface : A
+	{
+		fn Foo(i32 x);
+	}
+	class C interface : A
+	{
+		fn Foo(f32 x);
+	}
+	class D : B, C
+	{
+		// Should inherit all "Foo" variants.
+	}
+	fn Bar()
+	{
+		D::Foo();
+		D::Foo( 66 );
+		D::Foo( 3.5f );
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def InheritanceTest_ChildClassNameOverridesParentClassName_Test0():
 	c_program_text= """
 		class A polymorph
@@ -252,6 +317,72 @@ def InheritanceTest_ChildClassNameOverridesParentClassName_Test5():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 66541211 )
+
+
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test6():
+	c_program_text= """
+		class A polymorph
+		{
+			fn foo() : i32 { return 58585858; }
+		}
+		class B : A {}
+		class C : B
+		{
+			fn foo( i32 x ) : i32 { return x; }   // Merge this function into one set with "foo" from undirect ancestor.
+		}
+
+		fn Foo() : i32
+		{
+			return C::foo();  // A::foo must be called
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+	assert( call_result == 58585858 )
+
+
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test7():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this);
+		}
+		class B : A
+		{
+			// Inherit virtual A::Foo two times, override it.
+			fn virtual override Foo(this);
+		}
+		class C : A, B
+		{
+			// Inherit both B::Foo and A::Foo
+		}
+		fn Bar(C& c)
+		{
+			c.Foo(); // Call virtual function.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def InheritanceTest_ChildClassNameOverridesParentClassName_Test8():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this);
+		}
+		class B interface : A {}
+		class C interface : A {}
+		class D : B, C
+		{
+			// Inherit virtual A::Foo two times, override it.
+			fn virtual override Foo(this);
+		}
+		fn Bar(D& d)
+		{
+			d.Foo(); // Call virtual function.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
 
 
 def InheritanceTest_TypeTemplateShadowed_Test0():

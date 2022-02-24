@@ -222,10 +222,13 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	foreach( &mut func_variable : functions_set.functions_set.functions )
 	{
 		// Immediately build body of "constexpr" functions.
-		if( build_body ||
-			( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr && !is_class_method ) )
+		if( !func_variable.is_inherited )
 		{
-			BuildFuncCode( names_scope_ptr, func_variable );
+			if( build_body ||
+				( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr && !is_class_method ) )
+			{
+				BuildFuncCode( names_scope_ptr, func_variable );
+			}
 		}
 	}
 
@@ -234,6 +237,65 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 		auto mut lock= functions_set_ptr.lock_mut();
 		lock.deref()= move(functions_set);
 	}
+}
+
+fn CodeBuilder::PrepareClassParentsList( mut this, ClassTypePtr& class_type )
+{
+	if( class_type.lock_imut().deref().parents_list_prepared )
+	{
+		return;
+	}
+
+	GLOBALS_LOOP_DETECT( class_type )
+
+	var ust::vector</ClassType::Parent/> mut parents;
+
+	auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
+	if( !syntax_element_ptr.empty() )
+	{
+		auto& syntax_element= syntax_element_ptr.try_deref();
+
+		var NamesScopeMutPtr class_members= class_type.lock_imut().deref().members;
+		var NamesScopePtr names_scope_ptr= class_members.lock_imut().deref().GetParent().try_to_non_nullable();
+
+		auto mut global_function_context= CreateGlobalFunctionContext();
+
+		foreach( &parent_name : syntax_element.parents )
+		{
+			auto parent_type= PrepareType( names_scope_ptr, global_function_context, parent_name );
+			if( parent_type.GetClassType().empty() )
+			{
+				REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
+				continue;
+			}
+
+			var ClassTypePtr parent_class= parent_type.GetClassType().try_deref();
+
+			auto mut duplicated= false;
+			foreach( &prev_parent : parents )
+			{
+				duplicated|= prev_parent.class_ == parent_class;
+			}
+			if( duplicated )
+			{
+				REPORT_ERROR( DuplicatedParentClass, names_scope_ptr, syntax_element.src_loc, parent_type )
+				continue;
+			}
+
+			{ // Give access from this class to protected members of all ancestor classes.
+				auto mut members_lock= class_members.lock_mut();
+				AddAncestorsAccessRights_r( members_lock.deref(), parent_class );
+			}
+
+			var ClassType::Parent mut parent{ .class_= parent_class };
+			parents.push_back( move(parent) );
+		}
+	}
+
+	auto mut lock= class_type.lock_mut();
+	var ClassType& mut class_= lock.deref();
+	class_.parents_list_prepared= true;
+	class_.parents= move(parents);
 }
 
 fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type )
@@ -255,6 +317,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		return;
 	}
 
+	PrepareClassParentsList( class_type );
+
 	GLOBALS_LOOP_DETECT( class_type )
 
 	auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
@@ -262,62 +326,43 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 	auto mut global_function_context= CreateGlobalFunctionContext();
 
-	// Fill parents
-	foreach( &parent_name : syntax_element.parents )
+	// Perform remaining check of parents.
 	{
-		auto parent_type= PrepareType( names_scope_ptr, global_function_context, parent_name );
-		if( parent_type.GetClassType().empty() )
-		{
-			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
-			continue;
-		}
+		auto parents= class_type.lock_imut().deref().parents;
 
-		if( !EnsureTypeComplete( parent_type ) )
+		var ust::shared_ptr_nullable_mut</ClassType/> mut base_class;
+		foreach( &parent : parents )
 		{
-			REPORT_ERROR( UsingIncompleteType, names_scope_ptr, syntax_element.src_loc, parent_type )
-			continue;
-		}
+			var ClassTypePtr& parent_class= parent.class_;
+			var Type parent_type= parent_class;
 
-		var ClassTypePtr parent_class= parent_type.GetClassType().try_deref();
+			if( !EnsureTypeComplete( parent_class ) )
+			{
+				REPORT_ERROR( UsingIncompleteType, names_scope_ptr, syntax_element.src_loc, parent_type )
+				return;
+			}
+
+			auto parent_kind= parent_class.lock_imut().deref().kind;
+			if( !( parent_kind == ClassType::Kind::Abstract || parent_kind == ClassType::Kind::Interface || parent_kind == ClassType::Kind::PolymorphNonFinal ) )
+			{
+				REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
+				return;
+			}
+
+			if( parent_kind != ClassType::Kind::Interface ) // not interface=base
+			{
+				if( !base_class.empty() )
+				{
+					REPORT_ERROR( DuplicatedBaseClass, names_scope_ptr, syntax_element.src_loc, parent_type )
+					return;
+				}
+				base_class= parent_class;
+			}
+		}
 
 		auto mut class_lock= class_type.lock_mut();
 		auto &mut class_= class_lock.deref();
-
-		auto mut duplicated= false;
-		foreach( &prev_parent : class_.parents )
-		{
-			duplicated|= prev_parent.class_ == parent_class;
-		}
-		if( duplicated )
-		{
-			REPORT_ERROR( DuplicatedParentClass, names_scope_ptr, syntax_element.src_loc, parent_type )
-			continue;
-		}
-
-		auto parent_kind= parent_class.lock_imut().deref().kind;
-		if( !( parent_kind == ClassType::Kind::Abstract || parent_kind == ClassType::Kind::Interface || parent_kind == ClassType::Kind::PolymorphNonFinal ) )
-		{
-			REPORT_ERROR( CanNotDeriveFromThisType, names_scope_ptr, syntax_element.src_loc, parent_type )
-			continue;
-		}
-
-		if( parent_kind != ClassType::Kind::Interface ) // not interface=base
-		{
-			if( !class_.base_class.empty() )
-			{
-				REPORT_ERROR( DuplicatedBaseClass, names_scope_ptr, syntax_element.src_loc, parent_type )
-				continue;
-			}
-			class_.base_class= parent_class;
-		}
-
-		{ // Give access from this class to protected members of all ancestor classes.
-			auto mut members_lock= class_.members.lock_mut();
-			AddAncestorsAccessRights_r( members_lock.deref(), parent_class );
-		}
-
-		var ClassType::Parent mut parent{ .class_= parent_class };
-		class_.parents.push_back( move(parent) );
+		class_.base_class= move(base_class);
 	}
 
 	{ // Pre-mark class as polymorph, because it's needed for functions checks. Exact kind of class we will known later.
@@ -810,7 +855,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
-	// Merge namespaces of parents.
+	// Merge functions sets of parents into functions sets of this class.
+	// Do the same for type templates sets.
+	// Merge functions sets in order to have possibility to fetch functions sets, combined from sets of multiple parents.
+	// Do not borrow other kinds of symbols (type aliases, variables, etc.) in order to avoid global things build inside wrong namespace.
 	with( parents : class_type.lock_imut().deref().parents )
 	{
 		foreach( &parent : parents )
@@ -842,6 +890,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						continue; // Did not inherit constructors, destructors, assignment operators, compare operators.
 					}
 
+					auto src_functions_set_lock= src_functions_set_ptr.try_lock_imut();
+					auto& src_functions_set= src_functions_set_lock.deref();
 					if( has_name )
 					{
 						auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
@@ -849,9 +899,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 						if( !result_functions_set_ptr.empty() )
 						{
 							// Merge functions sets.
-							auto src_functions_set_lock= src_functions_set_ptr.try_lock_imut();
-							auto& src_functions_set= src_functions_set_lock.deref();
-
 							auto mut result_functions_set_lock= result_functions_set_ptr.try_lock_mut();
 							auto &mut result_functions_set= result_functions_set_lock.deref();
 
@@ -883,7 +930,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 								{
 									continue; // New class function shadows function with same type in source class, so, skip it.
 								}
-								ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.src_loc );
+								if( ApplyOverloadedFunction( result_functions_set.functions_set, src_function, class_members, syntax_element.src_loc ) )
+								{
+									result_functions_set.functions_set.functions.back().is_inherited= true;
+								}
 							}
 
 							// TODO - merge function templates smarter.
@@ -893,18 +943,32 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 							}
 						}
 					}
+					else
+					{
+						// Copy functions set value itself, not just shared_ptr.
+						var NamesScopeFunctionsSet mut functions_set_copy= src_functions_set;
+						foreach( &mut function : functions_set_copy.functions_set.functions )
+						{
+							function.is_inherited= true;
+						}
+
+						dst_members_.AddName( member_value.key(), NamesScopeValue( move(functions_set_copy) ) );
+						auto mut lock= class_type.lock_mut();
+						lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
+					}
 				} // if function set
 				auto src_type_templates_set_ptr= member_value.value().Get</TypeTemplatesSet/>();
-				if( !src_type_templates_set_ptr.empty() && has_name )
+				if( !src_type_templates_set_ptr.empty() )
 				{
-					auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
-					auto result_type_templates_set_ptr= result_class_value.try_deref().Get</TypeTemplatesSet/>();
-					if( !result_type_templates_set_ptr.empty() )
-					{
-						// Merge type template sets.
-						auto src_type_templates_set_lock= src_type_templates_set_ptr.try_lock_imut();
-						auto& src_type_templates_set= src_type_templates_set_lock.deref();
+					auto src_type_templates_set_lock= src_type_templates_set_ptr.try_lock_imut();
+					auto& src_type_templates_set= src_type_templates_set_lock.deref();
 
+					if( has_name )
+					{
+						auto result_class_value= dst_members_.GetThisScopeValue( member_value.key() );
+						auto result_type_templates_set_ptr= result_class_value.try_deref().Get</TypeTemplatesSet/>();
+
+						// Merge type template sets.
 						auto mut result_type_templates_set_lock= result_type_templates_set_ptr.try_lock_mut();
 						auto &mut result_type_templates_set= result_type_templates_set_lock.deref();
 
@@ -935,27 +999,17 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 							}
 						}
 					}
+					else
+					{
+						// Copy type templates set value itself, not just shared_ptr.
+						// TODO - set "inherited" flag.
+						var NamesScopeValue mut value_for_copy(src_type_templates_set);
+
+						dst_members_.AddName( member_value.key(), move(value_for_copy) );
+						auto mut lock= class_type.lock_mut();
+						lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
+					}
 				} // if type templates set
-
-				if( !has_name )
-				{
-					// Copy some values, not just take copy of shared pointer to avoid value mutation.
-					var NamesScopeValue mut value_for_copy= member_value.value();
-					if( !src_functions_set_ptr.empty() )
-					{
-						value_for_copy= src_functions_set_ptr.try_lock_imut().deref();
-					}
-					if( !src_type_templates_set_ptr.empty() )
-					{
-						value_for_copy= src_type_templates_set_ptr.try_lock_imut().deref();
-					}
-					// TODO - what about type aliases, global variables, etc.
-					// We can't just put these values into this class because we need to build these values inside original class.
-
-					dst_members_.AddName( member_value.key(), move(value_for_copy) );
-					auto mut lock= class_type.lock_mut();
-					lock.deref().SetMemberVisibility( member_value.key(), parent_member_visibility );
-				}
 			} // for parent members
 		} // for parents
 	}

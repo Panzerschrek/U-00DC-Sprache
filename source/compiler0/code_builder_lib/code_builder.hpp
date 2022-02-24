@@ -699,6 +699,9 @@ private:
 		const Synt::ComplexName& complex_name,
 		ResolveMode resolve_mode= ResolveMode::Regular );
 
+	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, const std::string& name );
+	std::pair<Value*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, const std::string& name, bool recursive_call= false );
+
 	// Functions
 
 	FunctionVariable* GetFunctionWithSameType(
@@ -856,6 +859,7 @@ private:
 
 	void GlobalThingBuildNamespace( NamesScope& names_scope );
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
+	void GlobalThingPrepareClassParentsList( ClassPtr class_type );
 	void GlobalThingBuildClass( ClassPtr class_type );
 	void GlobalThingBuildEnum( const EnumPtr enum_ );
 	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );

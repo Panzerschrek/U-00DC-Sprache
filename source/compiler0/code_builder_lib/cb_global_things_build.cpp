@@ -326,7 +326,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 		for( FunctionVariable& function_variable : functions_set.functions )
 		{
 			if( function_variable.syntax_element != nullptr && function_variable.syntax_element->block_ != nullptr &&
-				!function_variable.have_body && !function_variable.return_type_is_auto )
+				!function_variable.have_body && !function_variable.return_type_is_auto && !function_variable.is_inherited )
 			{
 				BuildFuncCode(
 					function_variable,
@@ -360,29 +360,18 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 	}
 }
 
-void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
+void CodeBuilder::GlobalThingPrepareClassParentsList( const ClassPtr class_type )
 {
-	Class& the_class= *class_type;
-
-	if( the_class.is_complete ||
-		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
+	if( class_type->parents_list_prepared || class_type->syntax_element == nullptr )
 		return;
 
-	if( the_class.typeinfo_type != std::nullopt )
-	{
-		const Type& type= *the_class.typeinfo_type;
-		BuildFullTypeinfo( type, typeinfo_cache_[type], *the_class.members->GetRoot() );
-		return;
-	}
+	DETECT_GLOBALS_LOOP( &class_type, class_type->members->GetThisNamespaceName(), class_type->body_src_loc );
 
-	const Synt::Class& class_declaration= *the_class.syntax_element;
-	const std::string& class_name= class_declaration.name_;
+	const Synt::Class& class_declaration= *class_type->syntax_element;
 
-	DETECT_GLOBALS_LOOP( &the_class, the_class.members->GetThisNamespaceName(), the_class.body_src_loc );
-
-	the_class.have_shared_state= class_declaration.have_shared_state_;
-
-	NamesScope& class_parent_namespace= *the_class.members->GetParent();
+	// Perform only steps necessary to build parents list.
+	// Do not even require completeness of parent class.
+	NamesScope& class_parent_namespace= *class_type->members->GetParent();
 	for( const Synt::ComplexName& parent : class_declaration.parents_ )
 	{
 		const Value parent_value= ResolveValue( class_parent_namespace, *global_function_context_, parent );
@@ -400,14 +389,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
 			continue;
 		}
-		if( !EnsureTypeComplete( *type_name ) )
-		{
-			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
-			continue;
-		}
 
 		bool duplicated= false;
-		for( const Class::Parent& parent : the_class.parents )
+		for( const Class::Parent& parent : class_type->parents )
 			duplicated= duplicated || parent.class_ == parent_class;
 		if( duplicated )
 		{
@@ -415,27 +399,68 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			continue;
 		}
 
-		const auto parent_kind= parent_class->kind;
+		class_type->parents.emplace_back();
+		class_type->parents.back().class_= parent_class;
+
+		GlobalThingPrepareClassParentsList( parent_class );
+		AddAncestorsAccessRights_r( *class_type, parent_class );
+
+	} // for parents
+
+	class_type->parents_list_prepared= true;
+}
+
+void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
+{
+	Class& the_class= *class_type;
+
+	if( the_class.is_complete ||
+		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
+		return;
+
+	if( the_class.typeinfo_type != std::nullopt )
+	{
+		const Type& type= *the_class.typeinfo_type;
+		BuildFullTypeinfo( type, typeinfo_cache_[type], *the_class.members->GetRoot() );
+		return;
+	}
+
+	GlobalThingPrepareClassParentsList( class_type );
+
+	const Synt::Class& class_declaration= *the_class.syntax_element;
+	const std::string& class_name= class_declaration.name_;
+
+	DETECT_GLOBALS_LOOP( &the_class, the_class.members->GetThisNamespaceName(), the_class.body_src_loc );
+
+	the_class.have_shared_state= class_declaration.have_shared_state_;
+
+	NamesScope& class_parent_namespace= *the_class.members->GetParent();
+	// Perform remaining check of parents.
+	for( Class::Parent& parent : the_class.parents )
+	{
+		if( !EnsureTypeComplete( parent.class_ ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, parent.class_ );
+			return;
+		}
+
+		const auto parent_kind= parent.class_->kind;
 		if( !( parent_kind == Class::Kind::Abstract || parent_kind == Class::Kind::Interface || parent_kind == Class::Kind::PolymorphNonFinal ) )
 		{
-			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
-			continue;
+			REPORT_ERROR( CanNotDeriveFromThisType, class_parent_namespace.GetErrors(), class_declaration.src_loc_, parent.class_ );
+			return;
 		}
 
 		if( parent_kind != Class::Kind::Interface ) // not interface=base
 		{
 			if( the_class.base_class != nullptr )
 			{
-				REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.src_loc_, type_name );
-				continue;
+				REPORT_ERROR( DuplicatedBaseClass, class_parent_namespace.GetErrors(), class_declaration.src_loc_, parent.class_ );
+				return;
 			}
-			the_class.base_class= parent_class;
+			the_class.base_class= parent.class_;
 		}
-
-		the_class.parents.emplace_back();
-		the_class.parents.back().class_= parent_class;
-		AddAncestorsAccessRights_r( the_class, parent_class );
-	} // for parents
+	}
 
 	// Pre-mark class as polymorph. Later we know class kind exactly, now, we only needs to know, that is polymorph - for virtual functions preparation.
 	if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Polymorph ||
@@ -767,7 +792,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		break;
 	};
 
-	// Merge namespaces of parents into result class.
+	// Merge functions sets of parents into functions sets of this class.
+	// Do the same for type templates sets.
+	// Merge functions sets in order to have possibility to fetch functions sets, combined from sets of multiple parents.
+	// Do not borrow other kinds of symbols (type aliases, variables, etc.) in order to avoid global things build inside wrong namespace.
 	for( const Class::Parent& parent : the_class.parents )
 	{
 		const auto parent_class= parent.class_;
@@ -782,13 +810,12 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 				if( const auto functions= value.GetFunctionsSet() )
 				{
-					// SPARCHE_TODO - maybe also skip additive-assignment operators?
 					if( name == Keyword( Keywords::constructor_ ) ||
 						name == Keyword( Keywords::destructor_ ) ||
 						name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
 						name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
 						name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
-						return; // Did not inherit constructors, destructors, assignment operators, compare operators.
+						return; // Do not inherit constructors, destructors, assignment operators, compare operators.
 
 					if( result_class_value != nullptr )
 					{
@@ -813,13 +840,26 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 									}
 								}
 								if( !overrides )
-									ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members->GetErrors(), class_declaration.src_loc_ );
+								{
+									if( ApplyOverloadedFunction( *result_class_functions, parent_function, the_class.members->GetErrors(), class_declaration.src_loc_ ) )
+										result_class_functions->functions.back().is_inherited= true;
+								}
 							} // for parent functions
 
 							// TODO - merge function templates smarter.
 							for( const FunctionTemplatePtr& function_template : functions->template_functions )
 								result_class_functions->template_functions.push_back(function_template);
 						}
+					}
+					else
+					{
+						// Take whole function set, but mark functions as inherited.
+						OverloadedFunctionsSet functions_set= *functions;
+						for( FunctionVariable& function : functions_set.functions )
+							function.is_inherited= true;
+
+						the_class.members->AddName( name, std::move(functions_set) );
+						the_class.SetMemberVisibility( name, parent_member_visibility );
 					}
 				}
 				if( const auto type_templates_set= value.GetTypeTemplatesSet() )
@@ -847,15 +887,14 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 							}
 						}
 					}
+					else
+					{
+						// Just take type templates set itself. There is no problem as soon as type templates set is complete.
+						the_class.members->AddName( name, value );
+						the_class.SetMemberVisibility( name, parent_member_visibility );
+					}
 				}
-
-				// Just override other kinds of symbols.
-				if( result_class_value == nullptr )
-				{
-					the_class.members->AddName( name, value );
-					the_class.SetMemberVisibility( name, parent_member_visibility );
-				}
-			});
+			} );
 	}
 
 	PrepareClassVirtualTableType( class_type );

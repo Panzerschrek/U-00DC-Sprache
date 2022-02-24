@@ -25,7 +25,7 @@ def AutoConstexprFunctionTemplate_Test1():
 
 def AutoConstexprFunctionTemplate_Test2():
 	c_program_text= """
-		template</ type T /> fn CallBar( i32 mul ) : i32 { return T::Bar( mul ); }
+		template</ type T /> fn CallBar( i32 mul ) : i32 { var T t; return t.Bar( mul ); }
 
 		struct S
 		{
@@ -39,7 +39,7 @@ def AutoConstexprFunctionTemplate_Test2():
 
 def AutoConstexprFunctionTemplate_Test3():
 	c_program_text= """
-		template</ type T /> fn CallBar() : i32 { return T::Bar(); }
+		template</ type T /> fn CallBar() : i32 { var T t; return t.Bar(); }
 
 		struct S
 		{

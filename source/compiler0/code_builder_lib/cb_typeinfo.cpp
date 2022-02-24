@@ -435,7 +435,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& class_type, 
 {
 	std::vector<TypeinfoListElement> list_elements;
 
-	class_type->members->ForEachInThisScope(
+	const auto process_class_member=
 		[&]( const std::string& member_name, const Value& class_member )
 		{
 			const ClassField* const class_field= class_member.GetClassField();
@@ -511,7 +511,9 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& class_type, 
 					member_name,
 					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 					node_type } );
-		} ); // for class elements
+		};
+
+	class_type->members->ForEachInThisScope( process_class_member );
 
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
@@ -520,7 +522,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr& class_type, N
 {
 	std::vector<TypeinfoListElement> list_elements;
 
-	class_type->members->ForEachInThisScope(
+	const auto process_class_member=
 		[&]( const std::string& name, Value& class_member )
 		{
 			if( class_member.GetTypedef() != nullptr ) // Event in complete class typedefs may be not yet complete. Complete it now.
@@ -554,7 +556,9 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr& class_type, N
 					name,
 					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 					node_type } );
-		} ); // for class elements
+		};
+
+	class_type->members->ForEachInThisScope( process_class_member );
 
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
@@ -563,7 +567,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr& class_typ
 {
 	std::vector<TypeinfoListElement> list_elements;
 
-	class_type->members->ForEachInThisScope(
+	const auto process_class_member=
 		[&]( const std::string& name, const Value& class_member )
 		{
 			const OverloadedFunctionsSet* const functions_set= class_member.GetFunctionsSet();
@@ -625,7 +629,9 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr& class_typ
 						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 						node_type } );
 			} // for functions with same name
-		} ); // for class elements
+		};
+
+	class_type->members->ForEachInThisScope( process_class_member );
 
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }

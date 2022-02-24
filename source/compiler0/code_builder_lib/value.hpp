@@ -19,13 +19,12 @@ class NamesScope;
 using NamesScopePtr= std::shared_ptr<NamesScope>;
 
 struct TemplateBase;
-using TemplateBasePtr= std::shared_ptr<TemplateBase>;
 
 struct TypeTemplate;
-using TypeTemplatePtr= std::shared_ptr<TypeTemplate>;
+using TypeTemplatePtr= std::shared_ptr<const TypeTemplate>;
 
 struct FunctionTemplate;
-using FunctionTemplatePtr= std::shared_ptr<FunctionTemplate>;
+using FunctionTemplatePtr= std::shared_ptr<const FunctionTemplate>;
 
 struct FunctionVariable final
 {
@@ -43,7 +42,7 @@ struct FunctionVariable final
 	Type type; // Function type 100%
 
 	// For functions generated from templates.
-	std::shared_ptr<FunctionTemplate> base_template;
+	FunctionTemplatePtr base_template;
 
 	unsigned int virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 	bool have_body= false;
@@ -54,6 +53,7 @@ struct FunctionVariable final
 	bool is_constructor= false;
 	bool is_conversion_constructor= false;
 	bool return_type_is_auto= false; // true, if return type must be deduced and not deduced yet.
+	bool is_inherited= false;
 
 	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;
 

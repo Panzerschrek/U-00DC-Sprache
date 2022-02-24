@@ -854,6 +854,75 @@ U_TEST( TypeTemplateRedefinition_ForImports_Test2 )
 		"root" );
 }
 
+U_TEST( DefineBodyForFunction_UsingChildClassName_Test0 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		class A polymorph
+		{
+			fn Foo();
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		class B : A {}
+
+		fn B::Foo(){} // Error, no native function named "Foo" in "B".
+	)";
+
+	const ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a", c_program_text_a },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( HaveError( result.errors, CodeBuilderErrorCode::NameNotFound, 6u ) );
+}
+
+U_TEST( DefineBodyForFunction_UsingChildClassName_Test1 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		class A polymorph
+		{
+			fn Foo();
+		}
+	)";
+
+	static const char c_program_text_b[]=
+	R"(
+		import "a"
+		class B : A
+		{
+			fn Foo(i32 x);
+		}
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "b"
+
+		fn B::Foo(){} // Error, no native function Foo() in B, only Foo(i32 x)
+	)";
+
+	const ErrorTestBuildResult result=
+		BuildMultisourceProgramWithErrors(
+			{
+				{ "a", c_program_text_a },
+				{ "b", c_program_text_b },
+				{ "root", c_program_text_root }
+			},
+			"root" );
+
+	U_TEST_ASSERT( !result.errors.empty() );
+	U_TEST_ASSERT( HaveError( result.errors, CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope, 4u ) );
+}
+
 } // namespace
 
 } // namespace U

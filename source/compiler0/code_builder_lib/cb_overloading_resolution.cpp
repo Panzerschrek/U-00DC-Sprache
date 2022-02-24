@@ -611,11 +611,11 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 				return nullptr;
 			}
 
-			Value* const value_in_class= class_->members->GetThisScopeValue( op_name );
-			if( value_in_class == nullptr )
+			const auto value_in_class= ResolveClassValue( class_, op_name );
+			if( value_in_class.first == nullptr )
 				continue;
 
-			OverloadedFunctionsSet* const operators_set= value_in_class->GetFunctionsSet();
+			OverloadedFunctionsSet* const operators_set= value_in_class.first->GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
 			GlobalThingBuildFunctionsSet( *class_->members, *operators_set, false ); // Make sure functions set is complete.
 
@@ -623,7 +623,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 			if( func != nullptr )
 			{
 				// Check access rights after function selection.
-				if( names.GetAccessFor( arg.type.GetClassType() ) < class_->GetMemberVisibility( op_name ) )
+				if( names.GetAccessFor( arg.type.GetClassType() ) < value_in_class.second )
 					REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), src_loc, op_name, class_->members->GetThisNamespaceName() );
 
 				return func;

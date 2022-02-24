@@ -1130,6 +1130,124 @@ U_TEST( OperatorBodyOutsideClass )
 	U_TEST_ASSERT( static_cast<uint64_t>( 584147 / 55 + ( 584147 + 55 ) ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( UseInheritedOverloadedOperator_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		class A polymorph
+		{
+			op()(this) : i32 { return 657; }
+		}
+
+		class B : A{}
+
+		fn Call(B& b) : i32
+		{
+			return b();
+		}
+
+		fn Foo() : i32
+		{
+			var B b;
+			return Call(b);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 657 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( UseInheritedOverloadedOperator_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		class A polymorph
+		{
+			op+(A& x, B& y) : i32 { return 99991; }
+		}
+
+		class B : A{}
+
+		fn Add(B& x, B& y) : i32
+		{
+			return x + y;
+		}
+
+		fn Foo() : i32
+		{
+			var B x, y;
+			return Add(x, y);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+	U_TEST_ASSERT( static_cast<uint64_t>( 99991 ) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST( UseInheritedOverloadedOperator_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		class A polymorph
+		{
+			op<=>(A& x, A& y) : i32 { return 0; }
+		}
+
+		class B : A{}
+
+		fn Compare(B& x, B& y)
+		{
+			x <=> y; // <=> not inherited
+		}
+
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
+}
+
+U_TEST( UseInheritedOverloadedOperator_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		class A polymorph
+		{
+			op==(A& x, A& y) : bool = default;
+		}
+
+		class B : A{}
+
+		fn Compare(B& x, B& y)
+		{
+			x == y; // == not inherited
+		}
+
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 11u );
+}
+
 } // namespace
 
 } // namespace U

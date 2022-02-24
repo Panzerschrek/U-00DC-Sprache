@@ -283,21 +283,6 @@ def ClassTypesInfo_Test1():
 	tests_lib.build_program( c_program_text )
 
 
-def ClassTypesInfo_Test2():
-	c_program_text= """
-		class A polymorph { i32 x; }
-		class B : A {}
-
-		template</ type T /> fn constexpr MustBeSame( T& a, T& b ) : bool { return true; }
-		fn Foo()
-		{
-			static_assert( MustBeSame( typeinfo</B/>.fields_list[0].class_type, typeinfo</A/> ) );
-			static_assert( MustBeSame( typeinfo</A/>.fields_list[0].class_type, typeinfo</A/>.fields_list[0].class_type ) );
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
 def ClassTypesInfo_Test3():
 	c_program_text= """
 	template</ size_type size0, size_type size1 />
