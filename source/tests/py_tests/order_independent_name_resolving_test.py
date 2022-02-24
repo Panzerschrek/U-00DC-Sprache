@@ -148,6 +148,96 @@ def OrderIndependent_RecursiveTypedef_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def OrderIndependent_ClassInternalDependencies_Test0():
+	c_program_text= """
+		struct A
+		{
+			auto x = B::y;
+			auto z= B::w;
+		}
+		struct B
+		{
+			auto y= A::z;
+			auto w= 66;
+		}
+		static_assert( A::x == 66 );
+		static_assert( B::y == 66 );
+		static_assert( A::z == 66 );
+		static_assert( B::w == 66 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def OrderIndependent_ClassInternalDependencies_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			auto x = B::y;
+			auto z= B::w;
+		}
+		class B : A
+		{
+			auto y= A::z;
+			auto w= 99995;
+		}
+		static_assert( A::x == 99995 );
+		static_assert( B::y == 99995 );
+		static_assert( A::z == 99995 );
+		static_assert( B::w == 99995 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def OrderIndependent_ClassInternalDependencies_Test2():
+	c_program_text= """
+		class A polymorph
+		{
+			type Q= B::T;
+		}
+		class B : A
+		{
+			type T= f32;
+		}
+		var A::Q q= 0.25f;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def OrderIndependent_ClassInternalDependencies_Test3():
+	c_program_text= """
+		class A polymorph
+		{
+			auto x= B::Foo();
+		}
+		class B : A
+		{
+			fn constexpr Foo() : u32
+			{
+				return 33335u;
+			}
+		}
+		static_assert( A::x == 33335u );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def OrderIndependent_ClassInternalDependencies_Test4():
+	c_program_text= """
+		class A polymorph
+		{
+			auto x= B::Foo();
+
+			fn constexpr Foo() : f64
+			{
+				return -33.5;
+			}
+		}
+		class B : A { }
+		static_assert( A::x == -33.5 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def GlobalsLoopDetected_Test0():
 	c_program_text= """
 		struct S{ S s; }  // Type depends on itself

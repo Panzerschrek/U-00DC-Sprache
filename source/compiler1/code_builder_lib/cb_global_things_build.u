@@ -222,10 +222,13 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	foreach( &mut func_variable : functions_set.functions_set.functions )
 	{
 		// Immediately build body of "constexpr" functions.
-		if( build_body ||
-			( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr && !is_class_method ) )
+		if( !func_variable.is_inherited )
 		{
-			BuildFuncCode( names_scope_ptr, func_variable );
+			if( build_body ||
+				( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr && !is_class_method ) )
+			{
+				BuildFuncCode( names_scope_ptr, func_variable );
+			}
 		}
 	}
 
