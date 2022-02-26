@@ -1120,3 +1120,37 @@ def ThisMethodMustBePublic_ForOrderCompareOperators_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForOrderCompareOperators_Test2():
+	c_program_text= """
+		template</type T/>
+		class A
+		{
+		private:
+			op<=>(A& l, A& r) : i32; // private order compare operator
+		}
+		type AI= A</i32/>;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TemplateContext", 8 ) )
+
+
+def ThisMethodMustBePublic_ForOtherMethods_Test0():
+	c_program_text= """
+		class A
+		{
+		private:
+			// Ok - all these methods may be non-public.
+			op++(mut this);
+			op()(this);
+			op-=(mut this, A& other);
+			op*(A x, A y) : A;
+			op~(A x) : A;
+
+			fn Foo();
+			fn Foo(this);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
