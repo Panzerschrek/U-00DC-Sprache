@@ -860,3 +860,263 @@ def VisibilityForStruct_Test0():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VisibilityForStruct" )
 	assert( errors_list[0].src_loc.line == 4 )
+
+
+def ThisMethodMustBePublic_ForConstructors_Test0():
+	c_program_text= """
+		class A
+		{
+		private:
+			fn constructor(){} // private default constructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForConstructors_Test1():
+	c_program_text= """
+		class A
+		{
+		private:
+			fn constructor(mut this, A& other){} // private copy constructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForConstructors_Test2():
+	c_program_text= """
+		class A
+		{
+		private:
+			fn constructor(i32 x){} // private arbitrary constructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForConstructors_Test3():
+	c_program_text= """
+		class A
+		{
+		protected:
+			fn constructor(i32 x, f32 y){} // protected arbitrary constructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForConstructors_Test4():
+	c_program_text= """
+		class A
+		{
+		private:
+			fn conversion_constructor(i32 x){} // private conversion constructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForConstructors_Test5():
+	c_program_text= """
+		class A
+		{
+		private:
+			fn constructor() = default; // private generated default constructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForConstructors_Test6():
+	c_program_text= """
+		class A
+		{
+		protected:
+			fn constructor(mut this, A& other) = default; // private generated copy constructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForConstructors_Test7():
+	c_program_text= """
+		class A
+		{
+		protected:
+			fn constructor(mut this, A& other) = delete; // private deleted copy constructor.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForDestructors_Test0():
+	c_program_text= """
+		class A
+		{
+		private:
+			fn destructor(); // private destructor
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForDestructors_Test1():
+	c_program_text= """
+		class A
+		{
+		protected:
+			fn destructor() {} // pritected destructor
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForAssignmentOperators_Test0():
+	c_program_text= """
+		class A
+		{
+		private:
+			op=(mut this, A& other); // private copy-assignment operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForAssignmentOperators_Test1():
+	c_program_text= """
+		class A
+		{
+		private:
+			op=(mut this, A& other) = default; // private generated copy-assignment operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForAssignmentOperators_Test2():
+	c_program_text= """
+		class A
+		{
+		protected:
+			op=(mut this, A& other) = delete; // protected deleted copy-assignment operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForAssignmentOperators_Test3():
+	c_program_text= """
+		class A
+		{
+		private:
+			op=(mut this, i32 x){} // private arbitrary assignment operator
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForEqualityCompareOperators_Test0():
+	c_program_text= """
+		class A
+		{
+		private:
+			op==(A& l, A& r) : bool; // private equality compare operator
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForEqualityCompareOperators_Test1():
+	c_program_text= """
+		class A
+		{
+		protected:
+			op==(A& l, A& r) : bool = default; // protected generated equality compare operator
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForEqualityCompareOperators_Test2():
+	c_program_text= """
+		class A
+		{
+		private:
+			op==(A& l, A& r) : bool = delete; // private deleted equality compare operator
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForEqualityCompareOperators_Test3():
+	c_program_text= """
+		class A
+		{
+		private:
+			op==(i32 x, A& r) : bool; // private other equality compare operator
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForOrderCompareOperators_Test0():
+	c_program_text= """
+		class A
+		{
+		protected:
+			op<=>(A& l, A& r) : i32; // protected order compare operator
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )
+
+
+def ThisMethodMustBePublic_ForOrderCompareOperators_Test1():
+	c_program_text= """
+		class A
+		{
+		private:
+			op<=>(A& l, f32 x) : i32; // private order compare operator
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ThisMethodMustBePublic", 5 ) )

@@ -95,6 +95,16 @@ void CodeBuilder::NamesScopeFill(
 	if( IsKeyword( func_name ) && func_name != Keywords::constructor_ && func_name != Keywords::destructor_ )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration.src_loc_ );
 
+	if( visibility != ClassMemberVisibility::Public )
+	{
+		if( func_name == Keywords::constructor_ ||
+			func_name == Keywords::destructor_ ||
+			func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+			func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
+			func_name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
+			REPORT_ERROR( ThisMethodMustBePublic, names_scope.GetErrors(), function_declaration.src_loc_, func_name );
+	}
+
 	if( Value* const prev_value= names_scope.GetThisScopeValue( func_name ) )
 	{
 		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
