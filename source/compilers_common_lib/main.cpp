@@ -584,87 +584,50 @@ int Main( int argc, const char* argv[] )
 		if( have_some_errors )
 			return 1;
 	}
-	else if( Options::input_files_type == Options::InputFileType::BC )
+	else if(
+		Options::input_files_type == Options::InputFileType::BC ||
+		Options::input_files_type == Options::InputFileType::LL )
 	{
-		// Load and link together multiple BC files.
+		// Load and link together multiple BC or LL files.
 
 		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
-			const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped= llvm::MemoryBuffer::getFile( input_file );
-			if( !file_mapped || *file_mapped == nullptr )
+			std::unique_ptr<llvm::Module> module;
+			if ( Options::input_files_type == Options::InputFileType::BC )
 			{
-				std::cerr << "Can't load file \"" << input_file << "\\" << std::endl;
-				have_some_errors= true;
-				continue;
-			}
-
-			llvm::Expected<std::unique_ptr<llvm::Module>> module= llvm::parseBitcodeFile( **file_mapped, llvm_context );
-
-			if( !module )
-			{
-				std::cerr << "Failed to parse BC module for file \"" << input_file << "\"" << std::endl;
-				have_some_errors= true;
-				continue;
-			}
-			if( (*module)->getDataLayout() != data_layout )
-			{
-				std::cerr << "Unexpected data layout of file \"" << input_file << "\": " << (*module)->getDataLayoutStr() << ", expected: " << data_layout.getStringRepresentation() << std::endl;
-				have_some_errors= true;
-				continue;
-			}
-			if( (*module)->getTargetTriple() != target_triple_str )
-			{
-				std::cerr << "Unexpected target triple of file \"" << input_file << "\": " << (*module)->getTargetTriple() << ", expected: " << target_triple_str << std::endl;
-				have_some_errors= true;
-				continue;
-			}
-			{
-				std::string err_stream_str;
-				llvm::raw_string_ostream err_stream( err_stream_str );
-				if( llvm::verifyModule( *module.get(), &err_stream ) )
+				const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped= llvm::MemoryBuffer::getFile( input_file );
+				if( !file_mapped || *file_mapped == nullptr )
 				{
-					std::cerr << "Module verify error for file \"" << input_file << "\":\n" << err_stream.str() << std::endl;
+					std::cerr << "Can't load file \"" << input_file << "\\" << std::endl;
+					have_some_errors= true;
+					continue;
+				}
+
+				llvm::Expected<std::unique_ptr<llvm::Module>> module_opt= llvm::parseBitcodeFile( **file_mapped, llvm_context );
+
+				if( !module_opt )
+				{
+					std::cerr << "Failed to parse BC module for file \"" << input_file << "\"" << std::endl;
+					have_some_errors= true;
+					continue;
+				}
+				module= std::move(*module_opt);
+			}
+			else
+			{
+				llvm::SMDiagnostic diagnostic( input_file, llvm::SourceMgr::DK_Error, "" );
+				module= llvm::parseAssemblyFile( input_file, diagnostic, llvm_context );
+
+				if( module == nullptr )
+				{
+					llvm::raw_os_ostream stream( std::cerr );
+					diagnostic.print( "", stream );
 					have_some_errors= true;
 					continue;
 				}
 			}
 
-			deps_list.push_back( input_file );
-
-			if( result_module == nullptr )
-				result_module= std::move( *module );
-			else
-			{
-				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(*module) );
-				if( not_ok )
-				{
-					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
-					have_some_errors= true;
-				}
-			}
-		}
-
-		if( have_some_errors )
-			return 1;
-	}
-	else if( Options::input_files_type == Options::InputFileType::LL )
-	{
-		// Load and link together multiple LL files.
-
-		bool have_some_errors= false;
-		for( const std::string& input_file : Options::input_files )
-		{
-			llvm::SMDiagnostic diagnostic( input_file, llvm::SourceMgr::DK_Error, "" );
-			std::unique_ptr<llvm::Module> module= llvm::parseAssemblyFile( input_file, diagnostic, llvm_context );
-
-			if( module == nullptr )
-			{
-				llvm::raw_os_ostream stream( std::cerr );
-				diagnostic.print( "", stream );
-				have_some_errors= true;
-				continue;
-			}
 			if( module->getDataLayout() != data_layout )
 			{
 				std::cerr << "Unexpected data layout of file \"" << input_file << "\": " << module->getDataLayoutStr() << ", expected: " << data_layout.getStringRepresentation() << std::endl;
