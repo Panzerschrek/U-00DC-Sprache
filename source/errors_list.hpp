@@ -49,6 +49,7 @@ PROCESS_ERROR( AccessingNonpublicClassMember, "Accessing member \"{0}\" of class
 PROCESS_ERROR( FunctionsVisibilityMismatch, "Visibility mismatch for function \"{0}\". All functions with same name in class must have same visibility." )
 PROCESS_ERROR( TypeTemplatesVisibilityMismatch, "Visibility mismatch for type template \"{0}\". All type templates with same name in class must have same visibility." )
 PROCESS_ERROR( VisibilityForStruct, "Visibility label for struct \"{0}\". Visibility labels enabled only for classes, structs have all members public." )
+PROCESS_ERROR( ThisMethodMustBePublic, "Method \"{0}\" must be public." )
 
 // Constexpr errors.
 PROCESS_ERROR( ExpectedConstantExpression, "Expected constant expression." )

@@ -77,6 +77,18 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
+	if( visibility != Synt::ClassVisibility::Public )
+	{
+		if( func_name ==  KeywordToString( Keyword::constructor_ ) ||
+			func_name == KeywordToString( Keyword::destructor_ ) ||
+			func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) ||
+			func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ||
+			func_name == OverloadedOperatorToString( OverloadedOperator::CompareOrder ) )
+		{
+			REPORT_ERROR( ThisMethodMustBePublic, names_scope_ptr, function.deref().src_loc, func_name )
+		}
+	}
+
 	if( function.deref().name.size() > 1s )
 	{
 		return; // Out of line function - fill it later.
