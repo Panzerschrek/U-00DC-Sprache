@@ -203,41 +203,6 @@ def OrderIndependent_ClassInternalDependencies_Test2():
 	tests_lib.build_program( c_program_text )
 
 
-def OrderIndependent_ClassInternalDependencies_Test3():
-	c_program_text= """
-		class A polymorph
-		{
-			auto x= B::Foo();
-		}
-		class B : A
-		{
-			fn constexpr Foo() : u32
-			{
-				return 33335u;
-			}
-		}
-		static_assert( A::x == 33335u );
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def OrderIndependent_ClassInternalDependencies_Test4():
-	c_program_text= """
-		class A polymorph
-		{
-			auto x= B::Foo();
-
-			fn constexpr Foo() : f64
-			{
-				return -33.5;
-			}
-		}
-		class B : A { }
-		static_assert( A::x == -33.5 );
-	"""
-	tests_lib.build_program( c_program_text )
-
-
 def GlobalsLoopDetected_Test0():
 	c_program_text= """
 		struct S{ S s; }  // Type depends on itself
