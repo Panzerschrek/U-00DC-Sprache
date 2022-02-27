@@ -272,6 +272,18 @@ cl::opt< FileType > file_type(
 		clEnumValN( FileType::Null, "null", "Emit no output file. Usable for compilation check." ) ),
 	cl::cat(options_category) );
 
+cl::opt<bool> override_data_layout(
+	"override-data-layout",
+	cl::desc("Override data layout of input LL or BC module."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+cl::opt<bool> override_target_triple(
+	"override-target-triple",
+	cl::desc("Override data layout of input LL or BC module."),
+	cl::init(false),
+	cl::cat(options_category) );
+
 cl::opt<char> optimization_level(
 	"O",
 	cl::desc("Optimization level. [-O0, -O1, -O2, -O3, -Os or -Oz] (default = '-O0')"),
@@ -628,15 +640,19 @@ int Main( int argc, const char* argv[] )
 				}
 			}
 
-			if( module->getDataLayout() != data_layout )
+			if( Options::override_data_layout )
+				module->setDataLayout( data_layout );
+			else if( module->getDataLayout() != data_layout )
 			{
-				std::cerr << "Unexpected data layout of file \"" << input_file << "\": " << module->getDataLayoutStr() << ", expected: " << data_layout.getStringRepresentation() << std::endl;
+				std::cerr << "Unexpoected data layout of file \"" << input_file << "\", expected \"" << data_layout.getStringRepresentation() << "\", got \"" << module->getDataLayout().getStringRepresentation() << "\"" << std::endl;
 				have_some_errors= true;
 				continue;
 			}
-			if( module->getTargetTriple() != target_triple_str )
+			if( Options::override_target_triple )
+				module->setTargetTriple( target_triple_str );
+			else if( module->getTargetTriple() != target_triple_str )
 			{
-				std::cerr << "Unexpected target triple of file \"" << input_file << "\": " << module->getTargetTriple() << ", expected: " << target_triple_str << std::endl;
+				std::cerr << "Unexpoected target triple of file \"" << input_file << "\", expected \"" << target_triple_str << "\", got \"" << module->getTargetTriple() << "\"" << std::endl;
 				have_some_errors= true;
 				continue;
 			}
