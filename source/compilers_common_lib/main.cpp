@@ -13,6 +13,7 @@
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_os_ostream.h>
+#include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
@@ -232,14 +233,15 @@ cl::list<std::string> input_files(
 	cl::OneOrMore,
 	cl::cat(options_category) );
 
-enum class InputFileType{ Source, BC };
+enum class InputFileType{ Source, BC, LL };
 cl::opt< InputFileType > input_files_type(
 	"input-filetype",
 	cl::init(InputFileType::Source),
 	cl::desc("Choose a input files type:"),
 	cl::values(
 		clEnumValN( InputFileType::Source, "source", "Reead Ü source files" ),
-		clEnumValN( InputFileType::BC, "bc", "Read an llvm bitcode ('.bc') files" )),
+		clEnumValN( InputFileType::BC, "bc", "Read an llvm bitcode ('.bc') files" ),
+		clEnumValN( InputFileType::LL, "ll", "Read an llvm asm ('.ll') files" )),
 	cl::cat(options_category) );
 
 cl::opt<std::string> output_file_name(
@@ -268,6 +270,18 @@ cl::opt< FileType > file_type(
 		clEnumValN( FileType::Obj, "obj", "Emit a native object ('.o') file" ),
 		clEnumValN( FileType::Asm, "asm", "Emit an assembly ('.s') file" ),
 		clEnumValN( FileType::Null, "null", "Emit no output file. Usable for compilation check." ) ),
+	cl::cat(options_category) );
+
+cl::opt<bool> override_data_layout(
+	"override-data-layout",
+	cl::desc("Override data layout of input LL or BC module."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+cl::opt<bool> override_target_triple(
+	"override-target-triple",
+	cl::desc("Override data layout of input LL or BC module."),
+	cl::init(false),
 	cl::cat(options_category) );
 
 cl::opt<char> optimization_level(
@@ -582,36 +596,84 @@ int Main( int argc, const char* argv[] )
 		if( have_some_errors )
 			return 1;
 	}
-	else if( Options::input_files_type == Options::InputFileType::BC )
+	else if(
+		Options::input_files_type == Options::InputFileType::BC ||
+		Options::input_files_type == Options::InputFileType::LL )
 	{
-		// Load and link together multiple BC files.
+		// Load and link together multiple BC or LL files.
 
 		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
-			const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped= llvm::MemoryBuffer::getFile( input_file );
-			if( !file_mapped || *file_mapped == nullptr )
+			std::unique_ptr<llvm::Module> module;
+			if ( Options::input_files_type == Options::InputFileType::BC )
 			{
-				std::cerr << "Can't load file \"" << input_file << "\\" << std::endl;
+				const llvm::ErrorOr< std::unique_ptr<llvm::MemoryBuffer> > file_mapped= llvm::MemoryBuffer::getFile( input_file );
+				if( !file_mapped || *file_mapped == nullptr )
+				{
+					std::cerr << "Can't load file \"" << input_file << "\\" << std::endl;
+					have_some_errors= true;
+					continue;
+				}
+
+				llvm::Expected<std::unique_ptr<llvm::Module>> module_opt= llvm::parseBitcodeFile( **file_mapped, llvm_context );
+
+				if( !module_opt )
+				{
+					std::cerr << "Failed to parse BC module for file \"" << input_file << "\"" << std::endl;
+					have_some_errors= true;
+					continue;
+				}
+				module= std::move(*module_opt);
+			}
+			else
+			{
+				llvm::SMDiagnostic diagnostic( input_file, llvm::SourceMgr::DK_Error, "" );
+				module= llvm::parseAssemblyFile( input_file, diagnostic, llvm_context );
+
+				if( module == nullptr )
+				{
+					llvm::raw_os_ostream stream( std::cerr );
+					diagnostic.print( "", stream );
+					have_some_errors= true;
+					continue;
+				}
+			}
+
+			if( Options::override_data_layout )
+				module->setDataLayout( data_layout );
+			else if( module->getDataLayout() != data_layout )
+			{
+				std::cerr << "Unexpoected data layout of file \"" << input_file << "\", expected \"" << data_layout.getStringRepresentation() << "\", got \"" << module->getDataLayout().getStringRepresentation() << "\"" << std::endl;
 				have_some_errors= true;
 				continue;
 			}
-
-			llvm::Expected<std::unique_ptr<llvm::Module>> module= llvm::parseBitcodeFile( **file_mapped, llvm_context );
-
-			if( !module )
+			if( Options::override_target_triple )
+				module->setTargetTriple( target_triple_str );
+			else if( module->getTargetTriple() != target_triple_str )
 			{
-				std::cerr << "Failed to parse BC module for file \"" << input_file << "\"" << std::endl;
-				return 1;
+				std::cerr << "Unexpoected target triple of file \"" << input_file << "\", expected \"" << target_triple_str << "\", got \"" << module->getTargetTriple() << "\"" << std::endl;
+				have_some_errors= true;
+				continue;
+			}
+			{
+				std::string err_stream_str;
+				llvm::raw_string_ostream err_stream( err_stream_str );
+				if( llvm::verifyModule( *module, &err_stream ) )
+				{
+					std::cerr << "Module verify error for file \"" << input_file << "\":\n" << err_stream.str() << std::endl;
+					have_some_errors= true;
+					continue;
+				}
 			}
 
 			deps_list.push_back( input_file );
 
 			if( result_module == nullptr )
-				result_module= std::move( *module );
+				result_module= std::move( module );
 			else
 			{
-				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(*module) );
+				const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(module) );
 				if( not_ok )
 				{
 					std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
