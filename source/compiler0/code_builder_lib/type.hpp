@@ -3,6 +3,7 @@
 #include <variant>
 
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/IR/CallingConv.h>
 #include <llvm/IR/DerivedTypes.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
@@ -191,6 +192,7 @@ public:
 	Type return_type;
 	ValueType return_value_type= ValueType::Value;
 	bool unsafe= false;
+	llvm::CallingConv::ID calling_convention= llvm::CallingConv::C;
 
 	// Use "std::set" for references description, because we needs stable order for function type mangling.
 

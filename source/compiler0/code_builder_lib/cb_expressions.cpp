@@ -2931,7 +2931,7 @@ Value CodeBuilder::DoCallFunction(
 		else
 		{
 			llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( function_type.llvm_type, function, llvm_args );
-			call_instruction->setCallingConv( GetLLVMCallingConvention() );
+			call_instruction->setCallingConv( function_type.calling_convention );
 
 			call_result= call_instruction;
 			if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )

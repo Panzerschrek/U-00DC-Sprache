@@ -759,7 +759,8 @@ bool operator==( const FunctionType& l, const FunctionType& r )
 		l.params == r.params &&
 		l.return_references == r.return_references &&
 		l.references_pollution == r.references_pollution &&
-		l.unsafe == r.unsafe;
+		l.unsafe == r.unsafe &&
+		l.calling_convention == r.calling_convention;
 }
 
 bool operator!=( const FunctionType& l, const FunctionType& r )

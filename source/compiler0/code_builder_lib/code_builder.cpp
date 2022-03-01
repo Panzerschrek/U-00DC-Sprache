@@ -908,6 +908,9 @@ size_t CodeBuilder::PrepareFunction(
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
 		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
 
+		// TODO - disable non-default calling convention for "thiscall" methods?
+		function_type.calling_convention= GetLLVMCallingConvention( func.type_.calling_convention_ );
+
 		function_type.llvm_type= GetLLVMFunctionType( function_type );
 
 		func_variable.type= std::move(function_type);
@@ -2231,7 +2234,7 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 
 	llvm_function->setDoesNotThrow(); // We do not support exceptions.
 
-	llvm_function->setCallingConv( GetLLVMCallingConvention() );
+	llvm_function->setCallingConv( function_type.calling_convention );
 
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
 		llvm_function->addFnAttr( llvm::Attribute::UWTable );

@@ -124,6 +124,8 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), function_type_name, function_type );
 	ProcessFunctionTypeReferencesPollution( names_scope.GetErrors(), function_type_name, function_type );
 
+	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention_ );
+
 	function_type.llvm_type= GetLLVMFunctionType( function_type );
 	function_pointer_type.llvm_type= function_type.llvm_type->getPointerTo();
 	return std::move(function_pointer_type);
@@ -214,8 +216,19 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );
 }
 
-llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention()
+llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const std::string& calling_convention_name )
 {
+	if( calling_convention_name == "C" ||
+		calling_convention_name == "Ü" )
+		return llvm::CallingConv::C;
+
+	if( calling_convention_name == "system" )
+	{
+		// TODO - customize this.
+		return llvm::CallingConv::C;
+	}
+
+	// TODO - report error about unknown konvention.
 	return llvm::CallingConv::C;
 }
 
