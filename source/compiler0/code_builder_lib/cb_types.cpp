@@ -214,4 +214,9 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );
 }
 
+llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention()
+{
+	return llvm::CallingConv::C;
+}
+
 } // namespace U

@@ -2231,6 +2231,8 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 
 	llvm_function->setDoesNotThrow(); // We do not support exceptions.
 
+	llvm_function->setCallingConv( GetLLVMCallingConvention() );
+
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
 		llvm_function->addFnAttr( llvm::Attribute::UWTable );
 

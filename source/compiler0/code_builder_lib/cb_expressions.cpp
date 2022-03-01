@@ -2930,7 +2930,10 @@ Value CodeBuilder::DoCallFunction(
 			call_result= constant_call_result;
 		else
 		{
-			call_result= function_context.llvm_ir_builder.CreateCall( function_type.llvm_type, function, llvm_args );
+			llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( function_type.llvm_type, function, llvm_args );
+			call_instruction->setCallingConv( GetLLVMCallingConvention() );
+
+			call_result= call_instruction;
 			if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 				call_result= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 		}
