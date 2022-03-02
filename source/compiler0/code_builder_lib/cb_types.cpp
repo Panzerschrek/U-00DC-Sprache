@@ -216,11 +216,15 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );
 }
 
-llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const std::string& calling_convention_name )
+llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const std::optional<std::string>& calling_convention_name )
 {
-	if( calling_convention_name == "C" ||
+	if( calling_convention_name == std::nullopt ||
+		calling_convention_name == "C" ||
 		calling_convention_name == "Ü" )
 		return llvm::CallingConv::C;
+
+	if( calling_convention_name == "fast" )
+		return llvm::CallingConv::Fast;
 
 	if( calling_convention_name == "system" )
 	{

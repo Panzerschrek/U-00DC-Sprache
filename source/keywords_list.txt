@@ -23,6 +23,7 @@ abstract
 shared
 ordered
 nomangle
+calling_conv
 virtual
 override
 pure

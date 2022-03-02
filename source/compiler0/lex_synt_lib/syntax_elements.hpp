@@ -279,7 +279,7 @@ struct FunctionType final : public SyntaxElementBase
 {
 	FunctionType( const SrcLoc& src_loc );
 
-	std::string calling_convention_;
+	std::optional<std::string> calling_convention_;
 	std::unique_ptr<TypeName> return_type_;
 	std::string return_value_reference_tag_;
 	FunctionReferencesPollutionList referecnces_pollution_list_;
