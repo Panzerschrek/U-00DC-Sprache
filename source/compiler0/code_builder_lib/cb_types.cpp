@@ -220,6 +220,7 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention( const std::optional
 {
 	if( calling_convention_name == std::nullopt ||
 		calling_convention_name == "C" ||
+		calling_convention_name == "default" ||
 		calling_convention_name == "Ü" )
 		return llvm::CallingConv::C;
 
