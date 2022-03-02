@@ -230,6 +230,59 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test4)
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope, 3 ) );
 }
 
+U_TEST(UnknownCallingConvention_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() calling_conv("SomeCrazyCallingCov");
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
+}
+
+U_TEST(UnknownCallingConvention_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() calling_conv("");
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
+}
+
+
+U_TEST(UnknownCallingConvention_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() calling_conv("Rust");
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
+}
+
+U_TEST(UnknownCallingConvention_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		type F= fn() calling_conv("6") : bool;
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
+}
+
 } // namespace
 
 } // namespace U

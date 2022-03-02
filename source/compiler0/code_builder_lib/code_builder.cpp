@@ -909,7 +909,7 @@ size_t CodeBuilder::PrepareFunction(
 		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
 
 		// TODO - disable non-default calling convention for "thiscall" methods?
-		function_type.calling_convention= GetLLVMCallingConvention( func.type_.calling_convention_ );
+		function_type.calling_convention= GetLLVMCallingConvention( func.type_.calling_convention_, func.type_.src_loc_, names_scope.GetErrors() );
 
 		function_type.llvm_type= GetLLVMFunctionType( function_type );
 

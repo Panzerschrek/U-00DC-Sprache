@@ -123,7 +123,10 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 
 	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
-	llvm::CallingConv::ID GetLLVMCallingConvention( const std::optional<std::string>& calling_convention_name );
+	llvm::CallingConv::ID GetLLVMCallingConvention(
+		const std::optional<std::string>& calling_convention_name,
+		const SrcLoc& src_loc,
+		CodeBuilderErrorsContainer& errors );
 
 	// Virtual stuff
 	void CheckvirtualFunctionOverridingReferenceNotation(
