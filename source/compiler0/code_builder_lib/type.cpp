@@ -717,6 +717,9 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 	if( src_function_type.unsafe && !dst_function_type.unsafe )
 		return false; // Conversion from unsafe to safe function is forbidden.
 
+	if( src_function_type.calling_convention != dst_function_type.calling_convention )
+		return false;
+
 	// Finally, we check all conditions
 	return true;
 }
