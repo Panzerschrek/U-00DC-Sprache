@@ -232,6 +232,9 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention(
 	if( *calling_convention_name == "fast" )
 		return llvm::CallingConv::Fast;
 
+	if( *calling_convention_name == "cold" )
+		return llvm::CallingConv::Cold;
+
 	if( *calling_convention_name == "system" )
 	{
 		if( target_triple_.getArch() == llvm::Triple::x86 && target_triple_.getOS() == llvm::Triple::Win32 )

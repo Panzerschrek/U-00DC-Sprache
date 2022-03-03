@@ -96,6 +96,20 @@ U_TEST(CallingConventionDeclaration_Test6)
 	BuildProgram( c_program_text );
 }
 
+U_TEST(CallingConventionDeclaration_Test7)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() unsafe call_conv("cold") : u32;
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* const function= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	U_TEST_ASSERT( function->getCallingConv() == llvm::CallingConv::Cold );
+}
+
 U_TEST(CallForFunctionWithCustomCallingConvention_Test0)
 {
 	static const char c_program_text[]=
