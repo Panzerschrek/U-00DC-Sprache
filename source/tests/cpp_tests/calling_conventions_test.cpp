@@ -307,6 +307,157 @@ U_TEST(UnknownCallingConvention_Test3)
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnknownCallingConvention, 2 ) );
 }
 
+U_TEST(NonDefaultCallingConventionForClassMethod_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			fn Foo(this) call_conv("fast");
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+}
+
+U_TEST(NonDefaultCallingConventionForClassMethod_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		class A
+		{
+			fn Foo(mut this, bool x) call_conv("cold") : i32; // Custom calling convention for this-call method.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+}
+
+U_TEST(NonDefaultCallingConventionForClassMethod_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		class A
+		{
+			fn constructor() call_conv("fast"); // Custom calling convention for constructor.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+}
+
+U_TEST(NonDefaultCallingConventionForClassMethod_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		class A
+		{
+			fn destructor() call_conv("cold"); // Custom calling convention for destructor.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+}
+
+U_TEST(NonDefaultCallingConventionForClassMethod_Test4)
+{
+	static const char c_program_text[]=
+	R"(
+		class A
+		{
+			op()(this, i32 x) call_conv("fast"); // Custom calling convention for this-call operator.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+}
+
+U_TEST(NonDefaultCallingConventionForClassMethod_Test5)
+{
+	static const char c_program_text[]=
+	R"(
+		class A
+		{
+			op<=>(A& l, A& r) call_conv("fast") : i32; // Custom calling convention for binary operator.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+}
+
+U_TEST(NonDefaultCallingConventionForClassMethod_Test6)
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			op~(A a) call_conv("cold") : A; // Custom calling convention for unary operator.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NonDefaultCallingConventionForClassMethod, 4 ) );
+}
+
+U_TEST(NonDefaultCallingConventionForClassMethod_Test7)
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			fn Foo(A& a) call_conv("fast"); // Ok - custom calling cobnvetion allowed for non-this call function.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST(NonDefaultCallingConventionForClassMethod_Test8)
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			fn Foo(this) call_conv("default"); // Ok - default calling connvention.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST(NonDefaultCallingConventionForClassMethod_Test9)
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			fn Foo(mut this, i32& x) call_conv("Ü"); // Ok - default calling connvention.
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace
 
 } // namespace U

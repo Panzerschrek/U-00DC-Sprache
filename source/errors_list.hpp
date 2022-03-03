@@ -192,7 +192,7 @@ PROCESS_ERROR( NoMangleMismatch, "\"nomangle\" specifiers mismatch for function 
 
 // Calling conventions
 PROCESS_ERROR( UnknownCallingConvention, "Unknown calling convention \"{0}\"." )
-PROCESS_ERROR( NonDefaultCallingConventionsForClassFunction, "Only default calling convention allowed for class function." )
+PROCESS_ERROR( NonDefaultCallingConventionForClassMethod, "Only default calling convention allowed for this method." )
 
 // Unsafe
 PROCESS_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, "Calling unsafe function outside unsafe block." )
