@@ -24,7 +24,7 @@ U_TEST(CallingConventionDeclaration_Test1)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() calling_conv("C");
+		fn Foo() call_conv("C");
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -38,7 +38,7 @@ U_TEST(CallingConventionDeclaration_Test2)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() unsafe calling_conv("fast") : u32;
+		fn Foo() unsafe call_conv("fast") : u32;
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -52,7 +52,7 @@ U_TEST(CallingConventionDeclaration_Test3)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() unsafe calling_conv("Ü") : u32;
+		fn Foo() unsafe call_conv("Ü") : u32;
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -66,7 +66,7 @@ U_TEST(CallingConventionDeclaration_Test4)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() unsafe calling_conv("default") : u32;
+		fn Foo() unsafe call_conv("default") : u32;
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -80,7 +80,7 @@ U_TEST(CallingConventionDeclaration_Test5)
 {
 	static const char c_program_text[]=
 	R"(
-		type FastCallFn = fn(i32 x) calling_conv("fast") : i32&;
+		type FastCallFn = fn(i32 x) call_conv("fast") : i32&;
 	)";
 
 	BuildProgram( c_program_text );
@@ -90,7 +90,7 @@ U_TEST(CallForFunctionWithCustomCallingConvention_Test0)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Bar() calling_conv("fast") : i32 { return 102934; }
+		fn Bar() call_conv("fast") : i32 { return 102934; }
 		fn Foo() : i32
 		{
 			return Bar();
@@ -110,7 +110,7 @@ U_TEST(CallForFunctionWithCustomCallingConvention_Test1)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Bar(u32 x) calling_conv("fast") : u32 { return x / 3u; }
+		fn Bar(u32 x) call_conv("fast") : u32 { return x / 3u; }
 		fn Foo() : u32
 		{
 			return Bar(951u);
@@ -131,12 +131,12 @@ U_TEST(CallingConventionAliases_Test0)
 	// Currently calling conventions "C", "default", "Ü" are aliases for "C" calling convention.
 	static const char c_program_text[]=
 	R"(
-		fn Foo() calling_conv("C");
-		fn Bar() calling_conv("default");
-		fn Baz() calling_conv("Ü");
+		fn Foo() call_conv("C");
+		fn Bar() call_conv("default");
+		fn Baz() call_conv("Ü");
 		fn FooBar();
 
-		type F= fn() calling_conv("default");
+		type F= fn() call_conv("default");
 
 		var F f0(Foo), f1(Bar), f2(Baz), f3(FooBar);
 	)";
@@ -150,10 +150,10 @@ U_TEST(CallingConventionAliases_Test1)
 	R"(
 		namespace Abc
 		{
-			fn Foo() calling_conv("default");
+			fn Foo() call_conv("default");
 		}
 		// Ok, define body for existing function using alias for calling convention.
-		fn Abc::Foo() calling_conv("C") {}
+		fn Abc::Foo() call_conv("C") {}
 	)";
 
 	BuildProgram( c_program_text );
@@ -163,7 +163,7 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test0)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() calling_conv("fast");
+		fn Foo() call_conv("fast");
 		var (fn()) ptr(Foo);
 	)";
 
@@ -177,8 +177,8 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test1)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() calling_conv("fast");
-		var (fn() calling_conv("fast")) foo_ptr(Foo);
+		fn Foo() call_conv("fast");
+		var (fn() call_conv("fast")) foo_ptr(Foo);
 		var (fn()) foo_ptr_copy= foo_ptr;
 	)";
 
@@ -192,8 +192,8 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test2)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() calling_conv("C");
-		fn Foo() calling_conv("fast"); // Overloading by calling convention is not possible.
+		fn Foo() call_conv("C");
+		fn Foo() call_conv("fast"); // Overloading by calling convention is not possible.
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -206,8 +206,8 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test3)
 {
 	static const char c_program_text[]=
 	R"(
-		namespace Abc{  fn Foo() calling_conv("fast");  }
-		fn Abc::Foo() calling_conv("C") {}  // Error, there is no function with such type inside "Abc".
+		namespace Abc{  fn Foo() call_conv("fast");  }
+		fn Abc::Foo() call_conv("C") {}  // Error, there is no function with such type inside "Abc".
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -220,7 +220,7 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test4)
 {
 	static const char c_program_text[]=
 	R"(
-		namespace Abc{  fn Foo() calling_conv("fast");  }
+		namespace Abc{  fn Foo() call_conv("fast");  }
 		fn Abc::Foo() {}  // Error, there is no function with such type inside "Abc". No calling convention specified means default calling convention.
 	)";
 
@@ -234,7 +234,7 @@ U_TEST(UnknownCallingConvention_Test0)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() calling_conv("SomeCrazyCallingCov");
+		fn Foo() call_conv("SomeCrazyCallingCov");
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -247,7 +247,7 @@ U_TEST(UnknownCallingConvention_Test1)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() calling_conv("");
+		fn Foo() call_conv("");
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -261,7 +261,7 @@ U_TEST(UnknownCallingConvention_Test2)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() calling_conv("Rust");
+		fn Foo() call_conv("Rust");
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -274,7 +274,7 @@ U_TEST(UnknownCallingConvention_Test3)
 {
 	static const char c_program_text[]=
 	R"(
-		type F= fn() calling_conv("6") : bool;
+		type F= fn() call_conv("6") : bool;
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );

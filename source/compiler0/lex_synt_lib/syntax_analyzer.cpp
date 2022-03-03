@@ -1254,7 +1254,7 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 		NextLexem();
 	}
 
-	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::calling_conv_ )
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::call_conv_ )
 	{
 		NextLexem();
 		ExpectLexem( Lexem::Type::BracketLeft );
