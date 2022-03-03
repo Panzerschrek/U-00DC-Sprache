@@ -949,6 +949,20 @@ U_TEST( TypeinfoClassManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$_TI@H@@@Z" ) != nullptr );
 }
 
+U_TEST( CallingConventionTest )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() call_conv("C"){}
+		fn Bar() call_conv("fast"){}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXXZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YIXXZ" ) != nullptr );
+}
+
 } // namespace
 
 } // namespace U
