@@ -86,6 +86,16 @@ U_TEST(CallingConventionDeclaration_Test5)
 	BuildProgram( c_program_text );
 }
 
+U_TEST(CallingConventionDeclaration_Test6)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo() unsafe call_conv("system") : u32;
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST(CallForFunctionWithCustomCallingConvention_Test0)
 {
 	static const char c_program_text[]=

@@ -234,7 +234,9 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention(
 
 	if( *calling_convention_name == "system" )
 	{
-		// TODO - customize this.
+		if( target_triple_.getArch() == llvm::Triple::x86 && target_triple_.getOS() == llvm::Triple::Win32 )
+			return llvm::CallingConv::X86_StdCall;
+
 		return llvm::CallingConv::C;
 	}
 
