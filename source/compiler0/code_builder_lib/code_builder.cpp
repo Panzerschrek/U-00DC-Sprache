@@ -76,9 +76,11 @@ ReferencesGraphNodePtr CodeBuilder::ReferencesGraphNodeHolder::TakeNode()
 CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
+	const llvm::Triple& target_triple,
 	const CodeBuilderOptions& options )
 	: llvm_context_( llvm_context )
 	, data_layout_(data_layout)
+	, target_triple_(target_triple)
 	, build_debug_info_( options.build_debug_info )
 	, create_lifetimes_( options.create_lifetimes )
 	, generate_lifetime_start_end_debug_calls_( options.generate_lifetime_start_end_debug_calls )
@@ -141,8 +143,9 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 			source_graph.nodes_storage.front().file_path,
 			llvm_context_ );
 
-	// Setup data layout
+	// Setup data layout and target triple.
 	module_->setDataLayout(data_layout_);
+	module_->setTargetTriple(target_triple_.normalize());
 
 	// Prepare halt func.
 	halt_func_=

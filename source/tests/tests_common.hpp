@@ -1,12 +1,13 @@
 #pragma once
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/Triple.h>
 #include <llvm/Support/Host.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 namespace U
 {
 
-const std::string GetTestsDataLayout()
+inline std::string GetTestsDataLayout()
 {
 	std::string result;
 
@@ -19,6 +20,11 @@ const std::string GetTestsDataLayout()
 	result+= "-S128";
 
 	return result;
+}
+
+inline llvm::Triple GetTestsTargetTriple()
+{
+	return llvm::Triple();
 }
 
 } // namespace U

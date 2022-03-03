@@ -26,6 +26,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfsPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
+	const llvm::Triple& target_triple,
 	bool generate_debug_info,
 	ManglingScheme mangling_scheme );
 

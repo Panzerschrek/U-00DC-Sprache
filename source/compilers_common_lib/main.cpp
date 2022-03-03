@@ -470,11 +470,10 @@ int Main( int argc, const char* argv[] )
 
 	// Prepare target machine.
 	std::string target_triple_str;
+	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	{
 		const llvm::Target* target= nullptr;
-
-		llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
 
 		if( !Options::architecture.empty() && Options::architecture != "native" )
 			target_triple.setArchName( Options::architecture );
@@ -560,6 +559,7 @@ int Main( int argc, const char* argv[] )
 					vfs,
 					llvm_context,
 					data_layout,
+					target_triple,
 					Options::generate_debug_info,
 					is_msvc ? ManglingScheme::MSVC : ManglingScheme::ItaniumABI );
 
@@ -759,9 +759,6 @@ int Main( int argc, const char* argv[] )
 			llvm::Linker::linkModules( *result_module, std::move(std_lib_module.get()) );
 		}
 	}
-
-	// Setup various module properties.
-	result_module->setTargetTriple( target_triple_str );
 
 	if( Options::generate_debug_info )
 	{

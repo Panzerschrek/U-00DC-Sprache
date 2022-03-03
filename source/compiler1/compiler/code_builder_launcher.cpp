@@ -112,9 +112,11 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfsPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
+	const llvm::Triple& target_triple,
 	const bool generate_debug_info,
 	const ManglingScheme mangling_scheme )
 {
+	(void)target_triple; // TODO - use it
 
 	CodeBuilderLaunchResult result;
 

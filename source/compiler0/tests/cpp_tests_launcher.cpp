@@ -109,6 +109,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
+			GetTestsTargetTriple(),
 			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph );
 
 	PrinteErrors_r( build_result.errors );
@@ -131,6 +132,7 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 		{ CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
+			GetTestsTargetTriple(),
 			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph ).errors };
 }
 
@@ -147,6 +149,7 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
+			GetTestsTargetTriple(),
 			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph );
 
 	PrinteErrors_r( build_result.errors );
@@ -168,6 +171,7 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 		{ CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
+			GetTestsTargetTriple(),
 			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph ).errors };
 }
 
@@ -188,6 +192,7 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
+			GetTestsTargetTriple(),
 			options ).BuildProgram( *source_graph );
 
 	PrinteErrors_r( build_result.errors );
@@ -213,6 +218,7 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
+			GetTestsTargetTriple(),
 			options ).BuildProgram( *source_graph );
 
 	PrinteErrors_r( build_result.errors );

@@ -10,6 +10,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfsPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
+	const llvm::Triple& target_triple,
 	const bool generate_debug_info,
 	const ManglingScheme mangling_scheme )
 {
@@ -33,6 +34,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 		CodeBuilder(
 			llvm_context,
 			data_layout,
+			target_triple,
 			options ).BuildProgram( *source_graph );
 
 	result.code_builder_errors= std::move( build_result.errors );

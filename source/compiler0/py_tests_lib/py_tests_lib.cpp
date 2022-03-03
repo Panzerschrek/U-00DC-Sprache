@@ -73,6 +73,7 @@ std::unique_ptr<CodeBuilder> CreateCodeBuilder()
 		std::make_unique<CodeBuilder>(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
+			GetTestsTargetTriple(),
 			options );
 }
 
