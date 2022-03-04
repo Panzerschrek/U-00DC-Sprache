@@ -223,7 +223,9 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test2)
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotOverloadFunction, 3 ) );
+	U_TEST_ASSERT(
+		HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotOverloadFunction, 2 ) ||
+		HaveError( build_result.errors, CodeBuilderErrorCode::CouldNotOverloadFunction, 3 ) );
 }
 
 U_TEST(CallingConventionMakesFunctionTypeDifferent_Test3)

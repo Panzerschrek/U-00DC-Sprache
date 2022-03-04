@@ -1203,6 +1203,13 @@ fn CodeBuilder::PrepareFunction(
 		}
 	}
 
+	// Check calloing convention for methods.
+	if( function_variable.t.calling_convention != LLVMCallConv::C &&
+		( function_variable.is_this_call || function_declaration.operator != OverloadedOperator::None ) )
+	{
+		REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope_ptr, function_declaration.src_loc )
+	}
+
 	// Setup references pollution for copy methods.
 	if( !class_type.empty() )
 	{

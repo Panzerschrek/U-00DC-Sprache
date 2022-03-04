@@ -397,6 +397,7 @@ fn CodeBuilder::GetLLVMCallingConvention(
 		return LLVMCallConv::C;
 	}
 
+	REPORT_ERROR( UnknownCallingConvention, names_scope, src_loc, cc )
 	return LLVMCallConv::C;
 }
 
