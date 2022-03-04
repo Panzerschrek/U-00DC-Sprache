@@ -79,6 +79,7 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
+	U1_StringView& target_triple_str,
 	bool build_debug_info,
 	U1::ManglingScheme mangling_scheme,
 	SourceFilePathCallback result_source_file_path_callback,

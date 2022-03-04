@@ -180,6 +180,7 @@ fn nomangle LLVMContextDispose(LLVMContextRef C) unsafe;
 fn nomangle LLVMModuleCreateWithNameInContext(NullTerminatedString& ModuleID, LLVMContextRef C) unsafe : LLVMModuleRef;
 fn nomangle LLVMDisposeModule(LLVMModuleRef M) unsafe;
 fn nomangle LLVMSetModuleDataLayout(LLVMModuleRef M, LLVMTargetDataRef DL) unsafe;
+fn nomangle LLVMSetTarget(LLVMModuleRef M, NullTerminatedString& Triple) unsafe;
 
 // Data layout
 

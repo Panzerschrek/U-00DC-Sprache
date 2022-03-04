@@ -73,7 +73,11 @@ class CodeBuilder
 {
 public:
 	// llvm context, data layout should live longer, than this class.
-	fn constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout, CodeBuilderOptions& options );
+	fn constructor(
+		LLVMContextRef llvm_context,
+		LLVMTargetDataRef data_layout,
+		ust::string8 target_triple_str, // should be null-terminated
+		CodeBuilderOptions& options );
 
 	struct BuildResult
 	{
@@ -840,6 +844,7 @@ private:
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
+	ust::string8 imut target_triple_str_; // null-terminated
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	ust::box</IMangler/> mangler_;
 

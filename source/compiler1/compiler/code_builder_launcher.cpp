@@ -116,8 +116,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const bool generate_debug_info,
 	const ManglingScheme mangling_scheme )
 {
-	(void)target_triple; // TODO - use it
-
 	CodeBuilderLaunchResult result;
 
 	const LLVMModuleRef llvm_module=
@@ -126,6 +124,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			StringToStringView(input_file),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
+			StringToStringView(target_triple.normalize()),
 			generate_debug_info,
 			mangling_scheme,
 			SourceFilePathProcessingFunction,
