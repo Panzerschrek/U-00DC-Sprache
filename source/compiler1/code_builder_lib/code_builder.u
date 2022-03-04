@@ -1435,6 +1435,8 @@ fn CodeBuilder::PrepareFunction(
 				module_,
 				llvm_function_name.front(),
 				function_variable.t.llvm_type );
+
+		LLVMSetFunctionCallConv( function_variable.llvm_function, function_variable.t.calling_convention );
 	}
 
 	SetupFunctionParamsAndRetAttributes( function_variable );

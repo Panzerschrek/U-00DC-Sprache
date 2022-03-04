@@ -94,6 +94,7 @@ struct FunctionType
 	Type return_type;
 	ValueType return_value_type;
 
+	LLVMCallConvID calling_convention = LLVMCallConv::C;
 	bool is_unsafe= false;
 
 	// for functions, returning references this is references of reference itslef.

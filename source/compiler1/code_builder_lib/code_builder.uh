@@ -214,6 +214,12 @@ private:
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
 	fn FillLLVMFunctionType( this, FunctionType &mut function_type );
 
+	fn GetLLVMCallingConvention(
+		this,
+		ust::optional</ust::string8/>& calling_convention_name,
+		NamesScopePtr& names_scope,
+		SrcLoc& src_loc ) : LLVMCallConvID;
+
 	// Returns constant value if initializer is contant
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef;
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef;

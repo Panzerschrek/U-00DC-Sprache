@@ -1154,6 +1154,22 @@ fn SyntaxAnalyzer::ParseFunctionTypeEnding( mut this, FunctionType &mut function
 		function_type.is_unsafe= true;
 	}
 
+	if( IsKeyword( it_.front(), Keyword::call_conv_ ) )
+	{
+		NextLexem();
+		ExpectLexem( Lexem::Type::BracketLeft );
+
+		if( it_.front().lexem_type != Lexem::Type::String )
+		{
+			PushErrorMessage();
+		}
+
+		function_type.calling_convention= it_.front().text;
+		NextLexem();
+
+		ExpectLexem( Lexem::Type::BracketRight );
+	}
+
 	if( it_.front().lexem_type != Lexem::Type::Colon )
 	{
 		return;

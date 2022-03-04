@@ -135,6 +135,17 @@ enum LLVMComdatSelectionKind : u32
 	SameSize ///< The data referenced by the COMDAT must be the same size.
 }
 
+type LLVMCallConvID = u32;
+
+namespace LLVMCallConv
+{
+	var LLVMCallConvID
+		C		(0),
+		Fast	(8),
+		Cold	(9),
+		LLVMX86StdcallCallConv(64);
+}
+
 type LLVMDWARFSourceLanguage= u32;
 type LLVMDIFlags= u32;
 
@@ -234,6 +245,9 @@ fn nomangle LLVMReplaceAllUsesWith(LLVMValueRef OldVal, LLVMValueRef NewVal) uns
 fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
+
+fn nomangle LLVMSetFunctionCallConv(LLVMValueRef Fn, LLVMCallConvID CC) unsafe;
+fn nomangle LLVMSetInstructionCallConv(LLVMValueRef Instr, LLVMCallConvID CC) unsafe;
 
 // Global value
 

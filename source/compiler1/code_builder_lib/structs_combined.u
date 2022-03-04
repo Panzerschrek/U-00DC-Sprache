@@ -800,6 +800,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		tl.return_type == tr.return_type &&
 		tl.return_value_type == tr.return_value_type &&
 		tl.is_unsafe == tr.is_unsafe &&
+		tl.calling_convention == tr.calling_convention &&
 		tl.params.size() == tr.params.size() &&
 		tl.params.size() > 0s &&
 		tl.params.front().value_type == tr.params.front().value_type &&

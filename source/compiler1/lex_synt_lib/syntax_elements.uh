@@ -264,6 +264,7 @@ struct FunctionType
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 	ust::string8 return_value_reference_tag; // Tag of returning reference or inner tag of returning value
+	ust::optional</ust::string8/> calling_convention;
 	bool is_unsafe= false;
 }
 
