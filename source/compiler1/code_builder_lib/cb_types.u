@@ -392,7 +392,11 @@ fn CodeBuilder::GetLLVMCallingConvention(
 
 	if( cc == "system" )
 	{
-		// TODO
+		if( target_triple_str_ == "i686-pc-windows-gnu\0" ||
+			target_triple_str_ == "i686-pc-windows-msvc\0" )
+		{
+			return LLVMCallConv::X86Stdcall;
+		}
 
 		return LLVMCallConv::C;
 	}
