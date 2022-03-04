@@ -54,7 +54,8 @@ bool TemplateSignatureParam::FunctionParam::operator==( const FunctionParam& oth
 	return
 		*this->return_type == *other.return_type &&
 		this->return_value_type == other.return_value_type &&
-		this->is_unsafe == other.is_unsafe;
+		this->is_unsafe == other.is_unsafe &&
+		this->calling_convention == other.calling_convention;
 }
 
 bool TemplateSignatureParam::SpecializedTemplateParam::operator==( const SpecializedTemplateParam& other ) const

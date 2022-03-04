@@ -503,6 +503,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		.return_type( TemplateSignatureParam::TypeParam() ),
 		.is_unsafe= signature_param.is_unsafe,
+		.calling_convention= GetLLVMCallingConvention( signature_param.calling_convention, names_scope, signature_param.src_loc ),
 		.return_value_type= ValueType::Value,
 	};
 
@@ -1535,7 +1536,8 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			var FunctionType& given_function_type= given_function_pointer_type.function_type;
 
 			if( given_function_type.return_value_type != function_type_param.return_value_type ||
-				given_function_type.is_unsafe != function_type_param.is_unsafe )
+				given_function_type.is_unsafe != function_type_param.is_unsafe ||
+				given_function_type.calling_convention != function_type_param.calling_convention )
 			{
 				return false;
 			}
