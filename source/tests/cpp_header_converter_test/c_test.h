@@ -49,8 +49,6 @@ typedef float MultidimentionalArrayType44[4][4];
 
 CPP_u32 UseTypedefAsTypeName( CPP_char8 c );
 
-struct RegularStruct; // Forward declaration
-
 struct RegularStruct
 {
 	int x;
