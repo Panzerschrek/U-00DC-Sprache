@@ -185,6 +185,7 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 		( this.return_value_type == ValueType::Value ) != ( dst.return_value_type == ValueType::Value ) ||
 		( this.return_value_type == ValueType::ReferenceImut && dst.return_value_type == ValueType::ReferenceMut ) || // Allow mutability conversions, except mut->imut
 		( this.is_unsafe && !dst.is_unsafe ) || // Disable unsafe function to safe function conversion
+		this.calling_convention != dst.calling_convention ||
 		this.params.size() != dst.params.size() )
 	{
 		return false;
@@ -256,7 +257,8 @@ op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
 		l.references_pollution == r.references_pollution &&
 		l.return_type == r.return_type &&
 		l.return_value_type == r.return_value_type &&
-		l.is_unsafe == r.is_unsafe;
+		l.is_unsafe == r.is_unsafe &&
+		l.calling_convention == r.calling_convention;
 }
 
 fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8
@@ -800,6 +802,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 		tl.return_type == tr.return_type &&
 		tl.return_value_type == tr.return_value_type &&
 		tl.is_unsafe == tr.is_unsafe &&
+		tl.calling_convention == tr.calling_convention &&
 		tl.params.size() == tr.params.size() &&
 		tl.params.size() > 0s &&
 		tl.params.front().value_type == tr.params.front().value_type &&

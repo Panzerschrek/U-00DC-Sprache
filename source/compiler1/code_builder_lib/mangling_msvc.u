@@ -323,8 +323,7 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 
 fn ManglerMSVC::EncodeFunctionType( this, ManglerStateMSVC &mut mangler_state, FunctionType& function_type, bool encode_full_type )
 {
-	// Calling convention code
-	mangler_state.PushElement( "A" );
+	mangler_state.PushElement( GetCallingConventionName( function_type.calling_convention ) );
 
 	if( function_type.return_value_type != ValueType::Value )
 	{
@@ -770,6 +769,28 @@ fn MakeNullTerminatedString( ust::string8 mut str ) : ust::string8
 {
 	str.push_back( "\0"c8 );
 	return move(str);
+}
+
+fn GetCallingConventionName( LLVMCallConvID cc ) : ust::array_view_imut</ char8 />
+{
+	if( cc == LLVMCallConv::C )
+	{
+		return "A";
+	}
+	if( cc == LLVMCallConv::Fast )
+	{
+		return "I";
+	}
+	if( cc == LLVMCallConv::Cold )
+	{
+		return "U";
+	}
+	if( cc == LLVMCallConv::X86Stdcall )
+	{
+		return "G";
+	}
+
+	return "A";
 }
 
 auto g_num_back_references= 10s;

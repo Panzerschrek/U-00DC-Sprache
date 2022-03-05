@@ -73,7 +73,11 @@ class CodeBuilder
 {
 public:
 	// llvm context, data layout should live longer, than this class.
-	fn constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout, CodeBuilderOptions& options );
+	fn constructor(
+		LLVMContextRef llvm_context,
+		LLVMTargetDataRef data_layout,
+		ust::string8 target_triple_str, // should be null-terminated
+		CodeBuilderOptions& options );
 
 	struct BuildResult
 	{
@@ -213,6 +217,12 @@ private:
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
 	fn FillLLVMFunctionType( this, FunctionType &mut function_type );
+
+	fn GetLLVMCallingConvention(
+		this,
+		ust::optional</ust::string8/>& calling_convention_name,
+		NamesScopePtr& names_scope,
+		SrcLoc& src_loc ) : LLVMCallConvID;
 
 	// Returns constant value if initializer is contant
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef;
@@ -834,6 +844,7 @@ private:
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
+	ust::string8 imut target_triple_str_; // null-terminated
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	ust::box</IMangler/> mangler_;
 

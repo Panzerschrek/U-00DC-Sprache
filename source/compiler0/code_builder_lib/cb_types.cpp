@@ -124,6 +124,8 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), function_type_name, function_type );
 	ProcessFunctionTypeReferencesPollution( names_scope.GetErrors(), function_type_name, function_type );
 
+	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention_, function_type_name.src_loc_, names_scope.GetErrors() );
+
 	function_type.llvm_type= GetLLVMFunctionType( function_type );
 	function_pointer_type.llvm_type= function_type.llvm_type->getPointerTo();
 	return std::move(function_pointer_type);
@@ -212,6 +214,37 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	}
 
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );
+}
+
+llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention(
+	const std::optional<std::string>& calling_convention_name,
+	const SrcLoc& src_loc,
+	CodeBuilderErrorsContainer& errors )
+{
+	if( calling_convention_name == std::nullopt )
+		return llvm::CallingConv::C;
+
+	if( *calling_convention_name == "C" ||
+		*calling_convention_name == "default" ||
+		*calling_convention_name == "Ü" )
+		return llvm::CallingConv::C;
+
+	if( *calling_convention_name == "fast" )
+		return llvm::CallingConv::Fast;
+
+	if( *calling_convention_name == "cold" )
+		return llvm::CallingConv::Cold;
+
+	if( *calling_convention_name == "system" )
+	{
+		if( target_triple_.getArch() == llvm::Triple::x86 && target_triple_.getOS() == llvm::Triple::Win32 )
+			return llvm::CallingConv::X86_StdCall;
+
+		return llvm::CallingConv::C;
+	}
+
+	REPORT_ERROR( UnknownCallingConvention, errors, src_loc, *calling_convention_name );
+	return llvm::CallingConv::C;
 }
 
 } // namespace U

@@ -190,6 +190,10 @@ PROCESS_ERROR( FunctionOverridingWithReferencesNotationChange, "Function overrid
 PROCESS_ERROR( NoMangleForNonglobalFunction, "\"nomangle\" for non-global function \"{0}\"." )
 PROCESS_ERROR( NoMangleMismatch, "\"nomangle\" specifiers mismatch for function \"{0}\"." )
 
+// Calling conventions
+PROCESS_ERROR( UnknownCallingConvention, "Unknown calling convention \"{0}\"." )
+PROCESS_ERROR( NonDefaultCallingConventionForClassMethod, "Only default calling convention allowed for this method." )
+
 // Unsafe
 PROCESS_ERROR( UnsafeFunctionCallOutsideUnsafeBlock, "Calling unsafe function outside unsafe block." )
 PROCESS_ERROR( ExplicitAccessToThisMethodIsUnsafe, "Explicit access to method \"{0}\" is unsafe." )

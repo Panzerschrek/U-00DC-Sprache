@@ -34,10 +34,10 @@ struct CodeBuilderOptions
 class CodeBuilder
 {
 public:
-
 	CodeBuilder(
 		llvm::LLVMContext& llvm_context,
 		const llvm::DataLayout& data_layout,
+		const llvm::Triple& target_triple,
 		const CodeBuilderOptions& options= CodeBuilderOptions() );
 
 	struct BuildResult
@@ -123,6 +123,10 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 
 	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
+	llvm::CallingConv::ID GetLLVMCallingConvention(
+		const std::optional<std::string>& calling_convention_name,
+		const SrcLoc& src_loc,
+		CodeBuilderErrorsContainer& errors );
 
 	// Virtual stuff
 	void CheckvirtualFunctionOverridingReferenceNotation(
@@ -954,6 +958,7 @@ private:
 private:
 	llvm::LLVMContext& llvm_context_;
 	const llvm::DataLayout data_layout_;
+	const llvm::Triple target_triple_;
 	const bool build_debug_info_;
 	const bool create_lifetimes_;
 	const bool generate_lifetime_start_end_debug_calls_;

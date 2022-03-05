@@ -39,10 +39,15 @@ fn ClearClassInternals( ClassTypePtr& class_type, NamesScopeMutPtr& dummy_class_
 	class_.typeinfo_src_type_.reset();
 }
 
-fn CodeBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout, CodeBuilderOptions& options )
+fn CodeBuilder::constructor(
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout,
+	ust::string8 mut target_triple_str,
+	CodeBuilderOptions& options )
 	(
 		llvm_context_(llvm_context),
 		data_layout_(data_layout),
+		target_triple_str_(move(target_triple_str)),
 		create_lifetimes_(options.create_lifetimes),
 		generate_lifetime_start_end_debug_calls_(options.generate_lifetime_start_end_debug_calls),
 		constexpr_function_evaluator_(data_layout),
@@ -113,6 +118,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		module_name += "\0";
 		module_ = LLVMModuleCreateWithNameInContext( module_name.front(), llvm_context_ );
 		LLVMSetModuleDataLayout( module_, data_layout_ );
+		LLVMSetTarget( module_, target_triple_str_.front() );
 	}
 
 	unsafe // Prepare dummy function.
@@ -1203,6 +1209,13 @@ fn CodeBuilder::PrepareFunction(
 		}
 	}
 
+	// Check calling convention for methods.
+	if( function_variable.t.calling_convention != LLVMCallConv::C &&
+		( function_variable.is_this_call || function_declaration.operator != OverloadedOperator::None ) )
+	{
+		REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope_ptr, function_declaration.src_loc )
+	}
+
 	// Setup references pollution for copy methods.
 	if( !class_type.empty() )
 	{
@@ -1435,6 +1448,8 @@ fn CodeBuilder::PrepareFunction(
 				module_,
 				llvm_function_name.front(),
 				function_variable.t.llvm_type );
+
+		LLVMSetFunctionCallConv( function_variable.llvm_function, function_variable.t.calling_convention );
 	}
 
 	SetupFunctionParamsAndRetAttributes( function_variable );

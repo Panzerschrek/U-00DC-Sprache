@@ -436,6 +436,25 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 	else if( const auto function= type.GetFunctionType() )
 	{
 		const ManglerState::NodeHolder function_node( mangler_state );
+
+		if( function->calling_convention == llvm::CallingConv::C ){}
+		else if( function->calling_convention == llvm::CallingConv::Cold )
+		{
+			mangler_state.Push( "U" );
+			mangler_state.PushLengthPrefixed( "cold" );
+		}
+		else if( function->calling_convention == llvm::CallingConv::Fast )
+		{
+			mangler_state.Push( "U" );
+			mangler_state.PushLengthPrefixed( "fast" );
+		}
+		else if( function->calling_convention == llvm::CallingConv::X86_StdCall )
+		{
+			mangler_state.Push( "U" );
+			mangler_state.PushLengthPrefixed( "stdcall" );
+		}
+		else U_ASSERT(false);
+
 		mangler_state.Push( "F" );
 
 		{

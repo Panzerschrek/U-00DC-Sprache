@@ -155,6 +155,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 					: PrepareType( names_scope, function_context, function_type.return_type.try_deref() ) ) ),
 		.return_value_type= ValueType::Value,
 		.is_unsafe= function_type.is_unsafe,
+		.calling_convention= GetLLVMCallingConvention( function_type.calling_convention, names_scope, function_type.src_loc ),
 	};
 
 	if( function_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference )
@@ -357,6 +358,51 @@ fn CodeBuilder::FillLLVMFunctionType( this, FunctionType &mut function_type )
 
 		function_type.llvm_type= LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool::False );
 	}
+}
+
+fn CodeBuilder::GetLLVMCallingConvention(
+	this,
+	ust::optional</ust::string8/>& calling_convention_name,
+	NamesScopePtr& names_scope,
+	SrcLoc& src_loc ) : LLVMCallConvID
+{
+	if( calling_convention_name.empty() )
+	{
+		return LLVMCallConv::C;
+	}
+
+	var ust::string8& cc= calling_convention_name.try_deref();
+
+	if( cc == "C" ||
+		cc == "default" ||
+		cc == "Ü" )
+	{
+		return LLVMCallConv::C;
+	}
+
+	if( cc == "fast" )
+	{
+		return LLVMCallConv::Fast;
+	}
+
+	if( cc == "cold" )
+	{
+		return LLVMCallConv::Cold;
+	}
+
+	if( cc == "system" )
+	{
+		if( target_triple_str_ == "i686-pc-windows-gnu\0" ||
+			target_triple_str_ == "i686-pc-windows-msvc\0" )
+		{
+			return LLVMCallConv::X86Stdcall;
+		}
+
+		return LLVMCallConv::C;
+	}
+
+	REPORT_ERROR( UnknownCallingConvention, names_scope, src_loc, cc )
+	return LLVMCallConv::C;
 }
 
 } // namespace U1

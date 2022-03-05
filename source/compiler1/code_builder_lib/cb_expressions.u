@@ -3265,6 +3265,7 @@ fn CodeBuilder::DoCallFunction(
 		unsafe
 		{
 			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.data(), u32(llvm_args.size()), "\0"[0] );
+			LLVMSetInstructionCallConv( call_result, function.t.calling_convention );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
 			else if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
 			{

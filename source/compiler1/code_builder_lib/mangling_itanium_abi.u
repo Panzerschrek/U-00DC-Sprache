@@ -576,6 +576,23 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 	{
 		ADD_NODE( mangler_state )
 		{
+			if( function_type.calling_convention == LLVMCallConv::C ) {}
+			else if( function_type.calling_convention == LLVMCallConv::Cold )
+			{
+				mangler_state.Push( "U" );
+				mangler_state.PushLengthPrefixed( "cold" );
+			}
+			else if( function_type.calling_convention == LLVMCallConv::Fast )
+			{
+				mangler_state.Push( "U" );
+				mangler_state.PushLengthPrefixed( "fast" );
+			}
+			else if( function_type.calling_convention == LLVMCallConv::X86Stdcall )
+			{
+				mangler_state.Push( "U" );
+				mangler_state.PushLengthPrefixed( "stdcall" );
+			}
+
 			mangler_state.Push( "F" );
 
 			{

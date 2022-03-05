@@ -112,10 +112,10 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfsPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
+	const llvm::Triple& target_triple,
 	const bool generate_debug_info,
 	const ManglingScheme mangling_scheme )
 {
-
 	CodeBuilderLaunchResult result;
 
 	const LLVMModuleRef llvm_module=
@@ -124,6 +124,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			StringToStringView(input_file),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
+			StringToStringView(target_triple.normalize()),
 			generate_debug_info,
 			mangling_scheme,
 			SourceFilePathProcessingFunction,

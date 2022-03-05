@@ -717,6 +717,9 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 	if( src_function_type.unsafe && !dst_function_type.unsafe )
 		return false; // Conversion from unsafe to safe function is forbidden.
 
+	if( src_function_type.calling_convention != dst_function_type.calling_convention )
+		return false;
+
 	// Finally, we check all conditions
 	return true;
 }
@@ -759,7 +762,8 @@ bool operator==( const FunctionType& l, const FunctionType& r )
 		l.params == r.params &&
 		l.return_references == r.return_references &&
 		l.references_pollution == r.references_pollution &&
-		l.unsafe == r.unsafe;
+		l.unsafe == r.unsafe &&
+		l.calling_convention == r.calling_convention;
 }
 
 bool operator!=( const FunctionType& l, const FunctionType& r )

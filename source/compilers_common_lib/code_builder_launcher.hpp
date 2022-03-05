@@ -1,4 +1,5 @@
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/Triple.h>
 #include <llvm/IR/Module.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
@@ -26,6 +27,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfsPtr& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
+	const llvm::Triple& target_triple,
 	bool generate_debug_info,
 	ManglingScheme mangling_scheme );
 

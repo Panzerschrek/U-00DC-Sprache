@@ -50,6 +50,27 @@ std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 	return "";
 }
 
+std::string_view GetCallingConventionName( const llvm::CallingConv::ID calling_convention )
+{
+	switch(calling_convention)
+	{
+	case llvm::CallingConv::C:
+		return "A";
+	case llvm::CallingConv::Fast:
+		return "I";
+	case llvm::CallingConv::Cold:
+		return "U";
+	case llvm::CallingConv::X86_StdCall:
+		return "G";
+	case llvm::CallingConv::X86_ThisCall:
+		return "E";
+	case llvm::CallingConv::X86_VectorCall:
+		return "Q";
+	};
+	U_ASSERT(false);
+	return "A";
+}
+
 const ProgramStringMap<std::string> g_op_names
 {
 	{ "+", "?H" },
@@ -414,8 +435,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 
 void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const FunctionType& function_type, const bool encode_full_type ) const
 {
-	// Calling convention code
-	mangler_state.PushElement( "A" );
+	mangler_state.PushElement( GetCallingConventionName(function_type.calling_convention) );
 
 	if( function_type.return_value_type != ValueType::Value )
 	{

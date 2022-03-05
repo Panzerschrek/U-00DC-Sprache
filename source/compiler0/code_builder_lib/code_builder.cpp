@@ -76,9 +76,11 @@ ReferencesGraphNodePtr CodeBuilder::ReferencesGraphNodeHolder::TakeNode()
 CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
+	const llvm::Triple& target_triple,
 	const CodeBuilderOptions& options )
 	: llvm_context_( llvm_context )
 	, data_layout_(data_layout)
+	, target_triple_(target_triple)
 	, build_debug_info_( options.build_debug_info )
 	, create_lifetimes_( options.create_lifetimes )
 	, generate_lifetime_start_end_debug_calls_( options.generate_lifetime_start_end_debug_calls )
@@ -141,8 +143,9 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 			source_graph.nodes_storage.front().file_path,
 			llvm_context_ );
 
-	// Setup data layout
+	// Setup data layout and target triple.
 	module_->setDataLayout(data_layout_);
+	module_->setTargetTriple(target_triple_.normalize());
 
 	// Prepare halt func.
 	halt_func_=
@@ -907,6 +910,13 @@ size_t CodeBuilder::PrepareFunction(
 		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type_, function_type );
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
 		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
+
+		function_type.calling_convention= GetLLVMCallingConvention( func.type_.calling_convention_, func.type_.src_loc_, names_scope.GetErrors() );
+		// Disable non-default calling conventions for this-call methods and operators because of problems with call of generated methods/operators.
+		// But it's fine to use custom calling convention for static methods.
+		if( function_type.calling_convention != llvm::CallingConv::C &&
+			( func_variable.is_this_call || func.overloaded_operator_ != OverloadedOperator::None ) )
+			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc_ );
 
 		function_type.llvm_type= GetLLVMFunctionType( function_type );
 
@@ -2230,6 +2240,8 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 	llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
 	llvm_function->setDoesNotThrow(); // We do not support exceptions.
+
+	llvm_function->setCallingConv( function_type.calling_convention );
 
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
 		llvm_function->addFnAttr( llvm::Attribute::UWTable );
