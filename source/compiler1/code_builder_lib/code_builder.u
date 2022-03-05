@@ -323,13 +323,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 				if( !prev_class_value.syntax_element.empty() && !new_class_value.syntax_element.empty() &&
 					prev_class_value.syntax_element != new_class_value.syntax_element )
 				{
-					REPORT_ERROR( ClassBodyDuplication, global_names_scope, new_class_value.syntax_element.try_deref().src_loc, new_class_value.syntax_element.try_deref().name )
-				}
-				if( !prev_class_value.forward_declaration_syntax_element.empty() && !new_class_value.forward_declaration_syntax_element.empty() &&
-					prev_class_value.forward_declaration_syntax_element != new_class_value.forward_declaration_syntax_element )
-				{
-					// TODO - generate another error
-					REPORT_ERROR( ClassBodyDuplication, global_names_scope, new_class_value.syntax_element.try_deref().src_loc, new_class_value.forward_declaration_syntax_element.try_deref().name )
+					REPORT_ERROR( Redefinition, global_names_scope, new_class_value.syntax_element.try_deref().src_loc, new_class_value.syntax_element.try_deref().name )
 				}
 
 				// Select complete class.

@@ -272,11 +272,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 			{
 				auto class_lock= src_class_type_ptr.try_lock_imut();
 				auto& class_= class_lock.deref();
-				auto src_loc=
-					select( class_.syntax_element.empty()
-						? class_.forward_declaration_syntax_element.try_deref().src_loc
-						: class_.syntax_element.try_deref().src_loc );
-				REPORT_ERROR( Redefinition, target_names_scope, src_loc, name )
+				REPORT_ERROR( Redefinition, target_names_scope, class_.syntax_element.try_deref().src_loc, name )
 			}
 			return;
 		}
@@ -454,10 +450,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 		{
 			auto class_lock= class_type_ptr.try_lock_imut();
 			auto& class_= class_lock.deref();
-			return
-				select( class_.syntax_element.empty()
-					? class_.forward_declaration_syntax_element.try_deref().src_loc
-					: class_.syntax_element.try_deref().src_loc );
+			return class_.syntax_element.try_deref().src_loc;
 		}
 	}
 	{

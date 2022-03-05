@@ -652,57 +652,14 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		return ust::shared_ptr_nullable_mut</ClassType/>();
 	}
 
-	if_var( prev_value : names_scope_ptr.lock_imut().deref().GetThisScopeValue( class_name ) )
+	if( !names_scope_ptr.lock_imut().deref().GetThisScopeValue( class_name ).empty() )
 	{
-		auto class_type_ptr= prev_value.Get</ClassType/>();
-		if( !class_type_ptr.empty() )
-		{
-			{
-				auto mut lock= class_type_ptr.try_lock_mut();
-				var ClassType &mut class_type= lock.deref();
-
-				if( class_.deref().is_forward_declaration )
-				{
-					if( !class_type.forward_declaration_syntax_element.empty() )
-					{
-						REPORT_ERROR( Redefinition, names_scope_ptr, class_.deref().src_loc, class_name )
-					}
-					else
-					{
-						class_type.forward_declaration_syntax_element= class_;
-					}
-				}
-				else
-				{
-					if( !class_type.syntax_element.empty() )
-					{
-						REPORT_ERROR( ClassBodyDuplication, names_scope_ptr, class_.deref().src_loc )
-					}
-					else
-					{
-						class_type.syntax_element= class_;
-					}
-				}
-			}
-
-			auto class_members= class_type_ptr.try_lock_imut().deref().members;
-			if( !class_.deref().is_forward_declaration )
-			{
-				NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr.try_to_non_nullable() );
-			}
-			return class_type_ptr.try_to_non_nullable();
-		}
-		else
-		{
-			REPORT_ERROR( Redefinition, names_scope_ptr, class_.deref().src_loc, class_name )
-			return ust::shared_ptr_nullable_mut</ClassType/>();
-		}
+		REPORT_ERROR( Redefinition, names_scope_ptr, class_.deref().src_loc, class_name )
+		return ust::shared_ptr_nullable_mut</ClassType/>();
 	}
 
 	var NamesScopeMutPtr class_members( NamesScope( class_name, names_scope_ptr ) );
-	var ClassType mut class_type{ .members= class_members, .members_initial= class_members };
-
-	select( class_.deref().is_forward_declaration ? class_type.forward_declaration_syntax_element : class_type.syntax_element )= class_;
+	var ClassType mut class_type{ .members= class_members, .members_initial= class_members, .syntax_element= class_ };
 
 	var NamesScopeValue mut names_scope_value( move(class_type) );
 	auto class_type_ptr= names_scope_value.Get</ClassType/>().try_to_non_nullable();
@@ -733,10 +690,8 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		lock.deref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
 	}
 
-	if( !class_.deref().is_forward_declaration )
-	{
-		NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr );
-	}
+
+	NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr );
 
 	var bool mut insert_not_ok= false;
 	{

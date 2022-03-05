@@ -130,7 +130,6 @@ struct ClassType
 	// This namespace does not changes in import.
 	NamesScopeMutPtr members_initial;
 
-	ust::shared_ptr_final_nullable</ Synt::Class /> forward_declaration_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Class /> syntax_element;
 
 	// This class fields names ordered by offset.
