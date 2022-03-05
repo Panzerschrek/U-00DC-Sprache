@@ -40,7 +40,6 @@ PROCESS_ERROR( BodyForGeneratedFunction, "Body for generated function \"{0}\"." 
 PROCESS_ERROR( BodyForDeletedFunction, "Body for deleted function \"{0}\"." )
 PROCESS_ERROR( FunctionDeclarationOutsideItsScope, "Function declaration outside it's scope." )
 PROCESS_ERROR( ClassDeclarationOutsideItsScope, "Class declaration outside its scope." )
-PROCESS_ERROR( ClassBodyDuplication, "Class body duplication." )
 PROCESS_ERROR( UsingIncompleteType, "Using incomplete type \"{0}\", expected complete type." )
 PROCESS_ERROR( GlobalsLoopDetected, "Globals loop detected:\n{0}" )
 

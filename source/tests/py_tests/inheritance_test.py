@@ -1133,7 +1133,6 @@ def AbstractClassConstructor_Test0():
 
 def AbstractClassConstructor_Test1():
 	c_program_text= """
-		class A;
 		class A abstract
 		{
 			fn constructor()
@@ -1145,7 +1144,7 @@ def AbstractClassConstructor_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ThisUnavailable" )
-	assert( errors_list[0].src_loc.line == 7 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def AbstractClassConstructor_Test2():
@@ -1165,7 +1164,6 @@ def AbstractClassConstructor_Test2():
 
 def AbstractClassDestructor_Test0():
 	c_program_text= """
-		class A;
 		class A abstract
 		{
 			fn destructor()
@@ -1177,12 +1175,11 @@ def AbstractClassDestructor_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ThisUnavailable" )
-	assert( errors_list[0].src_loc.line == 7 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def AbstractClassDestructor_Test1():
 	c_program_text= """
-		class A;
 		class A interface
 		{
 			fn destructor()
@@ -1194,12 +1191,11 @@ def AbstractClassDestructor_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ThisUnavailable" )
-	assert( errors_list[0].src_loc.line == 7 )
+	assert( errors_list[0].src_loc.line == 6 )
 
 
 def AbstractClassDestructor_Test2():
 	c_program_text= """
-		class A;
 		fn Foo( A& a ){}
 		class A abstract
 		{

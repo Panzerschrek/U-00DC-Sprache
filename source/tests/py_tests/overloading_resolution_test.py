@@ -65,23 +65,6 @@ def CouldNotOverloadFunction_Test4():
 	assert( errors_list[0].src_loc.line == 6 or errors_list[0].src_loc.line == 7 )
 
 
-def CouldNotSelectOverloadedFunction_Test0():
-	c_program_text= """
-		class B polymorph {}
-		class A;
-		fn Foo( B& b );
-		fn GetA() : A&;
-		fn Bar()
-		{
-			Foo(GetA()); // Error, type "A" is incomplete and we can not check it relations with type "B".
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
-	assert( errors_list[0].src_loc.line == 8 )
-
-
 def OverloadingResolutionTest_OnlyMutabilityCheck_Test0():
 	c_program_text= """
 		fn Bar( i32 &imut x ) : i32 { return 111; }

@@ -310,7 +310,7 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 				else if( prev_class_value.syntax_element != new_class_value.syntax_element )
 				{
 					// Different bodies from different files.
-					REPORT_ERROR( ClassBodyDuplication, global_errors_, prev_class_value.body_src_loc );
+					REPORT_ERROR( Redefinition, global_errors_, prev_class_value.body_src_loc );
 				}
 			}
 		}

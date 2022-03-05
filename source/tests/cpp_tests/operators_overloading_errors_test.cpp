@@ -159,23 +159,6 @@ U_TEST( InvalidReturnTypeForOperator_Test )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::InvalidReturnTypeForOperator, 13u ) );
 }
 
-U_TEST( UsingIncompleteTypeForOperator )
-{
-	static const char c_program_text[]=
-	R"(
-		struct Baz;
-		fn Foo( Baz &mut baz )
-		{
-			++baz;
-		}
-	)";
-
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT(
-		HaveError( build_result.errors, CodeBuilderErrorCode::UsingIncompleteType, 5u ) ||
-		HaveError( build_result.errors, CodeBuilderErrorCode::UsingIncompleteType, 3u ));
-}
-
 U_TEST( IndexationOperatorHaveFirstArgumentOfNonparentClass )
 {
 	static const char c_program_text[]=

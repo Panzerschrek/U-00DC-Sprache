@@ -125,32 +125,6 @@ def CastRef_Test5_ShouldCastValue():
 	tests_lib.build_program( c_program_text )
 
 
-def CastRef_Test7_CompleteteTypeRequiredForSource():
-	c_program_text= """
-		class B;
-		class A polymorph {}
-		fn ToA( B& b ) : A&
-		{
-			return cast_ref</ A />(b);
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UsingIncompleteType", 6 ) )
-
-
-def CastRef_Test8_CompleteteTypeRequiredForDestination():
-	c_program_text= """
-		class A {}
-		class B;
-		fn ToB( A& a ) : B&
-		{
-			return cast_ref</ B />(a);
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UsingIncompleteType", 6 ) )
-
-
 def CastRef_Test9_ShouldPreserveReferencedVariables():
 	c_program_text= """
 		fn Foo() : void&
@@ -317,30 +291,6 @@ def CastRefUnsafe_Test7_OperatorAllowedOnlyInsideUnsafeBlock():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "UnsafeReferenceCastOutsideUnsafeBlock" )
 	assert( errors_list[0].src_loc.line == 4 )
-
-
-def CastRefUnsafe_Test8_CompletenessStillRequiredForUnsafeCast():
-	c_program_text= """
-		class A; class B polymorph {}
-		fn ToA( B& b ) : A&
-		{
-			unsafe{  return cast_ref_unsafe</ A />(b);  }
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UsingIncompleteType", 5 ) )
-
-
-def CastRefUnsafe_Test9_CompletenessStillRequiredForUnsafeCast():
-	c_program_text= """
-		class A; class B polymorph {}
-		fn ToB( A& a ) : B&
-		{
-			unsafe{  return cast_ref_unsafe</ B />(a);  }
-		}
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "UsingIncompleteType", 5 ) )
 
 
 def CastImut_Test0_CastMutableReferenceToImmutableReference():
