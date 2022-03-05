@@ -150,6 +150,27 @@ U_TEST(CallForFunctionWithCustomCallingConvention_Test1)
 	U_TEST_ASSERT( result.IntVal.getLimitedValue() == uint64_t(951u / 3u) );
 }
 
+U_TEST(CallForFunctionWithCustomCallingConvention_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar(u32 x) call_conv("cold") : u32 { return x / 5u; }
+		fn Foo() : u32
+		{
+			var (fn(u32 x) call_conv("cold") : u32) mut ptr= Bar;
+			return ptr(123456u);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	const llvm::GenericValue result= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( result.IntVal.getLimitedValue() == uint64_t(123456u / 5u) );
+}
+
 U_TEST(CallingConventionAliases_Test0)
 {
 	// Currently calling conventions "C", "default", "Ü" are aliases for "C" calling convention.
