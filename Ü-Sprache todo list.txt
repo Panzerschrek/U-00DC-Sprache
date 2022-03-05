@@ -5,7 +5,6 @@ Delete the features from the list as soon as they are implemented.
 General:
 *) Dereference operator - for pointer-like classes.
 *) Continious initializer for arrays
-*) Explicit definition of cross-language called functions (FFI). Something like "extern C" and "extern system" in Rust.
 *) Different calling conventions (for API calls, for example)
 *) Anonymous (module-local) symbols - functions, classes, variables.
 *) <, <=, >, >= for enums.
@@ -58,6 +57,7 @@ Compiler:
 *) Prevent execution of constexpr functions with errors
 *) Return value optimization
 *) Precompiled modules
+*) More calling conventions (including platform-dependent)
 *) Rework of "Value" class
 
 Compiler1:
