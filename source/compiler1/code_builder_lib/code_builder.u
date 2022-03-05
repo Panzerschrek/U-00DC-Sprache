@@ -1209,7 +1209,7 @@ fn CodeBuilder::PrepareFunction(
 		}
 	}
 
-	// Check calloing convention for methods.
+	// Check calling convention for methods.
 	if( function_variable.t.calling_convention != LLVMCallConv::C &&
 		( function_variable.is_this_call || function_declaration.operator != OverloadedOperator::None ) )
 	{

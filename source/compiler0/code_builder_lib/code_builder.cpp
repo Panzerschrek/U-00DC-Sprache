@@ -912,8 +912,8 @@ size_t CodeBuilder::PrepareFunction(
 		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
 
 		function_type.calling_convention= GetLLVMCallingConvention( func.type_.calling_convention_, func.type_.src_loc_, names_scope.GetErrors() );
-		// Disable non-default calling conventions for this-call methods and operators because of problems with call for generated methods/operators.
-		// But it's fine to use custom calling convention for static method.
+		// Disable non-default calling conventions for this-call methods and operators because of problems with call of generated methods/operators.
+		// But it's fine to use custom calling convention for static methods.
 		if( function_type.calling_convention != llvm::CallingConv::C &&
 			( func_variable.is_this_call || func.overloaded_operator_ != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc_ );
