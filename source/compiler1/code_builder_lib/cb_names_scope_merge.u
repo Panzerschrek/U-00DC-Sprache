@@ -270,9 +270,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		{
 			if( dst_class_type_ptr != src_class_type_ptr )
 			{
-				auto class_lock= src_class_type_ptr.try_lock_imut();
-				auto& class_= class_lock.deref();
-				REPORT_ERROR( Redefinition, target_names_scope, class_.syntax_element.try_deref().src_loc, name )
+				REPORT_ERROR( Redefinition, target_names_scope, src_class_type_ptr.try_lock_imut().deref().syntax_element.try_deref().src_loc, name )
 			}
 			return;
 		}

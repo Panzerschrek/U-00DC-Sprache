@@ -452,28 +452,10 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 			}
 			else if( const Type* const type= dst_member->GetTypeName() )
 			{
-				if( ClassPtr dst_class= type->GetClassType() )
+				if( type->GetClassType() != src_member.GetTypeName()->GetClassType() )
 				{
-					const ClassPtr src_class= src_member.GetTypeName()->GetClassType();
-
-					if( src_class == nullptr || dst_class != src_class )
-					{
-						// Different pointer value means 100% different classes.
-						REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetSrcLoc(), src_name );
-						return;
-					}
-					if( dst_class->base_template != std::nullopt ) // TODO - maybe remove this check?
-						return; // Skip class templates.
-
-					// Just take copy of internal namespace.
-					// It's fine to modify class itself here - anyway we keep copy of class in class table of each file.
-					const auto class_namespace_copy= std::make_shared<NamesScope>( dst_class->members->GetThisNamespaceName(), &dst );
-					MergeNameScopes( *class_namespace_copy, *dst_class->members );
-
-					class_namespace_copy->SetClass( dst_class );
-					class_namespace_copy->CopyAccessRightsFrom( *dst_class->members );
-					dst_class->members= class_namespace_copy;
-
+					// Different pointer value means 100% different classes.
+					REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetSrcLoc(), src_name );
 					return;
 				}
 			}
