@@ -500,6 +500,8 @@ U_TEST( FunctionTypesMangling_Test0 )
 		fn BinaryRet( (fn( f32 x, f32 y ) : bool ) ptr ){}
 		fn RetS( (fn() : S ) ptr ){}
 		fn Pass( (fn( OtherStruct& o ) : OtherStruct ) ptr ){}
+		fn Cold( (fn() call_conv("cold") ) void_fn ){}
+		fn Fast( (fn() call_conv("fast") ) void_fn ){}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -511,6 +513,8 @@ U_TEST( FunctionTypesMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z9BinaryRetPFbffE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4RetSPF1SvE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4PassPF11OtherStructRKS_E" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4ColdPU4coldFvvE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z4FastPU4fastFvvE" ) != nullptr );
 }
 
 U_TEST( TupleTypesManglengTest )
