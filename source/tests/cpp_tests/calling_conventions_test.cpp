@@ -256,6 +256,33 @@ U_TEST(CallingConventionMakesFunctionTypeDifferent_Test4)
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::FunctionDeclarationOutsideItsScope, 3 ) );
 }
 
+U_TEST(CallingConventionMakesFunctionTypeDifferent_Test5)
+{
+	static const char c_program_text[]=
+	R"(
+		template<//> struct S</ fn () call_conv("fast") />
+		{
+			auto x= 11;
+		}
+
+		template<//> struct S</ fn () call_conv("cold") />
+		{
+			auto x= 22;
+		}
+
+		template<//> struct S</ fn () call_conv("C") />
+		{
+			auto x= 33;
+		}
+
+		static_assert( S</ fn () call_conv("fast") />::x == 11 );
+		static_assert( S</ fn () call_conv("cold") />::x == 22 );
+		static_assert( S</ fn () call_conv("C") />::x == 33 );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST(UnknownCallingConvention_Test0)
 {
 	static const char c_program_text[]=
