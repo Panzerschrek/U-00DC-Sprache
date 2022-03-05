@@ -3133,13 +3133,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 {
 	auto result= std::make_unique<Class>( it_->src_loc );
 
-	if( it_->type == Lexem::Type::Semicolon )
-	{
-		NextLexem();
-		result->is_forward_declaration_= true;
-		return result;
-	}
-	else if( it_->type == Lexem::Type::BraceLeft )
+	if( it_->type == Lexem::Type::BraceLeft )
 	{
 		NextLexem();
 	}

@@ -414,8 +414,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 {
 	Class& the_class= *class_type;
 
-	if( the_class.is_complete ||
-		( the_class.syntax_element != nullptr && the_class.syntax_element->is_forward_declaration_ ) )
+	if( the_class.is_complete )
 		return;
 
 	if( the_class.typeinfo_type != std::nullopt )

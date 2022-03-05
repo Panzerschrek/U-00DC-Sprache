@@ -796,7 +796,6 @@ struct Class final : public SyntaxElementBase
 	std::string name_;
 	std::vector<ComplexName> parents_;
 	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
-	bool is_forward_declaration_= false;
 	bool have_shared_state_= false;
 	bool keep_fields_order_= false;
 };
