@@ -185,9 +185,9 @@ ClassPtr CodeBuilder::NamesScopeFill( const Synt::ClassPtr& class_declaration_pt
 		return nullptr;
 	}
 
-	const auto class_type_ptr= std::make_shared<Class>( class_name, &names_scope );
-	current_class_table_.push_back(class_type_ptr);
+	auto class_type_ptr= std::make_unique<Class>( class_name, &names_scope );
 	const ClassPtr class_type= class_type_ptr.get();
+	classes_table_.push_back( std::move(class_type_ptr) );
 
 	names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.src_loc_ ) );
 	class_type->syntax_element= &class_declaration;

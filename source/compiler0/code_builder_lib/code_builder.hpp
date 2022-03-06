@@ -48,11 +48,11 @@ public:
 	BuildResult BuildProgram( const SourceGraph& source_graph );
 
 private:
-	using ClassTable= std::unordered_map<std::shared_ptr<Class>, Class>;
+	using ClassesMembersNamespacesTable= std::unordered_map<ClassPtr, std::shared_ptr<const NamesScope>>;
 	struct SourceBuildResult
 	{
 		std::unique_ptr<NamesScope> names_map;
-		ClassTable class_table;
+		ClassesMembersNamespacesTable classes_members_namespaces_table;
 	};
 
 	struct BlockBuildInfo
@@ -108,7 +108,10 @@ private:
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );
 
-	void MergeNameScopes( NamesScope& dst, const NamesScope& src );
+	void MergeNameScopes(
+		NamesScope& dst,
+		const NamesScope& src,
+		const ClassesMembersNamespacesTable& src_classes_members_namespaces_table );
 
 	void FillGlobalNamesScope( NamesScope& global_names_scope );
 
@@ -1011,7 +1014,9 @@ private:
 	std::vector<CodeBuilderError> global_errors_; // Do not use directly. Use NamesScope::GetErrors() instead.
 
 	std::vector<SourceBuildResult> compiled_sources_;
-	std::vector<std::shared_ptr<Class>> current_class_table_;
+
+	// Storage for class types. Do not use shared pointers for classes for loops preventing.
+	std::vector< std::unique_ptr<Class> > classes_table_;
 
 	// Storage for enum types. Do not use shared pointers for enums for loops preventing.
 	std::vector< std::unique_ptr<Enum> > enums_table_;
