@@ -664,7 +664,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 	var NamesScopeValue mut names_scope_value( move(class_type) );
 	auto class_type_ptr= names_scope_value.Get</ClassType/>().try_to_non_nullable();
 
-	current_class_table_.push_back( class_type_ptr );
+	class_table_.push_back( class_type_ptr );
 
 	{
 		auto mut lock= class_members.lock_mut();

@@ -236,12 +236,9 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 
 	{ // Clear classes internals to break strong shared pointers loop and avoid memory leaks.
 		var NamesScopeMutPtr dummy_class_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
-		foreach( &mut node : compiled_sources_cache_ )
+		foreach( & class_type : class_table_ )
 		{
-			foreach( &mut class_table_entry : node.class_table )
-			{
-				ClearClassInternals( class_table_entry.key(), dummy_class_names_scope );
-			}
+			ClearClassInternals( class_type, dummy_class_names_scope );
 		}
 
 		foreach( & class_type_ptr : typeinfo_class_table_ )
@@ -304,31 +301,15 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 			BuildSourceGraphNode( source_graph, child_node_index );
 		}
 	}
-	// Prepare class table.
-	{
-		var ust::unordered_map</ ClassTypePtr, ClassType /> mut tmp_class_table;
-		foreach( child_node_index : source_graph_node.children )
-		{
-			foreach( &class_table_entry : compiled_sources_cache_[child_node_index].class_table )
-			{
-				tmp_class_table.insert( class_table_entry.key(), class_table_entry.value() );
-			}
-		}
 
-		foreach( &mut class_table_entry : tmp_class_table )
-		{
-			current_class_table_.push_back( class_table_entry.key() );
-
-			auto mut value= class_table_entry.value();
-			auto mut lock= class_table_entry.key().lock_mut();
-			lock.deref()= move(value);
-		}
-	}
-	// Merge namespaces. This must be done AFTER class table praparation.
+	// Merge namespaces.
 	foreach( child_node_index : source_graph_node.children )
 	{
-		auto ptr= compiled_sources_cache_[child_node_index].names_scope.try_to_non_nullable();
-		NamesScopeMerge( global_names_scope, ptr.lock_imut().deref() );
+		var SourceGraphNodeBuildResult& child_node_build_result= compiled_sources_cache_[child_node_index];
+		NamesScopeMerge(
+			global_names_scope,
+			child_node_build_result.names_scope.try_to_non_nullable().lock_imut().deref(),
+			child_node_build_result.classes_members_namespaces_table );
 	}
 
 	auto& program_elements= source_graph_node.synt_result.program_elements;
@@ -346,16 +327,16 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 	}
 	generated_template_things_sequence_.clear();
 
-	auto class_table= take(current_class_table_);
-
-	var SourceGraphNodeBuildResult &mut out_node_build_result= compiled_sources_cache_[node_index];
+	var SourceGraphNodeBuildResult mut out_node_build_result= compiled_sources_cache_[node_index];
 	out_node_build_result.names_scope= move(global_names_scope);
 
-	// Fill class table of current node.
-	foreach( &class_type : class_table )
+	// Fill result classes members namespaces table.
+	foreach( &class_type : class_table_ )
 	{
-		out_node_build_result.class_table.insert( class_type, class_type.lock_imut().deref() );
+		out_node_build_result.classes_members_namespaces_table.insert( class_type, class_type.lock_imut().deref().members );
 	}
+
+	compiled_sources_cache_[node_index] = move(out_node_build_result);
 }
 
 fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, SrcLoc& src_loc ) : Value
