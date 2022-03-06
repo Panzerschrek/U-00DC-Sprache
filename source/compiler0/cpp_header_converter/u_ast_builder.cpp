@@ -323,8 +323,6 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			for( const clang::Decl* const sub_decl : record_decl.decls() )
 				ProcessClassDecl( *sub_decl, class_->elements_, externc );
 		}
-		else
-			class_->is_forward_declaration_= true;
 
 		return class_;
 	}
@@ -369,8 +367,6 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			field.type= std::move(array_type);
 			class_->elements_.push_back( std::move(field) );
 		}
-		else
-			class_->is_forward_declaration_= true;
 
 		return class_;
 	}

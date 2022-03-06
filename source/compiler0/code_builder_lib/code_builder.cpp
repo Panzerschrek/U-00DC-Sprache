@@ -247,7 +247,6 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 
 	// Clear internal structures.
 	compiled_sources_.clear();
-	current_class_table_.clear();
 	enums_table_.clear();
 	template_classes_cache_.clear();
 	typeinfo_cache_.clear();
@@ -284,48 +283,12 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
 		BuildSourceGraphNode( source_graph, child_node_inex );
 
-	// Prepare class table.
-	{
-		ClassTable tmp_class_table;
-		for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
-		{
-			for( const auto& class_table_entry : compiled_sources_[child_node_inex].class_table )
-			{
-				const auto prev_class_it= tmp_class_table.find( class_table_entry.first );
-				if( prev_class_it == tmp_class_table.end() )
-				{
-					tmp_class_table.emplace( class_table_entry.first, class_table_entry.second );
-					continue;
-				}
-
-				Class& prev_class_value= prev_class_it->second;
-				const Class& new_class_value= class_table_entry.second;
-
-				if( !prev_class_value.is_complete && !new_class_value.is_complete )
-				{} // Ok - both instances of class are incomplete.
-				else if( !prev_class_value.is_complete && new_class_value.is_complete )
-					prev_class_value= new_class_value; // Ok - replace incomplete class with complete.
-				else if( prev_class_value.is_complete && !new_class_value.is_complete )
-				{} // Ok - ignore incomplete class.
-				else if( prev_class_value.syntax_element != new_class_value.syntax_element )
-				{
-					// Different bodies from different files.
-					REPORT_ERROR( ClassBodyDuplication, global_errors_, prev_class_value.body_src_loc );
-				}
-			}
-		}
-
-		current_class_table_.clear();
-		for( auto& class_table_entry : tmp_class_table )
-		{
-			*class_table_entry.first= std::move(class_table_entry.second);
-			current_class_table_.push_back( class_table_entry.first );
-		}
-	}
-
 	// Merge namespaces of imported files into one.
 	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )
-		MergeNameScopes( *result.names_map, *compiled_sources_[ child_node_inex ].names_map );
+	{
+		const SourceBuildResult& child_node_build_result= compiled_sources_[ child_node_inex ];
+		MergeNameScopes( *result.names_map, *child_node_build_result.names_map, child_node_build_result.classes_members_namespaces_table );
+	}
 
 	// Do work for this node.
 	NamesScopeFill( source_graph_node.ast.program_elements, *result.names_map );
@@ -342,13 +305,15 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	}
 	generated_template_things_sequence_.clear();
 
-	// Fill result class table
-	for( const auto& class_shared_ptr : current_class_table_ )
-		result.class_table.emplace(class_shared_ptr, *class_shared_ptr);
-	current_class_table_.clear();
+	// Fill result classes members namespaces table.
+	for( const auto& class_shared_ptr : classes_table_ )
+		result.classes_members_namespaces_table.emplace( class_shared_ptr.get(), class_shared_ptr->members );
 }
 
-void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
+void CodeBuilder::MergeNameScopes(
+	NamesScope& dst,
+	const NamesScope& src,
+	const ClassesMembersNamespacesTable& src_classes_members_namespaces_table )
 {
 	src.ForEachInThisScope(
 		[&]( const std::string& src_name, const Value& src_member )
@@ -362,7 +327,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 					// We copy namespaces, instead of taking same shared pointer,
 					// because using same shared pointer we can change state of "src".
 					const NamesScopePtr names_scope_copy= std::make_shared<NamesScope>( names_scope->GetThisNamespaceName(), &dst );
-					MergeNameScopes( *names_scope_copy, *names_scope );
+					MergeNameScopes( *names_scope_copy, *names_scope, src_classes_members_namespaces_table );
 					dst.AddName( src_name, Value( names_scope_copy, src_member.GetSrcLoc() ) );
 
 					names_scope_copy->CopyAccessRightsFrom( *names_scope );
@@ -373,17 +338,22 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 					{
 						if( const ClassPtr class_= type->GetClassType() )
 						{
+							// Just take copy of internal namespace.
+							// Use namespace from table in order to properly merge changes made in several source files.
+							const auto it= src_classes_members_namespaces_table.find(class_);
+							U_ASSERT(it != src_classes_members_namespaces_table.end());
+							const auto& src_members_namespace= it->second;
+
 							// If current namespace is parent for this class and name is primary.
-							if( class_->members->GetParent() == &src &&
-								class_->members->GetThisNamespaceName() == src_name )
+							if( src_members_namespace->GetParent() == &src &&
+								src_members_namespace->GetThisNamespaceName() == src_name )
 							{
-								// Just take copy of internal namespace.
-								// It's fine to modify class itself here - anyway we keep copy of class in class table of each file.
-								const auto class_namespace_copy= std::make_shared<NamesScope>( class_->members->GetThisNamespaceName(), &dst );
-								MergeNameScopes( *class_namespace_copy, *class_->members );
+								const auto class_namespace_copy= std::make_shared<NamesScope>( src_members_namespace->GetThisNamespaceName(), &dst );
+								MergeNameScopes( *class_namespace_copy, *src_members_namespace, src_classes_members_namespaces_table );
 
 								class_namespace_copy->SetClass( class_ );
-								class_namespace_copy->CopyAccessRightsFrom( *class_->members );
+								class_namespace_copy->CopyAccessRightsFrom( *src_members_namespace );
+								// It's fine to modify "members", since we preserve actual namespaces in the table.
 								class_->members= class_namespace_copy;
 							}
 						}
@@ -406,7 +376,7 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 				// TODO - detect here template instantiation namespaces.
 				const NamesScopePtr dst_sub_namespace= dst_member->GetNamespace();
 				U_ASSERT( dst_sub_namespace != nullptr );
-				MergeNameScopes( *dst_sub_namespace, *sub_namespace );
+				MergeNameScopes( *dst_sub_namespace, *sub_namespace, src_classes_members_namespaces_table );
 				return;
 			}
 			else if(
@@ -452,29 +422,26 @@ void CodeBuilder::MergeNameScopes( NamesScope& dst, const NamesScope& src )
 			}
 			else if( const Type* const type= dst_member->GetTypeName() )
 			{
-				if( ClassPtr dst_class= type->GetClassType() )
+				const auto dst_class= type->GetClassType();
+				const auto src_class= src_member.GetTypeName()->GetClassType();
+				if( dst_class != src_class )
 				{
-					const ClassPtr src_class= src_member.GetTypeName()->GetClassType();
-
-					if( src_class == nullptr || dst_class != src_class )
-					{
-						// Different pointer value means 100% different classes.
-						REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetSrcLoc(), src_name );
-						return;
-					}
-					if( dst_class->base_template != std::nullopt ) // TODO - maybe remove this check?
-						return; // Skip class templates.
-
-					// Just take copy of internal namespace.
-					// It's fine to modify class itself here - anyway we keep copy of class in class table of each file.
-					const auto class_namespace_copy= std::make_shared<NamesScope>( dst_class->members->GetThisNamespaceName(), &dst );
-					MergeNameScopes( *class_namespace_copy, *dst_class->members );
-
-					class_namespace_copy->SetClass( dst_class );
-					class_namespace_copy->CopyAccessRightsFrom( *dst_class->members );
-					dst_class->members= class_namespace_copy;
-
+					// Different pointer value means 100% different classes.
+					REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetSrcLoc(), src_name );
 					return;
+				}
+				if( dst_class != nullptr && src_class != nullptr )
+				{
+					// Merge changes made in internal namespace of the class.
+					// This affects almost only functions sets.
+					const auto it= src_classes_members_namespaces_table.find(src_class);
+					U_ASSERT(it != src_classes_members_namespaces_table.end());
+					const auto& src_members_namespace= it->second;
+
+					// If current namespace is parent for this class and name is primary.
+					if( src_members_namespace->GetParent() == &src &&
+						src_members_namespace->GetThisNamespaceName() == src_name )
+						MergeNameScopes( *dst_class->members, *src_members_namespace, src_classes_members_namespaces_table );
 				}
 			}
 			else if( const auto dst_type_templates_set= dst_member->GetTypeTemplatesSet() )

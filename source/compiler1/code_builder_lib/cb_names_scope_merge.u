@@ -6,7 +6,10 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn CodeBuilder::NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src )
+fn CodeBuilder::NamesScopeMerge(
+	NamesScopeMutPtr& dst_ptr,
+	NamesScope& src,
+	ClassesMembersNamespacesTable& src_classes_members_namespaces_table )
 {
 	foreach( &el : src )
 	{
@@ -15,19 +18,22 @@ fn CodeBuilder::NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src )
 			auto& dst= dst_lock.deref();
 			if_var ( &dst_value : dst.GetThisScopeValue( el.key() ) )
 			{
-				NamesScopeMergeValues( dst_value, el.value(), el.key(), dst_ptr );
+				NamesScopeMergeValues( dst_value, el.value(), el.key(), dst_ptr, src_classes_members_namespaces_table );
 				continue;
 			}
 		}
 		{
 			auto mut dst_lock= dst_ptr.lock_mut();
 			auto &mut dst= dst_lock.deref();
-			dst.AddName( el.key(), DeepCopyNamesScopeValue( el.value(), dst_ptr ) );
+			dst.AddName( el.key(), DeepCopyNamesScopeValue( el.value(), dst_ptr, src_classes_members_namespaces_table ) );
 		}
 	}
 }
 
-fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeValue& value, NamesScopePtr& target_names_scope ) : NamesScopeValue
+fn CodeBuilder::DeepCopyNamesScopeValue(
+	NamesScopeValue& value,
+	NamesScopePtr& target_names_scope,
+	ClassesMembersNamespacesTable& src_classes_members_namespaces_table ) : NamesScopeValue
 {
 	variant_visit( &el : value.something_ )
 	{
@@ -35,7 +41,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeValue& value, NamesScopePtr& 
 			ust::is_same_type</ typeof(el), NamesScopeMutPtr/>() ||
 			ust::is_same_type</ typeof(el), ClassTypePtr/>() )
 		{
-			return DeepCopyNamesScopeValue( el, target_names_scope );
+			return DeepCopyNamesScopeValue( el, target_names_scope, src_classes_members_namespaces_table );
 		}
 		else
 		{
@@ -45,7 +51,10 @@ fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeValue& value, NamesScopePtr& 
 	halt;
 }
 
-fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScopePtr& target_names_scope ) : NamesScopeValue
+fn CodeBuilder::DeepCopyNamesScopeValue(
+	NamesScopeMutPtr& namespace_,
+	NamesScopePtr& target_names_scope,
+	ClassesMembersNamespacesTable& src_classes_members_namespaces_table ) : NamesScopeValue
 {
 	auto src_lock= namespace_.lock_imut();
 	auto& src= src_lock.deref();
@@ -57,17 +66,18 @@ fn CodeBuilder::DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScop
 		copy_lock.deref().CopyAccessRightsFrom( src );
 	}
 
-	NamesScopeMerge( copy_ptr, src );
+	NamesScopeMerge( copy_ptr, src, src_classes_members_namespaces_table );
 
 	return move(copy_ptr);
 }
 
-fn CodeBuilder::DeepCopyNamesScopeValue( ClassTypePtr& class_type, NamesScopePtr& target_names_scope  ) : NamesScopeValue
+fn CodeBuilder::DeepCopyNamesScopeValue(
+	ClassTypePtr& class_type,
+	NamesScopePtr& target_names_scope,
+	ClassesMembersNamespacesTable& src_classes_members_namespaces_table ) : NamesScopeValue
 {
 	// Take copy of internal class namespace to prevent modification of source namespace.
-	// We can freely modify class structure itself because we anyway save class table for each source file.
-
-	auto src_namespace= class_type.lock_imut().deref().members;
+	auto src_namespace= src_classes_members_namespaces_table.find( class_type ).try_deref();
 	auto src_lock= src_namespace.lock_imut();
 	auto& src= src_lock.deref();
 
@@ -79,9 +89,10 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ClassTypePtr& class_type, NamesScopePtr
 		dst_namespace_lock.deref().SetClass( class_type );
 	}
 
-	NamesScopeMerge( dst_namespace, src );
+	NamesScopeMerge( dst_namespace, src, src_classes_members_namespaces_table );
 
 	auto mut class_lock= class_type.lock_mut();
+	// It's fine to modify members pointer. Anyway we save members namespace for each source file in special table.
 	class_lock.deref().members= dst_namespace;
 
 	return class_type;
@@ -155,7 +166,12 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalStaticAssert
 	return GlobalStaticAssertsSet();
 }
 
-fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& src, ust::string8& name, NamesScopePtr& target_names_scope )
+fn CodeBuilder::NamesScopeMergeValues(
+	NamesScopeValue& dst,
+	NamesScopeValue& src,
+	ust::string8& name,
+	NamesScopePtr& target_names_scope,
+	ClassesMembersNamespacesTable& src_classes_members_namespaces_table )
 {
 	if( dst.something_.index() != src.something_.index() )
 	{
@@ -172,7 +188,7 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		auto src_namespace= src.Get</NamesScope/>();
 		if( !dst_namespace.empty() )
 		{
-			NamesScopeMerge( dst_namespace.try_to_non_nullable(), src_namespace.try_lock_imut().deref() );
+			NamesScopeMerge( dst_namespace.try_to_non_nullable(), src_namespace.try_lock_imut().deref(), src_classes_members_namespaces_table );
 			return;
 		}
 	}
@@ -202,10 +218,15 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 
 			foreach( &function : src.functions_set.functions )
 			{
-				auto func_src_loc=
-					select( function.body_syntax_element.empty()
-						? function.prototype_syntax_element.try_deref().src_loc
-						: function.body_syntax_element.try_deref().src_loc );
+				var SrcLoc mut func_src_loc;
+				if( !function.prototype_syntax_element.empty() )
+				{
+					func_src_loc= function.prototype_syntax_element.try_deref().src_loc;
+				}
+				if( !function.body_syntax_element.empty() )
+				{
+					func_src_loc= function.body_syntax_element.try_deref().src_loc;
+				}
 
 				if_var( &mut prev_function : GetFunctionWithSameType( dst.functions_set, function.t ) )
 				{
@@ -270,13 +291,14 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 		{
 			if( dst_class_type_ptr != src_class_type_ptr )
 			{
-				auto class_lock= src_class_type_ptr.try_lock_imut();
-				auto& class_= class_lock.deref();
-				auto src_loc=
-					select( class_.syntax_element.empty()
-						? class_.forward_declaration_syntax_element.try_deref().src_loc
-						: class_.syntax_element.try_deref().src_loc );
-				REPORT_ERROR( Redefinition, target_names_scope, src_loc, name )
+				REPORT_ERROR( Redefinition, target_names_scope, src_class_type_ptr.try_lock_imut().deref().syntax_element.try_deref().src_loc, name )
+			}
+			else
+			{
+				// Merge changes made in internal namespace of the class.
+				// This affects almost only functions sets.
+				auto src_namespace= src_classes_members_namespaces_table.find( src_class_type_ptr.try_to_non_nullable() ).try_deref();
+				NamesScopeMerge( dst_class_type_ptr.try_lock_imut().deref().members, src_namespace.lock_imut().deref(), src_classes_members_namespaces_table );
 			}
 			return;
 		}
@@ -372,6 +394,14 @@ fn CodeBuilder::NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& sr
 			return;
 		}
 	}
+	{ // class field
+		auto src_class_field_ptr= dst.Get</ClassField/>();
+		auto dst_class_field_ptr= src.Get</ClassField/>();
+		if( src_class_field_ptr == dst_class_field_ptr )
+		{
+			return;
+		}
+	}
 
 	// Can not merge things ot this kind.
 	REPORT_ERROR( Redefinition, target_names_scope, GetValueSrcLoc( src ), name )
@@ -454,10 +484,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 		{
 			auto class_lock= class_type_ptr.try_lock_imut();
 			auto& class_= class_lock.deref();
-			return
-				select( class_.syntax_element.empty()
-					? class_.forward_declaration_syntax_element.try_deref().src_loc
-					: class_.syntax_element.try_deref().src_loc );
+			return class_.syntax_element.try_deref().src_loc;
 		}
 	}
 	{

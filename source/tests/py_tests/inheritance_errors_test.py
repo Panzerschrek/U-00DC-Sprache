@@ -1,17 +1,6 @@
 from py_tests_common import *
 
 
-def UsingIncompleteType_ForInheritance_Test0():
-	c_program_text= """
-		class A;
-		class B : A {}  // Error - "A" is incomplete.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "UsingIncompleteType" )
-	assert( errors_list[0].src_loc.line == 3 )
-
-
 def BaseUnavailable_Test0():
 	c_program_text= """
 		class A

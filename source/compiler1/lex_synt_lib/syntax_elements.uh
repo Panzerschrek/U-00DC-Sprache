@@ -616,7 +616,6 @@ struct Class
 	KindAttribute kind_attribute= KindAttribute::Struct;
 	ust::vector</ComplexName/> parents;
 	ClassElements class_elements;
-	bool is_forward_declaration= false;
 	bool have_shared_state= false;
 	bool keep_fields_order= false;
 }

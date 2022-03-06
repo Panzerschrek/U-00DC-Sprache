@@ -35,29 +35,9 @@ def RawPointerTypeUsage_Test0():
 	tests_lib.build_program( c_program_text )
 
 
-def ElementTypeCompletenessIsNotRequiredForRawPointerDeclaration_Test0():
-	c_program_text= """
-		struct S;
-		fn Foo()
-		{
-			var $(S) ptr= zero_init;
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def ElementTypeCompletenessIsNotRequiredForRawPointerDeclaration_Test1():
-	c_program_text= """
-		struct S;
-		fn Foo( $(S) ptr ){}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
 def ElementTypeCompletenessIsNotRequiredForRawPointerDeclaration_Test2():
 	c_program_text= """
-		struct S;
-		struct T{ $(S) ptr; }
+		struct T{ $(T) ptr; }
 	"""
 	tests_lib.build_program( c_program_text )
 

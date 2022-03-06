@@ -648,14 +648,9 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 	if( class_.keep_fields_order_ )
 		stream << Keyword( Keywords::ordered_ ) << " ";
 
-	if( class_.is_forward_declaration_ )
-		stream << ";\n";
-	else
-	{
-		stream << "\n{\n";
-		ElementWrite( class_.elements_, stream );
-		stream << "}\n";
-	}
+	stream << "\n{\n";
+	ElementWrite( class_.elements_, stream );
+	stream << "}\n";
 }
 
 void ElementWrite( const Namespace& namespace_, std::ostream& stream )

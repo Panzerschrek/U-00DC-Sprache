@@ -179,140 +179,107 @@ ClassPtr CodeBuilder::NamesScopeFill( const Synt::ClassPtr& class_declaration_pt
 	if( IsKeyword( class_name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration.src_loc_ );
 
-	ClassPtr class_type= nullptr;
-	if( const Value* const prev_value= names_scope.GetThisScopeValue( class_name ) )
+	if( names_scope.GetThisScopeValue( class_name ) != nullptr )
 	{
-		if( const Type* const type= prev_value->GetTypeName() )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.src_loc_, class_name );
+		return nullptr;
+	}
+
+	auto class_type_ptr= std::make_unique<Class>( class_name, &names_scope );
+	const ClassPtr class_type= class_type_ptr.get();
+	classes_table_.push_back( std::move(class_type_ptr) );
+
+	names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.src_loc_ ) );
+	class_type->syntax_element= &class_declaration;
+	class_type->body_src_loc= class_declaration.src_loc_;
+	class_type->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_type ) );
+
+	class_type->members->AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
+	class_type->members->SetClass( class_type );
+
+	class_type->body_src_loc= class_declaration.src_loc_;
+	class_type->syntax_element= &class_declaration;
+
+	struct Visitor final
+	{
+		CodeBuilder& this_;
+		const Synt::Class& class_declaration;
+		ClassPtr class_type;
+		const std::string& class_name;
+		ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
+		unsigned int field_number= 0u;
+
+		Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassPtr in_class_type, const std::string& in_class_name )
+			: this_(in_this), class_declaration(in_class_declaration), class_type(in_class_type), class_name(in_class_name)
+		{}
+
+		void operator()( const Synt::ClassField& in_class_field )
 		{
-			if( const ClassPtr prev_class_type= type->GetClassType() )
-			{
-				class_type= prev_class_type;
-				if(  class_type->syntax_element->is_forward_declaration_ &&  class_declaration.is_forward_declaration_ )
-					REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.src_loc_, class_name );
-				if( !class_type->syntax_element->is_forward_declaration_ && !class_declaration.is_forward_declaration_ )
-					REPORT_ERROR( ClassBodyDuplication, names_scope.GetErrors(), class_declaration.src_loc_ );
-			}
-			else
-			{
-				REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.src_loc_, class_name );
-				return nullptr;
-			}
+			ClassField class_field;
+			class_field.syntax_element= &in_class_field;
+			class_field.original_index= field_number;
+
+			if( IsKeyword( in_class_field.name ) )
+				REPORT_ERROR( UsingKeywordAsName, class_type->members->GetErrors(), in_class_field.src_loc_ );
+			if( class_type->members->AddName( in_class_field.name, Value( class_field, in_class_field.src_loc_ ) ) == nullptr )
+				REPORT_ERROR( Redefinition, class_type->members->GetErrors(), in_class_field.src_loc_, in_class_field.name );
+
+			++field_number;
+			class_type->SetMemberVisibility( in_class_field.name, current_visibility );
 		}
-		else
+		void operator()( const Synt::FunctionPtr& func )
 		{
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), class_declaration.src_loc_, class_name );
-			return nullptr;
+			this_.NamesScopeFill( func, *class_type->members, class_type, current_visibility );
 		}
-	}
-	else
-	{
-		const auto class_type_ptr= std::make_shared<Class>( class_name, &names_scope  );
-		current_class_table_.push_back(class_type_ptr);
-		class_type= class_type_ptr.get();
-
-		names_scope.AddName( class_name, Value( Type( class_type ), class_declaration.src_loc_ ) );
-		class_type->syntax_element= &class_declaration;
-		class_type->body_src_loc= class_type->forward_declaration_src_loc= class_declaration.src_loc_;
-		class_type->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_type ) );
-
-		class_type->members->AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
-		class_type->members->SetClass( class_type );
-	}
-
-	Class& the_class= *class_type;
-
-	if( class_declaration.is_forward_declaration_ )
-		the_class.forward_declaration_src_loc= class_declaration.src_loc_;
-	else
-	{
-		the_class.body_src_loc= class_declaration.src_loc_;
-		the_class.syntax_element= &class_declaration;
-	}
-
-	if( !class_declaration.is_forward_declaration_ )
-	{
-		struct Visitor final
+		void operator()( const Synt::FunctionTemplate& func_template )
 		{
-			CodeBuilder& this_;
-			const Synt::Class& class_declaration;
-			ClassPtr& class_type;
-			Class& the_class;
-			const std::string& class_name;
-			ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
-			unsigned int field_number= 0u;
+			this_.NamesScopeFill( func_template, *class_type->members, class_type, current_visibility );
+		}
+		void operator()( const Synt::ClassVisibilityLabel& visibility_label )
+		{
+			if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
+				REPORT_ERROR( VisibilityForStruct, class_type->members->GetErrors(), visibility_label.src_loc_, class_name );
+			current_visibility= visibility_label.visibility_;
+		}
+		void operator()( const Synt::TypeTemplate& type_template )
+		{
+			this_.NamesScopeFill( type_template, *class_type->members, class_type, current_visibility );
+		}
+		void operator()( const Synt::Enum& enum_ )
+		{
+			this_.NamesScopeFill( enum_, *class_type->members );
+			class_type->SetMemberVisibility( enum_.name, current_visibility );
+		}
+		void operator()( const Synt::StaticAssert& static_assert_ )
+		{
+			this_.NamesScopeFill( static_assert_, *class_type->members );
+		}
+		void operator()( const Synt::TypeAlias& type_alias )
+		{
+			this_.NamesScopeFill( type_alias, *class_type->members );
+			class_type->SetMemberVisibility( type_alias.name, current_visibility );
+		}
+		void operator()( const Synt::VariablesDeclaration& variables_declaration )
+		{
+			this_.NamesScopeFill( variables_declaration, *class_type->members );
+			for( const auto& variable_declaration : variables_declaration.variables )
+				class_type->SetMemberVisibility( variable_declaration.name, current_visibility );
+		}
+		void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
+		{
+			this_.NamesScopeFill( auto_variable_declaration, *class_type->members );
+			class_type->SetMemberVisibility( auto_variable_declaration.name, current_visibility );
+		}
+		void operator()( const Synt::ClassPtr& inner_class )
+		{
+			this_.NamesScopeFill( inner_class, *class_type->members );
+			class_type->SetMemberVisibility( inner_class->name_, current_visibility );
+		}
+	};
 
-			Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassPtr& in_class_type, Class& in_the_class, const std::string& in_class_name )
-				: this_(in_this), class_declaration(in_class_declaration), class_type(in_class_type), the_class(in_the_class), class_name(in_class_name)
-			{}
-
-			void operator()( const Synt::ClassField& in_class_field )
-			{
-				ClassField class_field;
-				class_field.syntax_element= &in_class_field;
-				class_field.original_index= field_number;
-
-				if( IsKeyword( in_class_field.name ) )
-					REPORT_ERROR( UsingKeywordAsName, the_class.members->GetErrors(), in_class_field.src_loc_ );
-				if( the_class.members->AddName( in_class_field.name, Value( class_field, in_class_field.src_loc_ ) ) == nullptr )
-					REPORT_ERROR( Redefinition, the_class.members->GetErrors(), in_class_field.src_loc_, in_class_field.name );
-
-				++field_number;
-				the_class.SetMemberVisibility( in_class_field.name, current_visibility );
-			}
-			void operator()( const Synt::FunctionPtr& func )
-			{
-				this_.NamesScopeFill( func, *the_class.members, class_type, current_visibility );
-			}
-			void operator()( const Synt::FunctionTemplate& func_template )
-			{
-				this_.NamesScopeFill( func_template, *the_class.members, class_type, current_visibility );
-			}
-			void operator()( const Synt::ClassVisibilityLabel& visibility_label )
-			{
-				if( class_declaration.kind_attribute_ == Synt::ClassKindAttribute::Struct )
-					REPORT_ERROR( VisibilityForStruct, the_class.members->GetErrors(), visibility_label.src_loc_, class_name );
-				current_visibility= visibility_label.visibility_;
-			}
-			void operator()( const Synt::TypeTemplate& type_template )
-			{
-				this_.NamesScopeFill( type_template, *the_class.members, class_type, current_visibility );
-			}
-			void operator()( const Synt::Enum& enum_ )
-			{
-				this_.NamesScopeFill( enum_, *the_class.members );
-				the_class.SetMemberVisibility( enum_.name, current_visibility );
-			}
-			void operator()( const Synt::StaticAssert& static_assert_ )
-			{
-				this_.NamesScopeFill( static_assert_, *the_class.members );
-			}
-			void operator()( const Synt::TypeAlias& type_alias )
-			{
-				this_.NamesScopeFill( type_alias, *the_class.members );
-				the_class.SetMemberVisibility( type_alias.name, current_visibility );
-			}
-			void operator()( const Synt::VariablesDeclaration& variables_declaration )
-			{
-				this_.NamesScopeFill( variables_declaration, *the_class.members );
-				for( const auto& variable_declaration : variables_declaration.variables )
-					the_class.SetMemberVisibility( variable_declaration.name, current_visibility );
-			}
-			void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
-			{
-				this_.NamesScopeFill( auto_variable_declaration, *the_class.members );
-				the_class.SetMemberVisibility( auto_variable_declaration.name, current_visibility );
-			}
-			void operator()( const Synt::ClassPtr& inner_class )
-			{
-				this_.NamesScopeFill( inner_class, *the_class.members );
-				the_class.SetMemberVisibility( inner_class->name_, current_visibility );
-			}
-		};
-
-		Visitor visitor( *this, class_declaration, class_type, the_class, class_name );
-		for( const Synt::ClassElement& class_element : class_declaration.elements_ )
-			std::visit( visitor, class_element );
-	}
+	Visitor visitor( *this, class_declaration, class_type, class_name );
+	for( const Synt::ClassElement& class_element : class_declaration.elements_ )
+		std::visit( visitor, class_element );
 
 	return class_type;
 }

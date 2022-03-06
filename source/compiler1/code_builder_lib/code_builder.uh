@@ -112,12 +112,25 @@ private:
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
-	fn NamesScopeMerge( NamesScopeMutPtr& dst_ptr, NamesScope& src );
+	fn NamesScopeMerge(
+		NamesScopeMutPtr& dst_ptr,
+		NamesScope& src,
+		ClassesMembersNamespacesTable& src_classes_members_namespaces_table );
 
-	fn DeepCopyNamesScopeValue( NamesScopeValue& value, NamesScopePtr& target_names_scope ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue(
+		NamesScopeValue& value,
+		NamesScopePtr& target_names_scope,
+		ClassesMembersNamespacesTable& src_classes_members_namespaces_table ) : NamesScopeValue;
 
-	fn DeepCopyNamesScopeValue( ClassTypePtr& class_type, NamesScopePtr& target_names_scope ) : NamesScopeValue;
-	fn DeepCopyNamesScopeValue( NamesScopeMutPtr& namespace_, NamesScopePtr& target_names_scope ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue(
+		ClassTypePtr& class_type,
+		NamesScopePtr& target_names_scope,
+		ClassesMembersNamespacesTable& src_classes_members_namespaces_table ) : NamesScopeValue;
+
+	fn DeepCopyNamesScopeValue(
+		NamesScopeMutPtr& namespace_,
+		NamesScopePtr& target_names_scope,
+		ClassesMembersNamespacesTable& src_classes_members_namespaces_table ) : NamesScopeValue;
 
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeVariable/>& variable ) : NamesScopeValue;
@@ -131,7 +144,12 @@ private:
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalAutoVariable/>& global_auto_variable ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts ) : NamesScopeValue;
 
-	fn NamesScopeMergeValues( NamesScopeValue& dst, NamesScopeValue& src, ust::string8& name, NamesScopePtr& target_names_scope );
+	fn NamesScopeMergeValues(
+		NamesScopeValue& dst,
+		NamesScopeValue& src,
+		ust::string8& name,
+		NamesScopePtr& target_names_scope,
+		ClassesMembersNamespacesTable& src_classes_members_namespaces_table );
 
 	fn GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc; // Get src_loc or empty value
 
@@ -889,15 +907,16 @@ private:
 
 	ErrorsContainerPtr root_errors_container_;
 
+	type ClassesMembersNamespacesTable= ust::unordered_map</ ClassTypePtr, ust::shared_ptr_imut</ NamesScope /> />;
 	struct SourceGraphNodeBuildResult
 	{
 		ust::shared_ptr_nullable_imut</NamesScope/> names_scope;
-		ust::unordered_map</ ClassTypePtr, ClassType /> class_table;
+		ClassesMembersNamespacesTable classes_members_namespaces_table;
 	}
-	ust::vector</ SourceGraphNodeBuildResult /> compiled_sources_cache_;
+	ust::vector</ SourceGraphNodeBuildResult /> source_graph_nodes_build_results_;
 
 	// Class table of current source graph node.
-	ust::vector</ ClassTypePtr /> current_class_table_;
+	ust::vector</ ClassTypePtr /> class_table_;
 
 	// Store template things in global container to use same things for same template arguments.
 	ust::unordered_map</ ust::string8, NamesScopePtr /> generated_template_things_;

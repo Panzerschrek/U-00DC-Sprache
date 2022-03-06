@@ -286,7 +286,7 @@ U_TEST( Redefinition4 )
 	R"(
 		namespace A
 		{
-			struct S;
+			struct S{}
 		}
 		namespace B
 		{
