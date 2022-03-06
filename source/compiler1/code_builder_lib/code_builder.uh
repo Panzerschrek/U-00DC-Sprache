@@ -910,10 +910,10 @@ private:
 	type ClassesMembersNamespacesTable= ust::unordered_map</ ClassTypePtr, ust::shared_ptr_imut</ NamesScope /> />;
 	struct SourceGraphNodeBuildResult
 	{
-		ust::shared_ptr_nullable_imut</NamesScope/> names_scope; // TODO - make it non-nullable?
+		ust::shared_ptr_nullable_imut</NamesScope/> names_scope;
 		ClassesMembersNamespacesTable classes_members_namespaces_table;
 	}
-	ust::vector</ SourceGraphNodeBuildResult /> compiled_sources_cache_;
+	ust::vector</ SourceGraphNodeBuildResult /> source_graph_nodes_build_results_;
 
 	// Class table of current source graph node.
 	ust::vector</ ClassTypePtr /> class_table_;
