@@ -311,26 +311,7 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 		{
 			foreach( &class_table_entry : compiled_sources_cache_[child_node_index].class_table )
 			{
-				if( tmp_class_table.find( class_table_entry.key() ).empty() )
-				{
-					tmp_class_table.insert( class_table_entry.key(), class_table_entry.value() );
-					continue;
-				}
-
-				var ClassType &mut prev_class_value= tmp_class_table.find( class_table_entry.key() ).try_deref();
-				var ClassType& new_class_value= class_table_entry.value();
-
-				if( !prev_class_value.syntax_element.empty() && !new_class_value.syntax_element.empty() &&
-					prev_class_value.syntax_element != new_class_value.syntax_element )
-				{
-					REPORT_ERROR( Redefinition, global_names_scope, new_class_value.syntax_element.try_deref().src_loc, new_class_value.syntax_element.try_deref().name )
-				}
-
-				// Select complete class.
-				if( !prev_class_value.is_complete && new_class_value.is_complete )
-				{
-					prev_class_value= new_class_value;
-				}
+				tmp_class_table.insert( class_table_entry.key(), class_table_entry.value() );
 			}
 		}
 

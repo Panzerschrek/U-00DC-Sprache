@@ -291,27 +291,7 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 		{
 			for( const auto& class_table_entry : compiled_sources_[child_node_inex].class_table )
 			{
-				const auto prev_class_it= tmp_class_table.find( class_table_entry.first );
-				if( prev_class_it == tmp_class_table.end() )
-				{
-					tmp_class_table.emplace( class_table_entry.first, class_table_entry.second );
-					continue;
-				}
-
-				Class& prev_class_value= prev_class_it->second;
-				const Class& new_class_value= class_table_entry.second;
-
-				if( !prev_class_value.is_complete && !new_class_value.is_complete )
-				{} // Ok - both instances of class are incomplete.
-				else if( !prev_class_value.is_complete && new_class_value.is_complete )
-					prev_class_value= new_class_value; // Ok - replace incomplete class with complete.
-				else if( prev_class_value.is_complete && !new_class_value.is_complete )
-				{} // Ok - ignore incomplete class.
-				else if( prev_class_value.syntax_element != new_class_value.syntax_element )
-				{
-					// Different bodies from different files.
-					REPORT_ERROR( Redefinition, global_errors_, prev_class_value.body_src_loc );
-				}
+				tmp_class_table.emplace( class_table_entry.first, class_table_entry.second );
 			}
 		}
 
