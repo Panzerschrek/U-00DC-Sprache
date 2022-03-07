@@ -3,9 +3,6 @@ compiler. Features are grouped and sorted by priority inside each group.
 Delete the features from the list as soon as they are implemented.
 
 General:
-*) Dereference operator - for pointer-like classes.
-*) Continious initializer for arrays
-*) Different calling conventions (for API calls, for example)
 *) Anonymous (module-local) symbols - functions, classes, variables.
 *) <, <=, >, >= for enums.
 *) Forbid "shared" tag changing in inheritance.
@@ -20,6 +17,7 @@ General:
 *) More float types ( 16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
 *) Lambdas.
+*) Continious initializer for arrays
 *) Function pointers inside constexpr functions
 *) Reference result of constexpr function evaluation
 *) More advanced macros - more context, elements, string manipulations
@@ -42,6 +40,7 @@ Standart library:
 *) Associative containers - map, set, string_map
 *) Forbid non-thread-safe shared pointers in thread-safe shared pointers
 *) More algorithms
+*) Iterators library with transformations/operations (map, filter, reduce, etc.)
 *) Time library - get time functions, timers
 *) File library
 *) More type traits
@@ -68,6 +67,7 @@ QtCreator plugin:
 *) "go to defenition" possibility
 *) Indentation in editor
 *) More advanced program model updating
+*) Language server
 
 *) Plugins for other IDEs
 
