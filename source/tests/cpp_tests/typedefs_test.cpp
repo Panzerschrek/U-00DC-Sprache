@@ -432,6 +432,37 @@ U_TEST( TypedefInsideFunction_Test2 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( TypedefInsideFunction_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			type I= char8;
+			type J= I;
+			var J i= "Q"c8;
+			static_assert( i == "Q"c8 );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( TypedefInsideFunction_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto s= 33s;
+			type Arr= [ i32, s ]; // Use variable from function name space inside type name in type alias.
+			static_assert( typeinfo</Arr/>.element_count == 33s );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace
 
 } // namespace U
