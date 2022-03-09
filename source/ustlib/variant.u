@@ -44,11 +44,11 @@ public:
 	constructor()
 		( index_(0), storage_= zero_init )
 	{
-		auto& element_type_typeinfo= typeinfo</Y/>.elements_list[0].type;
-		var typeof(element_type_typeinfo)::src_type mut val;
+		type FirstT= typeof(typeinfo</Y/>.elements_list[0].type)::src_type;
+		var FirstT mut val;
 		unsafe
 		{
-			move_into_uninitialized( cast_ref_unsafe</ typeof(element_type_typeinfo)::src_type />(storage_), move(val) );
+			move_into_uninitialized( cast_ref_unsafe</ FirstT />(storage_), move(val) );
 		}
 	}
 
@@ -62,10 +62,11 @@ public:
 		{
 			if( cur_index == size_type(other.index_) )
 			{
+				type ElementT= typeof(element.type)::src_type;
 				unsafe
 				{
-					auto mut copy = cast_ref_unsafe</ typeof(element.type)::src_type />(other.storage_);
-					move_into_uninitialized( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_), move(copy) );
+					auto mut copy = cast_ref_unsafe</ ElementT />(other.storage_);
+					move_into_uninitialized( cast_ref_unsafe</ ElementT />(storage_), move(copy) );
 				}
 				return;
 			}
@@ -205,10 +206,11 @@ public:
 		{
 			if( cur_index == size_type(l.index_) )
 			{
+				type ElementT= typeof(element.type)::src_type;
 				unsafe
 				{
-					auto& l_element= cast_ref_unsafe</ typeof(element.type)::src_type />(l.storage_);
-					auto& r_element= cast_ref_unsafe</ typeof(element.type)::src_type />(r.storage_);
+					auto& l_element= cast_ref_unsafe</ ElementT />(l.storage_);
+					auto& r_element= cast_ref_unsafe</ ElementT />(r.storage_);
 					safe{  return l_element == r_element;  }
 				}
 			}
