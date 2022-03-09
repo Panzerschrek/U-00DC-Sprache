@@ -1,0 +1,17 @@
+fn nomangle main() : i32
+{
+	for( auto mut i= 0s; i < 16s; ++i )
+	{
+		unsafe
+		{
+			var [ char16, 64 ] mut name= zero_init;
+
+			auto res= GetModuleFileNameW( 0s, $<(name[0]), 64 );
+			halt if( res == 0 );
+		}
+	}
+
+	return 0;
+}
+
+fn nomangle GetModuleFileNameW( size_type module_handle, $(char16) ptr, i32 size ) unsafe call_conv("system") : i32;
