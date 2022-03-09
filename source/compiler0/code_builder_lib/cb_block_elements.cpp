@@ -1545,6 +1545,23 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::TypeAlias& type_alias )
+{
+	BlockBuildInfo block_info;
+
+	if( IsKeyword( type_alias.name ) )
+		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), type_alias.src_loc_ );
+
+	Type type= PrepareType( type_alias.value, names, function_context );
+	if( names.AddName( type_alias.name, Value( std::move(type), type_alias.src_loc_ ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names.GetErrors(), type_alias.src_loc_, type_alias.name );
+
+	return block_info;
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope&,
 	FunctionContext& function_context,
 	const Synt::Halt& )
