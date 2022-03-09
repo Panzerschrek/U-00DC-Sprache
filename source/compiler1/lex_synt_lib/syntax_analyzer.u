@@ -1837,6 +1837,10 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		{
 			block_elements.push_back( ParseStaticAssert() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::type_ ) )
+		{
+			block_elements.push_back( ParseTypeAlias() );
+		}
 		else if( IsKeyword( it_.front(), Keyword::halt_ ) )
 		{
 			block_elements.push_back( ParseHalt() );
