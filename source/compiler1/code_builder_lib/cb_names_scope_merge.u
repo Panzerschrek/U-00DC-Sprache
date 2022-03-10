@@ -37,9 +37,10 @@ fn CodeBuilder::DeepCopyNamesScopeValue(
 {
 	variant_visit( &el : value.something_ )
 	{
+		type ElementT= typeof(el);
 		static_if(
-			ust::is_same_type</ typeof(el), NamesScopeMutPtr/>() ||
-			ust::is_same_type</ typeof(el), ClassTypePtr/>() )
+			ust::is_same_type</ ElementT, NamesScopeMutPtr/>() ||
+			ust::is_same_type</ ElementT, ClassTypePtr/>() )
 		{
 			return DeepCopyNamesScopeValue( el, target_names_scope, src_classes_members_namespaces_table );
 		}

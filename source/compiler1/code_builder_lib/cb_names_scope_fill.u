@@ -14,7 +14,8 @@ fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr
 	{
 		variant_visit( & el : class_element )
 		{
-			static_if( ust::is_same_type</ typeof(el), Synt::ClassVisibilityLabel />() )
+			type ElementT= typeof(el);
+			static_if( ust::is_same_type</ ElementT, Synt::ClassVisibilityLabel />() )
 			{
 				if( is_struct )
 				{
@@ -25,7 +26,7 @@ fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr
 					current_visibility= el.visibility;
 				}
 			}
-			else if( ust::is_same_type</ typeof(el), ust::shared_ptr_final</Synt::ClassField/> />() )
+			else if( ust::is_same_type</ ElementT, ust::shared_ptr_final</Synt::ClassField/> />() )
 			{
 				NamesScopeFill( names_scope_ptr, el, class_type, current_visibility, field_index );
 				++field_index;
