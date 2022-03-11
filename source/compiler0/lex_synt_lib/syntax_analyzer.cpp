@@ -2383,6 +2383,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseStaticIfOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 			elements.emplace_back( ParseStaticAssert() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
+			elements.emplace_back( ParseTypeAlias() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ )
 			elements.emplace_back( ParseHalt() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::safe_ )

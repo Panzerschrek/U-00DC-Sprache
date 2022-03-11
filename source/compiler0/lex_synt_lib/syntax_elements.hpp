@@ -163,6 +163,7 @@ using BlockElement= std::variant<
 	IncrementOperator,
 	DecrementOperator,
 	StaticAssert,
+	TypeAlias,
 	Halt,
 	HaltIf
 >;

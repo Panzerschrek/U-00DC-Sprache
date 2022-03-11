@@ -511,6 +511,7 @@ type BlockElement = ust::variant</ tup[
 	ContinueOperator,
 	WithOperator,
 	StaticAssert,
+	TypeAlias,
 	Halt,
 	HaltIf
 	] />;

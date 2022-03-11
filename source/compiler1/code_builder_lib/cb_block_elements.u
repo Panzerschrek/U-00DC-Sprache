@@ -1604,6 +1604,28 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::TypeAlias& type_alias ) : BlockElementBuildInfo
+{
+	if( IsKeyword( type_alias.name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope, type_alias.src_loc )
+	}
+
+	var Type mut t= PrepareType( names_scope, function_context, type_alias.type_name );
+
+	var bool mut insert_not_ok= false;
+	{
+		auto mut lock= names_scope.lock_mut();
+		insert_not_ok= lock.deref().AddName( type_alias.name, NamesScopeValue( move(t) ) ).empty();
+	}
+	if( insert_not_ok )
+	{
+		REPORT_ERROR( Redefinition, names_scope, type_alias.src_loc, type_alias.name )
+	}
+
+	return BlockElementBuildInfo();
+}
+
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo
 {
 	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };

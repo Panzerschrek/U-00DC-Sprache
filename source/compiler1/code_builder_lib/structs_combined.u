@@ -674,18 +674,19 @@ op Type::==( Type& l, Type& r ) : bool
 
 	variant_visit( &l_t : l.something_ )
 	{
+		type LeftT= typeof(l_t);
 		static_if(
-			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</ArrayType/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</TupleType/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</RawPointerType/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</FunctionType/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::shared_ptr_final</FunctionPointerType/> />() )
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</ArrayType/> />() ||
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</TupleType/> />() ||
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</RawPointerType/> />() ||
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</FunctionType/> />() ||
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</FunctionPointerType/> />() )
 		{
-			return l_t.deref() == r.something_.get</ typeof(l_t) />().try_deref().deref();
+			return l_t.deref() == r.something_.get</ LeftT />().try_deref().deref();
 		}
 		else
 		{
-			return l_t == r.something_.get</ typeof(l_t) />().try_deref();
+			return l_t == r.something_.get</ LeftT />().try_deref();
 		}
 	}
 
@@ -997,18 +998,19 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 
 	variant_visit( &l_t : l.something_ )
 	{
+		type LeftT= typeof(l_t);
 		static_if(
-			ust::is_same_type</ typeof(l_t), ust::box</ArrayTypeParam/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::box</TupleTypeParam/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::box</RawPointerTypeParam/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::box</FunctionTypeParam/> />() ||
-			ust::is_same_type</ typeof(l_t), ust::box</SpecializedTemplateParam/> />() )
+			ust::is_same_type</ LeftT, ust::box</ArrayTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::box</TupleTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::box</RawPointerTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::box</FunctionTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::box</SpecializedTemplateParam/> />() )
 		{
-			return l_t.deref() == r.something_.get</ typeof(l_t) />().try_deref().deref();
+			return l_t.deref() == r.something_.get</ LeftT />().try_deref().deref();
 		}
 		else
 		{
-			return l_t == r.something_.get</ typeof(l_t) />().try_deref();
+			return l_t == r.something_.get</ LeftT />().try_deref();
 		}
 	}
 

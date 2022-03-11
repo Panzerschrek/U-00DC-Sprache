@@ -381,6 +381,88 @@ U_TEST( TypedefsTemplates_Test8_ShortTypedefTemplateForm_Test1 )
 	U_TEST_ASSERT( static_cast<uint64_t>( 23541 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST( TypedefInsideFunction_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			type I= i32;
+			var I i= 66;
+			static_assert( i == 66 );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( TypedefInsideFunction_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			type I= i32;
+			{
+				type I= u16; // Shadow type name from outer namespace
+				var I i= 33u16;
+				static_assert( i == 33u16 );
+			}
+			var I i= 77; // Ok, use previous value of type alias.
+			static_assert( i == 77 );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( TypedefInsideFunction_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		type I= i32;
+		fn Foo()
+		{
+			type I= f64; // Shadow global type alias.
+			var I i= 99.5;
+			static_assert( i == 99.5 );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( TypedefInsideFunction_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			type I= char8;
+			type J= I;
+			var J i= "Q"c8;
+			static_assert( i == "Q"c8 );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( TypedefInsideFunction_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto s= 33s;
+			type Arr= [ i32, s ]; // Use variable from function name space inside type name in type alias.
+			static_assert( typeinfo</Arr/>.element_count == 33s );
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 } // namespace
 
 } // namespace U
