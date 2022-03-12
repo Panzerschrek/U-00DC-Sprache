@@ -556,7 +556,7 @@ int Main( int argc, const char* argv[] )
 			CodeBuilderLaunchResult code_builder_launch_result=
 				LaunchCodeBuilder(
 					input_file,
-					vfs,
+					*vfs,
 					llvm_context,
 					data_layout,
 					target_triple,

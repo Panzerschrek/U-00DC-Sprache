@@ -98,19 +98,18 @@ static CodeBuilderOptions GetCodeBuilderOptionsForTests()
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
 	const std::string file_path= "_";
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
+	MultiFileVfs vfs( file_path, text );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, file_path );
 
-	U_TEST_ASSERT( source_graph != nullptr );
-	PrintLexSyntErrors( *source_graph );
-	U_TEST_ASSERT( source_graph->errors.empty() );
+	PrintLexSyntErrors( source_graph );
+	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	CodeBuilder::BuildResult build_result=
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph );
+			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -121,36 +120,34 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 {
 	const std::string file_path= "_";
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
+	MultiFileVfs vfs( file_path, text );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, file_path );
 
-	U_TEST_ASSERT( source_graph != nullptr );
-	PrintLexSyntErrors( *source_graph );
-	U_TEST_ASSERT( source_graph->errors.empty() );
+	PrintLexSyntErrors( source_graph );
+	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	return
 		{ CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph ).errors };
+			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph ).errors };
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path )
 {
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
+	MultiFileVfs vfs( std::move(sources) );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, root_file_path );
 
-	U_TEST_ASSERT( source_graph != nullptr );
-	PrintLexSyntErrors( *source_graph );
-	U_TEST_ASSERT( source_graph->errors.empty() );
+	PrintLexSyntErrors( source_graph );
+	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	CodeBuilder::BuildResult build_result=
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph );
+			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -160,30 +157,28 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 
 ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path )
 {
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<MultiFileVfs>( std::move(sources) ) ).LoadSource( root_file_path );
+	MultiFileVfs vfs( std::move(sources) );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, root_file_path );
 
-	U_TEST_ASSERT( source_graph != nullptr );
-	PrintLexSyntErrors( *source_graph );
-	U_TEST_ASSERT( source_graph->errors.empty() );
+	PrintLexSyntErrors( source_graph );
+	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	return
 		{ CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( *source_graph ).errors };
+			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph ).errors };
 }
 
 std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 {
 	const std::string file_path= "_";
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
+	MultiFileVfs vfs( file_path, text );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, file_path );
 
-	U_TEST_ASSERT( source_graph != nullptr );
-	PrintLexSyntErrors( *source_graph );
-	U_TEST_ASSERT( source_graph->errors.empty() );
+	PrintLexSyntErrors( source_graph );
+	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	CodeBuilderOptions options= GetCodeBuilderOptionsForTests();
 	options.generate_lifetime_start_end_debug_calls= true;
@@ -193,7 +188,7 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			options ).BuildProgram( *source_graph );
+			options ).BuildProgram( source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -204,12 +199,11 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text )
 {
 	const std::string file_path= "_";
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<MultiFileVfs>( file_path, text ) ).LoadSource( file_path );
+	MultiFileVfs vfs( file_path, text );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, file_path );
 
-	U_TEST_ASSERT( source_graph != nullptr );
-	PrintLexSyntErrors( *source_graph );
-	U_TEST_ASSERT( source_graph->errors.empty() );
+	PrintLexSyntErrors( source_graph );
+	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	CodeBuilderOptions options= GetCodeBuilderOptionsForTests();
 	options.mangling_scheme= ManglingScheme::MSVC64; // Test only 64-bit scheme
@@ -219,7 +213,7 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			options ).BuildProgram( *source_graph );
+			options ).BuildProgram( source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );

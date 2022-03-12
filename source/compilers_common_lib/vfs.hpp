@@ -4,6 +4,6 @@
 namespace U
 {
 
-std::shared_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& include_dirs );
+std::unique_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& include_dirs );
 
 } // namespace U

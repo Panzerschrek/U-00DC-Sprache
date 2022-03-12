@@ -92,7 +92,7 @@ private:
 
 } // namespace
 
-std::shared_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& include_dirs )
+std::unique_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& include_dirs )
 {
 	std::vector<fs_path> result_include_dirs;
 	result_include_dirs.reserve( include_dirs.size() );
@@ -121,7 +121,7 @@ std::shared_ptr<IVfs> CreateVfsOverSystemFS( const std::vector<std::string>& inc
 	if( !all_ok )
 		return nullptr;
 
-	return std::make_shared<VfsOverSystemFS>( std::move(result_include_dirs) );
+	return std::make_unique<VfsOverSystemFS>( std::move(result_include_dirs) );
 }
 
 } // namespace U

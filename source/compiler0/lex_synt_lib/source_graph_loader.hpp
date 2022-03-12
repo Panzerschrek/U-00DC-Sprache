@@ -19,8 +19,6 @@ public:
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path )= 0;
 };
 
-using IVfsPtr= std::shared_ptr<IVfs>;
-
 // Directed acyclic graph of sources.
 struct SourceGraph final
 {
@@ -40,24 +38,6 @@ struct SourceGraph final
 	LexSyntErrors errors;
 };
 
-using SourceGraphPtr= std::unique_ptr<SourceGraph>;
-
-class SourceGraphLoader final
-{
-public:
-	explicit SourceGraphLoader( IVfsPtr vfs );
-
-	// Never returns nullptr.
-	SourceGraphPtr LoadSource( const IVfs::Path& root_file_path );
-
-private:
-	size_t LoadNode_r( const IVfs::Path& file_path, const IVfs::Path& parent_file_path, SourceGraph& result );
-
-private:
-	const Synt::MacrosPtr built_in_macros_;
-	const IVfsPtr vfs_;
-
-	std::vector<IVfs::Path> processed_files_stack_;
-};
+SourceGraph LoadSourceGraph( IVfs& vfs, const IVfs::Path& root_file_path );
 
 } // namespace U

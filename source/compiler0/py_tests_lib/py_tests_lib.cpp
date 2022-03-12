@@ -80,16 +80,15 @@ std::unique_ptr<CodeBuilder> CreateCodeBuilder()
 std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 {
 	const std::string file_path= "_";
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, text ) ).LoadSource( file_path );
+	SingeFileVfs vfs( file_path, text );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, file_path );
 
-	if( source_graph != nullptr )
-		PrintLexSyntErrors( *source_graph );
+	PrintLexSyntErrors( source_graph );
 
-	if( source_graph == nullptr || !source_graph->errors.empty() )
+	if( !source_graph.errors.empty() )
 		return nullptr;
 
-	CodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( *source_graph );
+	CodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cerr << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << " " << error.text << "\n";
@@ -380,19 +379,18 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 		return nullptr;
 
 	const std::string file_path= "_";
-	const SourceGraphPtr source_graph=
-		SourceGraphLoader( std::make_shared<SingeFileVfs>( file_path, program_text ) ).LoadSource( file_path );
+	SingeFileVfs vfs( file_path, program_text );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, file_path );
 
-	if( source_graph != nullptr )
-		PrintLexSyntErrors( *source_graph );
+	PrintLexSyntErrors( source_graph );
 
-	if( source_graph == nullptr || !source_graph->errors.empty() )
+	if( !source_graph.errors.empty() )
 	{
 		PyErr_SetString( PyExc_RuntimeError, "source tree build failed" );
 		return nullptr;
 	}
 
-	PyObject* const list= BuildErrorsList( CreateCodeBuilder()->BuildProgram( *source_graph ).errors );
+	PyObject* const list= BuildErrorsList( CreateCodeBuilder()->BuildProgram( source_graph ).errors );
 	llvm::llvm_shutdown();
 
 	return list;
@@ -409,12 +407,12 @@ PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const ar
 
 	const std::string file_path= "_";
 
-	SourceGraphLoader source_graph_loader( std::make_shared<SingeFileVfs>( file_path, program_text ) );
-	const SourceGraphPtr source_graph= source_graph_loader.LoadSource( file_path );
+	SingeFileVfs vfs( file_path, program_text );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, file_path );
 
 	std::vector<CodeBuilderError> errors_converted;
-	errors_converted.reserve( source_graph->errors.size() );
-	for( const LexSyntError& error_message : source_graph->errors )
+	errors_converted.reserve( source_graph.errors.size() );
+	for( const LexSyntError& error_message : source_graph.errors )
 	{
 		CodeBuilderError error_converted;
 		error_converted.code= CodeBuilderErrorCode::BuildFailed;

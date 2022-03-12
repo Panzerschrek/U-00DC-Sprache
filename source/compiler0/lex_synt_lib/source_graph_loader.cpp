@@ -7,7 +7,10 @@
 namespace U
 {
 
-static Synt::MacrosPtr PrepareBuiltInMacros()
+namespace
+{
+
+Synt::MacrosPtr PrepareBuiltInMacros()
 {
 	#include "built_in_macros.hpp"
 	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_built_in_macros );
@@ -23,36 +26,22 @@ static Synt::MacrosPtr PrepareBuiltInMacros()
 	return synt_result.macros;
 }
 
-SourceGraphLoader::SourceGraphLoader( IVfsPtr vfs )
-	: built_in_macros_(PrepareBuiltInMacros())
-	, vfs_(std::move(vfs))
-{
-	U_ASSERT( built_in_macros_ != nullptr );
-	U_ASSERT( vfs_ != nullptr );
-}
-
-SourceGraphPtr SourceGraphLoader::LoadSource( const IVfs::Path& root_file_path )
-{
-	auto result = std::make_unique<SourceGraph>();
-	result->macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
-	LoadNode_r( root_file_path, "", *result );
-
-	return result;
-}
-
-size_t SourceGraphLoader::LoadNode_r(
+size_t LoadNode_r(
+	IVfs& vfs,
+	const Synt::MacrosByContextMap& built_in_macros,
 	const IVfs::Path& file_path,
 	const IVfs::Path& parent_file_path,
+	std::vector<std::string>& processed_files_stack,
 	SourceGraph& result )
 {
-	const IVfs::Path full_file_path= vfs_->GetFullFilePath( file_path, parent_file_path );
+	const IVfs::Path full_file_path= vfs.GetFullFilePath( file_path, parent_file_path );
 
 	// Check for dependency loops.
-	const auto prev_file_it= std::find( processed_files_stack_.begin(), processed_files_stack_.end(), full_file_path );
-	if( prev_file_it != processed_files_stack_.end() )
+	const auto prev_file_it= std::find( processed_files_stack.begin(), processed_files_stack.end(), full_file_path );
+	if( prev_file_it != processed_files_stack.end() )
 	{
 		std::string imports_loop_str= "Import loop detected: ";
-		for( auto it= prev_file_it; it != processed_files_stack_.end(); ++it )
+		for( auto it= prev_file_it; it != processed_files_stack.end(); ++it )
 			imports_loop_str+= *it + " -> ";
 		imports_loop_str+= full_file_path;
 
@@ -70,7 +59,7 @@ size_t SourceGraphLoader::LoadNode_r(
 	result.nodes_storage.emplace_back();
 	result.nodes_storage[node_index].file_path= full_file_path;
 
-	const std::optional<IVfs::FileContent> loaded_file= vfs_->LoadFileContent( full_file_path );
+	const std::optional<IVfs::FileContent> loaded_file= vfs.LoadFileContent( full_file_path );
 	if( loaded_file == std::nullopt )
 	{
 		LexSyntError error_message( "Can not read file \"" + full_file_path + "\"", SrcLoc( uint32_t(node_index), 0u, 0u ) );
@@ -99,10 +88,11 @@ size_t SourceGraphLoader::LoadNode_r(
 	std::vector<Synt::MacrosPtr> imported_macroses;
 
 	// Recursively load imports.
-	processed_files_stack_.push_back( full_file_path );
+	processed_files_stack.push_back( full_file_path );
 	for( size_t i= 0; i < result.nodes_storage[node_index].child_nodes_indeces.size(); ++i )
 	{
-		const size_t child_node_index= LoadNode_r( imports[i].import_name, full_file_path, result );
+		const size_t child_node_index=
+			LoadNode_r( vfs, built_in_macros, imports[i].import_name, full_file_path, processed_files_stack, result );
 		if( child_node_index != ~0u )
 		{
 			if( const Synt::MacrosPtr macro= result.nodes_storage[child_node_index].ast.macros; macro != nullptr )
@@ -110,10 +100,10 @@ size_t SourceGraphLoader::LoadNode_r(
 			result.nodes_storage[node_index].child_nodes_indeces[i]= child_node_index;
 		}
 	}
-	processed_files_stack_.pop_back();
+	processed_files_stack.pop_back();
 
 	// Merge macroses
-	Synt::MacrosByContextMap merged_macroses= *built_in_macros_;
+	Synt::MacrosByContextMap merged_macroses= built_in_macros;
 	for( const Synt::MacrosPtr& macros : imported_macroses )
 	{
 		for( const auto& context_macro_map_pair : *macros )
@@ -145,6 +135,21 @@ size_t SourceGraphLoader::LoadNode_r(
 
 	result.nodes_storage[node_index].ast= std::move( synt_result );
 	return node_index;
+}
+
+} // namespace
+
+SourceGraph LoadSourceGraph( IVfs& vfs, const IVfs::Path& root_file_path )
+{
+	SourceGraph result;
+	result.macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
+
+	const auto built_in_macros= PrepareBuiltInMacros();
+
+	std::vector<std::string> processed_files_stack;
+	LoadNode_r( vfs, *built_in_macros, root_file_path, "", processed_files_stack, result );
+
+	return result;
 }
 
 } // namespace U

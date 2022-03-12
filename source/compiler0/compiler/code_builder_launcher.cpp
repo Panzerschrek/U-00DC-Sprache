@@ -7,7 +7,7 @@ namespace U
 
 CodeBuilderLaunchResult LaunchCodeBuilder(
 	const IVfs::Path& input_file,
-	const IVfsPtr& vfs,
+	IVfs& vfs,
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
@@ -16,13 +16,13 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 {
 	CodeBuilderLaunchResult result;
 
-	const SourceGraphPtr source_graph= SourceGraphLoader(vfs).LoadSource( input_file );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, input_file );
 
-	result.dependent_files.reserve( source_graph->nodes_storage.size() );
-	for( const SourceGraph::Node& node : source_graph->nodes_storage )
+	result.dependent_files.reserve( source_graph.nodes_storage.size() );
+	for( const SourceGraph::Node& node : source_graph.nodes_storage )
 		result.dependent_files.push_back( node.file_path );
 
-	result.lex_synt_errors= std::move(source_graph->errors);
+	result.lex_synt_errors= std::move(source_graph.errors);
 	if( !result.lex_synt_errors.empty() )
 		return result;
 
@@ -35,7 +35,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			llvm_context,
 			data_layout,
 			target_triple,
-			options ).BuildProgram( *source_graph );
+			options ).BuildProgram( source_graph );
 
 	result.code_builder_errors= std::move( build_result.errors );
 	result.llvm_module= std::move( build_result.module );
