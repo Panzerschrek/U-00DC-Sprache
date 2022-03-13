@@ -74,6 +74,8 @@ fn ToString( RawPointerType& raw_pointer_type ) : ust::string8
 
 fn ToString( FunctionType& function_type ) : ust::string8
 {
+	// TODO - add references pollution/return references
+
 	var ust::string8 mut result;
 
 	result+= KeywordToString( Keyword::fn_ );
@@ -88,9 +90,39 @@ fn ToString( FunctionType& function_type ) : ust::string8
 		result+= " ";
 	}
 
+	if( function_type.calling_convention != LLVMCallConv::C )
+	{
+		result+= KeywordToString( Keyword::call_conv_ );
+		result+= "(\"";
+
+		if( function_type.calling_convention == LLVMCallConv::Fast )
+		{
+			result+= "fast";
+		}
+		if( function_type.calling_convention == LLVMCallConv::Cold )
+		{
+			result+= "cold";
+		}
+		if( function_type.calling_convention == LLVMCallConv::X86Stdcall )
+		{
+			result+= "system";
+		}
+
+		result+= "\") ";
+	}
+
 	result+= ": ";
 
 	result+= function_type.return_type.ToString();
+
+	if( function_type.return_value_type == ValueType::ReferenceMut )
+	{
+		result+= "&mut";
+	}
+	if( function_type.return_value_type == ValueType::ReferenceImut )
+	{
+		result+= "&imut";
+	}
 
 	return move(result);
 }

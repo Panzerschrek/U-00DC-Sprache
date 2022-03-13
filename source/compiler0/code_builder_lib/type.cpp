@@ -494,15 +494,31 @@ std::string Type::ToString() const
 	private:
 		std::string ProcessFunctionType( const FunctionType& function ) const
 		{
-			// TODO - actualize this
+			// TODO - add references pollution/return references
+
 			std::string result;
 			result+= "fn ";
-			result+= function.return_type.ToString();
 			result+= " ( ";
 			result+= FunctionParamsToString( function.params );
-			result+= " )";
+			result+= " ) ";
 			if( function.unsafe )
-				result+= " unsafe";
+				result+= "unsafe ";
+
+			if( function.calling_convention == llvm::CallingConv::Fast )
+				result+= "call_conv(\"fast\") ";
+			if( function.calling_convention == llvm::CallingConv::Cold )
+				result+= "call_conv(\"cold\") ";
+			if( function.calling_convention == llvm::CallingConv::X86_StdCall )
+				result+= "call_conv(\"system\") ";
+
+			result+= ": ";
+			result+= function.return_type.ToString();
+
+			if( function.return_value_type == ValueType::ReferenceMut )
+				result += "&mut";
+			if( function.return_value_type == ValueType::ReferenceImut )
+				result += "&imut";
+
 			return result;
 		}
 	};
