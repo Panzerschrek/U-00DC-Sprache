@@ -64,7 +64,7 @@ if( U_BUILD_CPP_HEADER_CONVERTER )
 		target_link_libraries( CppHeaderConverter LexSyntLib clangTooling )
 		# Hack! Clang libraries does not exports their include directories, set it manually.
 		target_include_directories( CppHeaderConverter PRIVATE ${LLVM_EXTERNAL_CLANG_SOURCE_DIR}/include )
-		target_include_directories( CppHeaderConverter PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/llvm/tools/clang/include )
+		target_include_directories( CppHeaderConverter PRIVATE ${CMAKE_BINARY_DIR}/llvm/tools/clang/include )
 
 	else()
 		message( STATUS "Clang not found, c++ header converter build disabled" )
