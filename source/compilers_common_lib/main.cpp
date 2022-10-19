@@ -26,6 +26,8 @@
 #include "../sprache_version/sprache_version.hpp"
 #include  "code_builder_launcher.hpp"
 #include "dep_file.hpp"
+#include "errors_print.hpp"
+#include "make_dep_file.hpp"
 #include "vfs.hpp"
 
 namespace U
@@ -68,89 +70,6 @@ std::string GetNativeTargetFeaturesStr()
 	return features.getString();
 }
 
-void PrintErrors( const std::vector<IVfs::Path>& source_files, const CodeBuilderErrorsContainer& errors, const ErrorsFormat format )
-{
-	for( const CodeBuilderError& error : errors )
-	{
-		if( format == ErrorsFormat::MSVC )
-		{
-			if( error.code == CodeBuilderErrorCode::TemplateContext )
-			{
-				U_ASSERT( error.template_context != nullptr );
-
-				PrintErrors( source_files, error.template_context->errors, format );
-
-				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ]
-					<< "(" << error.template_context->context_declaration_src_loc.GetLine() << "): note: "
-					<< "In instantiation of \"" << error.template_context->context_name
-					<< "\" " << error.template_context->parameters_description
-					<< "\n";
-
-				std::cerr << source_files[ error.src_loc.GetFileIndex() ]
-					<< "(" << error.src_loc.GetLine() << "): note: " << error.text << "\n";
-			}
-			else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
-			{
-				PrintErrors( source_files, error.template_context->errors, format );
-
-				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ]
-					<< "(" << error.template_context->context_declaration_src_loc.GetLine() << "): note: "
-					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
-
-				std::cerr << source_files[error.src_loc.GetFileIndex() ]
-					<< "(" << error.src_loc.GetLine() << "): note: required from here\n";
-			}
-			else
-			{
-				std::cerr << source_files[ error.src_loc.GetFileIndex() ]
-					<< "(" << error.src_loc.GetLine() << "): error: " << error.text << "\n";
-			}
-		}
-		else
-		{
-			if( error.code == CodeBuilderErrorCode::TemplateContext )
-			{
-				U_ASSERT( error.template_context != nullptr );
-
-				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ] << ": "
-					<< "In instantiation of \"" << error.template_context->context_name
-					<< "\" " << error.template_context->parameters_description
-					<< "\n";
-
-				std::cerr << source_files[error.src_loc.GetFileIndex() ]
-					<< ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": required from here: " << "\n";
-
-				PrintErrors( source_files, error.template_context->errors, format );
-			}
-			else if( error.code == CodeBuilderErrorCode::MacroExpansionContext )
-			{
-				U_ASSERT( error.template_context != nullptr );
-
-				std::cerr << source_files[ error.template_context->context_declaration_src_loc.GetFileIndex() ] << ": "
-					<< "In expansion of macro \"" << error.template_context->context_name << "\"\n";
-
-				std::cerr << source_files[ error.src_loc.GetFileIndex() ]
-					<< ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": required from here: " << "\n";
-
-				PrintErrors( source_files, error.template_context->errors, format );
-			}
-			else
-			{
-				std::cerr << source_files[ error.src_loc.GetFileIndex() ]
-					<< ":" << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << ": error: " << error.text << "\n";
-			}
-		}
-	}
-}
-
-void PrintErrorsForTests( const std::vector<IVfs::Path>& source_files, const CodeBuilderErrorsContainer& errors )
-{
-	// For tests we print errors as "file.u 88 NameNotFound"
-	for( const CodeBuilderError& error : errors )
-		std::cout << source_files[error.src_loc.GetFileIndex() ]
-			<< " " << error.src_loc.GetLine() << " " << CodeBuilderErrorCodeToString( error.code ) << "\n";
-}
-
 void AddModuleGlobalConstant( llvm::Module& module, llvm::Constant* const initializer, const std::string& name )
 {
 	const auto prev_variable= module.getGlobalVariable( name );
@@ -172,51 +91,6 @@ void AddModuleGlobalConstant( llvm::Module& module, llvm::Constant* const initia
 	llvm::Comdat* const comdat= module.getOrInsertComdat( variable->getName() );
 	comdat->setSelectionKind( llvm::Comdat::Any );
 	variable->setComdat( comdat );
-}
-
-std::string QuoteDepTargetString( const std::string& str )
-{
-	std::string result;
-	result.reserve( str.size() * 2u );
-
-	for( const char c : str )
-	{
-		if( c == ' ' || c == '\t' || c == '\\' || c == '#' )
-			result.push_back('\\');
-		if( c == '$' )
-			result.push_back('$');
-		result.push_back(c);
-	}
-
-	return result;
-}
-
-bool WriteDepFile(
-	const std::string& out_file_path,
-	const std::vector<IVfs::Path>& deps_list, // Files list should not contain duplicates.
-	const std::string& dep_file_path )
-{
-	std::string str= QuoteDepTargetString(out_file_path) + ":";
-	for( const IVfs::Path& path : deps_list )
-	{
-		str+= " ";
-		str+= QuoteDepTargetString(path);
-		if( &path != &deps_list.back() )
-			str+= " \\\n";
-	}
-
-	std::error_code file_error_code;
-	llvm::raw_fd_ostream deps_file_stream( dep_file_path, file_error_code, llvm::sys::fs::F_None );
-	deps_file_stream << str;
-
-	deps_file_stream.flush();
-	if( deps_file_stream.has_error() )
-	{
-		std::cerr << "Error while writing dep file \"" << dep_file_path << "\": " << file_error_code.message() << std::endl;
-		return false;
-	}
-
-	return true;
 }
 
 namespace Options
@@ -894,8 +768,7 @@ int Main( int argc, const char* argv[] )
 		result_module->print( out_file_stream, nullptr );
 
 	// Left only unique paths in dependencies list.
-	std::sort( deps_list.begin(), deps_list.end() );
-	deps_list.erase( std::unique( deps_list.begin(), deps_list.end() ), deps_list.end() );
+	DeduplicateDepsList(deps_list);
 
 	if( Options::deps_tracking )
 		DepFile::Write( Options::output_file_name, argc, argv, deps_list );
