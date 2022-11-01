@@ -32,6 +32,7 @@ size_t LoadNode_r(
 	const IVfs::Path& file_path,
 	const IVfs::Path& parent_file_path,
 	std::vector<std::string>& processed_files_stack,
+	const SrcLoc& import_src_loc,
 	SourceGraph& result )
 {
 	const IVfs::Path full_file_path= vfs.GetFullFilePath( file_path, parent_file_path );
@@ -45,7 +46,7 @@ size_t LoadNode_r(
 			imports_loop_str+= *it + " -> ";
 		imports_loop_str+= full_file_path;
 
-		result.errors.emplace_back( imports_loop_str, SrcLoc( 0u, 0u, 0u ) );
+		result.errors.emplace_back( imports_loop_str, import_src_loc );
 
 		return ~0u;
 	}
@@ -62,7 +63,7 @@ size_t LoadNode_r(
 	const std::optional<IVfs::FileContent> loaded_file= vfs.LoadFileContent( full_file_path );
 	if( loaded_file == std::nullopt )
 	{
-		LexSyntError error_message( "Can not read file \"" + full_file_path + "\"", SrcLoc( uint32_t(node_index), 0u, 0u ) );
+		LexSyntError error_message( "Can not read file \"" + full_file_path + "\"", import_src_loc );
 		result.errors.push_back( std::move(error_message) );
 		return ~0u;
 	}
@@ -91,8 +92,9 @@ size_t LoadNode_r(
 	processed_files_stack.push_back( full_file_path );
 	for( size_t i= 0; i < result.nodes_storage[node_index].child_nodes_indeces.size(); ++i )
 	{
+		const Synt::Import& import = imports[i];
 		const size_t child_node_index=
-			LoadNode_r( vfs, built_in_macros, imports[i].import_name, full_file_path, processed_files_stack, result );
+			LoadNode_r( vfs, built_in_macros, import.import_name, full_file_path, processed_files_stack, import.src_loc_, result );
 		if( child_node_index != ~0u )
 		{
 			if( const Synt::MacrosPtr macro= result.nodes_storage[child_node_index].ast.macros; macro != nullptr )
@@ -147,7 +149,7 @@ SourceGraph LoadSourceGraph( IVfs& vfs, const IVfs::Path& root_file_path )
 	const auto built_in_macros= PrepareBuiltInMacros();
 
 	std::vector<std::string> processed_files_stack;
-	LoadNode_r( vfs, *built_in_macros, root_file_path, "", processed_files_stack, result );
+	LoadNode_r( vfs, *built_in_macros, root_file_path, "", processed_files_stack, SrcLoc(0, 0, 0), result );
 
 	return result;
 }
