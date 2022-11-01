@@ -1458,14 +1458,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	FunctionContext& function_context )
 {
 	// Know args types.
-	ArgsVector<FunctionType::Param> args;
-	const auto state= SaveInstructionsState( function_context );
-	{
-		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-		for( const Synt::Expression* const in_arg : { &left_expr, &right_expr } )
-			args.push_back( PreEvaluateArg( *in_arg, names, function_context ) );
-	}
-	RestoreInstructionsState( function_context, state );
+	const ArgsVector<FunctionType::Param> args = PreEvaluateArgs( { &left_expr, &right_expr }, names, function_context );
 
 	// Apply here move-assignment.
 	if( op == OverloadedOperator::Assign &&
@@ -3204,6 +3197,43 @@ FunctionType::Param CodeBuilder::PreEvaluateArg( const Synt::Expression& express
 
 	}
 	return function_context.args_preevaluation_cache[&expression];
+}
+
+ArgsVector<FunctionType::Param> CodeBuilder::PreEvaluateArgs(
+	const ArgsVector<const Synt::Expression*>& expressions,
+	NamesScope& names,
+	FunctionContext& function_context )
+{
+	ArgsVector<FunctionType::Param> args;
+	args.reserve( expressions.size() );
+
+	// Save and restory state only if preevaluation cache contains no entry for at least one arg.
+	std::optional<InstructionsState> state;
+
+	{
+		const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+		for( const Synt::Expression* const expression : expressions )
+		{
+			if( function_context.args_preevaluation_cache.count(expression) == 0 )
+			{
+				if( state == std::nullopt )
+					state = SaveInstructionsState( function_context );
+
+				const Variable v= BuildExpressionCodeEnsureVariable( *expression, names, function_context );
+				function_context.args_preevaluation_cache.emplace( expression,  GetArgExtendedType(v) );
+				DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), Synt::GetExpressionSrcLoc( *expression ) );
+			}
+			args.push_back( function_context.args_preevaluation_cache[expression] );
+		}
+	}
+
+	if( state != std::nullopt )
+	{
+		RestoreInstructionsState( function_context, *state );
+	}
+
+	return args;
 }
 
 FunctionType::Param CodeBuilder::GetArgExtendedType( const Variable& variable )

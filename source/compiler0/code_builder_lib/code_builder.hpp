@@ -636,6 +636,10 @@ private:
 	// Preevaluate expresion to know it's extened type.
 	// Call this only inside save/state restore calls.
 	FunctionType::Param PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
+
+	// Preevaluate args and perform state save/restore during this.
+	ArgsVector<FunctionType::Param> PreEvaluateArgs( const ArgsVector<const Synt::Expression*>& expressions, NamesScope& names, FunctionContext& function_context );
+
 	FunctionType::Param GetArgExtendedType( const Variable& variable );
 
 	// Typeinfo
