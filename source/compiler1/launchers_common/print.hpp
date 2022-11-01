@@ -9,7 +9,6 @@ extern "C"
 
 using CppIoStreamRef= void*;
 
-CppIoStreamRef U1_GetCout();
 CppIoStreamRef U1_GetCerr();
 
 void U1_PrintStr( CppIoStreamRef stream, const char* string_null_termainated );
