@@ -684,6 +684,12 @@ struct Namespace
 	NamespaceElements elements;
 }
 
+struct Import
+{
+	SrcLoc src_loc;
+	ust::string8 name;
+}
+
 type NamespaceElement= ust::variant</ tup[
 	ust::shared_ptr_final</Function/>,
 	ust::shared_ptr_final</FunctionTemplate/>,

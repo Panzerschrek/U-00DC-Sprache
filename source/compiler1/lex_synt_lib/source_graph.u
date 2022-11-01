@@ -11,7 +11,7 @@ fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph
 	var Synt::MacrosByContextMap built_in_macros= PrepareBuiltInMacros( source_graph.macro_expansion_contexts );
 
 	var ust::vector</ust::string8/> mut imports_stack;
-	LoadSourceGraph_r( built_in_macros, vfs, root_file_path, "", source_graph, imports_stack );
+	LoadSourceGraph_r( built_in_macros, vfs, root_file_path, "", SrcLoc( 0u, 0u, 0u ), source_graph, imports_stack );
 	return move(source_graph);
 }
 
@@ -21,6 +21,7 @@ fn LoadSourceGraph_r(
 	IVfs &mut vfs,
 	ust::string8& file_path,
 	ust::string8& parent_file_path,
+	SrcLoc& import_src_loc,
 	SourceGraph& mut source_graph,
 	ust::vector</ust::string8/> &mut imports_stack ) : size_type
 {
@@ -38,7 +39,7 @@ fn LoadSourceGraph_r(
 			}
 			imports_loop_str+= file_path_normalized;
 
-			source_graph.errors.push_back( LexSyntError( SrcLoc( 0u, 0u, 0u ), move(imports_loop_str) ) );
+			source_graph.errors.push_back( LexSyntError( import_src_loc, move(imports_loop_str) ) );
 			return ~0s;
 		}
 	}
@@ -60,7 +61,7 @@ fn LoadSourceGraph_r(
 		str+= file_path_normalized;
 		str+= "\"";
 
-		source_graph.errors.push_back( LexSyntError( SrcLoc( 0u, 0u, 0u ), move(str) ) );
+		source_graph.errors.push_back( LexSyntError( import_src_loc, move(str) ) );
 		return ~0s;
 	}
 
@@ -90,7 +91,7 @@ fn LoadSourceGraph_r(
 	imports_stack.push_back( file_path_normalized );
 	foreach( &import_ : imports )
 	{
-		auto child= LoadSourceGraph_r( built_in_macros, vfs, import_, file_path_normalized, source_graph, imports_stack );
+		auto child= LoadSourceGraph_r( built_in_macros, vfs, import_.name, file_path_normalized, import_.src_loc, source_graph, imports_stack );
 		if( child != ~0s )
 		{
 			node.children.push_back(child);

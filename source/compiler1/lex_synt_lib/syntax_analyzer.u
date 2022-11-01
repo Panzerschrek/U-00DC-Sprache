@@ -379,7 +379,9 @@ fn SyntaxAnalyzer::ParseImports( mut this ) : ImportsList
 		{
 			PushErrorMessage();
 		}
-		imports_list.push_back( it_.front().text );
+
+		var Import mut import_ { .name= it_.front().text, .src_loc= it_.front().src_loc };
+		imports_list.push_back( move(import_) );
 		NextLexem();
 	}
 

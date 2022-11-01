@@ -8,7 +8,7 @@ namespace U1
 namespace Synt
 {
 
-type ImportsList= ust::vector</ust::string8/>;
+type ImportsList= ust::vector</Import/>;
 
 struct SyntaxAnalysisResult
 {
