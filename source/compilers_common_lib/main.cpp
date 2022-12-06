@@ -6,10 +6,13 @@
 #include <llvm/Bitcode/BitcodeReader.h>
 #include <llvm/Bitcode/BitcodeWriterPass.h>
 #include <llvm/CodeGen/TargetPassConfig.h>
+#include <llvm/InitializePasses.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/MC/SubtargetFeature.h>
+#include <llvm/Support/CodeGen.h>
+#include <llvm/Support/CommandLine.h>
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_os_ostream.h>
@@ -717,7 +720,7 @@ int Main( int argc, const char* argv[] )
 	switch( Options::file_type )
 	{
 	case Options::FileType::Obj:
-		if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::TargetMachine::CGFT_ObjectFile ) )
+		if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::CGFT_ObjectFile ) )
 		{
 			std::cerr << "Error, creating file emit pass." << std::endl;
 			return 1;
@@ -725,7 +728,7 @@ int Main( int argc, const char* argv[] )
 		break;
 
 	case Options::FileType::Asm:
-		if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::TargetMachine::CGFT_AssemblyFile ) )
+		if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::CGFT_AssemblyFile ) )
 		{
 			std::cerr << "Error, creating file emit pass." << std::endl;
 			return 1;

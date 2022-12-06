@@ -76,7 +76,7 @@ public:
 	explicit FrontendActionFactory( ParsedUnitsPtr out_result );
 
 public:
-	virtual clang::FrontendAction* create() override;
+	virtual std::unique_ptr<clang::FrontendAction> create() override;
 
 private:
 	const ParsedUnitsPtr out_result_;
