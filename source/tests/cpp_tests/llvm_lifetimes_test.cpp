@@ -444,7 +444,7 @@ U_TEST( ArgVariableLifetime_Test1 )
 	engine->runFunction( function, {} );
 
 	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 1 );
-	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::CaptureValue );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::CaptureValue );
 
 	const char16_t expected_x= 423;
 	U_TEST_ASSERT( g_lifetimes_call_sequence[0].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[0].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
