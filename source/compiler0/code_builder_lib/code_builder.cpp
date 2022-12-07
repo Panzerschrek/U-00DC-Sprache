@@ -205,7 +205,9 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 		for( const auto& node : source_graph.nodes_storage )
 			debug_info_.source_file_entries.push_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
 
-		const uint32_t c_dwarf_language_id= 0x8000 /* first user-defined language code */ + 0xDC /* code of "Ü" letter */;
+		// HACK! Add a workaround for wrong assert in llvm code in Dwarf.h:235. TODO - remove this after porting to LLVM 15 or newer.
+		// const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_lo_user + 0xDC /* code of "Ü" letter */;
+		const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_C;
 
 		debug_info_.builder= std::make_unique<llvm::DIBuilder>( *module_ );
 
