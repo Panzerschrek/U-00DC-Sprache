@@ -760,9 +760,9 @@ FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result )
 	: out_result_(std::move(out_result))
 {}
 
-clang::FrontendAction* FrontendActionFactory::create()
+std::unique_ptr<clang::FrontendAction> FrontendActionFactory::create()
 {
-	return new CppAstProcessor(out_result_);
+	return std::make_unique<CppAstProcessor>(out_result_);
 }
 
 } // namespace U

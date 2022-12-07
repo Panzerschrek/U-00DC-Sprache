@@ -699,6 +699,12 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 		else U_ASSERT(false);
 		break;
 
+	case llvm::Instruction::FNeg:
+		if( src_type->isFloatTy() ) val.FloatVal= -op.FloatVal;
+		else if( src_type->isDoubleTy() ) val.DoubleVal = -op.DoubleVal;
+		else U_ASSERT(false);
+		break;
+
 	case llvm::Instruction::SIToFP:
 		U_ASSERT(src_type->isIntegerTy());
 		if( dst_type->isFloatTy() )

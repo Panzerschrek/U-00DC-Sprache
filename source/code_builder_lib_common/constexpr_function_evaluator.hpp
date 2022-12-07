@@ -1,5 +1,6 @@
 #pragma once
 #include "push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/DenseMap.h>
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/ExecutionEngine/GenericValue.h>

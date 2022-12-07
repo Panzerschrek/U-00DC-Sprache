@@ -499,7 +499,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 {
 	LexicalAnalysisResult result;
 
-	Iterator it= &program_text.front();
+	Iterator it= program_text.data();
 	const Iterator it_end= it + program_text.size();
 
 	if( program_text.size() >= 3u && program_text.substr(0, 3) == "\xEF\xBB\xBF" )
