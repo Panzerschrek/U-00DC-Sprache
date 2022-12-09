@@ -9,6 +9,9 @@ namespace ust
 template</ type T />
 class box
 {
+	// Forbid box_nullable for structs with references inside.
+	static_assert( typeinfo</T/>.references_tags_count == 0s );
+
 public:
 	type hasher= box_hasher;
 
@@ -67,11 +70,6 @@ public:
 	}
 
 private:
-	fn check_type()
-	{
-		static_assert( typeinfo</T/>.references_tags_count == 0s );
-	}
-
 	type element_type_for_shared_check= T;
 
 private:
