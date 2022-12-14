@@ -1423,7 +1423,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	U_UNUSED(names);
 
 	// TODO - calculate it properly.
-	const bool is_shared= false;
+	const Type type = PrepareType( *shared_expression.type_, names, function_context );
+	const bool is_shared= GetTypeShared( type, names, shared_expression.src_loc_ );
 
 	Variable result;
 	result.location= Variable::Location::LLVMRegister;

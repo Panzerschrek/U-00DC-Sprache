@@ -30,10 +30,67 @@ def SharedExpressionDeclaration_Test0():
 	c_program_text= """
 		var bool a = shared</i32/>;
 		struct S{}
-		var bool s = shared</s/>;
+		var bool s = shared</S/>;
 		class C shared {}
 		var bool c = shared</C/>;
 		var bool a4 = shared</[f32, 4]/>;
 		var bool fb = shared</tup[f32, bool]/>;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SharedExporession_Test0():
+	c_program_text= """
+		// Fundamental types, raw pointers, function pointers, enums have no "shared" tag.
+		static_assert( !shared</i32/> );
+		static_assert( !shared</bool/> );
+		static_assert( !shared</f32/> );
+		static_assert( !shared</ [i32, 3] /> );
+		static_assert( !shared</ tup[ bool, tup[], [f32, 4] ] /> );
+		static_assert( !shared</ $(u64) /> );
+		static_assert( !shared</ fn(i32 a, f32 b) /> );
+
+		enum E{ A, B, C }
+		static_assert( !shared</ E /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SharedExporession_Test1():
+	c_program_text= """
+		struct A{ bool b; f32 f; f64 d; char16 c; }
+		static_assert( !shared</A/> );
+		static_assert( !shared</ [A, 7] /> );
+
+		struct B shared{}
+		static_assert( shared</B/> );
+		static_assert( shared</ tup[bool, B] /> );
+		static_assert( shared</ tup[C, B] /> );
+		static_assert( shared</ tup[B, C] /> );
+
+		struct C { i32 i; B b; }
+		static_assert( shared</C/> );
+
+		struct D{ [C, 2] c2; f32 f; }
+		static_assert( shared</D/> );
+
+		class E interface shared {}
+		static_assert( shared</E/> );
+
+		class F : E {}
+		static_assert( shared</F/> );
+
+		class G shared(true) {}
+		static_assert( shared</G/> );
+
+		class H shared(false) {}
+		static_assert( !shared</H/> );
+
+		class I shared( shared</A/> ) {}
+		static_assert( !shared</I/> );
+
+		class J shared( shared</B/> ) {}
+		static_assert( shared</J/> );
+
 	"""
 	tests_lib.build_program( c_program_text )

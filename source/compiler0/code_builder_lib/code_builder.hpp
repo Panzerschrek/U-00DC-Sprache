@@ -163,6 +163,10 @@ private:
 		const Class& the_class,
 		FunctionContext& function_context );
 
+	// Shared stuff
+
+	bool GetTypeShared( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
+
 	// Templates
 	void PrepareTypeTemplate(
 		const Synt::TypeTemplate& type_template_declaration,
