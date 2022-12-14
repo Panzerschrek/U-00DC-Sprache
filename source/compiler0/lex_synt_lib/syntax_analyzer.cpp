@@ -1156,6 +1156,19 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(typeinfo_);
 		}
+		else if( it_->text == Keywords::shared_ )
+		{
+			SharedExpression shared_expression(it_->src_loc );
+			NextLexem();
+
+			ExpectLexem( Lexem::Type::TemplateBracketLeft );
+
+			shared_expression.type_= std::make_unique<TypeName>( ParseTypeName() );
+
+			ExpectLexem( Lexem::Type::TemplateBracketRight );
+
+			return std::move(shared_expression);
+		}
 		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
 			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
 		else

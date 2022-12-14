@@ -135,6 +135,10 @@ TypeInfo::TypeInfo( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+SharedExpression::SharedExpression( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 BooleanConstant::BooleanConstant( const SrcLoc& src_loc, bool value )
 	: SyntaxElementBase(src_loc)
 	, value_( value )

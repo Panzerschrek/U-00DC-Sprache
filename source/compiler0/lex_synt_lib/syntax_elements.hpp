@@ -48,6 +48,7 @@ struct CastImut;
 struct CastRef;
 struct CastRefUnsafe;
 struct TypeInfo;
+struct SharedExpression;
 
 struct SequenceInitializer;
 struct StructNamedInitializer;
@@ -128,6 +129,7 @@ using Expression= std::variant<
 	CastRef,
 	CastRefUnsafe,
 	TypeInfo,
+	SharedExpression,
 	// Type name in expression context
 	ArrayTypeName,
 	FunctionTypePtr,
@@ -383,6 +385,13 @@ struct CastMut final : public SyntaxElementBase
 struct TypeInfo final : public SyntaxElementBase
 {
 	TypeInfo( const SrcLoc& src_loc );
+
+	std::unique_ptr<TypeName> type_;
+};
+
+struct SharedExpression final : public SyntaxElementBase
+{
+	SharedExpression( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> type_;
 };

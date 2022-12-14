@@ -398,6 +398,14 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( *typeinfo_.type_, stream );
 			stream << " />";
 		}
+		void operator()( const SharedExpression& shared_expression ) const
+		{
+			if( shared_expression.type_ == nullptr )
+				return;
+			stream << "</ ";
+			ElementWrite( *shared_expression.type_, stream );
+			stream << " />";
+		}
 		void operator()( const UnaryMinus& unary_minus ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::Sub );

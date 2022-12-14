@@ -1418,6 +1418,31 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::SharedExpression& shared_expression )
+{
+	U_UNUSED(names);
+
+	// TODO - calculate it properly.
+	const bool is_shared= false;
+
+	Variable result;
+	result.location= Variable::Location::LLVMRegister;
+	result.value_type= ValueType::Value;
+	result.type= bool_type_;
+
+	result.llvm_value= result.constexpr_value=
+		llvm::Constant::getIntegerValue(
+			fundamental_llvm_types_.bool_ ,
+			llvm::APInt( 1u, uint64_t(is_shared) ) );
+
+	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, Keyword( Keywords::shared_ ) );
+	RegisterTemporaryVariable( function_context, result );
+	return Value ( std::move(result), shared_expression.src_loc_ );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::ArrayTypeName& type_name )
 {
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
@@ -1446,7 +1471,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
 }
-
 
 std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const OverloadedOperator op,
