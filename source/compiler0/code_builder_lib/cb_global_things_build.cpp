@@ -431,8 +431,6 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 	DETECT_GLOBALS_LOOP( &the_class, the_class.members->GetThisNamespaceName(), the_class.body_src_loc );
 
-	the_class.have_shared_state= class_declaration.have_shared_state_;
-
 	NamesScope& class_parent_namespace= *the_class.members->GetParent();
 	// Perform remaining check of parents.
 	for( Class::Parent& parent : the_class.parents )

@@ -789,6 +789,10 @@ struct ClassVisibilityLabel final : public SyntaxElementBase
 	const ClassMemberVisibility visibility_;
 };
 
+struct SharedTagNone{};
+struct SharedTagTrue{};
+using SharedTag= std::variant<SharedTagNone, SharedTagTrue, std::unique_ptr<Expression>>;
+
 struct Class final : public SyntaxElementBase
 {
 	explicit Class( const SrcLoc& src_loc );
@@ -797,7 +801,7 @@ struct Class final : public SyntaxElementBase
 	std::string name_;
 	std::vector<ComplexName> parents_;
 	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
-	bool have_shared_state_= false;
+	SharedTag shared_tag_;
 	bool keep_fields_order_= false;
 };
 

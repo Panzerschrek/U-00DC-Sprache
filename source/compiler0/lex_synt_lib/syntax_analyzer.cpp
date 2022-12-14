@@ -304,7 +304,7 @@ private:
 
 	ClassKindAttribute TryParseClassKindAttribute();
 	std::vector<ComplexName> TryParseClassParentsList();
-	bool TryParseClassSharedState();
+	SharedTag TryParseClassSharedTag();
 	bool TryParseClassFieldsOrdered();
 
 	TypeAlias ParseTypeAlias();
@@ -2553,14 +2553,23 @@ std::vector<ComplexName> SyntaxAnalyzer::TryParseClassParentsList()
 	return result;
 }
 
-bool SyntaxAnalyzer::TryParseClassSharedState()
+SharedTag SyntaxAnalyzer::TryParseClassSharedTag()
 {
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::shared_ )
 	{
 		NextLexem();
-		return true;
+
+		if( it_->type == Lexem::Type::BracketLeft )
+		{
+			NextLexem();
+			Expression expression = ParseExpression();
+			ExpectLexem( Lexem::Type::BracketRight );
+			return std::make_unique<Expression>( std::move(expression) );
+		}
+
+		return SharedTagTrue();
 	}
-	return false;
+	return SharedTagNone();
 }
 
 bool SyntaxAnalyzer::TryParseClassFieldsOrdered()
@@ -2973,7 +2982,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		class_kind_attribute= TryParseClassKindAttribute();
 		parents_list= TryParseClassParentsList();
 	}
-	const bool have_shared_state= TryParseClassSharedState();
+	SharedTag shared_tag= TryParseClassSharedTag();
 	const bool keep_fields_order= TryParseClassFieldsOrdered();
 
 	std::unique_ptr<Class> result= ParseClassBody();
@@ -2982,7 +2991,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		result->src_loc_= class_src_loc;
 		result->name_= std::move(name);
 		result->kind_attribute_= class_kind_attribute;
-		result->have_shared_state_= have_shared_state;
+		result->shared_tag_= std::move(shared_tag);
 		result->keep_fields_order_= keep_fields_order;
 		result->parents_= std::move(parents_list);
 	}
@@ -3325,7 +3334,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 				class_kind_attribute= TryParseClassKindAttribute();
 				class_parents_list= TryParseClassParentsList();
 			}
-			const bool have_shared_state= TryParseClassSharedState();
+			SharedTag shared_tag= TryParseClassSharedTag();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
 
 			ClassPtr class_= ParseClassBody();
@@ -3334,7 +3343,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 				class_->src_loc_= template_thing_src_loc;
 				class_->name_= "_"; // // Give special name for all template classes
 				class_->kind_attribute_= class_kind_attribute;
-				class_->have_shared_state_= have_shared_state;
+				class_->shared_tag_= std::move(shared_tag);
 				class_->keep_fields_order_= keep_fields_order;
 				class_->parents_= std::move(class_parents_list);
 				class_template.something_= std::move(class_);

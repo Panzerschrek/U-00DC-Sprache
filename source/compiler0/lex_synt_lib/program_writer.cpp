@@ -643,8 +643,17 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 		}
 	}
 
-	if( class_.have_shared_state_ )
+	if( std::get_if<SharedTagNone>( &class_.shared_tag_ ) != nullptr )
+	{}
+	else if( std::get_if<SharedTagTrue>( &class_.shared_tag_ ) != nullptr )
 		stream << Keyword( Keywords::shared_ ) << " ";
+	else if( const auto expression_ptr = std::get_if<std::unique_ptr<Expression>>( &class_.shared_tag_ ) )
+	{
+		stream << Keyword( Keywords::shared_ ) << "( ";
+		ElementWrite( **expression_ptr, stream );
+		stream << " ) ";
+	}
+
 	if( class_.keep_fields_order_ )
 		stream << Keyword( Keywords::ordered_ ) << " ";
 
