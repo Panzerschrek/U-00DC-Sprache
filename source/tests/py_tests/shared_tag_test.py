@@ -92,5 +92,49 @@ def SharedExporession_Test1():
 		class J shared( shared</B/> ) {}
 		static_assert( shared</J/> );
 
+		class K polymorph shared {}
+		class L : K shared(false) {}
+		static_assert( shared</L/> );
+
+		class M shared(false) { L l; }
+		static_assert( shared</M/> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SharedExporession_Test2():
+	c_program_text= """
+		// Use recursive shared tag calculation.
+
+		class A shared( shared</A/> ) {}
+		static_assert( !shared</A/> );
+
+		class B shared( shared</C/> ) {}
+		class C{ B b; }
+		static_assert( !shared</C/> );
+		static_assert( !shared</B/> );
+
+		class D shared( shared</E/> ) {}
+		class E shared { D d; }
+		static_assert( shared</D/> );
+		static_assert( shared</E/> );
+
+		class F shared( shared</G/> ) {}
+		class G shared( shared</F/> ) {}
+		static_assert( !shared</F/> );
+		static_assert( !shared</G/> );
+
+		class H shared( shared</I/> ) {}
+		class I shared( shared</H/> ) { J j; }
+		class J shared {}
+		static_assert( shared</I/> );
+		static_assert( shared</H/> );
+
+		class K shared( shared</L/> ) {}
+		class L shared( shared</M/> ) {}
+		class M shared( shared</K/> ) {}
+		static_assert( !shared</K/> );
+		static_assert( !shared</L/> );
+		static_assert( !shared</M/> );
 	"""
 	tests_lib.build_program( c_program_text )
