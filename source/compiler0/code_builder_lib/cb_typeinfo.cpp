@@ -295,9 +295,6 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_bool_field( "is_interface", class_type->kind == Class::Kind::Interface );
 
 		add_bool_field( "is_typeinfo", class_type->typeinfo_type != std::nullopt );
-
-		// TODO - remove this typeinfo field.
-		add_bool_field( "shared", false );
 	}
 	else if( const RawPointerType* const raw_pointer_type= type.GetRawPointerType() )
 	{
