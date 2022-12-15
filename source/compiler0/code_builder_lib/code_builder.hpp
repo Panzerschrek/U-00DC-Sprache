@@ -167,6 +167,7 @@ private:
 
 	bool GetTypeShared( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
 	bool GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
+	void CheckClassSharedTagExpression( ClassPtr class_type );
 
 	// Templates
 	void PrepareTypeTemplate(

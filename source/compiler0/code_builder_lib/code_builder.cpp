@@ -225,6 +225,11 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	compiled_sources_.resize( source_graph.nodes_storage.size() );
 	BuildSourceGraphNode( source_graph, 0u );
 
+	// Perform post-checks for shared tags.
+	// Do this at the end to avoid dependency loops.
+	for( const auto& class_type : classes_table_ )
+		CheckClassSharedTagExpression( class_type.get() );
+
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
 	SetupDereferenceableFunctionParamsAndRetAttributes_r( *compiled_sources_.front().names_map );
@@ -249,6 +254,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 
 	// Clear internal structures.
 	compiled_sources_.clear();
+	classes_table_.clear();
 	enums_table_.clear();
 	template_classes_cache_.clear();
 	typeinfo_cache_.clear();

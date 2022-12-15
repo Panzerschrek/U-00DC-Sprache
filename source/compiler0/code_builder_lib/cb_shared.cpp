@@ -187,4 +187,26 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 	return false;
 }
 
+void CodeBuilder::CheckClassSharedTagExpression( const ClassPtr class_type )
+{
+	if( class_type->syntax_element != nullptr )
+	{
+		if( const auto expression_ptr = std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->shared_tag_ ) )
+		{
+			// Evaluate shared condition using initial class members parent scope.
+			NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
+
+			const Variable v= BuildExpressionCodeEnsureVariable( **expression_ptr, class_parent_scope, *global_function_context_ );
+			if( v.type != bool_type_ )
+			{
+				REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( **expression_ptr ), bool_type_, v.type );
+			}
+			else if( v.constexpr_value == nullptr )
+			{
+				REPORT_ERROR( ExpectedConstantExpression, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( **expression_ptr ) );
+			}
+		}
+	}
+}
+
 } // namespace U
