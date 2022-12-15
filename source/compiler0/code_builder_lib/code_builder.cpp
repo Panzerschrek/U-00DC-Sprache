@@ -262,6 +262,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	template_classes_cache_.clear();
 	typeinfo_cache_.clear();
 	typeinfo_class_table_.clear();
+	shared_expression_stack_.clear();
 	generated_template_things_storage_.clear();
 	generated_template_things_sequence_.clear();
 	debug_info_.builder= nullptr;

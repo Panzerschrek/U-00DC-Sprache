@@ -45,6 +45,7 @@ bool CodeBuilder::GetTypeShared( const Type& type, NamesScope& names_scope, cons
 
 	std::vector<Type> types_stack;
 	const bool result= GetTypeSharedImpl( types_stack, type, names_scope, src_loc );
+	U_ASSERT( types_stack.empty() ); // Should be empty at end.
 
 	shared_expression_stack_.pop_back();
 	return result;
