@@ -5,8 +5,8 @@ import "../ustlib/unordered_map.u"
 type IntPtr= ust::shared_ptr_mt_final</i32/>;
 type IntPtrNullable= ust::shared_ptr_mt_final_nullable</i32/>;
 
-static_assert( !ust::have_shared_state</IntPtr/>() );
-static_assert( !ust::have_shared_state</IntPtrNullable/>() );
+static_assert( !shared</IntPtr/> );
+static_assert( !shared</IntPtrNullable/> );
 
 fn nomangle main() : i32
 {

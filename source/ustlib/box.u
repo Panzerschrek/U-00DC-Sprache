@@ -7,7 +7,7 @@ namespace ust
 {
 
 template</ type T />
-class box
+class box shared( shared</T/> )
 {
 public:
 	type hasher= box_hasher;
@@ -71,8 +71,6 @@ private:
 	{
 		static_assert( typeinfo</T/>.references_tags_count == 0s );
 	}
-
-	type element_type_for_shared_check= T;
 
 private:
 	$(T) ptr_= zero_init;

@@ -26,7 +26,7 @@ namespace ust
 
 // Param - nonempty tuple with unique types.
 template</ type Y />
-class variant
+class variant shared( shared</Y/> )
 {
 public:
 	static_assert( typeinfo</Y/>.is_tuple );
@@ -242,9 +242,6 @@ public:
 		}
 		return false;
 	}
-
-private:
-	type element_type_for_shared_check= Y;
 
 private:
 	aligned_storage</
