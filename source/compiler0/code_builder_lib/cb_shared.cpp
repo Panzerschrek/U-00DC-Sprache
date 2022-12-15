@@ -209,4 +209,36 @@ void CodeBuilder::CheckClassSharedTagExpression( const ClassPtr class_type )
 	}
 }
 
+void CodeBuilder::CheckClassSharedTagInheritance( const ClassPtr class_type )
+{
+	// Forbid changing "shared" tag in inheritance.
+	// If class is "shared" all its parents should be "shared".
+	// Do this in order to prevent "shared" tag disappearing when storing derived class in container (box, box_nullable) for base class.
+	// "shared" tag presence is strongly necessary to statically (during compilation) prevent usage of "shared" classes in multithreaded context.
+
+	if( class_type->parents.empty() )
+		return;
+
+	SrcLoc src_loc;
+	if( class_type->syntax_element != nullptr )
+		src_loc= class_type->syntax_element->src_loc_;
+
+	if( !GetTypeShared( class_type, *class_type->members->GetParent(), src_loc ) )
+		return;
+
+	for( const Class::Parent& parent : class_type->parents )
+	{
+		const ClassPtr parent_class_type= parent.class_;
+
+		SrcLoc parent_src_loc;
+		if( parent_class_type->syntax_element != nullptr )
+			parent_src_loc= parent_class_type->syntax_element->src_loc_;
+
+		if( !GetTypeShared( parent_class_type, *parent_class_type->members->GetParent(), parent_src_loc ) )
+		{
+			REPORT_ERROR( SharedTagAdditionInInheritance, class_type->members->GetErrors(), src_loc, Type(class_type), Type(parent_class_type) );
+		}
+	}
+}
+
 } // namespace U

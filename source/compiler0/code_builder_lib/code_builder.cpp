@@ -228,7 +228,10 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	// Perform post-checks for shared tags.
 	// Do this at the end to avoid dependency loops.
 	for( const auto& class_type : classes_table_ )
+	{
 		CheckClassSharedTagExpression( class_type.get() );
+		CheckClassSharedTagInheritance( class_type.get() );
+	}
 
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
