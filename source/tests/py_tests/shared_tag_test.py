@@ -111,8 +111,8 @@ def SharedExporession_Test2():
 
 		class B shared( shared</C/> ) {}
 		class C{ B b; }
-		static_assert( !shared</C/> );
 		static_assert( !shared</B/> );
+		static_assert( !shared</C/> );
 
 		class D shared( shared</E/> ) {}
 		class E shared { D d; }
@@ -127,8 +127,8 @@ def SharedExporession_Test2():
 		class H shared( shared</I/> ) {}
 		class I shared( shared</H/> ) { J j; }
 		class J shared {}
-		static_assert( shared</I/> );
 		static_assert( shared</H/> );
+		static_assert( shared</I/> );
 
 		class K shared( shared</L/> ) {}
 		class L shared( shared</M/> ) {}

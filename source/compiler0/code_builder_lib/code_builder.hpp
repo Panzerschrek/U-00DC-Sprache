@@ -166,6 +166,7 @@ private:
 	// Shared stuff
 
 	bool GetTypeShared( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
+	bool GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
 
 	// Templates
 	void PrepareTypeTemplate(
@@ -1035,6 +1036,8 @@ private:
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	std::unordered_map< Type, Variable, TypeHasher > typeinfo_cache_;
 	std::vector<std::shared_ptr<Class>> typeinfo_class_table_;
+
+	std::vector<Type> shared_expression_stack_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
 	ProgramStringMap<Value> generated_template_things_storage_;
