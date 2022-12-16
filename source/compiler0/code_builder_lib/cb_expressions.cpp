@@ -1420,9 +1420,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::SharedExpression& shared_expression )
 {
-	U_UNUSED(names);
-
-	// TODO - calculate it properly.
 	const Type type = PrepareType( *shared_expression.type_, names, function_context );
 	const bool is_shared= GetTypeShared( type, names, shared_expression.src_loc_ );
 

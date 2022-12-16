@@ -14,7 +14,7 @@ bool CodeBuilder::GetTypeShared( const Type& type, NamesScope& names_scope, cons
 	{
 		if( type == prev_type )
 		{
-			loop_start = size_t( &prev_type - shared_expression_stack_.data() );
+			loop_start= size_t( &prev_type - shared_expression_stack_.data() );
 			break;
 		}
 	}
@@ -92,7 +92,7 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 		prev_types_stack.pop_back();
 		return false;
 	}
-	if( const auto class_type = type.GetClassType() )
+	if( const auto class_type= type.GetClassType() )
 	{
 		// Check shared tag existence first.
 		if( class_type->syntax_element != nullptr )
@@ -104,11 +104,13 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 				prev_types_stack.pop_back();
 				return true;
 			}
-			else if( const auto expression_ptr = std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->shared_tag_ ) )
+			else if( const auto expression_ptr= std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->shared_tag_ ) )
 			{
+				const Synt::Expression& expression= **expression_ptr;
+
 				// Evaluate shared condition using initial class members parent scope.
 				NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
-				if( const auto shared_expression = std::get_if<Synt::SharedExpression>( &**expression_ptr ) )
+				if( const auto shared_expression= std::get_if<Synt::SharedExpression>( &expression ) )
 				{
 					// Process "shared</T/>" expression specially to handle cases with recursive dependencies.
 					// TODO - handle also simple logical expressions with "shared" tag?
@@ -122,14 +124,14 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 				else
 				{
 					// Process general shared expression. This approach can'r resolve circular dependency.
-					const Variable v= BuildExpressionCodeEnsureVariable( **expression_ptr, class_parent_scope, *global_function_context_ );
+					const Variable v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
 					if( v.type != bool_type_ )
 					{
-						REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( **expression_ptr ), bool_type_, v.type );
+						REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v.type );
 					}
 					else if( v.constexpr_value == nullptr )
 					{
-						REPORT_ERROR( ExpectedConstantExpression, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( **expression_ptr ) );
+						REPORT_ERROR( ExpectedConstantExpression, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
 					}
 					else if( !v.constexpr_value->isZeroValue() )
 					{
@@ -138,6 +140,7 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 					}
 				}
 			}
+			else{ U_ASSERT(false); } // Unhandled shared tag kind.
 		}
 
 		// Check "shared" tag existence for parents.
@@ -166,7 +169,7 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 		{
 			if( const auto value= class_type->members->GetThisScopeValue( field_name ) )
 			{
-				if( const auto class_field = value->GetClassField() )
+				if( const auto class_field= value->GetClassField() )
 				{
 					// Check shared tag for both reference and non-reference fields.
 					if( GetTypeSharedImpl( prev_types_stack, class_field->type, names_scope, src_loc ) )
@@ -192,19 +195,21 @@ void CodeBuilder::CheckClassSharedTagExpression( const ClassPtr class_type )
 {
 	if( class_type->syntax_element != nullptr )
 	{
-		if( const auto expression_ptr = std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->shared_tag_ ) )
+		if( const auto expression_ptr= std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->shared_tag_ ) )
 		{
+			const Synt::Expression& expression= **expression_ptr;
+
 			// Evaluate shared condition using initial class members parent scope.
 			NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
 
-			const Variable v= BuildExpressionCodeEnsureVariable( **expression_ptr, class_parent_scope, *global_function_context_ );
+			const Variable v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
 			if( v.type != bool_type_ )
 			{
-				REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( **expression_ptr ), bool_type_, v.type );
+				REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v.type );
 			}
-			else if( v.constexpr_value == nullptr )
+			if( v.constexpr_value == nullptr )
 			{
-				REPORT_ERROR( ExpectedConstantExpression, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( **expression_ptr ) );
+				REPORT_ERROR( ExpectedConstantExpression, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
 			}
 		}
 	}
