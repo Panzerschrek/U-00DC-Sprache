@@ -39,6 +39,35 @@ def SharedTagExpression_Check2():
 	assert( errors_list[0].src_loc.line == 5 )
 
 
+def SharedTagDependencyLoop_Test0():
+	c_program_text= """
+		struct S shared( v ) {} // Can't handle expression except "shared" expression without triggering globals loop.
+		auto v = shared</S/>;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) or HaveError( errors_list, "GlobalsLoopDetected", 3 ) )
+
+
+def SharedTagDependencyLoop_Test1():
+	c_program_text= """
+		struct S shared( !shared</S/> ) {} // Can't handle complex expression in "shared" tag.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def SharedTagDependencyLoop_Test2():
+	c_program_text= """
+		auto x = false;
+		struct S shared( x || shared</S/> ) {} // Can't handle complex expression in "shared" tag.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 3 ) )
+
+
 def SharedTagAdditionInInheritance_Test0():
 	c_program_text= """
 		// Mark derived class as "shared".
