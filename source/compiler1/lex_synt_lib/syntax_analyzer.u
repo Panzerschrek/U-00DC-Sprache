@@ -762,6 +762,19 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 
 		return move(typeinfo_);
 	}
+	else if( IsKeyword( it_.front(), Keyword::shared_ ) )
+	{
+		var SharedExpression mut shared_expression{ .src_loc= it_.front().src_loc };
+		NextLexem();
+
+		ExpectLexem( Lexem::Type::TemplateBracketLeft );
+
+		shared_expression.type_name= ParseTypeName();
+
+		ExpectLexem( Lexem::Type::TemplateBracketRight );
+
+		return move(shared_expression);
+	}
 	else if( IsKeyword( it_.front(), Keyword::cast_ref_ ) )
 	{
 		auto src_loc= it_.front().src_loc;

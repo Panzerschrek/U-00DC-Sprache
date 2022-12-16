@@ -410,6 +410,26 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return BuildTypeinfo( t, root_names_scope );
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SharedExpression& shared_expression ) : Value
+{
+	auto is_shared = false; // TODO - calculate it properly.
+
+	var Variable mut res
+	{
+		.t= bool_type_,
+		.location= Variable::Location::LLVMRegister,
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, KeywordToString( Keyword::shared_ ) ),
+	};
+
+	unsafe{ res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), select( is_shared ? 1u64 : 0u64 ), LLVMBool::True ); }
+	res.llvm_value= res.constexpr_value;
+
+	// Register variable for references checking.
+	RegisterTemporaryVariable( function_context, res );
+
+	return move(res);
+}
+
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRef& cast_ref_ ) : Value
 {
 	return DoReferenceCast( names_scope, function_context, cast_ref_.t, cast_ref_.expression.deref(), cast_ref_.src_loc, false );

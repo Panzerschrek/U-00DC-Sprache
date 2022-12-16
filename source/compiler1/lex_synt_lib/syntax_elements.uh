@@ -77,6 +77,12 @@ struct Typeinfo
 	TypeName type_name;
 }
 
+struct SharedExpression
+{
+	SrcLoc src_loc;
+	TypeName type_name;
+}
+
 struct CastRef
 {
 	SrcLoc src_loc;
@@ -195,6 +201,7 @@ type Expression= ust::variant</ tup[
 	StringLiteral,
 	ComplexName,
 	Typeinfo,
+	SharedExpression,
 	CastRef,
 	CastRefUnsafe,
 	CastImut,
