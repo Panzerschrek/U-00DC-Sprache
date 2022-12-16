@@ -369,7 +369,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		auto mut lock= class_type.lock_mut();
 		auto &mut class_= lock.deref();
 
-		class_.have_shared_state= syntax_element.have_shared_state;
 
 		if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
 			syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface ||

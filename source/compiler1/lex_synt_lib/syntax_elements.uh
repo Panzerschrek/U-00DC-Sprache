@@ -600,6 +600,10 @@ type ClassElement= ust::variant</ tup[
 
 type ClassElements= ust::vector</ClassElement/>;
 
+struct SharedTagNone{}
+struct SharedTagTrue{}
+type SharedTag= ust::variant</tup[SharedTagNone, SharedTagTrue, ust::shared_ptr_final</Expression/>]/>;
+
 struct Class
 {
 	enum KindAttribute : u8
@@ -617,7 +621,7 @@ struct Class
 	KindAttribute kind_attribute= KindAttribute::Struct;
 	ust::vector</ComplexName/> parents;
 	ClassElements class_elements;
-	bool have_shared_state= false;
+	SharedTag shared_tag;
 	bool keep_fields_order= false;
 }
 
