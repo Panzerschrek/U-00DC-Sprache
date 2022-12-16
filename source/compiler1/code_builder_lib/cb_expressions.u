@@ -412,7 +412,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SharedExpression& shared_expression ) : Value
 {
-	auto is_shared = false; // TODO - calculate it properly.
+	var Type t= PrepareType( names_scope, function_context, shared_expression.type_name );
+	var bool is_shared= GetTypeShared( t, names_scope, shared_expression.src_loc );
 
 	var Variable mut res
 	{

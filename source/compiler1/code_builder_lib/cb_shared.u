@@ -136,11 +136,11 @@ fn CodeBuilder::GetTypeSharedImpl( mut this, ust::vector</Type/> &mut prev_types
 					var Variable v= BuildExpressionCodeEnsureVariable( class_parent_scope, function_context, expression_ptr.deref() );
 					if( v.t != bool_type_ )
 					{
-						REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( expression_ptr.deref() ), bool_type_, v.t )
+						REPORT_ERROR( TypesMismatch, class_parent_scope, Synt::GetSrcLoc( expression_ptr.deref() ), bool_type_, v.t )
 					}
 					else if( v.constexpr_value == LLVMValueRef::Null )
 					{
-						REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( expression_ptr.deref() ) )
+						REPORT_ERROR( ExpectedConstantExpression, class_parent_scope, Synt::GetSrcLoc( expression_ptr.deref() ) )
 					}
 					else
 					{
@@ -160,7 +160,8 @@ fn CodeBuilder::GetTypeSharedImpl( mut this, ust::vector</Type/> &mut prev_types
 		// Check "shared" tag existence for parents.
 		PrepareClassParentsList( class_type );
 
-		foreach( parent : class_type.lock_imut().deref().parents )
+		auto parents= class_type.lock_imut().deref().parents; // Copy parents container to avoid recursive call under class lock.
+		foreach( parent : parents )
 		{
 			if( GetTypeSharedImpl( prev_types_stack, parent.class_, names_scope, src_loc ) )
 			{
@@ -196,6 +197,54 @@ fn CodeBuilder::GetTypeSharedImpl( mut this, ust::vector</Type/> &mut prev_types
 
 	// Unhandled type kind.
 	halt;
+}
+
+fn CodeBuilder::CheckClassSharedTagExpression( mut this, ClassTypePtr& class_type )
+{
+	auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
+	if( !syntax_element_ptr.empty() )
+	{
+		var Synt::Class& syntax_element= syntax_element_ptr.try_deref();
+
+		if_var( &expression_ptr : syntax_element.shared_tag.get</ust::shared_ptr_final</Synt::Expression/>/>() )
+		{
+			var NamesScopePtr class_parent_scope= class_type.lock_imut().deref().members_initial.lock_imut().deref().GetParent().try_to_non_nullable();
+
+			var FunctionContext mut function_context= CreateGlobalFunctionContext();
+
+			var Variable v= BuildExpressionCodeEnsureVariable( class_parent_scope, function_context, expression_ptr.deref() );
+			if( v.t != bool_type_ )
+			{
+				REPORT_ERROR( TypesMismatch, class_parent_scope, Synt::GetSrcLoc( expression_ptr.deref() ), bool_type_, v.t )
+			}
+			if( v.constexpr_value == LLVMValueRef::Null )
+			{
+				REPORT_ERROR( ExpectedConstantExpression, class_parent_scope, Synt::GetSrcLoc( expression_ptr.deref() ) )
+			}
+		}
+	}
+}
+
+fn CodeBuilder::CheckClassSharedTagInheritance( mut this, ClassTypePtr& class_type )
+{
+	var NamesScopePtr class_parent_scope= class_type.lock_imut().deref().members_initial.lock_imut().deref().GetParent().try_to_non_nullable();
+
+	var SrcLoc mut src_loc= GetValueSrcLoc( class_type );
+
+	if( !GetTypeShared( class_type, class_parent_scope, src_loc ) )
+	{
+		// If type is not "shared" - do not care about "shared" tag existance on parents.
+		return;
+	}
+
+	auto parents= class_type.lock_imut().deref().parents; // Copy parents container to avoid recursive call under class lock.
+	foreach( parent : parents )
+	{
+		if( !GetTypeShared( parent.class_, class_parent_scope, src_loc ) )
+		{
+			REPORT_ERROR( SharedTagAdditionInInheritance, class_parent_scope, src_loc, Type(class_type), Type(parent.class_) )
+		}
+	}
 }
 
 } // namespace U1
