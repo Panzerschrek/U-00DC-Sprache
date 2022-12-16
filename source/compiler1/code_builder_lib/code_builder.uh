@@ -410,6 +410,14 @@ private:
 		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
 
+
+	// Shared stuff
+
+	fn GetTypeShared( mut this, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool;
+	fn GetTypeSharedImpl( mut this, ust::vector</Type/> &mut prev_types_stack, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool;
+	fn CheckClassSharedTagExpression( mut this, ClassTypePtr& class_type );
+	fn CheckClassSharedTagInheritance( mut this, ClassTypePtr& class_type );
+
 	// Templates
 	fn PrepareTypeTemplate(
 		mut this,
@@ -941,6 +949,8 @@ private:
 
 	// For globals loops detection.
 	GlobalThingsStackPtr global_things_stack_ptr_;
+
+	ust::vector</Type/> shared_expression_stack_;
 
 	// Debug info
 	bool imut build_debug_info_;

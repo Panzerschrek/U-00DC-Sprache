@@ -1,0 +1,201 @@
+import "/keywords.uh"
+import "error_reporting.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::GetTypeShared( mut this, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool
+{
+	var size_type mut loop_start= shared_expression_stack_.size();
+	for( auto mut i = 0s; i < shared_expression_stack_.size(); ++i )
+	{
+		if( t == shared_expression_stack_[i] )
+		{
+			loop_start = i;
+			break;
+		}
+	}
+
+	if( loop_start < shared_expression_stack_.size() )
+	{
+		var ust::string8 mut description;
+
+		for( auto mut i= loop_start; i < shared_expression_stack_.size(); ++i )
+		{
+			description += KeywordToString( Keyword::shared_ );
+			description += "</";
+			description += shared_expression_stack_[i].ToString();
+			description += "/>";
+			description += " -> ";
+		}
+
+		description += KeywordToString( Keyword::shared_ );
+		description += "</";
+		description += t.ToString();
+		description += "/>";
+
+		auto mut errors_container_lock= root_errors_container_.try_lock_mut();
+
+		errors_container_lock.deref().push_back(
+			ReportError( CodeBuilderErrorCode::GlobalsLoopDetected, src_loc, description ) );
+
+		return false;
+	}
+
+	shared_expression_stack_.push_back(t);
+
+	var ust::vector</Type/> mut types_stack;
+	var bool result= GetTypeSharedImpl( types_stack, t, names_scope, src_loc );
+
+	shared_expression_stack_.drop_back();
+	return result;
+}
+
+fn CodeBuilder::GetTypeSharedImpl( mut this, ust::vector</Type/> &mut prev_types_stack, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool
+{
+	// Simple non-recursive types without "shared" tag.
+	if( !t.GetFundamentalType().empty() ||
+		!t.GetRawPointerType().empty() ||
+		!t.GetFunctionType().empty() ||
+		!t.GetFunctionPointerType().empty() ||
+		!t.GetEnumType().empty() )
+	{
+		return false;
+	}
+
+	// Break recursive dependency. It is fine, since "x = y || x" is equivalent to " x = y || false".
+	foreach( &prev_type : prev_types_stack )
+	{
+		if( t == prev_type )
+		{
+			return false;
+		}
+	}
+
+	// Do not forget to call "pop_back" before return!
+	prev_types_stack.push_back( t );
+
+	if_var( &array_type : t.GetArrayType() )
+	{
+		var bool is_shared= GetTypeSharedImpl( prev_types_stack, array_type.element_type, names_scope, src_loc );
+		prev_types_stack.pop_back();
+		return is_shared;
+	}
+
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( GetTypeSharedImpl( prev_types_stack, element_type, names_scope, src_loc ) )
+			{
+				prev_types_stack.pop_back();
+				return true;
+			}
+		}
+
+		prev_types_stack.pop_back();
+		return false;
+	}
+
+	if_var( &class_type : t.GetClassType() )
+	{
+		// Check shared tag existence first.
+		auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
+		if( !syntax_element_ptr.empty() )
+		{
+			var Synt::Class& syntax_element= syntax_element_ptr.try_deref();
+
+			if_var( &shared_tag_none : syntax_element.shared_tag.get</Synt::SharedTagNone/>() )
+			{}
+			if_var( &shared_tag_none : syntax_element.shared_tag.get</Synt::SharedTagTrue/>() )
+			{
+				prev_types_stack.pop_back();
+				return true;
+			}
+			if_var( &expression_ptr : syntax_element.shared_tag.get</ust::shared_ptr_final</Synt::Expression/>/>() )
+			{
+				var NamesScopePtr class_parent_scope= class_type.lock_imut().deref().members_initial.lock_imut().deref().GetParent().try_to_non_nullable();
+
+				var FunctionContext mut function_context= CreateGlobalFunctionContext();
+
+				auto mut is_shared_expression= false;
+				if_var( &shared_expression : expression_ptr.deref().get</Synt::SharedExpression/>() )
+				{
+					is_shared_expression= true;
+
+					var Type dependent_type= PrepareType( class_parent_scope, function_context, shared_expression.type_name );
+					if( GetTypeSharedImpl( prev_types_stack, dependent_type, names_scope, src_loc ) )
+					{
+						prev_types_stack.pop_back();
+						return true;
+					}
+				}
+				if( !is_shared_expression )
+				{
+					var Variable v= BuildExpressionCodeEnsureVariable( class_parent_scope, function_context, expression_ptr.deref() );
+					if( v.t != bool_type_ )
+					{
+						REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( expression_ptr.deref() ), bool_type_, v.t )
+					}
+					else if( v.constexpr_value == LLVMValueRef::Null )
+					{
+						REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( expression_ptr.deref() ) )
+					}
+					else
+					{
+						var u64 mut val= zero_init;
+						unsafe{  val= LLVMConstIntGetZExtValue( v.constexpr_value );  }
+
+						if( val != 0u64 )
+						{
+							prev_types_stack.pop_back();
+							return true;
+						}
+					}
+				}
+			}
+		}
+
+		// Check "shared" tag existence for parents.
+		PrepareClassParentsList( class_type );
+
+		foreach( parent : class_type.lock_imut().deref().parents )
+		{
+			if( GetTypeSharedImpl( prev_types_stack, parent.class_, names_scope, src_loc ) )
+			{
+				prev_types_stack.pop_back();
+				return true;
+			}
+		}
+
+		// Check "shared" tag existence for fields. Type completion is required for this.
+
+		if( !EnsureTypeComplete( t ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, t )
+			prev_types_stack.pop_back();
+			return false;
+		}
+
+		auto fields= class_type.lock_imut().deref().fields_order; // Copy fields container to avoid recursive call under class lock.
+
+		foreach( &field : fields )
+		{
+			var Type field_type= field[1].lock_imut().deref().t; // Copy type to avoid recursive call under class field lock.
+			if( GetTypeSharedImpl( prev_types_stack, field_type, names_scope, src_loc ) )
+			{
+				prev_types_stack.pop_back();
+				return true;
+			}
+		}
+
+		prev_types_stack.pop_back();
+		return false;
+	}
+
+	// Unhandled type kind.
+	halt;
+}
+
+} // namespace U1
