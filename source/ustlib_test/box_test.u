@@ -31,7 +31,7 @@ class Impl : I0, I1 { i32 x=0; }
 class ImplDerived : Impl { i32 y= 0; }
 
 struct SNonSync non_sync{}
-type SNonSyncBox= ust::box</NonSync/>; // Should be ok for types with "non_sync" tag
+type SNonSyncBox= ust::box</SNonSync/>; // Should be ok for types with "non_sync" tag
 static_assert( non_sync</SNonSyncBox/> );
 
 fn nomangle main() : i32
