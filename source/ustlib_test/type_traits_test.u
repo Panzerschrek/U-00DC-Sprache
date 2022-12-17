@@ -1,5 +1,6 @@
 //##success_test
 import "../ustlib/type_traits.u"
+import "../ustlib/box_nullable.u"
 
 type I16= i16;
 
@@ -140,7 +141,6 @@ static_assert( !ust::class_have_method</ LargeClassWithMethods, fn() unsafe />( 
 static_assert(  ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &imut c ) unsafe />( "SomeUnsafe" ) );
 static_assert( !ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &imut c ) />( "SomeUnsafe" ) );
 static_assert(  ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWithMethods &mut c ) />( "destructor" ) );
-
 
 fn nomangle main() : i32
 {

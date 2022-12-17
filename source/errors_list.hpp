@@ -160,6 +160,7 @@ PROCESS_ERROR( ConstructorForInterface, "Constructor for interface." )
 PROCESS_ERROR( ConstructingAbstractClassOrInterface, "Constructing object of class \"{0}\", which is abstract or interface." )
 PROCESS_ERROR( MoveAssignForNonFinalPolymorphClass, "Perform move-assignment for non-final polymorph class \"{0}\"." )
 PROCESS_ERROR( TakeForNonFinalPolymorphClass, "Taking value of non-final polymorph class \"{0}\"." )
+PROCESS_ERROR( NonSyncTagAdditionInInheritance, "Class \"{0}\" is marked as \"non_sync\" or contains \"non_sync\" fields but its parent \"{1}\" is not \"non_sync\". Changing \"non_sync\" property in inheritance is forbidden." )
 
 // Auto functions errors
 PROCESS_ERROR( ExpectedBodyForAutoFunction, "Expected body for function \"{0}\", because return type declared as \"auto\"." )

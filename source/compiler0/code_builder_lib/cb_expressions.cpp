@@ -1418,6 +1418,29 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::NonSyncExpression& non_sync_expression )
+{
+	const Type type= PrepareType( *non_sync_expression.type_, names, function_context );
+	const bool is_non_sync= GetTypeNonSync( type, names, non_sync_expression.src_loc_ );
+
+	Variable result;
+	result.location= Variable::Location::LLVMRegister;
+	result.value_type= ValueType::Value;
+	result.type= bool_type_;
+
+	result.llvm_value= result.constexpr_value=
+		llvm::Constant::getIntegerValue(
+			fundamental_llvm_types_.bool_ ,
+			llvm::APInt( 1u, uint64_t(is_non_sync) ) );
+
+	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, Keyword( Keywords::non_sync_ ) );
+	RegisterTemporaryVariable( function_context, result );
+	return Value ( std::move(result), non_sync_expression.src_loc_ );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::ArrayTypeName& type_name )
 {
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
@@ -1446,7 +1469,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
 }
-
 
 std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	const OverloadedOperator op,

@@ -13,6 +13,8 @@ namespace ust
 template</ type Func, type ResultType />
 class thread
 {
+	static_assert( !non_sync</Func/> );
+
 public:
 	fn constructor( mut this'a', Func mut func'b' ) ' a <- b '
 	( impl_( Impl(move(func)) ) )

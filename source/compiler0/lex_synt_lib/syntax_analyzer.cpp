@@ -304,7 +304,7 @@ private:
 
 	ClassKindAttribute TryParseClassKindAttribute();
 	std::vector<ComplexName> TryParseClassParentsList();
-	bool TryParseClassSharedState();
+	NonSyncTag TryParseClassNonSyncTag();
 	bool TryParseClassFieldsOrdered();
 
 	TypeAlias ParseTypeAlias();
@@ -1155,6 +1155,19 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			ExpectLexem( Lexem::Type::TemplateBracketRight );
 
 			return std::move(typeinfo_);
+		}
+		else if( it_->text == Keywords::non_sync_ )
+		{
+			NonSyncExpression non_sync_expression(it_->src_loc );
+			NextLexem();
+
+			ExpectLexem( Lexem::Type::TemplateBracketLeft );
+
+			non_sync_expression.type_= std::make_unique<TypeName>( ParseTypeName() );
+
+			ExpectLexem( Lexem::Type::TemplateBracketRight );
+
+			return std::move(non_sync_expression);
 		}
 		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
 			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
@@ -2553,14 +2566,23 @@ std::vector<ComplexName> SyntaxAnalyzer::TryParseClassParentsList()
 	return result;
 }
 
-bool SyntaxAnalyzer::TryParseClassSharedState()
+NonSyncTag SyntaxAnalyzer::TryParseClassNonSyncTag()
 {
-	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::shared_ )
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::non_sync_ )
 	{
 		NextLexem();
-		return true;
+
+		if( it_->type == Lexem::Type::BracketLeft )
+		{
+			NextLexem();
+			Expression expression= ParseExpression();
+			ExpectLexem( Lexem::Type::BracketRight );
+			return std::make_unique<Expression>( std::move(expression) );
+		}
+
+		return NonSyncTagTrue();
 	}
-	return false;
+	return NonSyncTagNone();
 }
 
 bool SyntaxAnalyzer::TryParseClassFieldsOrdered()
@@ -2973,7 +2995,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		class_kind_attribute= TryParseClassKindAttribute();
 		parents_list= TryParseClassParentsList();
 	}
-	const bool have_shared_state= TryParseClassSharedState();
+	NonSyncTag non_sync_tag= TryParseClassNonSyncTag();
 	const bool keep_fields_order= TryParseClassFieldsOrdered();
 
 	std::unique_ptr<Class> result= ParseClassBody();
@@ -2982,7 +3004,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		result->src_loc_= class_src_loc;
 		result->name_= std::move(name);
 		result->kind_attribute_= class_kind_attribute;
-		result->have_shared_state_= have_shared_state;
+		result->non_sync_tag_= std::move(non_sync_tag);
 		result->keep_fields_order_= keep_fields_order;
 		result->parents_= std::move(parents_list);
 	}
@@ -3325,7 +3347,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 				class_kind_attribute= TryParseClassKindAttribute();
 				class_parents_list= TryParseClassParentsList();
 			}
-			const bool have_shared_state= TryParseClassSharedState();
+			NonSyncTag non_sync_tag= TryParseClassNonSyncTag();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
 
 			ClassPtr class_= ParseClassBody();
@@ -3334,7 +3356,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 				class_->src_loc_= template_thing_src_loc;
 				class_->name_= "_"; // // Give special name for all template classes
 				class_->kind_attribute_= class_kind_attribute;
-				class_->have_shared_state_= have_shared_state;
+				class_->non_sync_tag_= std::move(non_sync_tag);
 				class_->keep_fields_order_= keep_fields_order;
 				class_->parents_= std::move(class_parents_list);
 				class_template.something_= std::move(class_);

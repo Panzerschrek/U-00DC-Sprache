@@ -77,6 +77,12 @@ struct Typeinfo
 	TypeName type_name;
 }
 
+struct NonSyncExpression
+{
+	SrcLoc src_loc;
+	TypeName type_name;
+}
+
 struct CastRef
 {
 	SrcLoc src_loc;
@@ -195,6 +201,7 @@ type Expression= ust::variant</ tup[
 	StringLiteral,
 	ComplexName,
 	Typeinfo,
+	NonSyncExpression,
 	CastRef,
 	CastRefUnsafe,
 	CastImut,
@@ -600,6 +607,10 @@ type ClassElement= ust::variant</ tup[
 
 type ClassElements= ust::vector</ClassElement/>;
 
+struct NonSyncTagNone{}
+struct NonSyncTagTrue{}
+type NonSyncTag= ust::variant</tup[NonSyncTagNone, NonSyncTagTrue, ust::shared_ptr_final</Expression/>]/>;
+
 struct Class
 {
 	enum KindAttribute : u8
@@ -617,7 +628,7 @@ struct Class
 	KindAttribute kind_attribute= KindAttribute::Struct;
 	ust::vector</ComplexName/> parents;
 	ClassElements class_elements;
-	bool have_shared_state= false;
+	NonSyncTag non_sync_tag;
 	bool keep_fields_order= false;
 }
 

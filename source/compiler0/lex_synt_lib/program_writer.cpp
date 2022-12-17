@@ -398,6 +398,14 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( *typeinfo_.type_, stream );
 			stream << " />";
 		}
+		void operator()( const NonSyncExpression& non_sync_expression ) const
+		{
+			if( non_sync_expression.type_ == nullptr )
+				return;
+			stream << "</ ";
+			ElementWrite( *non_sync_expression.type_, stream );
+			stream << " />";
+		}
 		void operator()( const UnaryMinus& unary_minus ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::Sub );
@@ -643,8 +651,17 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 		}
 	}
 
-	if( class_.have_shared_state_ )
-		stream << Keyword( Keywords::shared_ ) << " ";
+	if( std::get_if<NonSyncTagNone>( &class_.non_sync_tag_ ) != nullptr )
+	{}
+	else if( std::get_if<NonSyncTagTrue>( &class_.non_sync_tag_ ) != nullptr )
+		stream << Keyword( Keywords::non_sync_ ) << " ";
+	else if( const auto expression_ptr = std::get_if<std::unique_ptr<Expression>>( &class_.non_sync_tag_ ) )
+	{
+		stream << Keyword( Keywords::non_sync_ ) << "( ";
+		ElementWrite( **expression_ptr, stream );
+		stream << " ) ";
+	}
+
 	if( class_.keep_fields_order_ )
 		stream << Keyword( Keywords::ordered_ ) << " ";
 

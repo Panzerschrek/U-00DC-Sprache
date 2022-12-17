@@ -34,6 +34,7 @@
    reference_casting
    typeinfo
    unsafe
+   non_sync_tag
    macros
    modules
    c_interaction

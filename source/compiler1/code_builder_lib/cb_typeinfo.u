@@ -438,7 +438,6 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		ADD_BOOL_FIELD( "is_interface", class_.kind == ClassType::Kind::Interface )
 
 		ADD_BOOL_FIELD( "is_typeinfo", !class_.typeinfo_src_type_.empty() )
-		ADD_BOOL_FIELD( "shared", class_.have_shared_state ) // TODO - remove "shared" flag completely, use type alias for shared_ptr classes marking.
 	}
 	if_var( &enum_ptr : t.GetEnumType() )
 	{

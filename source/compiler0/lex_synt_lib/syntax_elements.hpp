@@ -48,6 +48,7 @@ struct CastImut;
 struct CastRef;
 struct CastRefUnsafe;
 struct TypeInfo;
+struct NonSyncExpression;
 
 struct SequenceInitializer;
 struct StructNamedInitializer;
@@ -128,6 +129,7 @@ using Expression= std::variant<
 	CastRef,
 	CastRefUnsafe,
 	TypeInfo,
+	NonSyncExpression,
 	// Type name in expression context
 	ArrayTypeName,
 	FunctionTypePtr,
@@ -383,6 +385,13 @@ struct CastMut final : public SyntaxElementBase
 struct TypeInfo final : public SyntaxElementBase
 {
 	TypeInfo( const SrcLoc& src_loc );
+
+	std::unique_ptr<TypeName> type_;
+};
+
+struct NonSyncExpression final : public SyntaxElementBase
+{
+	NonSyncExpression( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> type_;
 };
@@ -789,6 +798,10 @@ struct ClassVisibilityLabel final : public SyntaxElementBase
 	const ClassMemberVisibility visibility_;
 };
 
+struct NonSyncTagNone{};
+struct NonSyncTagTrue{};
+using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, std::unique_ptr<Expression>>;
+
 struct Class final : public SyntaxElementBase
 {
 	explicit Class( const SrcLoc& src_loc );
@@ -797,7 +810,7 @@ struct Class final : public SyntaxElementBase
 	std::string name_;
 	std::vector<ComplexName> parents_;
 	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
-	bool have_shared_state_= false;
+	NonSyncTag non_sync_tag_;
 	bool keep_fields_order_= false;
 };
 

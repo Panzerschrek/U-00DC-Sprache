@@ -126,8 +126,7 @@ def CanNotDeriveFromThisType_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "CanNotDeriveFromThisType" )
-	assert( errors_list[0].src_loc.line == 3 )
+	assert( HaveError( errors_list, "CanNotDeriveFromThisType", 3 ) )
 
 
 def CanNotDeriveFromThisType_Test1():
@@ -138,8 +137,7 @@ def CanNotDeriveFromThisType_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "CanNotDeriveFromThisType" )
-	assert( errors_list[0].src_loc.line == 4 )
+	assert( HaveError( errors_list, "CanNotDeriveFromThisType", 4 ) )
 
 
 def CanNotDeriveFromThisType_Test2():
@@ -184,8 +182,7 @@ def DuplicatedBaseClass_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "DuplicatedBaseClass" )
-	assert( errors_list[0].src_loc.line == 4 )
+	assert( HaveError( errors_list, "DuplicatedBaseClass", 4 ) )
 
 
 def FieldsForInterfacesNotAllowed_Test0():

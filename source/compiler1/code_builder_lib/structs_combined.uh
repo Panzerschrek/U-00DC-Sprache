@@ -152,7 +152,6 @@ struct ClassType
 	bool is_equality_comparable= false;
 	bool have_explicit_noncopy_constructors= false;
 	bool can_be_constexpr= false;
-	bool have_shared_state= false;
 
 	InnerReferenceKind inner_reference_kind= InnerReferenceKind::None;
 

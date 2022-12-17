@@ -207,6 +207,17 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	source_graph_nodes_build_results_.resize( source_graph.nodes.size() );
 	BuildSourceGraphNode( source_graph, 0s );
 
+	// Perform post-checks for non_sync tags.
+	// Do this at the end to avoid dependency loops.
+	{
+		auto class_table= class_table_;
+		foreach( &class_type : class_table )
+		{
+			CheckClassNonSyncTagExpression( class_type );
+			CheckClassNonSyncTagInheritance( class_type );
+		}
+	}
+
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
 	SetupDereferenceableFunctionParamsAndRetAttributes_r( cast_imut(source_graph_nodes_build_results_).front().names_scope.try_lock_imut().deref() );
@@ -251,6 +262,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	generated_template_things_.clear();
 	generated_template_things_sequence_.clear();
 	typeinfo_cache_.clear();
+	non_sync_expression_stack_.clear();
 
 	if( debug_info_.builder != LLVMDIBuilderRef::Null )
 	{
