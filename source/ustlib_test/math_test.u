@@ -154,6 +154,18 @@ fn DoFloatsTest()
 	halt if( !ust::is_nan( ust::log2( ust::minus_inf</T/>() ) ) ); // result for minus infinity is nan
 	halt if( ust::log2( ust::plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
 
+	// log10
+	halt if( ust::log10( T(0.0) ) >= T(-1e24) );
+	halt if( ust::log10( T(1.0) ) != T(0.0) );
+	ExpectNear( ust::log10( T(10.0) ), T(1.0), T(1.0e-5) );
+	ExpectNear( ust::log10( T(100.0) ), T(2.0), T(1.0e-5) );
+	ExpectNear( ust::log10( T(316.2277660168379) ), T(2.5), T(1.0e-5) );
+	ExpectNear( ust::log10( T(10000000000.0) ), T(10.0), T(1.0e-5) );
+	halt if( !ust::is_nan( ust::log10( ust::nan</T/>() ) ) ); // result for nan is nan
+	halt if( !ust::is_nan( ust::log10( T(-1) ) ) ); // result for negative value is nan
+	halt if( !ust::is_nan( ust::log10( ust::minus_inf</T/>() ) ) ); // result for minus infinity is nan
+	halt if( ust::log10( ust::plus_inf</T/>() ) != ust::plus_inf</T/>() ); // result for infinity is infinity
+
 	// log1p
 	halt if( ust::log1p( T(-1.0) ) >= T(-1e24) );
 	halt if( ust::log1p( T(0.0) ) != T(0.0) );
@@ -331,6 +343,19 @@ fn DoFloatsTest()
 	halt if( !ust::is_nan( ust::trunc( ust::nan</T/>() ) ) ); // result for nan is nan
 	halt if( ust::trunc( ust:: plus_inf</T/>() ) != ust:: plus_inf</T/>() ); // result for infinity is infinity
 	halt if( ust::trunc( ust::minus_inf</T/>() ) != ust::minus_inf</T/>() ); // result for minus infinity is minus infinity
+
+	// fma
+	halt if( ust::fma( T(3.0), T(5.0), T(7.0) ) != T(3.0) * T(5.0) + T(7.0) );
+	halt if( ust::fma( T(3.0), T(-5.5), T(7.0) ) != T(3.0) * T(-5.5) + T(7.0) );
+	halt if( ust::fma( T(-3.0), T(5.0), T(7.0) ) != T(-3.0) * T(5.0) + T(7.0) );
+	halt if( ust::fma( T(3.0), T(5.0), T(-7.0) ) != T(3.0) * T(5.0) + T(-7.0) );
+	halt if( ust::fma( T(0.0), T(5.0), T(7.0) ) != T(0.0) * T(5.0) + T(7.0) );
+	halt if( ust::fma( T(3.0), T(0.0), T(7.0) ) != T(3.0) * T(0.0) + T(7.0) );
+	halt if( ust::fma( T(3.0), T(5.0), T(0.0) ) != T(3.0) * T(5.0) + T(0.0) );
+
+	halt if( !ust::is_nan( ust::fma( ust::nan</T/>(), T(5.0), T(7.0) ) ) );
+	halt if( !ust::is_nan( ust::fma( T(3.0), ust::nan</T/>(), T(7.0) ) ) );
+	halt if( !ust::is_nan( ust::fma( T(3.0), T(5.0), ust::nan</T/>() ) ) );
 }
 
 fn nomangle main() : i32

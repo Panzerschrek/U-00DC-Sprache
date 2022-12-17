@@ -14,6 +14,8 @@ declare float  @llvm.log.f32(float  %x)
 declare double @llvm.log.f64(double %x)
 declare float  @llvm.log2.f32(float  %x)
 declare double @llvm.log2.f64(double %x)
+declare float  @llvm.log10.f32(float  %x)
+declare double @llvm.log10.f64(double %x)
 declare float  @llvm.sin.f32(float  %x)
 declare double @llvm.sin.f64(double %x)
 declare float  @llvm.cos.f32(float  %x)
@@ -27,6 +29,9 @@ declare float  @llvm.round.f32(float  %x)
 declare double @llvm.round.f64(double %x)
 declare float  @llvm.trunc.f32(float  %x)
 declare double @llvm.trunc.f64(double %x)
+
+declare float  @llvm.fma.f32(float  %a, float  %b, float  %c)
+declare double @llvm.fma.f64(double %a, double %b, double %c)
 
 ;
 ; C99 math.h functions
@@ -146,6 +151,20 @@ $ust_log2_f64_impl = comdat any
 define linkonce_odr double @ust_log2_f64_impl( double %x ) unnamed_addr comdat
 {
 	%1= call double @llvm.log2.f64( double %x )
+	ret double %1
+}
+
+$ust_log10_f32_impl = comdat any
+define linkonce_odr float @ust_log10_f32_impl( float %x ) unnamed_addr comdat
+{
+	%1= call float @llvm.log10.f32( float %x )
+	ret float %1
+}
+
+$ust_log10_f64_impl = comdat any
+define linkonce_odr double @ust_log10_f64_impl( double %x ) unnamed_addr comdat
+{
+	%1= call double @llvm.log10.f64( double %x )
 	ret double %1
 }
 
@@ -314,5 +333,19 @@ $ust_trunc_f64_impl = comdat any
 define linkonce_odr double @ust_trunc_f64_impl( double %x ) unnamed_addr comdat
 {
 	%1= call double @llvm.trunc.f64( double %x )
+	ret double %1
+}
+
+$ust_fma_f32_impl = comdat any
+define linkonce_odr float @ust_fma_f32_impl( float %x, float %y, float %z ) unnamed_addr comdat
+{
+	%1= call float @llvm.fma.f32( float %x, float %y, float %z )
+	ret float %1
+}
+
+$ust_fma_f64_impl = comdat any
+define linkonce_odr double @ust_fma_f64_impl( double %x, double %y, double %z ) unnamed_addr comdat
+{
+	%1= call double @llvm.fma.f64( double %x, double %y, double %z )
 	ret double %1
 }

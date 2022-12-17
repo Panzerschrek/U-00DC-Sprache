@@ -57,6 +57,9 @@ fn log( f64 x ) : f64 { return ust_log_f64_impl( x ); }
 fn log2( f32 x ) : f32 { return ust_log2_f32_impl( x ); }
 fn log2( f64 x ) : f64 { return ust_log2_f64_impl( x ); }
 
+fn log10( f32 x ) : f32 { return ust_log10_f32_impl( x ); }
+fn log10( f64 x ) : f64 { return ust_log10_f64_impl( x ); }
+
 fn log1p( f32 x ) : f32 { return ust_log1p_f32_impl( x ); }
 fn log1p( f64 x ) : f64 { return ust_log1p_f64_impl( x ); }
 
@@ -97,11 +100,15 @@ fn round( f64 x ) : f64 { return ust_round_f64_impl( x ); }
 fn trunc( f32 x ) : f32 { return ust_trunc_f32_impl( x ); }
 fn trunc( f64 x ) : f64 { return ust_trunc_f64_impl( x ); }
 
+// Fused multiply-add. Result = x * y + z.
+fn fma( f32 x, f32 y, f32 z ) : f32 { return ust_fma_f32_impl( x, y, z ); }
+fn fma( f64 x, f64 y, f64 z ) : f64 { return ust_fma_f64_impl( x, y, z ); }
+
 // TODO:
 // * add hyperbolic trigonometric functions
 // * add more classification functions - is_finite, is_infinity, is_normal, etc.
 // * add more functions - error function, gamma function, etc.
-// * add special functions with more precision/prfomance - fma, lround, remquo, etc.
+// * add special functions with more precision/performance - lround, remquo, etc.
 // * add constants - pi, e, etc.
 
 namespace math_impl
@@ -160,6 +167,9 @@ fn nomangle ust_log_f64_impl( f64 x ) : f64;
 fn nomangle ust_log2_f32_impl( f32 x ) : f32;
 fn nomangle ust_log2_f64_impl( f64 x ) : f64;
 
+fn nomangle ust_log10_f32_impl( f32 x ) : f32;
+fn nomangle ust_log10_f64_impl( f64 x ) : f64;
+
 fn nomangle ust_log1p_f32_impl( f32 x ) : f32;
 fn nomangle ust_log1p_f64_impl( f64 x ) : f64;
 
@@ -195,3 +205,6 @@ fn nomangle ust_round_f64_impl( f64 x ) : f64;
 
 fn nomangle ust_trunc_f32_impl( f32 x ) : f32;
 fn nomangle ust_trunc_f64_impl( f64 x ) : f64;
+
+fn nomangle ust_fma_f32_impl( f32 x, f32 y, f32 z ) : f32;
+fn nomangle ust_fma_f64_impl( f64 x, f64 y, f64 z ) : f64;
