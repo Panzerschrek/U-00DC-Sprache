@@ -8,7 +8,7 @@ namespace ust
 {
 
 template</ type T />
-class box_nullable shared( shared</T/> )
+class box_nullable non_sync( non_sync</T/> )
 {
 public:
 	type hasher= box_nullable_hasher;

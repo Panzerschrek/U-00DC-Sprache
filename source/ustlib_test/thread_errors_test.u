@@ -2,7 +2,7 @@
 import "../ustlib/thread.u"
 import "../ustlib/shared_ptr.u"
 
-struct CallableObject shared
+struct CallableObject non_sync
 {
 	op()( this )
 	{}
@@ -17,7 +17,7 @@ struct CallableObjectShared
 
 fn nomangle main() : i32
 {
-	{ // Create thread with "shared"-marked function-object.
+	{ // Create thread with "non_sync"-marked function-object.
 		auto thread= ust::make_thread_void( CallableObject() ); //##expect_error TemplateContext
 	}
 	{ // Create thread with function-object, containing non-thread-safe shared_ptr class inside.

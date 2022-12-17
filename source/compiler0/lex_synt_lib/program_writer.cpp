@@ -398,12 +398,12 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( *typeinfo_.type_, stream );
 			stream << " />";
 		}
-		void operator()( const SharedExpression& shared_expression ) const
+		void operator()( const NonSyncExpression& non_sync_expression ) const
 		{
-			if( shared_expression.type_ == nullptr )
+			if( non_sync_expression.type_ == nullptr )
 				return;
 			stream << "</ ";
-			ElementWrite( *shared_expression.type_, stream );
+			ElementWrite( *non_sync_expression.type_, stream );
 			stream << " />";
 		}
 		void operator()( const UnaryMinus& unary_minus ) const
@@ -651,13 +651,13 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 		}
 	}
 
-	if( std::get_if<SharedTagNone>( &class_.shared_tag_ ) != nullptr )
+	if( std::get_if<NonSyncTagNone>( &class_.non_sync_tag_ ) != nullptr )
 	{}
-	else if( std::get_if<SharedTagTrue>( &class_.shared_tag_ ) != nullptr )
-		stream << Keyword( Keywords::shared_ ) << " ";
-	else if( const auto expression_ptr = std::get_if<std::unique_ptr<Expression>>( &class_.shared_tag_ ) )
+	else if( std::get_if<NonSyncTagTrue>( &class_.non_sync_tag_ ) != nullptr )
+		stream << Keyword( Keywords::non_sync_ ) << " ";
+	else if( const auto expression_ptr = std::get_if<std::unique_ptr<Expression>>( &class_.non_sync_tag_ ) )
 	{
-		stream << Keyword( Keywords::shared_ ) << "( ";
+		stream << Keyword( Keywords::non_sync_ ) << "( ";
 		ElementWrite( **expression_ptr, stream );
 		stream << " ) ";
 	}

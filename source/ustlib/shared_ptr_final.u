@@ -4,9 +4,9 @@ import "memory.u"
 namespace ust
 {
 
-// Mark as "shared", because counter operations are not thread-safe.
+// Mark as "non_sync", because counter operations are not thread-safe.
 template</ type T, bool is_nullable />
-class shared_ptr_final_base shared
+class shared_ptr_final_base non_sync
 {
 	// Forbid shared pointers for structs with references inside.
 	static_assert( typeinfo</T/>.references_tags_count == size_type(0) );

@@ -20,7 +20,7 @@ final
 polymorph
 interface
 abstract
-shared
+non_sync
 ordered
 nomangle
 call_conv

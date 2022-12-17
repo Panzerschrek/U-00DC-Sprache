@@ -26,7 +26,7 @@ namespace ust
 
 // Param - nonempty tuple with unique types.
 template</ type Y />
-class variant shared( shared</Y/> )
+class variant non_sync( non_sync</Y/> )
 {
 public:
 	static_assert( typeinfo</Y/>.is_tuple );

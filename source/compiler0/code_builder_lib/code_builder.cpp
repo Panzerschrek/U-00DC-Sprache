@@ -225,12 +225,12 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	compiled_sources_.resize( source_graph.nodes_storage.size() );
 	BuildSourceGraphNode( source_graph, 0u );
 
-	// Perform post-checks for shared tags.
+	// Perform post-checks for non_sync tags.
 	// Do this at the end to avoid dependency loops.
 	for( const auto& class_type : classes_table_ )
 	{
-		CheckClassSharedTagExpression( class_type.get() );
-		CheckClassSharedTagInheritance( class_type.get() );
+		CheckClassNonSyncTagExpression( class_type.get() );
+		CheckClassNonSyncTagInheritance( class_type.get() );
 	}
 
 	// Finalize "defererenceable" attributes.
@@ -262,7 +262,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	template_classes_cache_.clear();
 	typeinfo_cache_.clear();
 	typeinfo_class_table_.clear();
-	shared_expression_stack_.clear();
+	non_sync_expression_stack_.clear();
 	generated_template_things_storage_.clear();
 	generated_template_things_sequence_.clear();
 	debug_info_.builder= nullptr;

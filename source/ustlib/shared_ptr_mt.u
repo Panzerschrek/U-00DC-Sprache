@@ -16,7 +16,7 @@ class shared_ptr_mt_base
 
 	// It's have no sence to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
 	// Use singlethreaded shared pointer instead.
-	static_assert( !shared</T/> );
+	static_assert( !non_sync</T/> );
 
 	type hasher= shared_ptr_mt_base_hasher;
 

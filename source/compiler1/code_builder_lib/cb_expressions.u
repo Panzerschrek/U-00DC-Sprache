@@ -410,19 +410,19 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return BuildTypeinfo( t, root_names_scope );
 }
 
-fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SharedExpression& shared_expression ) : Value
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncExpression& non_sync_expression ) : Value
 {
-	var Type t= PrepareType( names_scope, function_context, shared_expression.type_name );
-	var bool is_shared= GetTypeShared( t, names_scope, shared_expression.src_loc );
+	var Type t= PrepareType( names_scope, function_context, non_sync_expression.type_name );
+	var bool is_non_sync= GetTypeNonSync( t, names_scope, non_sync_expression.src_loc );
 
 	var Variable mut res
 	{
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
-		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, KeywordToString( Keyword::shared_ ) ),
+		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, KeywordToString( Keyword::non_sync_ ) ),
 	};
 
-	unsafe{ res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), select( is_shared ? 1u64 : 0u64 ), LLVMBool::True ); }
+	unsafe{ res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), select( is_non_sync ? 1u64 : 0u64 ), LLVMBool::True ); }
 	res.llvm_value= res.constexpr_value;
 
 	// Register variable for references checking.

@@ -163,12 +163,12 @@ private:
 		const Class& the_class,
 		FunctionContext& function_context );
 
-	// Shared stuff
+	// NonSync stuff
 
-	bool GetTypeShared( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
-	bool GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
-	void CheckClassSharedTagExpression( ClassPtr class_type );
-	void CheckClassSharedTagInheritance( ClassPtr class_type );
+	bool GetTypeNonSync( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
+	bool GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
+	void CheckClassNonSyncTagExpression( ClassPtr class_type );
+	void CheckClassNonSyncTagInheritance( ClassPtr class_type );
 
 	// Templates
 	void PrepareTypeTemplate(
@@ -524,7 +524,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastRef& cast_ref );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastRefUnsafe& cast_ref_unsafe );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeInfo& typeinfo );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::SharedExpression& shared_expression );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncExpression& non_sync_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionTypePtr& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
@@ -1039,7 +1039,7 @@ private:
 	std::unordered_map< Type, Variable, TypeHasher > typeinfo_cache_;
 	std::vector<std::shared_ptr<Class>> typeinfo_class_table_;
 
-	std::vector<Type> shared_expression_stack_;
+	std::vector<Type> non_sync_expression_stack_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
 	ProgramStringMap<Value> generated_template_things_storage_;

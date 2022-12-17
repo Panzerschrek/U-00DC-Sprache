@@ -135,7 +135,7 @@ TypeInfo::TypeInfo( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
-SharedExpression::SharedExpression( const SrcLoc& src_loc )
+NonSyncExpression::NonSyncExpression( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 

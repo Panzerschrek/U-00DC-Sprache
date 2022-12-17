@@ -238,7 +238,7 @@ private:
 	fn ParseClass( mut this ) : Class;
 	fn ParseClassKindAttribute( mut this ) : Class::KindAttribute;
 	fn ParseClassParentsList( mut this ) : ust::vector</ComplexName/>;
-	fn ParseClassSharedTag( mut this ) : SharedTag;
+	fn ParseClassNonSyncTag( mut this ) : NonSyncTag;
 	fn ParseClassOrderedFlag( mut this ) : bool;
 	fn ParseClassBody( mut this ) : ClassElements;
 	fn ParseClassBodyElements( mut this ) : ClassElements;
@@ -762,18 +762,18 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 
 		return move(typeinfo_);
 	}
-	else if( IsKeyword( it_.front(), Keyword::shared_ ) )
+	else if( IsKeyword( it_.front(), Keyword::non_sync_ ) )
 	{
-		var SharedExpression mut shared_expression{ .src_loc= it_.front().src_loc };
+		var NonSyncExpression mut non_sync_expression{ .src_loc= it_.front().src_loc };
 		NextLexem();
 
 		ExpectLexem( Lexem::Type::TemplateBracketLeft );
 
-		shared_expression.type_name= ParseTypeName();
+		non_sync_expression.type_name= ParseTypeName();
 
 		ExpectLexem( Lexem::Type::TemplateBracketRight );
 
-		return move(shared_expression);
+		return move(non_sync_expression);
 	}
 	else if( IsKeyword( it_.front(), Keyword::cast_ref_ ) )
 	{
@@ -2446,7 +2446,7 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 		class_.kind_attribute= ParseClassKindAttribute();
 		class_.parents= ParseClassParentsList();
 	}
-	class_.shared_tag= ParseClassSharedTag();
+	class_.non_sync_tag= ParseClassNonSyncTag();
 	class_.keep_fields_order= ParseClassOrderedFlag();
 
 	class_.class_elements= ParseClassBody();
@@ -2642,9 +2642,9 @@ fn SyntaxAnalyzer::ParseClassParentsList( mut this ) : ust::vector</ComplexName/
 	return move(parents_list);
 }
 
-fn SyntaxAnalyzer::ParseClassSharedTag( mut this ) : SharedTag
+fn SyntaxAnalyzer::ParseClassNonSyncTag( mut this ) : NonSyncTag
 {
-	if( IsKeyword( it_.front(), Keyword::shared_ ) )
+	if( IsKeyword( it_.front(), Keyword::non_sync_ ) )
 	{
 		NextLexem();
 
@@ -2658,10 +2658,10 @@ fn SyntaxAnalyzer::ParseClassSharedTag( mut this ) : SharedTag
 
 			return ust::make_shared_ptr_final( move(expression) );
 		}
-		return SharedTagTrue();
+		return NonSyncTagTrue();
 	}
 
-	return SharedTagNone();
+	return NonSyncTagNone();
 }
 
 fn SyntaxAnalyzer::ParseClassOrderedFlag( mut this ) : bool
@@ -2920,7 +2920,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 			class_.kind_attribute= ParseClassKindAttribute();
 			class_.parents= ParseClassParentsList();
 		}
-		class_.shared_tag= ParseClassSharedTag();
+		class_.non_sync_tag= ParseClassNonSyncTag();
 		class_.keep_fields_order= ParseClassOrderedFlag();
 
 		class_.class_elements= ParseClassBody();

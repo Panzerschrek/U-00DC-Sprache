@@ -7,32 +7,32 @@
 namespace U
 {
 
-bool CodeBuilder::GetTypeShared( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc )
+bool CodeBuilder::GetTypeNonSync( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc )
 {
-	size_t loop_start= shared_expression_stack_.size();
-	for( const Type& prev_type : shared_expression_stack_ )
+	size_t loop_start= non_sync_expression_stack_.size();
+	for( const Type& prev_type : non_sync_expression_stack_ )
 	{
 		if( type == prev_type )
 		{
-			loop_start= size_t( &prev_type - shared_expression_stack_.data() );
+			loop_start= size_t( &prev_type - non_sync_expression_stack_.data() );
 			break;
 		}
 	}
 
-	if( loop_start < shared_expression_stack_.size() )
+	if( loop_start < non_sync_expression_stack_.size() )
 	{
 		std::string description;
 
-		for( size_t i= loop_start; i < shared_expression_stack_.size(); ++i )
+		for( size_t i= loop_start; i < non_sync_expression_stack_.size(); ++i )
 		{
-			description += Keyword( Keywords::shared_ );
+			description += Keyword( Keywords::non_sync_ );
 			description += "</";
-			description += shared_expression_stack_[i].ToString();
+			description += non_sync_expression_stack_[i].ToString();
 			description += "/>";
 			description += " -> ";
 		}
 
-		description += Keyword( Keywords::shared_ );
+		description += Keyword( Keywords::non_sync_ );
 		description += "</";
 		description += type.ToString();
 		description += "/>";
@@ -41,20 +41,20 @@ bool CodeBuilder::GetTypeShared( const Type& type, NamesScope& names_scope, cons
 		return false;
 	}
 
-	shared_expression_stack_.push_back(type);
+	non_sync_expression_stack_.push_back(type);
 
 	std::vector<Type> types_stack;
-	const bool result= GetTypeSharedImpl( types_stack, type, names_scope, src_loc );
+	const bool result= GetTypeNonSyncImpl( types_stack, type, names_scope, src_loc );
 	U_ASSERT( types_stack.empty() ); // Should be empty at end.
 
-	shared_expression_stack_.pop_back();
+	non_sync_expression_stack_.pop_back();
 	return result;
 }
 
 // TODO - cache results.
-bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc )
+bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc )
 {
-	// Simple non-recursive types without "shared" tag.
+	// Simple non-recursive types without "non_sync" tag.
 	if( type.GetFundamentalType() != nullptr ||
 		type.GetFunctionType() != nullptr ||
 		type.GetFunctionPointerType() != nullptr ||
@@ -74,15 +74,15 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 
 	if( const auto array_type= type.GetArrayType() )
 	{
-		const bool is_shared= GetTypeSharedImpl( prev_types_stack, array_type->type, names_scope, src_loc );
+		const bool is_non_sync= GetTypeNonSyncImpl( prev_types_stack, array_type->type, names_scope, src_loc );
 		prev_types_stack.pop_back();
-		return is_shared;
+		return is_non_sync;
 	}
 	if( const auto tuple_type= type.GetTupleType() )
 	{
 		for( const Type& element_type : tuple_type->elements )
 		{
-			if( GetTypeSharedImpl( prev_types_stack, element_type, names_scope, src_loc ) )
+			if( GetTypeNonSyncImpl( prev_types_stack, element_type, names_scope, src_loc ) )
 			{
 				prev_types_stack.pop_back();
 				return true;
@@ -94,28 +94,28 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 	}
 	if( const auto class_type= type.GetClassType() )
 	{
-		// Check shared tag existence first.
+		// Check "non_sync" tag existence first.
 		if( class_type->syntax_element != nullptr )
 		{
-			if( std::get_if<Synt::SharedTagNone>( &class_type->syntax_element->shared_tag_ ) != nullptr )
+			if( std::get_if<Synt::NonSyncTagNone>( &class_type->syntax_element->non_sync_tag_ ) != nullptr )
 			{}
-			else if( std::get_if<Synt::SharedTagTrue>( &class_type->syntax_element->shared_tag_ ) != nullptr )
+			else if( std::get_if<Synt::NonSyncTagTrue>( &class_type->syntax_element->non_sync_tag_ ) != nullptr )
 			{
 				prev_types_stack.pop_back();
 				return true;
 			}
-			else if( const auto expression_ptr= std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->shared_tag_ ) )
+			else if( const auto expression_ptr= std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->non_sync_tag_ ) )
 			{
 				const Synt::Expression& expression= **expression_ptr;
 
-				// Evaluate shared condition using initial class members parent scope.
+				// Evaluate non_sync condition using initial class members parent scope.
 				NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
-				if( const auto shared_expression= std::get_if<Synt::SharedExpression>( &expression ) )
+				if( const auto non_sync_expression= std::get_if<Synt::NonSyncExpression>( &expression ) )
 				{
-					// Process "shared</T/>" expression specially to handle cases with recursive dependencies.
-					// TODO - handle also simple logical expressions with "shared" tag?
-					const Type dependent_type= PrepareType( *shared_expression->type_, class_parent_scope, *global_function_context_ );
-					if( GetTypeSharedImpl( prev_types_stack, dependent_type, names_scope, src_loc ) )
+					// Process "non_sync</T/>" expression specially to handle cases with recursive dependencies.
+					// TODO - handle also simple logical expressions with "non_sync" tag?
+					const Type dependent_type= PrepareType( *non_sync_expression->type_, class_parent_scope, *global_function_context_ );
+					if( GetTypeNonSyncImpl( prev_types_stack, dependent_type, names_scope, src_loc ) )
 					{
 						prev_types_stack.pop_back();
 						return true;
@@ -123,7 +123,7 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 				}
 				else
 				{
-					// Process general shared expression. This approach can'r resolve circular dependency.
+					// Process general non_sync expression. This approach can't resolve circular dependency.
 					const Variable v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
 					if( v.type != bool_type_ )
 					{
@@ -140,23 +140,23 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 					}
 				}
 			}
-			else{ U_ASSERT(false); } // Unhandled shared tag kind.
+			else{ U_ASSERT(false); } // Unhandled non_sync tag kind.
 		}
 
-		// Check "shared" tag existence for parents.
+		// Check "non_sync" tag existence for parents.
 
 		GlobalThingPrepareClassParentsList( class_type );
 
 		for( const Class::Parent& parent : class_type->parents )
 		{
-			if( GetTypeSharedImpl( prev_types_stack, parent.class_, names_scope, src_loc ) )
+			if( GetTypeNonSyncImpl( prev_types_stack, parent.class_, names_scope, src_loc ) )
 			{
 				prev_types_stack.pop_back();
 				return true;
 			}
 		}
 
-		// Check "shared" tag existence for fields. Type completion is required for this.
+		// Check "non_sync" tag existence for fields. Type completion is required for this.
 
 		if( !EnsureTypeComplete( type ) )
 		{
@@ -171,8 +171,8 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 			{
 				if( const auto class_field= value->GetClassField() )
 				{
-					// Check shared tag for both reference and non-reference fields.
-					if( GetTypeSharedImpl( prev_types_stack, class_field->type, names_scope, src_loc ) )
+					// Check non_sync tag for both reference and non-reference fields.
+					if( GetTypeNonSyncImpl( prev_types_stack, class_field->type, names_scope, src_loc ) )
 					{
 						prev_types_stack.pop_back();
 						return true;
@@ -191,15 +191,15 @@ bool CodeBuilder::GetTypeSharedImpl( std::vector<Type>& prev_types_stack, const 
 	return false;
 }
 
-void CodeBuilder::CheckClassSharedTagExpression( const ClassPtr class_type )
+void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 {
 	if( class_type->syntax_element != nullptr )
 	{
-		if( const auto expression_ptr= std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->shared_tag_ ) )
+		if( const auto expression_ptr= std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->non_sync_tag_ ) )
 		{
 			const Synt::Expression& expression= **expression_ptr;
 
-			// Evaluate shared condition using initial class members parent scope.
+			// Evaluate non_sync condition using initial class members parent scope.
 			NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
 
 			const Variable v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
@@ -215,12 +215,12 @@ void CodeBuilder::CheckClassSharedTagExpression( const ClassPtr class_type )
 	}
 }
 
-void CodeBuilder::CheckClassSharedTagInheritance( const ClassPtr class_type )
+void CodeBuilder::CheckClassNonSyncTagInheritance( const ClassPtr class_type )
 {
-	// Forbid changing "shared" tag in inheritance.
-	// If class is "shared" all its parents should be "shared".
-	// Do this in order to prevent "shared" tag disappearing when storing derived class in container (box, box_nullable) for base class.
-	// "shared" tag presence is strongly necessary to statically (during compilation) prevent usage of "shared" classes in multithreaded context.
+	// Forbid changing "non_sync" tag in inheritance.
+	// If class is "non_sync" all its parents should be "non_sync".
+	// Do this in order to prevent "non_sync" tag disappearing when storing derived class in container (box, box_nullable) for base class.
+	// "non_sync" tag presence is strongly necessary to statically (during compilation) prevent usage of "non_sync" classes in multithreaded context.
 
 	if( class_type->parents.empty() )
 		return;
@@ -229,7 +229,7 @@ void CodeBuilder::CheckClassSharedTagInheritance( const ClassPtr class_type )
 	if( class_type->syntax_element != nullptr )
 		src_loc= class_type->syntax_element->src_loc_;
 
-	if( !GetTypeShared( class_type, *class_type->members->GetParent(), src_loc ) )
+	if( !GetTypeNonSync( class_type, *class_type->members->GetParent(), src_loc ) )
 		return;
 
 	for( const Class::Parent& parent : class_type->parents )
@@ -240,9 +240,9 @@ void CodeBuilder::CheckClassSharedTagInheritance( const ClassPtr class_type )
 		if( parent_class_type->syntax_element != nullptr )
 			parent_src_loc= parent_class_type->syntax_element->src_loc_;
 
-		if( !GetTypeShared( parent_class_type, *parent_class_type->members->GetParent(), parent_src_loc ) )
+		if( !GetTypeNonSync( parent_class_type, *parent_class_type->members->GetParent(), parent_src_loc ) )
 		{
-			REPORT_ERROR( SharedTagAdditionInInheritance, class_type->members->GetErrors(), src_loc, Type(class_type), Type(parent_class_type) );
+			REPORT_ERROR( NonSyncTagAdditionInInheritance, class_type->members->GetErrors(), src_loc, Type(class_type), Type(parent_class_type) );
 		}
 	}
 }

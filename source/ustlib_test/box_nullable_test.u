@@ -39,8 +39,9 @@ class BoxRecursive
 	ust::box_nullable</BoxRecursive/> next;
 }
 
-struct SShared shared{}
-type SSharedBox= ust::box_nullable</SShared/>; // Should be ok for types with "shared" tag
+struct SNonSync non_sync{}
+type SNonSyncBox= ust::box_nullable</SNonSync/>; // Should be ok for types with "non_sync" tag
+static_assert( non_sync</SNonSyncBox/> );
 
 fn nomangle main() : i32
 {

@@ -48,7 +48,7 @@ struct CastImut;
 struct CastRef;
 struct CastRefUnsafe;
 struct TypeInfo;
-struct SharedExpression;
+struct NonSyncExpression;
 
 struct SequenceInitializer;
 struct StructNamedInitializer;
@@ -129,7 +129,7 @@ using Expression= std::variant<
 	CastRef,
 	CastRefUnsafe,
 	TypeInfo,
-	SharedExpression,
+	NonSyncExpression,
 	// Type name in expression context
 	ArrayTypeName,
 	FunctionTypePtr,
@@ -389,9 +389,9 @@ struct TypeInfo final : public SyntaxElementBase
 	std::unique_ptr<TypeName> type_;
 };
 
-struct SharedExpression final : public SyntaxElementBase
+struct NonSyncExpression final : public SyntaxElementBase
 {
-	SharedExpression( const SrcLoc& src_loc );
+	NonSyncExpression( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> type_;
 };
@@ -798,9 +798,9 @@ struct ClassVisibilityLabel final : public SyntaxElementBase
 	const ClassMemberVisibility visibility_;
 };
 
-struct SharedTagNone{};
-struct SharedTagTrue{};
-using SharedTag= std::variant<SharedTagNone, SharedTagTrue, std::unique_ptr<Expression>>;
+struct NonSyncTagNone{};
+struct NonSyncTagTrue{};
+using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, std::unique_ptr<Expression>>;
 
 struct Class final : public SyntaxElementBase
 {
@@ -810,7 +810,7 @@ struct Class final : public SyntaxElementBase
 	std::string name_;
 	std::vector<ComplexName> parents_;
 	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
-	SharedTag shared_tag_;
+	NonSyncTag non_sync_tag_;
 	bool keep_fields_order_= false;
 };
 

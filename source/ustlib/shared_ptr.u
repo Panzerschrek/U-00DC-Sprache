@@ -7,7 +7,7 @@ namespace ust
 {
 
 template</ type T, bool is_nullable, bool is_mutable />
-class shared_ptr_base shared
+class shared_ptr_base non_sync
 {
 	// Forbid shared pointers for structs with references inside.
 	static_assert( typeinfo</T/>.references_tags_count == size_type(0) );
@@ -250,7 +250,7 @@ struct shared_ptr_base_hasher
 }
 
 template</ type T, bool is_mutable />
-class weak_ptr_base shared
+class weak_ptr_base non_sync
 {
 public:
 	fn constructor()= default;

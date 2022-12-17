@@ -308,7 +308,7 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StringLiteral& string_literal ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeinfo& typeinfo_ ) : Value;
-	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SharedExpression& shared_expression ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncExpression& non_sync_expression ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRef& cast_ref_ ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRefUnsafe& cast_ref_unsafe_ ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastImut& cast_imut_ ) : Value;
@@ -411,12 +411,12 @@ private:
 		SrcLoc& src_loc ) : Value;
 
 
-	// Shared stuff
+	// NonSync stuff
 
-	fn GetTypeShared( mut this, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool;
-	fn GetTypeSharedImpl( mut this, ust::vector</Type/> &mut prev_types_stack, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool;
-	fn CheckClassSharedTagExpression( mut this, ClassTypePtr& class_type );
-	fn CheckClassSharedTagInheritance( mut this, ClassTypePtr& class_type );
+	fn GetTypeNonSync( mut this, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool;
+	fn GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_types_stack, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool;
+	fn CheckClassNonSyncTagExpression( mut this, ClassTypePtr& class_type );
+	fn CheckClassNonSyncTagInheritance( mut this, ClassTypePtr& class_type );
 
 	// Templates
 	fn PrepareTypeTemplate(
@@ -950,7 +950,7 @@ private:
 	// For globals loops detection.
 	GlobalThingsStackPtr global_things_stack_ptr_;
 
-	ust::vector</Type/> shared_expression_stack_;
+	ust::vector</Type/> non_sync_expression_stack_;
 
 	// Debug info
 	bool imut build_debug_info_;

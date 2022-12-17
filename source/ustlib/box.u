@@ -7,7 +7,7 @@ namespace ust
 {
 
 template</ type T />
-class box shared( shared</T/> )
+class box non_sync( non_sync</T/> )
 {
 public:
 	type hasher= box_hasher;
