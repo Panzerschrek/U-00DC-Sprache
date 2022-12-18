@@ -109,6 +109,60 @@ U_TEST( EnumsCompareTest )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( EnumsOrderCompareTest0 )
+{
+	// Compare with unsinged underlaying type.
+	static const char c_program_text[]=
+	R"(
+		enum ColorComponent : u8 { r, g, b }
+
+		static_assert(    ColorComponent::r < ColorComponent::g   );
+		static_assert( !( ColorComponent::g < ColorComponent::g ) );
+		static_assert( !( ColorComponent::b < ColorComponent::g ) );
+
+		static_assert(    ColorComponent::r <= ColorComponent::g   );
+		static_assert(    ColorComponent::g <= ColorComponent::g   );
+		static_assert( !( ColorComponent::b <= ColorComponent::g ) );
+
+		static_assert( !( ColorComponent::r > ColorComponent::g ) );
+		static_assert( !( ColorComponent::g > ColorComponent::g ) );
+		static_assert(    ColorComponent::b > ColorComponent::g   );
+
+		static_assert( !( ColorComponent::r >= ColorComponent::g ) );
+		static_assert(    ColorComponent::g >= ColorComponent::g   );
+		static_assert(    ColorComponent::b >= ColorComponent::g   );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( EnumsOrderCompareTest1 )
+{
+	// Compare with singed underlaying type.
+	static const char c_program_text[]=
+	R"(
+		enum ColorComponent : i8 { r, g, b }
+
+		static_assert(    ColorComponent::r < ColorComponent::g   );
+		static_assert( !( ColorComponent::g < ColorComponent::g ) );
+		static_assert( !( ColorComponent::b < ColorComponent::g ) );
+
+		static_assert(    ColorComponent::r <= ColorComponent::g   );
+		static_assert(    ColorComponent::g <= ColorComponent::g   );
+		static_assert( !( ColorComponent::b <= ColorComponent::g ) );
+
+		static_assert( !( ColorComponent::r > ColorComponent::g ) );
+		static_assert( !( ColorComponent::g > ColorComponent::g ) );
+		static_assert(    ColorComponent::b > ColorComponent::g   );
+
+		static_assert( !( ColorComponent::r >= ColorComponent::g ) );
+		static_assert(    ColorComponent::g >= ColorComponent::g   );
+		static_assert(    ColorComponent::b >= ColorComponent::g   );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( EnumValueRefTest )
 {
 	static const char c_program_text[]=
