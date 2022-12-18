@@ -1963,8 +1963,7 @@ Value CodeBuilder::BuildBinaryOperator(
 				REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names.GetErrors(), src_loc, r_var.type, l_var.type, BinaryOperatorToString( binary_operator ) );
 				return ErrorValue();
 			}
-			// TODO - maybe allow order compare for enums?
-			if( !( l_fundamental_type != nullptr || l_type.GetRawPointerType() != nullptr ) )
+			if( !( l_fundamental_type != nullptr || l_type.GetRawPointerType() != nullptr || l_type.GetEnumType() != nullptr ) )
 			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_type );
 				return ErrorValue();
@@ -1982,6 +1981,8 @@ Value CodeBuilder::BuildBinaryOperator(
 					return ErrorValue();
 				}
 			}
+			else if( const auto enum_type= l_type.GetEnumType() )
+				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
 
 			switch( binary_operator )
 			{
@@ -2036,8 +2037,7 @@ Value CodeBuilder::BuildBinaryOperator(
 				REPORT_ERROR( NoMatchBinaryOperatorForGivenTypes, names.GetErrors(), src_loc, r_var.type, l_var.type, BinaryOperatorToString( binary_operator ) );
 				return ErrorValue();
 			}
-			// TODO - maybe allow order compare for enums?
-			if( !( l_fundamental_type != nullptr || l_type.GetRawPointerType() != nullptr ) )
+			if( !( l_fundamental_type != nullptr || l_type.GetRawPointerType() != nullptr || l_type.GetEnumType() != nullptr ) )
 			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_type );
 				return ErrorValue();
@@ -2055,6 +2055,8 @@ Value CodeBuilder::BuildBinaryOperator(
 					return ErrorValue();
 				}
 			}
+			else if( const auto enum_type= l_type.GetEnumType() )
+				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
 
 			llvm::Value* less= nullptr;
 			llvm::Value* greater= nullptr;

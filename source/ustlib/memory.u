@@ -41,36 +41,6 @@ fn int_to_ptr( size_type i ) unsafe : $(T)
 	}
 }
 
-// Allocation-deallocation functions.
-// If allocation function can not allocate memory block with requested size - program will be halted.
-
-fn memory_allocate( size_type size_bytes ) unsafe : void &mut
-{
-	memory_impl::allocation_size_check( size_bytes );
-	unsafe
-	{
-		auto ptr= ust_memory_allocate_impl( size_bytes );
-		halt if( ptr == nullptr</void/>() );
-		return $>(ptr);
-	}
-}
-
-fn memory_reallocate( void& mem, size_type new_size_bytes ) unsafe : void &mut
-{
-	memory_impl::allocation_size_check( new_size_bytes );
-	unsafe
-	{
-		auto ptr= ust_memory_reallocate_impl( $<(cast_mut(mem)), new_size_bytes );
-		halt if( ptr == nullptr</void/>() );
-		return $>(ptr);
-	}
-}
-
-fn memory_free( void& mem ) unsafe
-{
-	unsafe{  ust_memory_free_impl( $<(cast_mut(mem)) );  }
-}
-
 fn memory_copy( void &mut dst, void & src, size_type size_bytes ) unsafe
 {
 	unsafe{  ust_memory_copy_impl( $<(dst), $<(cast_mut(src)), size_bytes );  }
@@ -147,32 +117,9 @@ fn ref_cmp_ge( T& l, T& r ) : bool
 	unsafe{ return $<(cast_mut(l)) >= $<(cast_mut(r)); }
 }
 
-namespace memory_impl
-{
-
-fn allocation_size_check( size_type size )
-{
-	if( typeinfo</size_type/>.size_of == 8s )
-	{
-		// It's almost impossible to get pointer difference overflow on 64bit platform. So, ignore allocation size check  here.
-	}
-	else
-	{
-		// Do not allow allocations greater than half of address space to avoid pointer difference overflow.
-		// TODO - do this only if underlaying "malloc" function have no such functionality.
-		halt if( size >= 2147483647s );
-	}
-}
-
-} // namespace memory_impl
-
 } // namespace ust
 
 // External implementation functions.
-
-fn nomangle ust_memory_allocate_impl( size_type size ) unsafe : $(void);
-fn nomangle ust_memory_reallocate_impl( $(void) ptr, size_type new_size ) unsafe : $(void);
-fn nomangle ust_memory_free_impl( $(void) ptr ) unsafe;
 
 fn nomangle ust_memory_copy_impl( $(void) dst, $(void) src, size_type size_bytes ) unsafe;
 fn nomangle ust_memory_copy_align_1_impl ( $(void) dst, $(void) src, size_type size_bytes ) unsafe;

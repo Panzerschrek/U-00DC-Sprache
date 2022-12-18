@@ -4,7 +4,6 @@ Delete the features from the list as soon as they are implemented.
 
 General:
 *) Anonymous (module-local) symbols - functions, classes, variables.
-*) <, <=, >, >= for enums.
 *) build-in "for" for array types.
 *) type for raw data representation (like "char" in C++, which may alias with every type).
 *) Accessing overloaded operators directly, take pointers to overloaded operators.
