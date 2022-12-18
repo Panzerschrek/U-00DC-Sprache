@@ -395,6 +395,38 @@ def TypeinfoClassFunctionsList_Order_Test0():
 	tests_lib.build_program( c_program_text )
 
 
+def TypeinfoEnumElementsList_Order_Test0():
+	c_program_text= """
+		enum E
+		{
+			b,
+			qwerty,
+			a,
+			ar,
+			fff,
+		}
+		// Order should be alphabetical - "a", "ar", "b", "fff", "qwerty"
+
+		auto& ti= typeinfo</E/>;
+
+		static_assert( ti.elements_list[0].value == u32(E::a) );
+		static_assert( ti.elements_list[0].name[0] == "a"c8 );
+
+		static_assert( ti.elements_list[1].value == u32(E::ar) );
+		static_assert( ti.elements_list[1].name[0] == "a"c8 );
+
+		static_assert( ti.elements_list[2].value == u32(E::b) );
+		static_assert( ti.elements_list[2].name[0] == "b"c8 );
+
+		static_assert( ti.elements_list[3].value == u32(E::fff) );
+		static_assert( ti.elements_list[3].name[0] == "f"c8 );
+
+		static_assert( ti.elements_list[4].value == u32(E::qwerty) );
+		static_assert( ti.elements_list[4].name[0] == "q"c8 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ArgumenstEvaluationOrder_Test0():
 	c_program_text= """
 		fn AddMul10( i32 &mut x, i32 y ) : i32

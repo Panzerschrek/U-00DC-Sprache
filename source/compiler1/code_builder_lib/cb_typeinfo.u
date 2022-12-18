@@ -188,6 +188,17 @@ struct ClassInnerTypeForTypeinfo
 	}
 }
 
+struct EnumElementForTypeinfo
+{
+	LLVMValueRef value;
+	ust::string8 name;
+
+	op<=>( EnumElementForTypeinfo& l, EnumElementForTypeinfo& r ) : i32
+	{
+		return l.name <=> r.name;
+	}
+}
+
 fn FinishTypeinfoList( LLVMContextRef llvm_context, ust::vector</Type/> mut element_types, ust::vector</LLVMValueRef/>& initializers ) : Variable
 {
 	var TupleType mut tuple_type{ .element_types= move(element_types) };
@@ -838,16 +849,31 @@ fn CodeBuilder::BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_nam
 
 fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : Variable
 {
+	auto enum_lock= enum_type.lock_imut();
+	var Enum& enum_= enum_lock.deref();
+
+	var ust::vector</EnumElementForTypeinfo/> mut enum_elemens_list;
+
+	foreach( &enum_element : enum_.elements )
+	{
+		var EnumElementForTypeinfo mut el
+		{
+			.value= enum_element.value().constexpr_value,
+			.name= enum_element.key()
+		};
+
+		enum_elemens_list.push_back( move(el) );
+	}
+
+	// Sort enum elements in typeinfo by name, because we need strong order.
+	ust::sort( enum_elemens_list.range() );
+
 	var ust::vector</Type/> mut list_types;
 	var ust::vector</LLVMValueRef/> mut list_initializers;
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
 
-	auto enum_lock= enum_type.lock_imut();
-	var Enum& enum_= enum_lock.deref();
-
-	// TODO - sort enum members using some predictable order.
-	foreach( &enum_element : enum_.elements )
+	foreach( &enum_element : enum_elemens_list )
 	{
 		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, enum_type, g_typeinfo_enum_elements_list_node_class_name + ust::to_string8(list_types.size()) );
 		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
@@ -855,7 +881,7 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
 		var ust::vector</LLVMValueRef/> mut fields_initializers;
 
-		ADD_NAME_FIELD( enum_element.key() )
+		ADD_NAME_FIELD( enum_element.name )
 
 		{
 			var ClassField mut class_field
@@ -869,7 +895,7 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 			};
 
 			fields_llvm_types.push_back( class_field.t.GetLLVMType() );
-			fields_initializers.push_back( enum_element.value().constexpr_value );
+			fields_initializers.push_back( enum_element.value );
 
 			auto mut members_lock= class_members.lock_mut();
 			members_lock.deref().AddName( "value", move(class_field) );
