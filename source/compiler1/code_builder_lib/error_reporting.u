@@ -13,7 +13,7 @@ op CodeBuilderError::<=>(CodeBuilderError& l, CodeBuilderError& r) : i32
 	}
 	if( l.code != r.code )
 	{
-		return u32(l.code) <=> u32(r.code);
+		return l.code <=> r.code;
 	}
 
 	return l.text <=> r.text;
