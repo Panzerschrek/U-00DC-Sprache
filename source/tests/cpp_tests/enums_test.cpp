@@ -163,6 +163,36 @@ U_TEST( EnumsOrderCompareTest1 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( EnumsOrderCompareTest2 )
+{
+	// Compare with unsinged underlaying type.
+	static const char c_program_text[]=
+	R"(
+		enum ColorComponent : u8 { r, g, b }
+
+		static_assert( ColorComponent::r <=> ColorComponent::g == -1 );
+		static_assert( ColorComponent::g <=> ColorComponent::g ==  0 );
+		static_assert( ColorComponent::b <=> ColorComponent::g == +1 );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( EnumsOrderCompareTest3 )
+{
+	// Compare with singed underlaying type.
+	static const char c_program_text[]=
+	R"(
+		enum ColorComponent : i8 { r, g, b }
+
+		static_assert( ColorComponent::r <=> ColorComponent::g == -1 );
+		static_assert( ColorComponent::g <=> ColorComponent::g ==  0 );
+		static_assert( ColorComponent::b <=> ColorComponent::g == +1 );
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST( EnumValueRefTest )
 {
 	static const char c_program_text[]=
