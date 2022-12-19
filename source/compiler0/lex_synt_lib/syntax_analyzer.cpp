@@ -264,6 +264,8 @@ private:
 	Expression TryParseExpressionComponentPostfixOperator( Expression expr );
 	Expression ParseExpressionComponentHelper();
 
+	TypeName ParseTypeNameInTemplateBrackets();
+
 	FunctionParam ParseFunctionArgument();
 	void ParseFunctionTypeEnding( FunctionType& result );
 	FunctionTypePtr ParseFunctionType();
@@ -1099,13 +1101,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		{
 			CastRef cast( it_->src_loc );
 			NextLexem();
-
-			ExpectLexem( Lexem::Type::TemplateBracketLeft );
-
-			cast.type_= std::make_unique<TypeName>( ParseTypeName() );
-
-			ExpectLexem( Lexem::Type::TemplateBracketRight );
-
+			cast.type_= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
 			cast.expression_= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 			return std::move(cast);
@@ -1114,13 +1110,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		{
 			CastRefUnsafe cast( it_->src_loc );
 			NextLexem();
-
-			ExpectLexem( Lexem::Type::TemplateBracketLeft );
-
-			cast.type_= std::make_unique<TypeName>( ParseTypeName() );
-
-			ExpectLexem( Lexem::Type::TemplateBracketRight );
-
+			cast.type_= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
 			cast.expression_= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 			return std::move(cast);
@@ -1129,7 +1119,6 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		{
 			CastImut cast( it_->src_loc );
 			NextLexem();
-
 			cast.expression_= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 			return std::move(cast);
@@ -1138,7 +1127,6 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		{
 			CastMut cast( it_->src_loc );
 			NextLexem();
-
 			cast.expression_= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 			return std::move(cast);
@@ -1147,12 +1135,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		{
 			TypeInfo typeinfo_(it_->src_loc );
 			NextLexem();
-
-			ExpectLexem( Lexem::Type::TemplateBracketLeft );
-
-			typeinfo_.type_= std::make_unique<TypeName>( ParseTypeName() );
-
-			ExpectLexem( Lexem::Type::TemplateBracketRight );
+			typeinfo_.type_= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
 
 			return std::move(typeinfo_);
 		}
@@ -1160,12 +1143,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		{
 			NonSyncExpression non_sync_expression(it_->src_loc );
 			NextLexem();
-
-			ExpectLexem( Lexem::Type::TemplateBracketLeft );
-
-			non_sync_expression.type_= std::make_unique<TypeName>( ParseTypeName() );
-
-			ExpectLexem( Lexem::Type::TemplateBracketRight );
+			non_sync_expression.type_= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
 
 			return std::move(non_sync_expression);
 		}
@@ -1189,6 +1167,14 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 		PushErrorMessage();
 		return Expression();
 	};
+}
+
+TypeName SyntaxAnalyzer::ParseTypeNameInTemplateBrackets()
+{
+	ExpectLexem( Lexem::Type::TemplateBracketLeft );
+	TypeName result= ParseTypeName();
+	ExpectLexem( Lexem::Type::TemplateBracketRight );
+	return result;
 }
 
 FunctionParam SyntaxAnalyzer::ParseFunctionArgument()
@@ -2573,12 +2559,7 @@ NonSyncTag SyntaxAnalyzer::TryParseClassNonSyncTag()
 		NextLexem();
 
 		if( it_->type == Lexem::Type::BracketLeft )
-		{
-			NextLexem();
-			Expression expression= ParseExpression();
-			ExpectLexem( Lexem::Type::BracketRight );
-			return std::make_unique<Expression>( std::move(expression) );
-		}
+			return std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 		return NonSyncTagTrue();
 	}
