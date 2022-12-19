@@ -1,7 +1,5 @@
 #include <cctype>
 #include <cstring>
-#include <map>
-#include <set>
 
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
@@ -224,18 +222,21 @@ public:
 	std::vector<Import> ParseImportsOnly( const Lexems& lexems );
 
 private:
+	struct ParsedMacroElement;
+	using MacroVariablesMap= std::unordered_map<std::string, ParsedMacroElement>;
+
 	struct ParsedMacroElement
 	{
 		Lexems::const_iterator begin;
 		Lexems::const_iterator end;
-		std::vector< std::map<std::string, ParsedMacroElement> > sub_elements;
+		std::vector< MacroVariablesMap > sub_elements;
 		Macro::MatchElementKind kind= Macro::MatchElementKind::Lexem;
 	};
 
 	struct MacroNamesMap
 	{
 		const MacroNamesMap* prev= nullptr;
-		const std::map<std::string, ParsedMacroElement>* names= nullptr;
+		const MacroVariablesMap* names= nullptr;
 
 		const ParsedMacroElement* GetElement( const std::string& name ) const
 		{
@@ -328,10 +329,9 @@ private:
 	template<typename ParseFnResult>
 	ParseFnResult ExpandMacro( const Macro& macro, ParseFnResult (SyntaxAnalyzer::*parse_fn)() );
 
-	bool MatchMacroBlock(
+	std::optional<MacroVariablesMap> MatchMacroBlock(
 		const std::vector<Macro::MatchElement>& match_elements,
-		const std::string& macro_name,
-		std::map<std::string, ParsedMacroElement>& out_elements );
+		const std::string& macro_name );
 
 	Lexems DoExpandMacro(
 		const MacroNamesMap& parsed_elements,
@@ -512,7 +512,7 @@ void SyntaxAnalyzer::ParseMacro()
 std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 {
 	std::vector<Macro::MatchElement> result;
-	std::set<std::string> elements_set;
+	std::unordered_set<std::string> elements_set;
 
 	while( NotEndOfFile() )
 	{
@@ -3385,13 +3385,12 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == macro.name );
 	NextLexem();
 
-	std::map<std::string, ParsedMacroElement> elements_map;
-	if( !MatchMacroBlock( macro.match_template_elements, macro.name, elements_map ) )
+	auto elements_map= MatchMacroBlock( macro.match_template_elements, macro.name );
+	if( !elements_map.has_value() )
 		return ParseFnResult();
 
 	MacroNamesMap names_map;
-	names_map.prev= nullptr;
-	names_map.names= &elements_map;
+	names_map.names= &*elements_map;
 
 	ProgramStringMap<std::string> unique_macro_identifier_map;
 	Lexems result_lexems= DoExpandMacro( names_map, macro.result_template_elements, unique_macro_identifier_map );
@@ -3418,11 +3417,12 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	return std::move(element);
 }
 
-bool SyntaxAnalyzer::MatchMacroBlock(
+std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock(
 	const std::vector<Macro::MatchElement>& match_elements,
-	const std::string& macro_name,
-	std::map<std::string, ParsedMacroElement>& out_elements )
+	const std::string& macro_name )
 {
+	MacroVariablesMap out_elements;
+
 	const auto push_macro_error=
 	[&]
 	{
@@ -3435,6 +3435,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 	for( size_t i= 0u; i < match_elements.size(); ++i )
 	{
 		const Macro::MatchElement& match_element= match_elements[i];
+		const Macro::MatchElement* const next_match_element= (i + 1u < match_elements.size()) ? &match_elements[i + 1] : nullptr;
 
 		ParsedMacroElement element;
 		element.kind= match_element.kind;
@@ -3448,7 +3449,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			else
 			{
 				push_macro_error();
-				return false;
+				return std::nullopt;
 			}
 			break;
 
@@ -3458,7 +3459,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 			else
 			{
 				push_macro_error();
-				return false;
+				return std::nullopt;
 			}
 			break;
 
@@ -3472,65 +3473,58 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 				if( std::get_if<EmptyVariant>( &expression ) != nullptr )
 				{
 					push_macro_error();
-					return false;
+					return std::nullopt;
 				}
 			}
 			break;
 
 		case Macro::MatchElementKind::Block:
-			element.kind= match_element.kind;
 			ParseBlock();
 			break;
 
 		case Macro::MatchElementKind::Optional:
 			{
-				if( i + 1u < match_elements.size() && match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd )
+				bool has_value= true;
+
+				if( next_match_element != nullptr && match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd )
 				{
-					const Lexem& terminator_lexem= match_elements[i+1u].lexem;
-					if( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text )
-					{} // Optional is empty
-					else
-					{
-						std::map<std::string, ParsedMacroElement> optional_elements;
-						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
-							element.sub_elements.push_back( std::move(optional_elements) );
-						else
-							return false;
-					}
+					const Lexem& terminator_lexem= next_match_element->lexem;
+					has_value= !(it_->type == terminator_lexem.type && it_->text == terminator_lexem.text);
 				}
 				else if( match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAtBlockStart )
 				{
 					U_ASSERT( ! match_element.sub_elements.empty() && match_element.sub_elements.front().kind == Macro::MatchElementKind::Lexem );
 					const Lexem& check_lexem= match_element.sub_elements.front().lexem;
-					if( it_->type == check_lexem.type && it_->text == check_lexem.text )
-					{
-						std::map<std::string, ParsedMacroElement> optional_elements;
-						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
-							element.sub_elements.push_back( std::move(optional_elements) );
-						else
-							return false;
-					}
-					else {} // Optional is empty.
+					has_value= it_->type == check_lexem.type && it_->text == check_lexem.text;
 				}
 				else U_ASSERT(false);
+
+				if( has_value )
+				{
+					auto optional_elements= MatchMacroBlock( match_element.sub_elements, macro_name );
+					if( optional_elements.has_value() )
+						element.sub_elements.push_back( std::move(*optional_elements) );
+					else
+						return std::nullopt;
+				}
 			}
 			break;
 
 		case Macro::MatchElementKind::Repeated:
 			{
-				if( i + 1u < match_elements.size() && match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd )
+				if( next_match_element != nullptr && match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd )
 				{
-					const Lexem& terminator_lexem= match_elements[i+1u].lexem;
+					const Lexem& terminator_lexem= next_match_element->lexem;
 					while(NotEndOfFile())
 					{
 						if( it_->type == terminator_lexem.type && it_->text == terminator_lexem.text )
 							break;
 
-						std::map<std::string, ParsedMacroElement> optional_elements;
-						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
-							element.sub_elements.push_back( std::move(optional_elements) );
+						auto repeated_elements= MatchMacroBlock( match_element.sub_elements, macro_name );
+						if( repeated_elements.has_value() )
+							element.sub_elements.push_back( std::move(*repeated_elements) );
 						else
-							return false;
+							return std::nullopt;
 
 						// Process separator.
 						if( match_element.lexem.type != Lexem::Type::EndOfFile )
@@ -3542,7 +3536,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 								{
 									// Disable end lexem after separator.
 									push_macro_error();
-									return false;
+									return std::nullopt;
 								}
 							}
 							else
@@ -3559,11 +3553,11 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 						if( !( it_->type == check_lexem.type && it_->text == check_lexem.text ) )
 							break;
 
-						std::map<std::string, ParsedMacroElement> optional_elements;
-						if( MatchMacroBlock( match_element.sub_elements, macro_name, optional_elements ) )
-							element.sub_elements.push_back( std::move(optional_elements) );
+						auto repeated_elements= MatchMacroBlock( match_element.sub_elements, macro_name );
+						if( repeated_elements.has_value() )
+							element.sub_elements.push_back( std::move(*repeated_elements) );
 						else
-							return false;
+							return std::nullopt;
 
 						// Process separator.
 						if( match_element.lexem.type != Lexem::Type::EndOfFile )
@@ -3575,7 +3569,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 								{
 									// After separator must be start lexem of block.
 									push_macro_error();
-									return false;
+									return std::nullopt;
 								}
 							}
 							else
@@ -3592,7 +3586,7 @@ bool SyntaxAnalyzer::MatchMacroBlock(
 		out_elements[match_element.name]= std::move(element);
 	}
 
-	return true;
+	return out_elements;
 }
 
 Lexems SyntaxAnalyzer::DoExpandMacro(
@@ -3648,8 +3642,8 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					error_messages_.push_back( std::move(msg) );
 					return result_lexems;
 				}
-				else
-					result_lexems.insert( result_lexems.end(), element->begin, element->end );
+
+				result_lexems.insert( result_lexems.end(), element->begin, element->end );
 			}
 			break;
 
@@ -3664,32 +3658,30 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					error_messages_.push_back( std::move(msg) );
 					return result_lexems;
 				}
+
+				if( element->kind == Macro::MatchElementKind::Optional || element->kind == Macro::MatchElementKind::Repeated )
+				{
+					for( const auto& sub_elements : element->sub_elements )
+					{
+						MacroNamesMap sub_elements_map;
+						sub_elements_map.prev= &parsed_elements;
+						sub_elements_map.names= &sub_elements;
+
+						Lexems element_lexems= DoExpandMacro( sub_elements_map, result_element.sub_elements, unique_macro_identifier_map );
+						result_lexems.insert( result_lexems.end(), element_lexems.begin(), element_lexems.end() );
+
+						// Push separator.
+						if( &sub_elements != &element->sub_elements.back() && result_element.lexem.type != Lexem::Type::EndOfFile )
+							result_lexems.push_back( result_element.lexem );
+					}
+				}
 				else
 				{
-					if( element->kind == Macro::MatchElementKind::Optional || element->kind == Macro::MatchElementKind::Repeated )
-					{
-						for( const auto& sub_elements : element->sub_elements )
-						{
-							MacroNamesMap sub_elements_map;
-							sub_elements_map.prev= &parsed_elements;
-							sub_elements_map.names= &sub_elements;
-
-							Lexems element_lexems= DoExpandMacro( sub_elements_map, result_element.sub_elements, unique_macro_identifier_map );
-							result_lexems.insert( result_lexems.end(), element_lexems.begin(), element_lexems.end() );
-
-							// Push separator.
-							if( &sub_elements != &element->sub_elements.back() && result_element.lexem.type != Lexem::Type::EndOfFile )
-								result_lexems.push_back( result_element.lexem );
-						}
-					}
-					else
-					{
-						LexSyntError msg;
-						msg.src_loc= result_element.lexem.src_loc;
-						msg.text= "Expected optional or repated.";
-						error_messages_.push_back( std::move(msg) );
-						return result_lexems;
-					}
+					LexSyntError msg;
+					msg.src_loc= result_element.lexem.src_loc;
+					msg.text= "Expected optional or repated.";
+					error_messages_.push_back( std::move(msg) );
+					return result_lexems;
 				}
 			}
 			break;

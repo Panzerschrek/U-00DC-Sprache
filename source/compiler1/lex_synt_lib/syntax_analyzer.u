@@ -3368,7 +3368,9 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 
 fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>
 {
+	auto empty_result= ust::shared_ptr_final_nullable</MacroVariablesMap/>();
 	var MacroVariablesMap mut macro_variables_map;
+
 	for( auto mut i= 0s; i < match_elements.size(); ++i )
 	{
 		auto& match_element= match_elements[i];
@@ -3378,7 +3380,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 			if( !( it_.front().lexem_type == match_element.lexem.lexem_type && it_.front().text == match_element.lexem.text ) )
 			{
 				PushErrorMessage();
-				return ust::shared_ptr_final_nullable</MacroVariablesMap/>();
+				return empty_result;
 			}
 			NextLexem();
 			continue;
@@ -3431,7 +3433,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 				auto sub_variables_map_opt= MatchMacroBlock( sub_elements );
 				if( sub_variables_map_opt.empty() )
 				{
-					return ust::shared_ptr_final_nullable</MacroVariablesMap/>();
+					return empty_result;
 				}
 				element.sub_elements.push_back( sub_variables_map_opt.try_to_non_nullable() );
 			}
@@ -3449,7 +3451,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 					auto sub_variables_map_opt= MatchMacroBlock( sub_elements );
 					if( sub_variables_map_opt.empty() )
 					{
-						return ust::shared_ptr_final_nullable</MacroVariablesMap/>();
+						return empty_result;
 					}
 					element.sub_elements.push_back( sub_variables_map_opt.try_to_non_nullable() );
 
@@ -3463,7 +3465,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 							{
 								// Disable end lexem after separator.
 								PushErrorMessage();
-								return ust::shared_ptr_final_nullable</MacroVariablesMap/>();
+								return empty_result;
 							}
 						}
 						else
@@ -3483,7 +3485,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 					auto sub_variables_map_opt= MatchMacroBlock( sub_elements );
 					if( sub_variables_map_opt.empty() )
 					{
-						return ust::shared_ptr_final_nullable</MacroVariablesMap/>();
+						return empty_result;
 					}
 					element.sub_elements.push_back( sub_variables_map_opt.try_to_non_nullable() );
 
@@ -3497,7 +3499,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 							if( !( it_.front().lexem_type == check_lexem.lexem_type && it_.front().text == check_lexem.text ) )
 							{
 								PushErrorMessage();
-								return ust::shared_ptr_final_nullable</MacroVariablesMap/>();
+								return empty_result;
 							}
 						}
 						else
