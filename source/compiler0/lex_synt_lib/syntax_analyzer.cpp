@@ -251,8 +251,8 @@ private:
 	std::vector<Import> ParseImports();
 
 	void ParseMacro();
-	std::vector<Macro::MatchElement> ParseMacroMatchBlock();
-	std::vector<Macro::ResultElement> ParseMacroResultBlock();
+	Macro::MatchElements ParseMacroMatchBlock();
+	Macro::ResultElements ParseMacroResultBlock();
 
 	ProgramElements ParseNamespaceBody() { return ParseNamespaceBody( Lexem::Type::BraceRight ); }
 	ProgramElements ParseNamespaceBody( Lexem::Type end_lexem );
@@ -330,12 +330,12 @@ private:
 	ParseFnResult ExpandMacro( const Macro& macro, ParseFnResult (SyntaxAnalyzer::*parse_fn)() );
 
 	std::optional<MacroVariablesMap> MatchMacroBlock(
-		const std::vector<Macro::MatchElement>& match_elements,
+		const Macro::MatchElements& match_elements,
 		const std::string& macro_name );
 
 	Lexems DoExpandMacro(
 		const MacroNamesMap& parsed_elements,
-		const std::vector<Macro::ResultElement>& result_elements,
+		const Macro::ResultElements& result_elements,
 		ProgramStringMap<std::string>& unique_macro_identifier_map );
 
 	void ExpectSemicolon();
@@ -509,9 +509,9 @@ void SyntaxAnalyzer::ParseMacro()
 		macro_map[macro.name]= std::move(macro);
 }
 
-std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
+Macro::MatchElements SyntaxAnalyzer::ParseMacroMatchBlock()
 {
-	std::vector<Macro::MatchElement> result;
+	Macro::MatchElements result;
 	std::unordered_set<std::string> elements_set;
 
 	while( NotEndOfFile() )
@@ -675,9 +675,9 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 	return result;
 }
 
-std::vector<Macro::ResultElement> SyntaxAnalyzer::ParseMacroResultBlock()
+Macro::ResultElements SyntaxAnalyzer::ParseMacroResultBlock()
 {
-	std::vector<Macro::ResultElement> result;
+	Macro::ResultElements result;
 
 	while( NotEndOfFile() )
 	{
@@ -3421,7 +3421,7 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 }
 
 std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock(
-	const std::vector<Macro::MatchElement>& match_elements,
+	const Macro::MatchElements& match_elements,
 	const std::string& macro_name )
 {
 	MacroVariablesMap out_elements;
@@ -3594,7 +3594,7 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 
 Lexems SyntaxAnalyzer::DoExpandMacro(
 	const MacroNamesMap& parsed_elements,
-	const std::vector<Macro::ResultElement>& result_elements,
+	const Macro::ResultElements& result_elements,
 	ProgramStringMap<std::string>& unique_macro_identifier_map )
 {
 	Lexems result_lexems;

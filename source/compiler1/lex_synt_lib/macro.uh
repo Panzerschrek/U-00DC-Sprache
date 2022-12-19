@@ -1,3 +1,4 @@
+import "/box_nullable.u"
 import "/shared_ptr_final.u"
 import "/shared_ptr.u"
 import "/unordered_map.u"
@@ -49,21 +50,25 @@ struct Macro
 		BlockCheckLexemKind block_check_lexem_kind= BlockCheckLexemKind::LexemAfterBlockEnd; // For optionals and loops.
 		Lexem lexem; // lexem for lexem elements, separator or EOF for loops
 		ust::string8 name; // for non-lexems
-		ust::shared_ptr_final_nullable</ ust::vector</MatchElement/> /> sub_elements; // For optionals, loops. TODO - remove pointer
+		ust::box_nullable</ MatchElements /> sub_elements; // TODO - avoid usage of box</vector/>
 	}
+
+	type MatchElements= ust::vector</MatchElement/>;
 
 	struct ResultElement
 	{
 		ResultElementKind kind= ResultElementKind::Lexem;
 		Lexem lexem; // lexem for SimpleElement, separator or EOF for loops
 		ust::string8 name; // for non-lexems
-		ust::shared_ptr_final_nullable</ ust::vector</ResultElement/> /> sub_elements; // For optionals, loops.  TODO - remove pointer
+		ust::box_nullable</ ResultElements /> sub_elements; // TODO - avoid usage of box</vector/>
 	}
+
+	type ResultElements= ust::vector</ResultElement/>;
 
 	SrcLoc src_loc;
 	ust::string8 name;
-	ust::vector</MatchElement/> match_template_elements;
-	ust::vector</ResultElement/> result_template_elements;
+	MatchElements match_template_elements;
+	ResultElements result_template_elements;
 }
 
 type MacroMap= ust::unordered_map</ ust::string8, ust::shared_ptr_final</Macro/> />;

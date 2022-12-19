@@ -255,8 +255,8 @@ private:
 	// Macro related stuff.
 
 	fn ParseMacro( mut this );
-	fn ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchElement/>;
-	fn ParseMacroResultBlock( mut this ) : ust::vector</Macro::ResultElement/>;
+	fn ParseMacroMatchBlock( mut this ) : Macro::MatchElements;
+	fn ParseMacroResultBlock( mut this ) : Macro::ResultElements;
 
 	struct ParsedMacroElement
 	{
@@ -299,13 +299,13 @@ private:
 	}
 
 	fn ExpandMacroImpl( mut this, Macro& macro ) : Lexems;
-	fn MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>;
+	fn MatchMacroBlock( mut this, Macro::MatchElements& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>;
 
 	type UniqueMacroIdentifiersMap= ust::unordered_map</ ust::string8, ust::string8 />;
 
 	fn ExpandMacroBlock(
 		mut this,
-		ust::vector</Macro::ResultElement/>& result_elements,
+		Macro::ResultElements& result_elements,
 		MacroVariablesMapsStack &mut macro_variables_maps_stack,
 		UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
 		SrcLoc& expansion_src_loc ) : Lexems;
@@ -2527,7 +2527,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 		{
 			if( it_.front().lexem_type == Lexem::Type::Identifier )
 			{
-				if_var( macro : FetchMacro( it_.front().text, Macro::Context::Class ) )
+				if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Class ) )
 				{
 					var ClassElements mut expanded_class_elements= ExpandMacro</ClassElements/>( macro );
 					VectorAppend( class_elements, move(expanded_class_elements) );
@@ -3064,9 +3064,9 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	}
 }
 
-fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchElement/>
+fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 {
-	var ust::vector</Macro::MatchElement/> mut match_elements;
+	var Macro::MatchElements mut match_elements;
 
 	var ust::unordered_set</ ust::string8 /> mut elements_set;
 	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::MacroBracketRight )
@@ -3100,20 +3100,15 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 			else if( element_type == "opt"   )
 			{
 				ExpectLexem( Lexem::Type::MacroBracketLeft );
-
-				auto mut sub_elements= ParseMacroMatchBlock();
-
+				match_element.sub_elements= ust::box_nullable</ Macro::MatchElements />( ParseMacroMatchBlock() );
 				ExpectLexem( Lexem::Type::MacroBracketRight );
 
-				match_element.sub_elements= ust::shared_ptr_final_nullable</ ust::vector</Macro::MatchElement/> />( move(sub_elements) );
 				match_element.kind= Macro::MatchElementKind::Optional;
 			}
 			else if( element_type == "rep" )
 			{
 				ExpectLexem( Lexem::Type::MacroBracketLeft );
-
-				auto mut sub_elements= ParseMacroMatchBlock();
-
+				match_element.sub_elements= ust::box_nullable</ Macro::MatchElements />( ParseMacroMatchBlock() );
 				ExpectLexem( Lexem::Type::MacroBracketRight );
 
 				// Separator.
@@ -3138,7 +3133,6 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 					match_element.lexem.lexem_type= Lexem::Type::EndOfFile;
 				}
 
-				match_element.sub_elements= ust::shared_ptr_final_nullable</ ust::vector</Macro::MatchElement/> />( move(sub_elements) );
 				match_element.kind= Macro::MatchElementKind::Repeated;
 			}
 			else
@@ -3238,9 +3232,9 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : ust::vector</Macro::MatchE
 	return move(match_elements);
 }
 
-fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : ust::vector</Macro::ResultElement/>
+fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : Macro::ResultElements
 {
-	var ust::vector</Macro::ResultElement/> mut result_elements;
+	var Macro::ResultElements mut result_elements;
 
 	while( NotEndOfFile() && it_.front().lexem_type != Lexem::Type::MacroBracketRight )
 	{
@@ -3258,7 +3252,7 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : ust::vector</Macro::Resul
 			{
 				NextLexem();
 
-				auto mut sub_elements= ParseMacroResultBlock();
+				result_element.sub_elements= ust::box_nullable</ Macro::ResultElements />( ParseMacroResultBlock() );
 
 				ExpectLexem( Lexem::Type::MacroBracketRight );
 
@@ -3284,7 +3278,6 @@ fn SyntaxAnalyzer::ParseMacroResultBlock( mut this ) : ust::vector</Macro::Resul
 					result_element.lexem.lexem_type= Lexem::Type::EndOfFile;
 				}
 
-				result_element.sub_elements= ust::shared_ptr_final_nullable</ ust::vector</Macro::ResultElement/> />( move(sub_elements) );
 				result_element.kind= Macro::ResultElementKind::VariableElementWithMacroBlock;
 			}
 			else
@@ -3366,7 +3359,7 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 	return move(lexems);
 }
 
-fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>
+fn SyntaxAnalyzer::MatchMacroBlock( mut this, Macro::MatchElements& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>
 {
 	auto empty_result= ust::shared_ptr_final_nullable</MacroVariablesMap/>();
 	var MacroVariablesMap mut macro_variables_map;
@@ -3413,7 +3406,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 		{
 			var bool mut has_value= true;
 
-			var ust::vector</Macro::MatchElement/>& sub_elements= match_element.sub_elements.try_deref();
+			var Macro::MatchElements& sub_elements= match_element.sub_elements.try_deref();
 			if( match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd &&
 				i + 1s < match_elements.size() )
 			{
@@ -3440,7 +3433,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 		}
 		else if( match_element.kind == Macro::MatchElementKind::Repeated )
 		{
-			var ust::vector</Macro::MatchElement/>& sub_elements= match_element.sub_elements.try_deref();
+			var Macro::MatchElements& sub_elements= match_element.sub_elements.try_deref();
 			if( match_element.block_check_lexem_kind == Macro::BlockCheckLexemKind::LexemAfterBlockEnd &&
 				i + 1s < match_elements.size() )
 			{
@@ -3529,7 +3522,7 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, ust::vector</Macro::MatchElement/>
 
 fn SyntaxAnalyzer::ExpandMacroBlock(
 	mut this,
-	ust::vector</Macro::ResultElement/>& result_elements,
+	Macro::ResultElements& result_elements,
 	MacroVariablesMapsStack &mut macro_variables_maps_stack,
 	UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
 	SrcLoc& expansion_src_loc ) : Lexems
