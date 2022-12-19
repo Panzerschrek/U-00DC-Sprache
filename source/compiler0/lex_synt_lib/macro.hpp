@@ -13,7 +13,7 @@ namespace Synt
 
 struct Macro
 {
-	enum class Context
+	enum class Context : uint8_t
 	{
 		Expression,
 		Block,
@@ -21,7 +21,7 @@ struct Macro
 		Namespace,
 	};
 
-	enum class MatchElementKind
+	enum class MatchElementKind : uint8_t
 	{
 		Lexem,
 		Identifier,
@@ -32,14 +32,14 @@ struct Macro
 		Repeated,
 	};
 
-	enum class ResultElementKind
+	enum class ResultElementKind : uint8_t
 	{
 		Lexem,
 		VariableElement, // Identifier, typename, expression, block
 		VariableElementWithMacroBlock, // Optional, loop
 	};
 
-	enum class BlockCheckLexemKind
+	enum class BlockCheckLexemKind : uint8_t
 	{
 		LexemAfterBlockEnd, // Detect optional/loop end, using lexem after optional/loop as terminator.
 		LexemAtBlockStart, // Detect optional/loop, using lexem in beginning of optional/loop.
@@ -69,7 +69,7 @@ struct Macro
 };
 
 using MacroMap= ProgramStringMap< Macro >;
-using MacrosByContextMap= std::map< Macro::Context, MacroMap >;
+using MacrosByContextMap= std::unordered_map< Macro::Context, MacroMap >;
 
 using MacrosPtr= std::shared_ptr<MacrosByContextMap>;
 

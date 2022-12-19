@@ -619,25 +619,28 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 	// Detect kind of end lexems for optionals/loops.
 	for( size_t i= 0u; i < result.size(); ++i )
 	{
-		if( result[i].kind == Macro::MatchElementKind::Optional || result[i].kind == Macro::MatchElementKind::Repeated )
+		Macro::MatchElement& element= result[i];
+		const Macro::MatchElement* const next_element= (i + 1u < result.size()) ? &result[i+1u] : nullptr;
+
+		if( element.kind == Macro::MatchElementKind::Optional || element.kind == Macro::MatchElementKind::Repeated )
 		{
-			if( !result[i].sub_elements.empty() && result[i].sub_elements.front().kind == Macro::MatchElementKind::Lexem )
-				result[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAtBlockStart;
-			else if( i + 1u < result.size() && result[i+1u].kind == Macro::MatchElementKind::Lexem )
-				result[i].block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
+			if( !element.sub_elements.empty() && element.sub_elements.front().kind == Macro::MatchElementKind::Lexem )
+				element.block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAtBlockStart;
+			else if( next_element != nullptr && next_element->kind == Macro::MatchElementKind::Lexem )
+				element.block_check_lexem_kind= Macro::BlockCheckLexemKind::LexemAfterBlockEnd;
 			else
 			{
 				LexSyntError msg;
 				msg.src_loc= it_->src_loc;
-				msg.text= "Expected lexem at start or after \"" + result[i].name + "\" element.";
+				msg.text= "Expected lexem at start or after \"" + element.name + "\" element.";
 				error_messages_.push_back(std::move(msg));
 			}
 
-			if( i + 1u < result.size() && result[i+1u].kind == Macro::MatchElementKind::Lexem )
+			if( next_element != nullptr && next_element->kind == Macro::MatchElementKind::Lexem )
 			{
-				if( result[i].kind == Macro::MatchElementKind::Optional &&
-					!result[i].sub_elements.empty() && result[i].sub_elements.front().kind == Macro::MatchElementKind::Lexem &&
-					result[i].sub_elements.front().lexem.type == result[i+1u].lexem.type && result[i].sub_elements.front().lexem.text == result[i+1u].lexem.text )
+				if( element.kind == Macro::MatchElementKind::Optional &&
+					!element.sub_elements.empty() && element.sub_elements.front().kind == Macro::MatchElementKind::Lexem &&
+					element.sub_elements.front().lexem.type == next_element->lexem.type && element.sub_elements.front().lexem.text == result[i+1u].lexem.text )
 				{
 					LexSyntError msg;
 					msg.src_loc= it_->src_loc;
@@ -645,9 +648,9 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 					error_messages_.push_back(std::move(msg));
 				}
 
-				if( result[i].kind == Macro::MatchElementKind::Repeated &&
-					result[i].lexem.type != Lexem::Type::EndOfFile &&
-					result[i].lexem.type == result[i+1].lexem.type && result[i].lexem.text == result[i+1].lexem.text )
+				if( element.kind == Macro::MatchElementKind::Repeated &&
+					element.lexem.type != Lexem::Type::EndOfFile &&
+					element.lexem.type == next_element->lexem.type && element.lexem.text == next_element->lexem.text )
 				{
 					LexSyntError msg;
 					msg.src_loc= it_->src_loc;
@@ -655,10 +658,10 @@ std::vector<Macro::MatchElement> SyntaxAnalyzer::ParseMacroMatchBlock()
 					error_messages_.push_back(std::move(msg));
 				}
 
-				if( result[i].kind == Macro::MatchElementKind::Repeated &&
-					result[i].lexem.type == Lexem::Type::EndOfFile &&
-					!result[i].sub_elements.empty() && result[i].sub_elements.front().kind == Macro::MatchElementKind::Lexem &&
-					result[i].sub_elements.front().lexem.type == result[i+1u].lexem.type && result[i].sub_elements.front().lexem.text == result[i+1u].lexem.text )
+				if( element.kind == Macro::MatchElementKind::Repeated &&
+					element.lexem.type == Lexem::Type::EndOfFile &&
+					!element.sub_elements.empty() && element.sub_elements.front().kind == Macro::MatchElementKind::Lexem &&
+					element.sub_elements.front().lexem.type == next_element->lexem.type && element.sub_elements.front().lexem.text == next_element->lexem.text )
 				{
 					LexSyntError msg;
 					msg.src_loc= it_->src_loc;
