@@ -287,14 +287,15 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 				function_variable.type= std::move(function_type);
 
 				// Then, compile function again, when type already known.
-				BuildFuncCode(
-					function_variable,
-					functions_set.base_class,
-					names_scope,
-					functions_set_name,
-					function_variable.syntax_element->type_.params_,
-					*function_variable.syntax_element->block_,
-					function_variable.syntax_element->constructor_initialization_list_.get() );
+				if( !avoid_building_function_bodies_ )
+					BuildFuncCode(
+						function_variable,
+						functions_set.base_class,
+						names_scope,
+						functions_set_name,
+						function_variable.syntax_element->type_.params_,
+						*function_variable.syntax_element->block_,
+						function_variable.syntax_element->constructor_initialization_list_.get() );
 			}
 		}
 
@@ -309,7 +310,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 		functions_set.template_syntax_elements.clear();
 	}
 
-	if( build_body )
+	if( build_body && !avoid_building_function_bodies_ )
 	{
 		for( FunctionVariable& function_variable : functions_set.functions )
 		{

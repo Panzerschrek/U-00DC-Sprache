@@ -1240,7 +1240,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		function_variable.llvm_function->function->setName( function_variable.llvm_function->name_mangled );
 
 	// And generate function body after insertion of prototype.
-	if( !function_variable.have_body ) // if function is constexpr, body may be already generated.
+	if( !function_variable.have_body && !avoid_building_function_bodies_ ) // if function is constexpr, body may be already generated.
 		BuildFuncCode(
 			function_variable,
 			function_template.base_class,

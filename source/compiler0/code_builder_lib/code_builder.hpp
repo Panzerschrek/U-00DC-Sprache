@@ -31,6 +31,10 @@ struct CodeBuilderOptions
 	bool create_lifetimes= true;
 	bool generate_lifetime_start_end_debug_calls= false;
 	bool generate_tbaa_metadata= false;
+
+	// Avoid building bodies of functions. Build only bodies of constexpr functions and generate methods.
+	bool avoid_building_function_bodies= false;
+
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
@@ -1015,6 +1019,7 @@ private:
 	const bool create_lifetimes_;
 	const bool generate_lifetime_start_end_debug_calls_;
 	const bool generate_tbaa_metadata_;
+	const bool avoid_building_function_bodies_;
 
 	struct
 	{
