@@ -115,9 +115,12 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::Triple& target_triple,
 	const bool generate_debug_info,
 	const bool generate_tbaa_metadata,
+	const bool avoid_building_function_bodies,
 	const ManglingScheme mangling_scheme )
 {
 	CodeBuilderLaunchResult result;
+
+	(void)avoid_building_function_bodies; // TODO - use it.
 
 	const LLVMModuleRef llvm_module=
 		U1_BuildProgramUsingVFS(

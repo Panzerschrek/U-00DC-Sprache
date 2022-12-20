@@ -14,6 +14,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::Triple& target_triple,
 	const bool generate_debug_info,
 	const bool generate_tbaa_metadata,
+	const bool avoid_building_function_bodies,
 	const ManglingScheme mangling_scheme )
 {
 	CodeBuilderLaunchResult result;
@@ -32,6 +33,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	options.build_debug_info= generate_debug_info;
 	options.mangling_scheme= mangling_scheme;
 	options.generate_tbaa_metadata= generate_tbaa_metadata;
+	options.avoid_building_function_bodies= avoid_building_function_bodies;
 
 	CodeBuilder::BuildResult build_result=
 		CodeBuilder(

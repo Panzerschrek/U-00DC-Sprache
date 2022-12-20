@@ -30,6 +30,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::Triple& target_triple,
 	bool generate_debug_info,
 	bool generate_tbaa_metadata,
+	bool avoid_building_function_bodies,
 	ManglingScheme mangling_scheme );
 
 uint32_t GetCompilerGeneration();

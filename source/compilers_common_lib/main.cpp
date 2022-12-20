@@ -180,6 +180,12 @@ cl::opt<bool> generate_debug_info(
 	cl::init(false),
 	cl::cat(options_category) );
 
+cl::opt<bool> avoid_building_function_bodies(
+	"avoid-building-function-bodies",
+	cl::desc("Avoid building function bodies."),
+	cl::init(false),
+	cl::cat(options_category) );
+
 cl::opt<std::string> architecture(
 	"march",
 	cl::desc("Architecture to generate code for (see --version)"),
@@ -517,6 +523,7 @@ int Main( int argc, const char* argv[] )
 					target_triple,
 					Options::generate_debug_info,
 					generate_tbaa_metadata,
+					Options::avoid_building_function_bodies,
 					mangling_scheme );
 
 			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
