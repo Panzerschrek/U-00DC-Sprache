@@ -133,35 +133,6 @@ file( GLOB LAUNCHERS_COMMON_CPP_SOURCES "launchers_common/*.cpp" )
 file( GLOB LAUNCHERS_COMMON_CPP_HEADERS "launchers_common/*.hpp" )
 CompileUSources( LAUNCHERS_COMMON_SOURCES LAUNCHERS_COMMON_OBJECTS )
 
-##
-## Helper compiler launch to check all files
-##
-
-set( ALL_IMPORTS_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/all_imports.u" )
-
-list( APPEND ALL_SOURCES ${LEX_SYNT_LIB_SOURCES} ${LAUNCHERS_COMMON_SOURCES} ${CODE_BUILDER_LIB_SOURCES} )
-foreach( SOURCE ${ALL_SOURCES} )
-	file( RELATIVE_PATH SOURCE_REL ${CMAKE_CURRENT_BINARY_DIR} ${SOURCE} )
-	set( ALL_IMPORT_CONTENT "${ALL_IMPORT_CONTENT}import \"${SOURCE_REL}\"\n" )
-endforeach()
-
-file( GENERATE OUTPUT ${ALL_IMPORTS_SOURCE} CONTENT ${ALL_IMPORT_CONTENT} )
-
-add_custom_target(
-	AllImportsCheck${NEXT_COMPILER_GENERATION} ALL
-	DEPENDS ${ALL_IMPORTS_SOURCE} ${ALL_SOURCES} Compiler${CURRENT_COMPILER_GENERATION}
-	COMMAND
-		Compiler${CURRENT_COMPILER_GENERATION}
-		${ALL_IMPORTS_SOURCE}
-		-O0 ${SPRACHE_COMPILER_PIC_OPTIONS}
-		--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
-		--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
-		--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
-		--avoid-building-function-bodies
-		--filetype=null
-	COMMENT "Checking ${ALL_IMPORTS_SOURCE}"
-	)
-
 if( U_COMPILER1_LTO )
 	set( CODE_BUILDER_LIB_BC ${CMAKE_CURRENT_BINARY_DIR}/CodeBuilderLib.bc )
 	set( CODE_BUILDER_LIB_O ${CMAKE_CURRENT_BINARY_DIR}/CodeBuilderLib.bc.o )
@@ -229,6 +200,34 @@ else()
 		)
 endif()
 target_link_libraries( CodeBuilderLib${NEXT_COMPILER_GENERATION} LexSyntLibCommon CodeBuilderLibCommon )
+
+##
+## Helper compiler launch to check all files
+##
+
+set( ALL_IMPORTS_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/all_imports.u" )
+
+list( APPEND ALL_SOURCES ${LEX_SYNT_LIB_SOURCES} ${LAUNCHERS_COMMON_SOURCES} ${CODE_BUILDER_LIB_SOURCES} )
+foreach( SOURCE ${ALL_SOURCES} )
+	file( RELATIVE_PATH SOURCE_REL ${CMAKE_CURRENT_BINARY_DIR} ${SOURCE} )
+	set( ALL_IMPORT_CONTENT "${ALL_IMPORT_CONTENT}import \"${SOURCE_REL}\"\n" )
+endforeach()
+
+file( GENERATE OUTPUT ${ALL_IMPORTS_SOURCE} CONTENT ${ALL_IMPORT_CONTENT} )
+
+add_custom_command(
+	TARGET CodeBuilderLib${NEXT_COMPILER_GENERATION} POST_BUILD
+	COMMAND
+		Compiler${CURRENT_COMPILER_GENERATION}
+		${ALL_IMPORTS_SOURCE}
+		--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
+		--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
+		--include-dir ${CMAKE_CURRENT_BINARY_DIR}/
+		-O0
+		--avoid-building-function-bodies
+		--filetype=null
+	COMMENT "Checking ${ALL_IMPORTS_SOURCE}"
+	)
 
 #
 # Compiler
