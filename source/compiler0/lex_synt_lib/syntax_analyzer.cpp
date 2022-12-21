@@ -218,7 +218,7 @@ public:
 	SyntaxAnalyzer();
 	SyntaxAnalyzer( const MacrosPtr& macros, const MacroExpansionContextsPtr& macro_expansion_contexts );
 
-	SyntaxAnalysisResult DoAnalyzis( const Lexems& lexems );
+	SyntaxAnalysisResult DoAnalyzis( const Lexems& lexems, SourceFileContentsHashView source_file_contents_hash );
 	std::vector<Import> ParseImportsOnly( const Lexems& lexems );
 
 private:
@@ -353,6 +353,7 @@ private:
 	LexSyntErrors error_messages_;
 	Lexems::const_iterator it_;
 	Lexems::const_iterator it_end_;
+	SourceFileContentsHashView source_file_contents_hash_;
 
 	Lexems::const_iterator last_error_it_;
 	size_t last_error_repeats_;
@@ -370,7 +371,9 @@ SyntaxAnalyzer::SyntaxAnalyzer( const MacrosPtr& macros, const MacroExpansionCon
 	: macros_(macros), macro_expansion_contexts_(macro_expansion_contexts)
 {}
 
-SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
+SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis(
+	const Lexems& lexems,
+	const SourceFileContentsHashView source_file_contents_hash )
 {
 	SyntaxAnalysisResult result;
 
@@ -378,6 +381,7 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 	it_end_= lexems.end();
 	last_error_it_= lexems.end();
 	last_error_repeats_= 0u;
+	source_file_contents_hash_= source_file_contents_hash;
 
 	result.imports= ParseImports();
 	while( NotEndOfFile() )
@@ -3414,6 +3418,7 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	SyntaxAnalyzer result_analyzer( macros_, macro_expansion_contexts_ );
 	result_analyzer.it_= result_lexems.begin();
 	result_analyzer.it_end_= result_lexems.end();
+	result_analyzer.source_file_contents_hash_= source_file_contents_hash_;
 
 	auto element= (result_analyzer.*parse_fn)();
 	error_messages_.insert( error_messages_.end(), result_analyzer.error_messages_.begin(), result_analyzer.error_messages_.end() );
@@ -3617,14 +3622,14 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				{
 					U_ASSERT( result_element.lexem.text.size() > 2u && result_element.lexem.text[0] == '?' && result_element.lexem.text[1] == '?' );
 
-					// TODO - Do not use pointer here for determenistic reasons.
-					l.text=
-						"_macro_ident_" +
-						result_element.lexem.text.substr(2u) +
-						"_" +
-						std::to_string( reinterpret_cast<uintptr_t>( &unique_macro_identifier_map ) ) +
-						"_" +
-						std::to_string( unique_macro_identifier_map.size() );
+					// TODO - make identitifers in different macro expansions different.
+					l.text= "_macro_ident_";
+					l.text+= result_element.lexem.text.substr(2u);
+					l.text+= "_";
+					l.text+= source_file_contents_hash_;
+					l.text+= "_";
+					l.text+= std::to_string( unique_macro_identifier_map.size() );
+
 					unique_macro_identifier_map[ result_element.lexem.text ]= l.text;
 				}
 
@@ -3824,13 +3829,14 @@ std::vector<Import> ParseImports( const Lexems& lexems )
 SyntaxAnalysisResult SyntaxAnalysis(
 	const Lexems& lexems,
 	MacrosByContextMap macros,
-	const MacroExpansionContextsPtr& macro_expansion_contexts )
+	const MacroExpansionContextsPtr& macro_expansion_contexts,
+	SourceFileContentsHashView source_file_contents_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		std::make_shared<MacrosByContextMap>( std::move(macros) ),
 		macro_expansion_contexts );
 
-	return syntax_analyzer.DoAnalyzis( lexems );
+	return syntax_analyzer.DoAnalyzis( lexems, source_file_contents_hash );
 }
 
 } // namespace Synt

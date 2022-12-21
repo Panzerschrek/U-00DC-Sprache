@@ -38,6 +38,11 @@ struct SourceGraph final
 	LexSyntErrors errors;
 };
 
-SourceGraph LoadSourceGraph( IVfs& vfs, const IVfs::Path& root_file_path );
+using SourceFileContentsHashigFunction= std::string(*)( std::string_view );
+
+SourceGraph LoadSourceGraph(
+	IVfs& vfs,
+	SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	const IVfs::Path& root_file_path );
 
 } // namespace U

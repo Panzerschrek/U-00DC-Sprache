@@ -10,7 +10,7 @@ namespace U
 namespace
 {
 
-Synt::MacrosPtr PrepareBuiltInMacros()
+Synt::MacrosPtr PrepareBuiltInMacros( const SourceFileContentsHashigFunction source_file_contents_hashing_function )
 {
 	#include "built_in_macros.hpp"
 	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_built_in_macros );
@@ -20,7 +20,8 @@ Synt::MacrosPtr PrepareBuiltInMacros()
 		Synt::SyntaxAnalysis(
 			lex_result.lexems,
 			Synt::MacrosByContextMap(),
-			std::make_shared<Synt::MacroExpansionContexts>() );
+			std::make_shared<Synt::MacroExpansionContexts>(),
+			source_file_contents_hashing_function( c_built_in_macros ) );
 	U_ASSERT( synt_result.error_messages.empty() );
 
 	return synt_result.macros;
@@ -28,6 +29,7 @@ Synt::MacrosPtr PrepareBuiltInMacros()
 
 size_t LoadNode_r(
 	IVfs& vfs,
+	const SourceFileContentsHashigFunction source_file_contents_hashing_function,
 	const Synt::MacrosByContextMap& built_in_macros,
 	const IVfs::Path& file_path,
 	const IVfs::Path& parent_file_path,
@@ -94,7 +96,15 @@ size_t LoadNode_r(
 	{
 		const Synt::Import& import = imports[i];
 		const size_t child_node_index=
-			LoadNode_r( vfs, built_in_macros, import.import_name, full_file_path, processed_files_stack, import.src_loc_, result );
+			LoadNode_r(
+				vfs,
+				source_file_contents_hashing_function,
+				built_in_macros,
+				import.import_name,
+				full_file_path,
+				processed_files_stack,
+				import.src_loc_,
+				result );
 		if( child_node_index != ~0u )
 		{
 			if( const Synt::MacrosPtr macro= result.nodes_storage[child_node_index].ast.macros; macro != nullptr )
@@ -131,7 +141,8 @@ size_t LoadNode_r(
 		Synt::SyntaxAnalysis(
 		lex_result.lexems,
 		std::move(merged_macroses),
-		result.macro_expansion_contexts );
+		result.macro_expansion_contexts,
+		source_file_contents_hashing_function( *loaded_file ) );
 
 	result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
@@ -141,15 +152,26 @@ size_t LoadNode_r(
 
 } // namespace
 
-SourceGraph LoadSourceGraph( IVfs& vfs, const IVfs::Path& root_file_path )
+SourceGraph LoadSourceGraph(
+	IVfs& vfs,
+	const SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	const IVfs::Path& root_file_path )
 {
 	SourceGraph result;
 	result.macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
 
-	const auto built_in_macros= PrepareBuiltInMacros();
+	const auto built_in_macros= PrepareBuiltInMacros( source_file_contents_hashing_function );
 
 	std::vector<std::string> processed_files_stack;
-	LoadNode_r( vfs, *built_in_macros, root_file_path, "", processed_files_stack, SrcLoc(0, 0, 0), result );
+	LoadNode_r(
+		vfs,
+		source_file_contents_hashing_function,
+		*built_in_macros,
+		root_file_path,
+		"",
+		processed_files_stack,
+		SrcLoc(0, 0, 0),
+		result );
 
 	return result;
 }
