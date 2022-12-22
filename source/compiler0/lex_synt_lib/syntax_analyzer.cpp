@@ -3639,7 +3639,6 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				{
 					U_ASSERT( result_element.lexem.text.size() > 2u && result_element.lexem.text[0] == '?' && result_element.lexem.text[1] == '?' );
 
-					// TODO - make identitifers in different macro expansions different.
 					l.text= "_macro_ident_";
 					l.text+= result_element.lexem.text.substr(2u);
 					l.text+= "_";
