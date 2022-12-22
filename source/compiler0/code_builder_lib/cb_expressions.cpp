@@ -1652,7 +1652,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		result.type= bool_type_;
 		result.location= Variable::Location::LLVMRegister;
 
-		if( l_var.constexpr_value != nullptr || r_var.constexpr_value != nullptr )
+		if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
 			result.llvm_value= result.constexpr_value= ConstexprCompareEqual( l_var.constexpr_value, r_var.constexpr_value, l_var.type, names, src_loc );
 		else
 		{

@@ -1077,7 +1077,7 @@ void CodeBuilder::CopyBytes(
 
 llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 	llvm::Constant* const l,
-	llvm::Constant* const  r,
+	llvm::Constant* const r,
 	const Type& type, NamesScope& names,
 	const SrcLoc& src_loc )
 {
