@@ -326,8 +326,8 @@ private:
 	size_type last_error_repeats_= 0s;
 	LexSyntErrors errors_;
 
-	MacrosPtr macros_;
-	MacroExpansionContextsPtr macro_expansion_contexts_;
+	MacrosPtr imut macros_;
+	MacroExpansionContextsPtr imut macro_expansion_contexts_;
 }
 
 fn SyntaxAnalyzer::constructor(
@@ -3689,7 +3689,8 @@ fn SyntaxAnalyzer::PushMacroErrorMessage( mut this, SrcLoc& src_loc, ust::string
 fn SyntaxAnalysis(
 	Lexems& lexems,
 	MacrosByContextMap mut macros,
-	MacroExpansionContextsPtr mut macro_expansion_contexts /*in-out param*/ ) : SyntaxAnalysisResult
+	MacroExpansionContextsPtr mut macro_expansion_contexts /*in-out param*/,
+	ust::string8 source_file_contents_hash ) : SyntaxAnalysisResult
 {
 	var SyntaxAnalyzer mut analyzer( lexems, MacrosPtr( move(macros) ), move(macro_expansion_contexts) );
 	return analyzer.DoAnalyzis();

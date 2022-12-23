@@ -2,6 +2,7 @@ import "/string_conversions.u"
 import "../lex_synt_lib/source_graph.uh"
 import "../code_builder_lib/code_builder.uh"
 import "print.uh"
+import "source_file_contents_hash_wrapper.uh"
 import "funcs_u.uh"
 
 fn GetTestsTargetTripleStr() : ust::string8
@@ -55,7 +56,7 @@ fn nomangle U1_BuildProgram(
 		safe
 		{
 			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, "_" );
+			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_" );
 
 			U1::PrintLexSyntErrors( source_graph );
 			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -92,7 +93,7 @@ fn nomangle U1_BuildProgramWithErrors(
 		safe
 		{
 			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, "_" );
+			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_" );
 
 			U1::PrintLexSyntErrors( source_graph );
 			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -122,7 +123,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
 
 		var U1::TestVfs mut test_vfs( program_text );
-		auto source_graph= U1::LoadSourceGraph( test_vfs, "_");
+		auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_");
 
 		foreach( &node : source_graph.nodes )
 		{
@@ -159,7 +160,7 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	{
 		auto path= U1::StringToArrayView( root_file_path.data, root_file_path.size );
 
-		auto source_graph= U1::LoadSourceGraph( vfs, path );
+		auto source_graph= U1::LoadSourceGraph( vfs, U1::g_calculate_source_file_contents_hash_ptr, path );
 
 		foreach( &node : source_graph.nodes )
 		{
@@ -214,7 +215,7 @@ fn nomangle U1_BuildMultisourceProgram(
 	unsafe{ root_file_path_str= U1::StringToArrayView( root_file_path.data, root_file_path.size ); }
 
 	var U1::TestVfs mut test_vfs( U1::TransformSourceFiles( source_files, source_file_count ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, root_file_path_str );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, root_file_path_str );
 
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
@@ -247,7 +248,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	unsafe{ root_file_path_str= U1::StringToArrayView( root_file_path.data, root_file_path.size ); }
 
 	var U1::TestVfs mut test_vfs( U1::TransformSourceFiles( source_files, source_file_count ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, root_file_path_str );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, root_file_path_str );
 
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
@@ -276,7 +277,7 @@ fn nomangle U1_BuildProgramForLifetimesTest(
 		safe
 		{
 			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, "_" );
+			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_" );
 
 			U1::PrintLexSyntErrors( source_graph );
 			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -312,7 +313,7 @@ fn nomangle U1_BuildProgramForMSVCManglingTest(
 		safe
 		{
 			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, "_" );
+			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_" );
 
 			U1::PrintLexSyntErrors( source_graph );
 			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -416,6 +417,38 @@ fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 		str+= err.text;
 		str+= "\n\0";
 		unsafe{  U1_PrintStr( U1_GetCerr(), str.front() );  }
+	}
+}
+
+var SourceFileContentsHashigFunction g_calculate_source_file_contents_hash_ptr(CalculateSourceFileContentsHash);
+
+fn CalculateSourceFileContentsHash( ust::array_view_imut</ char8 /> source_file_contents ) : ust::string8
+{
+	unsafe
+	{
+		var ust::string8 mut result;
+
+		var U1_StringView source_file_contents_view{ .data= source_file_contents.data(), .size= source_file_contents.size() };
+
+		var $(ust::string8) result_ptr= $<(result);
+		auto result_handle= cast_ref_unsafe</UserHandle/>(result_ptr);
+		U1_CalculateSourceFileContentsHash(
+			source_file_contents_view,
+			CalculateSourceFileContentsHashCallback( CalculateSourceFileContentsHashCallbackFunc ),
+			result_handle );
+
+		return result;
+	}
+}
+
+fn CalculateSourceFileContentsHashCallbackFunc( UserHandle data, U1_StringView& hash )
+{
+	unsafe
+	{
+		auto result_ptr= cast_ref_unsafe</$(ust::string8)/>(data);
+		var ust::string8 &mut result_ref= cast_ref_unsafe</ust::string8/>( $>(result_ptr) );
+
+		result_ref= StringToArrayView( hash.data, hash.size );
 	}
 }
 

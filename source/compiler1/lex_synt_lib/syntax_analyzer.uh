@@ -31,7 +31,8 @@ type MacroExpansionContextsPtr= ust::shared_ptr_mut</MacroExpansionContexts/>;
 fn SyntaxAnalysis(
 	Lexems& lexems,
 	MacrosByContextMap mut macros,
-	MacroExpansionContextsPtr mut macro_expansion_contexts /*in-out param*/ ) : SyntaxAnalysisResult;
+	MacroExpansionContextsPtr mut macro_expansion_contexts /*in-out param*/,
+	ust::string8 source_file_contents_hash ) : SyntaxAnalysisResult;
 
 fn ParseImports( Lexems& lexems ) : ImportsList;
 
