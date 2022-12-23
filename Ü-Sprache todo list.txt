@@ -44,6 +44,8 @@ Standart library:
 *) More math functions
 
 Compiler:
+*) Fix non-dethermenistic result of inline functions caused by different addresses of functions with "private" linkage in different compilation units.
+*) Fix non-dethermenistic compilation result caused by non-dethermenistic address of global constant variables, including "typeinfo" variables.
 *) Use TBAA from LLVM.
 *) Pass/return by-value composite values with single scalar inside.
 *) Faster calling convention for non-cross-language functions.
