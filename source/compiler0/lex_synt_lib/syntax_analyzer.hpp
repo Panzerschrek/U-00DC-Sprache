@@ -30,14 +30,12 @@ struct SyntaxAnalysisResult
 	LexSyntErrors error_messages;
 };
 
-using SourceFileContentsHashView= std::string_view;
-
 std::vector<Import> ParseImports( const Lexems& lexems );
 SyntaxAnalysisResult SyntaxAnalysis(
 	const Lexems& lexems,
 	MacrosByContextMap macros,
 	const MacroExpansionContextsPtr& macro_expansion_contexts, /* in-out contexts */
-	SourceFileContentsHashView source_file_contents_hash );
+	std::string source_file_contents_hash );
 
 } // namespace Synt
 

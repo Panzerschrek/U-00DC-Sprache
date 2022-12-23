@@ -1,5 +1,7 @@
 import "funcs_u.uh"
 
+// If contents of this file changed, source_file_contents_hash_wrapper.hpp must be changed too!
+
 type CalculateSourceFileContentsHashCallback= fn( UserHandle data,  U1_StringView& hash );
 
 fn nomangle U1_CalculateSourceFileContentsHash(

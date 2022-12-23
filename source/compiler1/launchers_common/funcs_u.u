@@ -426,12 +426,12 @@ fn CalculateSourceFileContentsHash( ust::array_view_imut</ char8 /> source_file_
 {
 	unsafe
 	{
-		var ust::string8 mut result;
-
 		var U1_StringView source_file_contents_view{ .data= source_file_contents.data(), .size= source_file_contents.size() };
 
+		var ust::string8 mut result;
 		var $(ust::string8) result_ptr= $<(result);
 		auto result_handle= cast_ref_unsafe</UserHandle/>(result_ptr);
+
 		U1_CalculateSourceFileContentsHash(
 			source_file_contents_view,
 			CalculateSourceFileContentsHashCallback( CalculateSourceFileContentsHashCallbackFunc ),
@@ -447,7 +447,6 @@ fn CalculateSourceFileContentsHashCallbackFunc( UserHandle data, U1_StringView& 
 	{
 		auto result_ptr= cast_ref_unsafe</$(ust::string8)/>(data);
 		var ust::string8 &mut result_ref= cast_ref_unsafe</ust::string8/>( $>(result_ptr) );
-
 		result_ref= StringToArrayView( hash.data, hash.size );
 	}
 }

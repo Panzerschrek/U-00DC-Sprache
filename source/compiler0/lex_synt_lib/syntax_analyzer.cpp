@@ -3851,13 +3851,13 @@ SyntaxAnalysisResult SyntaxAnalysis(
 	const Lexems& lexems,
 	MacrosByContextMap macros,
 	const MacroExpansionContextsPtr& macro_expansion_contexts,
-	SourceFileContentsHashView source_file_contents_hash )
+	std::string source_file_contents_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		std::make_shared<MacrosByContextMap>( std::move(macros) ),
 		macro_expansion_contexts );
 
-	return syntax_analyzer.DoAnalyzis( lexems, std::string(source_file_contents_hash) );
+	return syntax_analyzer.DoAnalyzis( lexems, std::move(source_file_contents_hash) );
 }
 
 } // namespace Synt
