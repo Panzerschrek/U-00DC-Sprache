@@ -1,0 +1,9 @@
+?macro <? DECLARE_VARIABLE:namespace ?name:ident ?>
+->
+<?
+	var u32 mut ??var = 0u;
+	fn ?name() unsafe : u32 &mut
+	{
+		unsafe{ return ??var; }
+	}
+?>

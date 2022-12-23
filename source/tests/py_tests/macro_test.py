@@ -435,6 +435,40 @@ def UniqueMacroLexem_Test1():
 	assert( errors_list[0].text.find("i") != -1 )
 
 
+def UniqueMacroLexemIsGloballyUnique_Test0():
+	# Each macro expansion should produce unique identifiers.
+	c_program_text= """
+	?macro <? DECLARE_S:namespace ?> -> <? struct ??s{} ?>
+
+	DECLARE_S
+	DECLARE_S
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UniqueMacroLexemIsGloballyUnique_Test1():
+	# Each macro expansion should produce unique identifiers even if ed expansion is inside macro.
+	c_program_text= """
+	?macro <? DECLARE_S:namespace ?> -> <? struct ??s{} ?>
+	?macro <? CALL_DECLARE_S:namespace ?> -> <? DECLARE_S ?>
+
+	CALL_DECLARE_S
+	CALL_DECLARE_S
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UniqueMacroLexemIsGloballyUnique_Test2():
+	# Each macro expansion should produce unique identifiers even if ed expansion is inside macro.
+	c_program_text= """
+	?macro <? DECLARE_S:namespace ?> -> <? struct ??s{} ?>
+	?macro <? CALL_DECLARE_S:namespace ?> -> <? DECLARE_S DECLARE_S ?>
+
+	CALL_DECLARE_S
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def MacroExpansionContext_Test0():
 	c_program_text= """
 	?macro <? TEST:namespace ?name:ident ?> -> <? fn ?name () { a; } ?>

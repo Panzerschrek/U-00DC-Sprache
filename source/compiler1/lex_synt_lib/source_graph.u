@@ -4,14 +4,27 @@ import "source_graph.uh"
 namespace U1
 {
 
-fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph
+fn LoadSourceGraph(
+	IVfs &mut vfs,
+	SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	ust::string8& root_file_path ) : SourceGraph
 {
 	var SourceGraph mut source_graph{ .macro_expansion_contexts(Synt::MacroExpansionContexts()) };
 
-	var Synt::MacrosByContextMap built_in_macros= PrepareBuiltInMacros( source_graph.macro_expansion_contexts );
+	var Synt::MacrosByContextMap built_in_macros=
+		PrepareBuiltInMacros( source_file_contents_hashing_function, source_graph.macro_expansion_contexts );
 
 	var ust::vector</ust::string8/> mut imports_stack;
-	LoadSourceGraph_r( built_in_macros, vfs, root_file_path, "", SrcLoc( 0u, 0u, 0u ), source_graph, imports_stack );
+	LoadSourceGraph_r(
+		built_in_macros,
+		vfs,
+		source_file_contents_hashing_function,
+		root_file_path,
+		"",
+		SrcLoc( 0u, 0u, 0u ),
+		source_graph,
+		imports_stack );
+
 	return move(source_graph);
 }
 
@@ -19,6 +32,7 @@ fn LoadSourceGraph( IVfs &mut vfs, ust::string8& root_file_path ) : SourceGraph
 fn LoadSourceGraph_r(
 	Synt::MacrosByContextMap& built_in_macros,
 	IVfs &mut vfs,
+	SourceFileContentsHashigFunction source_file_contents_hashing_function,
 	ust::string8& file_path,
 	ust::string8& parent_file_path,
 	SrcLoc& import_src_loc,
@@ -65,11 +79,13 @@ fn LoadSourceGraph_r(
 		return ~0s;
 	}
 
+	auto file_content_view= file_content_opt.try_deref().range();
+
 	// Reserve place for empty node
 	auto node_index= source_graph.nodes.size();
 	source_graph.nodes.push_back( SourceGraph::Node() );
 
-	auto mut lex_result= LexicalAnalysis( file_content_opt.try_deref().range() );
+	auto mut lex_result= LexicalAnalysis( file_content_view );
 	foreach( &error : lex_result.errors )
 	{
 		source_graph.errors.push_back( error );
@@ -91,7 +107,16 @@ fn LoadSourceGraph_r(
 	imports_stack.push_back( file_path_normalized );
 	foreach( &import_ : imports )
 	{
-		auto child= LoadSourceGraph_r( built_in_macros, vfs, import_.name, file_path_normalized, import_.src_loc, source_graph, imports_stack );
+		auto child=
+			LoadSourceGraph_r(
+				built_in_macros,
+				vfs,
+				source_file_contents_hashing_function,
+				import_.name,
+				file_path_normalized,
+				import_.src_loc,
+				source_graph,
+				imports_stack );
 		if( child != ~0s )
 		{
 			node.children.push_back(child);
@@ -134,7 +159,13 @@ fn LoadSourceGraph_r(
 		source_graph.errors.push_back( take(macro_error) );
 	}
 
-	auto mut synt_result= Synt::SyntaxAnalysis( lex_result.lexems, move(macros), source_graph.macro_expansion_contexts );
+	auto mut synt_result=
+		Synt::SyntaxAnalysis(
+			lex_result.lexems,
+			move(macros),
+			source_graph.macro_expansion_contexts,
+			source_file_contents_hashing_function( file_content_view ) );
+
 	foreach( &error : synt_result.errors )
 	{
 		source_graph.errors.push_back( error );
@@ -145,13 +176,20 @@ fn LoadSourceGraph_r(
 	return node_index;
 }
 
-fn PrepareBuiltInMacros( Synt::MacroExpansionContextsPtr mut macro_expansion_contexts ) : Synt::MacrosByContextMap
+fn PrepareBuiltInMacros(
+	SourceFileContentsHashigFunction source_file_contents_hashing_function,
+	Synt::MacroExpansionContextsPtr mut macro_expansion_contexts ) : Synt::MacrosByContextMap
 {
 	var LexicalAnalysisResult lex_result= LexicalAnalysis( c_built_in_macros );
 	halt if( !lex_result.errors.empty() );
 
 	var Synt::SyntaxAnalysisResult mut synt_result=
-		Synt::SyntaxAnalysis( lex_result.lexems, Synt::MacrosByContextMap(), move(macro_expansion_contexts) );
+		Synt::SyntaxAnalysis(
+			lex_result.lexems,
+			Synt::MacrosByContextMap(),
+			move(macro_expansion_contexts),
+			source_file_contents_hashing_function( c_built_in_macros ) );
+
 	halt if( !synt_result.errors.empty() );
 
 	return take( synt_result.macros );

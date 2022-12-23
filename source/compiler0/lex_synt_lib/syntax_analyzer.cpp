@@ -218,7 +218,7 @@ public:
 	SyntaxAnalyzer();
 	SyntaxAnalyzer( const MacrosPtr& macros, const MacroExpansionContextsPtr& macro_expansion_contexts );
 
-	SyntaxAnalysisResult DoAnalyzis( const Lexems& lexems );
+	SyntaxAnalysisResult DoAnalyzis( const Lexems& lexems, std::string macro_unique_identifiers_base_name );
 	std::vector<Import> ParseImportsOnly( const Lexems& lexems );
 
 private:
@@ -336,7 +336,8 @@ private:
 	Lexems DoExpandMacro(
 		const MacroNamesMap& parsed_elements,
 		const Macro::ResultElements& result_elements,
-		ProgramStringMap<std::string>& unique_macro_identifier_map );
+		ProgramStringMap<std::string>& unique_macro_identifier_map,
+		const std::string& macro_unique_identifiers_base_name );
 
 	void ExpectSemicolon();
 	void ExpectLexem( Lexem::Type lexem_type );
@@ -353,6 +354,7 @@ private:
 	LexSyntErrors error_messages_;
 	Lexems::const_iterator it_;
 	Lexems::const_iterator it_end_;
+	std::string macro_unique_identifiers_base_name_;
 
 	Lexems::const_iterator last_error_it_;
 	size_t last_error_repeats_;
@@ -370,7 +372,9 @@ SyntaxAnalyzer::SyntaxAnalyzer( const MacrosPtr& macros, const MacroExpansionCon
 	: macros_(macros), macro_expansion_contexts_(macro_expansion_contexts)
 {}
 
-SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
+SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis(
+	const Lexems& lexems,
+	std::string macro_unique_identifiers_base_name )
 {
 	SyntaxAnalysisResult result;
 
@@ -378,6 +382,7 @@ SyntaxAnalysisResult SyntaxAnalyzer::DoAnalyzis( const Lexems& lexems )
 	it_end_= lexems.end();
 	last_error_it_= lexems.end();
 	last_error_repeats_= 0u;
+	macro_unique_identifiers_base_name_= std::move(macro_unique_identifiers_base_name);
 
 	result.imports= ParseImports();
 	while( NotEndOfFile() )
@@ -3396,7 +3401,21 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	names_map.names= &*elements_map;
 
 	ProgramStringMap<std::string> unique_macro_identifier_map;
-	Lexems result_lexems= DoExpandMacro( names_map, macro.result_template_elements, unique_macro_identifier_map );
+
+	// Append expansion point line/column in order to make macro unique identifiers unique in different macto expansions.
+	// Use only line/column and not use file index/macro expansion index, bacause we need to produce same result for file imported in different files.
+	std::string macro_unique_identifiers_base_name= macro_unique_identifiers_base_name_;
+	macro_unique_identifiers_base_name+= "_l";
+	macro_unique_identifiers_base_name+= std::to_string( expansion_src_loc.GetLine() );
+	macro_unique_identifiers_base_name+= "_c";
+	macro_unique_identifiers_base_name+= std::to_string( expansion_src_loc.GetColumn() );
+
+	Lexems result_lexems=
+		DoExpandMacro(
+			names_map,
+			macro.result_template_elements,
+			unique_macro_identifier_map,
+			macro_unique_identifiers_base_name );
 
 	Lexem eof;
 	eof.type= Lexem::Type::EndOfFile;
@@ -3414,6 +3433,8 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	SyntaxAnalyzer result_analyzer( macros_, macro_expansion_contexts_ );
 	result_analyzer.it_= result_lexems.begin();
 	result_analyzer.it_end_= result_lexems.end();
+	// For subsequent macro expansions use base name that contains also root expansion point (and more - full expansion path).
+	result_analyzer.macro_unique_identifiers_base_name_= macro_unique_identifiers_base_name;
 
 	auto element= (result_analyzer.*parse_fn)();
 	error_messages_.insert( error_messages_.end(), result_analyzer.error_messages_.begin(), result_analyzer.error_messages_.end() );
@@ -3595,7 +3616,8 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 Lexems SyntaxAnalyzer::DoExpandMacro(
 	const MacroNamesMap& parsed_elements,
 	const Macro::ResultElements& result_elements,
-	ProgramStringMap<std::string>& unique_macro_identifier_map )
+	ProgramStringMap<std::string>& unique_macro_identifier_map,
+	const std::string& macro_unique_identifiers_base_name )
 {
 	Lexems result_lexems;
 	for( const Macro::ResultElement& result_element : result_elements )
@@ -3617,14 +3639,13 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				{
 					U_ASSERT( result_element.lexem.text.size() > 2u && result_element.lexem.text[0] == '?' && result_element.lexem.text[1] == '?' );
 
-					// TODO - Do not use pointer here for determenistic reasons.
-					l.text=
-						"_macro_ident_" +
-						result_element.lexem.text.substr(2u) +
-						"_" +
-						std::to_string( reinterpret_cast<uintptr_t>( &unique_macro_identifier_map ) ) +
-						"_" +
-						std::to_string( unique_macro_identifier_map.size() );
+					l.text= "_macro_ident_";
+					l.text+= result_element.lexem.text.substr(2u);
+					l.text+= "_";
+					l.text+= macro_unique_identifiers_base_name;
+					l.text+= "_";
+					l.text+= std::to_string( unique_macro_identifier_map.size() );
+
 					unique_macro_identifier_map[ result_element.lexem.text ]= l.text;
 				}
 
@@ -3670,7 +3691,12 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 						sub_elements_map.prev= &parsed_elements;
 						sub_elements_map.names= &sub_elements;
 
-						Lexems element_lexems= DoExpandMacro( sub_elements_map, result_element.sub_elements, unique_macro_identifier_map );
+						Lexems element_lexems=
+							DoExpandMacro(
+								sub_elements_map,
+								result_element.sub_elements,
+								unique_macro_identifier_map,
+								macro_unique_identifiers_base_name );
 						result_lexems.insert( result_lexems.end(), element_lexems.begin(), element_lexems.end() );
 
 						// Push separator.
@@ -3824,13 +3850,14 @@ std::vector<Import> ParseImports( const Lexems& lexems )
 SyntaxAnalysisResult SyntaxAnalysis(
 	const Lexems& lexems,
 	MacrosByContextMap macros,
-	const MacroExpansionContextsPtr& macro_expansion_contexts )
+	const MacroExpansionContextsPtr& macro_expansion_contexts,
+	std::string source_file_contents_hash )
 {
 	SyntaxAnalyzer syntax_analyzer(
 		std::make_shared<MacrosByContextMap>( std::move(macros) ),
 		macro_expansion_contexts );
 
-	return syntax_analyzer.DoAnalyzis( lexems );
+	return syntax_analyzer.DoAnalyzis( lexems, std::move(source_file_contents_hash) );
 }
 
 } // namespace Synt
