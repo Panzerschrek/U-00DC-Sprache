@@ -184,7 +184,8 @@ public:
 		this'a',
 		Lexems&'b lexems,
 		MacrosPtr mut macros,
-		MacroExpansionContextsPtr mut macro_expansion_contexts ) ' a <- b ';
+		MacroExpansionContextsPtr mut macro_expansion_contexts,
+		ust::string8 macro_unique_identifiers_base_name ) ' a <- b ';
 
 	fn DoAnalyzis( mut this ) : SyntaxAnalysisResult;
 	fn ParseImports( mut this ) : ImportsList;
@@ -273,8 +274,24 @@ private:
 	template</type T/>
 	fn ExpandMacro( mut this, Macro& macro ) : T
 	{
-		var Lexems lexems_expanded= ExpandMacroImpl( macro );
-		var SyntaxAnalyzer mut syntax_analyzer( lexems_expanded, macros_, macro_expansion_contexts_ );
+		var SrcLoc expansion_src_loc= it_.front().src_loc;
+
+		// Append expansion point line/column in order to make macro unique identifiers unique in different macto expansions.
+		// Use only line/column and not use file index/macro expansion index, bacause we need to produce same result for file imported in different files.
+		var ust::string8 mut macro_unique_identifiers_base_name= macro_unique_identifiers_base_name_;
+		macro_unique_identifiers_base_name+= "_l";
+		macro_unique_identifiers_base_name+= ust::to_string8( expansion_src_loc.GetLine() );
+		macro_unique_identifiers_base_name+= "_c";
+		macro_unique_identifiers_base_name+= ust::to_string8( expansion_src_loc.GetColumn() );
+
+		var Lexems lexems_expanded= ExpandMacroImpl( macro, macro_unique_identifiers_base_name );
+
+		var SyntaxAnalyzer mut syntax_analyzer(
+			lexems_expanded,
+			macros_,
+			macro_expansion_contexts_,
+			move(macro_unique_identifiers_base_name) );
+
 		var T mut result;
 		static_if( ust::is_same_type</T, Expression/>() )
 		{
@@ -298,7 +315,7 @@ private:
 		return move(result);
 	}
 
-	fn ExpandMacroImpl( mut this, Macro& macro ) : Lexems;
+	fn ExpandMacroImpl( mut this, Macro& macro, ust::string8& macro_unique_identifiers_base_name ) : Lexems;
 	fn MatchMacroBlock( mut this, Macro::MatchElements& match_elements ) : ust::shared_ptr_final_nullable</MacroVariablesMap/>;
 
 	type UniqueMacroIdentifiersMap= ust::unordered_map</ ust::string8, ust::string8 />;
@@ -308,6 +325,7 @@ private:
 		Macro::ResultElements& result_elements,
 		MacroVariablesMapsStack &mut macro_variables_maps_stack,
 		UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
+		ust::string8& macro_unique_identifiers_base_name,
 		SrcLoc& expansion_src_loc ) : Lexems;
 
 	fn FetchMacroVariable( MacroVariablesMapsStack& macro_variables_maps_stack, ust::string8& variable_name ) : ust::optional</ParsedMacroElement/>;
@@ -328,18 +346,21 @@ private:
 
 	MacrosPtr imut macros_;
 	MacroExpansionContextsPtr imut macro_expansion_contexts_;
+	ust::string8 imut macro_unique_identifiers_base_name_;
 }
 
 fn SyntaxAnalyzer::constructor(
 	this'a',
 	Lexems&'b lexems,
 	MacrosPtr mut macros,
-	MacroExpansionContextsPtr mut macro_expansion_contexts ) ' a <- b '
+	MacroExpansionContextsPtr mut macro_expansion_contexts,
+	ust::string8 mut macro_unique_identifiers_base_name ) ' a <- b '
 	(
 		it_= lexems.range(),
 		last_error_it_= it_,
 		macros_(move(macros)),
-		macro_expansion_contexts_(move(macro_expansion_contexts))
+		macro_expansion_contexts_(move(macro_expansion_contexts)),
+		macro_unique_identifiers_base_name_(move(macro_unique_identifiers_base_name))
 	)
 {
 }
@@ -3313,7 +3334,7 @@ fn SyntaxAnalyzer::FetchMacro( this, ust::string8& name, Macro::Context context 
 	return ust::shared_ptr_final_nullable</Macro/>();
 }
 
-fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
+fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro, ust::string8& macro_unique_identifiers_base_name ) : Lexems
 {
 	var SrcLoc expansion_src_loc= it_.front().src_loc;
 	NextLexem(); // Skip macro name itself.
@@ -3329,7 +3350,13 @@ fn SyntaxAnalyzer::ExpandMacroImpl( mut this, Macro& macro ) : Lexems
 
 	var UniqueMacroIdentifiersMap mut unique_macro_indentifiers_map;
 
-	auto mut lexems= ExpandMacroBlock( macro.result_template_elements, macro_variables_maps_stack, unique_macro_indentifiers_map, expansion_src_loc );
+	auto mut lexems=
+		ExpandMacroBlock(
+			macro.result_template_elements,
+			macro_variables_maps_stack,
+			unique_macro_indentifiers_map,
+			macro_unique_identifiers_base_name,
+			expansion_src_loc );
 
 	var Lexem end_of_file_lexem{ .lexem_type= Lexem::Type::EndOfFile };
 	lexems.push_back( end_of_file_lexem );
@@ -3525,6 +3552,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 	Macro::ResultElements& result_elements,
 	MacroVariablesMapsStack &mut macro_variables_maps_stack,
 	UniqueMacroIdentifiersMap &mut unique_macro_indentifiers_map,
+	ust::string8& macro_unique_identifiers_base_name,
 	SrcLoc& expansion_src_loc ) : Lexems
 {
 	var Lexems mut lexems_expanded;
@@ -3536,9 +3564,10 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 			{
 				if( unique_macro_indentifiers_map.find( result_element.lexem.text ).empty() )
 				{
-					// TODO - maybe also add something to distinct macro identifiers from different macro expansions?
 					var ust::string8 mut name= "_macro_ident_";
 					name+= result_element.lexem.text;
+					name+= "_";
+					name+= macro_unique_identifiers_base_name;
 					name+= "_";
 					name+= ust::to_string8(unique_macro_indentifiers_map.size());
 					unique_macro_indentifiers_map.insert( result_element.lexem.text, move(name) );
@@ -3590,7 +3619,14 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 			{
 				macro_variables_maps_stack.push_back( variable_element );
 
-				auto mut internal_lexems_expanded= ExpandMacroBlock( result_element.sub_elements.try_deref(), macro_variables_maps_stack, unique_macro_indentifiers_map, expansion_src_loc );
+				auto mut internal_lexems_expanded=
+					ExpandMacroBlock(
+						result_element.sub_elements.try_deref(),
+						macro_variables_maps_stack,
+						unique_macro_indentifiers_map,
+						macro_unique_identifiers_base_name,
+						expansion_src_loc );
+
 				VectorAppend( lexems_expanded, move(internal_lexems_expanded) );
 
 				macro_variables_maps_stack.drop_back();
@@ -3690,9 +3726,14 @@ fn SyntaxAnalysis(
 	Lexems& lexems,
 	MacrosByContextMap mut macros,
 	MacroExpansionContextsPtr mut macro_expansion_contexts /*in-out param*/,
-	ust::string8 source_file_contents_hash ) : SyntaxAnalysisResult
+	ust::string8 mut source_file_contents_hash ) : SyntaxAnalysisResult
 {
-	var SyntaxAnalyzer mut analyzer( lexems, MacrosPtr( move(macros) ), move(macro_expansion_contexts) );
+	var SyntaxAnalyzer mut analyzer(
+		lexems,
+		MacrosPtr( move(macros) ),
+		move(macro_expansion_contexts),
+		move(source_file_contents_hash) );
+
 	return analyzer.DoAnalyzis();
 }
 
@@ -3701,7 +3742,8 @@ fn ParseImports( Lexems& lexems ) : ImportsList
 	var SyntaxAnalyzer mut analyzer(
 		lexems,
 		MacrosPtr( MacrosByContextMap() ),
-		MacroExpansionContextsPtr( MacroExpansionContexts() ) );
+		MacroExpansionContextsPtr( MacroExpansionContexts() ),
+		"" );
 	return analyzer.ParseImports();
 }
 
