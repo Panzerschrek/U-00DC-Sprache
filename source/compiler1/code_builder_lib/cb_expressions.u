@@ -516,14 +516,35 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
 {
-	// TODO
-	return BuildExpressionCode( names_scope, function_context, safe_expression.expression.deref() );
+	auto prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= false;
+	auto mut result= BuildExpressionCode( names_scope, function_context, safe_expression.expression.deref() );
+	function_context.is_in_unsafe_block= prev_unsafe;
+	return move(result);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnsafeExpression& unsafe_expression ) : Value
 {
-	// TODO
-	return BuildExpressionCode( names_scope, function_context, unsafe_expression.expression.deref() );
+	if( function_context.llvm_function == global_llvm_function_ )
+	{
+		REPORT_ERROR( UnsafeExpressionInGlobalContext, names_scope, unsafe_expression.src_loc )
+	}
+
+	// "unsafe" expression usage should prevent function to be "constexpr".
+	function_context.have_non_constexpr_operations_inside= true;
+
+	auto prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= true;
+	auto mut result= BuildExpressionCode( names_scope, function_context, unsafe_expression.expression.deref() );
+	function_context.is_in_unsafe_block= prev_unsafe;
+
+	// Avoid passing constexpr values trough unsafe expression.
+	if_var( &mut variable : result.get</Variable/>() )
+	{
+		variable.constexpr_value= LLVMValueRef::Null;
+	}
+
+	return move(result);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
