@@ -1455,7 +1455,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::UnsafeExpression& unsafe_expression )
 {
-	// TODO - forbid "unsafe" in global context (outside functions body).
+	if( function_context.function == global_function_context_->function )
+		REPORT_ERROR( UnsafeExpressionInGlobalContext, names.GetErrors(), unsafe_expression.src_loc_ );
+
 	// TODO - reset "constexpr" value of result.
 	const bool prev_unsafe= function_context.is_in_unsafe_block;
 	function_context.is_in_unsafe_block= true;

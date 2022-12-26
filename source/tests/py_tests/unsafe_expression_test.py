@@ -104,3 +104,93 @@ def UnsafeExpression_Test6():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def UnsafeExpression_Test7():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn constructor()
+			( x= unsafe(Bar()) ) // Use "unsafe" expression in constructor initializer list.
+			{}
+		}
+		fn Bar() unsafe : i32;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UnsafeExpressionInGlobalContext_Test0():
+	c_program_text= """
+	// Unsafe expression for global variable initializer.
+	auto x= unsafe(0);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+
+
+def UnsafeExpressionInGlobalContext_Test1():
+	c_program_text= """
+	// Unsafe expression for global variable initializer.
+	var i32 mut x(unsafe(45));
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+
+
+def UnsafeExpressionInGlobalContext_Test2():
+	c_program_text= """
+	// Unsafe expression for array type size.
+	type T= [ i32, unsafe(4) ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+
+
+def UnsafeExpressionInGlobalContext_Test3():
+	c_program_text= """
+	// Unsafe expression for type template argument.
+	type T= S</unsafe(42)/>;
+	template</i32 s/> struct S{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+
+
+def UnsafeExpressionInGlobalContext_Test4():
+	c_program_text= """
+	// Unsafe expression for default template default param value.
+	template</i32 s/> struct S</ s= unsafe(0) /> {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+
+
+def UnsafeExpressionInGlobalContext_Test5():
+	c_program_text= """
+	// Unsafe expression for struct field default initializer.
+	struct S
+	{
+		i32 x= unsafe(0);
+		i32 y= safe(unsafe(1));
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) >= 2 )
+	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 5 ) )
+	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 6 ) )
+
+
+def UnsafeExpressionInGlobalContext_Test6():
+	c_program_text= """
+	// Unsafe expression for "non_sync" tag.
+	struct S non_sync( unsafe(false) ) {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )

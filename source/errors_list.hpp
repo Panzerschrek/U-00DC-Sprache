@@ -202,6 +202,7 @@ PROCESS_ERROR( MutableReferenceCastOutsideUnsafeBlock, "Mutable reference cast o
 PROCESS_ERROR( UninitializedInitializerOutsideUnsafeBlock, "Unsafe initializer outside unsafe block." )
 PROCESS_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, "Accessing global mutable variable outside unsafe block." )
 PROCESS_ERROR( ThisMethodCanNotBeUnsafe, "This method can not be unsafe." )
+PROCESS_ERROR( UnsafeExpressionInGlobalContext, "Unsafe expression in global context." )
 
 // Raw pointers
 PROCESS_ERROR( ValueIsNotReference, "Value is not a reference. Expected mutable or immutable reference, got immediate value." )
