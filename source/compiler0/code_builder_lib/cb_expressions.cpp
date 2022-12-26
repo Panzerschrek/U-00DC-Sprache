@@ -1458,6 +1458,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( function_context.function == global_function_context_->function )
 		REPORT_ERROR( UnsafeExpressionInGlobalContext, names.GetErrors(), unsafe_expression.src_loc_ );
 
+	// "unsafe" expression usage should prevent function to be "constexpr".
+	function_context.have_non_constexpr_operations_inside= true;
+
 	const bool prev_unsafe= function_context.is_in_unsafe_block;
 	function_context.is_in_unsafe_block= true;
 	Value result= BuildExpressionCode( *unsafe_expression.expression_, names, function_context );

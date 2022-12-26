@@ -231,3 +231,32 @@ def UnsafeExpressionIsNotConstexpr_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
+
+
+def ConstexprFunctionContainsUnallowedOperations_ForUnsafeExpression_Test0():
+	c_program_text= """
+	fn constexpr foo() : u32
+	{
+		auto x= unsafe(0u); // "Unsafe" expression is not allowed in "constexpr" functions.
+		return x;
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 2 ) )
+
+
+def ConstexprFunctionContainsUnallowedOperations_ForUnsafeExpression_Test1():
+	c_program_text= """
+	struct S
+	{
+		i32 x= 0;
+
+		fn constexpr constructor()
+			( x= unsafe(0) ) // "Unsafe" expression is not allowed in "constexpr" constructor.
+		{}
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 6 ) )
