@@ -1441,6 +1441,24 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::SafeExpression& safe_expression )
+{
+	// TODO
+	return BuildExpressionCode( *safe_expression.expression_, names, function_context );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::UnsafeExpression& unsafe_expression )
+{
+	// TODO
+	return BuildExpressionCode( *unsafe_expression.expression_, names, function_context );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::ArrayTypeName& type_name )
 {
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );

@@ -49,6 +49,8 @@ struct CastRef;
 struct CastRefUnsafe;
 struct TypeInfo;
 struct NonSyncExpression;
+struct SafeExpression;
+struct UnsafeExpression;
 
 struct SequenceInitializer;
 struct StructNamedInitializer;
@@ -130,6 +132,8 @@ using Expression= std::variant<
 	CastRefUnsafe,
 	TypeInfo,
 	NonSyncExpression,
+	SafeExpression,
+	UnsafeExpression,
 	// Type name in expression context
 	ArrayTypeName,
 	FunctionTypePtr,
@@ -394,6 +398,20 @@ struct NonSyncExpression final : public SyntaxElementBase
 	NonSyncExpression( const SrcLoc& src_loc );
 
 	std::unique_ptr<TypeName> type_;
+};
+
+struct SafeExpression final : public SyntaxElementBase
+{
+	SafeExpression( const SrcLoc& src_loc );
+
+	std::unique_ptr<Expression> expression_;
+};
+
+struct UnsafeExpression final : public SyntaxElementBase
+{
+	UnsafeExpression( const SrcLoc& src_loc );
+
+	std::unique_ptr<Expression> expression_;
 };
 
 struct BooleanConstant final : public SyntaxElementBase

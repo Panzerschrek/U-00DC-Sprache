@@ -139,6 +139,14 @@ NonSyncExpression::NonSyncExpression( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+SafeExpression::SafeExpression( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
+UnsafeExpression::UnsafeExpression( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 BooleanConstant::BooleanConstant( const SrcLoc& src_loc, bool value )
 	: SyntaxElementBase(src_loc)
 	, value_( value )
