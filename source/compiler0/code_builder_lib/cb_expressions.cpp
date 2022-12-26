@@ -1443,8 +1443,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::SafeExpression& safe_expression )
 {
-	// TODO
-	return BuildExpressionCode( *safe_expression.expression_, names, function_context );
+	const bool prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= false;
+	Value result= BuildExpressionCode( *safe_expression.expression_, names, function_context );
+	function_context.is_in_unsafe_block= prev_unsafe;
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1452,8 +1455,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::UnsafeExpression& unsafe_expression )
 {
-	// TODO
-	return BuildExpressionCode( *unsafe_expression.expression_, names, function_context );
+	// TODO - forbid "unsafe" in global context (outside functions body).
+	// TODO - reset "constexpr" value of result.
+	const bool prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= true;
+	Value result= BuildExpressionCode( *unsafe_expression.expression_, names, function_context );
+	function_context.is_in_unsafe_block= prev_unsafe;
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
