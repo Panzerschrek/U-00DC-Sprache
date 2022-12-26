@@ -21,12 +21,12 @@ fn ErrorHandlerFunc( void &mut user_data, $(char8) error_text_start, size_type e
 
 fn ConstexprFunctionEvaluator::constructor( LLVMTargetDataRef data_layout )
 {
-	unsafe{  impl_= U1_ConstexprFunctionEvaluatorCreate( data_layout );  }
+	impl_= unsafe( U1_ConstexprFunctionEvaluatorCreate( data_layout ) );
 }
 
 fn ConstexprFunctionEvaluator::destructor()
 {
-	unsafe{  U1_ConstexprFunctionEvaluatorDestroy( impl_ );  }
+	unsafe( U1_ConstexprFunctionEvaluatorDestroy( impl_ ) );
 }
 
 fn ConstexprFunctionEvaluator::Evaluate( mut this, LLVMValueRef function, ust::array_view_imut</LLVMValueRef/> args ) : Result
@@ -36,17 +36,15 @@ fn ConstexprFunctionEvaluator::Evaluate( mut this, LLVMValueRef function, ust::a
 		.constant= zero_init
 	};
 
-	unsafe
-	{
-		result.constant=
+	result.constant=
+		unsafe(
 			U1_ConstexprFunctionEvaluatorEvaluate(
 				impl_,
 				function,
 				args.data(),
 				args.size(),
 				ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
-				cast_ref_unsafe</void/>( result.errors ) );
-	}
+				cast_ref_unsafe</void/>( result.errors ) ) );
 
 	return move(result);
 }
