@@ -47,7 +47,7 @@ public:
 		clear();
 		if( table_ != nullptr</TableValue/>() )
 		{
-			unsafe{  memory_free( cast_ref_unsafe</void/>( $>(table_) ) );  }
+			unsafe( memory_free( cast_ref_unsafe</void/>( $>(table_) ) ) );
 		}
 	}
 
@@ -198,12 +198,12 @@ public:
 
 	fn range( imut this ) : unordered_map_range</false/>'this'
 	{
-		unsafe{  return unordered_map_range</false/>( table_, size_, capacity_ );  }
+		return unsafe( unordered_map_range</false/>( table_, size_, capacity_ ) );
 	}
 
 	fn range(  mut this ) : unordered_map_range</true />'this'
 	{
-		unsafe{  return unordered_map_range</true />( table_, size_, capacity_ );  }
+		return unsafe( unordered_map_range</true />( table_, size_, capacity_ ) );
 	}
 
 private:
@@ -367,7 +367,7 @@ public:
 		fn drop_front( mut this )
 		{
 			halt if( empty() );
-			unsafe{  drop_front_unchecked();  }
+			unsafe( drop_front_unchecked() );
 		}
 
 		fn drop_front_unchecked( mut this ) unsafe
@@ -383,26 +383,26 @@ public:
 		front( this'x' ) : element_mut'x'
 		{
 			halt if(empty());
-			unsafe {  return front_unchecked();  }
+			return unsafe( front_unchecked() );
 		}
 
 		fn enable_if( !is_mutable )
 		front( this'x' ) : element_imut'x'
 		{
 			halt if(empty());
-			unsafe {  return front_unchecked();  }
+			return unsafe( front_unchecked() );
 		}
 
 		fn enable_if( is_mutable )
 		front_unchecked( this'x' ) unsafe : element_mut'x'
 		{
-			unsafe{  return element_mut( $>(table_) );  }
+			return unsafe( element_mut( $>(table_) ) );
 		}
 
 		fn enable_if( !is_mutable )
 		front_unchecked( this'x' ) unsafe : element_imut'x'
 		{
-			unsafe{  return element_imut( $>(table_) );  }
+			return unsafe( element_imut( $>(table_) ) );
 		}
 
 	private:

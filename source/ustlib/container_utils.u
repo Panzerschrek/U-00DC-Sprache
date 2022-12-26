@@ -26,20 +26,20 @@ fn call_destructor( T&mut t ) unsafe
 	static_if( typeinfo</T/>.is_class )
 	{
 		// In case of polymorph class virtual destructor (with address correction, if necessary) will be called.
-		unsafe{ t.destructor(); }
+		unsafe( t.destructor() );
 	}
 	else if( typeinfo</T/>.is_array )
 	{
 		for( var size_type mut i(0); i < typeinfo</T/>.element_count; ++i )
 		{
-			unsafe{ ust::call_destructor( t[i] ); }
+			unsafe( ust::call_destructor( t[i] ) );
 		}
 	}
 	else if( typeinfo</T/>.is_tuple )
 	{
 		for( &mut el : t )
 		{
-			unsafe{ ust::call_destructor( el ); }
+			unsafe( ust::call_destructor( el ) );
 		}
 	}
 }
@@ -51,20 +51,20 @@ fn call_default_constructor( T&mut t ) unsafe
 
 	static_if( typeinfo</T/>.is_class )
 	{
-		unsafe{ t.constructor(); }
+		unsafe( t.constructor() );
 	}
 	else if( typeinfo</T/>.is_array )
 	{
 		for( var size_type mut i(0); i < typeinfo</T/>.element_count; ++i )
 		{
-			unsafe{ ust::call_default_constructor( t[i] ); }
+			unsafe( ust::call_default_constructor( t[i] ) );
 		}
 	}
 	else if( typeinfo</T/>.is_tuple )
 	{
 		for( &mut el : t )
 		{
-			unsafe{ ust::call_default_constructor( el ); }
+			unsafe( ust::call_default_constructor( el ) );
 		}
 	}
 }
