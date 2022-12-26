@@ -194,3 +194,40 @@ def UnsafeExpressionInGlobalContext_Test6():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnsafeExpressionInGlobalContext", 3 ) )
+
+
+def UnsafeExpressionIsNotConstexpr_Test0():
+	c_program_text= """
+	fn foo()
+	{
+		auto constexpr x= unsafe(0);
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
+
+
+def UnsafeExpressionIsNotConstexpr_Test1():
+	c_program_text= """
+	fn foo()
+	{
+		var f32 constexpr x= safe(unsafe(f32));
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
+
+
+
+def UnsafeExpressionIsNotConstexpr_Test2():
+	c_program_text= """
+	fn foo()
+	{
+		var [i32, 3] constexpr x[ 5, unsafe(6), 7 ];
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VariableInitializerIsNotConstantExpression", 4 ) )
