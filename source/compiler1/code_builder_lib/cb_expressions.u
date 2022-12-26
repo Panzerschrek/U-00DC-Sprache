@@ -514,6 +514,18 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return move(r);
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
+{
+	// TODO
+	return BuildExpressionCode( names_scope, function_context, safe_expression.expression.deref() );
+}
+
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnsafeExpression& unsafe_expression ) : Value
+{
+	// TODO
+	return BuildExpressionCode( names_scope, function_context, unsafe_expression.expression.deref() );
+}
+
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
 {
 	var Synt::ComplexName complex_name{ .src_loc= move_operator.src_loc, .start= move_operator.variable_name };

@@ -2410,7 +2410,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseTypeAlias() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ )
 			elements.emplace_back( ParseHalt() );
-		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::safe_ )
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::safe_ &&
+				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{
 			NextLexem();
 			Block block= ParseBlock();
