@@ -498,6 +498,40 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	return nullptr;
 }
 
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
+	const Variable& variable,
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::SafeInitializerWrapper& safe_initializer_wrapper )
+{
+	const bool prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= false;
+	const auto result= ApplyInitializer( variable, names, function_context, *safe_initializer_wrapper.initiailizer );
+	function_context.is_in_unsafe_block= prev_unsafe;
+	return result;
+}
+
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
+	const Variable& variable,
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::UnsafeInitializerWrapper& unsafe_initializer_wrapper )
+{
+	if( function_context.function == global_function_context_->function )
+		REPORT_ERROR( UnsafeExpressionInGlobalContext, names.GetErrors(), unsafe_initializer_wrapper.src_loc_ );
+
+	// "unsafe" expression usage should prevent function to be "constexpr".
+	function_context.have_non_constexpr_operations_inside= true;
+
+	const bool prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= true;
+	ApplyInitializer( variable, names, function_context, *unsafe_initializer_wrapper.initiailizer );
+	function_context.is_in_unsafe_block= prev_unsafe;
+
+	// Unsafe initializer can't produce constexpr value.
+	return nullptr;
+}
+
 llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 	const std::string& variable_name,
 	const SrcLoc& src_loc,

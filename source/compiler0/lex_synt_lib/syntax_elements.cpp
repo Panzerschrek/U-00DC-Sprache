@@ -91,6 +91,14 @@ UninitializedInitializer::UninitializedInitializer( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+SafeInitializerWrapper::SafeInitializerWrapper( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
+UnsafeInitializerWrapper::UnsafeInitializerWrapper( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 BinaryOperator::BinaryOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
 {}

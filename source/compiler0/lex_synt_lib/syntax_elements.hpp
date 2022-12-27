@@ -57,6 +57,8 @@ struct StructNamedInitializer;
 struct ConstructorInitializer;
 struct ZeroInitializer;
 struct UninitializedInitializer;
+struct SafeInitializerWrapper;
+struct UnsafeInitializerWrapper;
 
 struct Block;
 struct VariablesDeclaration;
@@ -148,7 +150,9 @@ using Initializer= std::variant<
 	ConstructorInitializer,
 	Expression,
 	ZeroInitializer,
-	UninitializedInitializer >;
+	UninitializedInitializer,
+	SafeInitializerWrapper,
+	UnsafeInitializerWrapper>;
 
 using BlockElement= std::variant<
 	Block,
@@ -520,6 +524,20 @@ struct ZeroInitializer final : public SyntaxElementBase
 struct UninitializedInitializer final : public SyntaxElementBase
 {
 	explicit UninitializedInitializer( const SrcLoc& src_loc );
+};
+
+struct SafeInitializerWrapper final : public SyntaxElementBase
+{
+	explicit SafeInitializerWrapper( const SrcLoc& src_loc );
+
+	std::unique_ptr<Initializer> initiailizer;
+};
+
+struct UnsafeInitializerWrapper final : public SyntaxElementBase
+{
+	explicit UnsafeInitializerWrapper( const SrcLoc& src_loc );
+
+	std::unique_ptr<Initializer> initiailizer;
 };
 
 struct StructNamedInitializer::MemberInitializer

@@ -284,6 +284,8 @@ private:
 	Initializer ParseArrayInitializer();
 	Initializer ParseStructNamedInitializer();
 	Initializer ParseConstructorInitializer();
+	Initializer ParseSafeInitializerWrapper();
+	Initializer ParseUnsafeInitializerWrapper();
 
 	VariablesDeclaration ParseVariablesDeclaration();
 	AutoVariableDeclaration ParseAutoVariableDeclaration();
@@ -1719,6 +1721,10 @@ Initializer SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initia
 		NextLexem();
 		return UninitializedInitializer( prev_it->src_loc );
 	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::safe_ )
+		return ParseSafeInitializerWrapper();
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
+		return ParseUnsafeInitializerWrapper();
 	else if( parse_expression_initializer )
 	{
 		// In some cases usage of expression in initializer is forbidden.
@@ -1753,7 +1759,8 @@ Initializer SyntaxAnalyzer::ParseVariableInitializer()
 	else if(
 		it_->type == Lexem::Type::BracketLeft ||
 		it_->type == Lexem::Type::SquareBracketLeft ||
-		it_->type == Lexem::Type::BraceLeft )
+		it_->type == Lexem::Type::BraceLeft ||
+		(it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::safe_ || it_->text == Keywords::unsafe_ ) ) )
 		return ParseInitializer( false );
 
 	return initializer;
@@ -1832,6 +1839,26 @@ Initializer SyntaxAnalyzer::ParseConstructorInitializer()
 	ConstructorInitializer result( it_->src_loc );
 	result.arguments= ParseCall();
 	return std::move(result);
+}
+
+Initializer SyntaxAnalyzer::ParseSafeInitializerWrapper()
+{
+	SafeInitializerWrapper initializer(it_->src_loc );
+	NextLexem();
+	ExpectLexem( Lexem::Type::BracketLeft );
+	initializer.initiailizer= std::make_unique<Initializer>( ParseInitializer( true ) );
+	ExpectLexem( Lexem::Type::BracketRight );
+	return initializer;
+}
+
+Initializer SyntaxAnalyzer:: ParseUnsafeInitializerWrapper()
+{
+	UnsafeInitializerWrapper initializer(it_->src_loc );
+	NextLexem();
+	ExpectLexem( Lexem::Type::BracketLeft );
+	initializer.initiailizer= std::make_unique<Initializer>( ParseInitializer( true ) );
+	ExpectLexem( Lexem::Type::BracketRight );
+	return initializer;
 }
 
 VariablesDeclaration SyntaxAnalyzer::ParseVariablesDeclaration()
