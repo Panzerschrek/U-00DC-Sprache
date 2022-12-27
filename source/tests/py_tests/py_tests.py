@@ -78,6 +78,7 @@ def main():
 		"typeinfo_test",
 		"typeof_test",
 		"uninitialized_initializer_test",
+		"unsafe_expression_test",
 		"unsafe_test",
 		"virtual_functions_test",
 		"void_test",

@@ -1155,6 +1155,22 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(non_sync_expression);
 		}
+		else if( it_->text == Keywords::safe_ )
+		{
+			SafeExpression expr( it_->src_loc );
+			NextLexem();
+			expr.expression_= std::make_unique<Expression>( ParseExpressionInBrackets() );
+
+			return std::move(expr);
+		}
+		else if( it_->text == Keywords::unsafe_ )
+		{
+			UnsafeExpression expr( it_->src_loc );
+			NextLexem();
+			expr.expression_= std::make_unique<Expression>( ParseExpressionInBrackets() );
+
+			return std::move(expr);
+		}
 		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
 			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
 		else
@@ -2394,14 +2410,16 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseTypeAlias() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ )
 			elements.emplace_back( ParseHalt() );
-		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::safe_ )
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::safe_ &&
+				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{
 			NextLexem();
 			Block block= ParseBlock();
 			block.safety_= Block::Safety::Safe;
 			elements.emplace_back( std::move( block ) );
 		}
-		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ &&
+				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{
 			NextLexem();
 			Block block= ParseBlock();

@@ -1441,6 +1441,41 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::SafeExpression& safe_expression )
+{
+	const bool prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= false;
+	Value result= BuildExpressionCode( *safe_expression.expression_, names, function_context );
+	function_context.is_in_unsafe_block= prev_unsafe;
+	return result;
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::UnsafeExpression& unsafe_expression )
+{
+	if( function_context.function == global_function_context_->function )
+		REPORT_ERROR( UnsafeExpressionInGlobalContext, names.GetErrors(), unsafe_expression.src_loc_ );
+
+	// "unsafe" expression usage should prevent function to be "constexpr".
+	function_context.have_non_constexpr_operations_inside= true;
+
+	const bool prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= true;
+	Value result= BuildExpressionCode( *unsafe_expression.expression_, names, function_context );
+	function_context.is_in_unsafe_block= prev_unsafe;
+
+	// Avoid passing constexpr values trough unsafe expression.
+	if(auto variable_ptr= result.GetVariable() )
+		variable_ptr->constexpr_value= nullptr;
+
+	return result;
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::ArrayTypeName& type_name )
 {
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );

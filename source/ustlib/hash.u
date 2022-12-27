@@ -24,12 +24,12 @@ fn constexpr hash( bool x ) : size_type
 
 fn hash( f32 x ) : size_type
 {
-	unsafe{  return hash( cast_ref_unsafe</u32/>(x) );  }
+	return hash( unsafe( cast_ref_unsafe</u32/>(x) ) );
 }
 
 fn hash( f64 x ) : size_type
 {
-	unsafe{  return hash( cast_ref_unsafe</u64/>(x) );  }
+	return hash( unsafe( cast_ref_unsafe</u64/>(x) ) );
 }
 
 template</ type T />
@@ -53,7 +53,7 @@ fn hash( T& x ) : size_type
 	else if( typeinfo</T/>.is_function_pointer )
 	{
 		// For function pointers just take value of function pointer.
-		unsafe{  return cast_ref_unsafe</size_type/>(x);  }
+		return unsafe( cast_ref_unsafe</size_type/>(x) );
 	}
 	else
 	{

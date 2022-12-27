@@ -109,6 +109,18 @@ struct CastMut
 	ust::shared_ptr_final</Expression/> expression;
 }
 
+struct SafeExpression
+{
+	SrcLoc src_loc;
+	ust::shared_ptr_final</Expression/> expression;
+}
+
+struct UnsafeExpression
+{
+	SrcLoc src_loc;
+	ust::shared_ptr_final</Expression/> expression;
+}
+
 struct MoveOperator
 {
 	SrcLoc src_loc;
@@ -206,6 +218,8 @@ type Expression= ust::variant</ tup[
 	CastRefUnsafe,
 	CastImut,
 	CastMut,
+	SafeExpression,
+	UnsafeExpression,
 	MoveOperator,
 	TakeOperator,
 	TernaryOperator,

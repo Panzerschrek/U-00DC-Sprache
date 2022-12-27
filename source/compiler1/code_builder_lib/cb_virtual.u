@@ -386,7 +386,7 @@ fn CodeBuilder::PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type
 	{
 		// No parents - create special fields - base offset, type id, etc.
 		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
-		unsafe {  virtual_table_struct_fields.push_back( LLVMPointerType( polymorph_type_id_table_element_type_, 0u ) );   } // type_id field
+		virtual_table_struct_fields.push_back( unsafe( LLVMPointerType( polymorph_type_id_table_element_type_, 0u ) ) );  // type_id field
 	}
 
 	auto mut own_functions_count= 0u;
@@ -489,22 +489,16 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 	{
 		if( parent.field_number == 0u )
 		{
-			unsafe
-			{
-				var u64 parent_offset= offset + LLVMOffsetOfElement( data_layout_, ancestor_class.llvm_type, parent.field_number );
-				initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().deref(), dst_class, parent_offset ) );
-			}
+			var u64 parent_offset= offset + unsafe( LLVMOffsetOfElement( data_layout_, ancestor_class.llvm_type, parent.field_number ) );
+			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().deref(), dst_class, parent_offset ) );
 		}
 	}
 	foreach( &parent : ancestor_class.parents )
 	{
 		if( parent.field_number != 0u )
 		{
-			unsafe
-			{
-				var u64 parent_offset= offset + LLVMOffsetOfElement( data_layout_, ancestor_class.llvm_type, parent.field_number );
-				initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().deref(), dst_class, parent_offset ) );
-			}
+			var u64 parent_offset= offset + unsafe( LLVMOffsetOfElement( data_layout_, ancestor_class.llvm_type, parent.field_number ) );
+			initializer_values.push_back( BuildClassVirtualTable_r( parent.class_.lock_imut().deref(), dst_class, parent_offset ) );
 		}
 	}
 
@@ -545,11 +539,8 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 				}
 			}
 
-			unsafe
-			{
-				auto function_pointer_casted= LLVMBuildPointerCast( function_context.llvm_ir_builder, func, fn_type_ptr, "\0"[0] );
-				function_pointers_initializer_values.push_back( function_pointer_casted );
-			}
+			auto function_pointer_casted= unsafe( LLVMBuildPointerCast( function_context.llvm_ir_builder, func, fn_type_ptr, "\0"[0] ) );
+			function_pointers_initializer_values.push_back( function_pointer_casted );
 		}
 
 		initializer_values.push_back( LLVMConstArray( fn_type_ptr, function_pointers_initializer_values.data(), u32(function_pointers_initializer_values.size()) ) );

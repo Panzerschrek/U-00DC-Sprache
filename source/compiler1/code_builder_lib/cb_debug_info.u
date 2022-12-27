@@ -67,15 +67,13 @@ fn CodeBuilder::DebugInfoStartBlock( mut this, FunctionContext &mut function_con
 	}
 
 	auto prev= function_context.current_debug_info_scope;
-	unsafe
-	{
-		function_context.current_debug_info_scope= LLVMDIBuilderCreateLexicalBlock(
-			debug_info_.builder,
-			function_context.current_debug_info_scope,
-			debug_info_.source_file_entries[ src_loc.GetFileIndex() ],
-			src_loc.GetLine(),
-			src_loc.GetColumn() );
-	}
+	function_context.current_debug_info_scope= unsafe( LLVMDIBuilderCreateLexicalBlock(
+		debug_info_.builder,
+		function_context.current_debug_info_scope,
+		debug_info_.source_file_entries[ src_loc.GetFileIndex() ],
+		src_loc.GetLine(),
+		src_loc.GetColumn() ) );
+
 	return prev;
 }
 
@@ -86,10 +84,7 @@ fn CodeBuilder::DebugInfoEndBlock( mut this, FunctionContext &mut function_conte
 		return;
 	}
 
-	unsafe
-	{
-		function_context.current_debug_info_scope= prev_block;
-	}
+	function_context.current_debug_info_scope= prev_block;
 }
 
 fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc )
@@ -220,15 +215,12 @@ fn CodeBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 
 	var ust::array_view_imut</char8/> stub_type_name= "_stub_debug_type";
 
-	unsafe
-	{
-		return LLVMDIBuilderCreateBasicType(
-			debug_info_.builder,
-			stub_type_name.data(), stub_type_name.size(),
-			8u,
-			LLVMDWARFTypeEncoding::unsigned,
-			0u );
-	}
+	return unsafe( LLVMDIBuilderCreateBasicType(
+		debug_info_.builder,
+		stub_type_name.data(), stub_type_name.size(),
+		8u,
+		LLVMDWARFTypeEncoding::unsigned,
+		0u ) );
 }
 
 fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataRef
@@ -240,23 +232,20 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 		// Internal representation of void type is llvm struct with zero elements.
 		auto di_file= debug_info_.source_file_entries.front();
 
-		unsafe
-		{
-			return LLVMDIBuilderCreateStructType(
-				debug_info_.builder,
-				di_file,
-				type_name.data(), type_name.size(),
-				di_file,
-				0u, // Line
-				LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
-				LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
-				LLVMDIFlags(0),
-				LLVMMetadataRef::Null, // DerivedFrom
-				ust::nullptr</LLVMMetadataRef/>(), 0u, // elements
-				0u, // RuntimeLang
-				LLVMMetadataRef::Null,// VTableHolder
-				ust::nullptr</char8/>(), 0s);
-		}
+		return unsafe( LLVMDIBuilderCreateStructType(
+			debug_info_.builder,
+			di_file,
+			type_name.data(), type_name.size(),
+			di_file,
+			0u, // Line
+			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
+			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
+			LLVMDIFlags(0),
+			LLVMMetadataRef::Null, // DerivedFrom
+			ust::nullptr</LLVMMetadataRef/>(), 0u, // elements
+			0u, // RuntimeLang
+			LLVMMetadataRef::Null,// VTableHolder
+			ust::nullptr</char8/>(), 0s ) );
 	}
 
 	var LLVMDWARFTypeEncoding mut encoding= LLVMDWARFTypeEncoding::unsigned;
@@ -266,15 +255,12 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 	else if( IsSignedInteger( t.fundamental_type )     ){  encoding= LLVMDWARFTypeEncoding::signed;         }
 	else if( IsUnsignedInteger( t.fundamental_type )   ){  encoding= LLVMDWARFTypeEncoding::unsigned;       }
 
-	unsafe
-	{
-		return LLVMDIBuilderCreateBasicType(
-			debug_info_.builder,
-			type_name.data(), type_name.size(),
-			u32( t.GetSize() * 8s ),
-			encoding,
-			0u );
-	}
+	return unsafe( LLVMDIBuilderCreateBasicType(
+		debug_info_.builder,
+		type_name.data(), type_name.size(),
+		u32( t.GetSize() * 8s ),
+		encoding,
+		0u ) );
 }
 
 fn CodeBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef
@@ -304,56 +290,47 @@ fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 		var LLVMMetadataRef element_di_type= CreateDIType( element_type );
 		var LLVMTypeRef llvm_element_type= element_type.GetLLVMType();
 
-		unsafe
-		{
-			elements.push_back(
-				LLVMDIBuilderCreateMemberType(
-					debug_info_.builder,
-					di_file,
-					cast_mut(name).data(), name.size(),
-					di_file,
-					0u, // Line
-					LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,
-					LLVMABIAlignmentOfType( data_layout_, llvm_element_type ) * 8u32,
-					LLVMOffsetOfElement( data_layout_, t.llvm_type, u32(i) ) * 8u64,
-					LLVMDIFlags(0),
-					element_di_type) );
-		}
+		elements.push_back(
+			unsafe( LLVMDIBuilderCreateMemberType(
+				debug_info_.builder,
+				di_file,
+				cast_mut(name).data(), name.size(),
+				di_file,
+				0u, // Line
+				LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,
+				LLVMABIAlignmentOfType( data_layout_, llvm_element_type ) * 8u32,
+				LLVMOffsetOfElement( data_layout_, t.llvm_type, u32(i) ) * 8u64,
+				LLVMDIFlags(0),
+				element_di_type) ) );
 	}
 
 	var ust::string8 name= Type(t).ToString();
 
-	unsafe
-	{
-		return LLVMDIBuilderCreateStructType(
-			debug_info_.builder,
-			di_file,
-			cast_mut(name).data(), name.size(),
-			di_file,
-			0u, // Line
-			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
-			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
-			LLVMDIFlags(0),
-			LLVMMetadataRef::Null, // DerivedFrom
-			elements.data(), u32(elements.size()),
-			0u, // RuntimeLang
-			LLVMMetadataRef::Null,// VTableHolder
-			ust::nullptr</char8/>(), 0s);
-	}
+	return unsafe( LLVMDIBuilderCreateStructType(
+		debug_info_.builder,
+		di_file,
+		cast_mut(name).data(), name.size(),
+		di_file,
+		0u, // Line
+		LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
+		LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
+		LLVMDIFlags(0),
+		LLVMMetadataRef::Null, // DerivedFrom
+		elements.data(), u32(elements.size()),
+		0u, // RuntimeLang
+		LLVMMetadataRef::Null,// VTableHolder
+		ust::nullptr</char8/>(), 0s ) );
 }
 
 fn CodeBuilder::CreateDITypeImpl( mut this, RawPointerType& t ) : LLVMMetadataRef
 {
-	unsafe
-	{
-		return LLVMDIBuilderCreatePointerType(
-			debug_info_.builder,
-			CreateDIType( t.element_type ),
-			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
-			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
-			0u, // address space
-			ust::nullptr</char8/>(), 0s );
-	}
+	return unsafe( LLVMDIBuilderCreatePointerType(
+		debug_info_.builder,
+		CreateDIType( t.element_type ),
+		LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
+		LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
+		0u, // address space
+		ust::nullptr</char8/>(), 0s ) );
 }
 
 fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
@@ -399,28 +376,22 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 		di_types.push_back( di_type );
 	}
 
-	unsafe
-	{
-		return LLVMDIBuilderCreateSubroutineType(
-			debug_info_.builder,
-			debug_info_.source_file_entries.front(),
-			di_types.data(), u32( di_types.size() ),
-			LLVMDIFlags(0) );
-	}
+	return unsafe( LLVMDIBuilderCreateSubroutineType(
+		debug_info_.builder,
+		debug_info_.source_file_entries.front(),
+		di_types.data(), u32( di_types.size() ),
+		LLVMDIFlags(0) ) );
 }
 
 fn CodeBuilder::CreateDITypeImpl( mut this, FunctionPointerType& t ) : LLVMMetadataRef
 {
-	unsafe
-	{
-		return LLVMDIBuilderCreatePointerType(
-			debug_info_.builder,
-			CreateDITypeImpl( t.function_type ),
-			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
-			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
-			0u, // address space
-			ust::nullptr</char8/>(), 0s );
-	}
+	return unsafe( LLVMDIBuilderCreatePointerType(
+		debug_info_.builder,
+		CreateDITypeImpl( t.function_type ),
+		LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
+		LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
+		0u, // address space
+		ust::nullptr</char8/>(), 0s ) );
 }
 
 fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
@@ -460,33 +431,30 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 			var LLVMMetadataRef mut element_di_type= CreateDIType( field.t );
 			var LLVMTypeRef mut llvm_element_type= field.t.GetLLVMType();
 
-			unsafe
+			if( field.is_reference )
 			{
-				if( field.is_reference )
-				{
-					auto pointer_llvm_type= LLVMPointerType( llvm_element_type, 0u );
-					element_di_type= LLVMDIBuilderCreatePointerType(
-						debug_info_.builder,
-						element_di_type,
-						LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
-						LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
-						0u, // address space
-						ust::nullptr</char8/>(), 0s );
-				}
-
-				elements.push_back(
-					LLVMDIBuilderCreateMemberType(
-						debug_info_.builder,
-						di_file,
-						cast_mut(field_name).data(), field_name.size(),
-						di_file,
-						0u, // Line
-						LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,
-						LLVMABIAlignmentOfType( data_layout_, llvm_element_type ) * 8u32,
-						LLVMOffsetOfElement( data_layout_, class_type.llvm_type, u32(field.index) ) * 8u64,
-						LLVMDIFlags(0),
-						element_di_type) );
+				auto pointer_llvm_type= unsafe( LLVMPointerType( llvm_element_type, 0u ) );
+				element_di_type= unsafe( LLVMDIBuilderCreatePointerType(
+					debug_info_.builder,
+					element_di_type,
+					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
+					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
+					0u, // address space
+					ust::nullptr</char8/>(), 0s ) );
 			}
+
+			elements.push_back(
+				unsafe( LLVMDIBuilderCreateMemberType(
+					debug_info_.builder,
+					di_file,
+					cast_mut(field_name).data(), field_name.size(),
+					di_file,
+					0u, // Line
+					LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,
+					LLVMABIAlignmentOfType( data_layout_, llvm_element_type ) * 8u32,
+					LLVMOffsetOfElement( data_layout_, class_type.llvm_type, u32(field.index) ) * 8u64,
+					LLVMDIFlags(0),
+					element_di_type) ) );
 		}
 
 		foreach( &parent : class_type.parents )
@@ -495,46 +463,40 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 			var LLVMTypeRef llvm_element_type= parent.class_.lock_imut().deref().llvm_type;
 			var ust::string8 name= Type(parent.class_).ToString();
 
-			unsafe
-			{
-				elements.push_back(
-					LLVMDIBuilderCreateMemberType(
-						debug_info_.builder,
-						di_file,
-						cast_mut(name).data(), name.size(),
-						di_file,
-						0u, // Line
-						LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,
-						LLVMABIAlignmentOfType( data_layout_, llvm_element_type ) * 8u32,
-						LLVMOffsetOfElement( data_layout_, class_type.llvm_type, parent.field_number ) * 8u64,
-						LLVMDIFlags(0),
-						parent_di_type ) );
-			}
+			elements.push_back(
+				unsafe( LLVMDIBuilderCreateMemberType(
+					debug_info_.builder,
+					di_file,
+					cast_mut(name).data(), name.size(),
+					di_file,
+					0u, // Line
+					LLVMABISizeOfType( data_layout_, llvm_element_type ) * 8u64,
+					LLVMABIAlignmentOfType( data_layout_, llvm_element_type ) * 8u32,
+					LLVMOffsetOfElement( data_layout_, class_type.llvm_type, parent.field_number ) * 8u64,
+					LLVMDIFlags(0),
+					parent_di_type ) ) );
 		}
 	}
 
 	var ust::string8 name= Type(t).ToString();
 
-	unsafe
-	{
-		auto di_type= LLVMDIBuilderCreateStructType(
-			debug_info_.builder,
-			di_file,
-			cast_mut(name).data(), name.size(),
-			di_file,
-			src_loc.GetLine(),
-			LLVMABISizeOfType( data_layout_, class_type.llvm_type ) * 8u64,
-			LLVMABIAlignmentOfType( data_layout_, class_type.llvm_type ) * 8u32,
-			LLVMDIFlags(0),
-			LLVMMetadataRef::Null, // DerivedFrom
-			elements.data(), u32(elements.size()),
-			0u, // RuntimeLang
-			LLVMMetadataRef::Null,// VTableHolder
-			ust::nullptr</char8/>(), 0s);
+	auto di_type= unsafe( LLVMDIBuilderCreateStructType(
+		debug_info_.builder,
+		di_file,
+		cast_mut(name).data(), name.size(),
+		di_file,
+		src_loc.GetLine(),
+		LLVMABISizeOfType( data_layout_, class_type.llvm_type ) * 8u64,
+		LLVMABIAlignmentOfType( data_layout_, class_type.llvm_type ) * 8u32,
+		LLVMDIFlags(0),
+		LLVMMetadataRef::Null, // DerivedFrom
+		elements.data(), u32(elements.size()),
+		0u, // RuntimeLang
+		LLVMMetadataRef::Null,// VTableHolder
+		ust::nullptr</char8/>(), 0s ) );
 
-		debug_info_.classes_di_types[t]= di_type;
-		return di_type;
-	}
+	debug_info_.classes_di_types[t]= di_type;
+	return di_type;
 }
 
 fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
@@ -553,17 +515,14 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 	foreach( &element_pair : enum_.elements )
 	{
 		var ust::string8& name= element_pair.key();
-		unsafe
-		{
-			var LLVMValueRef constexpr_value= element_pair.value().constexpr_value;
+		var LLVMValueRef constexpr_value= element_pair.value().constexpr_value;
 
-			elements.push_back(
-				LLVMDIBuilderCreateEnumerator(
-					debug_info_.builder,
-					cast_mut(name).data(), name.size(),
-					select( is_unsigned ? i64(LLVMConstIntGetZExtValue(constexpr_value)) : LLVMConstIntGetSExtValue(constexpr_value) ),
-					select( is_unsigned ? LLVMBool::True : LLVMBool::False ) ) );
-		}
+		elements.push_back(
+			unsafe( LLVMDIBuilderCreateEnumerator(
+				debug_info_.builder,
+				cast_mut(name).data(), name.size(),
+				select( is_unsigned ? i64(LLVMConstIntGetZExtValue(constexpr_value)) : LLVMConstIntGetSExtValue(constexpr_value) ),
+				select( is_unsigned ? LLVMBool::True : LLVMBool::False ) ) ) );
 	}
 
 	var SrcLoc& src_loc= enum_.syntax_element.deref().src_loc;
@@ -571,22 +530,19 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 
 	var ust::string8 name= Type(t).ToString();
 
-	unsafe
-	{
-		auto di_type= LLVMDIBuilderCreateEnumerationType(
-			debug_info_.builder,
-			di_file,
-			cast_mut(name).data(), name.size(),
-			di_file,
-			src_loc.GetLine(),
-			LLVMABISizeOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u64,
-			LLVMABIAlignmentOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u32,
-			elements.data(), u32(elements.size()),
-			CreateDITypeImpl(enum_.underlaying_type) );
+	auto di_type= unsafe( LLVMDIBuilderCreateEnumerationType(
+		debug_info_.builder,
+		di_file,
+		cast_mut(name).data(), name.size(),
+		di_file,
+		src_loc.GetLine(),
+		LLVMABISizeOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u64,
+		LLVMABIAlignmentOfType( data_layout_, enum_.underlaying_type.llvm_type ) * 8u32,
+		elements.data(), u32(elements.size()),
+		CreateDITypeImpl(enum_.underlaying_type) ) );
 
-		debug_info_.enums_di_types.insert( t, di_type );
-		return di_type;
-	}
+	debug_info_.enums_di_types.insert( t, di_type );
+	return di_type;
 }
 
 } // namespace U1

@@ -769,10 +769,7 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 	{
 		if( fundamental_type.fundamental_type == U_FundamentalType::bool_ )
 		{
-			var u64 mut value= zero_init;
-			unsafe{  value= LLVMConstIntGetZExtValue( constant_value );  }
-			if( value == 0u64 ) {  return "false";  }
-			else {  return "true";  }
+			return select( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) == 0u64 ? ust::string8("false") : ust::string8("true") );
 		}
 		else if( IsSignedInteger( fundamental_type.fundamental_type ) )
 		{
@@ -782,7 +779,7 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 			else
 			{  suffix= GetFundamentalTypeName( fundamental_type.fundamental_type );  }
 
-			unsafe{  return ust::to_string8( LLVMConstIntGetSExtValue( constant_value ) ) + suffix;  }
+			return ust::to_string8( unsafe( LLVMConstIntGetSExtValue( constant_value ) ) ) + suffix;
 		}
 		else if( IsUnsignedInteger( fundamental_type.fundamental_type ) )
 		{
@@ -792,7 +789,7 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 			else
 			{  suffix= GetFundamentalTypeName( fundamental_type.fundamental_type );  }
 
-			unsafe{  return ust::to_string8( LLVMConstIntGetZExtValue( constant_value ) )  + suffix;  }
+			return ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) )  + suffix;
 		}
 		else if( IsChar( fundamental_type.fundamental_type ) )
 		{
@@ -800,23 +797,20 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 			if( fundamental_type.fundamental_type == U_FundamentalType::char8_  ) {  suffix= "c8" ;  }
 			if( fundamental_type.fundamental_type == U_FundamentalType::char16_ ) {  suffix= "c16";  }
 			if( fundamental_type.fundamental_type == U_FundamentalType::char32_ ) {  suffix= "c32";  }
-			unsafe{  return ust::to_string8( LLVMConstIntGetZExtValue( constant_value ) ) + suffix;  }
+			return ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) ) + suffix;
 		}
 	}
 	if_var( &enum_type : t.GetEnumType() )
 	{
 		foreach( &element : enum_type.lock_imut().deref().elements )
 		{
-			unsafe
+			if( unsafe( LLVMConstIntGetZExtValue( constant_value ) == LLVMConstIntGetZExtValue( element.value().constexpr_value ) ) )
 			{
-				if( LLVMConstIntGetZExtValue( constant_value ) == LLVMConstIntGetZExtValue( element.value().constexpr_value ) )
-				{
-					var ust::string8 mut res;
-					res+= t.ToString();
-					res+= "::";
-					res+= element.key();
-					return res;
-				}
+				var ust::string8 mut res;
+				res+= t.ToString();
+				res+= "::";
+				res+= element.key();
+				return res;
 			}
 		}
 	}
@@ -1013,12 +1007,7 @@ op TemplateSignatureParam::VariableParam::==(VariableParam& l, VariableParam& r)
 		return false;
 	}
 
-	unsafe
-	{
-		return
-			LLVMConstIntGetZExtValue(l.v.constexpr_value) ==
-			LLVMConstIntGetZExtValue(r.v.constexpr_value);
-	}
+	return unsafe( LLVMConstIntGetZExtValue(l.v.constexpr_value) == LLVMConstIntGetZExtValue(r.v.constexpr_value) );
 }
 
 op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool

@@ -46,10 +46,7 @@ public:
 	{
 		type FirstT= typeof(typeinfo</Y/>.elements_list[0].type)::src_type;
 		var FirstT mut val;
-		unsafe
-		{
-			move_into_uninitialized( cast_ref_unsafe</ FirstT />(storage_), move(val) );
-		}
+		unsafe( move_into_uninitialized( cast_ref_unsafe</ FirstT />(storage_), move(val) ) );
 	}
 
 	fn
@@ -84,10 +81,7 @@ public:
 		{
 			static_if( is_same_type</ typeof(element.type)::src_type, T />() )
 			{
-				unsafe
-				{
-					move_into_uninitialized( cast_ref_unsafe</T/>(storage_), move(val) );
-				}
+				unsafe( move_into_uninitialized( cast_ref_unsafe</T/>(storage_), move(val) ) );
 
 				index_= u8(cur_index);
 				return;
@@ -106,10 +100,7 @@ public:
 		{
 			if( cur_index == size_type(index_) )
 			{
-				unsafe
-				{
-					call_destructor( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_) );
-				}
+				unsafe( call_destructor( cast_ref_unsafe</ typeof(element.type)::src_type />(storage_) ) );
 				return;
 			}
 			++cur_index;
@@ -149,10 +140,7 @@ public:
 			{
 				if( cur_index == size_type(index_) )
 				{
-					unsafe
-					{
-						res.reset( cast_ref_unsafe</T/>(storage_) );
-					}
+					res.reset( unsafe( cast_ref_unsafe</T/>(storage_) ) );
 				}
 			}
 			else
@@ -175,10 +163,7 @@ public:
 			{
 				if( cur_index == size_type(index_) )
 				{
-					unsafe
-					{
-						res.reset( cast_ref_unsafe</T/>(storage_) );
-					}
+					res.reset( unsafe( cast_ref_unsafe</T/>(storage_) ) );
 				}
 			}
 			else

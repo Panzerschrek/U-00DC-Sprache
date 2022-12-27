@@ -52,22 +52,22 @@ public:
 
 	fn deref( mut this ) : T &mut
 	{
-		unsafe{  return deref_unchecked();  }
+		return unsafe( deref_unchecked() );
 	}
 
 	fn deref( imut this ) : T &imut
 	{
-		unsafe{  return deref_unchecked();  }
+		return unsafe( deref_unchecked() );
 	}
 
 	fn deref_unchecked( mut this ) unsafe : T &mut
 	{
-		unsafe{  return $>(ptr_);  }
+		return unsafe( $>(ptr_) );
 	}
 
 	fn deref_unchecked( imut this ) unsafe : T &imut
 	{
-		unsafe{  return $>(ptr_);  }
+		return unsafe( $>(ptr_) );
 	}
 
 private:

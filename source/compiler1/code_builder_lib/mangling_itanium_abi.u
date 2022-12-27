@@ -735,25 +735,22 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 
 			if( v.constexpr_value != LLVMValueRef::Null )
 			{
-				unsafe
+				if( is_signed )
 				{
-					if( is_signed )
+					auto num= unsafe( LLVMConstIntGetSExtValue( v.constexpr_value ) );
+					if( num >= 0i64 )
 					{
-						auto num= LLVMConstIntGetSExtValue( v.constexpr_value );
-						if( num >= 0i64 )
-						{
-							mangler_state.PushDecimalNumber( u64(num) );
-						}
-						else
-						{
-							mangler_state.Push( "n" );
-							mangler_state.PushDecimalNumber( u64(-num) );
-						}
+						mangler_state.PushDecimalNumber( u64(num) );
 					}
 					else
 					{
-						mangler_state.PushDecimalNumber( LLVMConstIntGetZExtValue( v.constexpr_value ) );
+						mangler_state.Push( "n" );
+						mangler_state.PushDecimalNumber( u64(-num) );
 					}
+				}
+				else
+				{
+					mangler_state.PushDecimalNumber( unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) );
 				}
 			}
 

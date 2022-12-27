@@ -9,7 +9,7 @@ template</type Dst, type Src/>
 fn CastPtr($(Src) src) unsafe : $(Dst)
 {
 	// Cast reference to pointer to reference to pointer of other type.
-	unsafe{  return cast_ref_unsafe</$(Dst)/>(src);  }
+	return unsafe( cast_ref_unsafe</$(Dst)/>(src) );
 }
 
 fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable
@@ -23,10 +23,13 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 
 	REPORT_ERROR( ExpectedVariable, names_scope, Synt::GetSrcLoc(expression), GetValueKindName(value) )
 
-	var Variable mut dummy;
-	dummy.t= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
-	dummy.location= Variable::Location::LLVMRegister;
-	unsafe{  dummy.llvm_value= LLVMGetUndef( fundamental_llvm_types_.invalid_type_ );  }
+	var Variable mut dummy
+	{
+		.t= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ),
+		.location= Variable::Location::LLVMRegister,
+		.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.invalid_type_ ) )
+	};
+
 	return move(dummy);
 }
 
@@ -135,7 +138,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, KeywordToString( select( boolean_constant.value ? Keyword::true_ : Keyword::false_ ) ) ),
 	};
 
-	unsafe{ res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ); }
+	res.constexpr_value= unsafe( LLVMConstInt( res.t.GetLLVMType(), select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ) );
 	res.llvm_value= res.constexpr_value;
 
 	// Register variable for references checking.
@@ -422,7 +425,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, KeywordToString( Keyword::non_sync_ ) ),
 	};
 
-	unsafe{ res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), select( is_non_sync ? 1u64 : 0u64 ), LLVMBool::True ); }
+	res.constexpr_value= unsafe( LLVMConstInt( res.t.GetLLVMType(), select( is_non_sync ? 1u64 : 0u64 ), LLVMBool::True ) );
 	res.llvm_value= res.constexpr_value;
 
 	// Register variable for references checking.
@@ -512,6 +515,39 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	return move(r);
+}
+
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SafeExpression& safe_expression ) : Value
+{
+	auto prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= false;
+	auto mut result= BuildExpressionCode( names_scope, function_context, safe_expression.expression.deref() );
+	function_context.is_in_unsafe_block= prev_unsafe;
+	return move(result);
+}
+
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::UnsafeExpression& unsafe_expression ) : Value
+{
+	if( function_context.llvm_function == global_llvm_function_ )
+	{
+		REPORT_ERROR( UnsafeExpressionInGlobalContext, names_scope, unsafe_expression.src_loc )
+	}
+
+	// "unsafe" expression usage should prevent function to be "constexpr".
+	function_context.have_non_constexpr_operations_inside= true;
+
+	auto prev_unsafe= function_context.is_in_unsafe_block;
+	function_context.is_in_unsafe_block= true;
+	auto mut result= BuildExpressionCode( names_scope, function_context, unsafe_expression.expression.deref() );
+	function_context.is_in_unsafe_block= prev_unsafe;
+
+	// Avoid passing constexpr values trough unsafe expression.
+	if_var( &mut variable : result.get</Variable/>() )
+	{
+		variable.constexpr_value= LLVMValueRef::Null;
+	}
+
+	return move(result);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
@@ -620,10 +656,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.value_type= ValueType::Value,
 		.location= Variable::Location::Pointer,
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, variable_name ),
+		.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, variable.t.GetLLVMType(), variable_name.front() ) )
 	};
 
 	variable_name.push_back( "\0"c8 );
-	unsafe{  result.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, result.t.GetLLVMType(), variable_name.front() );  }
 	CreateLifetimeStart( function_context, result.llvm_value );
 
 	// Copy content to new variable.
@@ -698,7 +734,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( UsingIncompleteType, names_scope, ternary_operator.src_loc, result.t )
 			return ErrorValue();
 		}
-		unsafe{  result.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, result.t.GetLLVMType(), "select_result\0"[0] );  }
+		result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, result.t.GetLLVMType(), "select_result\0"[0] ) );
 		CreateLifetimeStart( function_context, result.llvm_value );
 	}
 	else if( branches_types_imut[0].value_type == ValueType::ReferenceImut || branches_types_imut[1].value_type == ValueType::ReferenceImut )
@@ -813,9 +849,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( condition.constexpr_value != LLVMValueRef::Null )
 	{
-		var u64 mut condition_value= 0u64;
-		unsafe{  condition_value= LLVMConstIntGetZExtValue( condition.constexpr_value );  }
-		result.constexpr_value= select( condition_value != 0u64 ? branches_constexpr_values[0] : branches_constexpr_values[1] );
+		result.constexpr_value=
+			select( unsafe( LLVMConstIntGetZExtValue( condition.constexpr_value ) ) != 0u64 ? branches_constexpr_values[0] : branches_constexpr_values[1] );
 	}
 
 	// Register variable for references checking and destruction.
@@ -851,8 +886,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	*/
 	function_context.have_non_constexpr_operations_inside= true;
 
-	var RawPointerType mut t{ .element_type= v.t };
-	unsafe{  t.llvm_type= LLVMTypeOf( v.llvm_value );  } // llvm type of reference is actually type of pointer
+	var RawPointerType mut t
+	{
+		.element_type= v.t,
+		.llvm_type= unsafe( LLVMTypeOf( v.llvm_value ) )  // llvm type of reference is actually type of pointer
+	};
 	var Variable mut res
 	{
 		.t= move(t),
@@ -964,7 +1002,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					variable.t= bool_type_;
 				}
 
-				unsafe{  if( LLVMIsConstant( variable.llvm_value ) == LLVMBool::True ){ variable.constexpr_value= variable.llvm_value; }  }
+				if( unsafe(LLVMIsConstant( variable.llvm_value ) ) == LLVMBool::True ){ variable.constexpr_value= variable.llvm_value; }
 				variable.location= Variable::Location::LLVMRegister;
 			}
 		}
@@ -1038,8 +1076,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			if( index.constexpr_value != LLVMValueRef::Null )
 			{
 				// Statically check index.
-				auto mut index_value_num= 0u64;
-				unsafe{  index_value_num= LLVMConstIntGetZExtValue( index_value );  }
+				auto index_value_num= unsafe( LLVMConstIntGetZExtValue( index_value ) );
 				if( index_value_num >= variable_array_type.element_count )
 				{
 					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope, indexation_operator.src_loc, index_value_num, variable_array_type.element_count )
@@ -1098,10 +1135,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
 			{
-				unsafe
-				{
-					result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32( LLVMConstIntGetZExtValue( index_value ) ), 1u );
-				}
+				result.constexpr_value= unsafe( LLVMConstExtractValue( variable.constexpr_value, u32( LLVMConstIntGetZExtValue( index_value ) ), 1u ) );
 			}
 
 			// Register variable for references checking.
@@ -1166,7 +1200,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			if( variable.constexpr_value != LLVMValueRef::Null )
 			{
-				unsafe{  result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32(type_index), 1u );  }
+				result.constexpr_value= unsafe( LLVMConstExtractValue( variable.constexpr_value, u32(type_index), 1u ) );
 			}
 
 			// Register variable for references checking.
@@ -1357,7 +1391,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 				else
 				{
-					unsafe{  result.llvm_value= LLVMBuildLoad( function_context.llvm_ir_builder, gep_result, op_name_nt.front() );  }
+					result.llvm_value= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, gep_result, op_name_nt.front() ) );
 					MarkLoadInstructionWithNonNullMetadata( result.llvm_value ); // Reference field is never null.
 				}
 
@@ -1400,7 +1434,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				result.llvm_value= gep_result;
 				if( variable.constexpr_value != LLVMValueRef::Null )
 				{
-					unsafe{ result.constexpr_value= LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ); }
+					result.constexpr_value= unsafe( LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ) );
 				}
 
 				result.node_id= variable.node_id;
@@ -1508,11 +1542,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( IsInteger( fundamental_type.try_deref().fundamental_type ) )
 	{
-		unsafe{  result.llvm_value= LLVMBuildNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] );  }
+		result.llvm_value= unsafe( LLVMBuildNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
 	}
 	else if( IsFloatingPoint( fundamental_type.try_deref().fundamental_type ) )
 	{
-		unsafe{  result.llvm_value= LLVMBuildFNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] );  }
+		result.llvm_value= unsafe( LLVMBuildFNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
 	}
 	else
 	{
@@ -1521,7 +1555,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	unsafe{  if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }  }
+	if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
 
 	// Register variable for references checking.
 	RegisterTemporaryVariable( function_context, result );
@@ -2319,14 +2353,11 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 	}
 	else{ halt; }
 
-	unsafe
+	if( l_var.constexpr_value != LLVMValueRef::Null &&
+		r_var.constexpr_value != LLVMValueRef::Null &&
+		unsafe( LLVMIsConstant( res.llvm_value ) ) == LLVMBool::True )
 	{
-		if( l_var.constexpr_value != LLVMValueRef::Null &&
-			r_var.constexpr_value != LLVMValueRef::Null &&
-			LLVMIsConstant( res.llvm_value ) == LLVMBool::True )
-		{
-			res.constexpr_value= res.llvm_value;
-		}
+		res.constexpr_value= res.llvm_value;
 	}
 
 	res.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( operator ) );
@@ -2960,7 +2991,7 @@ fn CodeBuilder::DoCallFunction(
 	var bool is_s_ret= function_type.IsStructRet();
 	if( is_s_ret )
 	{
-		unsafe{  s_ret_value= LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.GetLLVMType(), "\0"[0] );  }
+		s_ret_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.GetLLVMType(), "\0"[0] ) );
 		llvm_args.push_back( s_ret_value );
 	}
 
@@ -3007,8 +3038,8 @@ fn CodeBuilder::DoCallFunction(
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "converted arg " + arg_number_str ),
+					.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), "\0"[0] ) )
 				};
-				unsafe{  arg_converted.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, arg_converted.t.GetLLVMType(), "\0"[0] );  }
 				CreateLifetimeStart( function_context, arg_converted.llvm_value );
 
 				{
@@ -3106,16 +3137,13 @@ fn CodeBuilder::DoCallFunction(
 			if( arg.location == Variable::Location::LLVMRegister )
 			{
 				// Bind value to const reference.
-				unsafe
+				auto temp_storage= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, arg.t.GetLLVMType(), "\0"[0] ) );
+				if( arg.t != void_type_ )
 				{
-					auto temp_storage= LLVMBuildAlloca( function_context.alloca_ir_builder, arg.t.GetLLVMType(), "\0"[0] );
-					if( arg.t != void_type_ )
-					{
-						LLVMBuildStore( function_context.llvm_ir_builder, arg.llvm_value, temp_storage );
-					}
-					llvm_arg= temp_storage;
-					// Do not call here lifetime.start since there is no way to call lifetime.end for this value, because this allocation logically linked with some temp variable and can extend it's lifetime.
+					unsafe( LLVMBuildStore( function_context.llvm_ir_builder, arg.llvm_value, temp_storage ) );
 				}
+				llvm_arg= temp_storage;
+				// Do not call here lifetime.start since there is no way to call lifetime.end for this value, because this allocation logically linked with some temp variable and can extend it's lifetime.
 			}
 			else
 			{
@@ -3162,7 +3190,7 @@ fn CodeBuilder::DoCallFunction(
 
 			if( arg.t == void_type_ )
 			{
-				unsafe{  llvm_arg= LLVMGetUndef( arg.t.GetLLVMType() );  }
+				llvm_arg= unsafe( LLVMGetUndef( arg.t.GetLLVMType() ) );
 			}
 			else if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
 			{
@@ -3185,11 +3213,7 @@ fn CodeBuilder::DoCallFunction(
 						return ErrorValue();
 					}
 
-					auto mut var_copy= LLVMValueRef::Null;
-					unsafe
-					{
-						var_copy= LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), "\0"[0] );
-					}
+					auto var_copy= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), "\0"[0] ) );
 					CreateLifetimeStart( function_context, var_copy );
 					value_args_for_lifetime_end_call.push_back( var_copy );
 
@@ -3249,7 +3273,7 @@ fn CodeBuilder::DoCallFunction(
 		{
 			if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
 			{
-				unsafe{  result.constexpr_value= LLVMConstNull( fundamental_llvm_types_.void_ );  }
+				result.constexpr_value= unsafe( LLVMConstNull( fundamental_llvm_types_.void_ ) );
 			}
 			else
 			{
@@ -3293,7 +3317,7 @@ fn CodeBuilder::DoCallFunction(
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
 			else if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
 			{
-				unsafe{  result.llvm_value= LLVMGetUndef( fundamental_llvm_types_.void_ );  }
+				result.llvm_value= LLVMGetUndef( fundamental_llvm_types_.void_ );
 			}
 		}
 	}
@@ -3515,7 +3539,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 	};
 
 	auto name= "temp " + t.ToString() + "\0";
-	unsafe{  result.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), name.front() );  }
+	result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), name.front() ) );
 	CreateLifetimeStart( function_context, result.llvm_value );
 
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, name );

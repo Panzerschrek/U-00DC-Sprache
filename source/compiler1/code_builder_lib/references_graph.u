@@ -10,7 +10,7 @@ var u32 mut g_references_graph_next_node_id = 1u;
 
 fn GetNextNodeId() : u32
 {
-	unsafe{  return ust::atomic_inc(g_references_graph_next_node_id);  }
+	return unsafe( ust::atomic_inc(g_references_graph_next_node_id) );
 }
 
 struct NodeReplacement

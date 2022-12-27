@@ -70,7 +70,7 @@ fn nomangle U1_BuildProgram(
 			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
 			if( !code_builder_res.errors.empty() )
 			{
-				unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+				unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
 				return LLVMModuleRef::Null;
 			}
 
@@ -104,7 +104,7 @@ fn nomangle U1_BuildProgramWithErrors(
 			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
-			unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+			unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
 
 			U1_ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors );
 		}
@@ -211,8 +211,7 @@ fn nomangle U1_BuildMultisourceProgram(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
 {
-	var ust::string8 mut root_file_path_str;
-	unsafe{ root_file_path_str= U1::StringToArrayView( root_file_path.data, root_file_path.size ); }
+	var ust::string8 root_file_path_str= unsafe( U1::StringToArrayView( root_file_path.data, root_file_path.size ) );
 
 	var U1::TestVfs mut test_vfs( U1::TransformSourceFiles( source_files, source_file_count ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, root_file_path_str );
@@ -228,7 +227,7 @@ fn nomangle U1_BuildMultisourceProgram(
 	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
 	if( !code_builder_res.errors.empty() )
 	{
-		unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+		unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
 		return LLVMModuleRef::Null;
 	}
 
@@ -244,8 +243,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	ErrorsHandlingCallbacks& errors_handling_callbacks,
 	UserHandle data ) unsafe : bool
 {
-	var ust::string8 mut root_file_path_str;
-	unsafe{ root_file_path_str= U1::StringToArrayView( root_file_path.data, root_file_path.size ); }
+	var ust::string8 root_file_path_str= unsafe( U1::StringToArrayView( root_file_path.data, root_file_path.size ) );
 
 	var U1::TestVfs mut test_vfs( U1::TransformSourceFiles( source_files, source_file_count ) );
 	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, root_file_path_str );
@@ -258,7 +256,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
-	unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+	unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
 
 	U1_ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors );
 
@@ -292,7 +290,7 @@ fn nomangle U1_BuildProgramForLifetimesTest(
 			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
 			if( !code_builder_res.errors.empty() )
 			{
-				unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+				unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
 				return LLVMModuleRef::Null;
 			}
 
@@ -328,7 +326,7 @@ fn nomangle U1_BuildProgramForMSVCManglingTest(
 			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
 			if( !code_builder_res.errors.empty() )
 			{
-				unsafe{  LLVMDisposeModule( code_builder_res.llvm_module );  }
+				unsafe(LLVMDisposeModule( code_builder_res.llvm_module ) );
 				return LLVMModuleRef::Null;
 			}
 
@@ -348,10 +346,7 @@ fn GetCodeBuilderOptionsForTests() : CodeBuilderOptions
 
 fn StringToArrayView( $(char8) string_start, size_type string_size ) unsafe : ust::array_view_imut</ char8 />
 {
-	unsafe
-	{
-		return ust::array_view_imut</ char8 />( string_start, string_size );
-	}
+	return unsafe( ust::array_view_imut</ char8 />( string_start, string_size ) );
 }
 
 fn TransformSourceFiles( U1_SourceFile& source_files, size_type source_file_count ) : TestVfs::SourceEntries
@@ -393,7 +388,7 @@ fn PrintLexSyntErrors( SourceGraph& source_graph )
 		str+= ": error: ";
 		str+= err.text;
 		str+= "\n\0";
-		unsafe{  U1_PrintStr( U1_GetCerr(), str.front() );  }
+		unsafe( U1_PrintStr( U1_GetCerr(), str.front() ) );
 	}
 }
 
@@ -416,7 +411,7 @@ fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 		str+= ": error: ";
 		str+= err.text;
 		str+= "\n\0";
-		unsafe{  U1_PrintStr( U1_GetCerr(), str.front() );  }
+		unsafe( U1_PrintStr( U1_GetCerr(), str.front() ) );
 	}
 }
 

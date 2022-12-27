@@ -406,6 +406,20 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( *non_sync_expression.type_, stream );
 			stream << " />";
 		}
+		void operator()( const SafeExpression& safe_expression ) const
+		{
+			stream << Keyword( Keywords::safe_ );
+			stream << "( ";
+			ElementWrite( *safe_expression.expression_, stream );
+			stream << " )";
+		}
+		void operator()( const UnsafeExpression& unsafe_expression ) const
+		{
+			stream << Keyword( Keywords::unsafe_ );
+			stream << "( ";
+			ElementWrite( *unsafe_expression.expression_, stream );
+			stream << " )";
+		}
 		void operator()( const UnaryMinus& unary_minus ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::Sub );

@@ -517,16 +517,13 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerStateMSVC &mut mangler_state, T
 				is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlaying_type.fundamental_type );
 			}
 
-			unsafe
+			if( is_signed )
 			{
-				if( is_signed )
-				{
-					EncodeNumber( mangler_state, LLVMConstIntGetSExtValue( v.constexpr_value ) );
-				}
-				else
-				{
-					EncodeNumber( mangler_state, LLVMConstIntGetZExtValue( v.constexpr_value ) );
-				}
+				EncodeNumber( mangler_state, unsafe( LLVMConstIntGetSExtValue( v.constexpr_value ) ) );
+			}
+			else
+			{
+				EncodeNumber( mangler_state, unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) );
 			}
 		}
 	}

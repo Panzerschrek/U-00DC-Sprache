@@ -18,8 +18,7 @@ import "code_builder.uh"
 		};
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
-
-		unsafe{  fields_initializers.push_back( LLVMConstInt( class_field.t.GetLLVMType(), select( ?value ? 1u64 : 0u64 ), LLVMBool::False ) );  }
+		fields_initializers.push_back( unsafe( LLVMConstInt( class_field.t.GetLLVMType(), select( ?value ? 1u64 : 0u64 ), LLVMBool::False ) ) );
 
 		auto mut members_lock= class_members.lock_mut();
 		members_lock.deref().AddName( ?name, move(class_field) );
@@ -41,8 +40,7 @@ import "code_builder.uh"
 		};
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
-
-		unsafe{  fields_initializers.push_back( LLVMConstInt( class_field.t.GetLLVMType(), u64(?value), LLVMBool::False ) );  }
+		fields_initializers.push_back( unsafe( LLVMConstInt( class_field.t.GetLLVMType(), u64(?value), LLVMBool::False ) ) );
 
 		auto mut members_lock= class_members.lock_mut();
 		members_lock.deref().AddName( ?name, move(class_field) );
@@ -64,7 +62,7 @@ import "code_builder.uh"
 			.source_class= typeinfo_class,
 		};
 
-		unsafe{  fields_llvm_types.push_back( LLVMPointerType( class_field.t.GetLLVMType(), 0u ) );  }
+		fields_llvm_types.push_back( unsafe( LLVMPointerType( class_field.t.GetLLVMType(), 0u ) ) );
 
 		fields_initializers.push_back( dependent_type_typeinfo.llvm_value );
 
@@ -107,7 +105,7 @@ import "code_builder.uh"
 			.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ ),
 			.element_count= u64(element_name.size()),
 		};
-		unsafe{  array_type.llvm_type= LLVMArrayType( array_type.element_type.GetLLVMType(), u32(array_type.element_count) );  }
+		array_type.llvm_type= unsafe( LLVMArrayType( array_type.element_type.GetLLVMType(), u32(array_type.element_count) ) );
 
 		var ClassField mut class_field
 		{
@@ -120,7 +118,7 @@ import "code_builder.uh"
 		};
 
 		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
-		unsafe{  fields_initializers.push_back( LLVMConstStringInContext( llvm_context_, cast_mut(element_name).data(), u32(element_name.size()), LLVMBool::True ) );  }
+		fields_initializers.push_back( unsafe( LLVMConstStringInContext( llvm_context_, cast_mut(element_name).data(), u32(element_name.size()), LLVMBool::True ) ) );
 
 		auto mut members_lock= class_members.lock_mut();
 		members_lock.deref().AddName( "name", move(class_field) );
@@ -209,10 +207,7 @@ fn FinishTypeinfoList( LLVMContextRef llvm_context, ust::vector</Type/> mut elem
 		element_llvm_types.push_back( element_type.GetLLVMType() );
 	}
 
-	unsafe
-	{
-		tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False );
-	}
+	tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
 
 	var Variable mut variable
 	{
@@ -221,10 +216,7 @@ fn FinishTypeinfoList( LLVMContextRef llvm_context, ust::vector</Type/> mut elem
 		.location= Variable::Location::LLVMRegister,
 	};
 
-	unsafe
-	{
-		variable.constexpr_value= LLVMConstStructInContext( llvm_context, cast_mut(initializers).data(), u32(initializers.size()), LLVMBool::False );
-	}
+	variable.constexpr_value= unsafe( LLVMConstStructInContext( llvm_context, cast_mut(initializers).data(), u32(initializers.size()), LLVMBool::False ) );
 	variable.llvm_value= variable.constexpr_value;
 
 	return move(variable);
@@ -279,7 +271,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		if_var( &function_type : t.GetFunctionType() )
 		{
 			var FunctionPointerType mut function_pointer_type{ .function_type= function_type };
-			unsafe{  function_pointer_type.llvm_type= LLVMPointerType( function_pointer_type.function_type.llvm_type, 0u );  }
+			function_pointer_type.llvm_type= unsafe( LLVMPointerType( function_pointer_type.function_type.llvm_type, 0u ) );
 			src_type= move(function_pointer_type);
 		}
 
@@ -501,10 +493,9 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 	}
 
 	auto name_mangled= mangler_.deref().MangleType( class_type_ptr );
-	unsafe
 	{
 		auto mut lock= class_type_ptr.lock_mut();
-		lock.deref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
+		lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, name_mangled.front() ) );
 	}
 
 	typeinfo_class_table_.push_back( class_type_ptr );
@@ -518,7 +509,7 @@ fn CodeBuilder::FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust
 		auto mut class_lock= typeinfo_class.lock_mut();
 		var ClassType &mut class_= class_lock.deref();
 
-		unsafe{  LLVMStructSetBody( class_.llvm_type, cast_mut(fields_llvm_types).data(), u32(fields_llvm_types.size()), LLVMBool::False );  }
+		unsafe( LLVMStructSetBody( class_.llvm_type, cast_mut(fields_llvm_types).data(), u32(fields_llvm_types.size()), LLVMBool::False ) );
 
 		class_.is_complete= true;
 	}
@@ -546,18 +537,12 @@ fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_na
 		ADD_TYPEINFO_FIELD( "type", tuple_type.element_types[i] )
 
 		ADD_SIZE_FIELD( "index", i )
-
-		auto mut offset= 0u64;
-		unsafe{  offset= LLVMOffsetOfElement( data_layout_, tuple_type.llvm_type, u32(i) );  }
-		ADD_SIZE_FIELD( "offset", offset )
+		ADD_SIZE_FIELD( "offset", unsafe(LLVMOffsetOfElement( data_layout_, tuple_type.llvm_type, u32(i) )) )
 
 		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
-		unsafe
-		{
-			list_initializers.push_back( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) );
-		}
+		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
 	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
@@ -588,10 +573,7 @@ fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_n
 		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
-		unsafe
-		{
-			list_initializers.push_back( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) );
-		}
+		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
 	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
@@ -639,11 +621,8 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		ADD_TYPEINFO_FIELD( "class_type", field.source_class )
 
 		// Base class always have zero offset, so, we can just use offset of class field in its own class.
-		auto mut offset= 0u64;
 		auto field_source_class_llvm_type= field.source_class.lock_imut().deref().llvm_type;
-		unsafe{  offset+= LLVMOffsetOfElement( data_layout_, field_source_class_llvm_type, u32(field.index) );  }
-
-		ADD_SIZE_FIELD( "offset", offset )
+		ADD_SIZE_FIELD( "offset", unsafe( LLVMOffsetOfElement( data_layout_, field_source_class_llvm_type, u32(field.index) ) ) )
 
 		ADD_BOOL_FIELD( "is_mutable", field.is_mutable )
 		ADD_BOOL_FIELD( "is_reference", field.is_reference )
@@ -653,10 +632,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
-		unsafe
-		{
-			list_initializers.push_back( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) );
-		}
+		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
 	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
@@ -727,10 +703,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
-		unsafe
-		{
-			list_initializers.push_back( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) );
-		}
+		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
 	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
@@ -803,10 +776,7 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
-		unsafe
-		{
-			list_initializers.push_back( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) );
-		}
+		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
 	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
@@ -831,17 +801,12 @@ fn CodeBuilder::BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_nam
 
 		ADD_TYPEINFO_FIELD( "type", parent.class_ )
 
-		auto mut offset= 0u64;
-		unsafe{  offset= LLVMOffsetOfElement( data_layout_, class_.llvm_type, parent.field_number );  }
-		ADD_SIZE_FIELD( "offset", offset )
+		ADD_SIZE_FIELD( "offset", unsafe( LLVMOffsetOfElement( data_layout_, class_.llvm_type, parent.field_number ) ) )
 
 		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
-		unsafe
-		{
-			list_initializers.push_back( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) );
-		}
+		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
 	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
@@ -904,10 +869,7 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 		FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
 		list_types.push_back( typeinfo_class );
-		unsafe
-		{
-			list_initializers.push_back( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) );
-		}
+		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
 	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );

@@ -121,11 +121,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				continue;
 			}
 
-			unsafe
-			{
-				out_variable.llvm_value=
-					LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), (variable_declaration.name + "\0").front() );
-			}
+			out_variable.llvm_value=
+				unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), (variable_declaration.name + "\0").front() ) );
 			CreateLifetimeStart( function_context, out_variable.llvm_value );
 
 			CreateVariableDebugInfo( function_context, out_variable, variable_declaration.name, variable_declaration.src_loc );
@@ -404,16 +401,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 		CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
 		CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-		unsafe
+
+		if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
 		{
-			if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
-			{
-				LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block );
-			}
-			else
-			{
-				LLVMBuildRetVoid( function_context.llvm_ir_builder );
-			}
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block ) );
+		}
+		else
+		{
+			unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
 		}
 		return block_element_build_info;
 	}
@@ -471,7 +466,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 
 		auto reference_converted= CreateReferenceCast( expr.llvm_value, expr.t, function_context.function_type.return_type, function_context );
-		unsafe{  LLVMBuildRet( function_context.llvm_ir_builder, reference_converted );  }
+		unsafe( LLVMBuildRet( function_context.llvm_ir_builder, reference_converted ) );
 	}
 	else
 	{
@@ -533,7 +528,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 				CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
 				CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-				unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
+				unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
 			}
 			else
 			{
@@ -541,16 +536,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				{
 					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
 					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-					unsafe
+
+					if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
 					{
-						if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
-						{
-							LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block );
-						}
-						else
-						{
-							LLVMBuildRetVoid( function_context.llvm_ir_builder );
-						}
+						unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block ) );
+					}
+					else
+					{
+						unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
 					}
 				}
 				else
@@ -558,7 +551,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
 					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-					unsafe{  LLVMBuildRet( function_context.llvm_ir_builder, value_in_register );  }
+					unsafe( LLVMBuildRet( function_context.llvm_ir_builder, value_in_register ) );
 				}
 			}
 			return block_element_build_info;
@@ -606,7 +599,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
 			CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-			unsafe{  LLVMBuildRetVoid( function_context.llvm_ir_builder );  }
+			unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
 			return block_element_build_info;
 		}
 
@@ -664,7 +657,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		if( r.t != void_type_ )
 		{
-			unsafe{  LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value );  }
+			unsafe( LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value ) );
 		}
 	}
 
@@ -722,13 +715,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			return BlockElementBuildInfo();
 		}
 
-		unsafe
-		{
+		unsafe (
 			LLVMBuildStore(
 				function_context.llvm_ir_builder,
 				CreateMoveToLLVMRegisterInstruction( op_result_variable, function_context ),
-				l_var.llvm_value );
-		}
+				l_var.llvm_value ) );
 	}
 
 	CallDestructorsForTopVariablesFrame( names_scope, function_context, additive_assignment_operator.src_loc );
@@ -780,11 +771,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto& branch= if_operator.branches[i];
 
 		var LLVMBasicBlockRef mut body_block= zero_init, current_condition_block= next_condition_block;
-		unsafe{  body_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );  }
+		body_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] ) );
 
 		if( i + 1s < if_operator.branches.size() )
 		{
-			unsafe{  next_condition_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );  }
+			next_condition_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] ) );
 		}
 		else
 		{
@@ -801,7 +792,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( !branch.condition.get</Synt::EmptyVariant/>().empty() )
 		{
 			// Make empty condition block - move to it unconditional break to body.
-			unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, body_block );  }
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, body_block ) );
 		}
 		else
 		{
@@ -818,14 +809,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					condition_expression.t )
 
 				CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.src_loc );
-				unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, body_block );  }
+				unsafe( LLVMBuildBr( function_context.llvm_ir_builder, body_block ) );
 			}
 			else
 			{
 				auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
 				CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.src_loc );
 
-				unsafe{  LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, body_block, next_condition_block );  }
+				unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, body_block, next_condition_block ) );
 			}
 		}
 
@@ -843,7 +834,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			branches_references_graphs.push_back( take(function_context.references_graph) );
 			block_element_build_info.have_terminal_instruction_inside= false;
-			unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, block_after_if );  }
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
 		}
 
 		function_context.references_graph= move(references_graph_before_this_branch);
@@ -911,9 +902,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				return BlockElementBuildInfo();
 			}
 
-			var u64 mut constexpr_value= 0u64;
-			unsafe{  constexpr_value= LLVMConstIntGetZExtValue( condition_expression.constexpr_value );  }
-			if( constexpr_value != 0u64 )
+			if( unsafe( LLVMConstIntGetZExtValue( condition_expression.constexpr_value ) ) != 0u64 )
 			{
 				return BuildBlockElement( names_scope, function_context, branch.block );
 			}
@@ -988,7 +977,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	auto info= BuildBlockElement( names_scope, function_context, while_operator.block );
 	if( !info.have_terminal_instruction_inside )
 	{
-		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, test_block ) );
 		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
 	}
 
@@ -1057,7 +1046,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto mut finish_basic_block= LLVMBasicBlockRef::Null;
 		if( !tuple_type.element_types.empty() )
 		{
-			unsafe{  finish_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );  }
+			finish_basic_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] ) );
 		}
 
 		var ust::vector</ReferencesGraph/> mut references_graphs_for_merge;
@@ -1107,11 +1096,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 			else if( range_for_operator.reference_modifier == Synt::ReferenceModifier::None )
 			{
-				unsafe
-				{
-					variable.llvm_value=
-						LLVMBuildAlloca( function_context.alloca_ir_builder, variable.t.GetLLVMType(), (range_for_operator.loop_variable_name + "\0").front() );
-				}
+
+				variable.llvm_value=
+					unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, variable.t.GetLLVMType(), (range_for_operator.loop_variable_name + "\0").front() ) );
 				CreateLifetimeStart( function_context, variable.llvm_value );
 
 				CreateVariableDebugInfo( function_context, variable, variable_name, range_for_operator.src_loc );
@@ -1148,7 +1135,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 			else
 			{
-				unsafe{  next_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );  }
+				next_basic_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] ) );
 			}
 
 			var LoopFrame loop_frame
@@ -1165,7 +1152,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				CallDestructorsForTopVariablesFrame( names_scope, function_context, range_for_operator.src_loc ); // destroy loop variable
 				function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
-				unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, next_basic_block );  }
+				unsafe( LLVMBuildBr( function_context.llvm_ir_builder, next_basic_block ) );
 			}
 
 			// Graph state in next iteration is combination of graph state of all branches with "continue" on previous iteration.
@@ -1284,7 +1271,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	if( !c_style_for_operator.loop_condition.get</Synt::EmptyVariant/>().empty() )
 	{
 		// No condition.
-		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, loop_block );  }
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) );
 	}
 	else
 	{
@@ -1302,7 +1289,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, condition_src_loc );
 
-		unsafe{  LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, loop_block, block_after_loop );  }
+		unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, loop_block, block_after_loop ) );
 	}
 
 	auto mut references_graph_after_test_block= function_context.references_graph;
@@ -1325,7 +1312,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	auto info= BuildBlockElement( names_scope, function_context, c_style_for_operator.block );
 	if( !info.have_terminal_instruction_inside )
 	{
-		unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, loop_iteration_block );  }
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_iteration_block ) );
 		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
 	}
 
@@ -1354,7 +1341,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 	}
 
-	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, test_block );  }
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, test_block ) );
 
 	CheckReferencesGraphAfterLoop( references_graph_before_loop, function_context.references_graph, names_scope, c_style_for_operator.block.deref().end_src_loc );
 	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, c_style_for_operator.block.deref().end_src_loc );
@@ -1381,7 +1368,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	CallDestructorsForLoopInnerVariables( names_scope, function_context, break_operator.src_loc );
-	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_break );  }
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_break ) );
 
 	function_context.loops_stack.back().break_references_graphs.push_back( function_context.references_graph );
 
@@ -1564,7 +1551,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	CallDestructorsForLoopInnerVariables( names_scope, function_context, continue_operator.src_loc );
-	unsafe{  LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_continue );  }
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_continue ) );
 
 	function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
 
@@ -1594,9 +1581,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		return BlockElementBuildInfo();
 	}
 
-	var u64 mut val= zero_init;
-	unsafe{  val= LLVMConstIntGetZExtValue( condition_variable.constexpr_value );  }
-	if( val == 0u64 )
+	if( unsafe( LLVMConstIntGetZExtValue( condition_variable.constexpr_value ) ) == 0u64 )
 	{
 		REPORT_ERROR( StaticAssertionFailed, names_scope, static_assert_.src_loc )
 	}

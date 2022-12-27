@@ -146,10 +146,7 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 					}
 					else
 					{
-						var u64 mut val= zero_init;
-						unsafe{  val= LLVMConstIntGetZExtValue( v.constexpr_value );  }
-
-						if( val != 0u64 )
+						if( unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) != 0u64 )
 						{
 							prev_types_stack.pop_back();
 							return true;
