@@ -453,7 +453,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 
 	if( allocate_virtual_table_pointer )
 	{
-		unsafe{  fields_llvm_types.push_back( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) );  } // set exact type later.
+		fields_llvm_types.push_back( unsafe( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) ) );// set exact type later.
 	}
 	{
 		// Make base class first field. Add parent classes fields.
@@ -536,7 +536,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				var ClassField &mut field= field_lock.deref();
 
 				auto mut llvm_type= field.t.GetLLVMType();
-				if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
+				if( field.is_reference ) { llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) ); }
 
 				field.index= fields_llvm_types.size();
 				fields_llvm_types.push_back( llvm_type );
@@ -555,7 +555,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					auto field_lock= fields_left[i].lock_imut();
 					var ClassField& field= field_lock.deref();
 					auto mut llvm_type= field.t.GetLLVMType();
-					if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
+					if( field.is_reference ) { llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) ); }
 
 					unsafe
 					{
@@ -590,7 +590,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				var ClassField &mut field= field_lock.deref();
 
 				auto mut llvm_type= field.t.GetLLVMType();
-				if( field.is_reference ) { unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  } }
+				if( field.is_reference ) { llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) ); }
 
 				field.index= fields_llvm_types.size();
 				fields_llvm_types.push_back( llvm_type );
@@ -657,10 +657,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		PrepareClassVirtualTableType( class_type );
 		if( allocate_virtual_table_pointer )
 		{
-			unsafe
-			{
-				fields_llvm_types.front()= LLVMPointerType( class_type.lock_imut().deref().virtual_table_llvm_type, 0u );
-			}
+			fields_llvm_types.front()= unsafe( LLVMPointerType( class_type.lock_imut().deref().virtual_table_llvm_type, 0u ) );
 		}
 	}
 
@@ -1094,7 +1091,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		var Enum::Element mut out_element;
 
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( enum_inernal_names_scope.lock_imut().deref(), element.name, enum_type, true );
-		unsafe{  out_element.constexpr_value= LLVMConstInt( underlaying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False );  }
+		out_element.constexpr_value= unsafe( LLVMConstInt( underlaying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False ) );
 		out_element.llvm_value= AddGlobalConstantVariable( name_mangled, underlaying_type.llvm_type, out_element.constexpr_value );
 
 		enum_elements.insert( element.name, move(out_element) );
@@ -1215,7 +1212,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 		if( variable.constexpr_value != LLVMValueRef::Null ) // May be in case of error.
 		{
-			unsafe{  LLVMSetInitializer( variable.llvm_value, variable.constexpr_value );  }
+			unsafe( LLVMSetInitializer( variable.llvm_value, variable.constexpr_value ) );
 		}
 	}
 	else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
@@ -1349,7 +1346,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType() )
 			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value ) );
 
-		unsafe{  LLVMSetInitializer( variable.llvm_value, expr.constexpr_value );  }
+		unsafe( LLVMSetInitializer( variable.llvm_value, expr.constexpr_value ) );
 	}
 	else { halt; }
 

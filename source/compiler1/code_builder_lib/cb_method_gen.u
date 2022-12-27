@@ -114,17 +114,14 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.t= function_type,
 		};
 
-		unsafe
-		{
-			function_variable.llvm_function=
-				LLVMAddFunction(
-					module_,
-					mangler_.deref().MangleFunction(
-						class_members,
-						KeywordToString( Keyword::constructor_ ),
-						function_variable.t ).front(),
-					function_variable.t.llvm_type );
-		}
+		function_variable.llvm_function=
+			unsafe( LLVMAddFunction(
+				module_,
+				mangler_.deref().MangleFunction(
+					class_members,
+					KeywordToString( Keyword::constructor_ ),
+					function_variable.t ).front(),
+				function_variable.t.llvm_type ) );
 
 		constructor_index= constructors.functions.size();
 		constructors.functions.push_back( move(function_variable) );
@@ -141,8 +138,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		function_variable.t );
 	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 
-	auto mut this_llvm_value= LLVMValueRef::Null;
-	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }
+	auto this_llvm_value= unsafe( LLVMGetParam( function_variable.llvm_function, 0u ) );
 
 	auto src_loc= class_type.lock_imut().deref().syntax_element.try_deref().src_loc;
 
@@ -322,17 +318,14 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			.t= function_type,
 		};
 
-		unsafe
-		{
-			function_variable.llvm_function=
-				LLVMAddFunction(
-					module_,
-					mangler_.deref().MangleFunction(
-						class_members,
-						KeywordToString( Keyword::constructor_ ),
-						function_variable.t ).front(),
-					function_variable.t.llvm_type );
-		}
+		function_variable.llvm_function=
+			unsafe( LLVMAddFunction(
+				module_,
+				mangler_.deref().MangleFunction(
+					class_members,
+					KeywordToString( Keyword::constructor_ ),
+					function_variable.t ).front(),
+				function_variable.t.llvm_type ) );
 
 		constructor_index= constructors.functions.size();
 		constructors.functions.push_back( move(function_variable) );
@@ -378,13 +371,10 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 		if( class_field.is_reference )
 		{
-			unsafe
-			{
-				LLVMBuildStore(
-					function_context.llvm_ir_builder,
-					LLVMBuildLoad( function_context.llvm_ir_builder, src_member_value, "\0"[0] ),
-					dst_member_value );
-			}
+			unsafe( LLVMBuildStore(
+				function_context.llvm_ir_builder,
+				LLVMBuildLoad( function_context.llvm_ir_builder, src_member_value, "\0"[0] ),
+				dst_member_value ) );
 		}
 		else
 		{
@@ -520,17 +510,14 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			.t= function_type,
 		};
 
-		unsafe
-		{
-			function_variable.llvm_function=
-				LLVMAddFunction(
-					module_,
-					mangler_.deref().MangleFunction(
-						class_members,
-						OverloadedOperatorToString( OverloadedOperator::Assign ),
-						function_variable.t ).front(),
-					function_variable.t.llvm_type);
-		}
+		function_variable.llvm_function=
+			unsafe( LLVMAddFunction(
+				module_,
+				mangler_.deref().MangleFunction(
+					class_members,
+					OverloadedOperatorToString( OverloadedOperator::Assign ),
+					function_variable.t ).front(),
+				function_variable.t.llvm_type) );
 
 		operator_index= operators.functions.size();
 		operators.functions.push_back( move(function_variable) );
@@ -730,17 +717,14 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 			.t= function_type,
 		};
 
-		unsafe
-		{
-			function_variable.llvm_function=
-				LLVMAddFunction(
-					module_,
-					mangler_.deref().MangleFunction(
-						class_members_ptr.lock_imut().deref(),
-						op_name,
-						function_variable.t ).front(),
-					function_variable.t.llvm_type);
-		}
+		function_variable.llvm_function=
+			unsafe( LLVMAddFunction(
+				module_,
+				mangler_.deref().MangleFunction(
+					class_members_ptr.lock_imut().deref(),
+					op_name,
+					function_variable.t ).front(),
+				function_variable.t.llvm_type) );
 
 		operator_index= operators.functions.size();
 		operators.functions.push_back( move(function_variable) );
@@ -852,17 +836,14 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 		.t= function_type,
 	};
 
-	unsafe
-	{
-		function_variable.llvm_function=
-			LLVMAddFunction(
-				module_,
-				mangler_.deref().MangleFunction(
-					class_members,
-					KeywordToString( Keyword::destructor_ ),
-					function_variable.t ).front(),
-				function_variable.t.llvm_type );
-	}
+	function_variable.llvm_function=
+		unsafe( LLVMAddFunction(
+			module_,
+			mangler_.deref().MangleFunction(
+				class_members,
+				KeywordToString( Keyword::destructor_ ),
+				function_variable.t ).front(),
+			function_variable.t.llvm_type ) );
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
 
@@ -896,8 +877,7 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 		function_variable.llvm_function,
 		function_variable.t );
 
-	auto mut this_llvm_value= LLVMValueRef::Null;
-	unsafe{  this_llvm_value= LLVMGetParam( function_variable.llvm_function, 0u );  }
+	auto this_llvm_value= unsafe( LLVMGetParam( function_variable.llvm_function, 0u ) );
 
 	BuildMembersDestructors( function_context, this_llvm_value, class_type );
 
@@ -1007,11 +987,8 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 				}
 
 				// Call it.
-				unsafe
-				{
-					var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
-					LLVMBuildCall( function_context.llvm_ir_builder, constructor_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] );
-				}
+				var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
+				unsafe( LLVMBuildCall( function_context.llvm_ir_builder, constructor_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] ) );
 				break;
 			}
 		}
@@ -1100,11 +1077,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 				}
 
 				// Call it.
-				unsafe
-				{
-					var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
-					LLVMBuildCall( function_context.llvm_ir_builder, operator_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] );
-				}
+				var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
+				unsafe( LLVMBuildCall( function_context.llvm_ir_builder, operator_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] ) );
 				break;
 			}
 		}
@@ -1238,13 +1212,8 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 			function_context,
 			array_type.element_count,
 			{
-				auto mut element_value= LLVMValueRef::Null;
-
-				unsafe
-				{
-					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
-					element_value= LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, "[]\0"[0] );
-				}
+				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
+				auto element_value= unsafe( LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, "[]\0"[0] ) );
 
 				BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type, src_loc );
 			}
@@ -1268,11 +1237,8 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 		auto& destructor_= destructors_lock.deref().functions_set.functions.front();
 
 		// Call it.
-		unsafe
-		{
-			auto mut v= value;
-			LLVMBuildCall( function_context.llvm_ir_builder, destructor_.llvm_function, $<(v), 1u, "\0"[0] );
-		}
+		auto mut v= value;
+		unsafe( LLVMBuildCall( function_context.llvm_ir_builder, destructor_.llvm_function, $<(v), 1u, "\0"[0] ) );
 	}
 }
 

@@ -755,10 +755,8 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 {
 	var TypeTemplatePtr& type_template_ptr= template_args_evaluation_result.type_template;
 
-	var size_type mut int_ptr= zero_init;
-	unsafe{  int_ptr= ust::ref_to_int( type_template_ptr.deref() );  }
 	auto template_key=
-		ust::to_string8( int_ptr ) +
+		ust::to_string8( ust::ref_to_int( type_template_ptr.deref() ) ) +
 		mangler_.deref().MangleTemplateArgs( template_args_evaluation_result.signature_args );
 
 	var ust::string8 template_class_name= "_";
@@ -809,7 +807,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 		}
 
 		auto mangled_llvm_type_name= mangler_.deref().MangleType( class_type.try_to_non_nullable() );
-		unsafe{  U1_SetStructName( class_type.try_lock_imut().deref().llvm_type, mangled_llvm_type_name.front() );  }
+		unsafe( U1_SetStructName( class_type.try_lock_imut().deref().llvm_type, mangled_llvm_type_name.front() ) );
 
 		AddNewTemplateThing( template_key, args_names_scope );
 		return Type( class_type.try_to_non_nullable() );
@@ -1049,10 +1047,8 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	}
 
 	// Use combination of template args (not signature params) and template pointer. This combination should be unique.
-	var size_type mut int_ptr= zero_init;
-	unsafe{  int_ptr= ust::ref_to_int( function_template_ptr.deref() );  }
 	auto template_key=
-		ust::to_string8( int_ptr ) +
+		ust::to_string8( ust::ref_to_int( function_template_ptr.deref() ) ) +
 		mangler_.deref().MangleTemplateArgs( result_template_args );
 
 	auto& function_name= function_syntax_element.name.back();
@@ -1096,10 +1092,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 	auto name_mangled=
 		mangler_.deref().MangleFunction( function_template.parent_names_scope.lock().try_lock_imut().deref(), function_name, function_variable.t, result_template_args );
-	unsafe
-	{
-		LLVMSetValueName2( function_variable.llvm_function, cast_mut(name_mangled).data(), name_mangled.size() - 1s );
-	}
+	unsafe( LLVMSetValueName2( function_variable.llvm_function, cast_mut(name_mangled).data(), name_mangled.size() - 1s ) );
 
 	{
 		auto mut lock= result_functions_set_ptr.try_lock_mut();
@@ -1164,10 +1157,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	var ust::string8 mut cache_key= "_parametrized_";
 	foreach( &function_template_ptr : functions_set.function_templates )
 	{
-		unsafe
-		{
-			cache_key+= ust::to_string8( ust::ref_to_int( function_template_ptr.deref() ) );
-		}
+		cache_key+= ust::to_string8( ust::ref_to_int( function_template_ptr.deref() ) );
 		cache_key+= "_";
 	}
 	cache_key+= mangler_.deref().MangleTemplateArgs( template_args_finished );
@@ -1356,12 +1346,9 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 					return false;
 				}
 
-				unsafe
-				{
-					return
-						LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
-						LLVMConstIntGetZExtValue( v.constexpr_value );
-				}
+				return unsafe(
+					LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
+					LLVMConstIntGetZExtValue( v.constexpr_value ) );
 			}
 		}
 	}
@@ -1421,12 +1408,9 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			return false;
 		}
 
-		unsafe
-		{
-			return
-				LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
-				LLVMConstIntGetZExtValue( variable_param.v.constexpr_value );
-		}
+		return unsafe(
+			LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
+			LLVMConstIntGetZExtValue( variable_param.v.constexpr_value ) );
 	}
 
 	return false;
@@ -1455,11 +1439,8 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				.value_type= ValueType::Value,
 				.location= Variable::Location::LLVMRegister,
 			};
-			unsafe
-			{
-				size_var.constexpr_value= LLVMConstInt( size_type_.GetLLVMType(), given_array_type.element_count, LLVMBool::False );
-				size_var.llvm_value= size_var.constexpr_value;
-			}
+			size_var.constexpr_value= unsafe( LLVMConstInt( size_type_.GetLLVMType(), given_array_type.element_count, LLVMBool::False ) );
+			size_var.llvm_value= size_var.constexpr_value;
 
 			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_count, move(size_var), src_loc ) )
 			{

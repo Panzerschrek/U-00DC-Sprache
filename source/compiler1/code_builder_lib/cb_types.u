@@ -56,8 +56,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		{
 			if( IsSignedInteger( index_variable.t.GetFundamentalType().try_deref().fundamental_type ) )
 			{
-				auto mut s= 0i64;
-				unsafe{  s= LLVMConstIntGetSExtValue( index_variable.constexpr_value );  }
+				auto s= unsafe( LLVMConstIntGetSExtValue( index_variable.constexpr_value ) );
 				if( s >= 0i64 )
 				{
 					out_array_type.element_count= u64(s);
@@ -70,7 +69,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 			}
 			else
 			{
-				unsafe{  out_array_type.element_count= LLVMConstIntGetZExtValue( index_variable.constexpr_value );  }
+				out_array_type.element_count= unsafe( LLVMConstIntGetZExtValue( index_variable.constexpr_value ) );
 			}
 		}
 		else
@@ -83,7 +82,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.src_loc )
 	}
 
-	unsafe{ out_array_type.llvm_type= LLVMArrayType( out_array_type.element_type.GetLLVMType(), u32(out_array_type.element_count) ); }
+	out_array_type.llvm_type= unsafe( LLVMArrayType( out_array_type.element_type.GetLLVMType(), u32(out_array_type.element_count) ) );
 
 	return Type( move(out_array_type) );
 }
@@ -105,10 +104,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		out_tuple_type.element_types.push_back( move(t) );
 	}
 
-	unsafe
-	{
-		out_tuple_type.llvm_type= LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False );
-	}
+	out_tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
 
 	return move(out_tuple_type);
 }
@@ -121,7 +117,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerType& raw_pointer_type ) : Type
 {
 	var RawPointerType mut out_type{ .element_type = PrepareType( names_scope, function_context, raw_pointer_type.element_type ) };
-	unsafe{  out_type.llvm_type= LLVMPointerType( out_type.element_type.GetLLVMType(), 0u );  }
+	out_type.llvm_type= unsafe( LLVMPointerType( out_type.element_type.GetLLVMType(), 0u ) );
 
 	return move(out_type);
 }
@@ -139,7 +135,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		.function_type= PrepareFunctionType( names_scope, function_context, function_type, ust::shared_ptr_nullable_mut</ClassType/>() )
 	};
 
-	unsafe{  function_pointer_type.llvm_type= LLVMPointerType( function_pointer_type.function_type.llvm_type, 0u );  }
+	function_pointer_type.llvm_type= unsafe( LLVMPointerType( function_pointer_type.function_type.llvm_type, 0u ) );
 
 	return move(function_pointer_type);
 }
@@ -323,7 +319,7 @@ fn CodeBuilder::FillLLVMFunctionType( this, FunctionType &mut function_type )
 	var bool is_s_ret= function_type.IsStructRet();
 	if( is_s_ret )
 	{
-		unsafe{  llvm_param_types.push_back( LLVMPointerType( function_type.return_type.GetLLVMType(), 0u ) );  }
+		llvm_param_types.push_back( unsafe( LLVMPointerType( function_type.return_type.GetLLVMType(), 0u ) ) );
 	}
 
 	foreach( &param : function_type.params )
@@ -331,14 +327,14 @@ fn CodeBuilder::FillLLVMFunctionType( this, FunctionType &mut function_type )
 		auto mut llvm_type= param.t.GetLLVMType();
 		if( param.value_type != ValueType::Value )
 		{
-			unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
+			llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
 		}
 		else
 		{
 			// Pass aggregate types by-reference.
 			if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
 			{
-				unsafe{  llvm_type= LLVMPointerType( llvm_type, 0u );  }
+				llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
 			}
 		}
 		llvm_param_types.push_back( llvm_type );

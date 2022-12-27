@@ -684,11 +684,10 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 		lock.deref().AddAccessRightsFor( class_type_ptr, Synt::ClassVisibility::Private );
 	}
 
-	unsafe
 	{
 		auto name_mangled= mangler_.deref().MangleType( class_type_ptr );
 		auto mut lock= class_type_ptr.lock_mut();
-		lock.deref().llvm_type= LLVMStructCreateNamed( llvm_context_, name_mangled.front() );
+		lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, name_mangled.front() ) );
 	}
 
 
