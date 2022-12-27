@@ -1848,7 +1848,7 @@ Initializer SyntaxAnalyzer::ParseSafeInitializerWrapper()
 	ExpectLexem( Lexem::Type::BracketLeft );
 	initializer.initiailizer= std::make_unique<Initializer>( ParseInitializer( true ) );
 	ExpectLexem( Lexem::Type::BracketRight );
-	return initializer;
+	return std::move(initializer);
 }
 
 Initializer SyntaxAnalyzer:: ParseUnsafeInitializerWrapper()
@@ -1858,7 +1858,7 @@ Initializer SyntaxAnalyzer:: ParseUnsafeInitializerWrapper()
 	ExpectLexem( Lexem::Type::BracketLeft );
 	initializer.initiailizer= std::make_unique<Initializer>( ParseInitializer( true ) );
 	ExpectLexem( Lexem::Type::BracketRight );
-	return initializer;
+	return std::move(initializer);
 }
 
 VariablesDeclaration SyntaxAnalyzer::ParseVariablesDeclaration()
