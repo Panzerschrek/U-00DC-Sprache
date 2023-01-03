@@ -975,7 +975,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-		const Synt::ContinueOperator& continue_operator )
+	const Synt::ContinueOperator& continue_operator )
 {
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
@@ -1143,7 +1143,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-		const Synt::IfOperator& if_operator )
+	const Synt::IfOperator& if_operator )
 {
 	U_ASSERT( !if_operator.branches_.empty() );
 
@@ -1202,7 +1202,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 			else
 			{
-				llvm::Value* condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+				llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
 				CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch.condition ) );
 
 				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
