@@ -1301,7 +1301,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::SingleExpressionOperator& single_expression_operator )
 {
-	BuildExpressionCodeAndDestroyTemporaries( single_expression_operator.expression_, names, function_context );
+	const StackVariablesStorage temp_variables_storage( function_context );
+	BuildExpressionCode( single_expression_operator.expression_, names, function_context );
+	CallDestructors( temp_variables_storage, names, function_context, single_expression_operator.src_loc_ );
+
 	return BlockBuildInfo();
 }
 

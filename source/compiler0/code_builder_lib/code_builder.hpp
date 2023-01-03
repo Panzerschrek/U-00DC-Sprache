@@ -490,11 +490,6 @@ private:
 		const Synt::StructNamedInitializer& constructor_initialization_list );
 
 	// Expressions.
-	Value BuildExpressionCodeAndDestroyTemporaries(
-		const Synt::Expression& expression,
-		NamesScope& names,
-		FunctionContext& function_context );
-
 	Variable BuildExpressionCodeEnsureVariable(
 		const Synt::Expression& expression,
 		NamesScope& names,

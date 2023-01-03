@@ -16,19 +16,6 @@
 namespace U
 {
 
-Value CodeBuilder::BuildExpressionCodeAndDestroyTemporaries(
-	const Synt::Expression& expression,
-	NamesScope& names,
-	FunctionContext& function_context )
-{
-	// Destruction frame for temporary variables of expression.
-	const StackVariablesStorage temp_variables_storage( function_context );
-	const Value result= BuildExpressionCode( expression, names, function_context );
-	CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( expression ) );
-
-	return result;
-}
-
 Variable CodeBuilder::BuildExpressionCodeEnsureVariable(
 	const Synt::Expression& expression,
 	NamesScope& names,
