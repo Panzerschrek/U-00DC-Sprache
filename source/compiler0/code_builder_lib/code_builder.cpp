@@ -1569,6 +1569,11 @@ void CodeBuilder::BuildConstructorInitialization(
 		function_context.uninitialized_this_fields.insert( field->syntax_element->name );
 	} // for fields initializers
 
+	if( have_fields_errors )
+		return;
+
+	const StackVariablesStorage temp_variables_storage( function_context );
+
 	// Initialize fields, missing in initializer list.
 	for( const std::string& field_name : base_class.fields_order )
 	{
@@ -1576,8 +1581,6 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 
 		const ClassField& field= *base_class.members->GetThisScopeValue( field_name )->GetClassField();
-
-		const StackVariablesStorage temp_variables_storage( function_context );
 
 		if( field.is_reference )
 		{
@@ -1602,12 +1605,11 @@ void CodeBuilder::BuildConstructorInitialization(
 			else
 				ApplyEmptyInitializer( field_name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
 		}
-		CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
 	}
+
+	// Initialize base (if it is not listed).
 	if( !base_initialized && base_class.base_class != nullptr )
 	{
-		const StackVariablesStorage temp_variables_storage( function_context );
-
 		// Apply default initializer for base class.
 		Variable base_variable;
 		base_variable.type= base_class.base_class;
@@ -1618,17 +1620,11 @@ void CodeBuilder::BuildConstructorInitialization(
 
 		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
-
-		CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
 	}
 
-	if( have_fields_errors )
-		return;
-
+	// Initialize fields listed in the initializer.
 	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
-		const StackVariablesStorage temp_variables_storage( function_context );
-
 		if( field_initializer.name == Keywords::base_ )
 		{
 			Variable base_variable;
@@ -1666,10 +1662,9 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 
 		function_context.uninitialized_this_fields.erase( field->syntax_element->name );
-
-		CallDestructors( temp_variables_storage, names_scope, function_context, Synt::GetInitializerSrcLoc( field_initializer.initializer ) );
 	} // for fields initializers
 
+	CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
 	SetupVirtualTablePointers( this_.llvm_value, base_class, function_context );
 }
 
