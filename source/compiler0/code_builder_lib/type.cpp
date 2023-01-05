@@ -39,6 +39,11 @@ uint64_t GetFundamentalTypeSize( const U_FundamentalType type )
 	case U_FundamentalType::char8 : return 1u;
 	case U_FundamentalType::char16: return 2u;
 	case U_FundamentalType::char32: return 4u;
+	case U_FundamentalType::byte8  : return 1u;
+	case U_FundamentalType::byte16 : return 2u;
+	case U_FundamentalType::byte32 : return 4u;
+	case U_FundamentalType::byte64 : return 8u;
+	case U_FundamentalType::byte128: return 16u;
 	case U_FundamentalType::LastType: break;
 	};
 
