@@ -992,6 +992,12 @@ private:
 		llvm::IntegerType* char16;
 		llvm::IntegerType* char32;
 
+		llvm::IntegerType* byte8  ;
+		llvm::IntegerType* byte16 ;
+		llvm::IntegerType* byte32 ;
+		llvm::IntegerType* byte64 ;
+		llvm::IntegerType* byte128;
+
 		llvm::StructType* void_;
 		llvm::Type* void_for_ret;
 		llvm::Type* invalid_type;

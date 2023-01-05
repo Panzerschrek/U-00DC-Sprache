@@ -50,6 +50,16 @@ bool IsChar( const U_FundamentalType type )
 		type == U_FundamentalType::char32;
 }
 
+bool IsByte( const U_FundamentalType type )
+{
+	return
+		type == U_FundamentalType::byte8  ||
+		type == U_FundamentalType::byte16 ||
+		type == U_FundamentalType::byte32 ||
+		type == U_FundamentalType::byte64 ||
+		type == U_FundamentalType::byte128;
+}
+
 const std::string g_invalid_type_name= "InvalidType";
 
 const std::string& GetFundamentalTypeName( const U_FundamentalType type )
@@ -74,6 +84,11 @@ const std::string& GetFundamentalTypeName( const U_FundamentalType type )
 	case U_FundamentalType::char8 : return Keyword( Keywords::char8_  );
 	case U_FundamentalType::char16: return Keyword( Keywords::char16_ );
 	case U_FundamentalType::char32: return Keyword( Keywords::char32_ );
+	case U_FundamentalType::byte8   : return Keyword( Keywords::byte8_   );
+	case U_FundamentalType::byte16  : return Keyword( Keywords::byte16_  );
+	case U_FundamentalType::byte32  : return Keyword( Keywords::byte32_  );
+	case U_FundamentalType::byte64  : return Keyword( Keywords::byte64_  );
+	case U_FundamentalType::byte128 : return Keyword( Keywords::byte128_ );
 	case U_FundamentalType::LastType: break;
 	};
 
@@ -103,6 +118,11 @@ U_FundamentalType GetFundamentalTypeByName( const std::string& name )
 	if( name == Keywords::char8_  ) return U_FundamentalType::char8;
 	if( name == Keywords::char16_ ) return U_FundamentalType::char16;
 	if( name == Keywords::char32_ ) return U_FundamentalType::char32;
+	if( name == Keywords::byte8_   ) return U_FundamentalType::byte8;
+	if( name == Keywords::byte16_  ) return U_FundamentalType::byte16;
+	if( name == Keywords::byte32_  ) return U_FundamentalType::byte32;
+	if( name == Keywords::byte64_  ) return U_FundamentalType::byte64;
+	if( name == Keywords::byte128_ ) return U_FundamentalType::byte128;
 
 	return U_FundamentalType::InvalidType;
 }

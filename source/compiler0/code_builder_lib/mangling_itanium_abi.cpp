@@ -312,6 +312,13 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 	case U_FundamentalType::char8 : return "c"; // C++ char
 	case U_FundamentalType::char16: return "Ds"; // C++ char16_t
 	case U_FundamentalType::char32: return "Di"; // C++ char32_t
+
+	// Use vendor-extended types for "byte" types.
+	case U_FundamentalType::byte8  : return "u5byte8";
+	case U_FundamentalType::byte16 : return "u6byte16";
+	case U_FundamentalType::byte32 : return "u6byte32";
+	case U_FundamentalType::byte64 : return "u6byte64";
+	case U_FundamentalType::byte128: return "u7byte128";
 	};
 
 	U_ASSERT(false);
