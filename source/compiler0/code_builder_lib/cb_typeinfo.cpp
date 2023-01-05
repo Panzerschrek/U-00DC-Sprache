@@ -227,6 +227,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_bool_field( "is_unsigned_integer", IsUnsignedInteger( fundamental_type->fundamental_type ) );
 		add_bool_field( "is_float"           , IsFloatingPoint  ( fundamental_type->fundamental_type ) );
 		add_bool_field( "is_char"            , IsChar           ( fundamental_type->fundamental_type ) );
+		add_bool_field( "is_byte"            , IsByte           ( fundamental_type->fundamental_type ) );
 		add_bool_field( "is_bool"            , fundamental_type->fundamental_type == U_FundamentalType::Bool );
 		add_bool_field( "is_void"            , fundamental_type->fundamental_type == U_FundamentalType::Void );
 	}

@@ -705,14 +705,14 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				( IsInteger( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
 			{
 				// Perform int -> bytes or bytes -> int conversion.
-				// Do nothing, becase internally bytes and int of same size is same type.
+				// Do nothing, because internally bytes and int of same size is same type.
 			}
 			else if( src_size == dst_size && (
 				( IsByte( dst_type->fundamental_type ) && IsChar( src_type->fundamental_type ) ) ||
 				( IsChar( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
 			{
 				// Perform char -> bytes or bytes -> char conversion.
-				// Do nothing, becase internally bytes and int of same size is same type.
+				// Do nothing, because internally bytes and char of same size is same type.
 			}
 			else if( src_size == dst_size && (
 				( IsByte( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) ) ||

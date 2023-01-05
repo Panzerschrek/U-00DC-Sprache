@@ -92,6 +92,26 @@ std::string ConstantVariableToString( const Variable& variable )
 
 			return std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() ) + suffix;
 		}
+		else if( IsByte( fundamental_type->fundamental_type ) )
+		{
+			std::string res;
+			res+= GetFundamentalTypeName( fundamental_type->fundamental_type );
+			res+= "( ";
+
+			res+= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
+			switch( fundamental_type->fundamental_type )
+			{
+			case U_FundamentalType::byte8  : res+= GetFundamentalTypeName( U_FundamentalType::u8   ); break;
+			case U_FundamentalType::byte16 : res+= GetFundamentalTypeName( U_FundamentalType::u16  ); break;
+			case U_FundamentalType::byte32 : res+= GetFundamentalTypeName( U_FundamentalType::u32  ); break;
+			case U_FundamentalType::byte64 : res+= GetFundamentalTypeName( U_FundamentalType::u64  ); break;
+			case U_FundamentalType::byte128: res+= GetFundamentalTypeName( U_FundamentalType::u128 ); break;
+			default: U_ASSERT(false); break;
+			}
+
+			res+= " )";
+			return res;
+		}
 	}
 	else if( const auto enum_type= variable.type.GetEnumType() )
 	{
