@@ -207,6 +207,27 @@ def ByteTypesNonexistentOperations_Test3():
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 11 ) )
 
 
+def ByteTypesNonexistentOperations_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			// "bool" can't be converted ito "byte8"
+			var byte8 byte_value(false);
+			var bool some_bool= true;
+			var byte8 other_byte_value= some_bool;
+			// byte8 can't be converted into bool.
+			var byte8 zero_byte= zero_init;
+			var bool bool_value_0= zero_byte;
+			var bool bool_value_1(zero_byte);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 5 ) )
+	assert( HaveError( errors_list, "TypesMismatch", 7 ) )
+	assert( HaveError( errors_list, "TypesMismatch", 10 ) )
+	assert( HaveError( errors_list, "TypesMismatch", 11 ) )
+
+
 def ByteTypesEqualityCompare_Test0():
 	c_program_text= """
 		fn Foo()
