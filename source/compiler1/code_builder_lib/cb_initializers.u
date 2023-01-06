@@ -794,6 +794,27 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				}
 				else{} // Same size - do nothing
 			}
+			else if( src_type.GetSize() == dst_type.GetSize() && (
+				( IsByte( dst_type.fundamental_type ) && IsInteger( src_type.fundamental_type ) ) ||
+				( IsInteger( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
+			{
+				// Perform int -> bytes or bytes -> int conversion.
+				// Do nothing, because internally bytes and int of same size is same type.
+			}
+			else if( src_type.GetSize() == dst_type.GetSize() && (
+				( IsByte( dst_type.fundamental_type ) && IsChar( src_type.fundamental_type ) ) ||
+				( IsChar( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
+			{
+				// Perform char -> bytes or bytes -> char conversion.
+				// Do nothing, because internally bytes and char of same size is same type.
+			}
+			else if( src_type.GetSize() == dst_type.GetSize() && (
+				( IsByte( dst_type.fundamental_type ) && IsFloatingPoint( src_type.fundamental_type ) ) ||
+				( IsFloatingPoint( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
+			{
+				// Perfrom float -> bytes or bytes->float conversion.
+				llvm_value= LLVMBuildBitCast( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+			}
 			else
 			{
 				if( dst_type.fundamental_type == U_FundamentalType::bool_ )

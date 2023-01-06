@@ -383,6 +383,13 @@ fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ cha
 	if( t == U_FundamentalType::char8_		){ return "c"; }
 	if( t == U_FundamentalType::char16_		){ return "Ds"; }
 	if( t == U_FundamentalType::char32_		){ return "Di"; }
+	// Use vendor-extended types for "byte" types.
+	if( t == U_FundamentalType::byte8_		){ return "u5byte8"  ; }
+	if( t == U_FundamentalType::byte16_		){ return "u6byte16" ; }
+	if( t == U_FundamentalType::byte32_		){ return "u6byte32" ; }
+	if( t == U_FundamentalType::byte64_		){ return "u6byte64" ; }
+	if( t == U_FundamentalType::byte128_	){ return "u7byte128"; }
+
 	return "";
 }
 

@@ -348,6 +348,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		ADD_BOOL_FIELD( "is_unsigned_integer", IsUnsignedInteger( fundamental_type.fundamental_type ) )
 		ADD_BOOL_FIELD( "is_float"           , IsFloatingPoint  ( fundamental_type.fundamental_type ) )
 		ADD_BOOL_FIELD( "is_char"            , IsChar           ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_byte"            , IsByte           ( fundamental_type.fundamental_type ) )
 		ADD_BOOL_FIELD( "is_bool"            , fundamental_type.fundamental_type == U_FundamentalType::bool_ )
 		ADD_BOOL_FIELD( "is_void"            , fundamental_type.fundamental_type == U_FundamentalType::void_ )
 	}

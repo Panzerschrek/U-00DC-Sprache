@@ -168,6 +168,11 @@ fn FundamentalType::GetSize(this) : size_type
 	if( fundamental_type ==  U_FundamentalType::char8_  ){ return 1s; }
 	if( fundamental_type ==  U_FundamentalType::char16_ ){ return 2s; }
 	if( fundamental_type ==  U_FundamentalType::char32_ ){ return 4s; }
+	if( fundamental_type ==  U_FundamentalType::byte8_   ){ return  1s; }
+	if( fundamental_type ==  U_FundamentalType::byte16_  ){ return  2s; }
+	if( fundamental_type ==  U_FundamentalType::byte32_  ){ return  4s; }
+	if( fundamental_type ==  U_FundamentalType::byte64_  ){ return  8s; }
+	if( fundamental_type ==  U_FundamentalType::byte128_ ){ return 16s; }
 
 	halt;
 }

@@ -76,6 +76,12 @@ fn CodeBuilder::constructor(
 		fundamental_llvm_types_.char16_= LLVMInt16TypeInContext( llvm_context_ );
 		fundamental_llvm_types_.char32_= LLVMInt32TypeInContext( llvm_context_ );
 
+		fundamental_llvm_types_.byte8_  = LLVMInt8TypeInContext  ( llvm_context_ );
+		fundamental_llvm_types_.byte16_ = LLVMInt16TypeInContext ( llvm_context_ );
+		fundamental_llvm_types_.byte32_ = LLVMInt32TypeInContext ( llvm_context_ );
+		fundamental_llvm_types_.byte64_ = LLVMInt64TypeInContext ( llvm_context_ );
+		fundamental_llvm_types_.byte128_= LLVMInt128TypeInContext( llvm_context_ );
+
 		fundamental_llvm_types_.invalid_type_= LLVMInt8TypeInContext( llvm_context_ );
 		fundamental_llvm_types_.void_for_ret_= LLVMVoidTypeInContext( llvm_context_ );
 		fundamental_llvm_types_.bool_= LLVMInt1TypeInContext( llvm_context_ );
@@ -1031,7 +1037,7 @@ fn CodeBuilder::ResolveClassValueImpl(
 
 fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 {
-	var [ tup[ Keyword, U_FundamentalType ], 17 ] constexpr types_table
+	var [ tup[ Keyword, U_FundamentalType ], 22 ] constexpr types_table
 	[
 		[ Keyword::void_, U_FundamentalType::void_ ],
 		[ Keyword::bool_, U_FundamentalType::bool_ ],
@@ -1050,6 +1056,11 @@ fn CodeBuilder::FillGlobalNamesScope( this, NamesScope &mut names_scope )
 		[ Keyword::char8_ , U_FundamentalType::char8_  ],
 		[ Keyword::char16_, U_FundamentalType::char16_ ],
 		[ Keyword::char32_, U_FundamentalType::char32_ ],
+		[ Keyword::byte8_  , U_FundamentalType::byte8_   ],
+		[ Keyword::byte16_ , U_FundamentalType::byte16_  ],
+		[ Keyword::byte32_ , U_FundamentalType::byte32_  ],
+		[ Keyword::byte64_ , U_FundamentalType::byte64_  ],
+		[ Keyword::byte128_, U_FundamentalType::byte128_ ],
 	];
 
 	foreach( &el : types_table )
@@ -2532,6 +2543,11 @@ fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRe
 	if( t == U_FundamentalType::char8_		) { return fundamental_llvm_types_.char8_ ; }
 	if( t == U_FundamentalType::char16_		) { return fundamental_llvm_types_.char16_; }
 	if( t == U_FundamentalType::char32_		) { return fundamental_llvm_types_.char32_; }
+	if( t == U_FundamentalType::byte8_		) { return fundamental_llvm_types_.byte8_  ; }
+	if( t == U_FundamentalType::byte16_		) { return fundamental_llvm_types_.byte16_ ; }
+	if( t == U_FundamentalType::byte32_		) { return fundamental_llvm_types_.byte32_ ; }
+	if( t == U_FundamentalType::byte64_		) { return fundamental_llvm_types_.byte64_ ; }
+	if( t == U_FundamentalType::byte128_	) { return fundamental_llvm_types_.byte128_; }
 
 	halt;
 }

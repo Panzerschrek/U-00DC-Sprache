@@ -759,6 +759,13 @@ fn GetFundamentalTypeNameMSVC( U_FundamentalType t ) : ust::array_view_imut</ ch
 	if( t == U_FundamentalType::char8_		){ return "D"; }
 	if( t == U_FundamentalType::char16_		){ return "_S"; }
 	if( t == U_FundamentalType::char32_		){ return "_U"; }
+	// Encode "byte" types as regular structs in global namspace.
+	if( t == U_FundamentalType::byte8_		){ return "Ubyte8@@"  ; }
+	if( t == U_FundamentalType::byte16_		){ return "Ubyte16@@" ; }
+	if( t == U_FundamentalType::byte32_		){ return "Ubyte32@@" ; }
+	if( t == U_FundamentalType::byte64_		){ return "Ubyte64@@" ; }
+	if( t == U_FundamentalType::byte128_	){ return "Ubyte128@@"; }
+
 	return "";
 }
 
