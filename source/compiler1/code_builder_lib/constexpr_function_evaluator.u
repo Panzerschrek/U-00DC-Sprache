@@ -4,7 +4,7 @@ import "constexpr_function_evaluator.uh"
 namespace U1
 {
 
-fn ErrorHandlerFunc( void &mut user_data, $(char8) error_text_start, size_type error_text_size )
+fn ErrorHandlerFunc( byte8 &mut user_data, $(char8) error_text_start, size_type error_text_size )
 {
 	unsafe
 	{
@@ -44,7 +44,7 @@ fn ConstexprFunctionEvaluator::Evaluate( mut this, LLVMValueRef function, ust::a
 				args.data(),
 				args.size(),
 				ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
-				cast_ref_unsafe</void/>( result.errors ) ) );
+				cast_ref_unsafe</byte8/>( result.errors ) ) );
 
 	return move(result);
 }
