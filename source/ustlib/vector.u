@@ -102,7 +102,7 @@ public:
 					}
 					else
 					{
-						ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), num_bytes ) ) );
+						ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), num_bytes ) ) );
 					}
 				}
 
@@ -135,7 +135,7 @@ public:
 			}
 			if( ptr_ != nullptr</T/>() )
 			{
-				memory_free( cast_ref_unsafe</void/>( $>(ptr_) ) );
+				memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
 			}
 		}
 	}
@@ -430,12 +430,12 @@ public:
 			{
 				if( capacity_ == size_type(0) )
 				{
-					memory_free( cast_ref_unsafe</void/>( $>(ptr_) ) );
+					memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
 					ptr_= nullptr</T/>();
 				}
 				else
 				{
-					auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), capacity_ * c_element_size_ ) );
+					auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), capacity_ * c_element_size_ ) );
 					ptr_= $<( ref );
 				}
 			}
@@ -479,7 +479,7 @@ private:
 				// It's impossible to get capacity overflow here, because "new_size" can't be greater than address space size.
 				while( capacity_ < new_size ) { capacity_*= 2s; }
 				// Multiplication overflow check is needed here.
-				ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+				ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
 			}
 		}
 	}

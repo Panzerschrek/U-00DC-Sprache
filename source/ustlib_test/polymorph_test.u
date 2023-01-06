@@ -24,13 +24,13 @@ fn nomangle main() : i32
 	unsafe
 	{
 		var i32 x= 0;
-		var void &ref= cast_ref_unsafe</void/>(x);
+		var byte8 &ref= cast_ref_unsafe</byte8/>(x);
 		halt if( !RefEq( ust::polymorph_restore_original_ref( ref ), x ) );
 	}
 	unsafe
 	{
 		var S s;
-		var void &ref= cast_ref_unsafe</void/>(s);
+		var byte8 &ref= cast_ref_unsafe</byte8/>(s);
 		halt if( !RefEq( ust::polymorph_restore_original_ref( ref ), s ) );
 	}
 	{

@@ -119,7 +119,7 @@ public:
 			shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
 			if( $>(counter_).use_count_total == 0u )
 			{
-				memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
+				memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
 			}
 		}
 	}
@@ -344,7 +344,7 @@ public:
 				shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
 				if( $>(counter_).use_count_total == 0u )
 				{
-					memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
+					memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
 				}
 			}
 		}
