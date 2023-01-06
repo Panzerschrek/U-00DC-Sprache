@@ -12,9 +12,18 @@ fn constexpr hash( i32 x ) : size_type { return size_type(x); }
 fn constexpr hash( u32 x ) : size_type { return size_type(x); }
 fn constexpr hash( i64 x ) : size_type { return size_type(x); }
 fn constexpr hash( u64 x ) : size_type { return size_type(x); }
+fn constexpr hash( i128 x ) : size_type { return size_type(x); }
+fn constexpr hash( u128 x ) : size_type { return size_type(x); }
 fn constexpr hash( char8  x ) : size_type { return size_type(x); }
 fn constexpr hash( char16 x ) : size_type { return size_type(x); }
 fn constexpr hash( char32 x ) : size_type { return size_type(x); }
+
+// Hash byte-types as unsigned integers of same size.
+fn constexpr hash( byte8   x ) : size_type { return hash(u8  (x)); }
+fn constexpr hash( byte16  x ) : size_type { return hash(u16 (x)); }
+fn constexpr hash( byte32  x ) : size_type { return hash(u32 (x)); }
+fn constexpr hash( byte64  x ) : size_type { return hash(u64 (x)); }
+fn constexpr hash( byte128 x ) : size_type { return hash(u128(x)); }
 
 fn constexpr hash( bool x ) : size_type
 {
@@ -22,15 +31,9 @@ fn constexpr hash( bool x ) : size_type
 	return size_type(0);
 }
 
-fn hash( f32 x ) : size_type
-{
-	return hash( unsafe( cast_ref_unsafe</u32/>(x) ) );
-}
-
-fn hash( f64 x ) : size_type
-{
-	return hash( unsafe( cast_ref_unsafe</u64/>(x) ) );
-}
+// Use bitcast for floating point values hashing.
+fn constexpr hash( f32 x ) : size_type { return hash( byte32(x) ); }
+fn constexpr hash( f64 x ) : size_type { return hash( byte64(x) ); }
 
 template</ type T />
 fn hash( T& x ) : size_type
