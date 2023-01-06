@@ -27,6 +27,12 @@ U_TEST( BasicFunctionManglingTest )
 
 		fn MutValueArg(i32 mut x ){}
 		fn ImutValueArg(i32 imut x){}
+
+		fn FooByte8Bar( byte8 x ){}
+		fn FooByte16Bar( byte16 x ){}
+		fn FooByte32Bar( byte32 x ){}
+		fn FooByte64Bar( byte64 x ){}
+		fn FooByte128Bar( byte128 x ){}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
@@ -46,6 +52,12 @@ U_TEST( BasicFunctionManglingTest )
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?MutValueArg@@YAXH@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?ImutValueArg@@YAXH@Z" ) != nullptr );
+
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?FooByte8Bar@@YAXUbyte8@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?FooByte16Bar@@YAXUbyte16@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?FooByte32Bar@@YAXUbyte32@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?FooByte64Bar@@YAXUbyte64@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?FooByte128Bar@@YAXUbyte128@@@Z" ) != nullptr );
 }
 
 U_TEST( BasicGlobalVariablesManglingTest )

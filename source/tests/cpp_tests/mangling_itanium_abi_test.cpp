@@ -463,6 +463,11 @@ U_TEST( FundamentalTypesManglingTest )
 		fn Foo0E( char32 x ){}
 		fn Foo0F( bool x ){}
 		fn Foo10(){}
+		fn FooByte8Bar( byte8 x ){}
+		fn FooByte16Bar( byte16 x ){}
+		fn FooByte32Bar( byte32 x ){}
+		fn FooByte64Bar( byte64 x ){}
+		fn FooByte128Bar( byte128 x ){}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -484,6 +489,11 @@ U_TEST( FundamentalTypesManglingTest )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo0EDi" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo0Fb" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z5Foo10v" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z11FooByte8Baru5byte8" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z12FooByte16Baru6byte16" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z12FooByte32Baru6byte32" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z12FooByte64Baru6byte64" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z13FooByte128Baru7byte128" ) != nullptr );
 }
 
 U_TEST( FunctionTypesMangling_Test0 )
