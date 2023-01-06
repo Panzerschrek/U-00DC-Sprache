@@ -170,7 +170,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 				if( name_length > 0s )
 				{
 					f.mangled_name.resize( name_length, "\0"c8 );
-					ust::memory_copy( cast_ref_unsafe</void/>( f.mangled_name.front() ), cast_ref_unsafe</void/>( $>(name_start) ), name_length );
+					ust::memory_copy( cast_ref_unsafe</byte8/>( f.mangled_name.front() ), cast_ref_unsafe</byte8/>( $>(name_start) ), name_length );
 				}
 			}
 

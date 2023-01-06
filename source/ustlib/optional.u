@@ -209,7 +209,7 @@ public:
 		unsafe
 		{
 			var T mut t= uninitialized;
-			memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</void/>(t), cast_ref_unsafe</void/>(deref_unchecked()), typeinfo</T/>.size_of );
+			memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>(deref_unchecked()), typeinfo</T/>.size_of );
 			return move(t);
 		}
 	}
