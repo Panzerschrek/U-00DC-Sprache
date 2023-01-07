@@ -58,14 +58,14 @@ fn CodeBuilder::constructor(
 {
 	unsafe
 	{
-		fundamental_llvm_types_.i8_ = LLVMInt8TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.u8_ = LLVMInt8TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.i16_= LLVMInt16TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.u16_= LLVMInt16TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.i32_= LLVMInt32TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.u32_= LLVMInt32TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.i64_= LLVMInt64TypeInContext( llvm_context_ );
-		fundamental_llvm_types_.u64_= LLVMInt64TypeInContext( llvm_context_ );
+		fundamental_llvm_types_.i8_  = LLVMInt8TypeInContext  ( llvm_context_ );
+		fundamental_llvm_types_.u8_  = LLVMInt8TypeInContext  ( llvm_context_ );
+		fundamental_llvm_types_.i16_ = LLVMInt16TypeInContext ( llvm_context_ );
+		fundamental_llvm_types_.u16_ = LLVMInt16TypeInContext ( llvm_context_ );
+		fundamental_llvm_types_.i32_ = LLVMInt32TypeInContext ( llvm_context_ );
+		fundamental_llvm_types_.u32_ = LLVMInt32TypeInContext ( llvm_context_ );
+		fundamental_llvm_types_.i64_ = LLVMInt64TypeInContext ( llvm_context_ );
+		fundamental_llvm_types_.u64_ = LLVMInt64TypeInContext ( llvm_context_ );
 		fundamental_llvm_types_.i128_= LLVMInt128TypeInContext( llvm_context_ );
 		fundamental_llvm_types_.u128_= LLVMInt128TypeInContext( llvm_context_ );
 

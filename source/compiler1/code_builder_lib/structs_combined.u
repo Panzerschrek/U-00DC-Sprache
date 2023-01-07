@@ -153,14 +153,14 @@ fn FundamentalType::GetSize(this) : size_type
 	if( fundamental_type ==  U_FundamentalType::InvalidType){ return 0s; }
 	if( fundamental_type ==  U_FundamentalType::void_  ){ return 0s; }
 	if( fundamental_type ==  U_FundamentalType::bool_ ){ return 1s; }
-	if( fundamental_type ==  U_FundamentalType::i8_   ){ return 1s; }
-	if( fundamental_type ==  U_FundamentalType::u8_   ){ return 1s; }
-	if( fundamental_type ==  U_FundamentalType::i16_  ){ return 2s; }
-	if( fundamental_type ==  U_FundamentalType::u16_  ){ return 2s; }
-	if( fundamental_type ==  U_FundamentalType::i32_  ){ return 4s; }
-	if( fundamental_type ==  U_FundamentalType::u32_  ){ return 4s; }
-	if( fundamental_type ==  U_FundamentalType::i64_  ){ return 8s; }
-	if( fundamental_type ==  U_FundamentalType::u64_  ){ return 8s; }
+	if( fundamental_type ==  U_FundamentalType::i8_   ){ return  1s; }
+	if( fundamental_type ==  U_FundamentalType::u8_   ){ return  1s; }
+	if( fundamental_type ==  U_FundamentalType::i16_  ){ return  2s; }
+	if( fundamental_type ==  U_FundamentalType::u16_  ){ return  2s; }
+	if( fundamental_type ==  U_FundamentalType::i32_  ){ return  4s; }
+	if( fundamental_type ==  U_FundamentalType::u32_  ){ return  4s; }
+	if( fundamental_type ==  U_FundamentalType::i64_  ){ return  8s; }
+	if( fundamental_type ==  U_FundamentalType::u64_  ){ return  8s; }
 	if( fundamental_type ==  U_FundamentalType::i128_ ){ return 16s; }
 	if( fundamental_type ==  U_FundamentalType::u128_ ){ return 16s; }
 	if( fundamental_type ==  U_FundamentalType::f32_ ){ return 4s; }

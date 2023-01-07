@@ -87,14 +87,14 @@ CodeBuilder::CodeBuilder(
 	, constexpr_function_evaluator_( data_layout_ )
 	, mangler_( CreateMangler( options.mangling_scheme, data_layout_ ) )
 {
-	fundamental_llvm_types_.i8 = llvm::Type::getInt8Ty( llvm_context_ );
-	fundamental_llvm_types_.u8 = llvm::Type::getInt8Ty( llvm_context_ );
-	fundamental_llvm_types_.i16= llvm::Type::getInt16Ty( llvm_context_ );
-	fundamental_llvm_types_.u16= llvm::Type::getInt16Ty( llvm_context_ );
-	fundamental_llvm_types_.i32= llvm::Type::getInt32Ty( llvm_context_ );
-	fundamental_llvm_types_.u32= llvm::Type::getInt32Ty( llvm_context_ );
-	fundamental_llvm_types_.i64= llvm::Type::getInt64Ty( llvm_context_ );
-	fundamental_llvm_types_.u64= llvm::Type::getInt64Ty( llvm_context_ );
+	fundamental_llvm_types_.i8  = llvm::Type::getInt8Ty  ( llvm_context_ );
+	fundamental_llvm_types_.u8  = llvm::Type::getInt8Ty  ( llvm_context_ );
+	fundamental_llvm_types_.i16 = llvm::Type::getInt16Ty ( llvm_context_ );
+	fundamental_llvm_types_.u16 = llvm::Type::getInt16Ty ( llvm_context_ );
+	fundamental_llvm_types_.i32 = llvm::Type::getInt32Ty ( llvm_context_ );
+	fundamental_llvm_types_.u32 = llvm::Type::getInt32Ty ( llvm_context_ );
+	fundamental_llvm_types_.i64 = llvm::Type::getInt64Ty ( llvm_context_ );
+	fundamental_llvm_types_.u64 = llvm::Type::getInt64Ty ( llvm_context_ );
 	fundamental_llvm_types_.i128= llvm::Type::getInt128Ty( llvm_context_ );
 	fundamental_llvm_types_.u128= llvm::Type::getInt128Ty( llvm_context_ );
 
@@ -105,10 +105,10 @@ CodeBuilder::CodeBuilder(
 	fundamental_llvm_types_.char16= llvm::Type::getInt16Ty( llvm_context_ );
 	fundamental_llvm_types_.char32= llvm::Type::getInt32Ty( llvm_context_ );
 
-	fundamental_llvm_types_.byte8  = llvm::Type::getInt8Ty ( llvm_context_ );
-	fundamental_llvm_types_.byte16 = llvm::Type::getInt16Ty( llvm_context_ );
-	fundamental_llvm_types_.byte32 = llvm::Type::getInt32Ty( llvm_context_ );
-	fundamental_llvm_types_.byte64 = llvm::Type::getInt64Ty( llvm_context_ );
+	fundamental_llvm_types_.byte8  = llvm::Type::getInt8Ty  ( llvm_context_ );
+	fundamental_llvm_types_.byte16 = llvm::Type::getInt16Ty ( llvm_context_ );
+	fundamental_llvm_types_.byte32 = llvm::Type::getInt32Ty ( llvm_context_ );
+	fundamental_llvm_types_.byte64 = llvm::Type::getInt64Ty ( llvm_context_ );
 	fundamental_llvm_types_.byte128= llvm::Type::getInt128Ty( llvm_context_ );
 
 	fundamental_llvm_types_.invalid_type= llvm::Type::getInt8Ty( llvm_context_ );

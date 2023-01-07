@@ -103,14 +103,14 @@ U_FundamentalType GetFundamentalTypeByName( const std::string& name )
 	// But for garantee of construction order we needs use static function variable, that requires mutex, which is slow.
 	if( name ==  Keywords::void_ ) return U_FundamentalType::Void;
 	if( name == Keywords::bool_ ) return U_FundamentalType::Bool;
-	if( name == Keywords::i8_   ) return U_FundamentalType::i8;
-	if( name == Keywords::u8_   ) return U_FundamentalType::u8;
-	if( name == Keywords::i16_  ) return U_FundamentalType::i16;
-	if( name == Keywords::u16_  ) return U_FundamentalType::u16;
-	if( name == Keywords::i32_  ) return U_FundamentalType::i32;
-	if( name == Keywords::u32_  ) return U_FundamentalType::u32;
-	if( name == Keywords::i64_  ) return U_FundamentalType::i64;
-	if( name == Keywords::u64_  ) return U_FundamentalType::u64;
+	if( name == Keywords::i8_   ) return U_FundamentalType::i8  ;
+	if( name == Keywords::u8_   ) return U_FundamentalType::u8  ;
+	if( name == Keywords::i16_  ) return U_FundamentalType::i16 ;
+	if( name == Keywords::u16_  ) return U_FundamentalType::u16 ;
+	if( name == Keywords::i32_  ) return U_FundamentalType::i32 ;
+	if( name == Keywords::u32_  ) return U_FundamentalType::u32 ;
+	if( name == Keywords::i64_  ) return U_FundamentalType::i64 ;
+	if( name == Keywords::u64_  ) return U_FundamentalType::u64 ;
 	if( name == Keywords::i128_ ) return U_FundamentalType::i128;
 	if( name == Keywords::u128_ ) return U_FundamentalType::u128;
 	if( name == Keywords::f32_ ) return U_FundamentalType::f32;
@@ -118,10 +118,10 @@ U_FundamentalType GetFundamentalTypeByName( const std::string& name )
 	if( name == Keywords::char8_  ) return U_FundamentalType::char8;
 	if( name == Keywords::char16_ ) return U_FundamentalType::char16;
 	if( name == Keywords::char32_ ) return U_FundamentalType::char32;
-	if( name == Keywords::byte8_   ) return U_FundamentalType::byte8;
-	if( name == Keywords::byte16_  ) return U_FundamentalType::byte16;
-	if( name == Keywords::byte32_  ) return U_FundamentalType::byte32;
-	if( name == Keywords::byte64_  ) return U_FundamentalType::byte64;
+	if( name == Keywords::byte8_   ) return U_FundamentalType::byte8  ;
+	if( name == Keywords::byte16_  ) return U_FundamentalType::byte16 ;
+	if( name == Keywords::byte32_  ) return U_FundamentalType::byte32 ;
+	if( name == Keywords::byte64_  ) return U_FundamentalType::byte64 ;
 	if( name == Keywords::byte128_ ) return U_FundamentalType::byte128;
 
 	return U_FundamentalType::InvalidType;
