@@ -123,12 +123,12 @@ public:
 			if( atomic_dec( $>(counter_).use_count_strong ) == 1u )
 			{
 				call_destructor( $>(value_) );
-				memory_free( cast_ref_unsafe</void/>( polymorph_restore_original_ref( $>(value_) ) ) );
+				memory_free( cast_ref_unsafe</byte8/>( polymorph_restore_original_ref( $>(value_) ) ) );
 			}
 			if( atomic_dec( $>(counter_).use_count_total ) == 1u )
 			{
 				halt if( pthread_rwlock_destroy( $>(counter_).rwlock ) != 0 );
-				memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
+				memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
 			}
 		}
 	}
@@ -351,7 +351,7 @@ public:
 				if( atomic_dec( $>(counter_).use_count_total ) == 1u )
 				{
 					halt if( pthread_rwlock_destroy( $>(counter_).rwlock ) != 0 );
-					memory_free( cast_ref_unsafe</void/>( $>(counter_) ) );
+					memory_free( cast_ref_unsafe</byte8/>( $>(counter_) ) );
 				}
 			}
 		}

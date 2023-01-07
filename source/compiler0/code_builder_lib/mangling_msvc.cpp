@@ -44,6 +44,12 @@ std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 	case U_FundamentalType::char8 : return "D"; // C++ "char"
 	case U_FundamentalType::char16: return "_S"; // C++ "char16_t"
 	case U_FundamentalType::char32: return "_U"; // C++ "char32_t"
+	// Encode "byte" types as regular structs in global namspace.
+	case U_FundamentalType::byte8  : return "Ubyte8@@"  ;
+	case U_FundamentalType::byte16 : return "Ubyte16@@" ;
+	case U_FundamentalType::byte32 : return "Ubyte32@@" ;
+	case U_FundamentalType::byte64 : return "Ubyte64@@" ;
+	case U_FundamentalType::byte128: return "Ubyte128@@";
 	};
 
 	U_ASSERT(false);

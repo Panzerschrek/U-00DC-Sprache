@@ -5,7 +5,7 @@ namespace ust
 {
 
 template</type T/>
-fn polymorph_restore_original_ref( T &imut ref ) : void &imut
+fn polymorph_restore_original_ref( T &imut ref ) : byte8 &imut
 {
 	static_if( polymorph_impl::is_polymorph</T/>() )
 	{
@@ -15,12 +15,12 @@ fn polymorph_restore_original_ref( T &imut ref ) : void &imut
 			auto offset= cast_ref_unsafe</ polymorph_impl::virtual_class />(ref).vptr.offset_of_allocated_object;
 
 			auto original_ptr= $<( cast_ref_unsafe</u8/>(cast_mut(ref)) ) - offset;
-			return cast_ref_unsafe</ void />( $>(original_ptr) );
+			return cast_ref_unsafe</ byte8 />( $>(original_ptr) );
 		}
 	}
 	else
 	{
-		unsafe{  return  cast_ref_unsafe</void/>( ref );  }
+		unsafe{  return  cast_ref_unsafe</byte8/>( ref );  }
 	}
 }
 

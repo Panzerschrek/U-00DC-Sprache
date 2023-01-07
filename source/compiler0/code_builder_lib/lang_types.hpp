@@ -29,6 +29,12 @@ enum class U_FundamentalType
 	char16,
 	char32,
 
+	byte8,
+	byte16,
+	byte32,
+	byte64,
+	byte128,
+
 	LastType,
 };
 
@@ -38,6 +44,7 @@ bool IsInteger( U_FundamentalType type );
 bool IsFloatingPoint( U_FundamentalType type );
 bool IsNumericType( U_FundamentalType type );
 bool IsChar( U_FundamentalType type );
+bool IsByte( U_FundamentalType type );
 
 const std::string& GetFundamentalTypeName( U_FundamentalType type );
 U_FundamentalType GetFundamentalTypeByName( const std::string& name );

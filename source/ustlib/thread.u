@@ -27,7 +27,7 @@ public:
 			auto &mut impl= impl_.try_deref();
 
 			halt if( pthread_attr_init( attr ) != 0 );
-			halt if( pthread_create( thread_id, attr, fn_ptr, $<( cast_ref_unsafe</void/>(impl) ) ) != 0 );
+			halt if( pthread_create( thread_id, attr, fn_ptr, $<( cast_ref_unsafe</byte8/>(impl) ) ) != 0 );
 			halt if( pthread_attr_destroy( attr ) != 0 );
 
 			impl.thread_id= thread_id;
@@ -65,7 +65,7 @@ private:
 		fn constructor( Func mut in_func ) ( func(move(in_func)) ) {}
 	}
 
-	fn thread_function( $(void) impl_ptr ) : $(void)
+	fn thread_function( $(byte8) impl_ptr ) : $(byte8)
 	{
 		unsafe
 		{
@@ -74,7 +74,7 @@ private:
 			auto mut res= impl.func();
 			impl.result.reset( move(res) );
 
-			return nullptr</void/>();
+			return nullptr</byte8/>();
 		}
 	}
 
@@ -82,7 +82,7 @@ private:
 	{
 		unsafe
 		{
-			halt if( pthread_join( impl_.try_deref().thread_id, nullptr</$(void)/>() ) != 0 );
+			halt if( pthread_join( impl_.try_deref().thread_id, nullptr</$(byte8)/>() ) != 0 );
 		}
 	}
 

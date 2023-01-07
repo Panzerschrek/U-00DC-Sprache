@@ -6,29 +6,29 @@ namespace ust
 // Allocation-deallocation functions.
 // If allocation function can not allocate memory block with requested size - program will be halted.
 
-fn memory_allocate( size_type size_bytes ) unsafe : void &mut
+fn memory_allocate( size_type size_bytes ) unsafe : byte8 &mut
 {
 	alloc_impl::allocation_size_check( size_bytes );
 	unsafe
 	{
 		auto ptr= ust_memory_allocate_impl( size_bytes );
-		halt if( ptr == nullptr</void/>() );
+		halt if( ptr == nullptr</byte8/>() );
 		return $>(ptr);
 	}
 }
 
-fn memory_reallocate( void& mem, size_type new_size_bytes ) unsafe : void &mut
+fn memory_reallocate( byte8& mem, size_type new_size_bytes ) unsafe : byte8 &mut
 {
 	alloc_impl::allocation_size_check( new_size_bytes );
 	unsafe
 	{
 		auto ptr= ust_memory_reallocate_impl( $<(cast_mut(mem)), new_size_bytes );
-		halt if( ptr == nullptr</void/>() );
+		halt if( ptr == nullptr</byte8/>() );
 		return $>(ptr);
 	}
 }
 
-fn memory_free( void& mem ) unsafe
+fn memory_free( byte8& mem ) unsafe
 {
 	unsafe{  ust_memory_free_impl( $<(cast_mut(mem)) );  }
 }
@@ -56,6 +56,6 @@ fn allocation_size_check( size_type size )
 
 // External implementation functions.
 
-fn nomangle ust_memory_allocate_impl( size_type size ) unsafe : $(void);
-fn nomangle ust_memory_reallocate_impl( $(void) ptr, size_type new_size ) unsafe : $(void);
-fn nomangle ust_memory_free_impl( $(void) ptr ) unsafe;
+fn nomangle ust_memory_allocate_impl( size_type size ) unsafe : $(byte8);
+fn nomangle ust_memory_reallocate_impl( $(byte8) ptr, size_type new_size ) unsafe : $(byte8);
+fn nomangle ust_memory_free_impl( $(byte8) ptr ) unsafe;

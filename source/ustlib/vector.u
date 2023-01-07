@@ -102,7 +102,7 @@ public:
 					}
 					else
 					{
-						ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), num_bytes ) ) );
+						ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), num_bytes ) ) );
 					}
 				}
 
@@ -135,7 +135,7 @@ public:
 			}
 			if( ptr_ != nullptr</T/>() )
 			{
-				memory_free( cast_ref_unsafe</void/>( $>(ptr_) ) );
+				memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
 			}
 		}
 	}
@@ -269,9 +269,9 @@ public:
 			var $(T) ptr1= ptr_ + i1;
 
 			var aligned_storage</ typeinfo</T/>.size_of, typeinfo</T/>.align_of /> mut temp= uninitialized;
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</void/>( temp )    , cast_ref_unsafe</void/>( $>(ptr0) ), c_element_size_ );
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</void/>( $>(ptr0) ), cast_ref_unsafe</void/>( $>(ptr1) ), c_element_size_ );
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</void/>( $>(ptr1) ), cast_ref_unsafe</void/>( temp )    , c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( temp )    , cast_ref_unsafe</byte8/>( $>(ptr0) ), c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(ptr0) ), cast_ref_unsafe</byte8/>( $>(ptr1) ), c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( $>(ptr1) ), cast_ref_unsafe</byte8/>( temp )    , c_element_size_ );
 		}
 	}
 
@@ -343,7 +343,7 @@ public:
 		{
 			--size_;
 			var T mut result= uninitialized;
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</void/>( result ), cast_ref_unsafe</void/>( $>(ptr_ + size_) ), c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( $>(ptr_ + size_) ), c_element_size_ );
 			return move(result);
 		}
 	}
@@ -354,7 +354,7 @@ public:
 		{
 			--size_;
 			var T mut result= uninitialized;
-			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</void/>( result ), cast_ref_unsafe</void/>( $>(ptr_ + size_) ), c_element_size_ );
+			memory_copy_aligned( c_element_alignment_, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( $>(ptr_ + size_) ), c_element_size_ );
 			return move(result);
 		}
 	}
@@ -430,12 +430,12 @@ public:
 			{
 				if( capacity_ == size_type(0) )
 				{
-					memory_free( cast_ref_unsafe</void/>( $>(ptr_) ) );
+					memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
 					ptr_= nullptr</T/>();
 				}
 				else
 				{
-					auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), capacity_ * c_element_size_ ) );
+					auto &mut ref= cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), capacity_ * c_element_size_ ) );
 					ptr_= $<( ref );
 				}
 			}
@@ -479,7 +479,7 @@ private:
 				// It's impossible to get capacity overflow here, because "new_size" can't be greater than address space size.
 				while( capacity_ < new_size ) { capacity_*= 2s; }
 				// Multiplication overflow check is needed here.
-				ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</void/>( $>(ptr_) ), mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
+				ptr_= $<( cast_ref_unsafe</T/>( memory_reallocate( cast_ref_unsafe</byte8/>( $>(ptr_) ), mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
 			}
 		}
 	}

@@ -48,6 +48,11 @@ f64
 char8
 char16
 char32
+byte8
+byte16
+byte32
+byte64
+byte128
 size_type
 true
 false

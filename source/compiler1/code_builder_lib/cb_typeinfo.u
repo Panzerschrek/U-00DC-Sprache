@@ -348,6 +348,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 		ADD_BOOL_FIELD( "is_unsigned_integer", IsUnsignedInteger( fundamental_type.fundamental_type ) )
 		ADD_BOOL_FIELD( "is_float"           , IsFloatingPoint  ( fundamental_type.fundamental_type ) )
 		ADD_BOOL_FIELD( "is_char"            , IsChar           ( fundamental_type.fundamental_type ) )
+		ADD_BOOL_FIELD( "is_byte"            , IsByte           ( fundamental_type.fundamental_type ) )
 		ADD_BOOL_FIELD( "is_bool"            , fundamental_type.fundamental_type == U_FundamentalType::bool_ )
 		ADD_BOOL_FIELD( "is_void"            , fundamental_type.fundamental_type == U_FundamentalType::void_ )
 	}
@@ -664,7 +665,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 					if( name_length > 0s )
 					{
 						f.mangled_name.resize( name_length, "\0"c8 );
-						ust::memory_copy( cast_ref_unsafe</void/>( f.mangled_name.front() ), cast_ref_unsafe</void/>( $>(name_start) ), name_length );
+						ust::memory_copy( cast_ref_unsafe</byte8/>( f.mangled_name.front() ), cast_ref_unsafe</byte8/>( $>(name_start) ), name_length );
 					}
 				}
 

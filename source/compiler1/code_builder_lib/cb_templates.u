@@ -1624,6 +1624,7 @@ fn CodeBuilder::TypeIsValidForTemplateVariableArgument( Type& t ) : bool
 		return
 			IsInteger( fundamental_type.fundamental_type ) ||
 			IsChar( fundamental_type.fundamental_type ) ||
+			IsByte( fundamental_type.fundamental_type ) ||
 			fundamental_type.fundamental_type == U_FundamentalType::bool_;
 	}
 

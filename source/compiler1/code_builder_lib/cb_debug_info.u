@@ -252,6 +252,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 	if( t.fundamental_type == U_FundamentalType::bool_ ){  encoding= LLVMDWARFTypeEncoding::boolean;        }
 	else if( IsFloatingPoint( t.fundamental_type )     ){  encoding= LLVMDWARFTypeEncoding::float;          }
 	else if( IsChar( t.fundamental_type )              ){  encoding= LLVMDWARFTypeEncoding::unsigned_char;  }
+	else if( IsByte( t.fundamental_type )              ){  encoding= LLVMDWARFTypeEncoding::unsigned;       }
 	else if( IsSignedInteger( t.fundamental_type )     ){  encoding= LLVMDWARFTypeEncoding::signed;         }
 	else if( IsUnsignedInteger( t.fundamental_type )   ){  encoding= LLVMDWARFTypeEncoding::unsigned;       }
 

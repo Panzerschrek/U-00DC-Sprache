@@ -898,6 +898,12 @@ private:
 		LLVMTypeRef char16_;
 		LLVMTypeRef char32_;
 
+		LLVMTypeRef byte8_  ;
+		LLVMTypeRef byte16_ ;
+		LLVMTypeRef byte32_ ;
+		LLVMTypeRef byte64_ ;
+		LLVMTypeRef byte128_;
+
 		LLVMTypeRef void_;
 		LLVMTypeRef void_for_ret_;
 		LLVMTypeRef invalid_type_;

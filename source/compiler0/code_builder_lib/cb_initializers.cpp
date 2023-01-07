@@ -700,6 +700,27 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				else if( src_size > dst_size )
 					value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
 			}
+			else if( src_size == dst_size && (
+				( IsByte( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) ) ||
+				( IsInteger( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
+			{
+				// Perform int -> bytes or bytes -> int conversion.
+				// Do nothing, because internally bytes and int of same size is same type.
+			}
+			else if( src_size == dst_size && (
+				( IsByte( dst_type->fundamental_type ) && IsChar( src_type->fundamental_type ) ) ||
+				( IsChar( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
+			{
+				// Perform char -> bytes or bytes -> char conversion.
+				// Do nothing, because internally bytes and char of same size is same type.
+			}
+			else if( src_size == dst_size && (
+				( IsByte( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) ) ||
+				( IsFloatingPoint( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
+			{
+				// Perfrom float -> bytes or bytes->float conversion.
+				value_for_assignment= function_context.llvm_ir_builder.CreateBitCast( value_for_assignment, dst_type->llvm_type );
+			}
 			else
 			{
 				if( dst_type->fundamental_type == U_FundamentalType::Bool )
