@@ -804,6 +804,22 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 			if( fundamental_type.fundamental_type == U_FundamentalType::char32_ ) {  suffix= "c32";  }
 			return ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) ) + suffix;
 		}
+		else if( IsByte(  fundamental_type.fundamental_type ) )
+		{
+			var ust::string8 mut res;
+			res+= GetFundamentalTypeName( fundamental_type.fundamental_type );
+			res+= "( ";
+
+			res+= ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) );
+			if( fundamental_type.fundamental_type == U_FundamentalType::byte8_   ) { res+= GetFundamentalTypeName( U_FundamentalType::u8_   ); }
+			if( fundamental_type.fundamental_type == U_FundamentalType::byte16_  ) { res+= GetFundamentalTypeName( U_FundamentalType::u16_  ); }
+			if( fundamental_type.fundamental_type == U_FundamentalType::byte32_  ) { res+= GetFundamentalTypeName( U_FundamentalType::u32_  ); }
+			if( fundamental_type.fundamental_type == U_FundamentalType::byte64_  ) { res+= GetFundamentalTypeName( U_FundamentalType::u64_  ); }
+			if( fundamental_type.fundamental_type == U_FundamentalType::byte128_ ) { res+= GetFundamentalTypeName( U_FundamentalType::u128_ ); }
+
+			res+= " )";
+			return move(res);
+		}
 	}
 	if_var( &enum_type : t.GetEnumType() )
 	{
