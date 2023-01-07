@@ -174,6 +174,7 @@ def ByteTypesNonexistentOperations_Test2():
 			c |= d;
 			d ^= c;
 			c <<= d;
+			++a;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -183,6 +184,22 @@ def ByteTypesNonexistentOperations_Test2():
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 10 ) )
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 11 ) )
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 12 ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 13 ) )
+
+
+def ByteTypesNonexistentOperations_Test3():
+	c_program_text= """
+		var byte8 b(66u8);
+		type Arr= [ f32, b ]; // Can't use byte types as array size.
+		fn Foo()
+		{
+			var [i32, 128] arr= zero_init;
+			arr[b]; // Can't use byte types as array indeces.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "ArraySizeIsNotInteger", 2 ) )
+	assert( HaveError( errors_list, "TypesMismatch", 7 ) )
 
 
 def ByteTypesNonexistentOperations_Test3():
@@ -267,6 +284,21 @@ def ByteTypesAreCopyConstructible_Test0():
 			var byte16 mut a(888u16);
 			var byte16 mut b(a);
 			halt if( b != a );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	call_result= tests_lib.run_function( "_Z3Foov" )
+
+
+def ByteTypesAreCopyConstructible_Test1():
+	c_program_text= """
+		struct S{ byte32 b; }
+		fn Foo()
+		{
+			var S s{ .b(678) };
+			var S s_copy(s);
+			halt if(s != s_copy);
+			halt if(s.b != s_copy.b);
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -468,3 +500,11 @@ def ByteTypesAreDistinctFromOtherFundamentalTypes_Test0():
 	}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ByteTypeCanNotBeEnumUnderlayingType_Test0():
+	c_program_text= """
+		enum E : byte32 { A, B, C }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( HaveError( errors_list, "TypesMismatch", 2 ) )
