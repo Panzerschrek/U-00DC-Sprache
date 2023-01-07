@@ -609,21 +609,25 @@ U_TEST( ClassTemplatesMangling_Test1 )
 		template</ i32 x /> struct A{ fn FunA(){} }
 		template</ i32 x, u64 y /> struct B{ fn FunB(){} }
 		template</ E e /> struct C{ fn FunC(){} }
+		template</ byte32 b /> struct D{ fn FuncD(){} }
 
 		type A66= A</ 66 />;
 		type B_minus_5_plus_666= B</ -5, 666u64 />;
 		type C_C= C</ E::C />;
+		type D_D= D</ byte32(768u) />;
 	)";
 	auto module= BuildProgram( c_program_text );
 	U_TEST_ASSERT( module->getTypeByName( "1AILi66EE" ) != nullptr ); // A</ 66 />
 	U_TEST_ASSERT( module->getTypeByName( "1BILin5ELy666EE" ) != nullptr ); // B</ -5, 666u64 />
-	U_TEST_ASSERT( module->getTypeByName( "1CIL1E2EE" ) != nullptr ); // C</ E::C />::FunC()
+	U_TEST_ASSERT( module->getTypeByName( "1CIL1E2EE" ) != nullptr ); // C</ E::C />
+	U_TEST_ASSERT( module->getTypeByName( "1DILu6byte32768EE" ) != nullptr ); // D</ byte32(768u) />
 
 	const EnginePtr engine= CreateEngine( std::move(module) );
 
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1AILi66EE4FunAEv" ) != nullptr ); // A</ 66 />::FunA()
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1BILin5ELy666EE4FunBEv" ) != nullptr ); // B</ -5, 666u64 />::FunB()
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN1CIL1E2EE4FunCEv" ) != nullptr ); // C</ E::C />::FunC()
+	U_TEST_ASSERT(engine->FindFunctionNamed( "_ZN1DILu6byte32768EE5FuncDEv" ) != nullptr ); // D</ byte32(768u) />::FunD()
 }
 
 U_TEST( ClassTemplatesMangling_Test2 )
