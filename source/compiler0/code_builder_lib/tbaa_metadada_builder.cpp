@@ -85,6 +85,13 @@ llvm::MDNode* TBAAMetadataBuilder::CreateVirtualTablePointerAccessTag()
 	return md_builder_.createTBAAStructTagNode( type_descriptor, type_descriptor, 0 );
 }
 
+llvm::MDNode* TBAAMetadataBuilder::CreateVirtualTableFunctionPointerAccessTag()
+{
+	// Use generic pointer type for virtual table fetches. It's important, becase for simplicity reasons pointers in virtual table are almost untyped.
+	const auto type_descriptor= type_descriptors_.ptr_;
+	return md_builder_.createTBAAStructTagNode( type_descriptor, type_descriptor, 0 );
+}
+
 llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptor( const Type& type )
 {
 	if( const auto it= types_dscriptors_cache_.find(type); it != types_dscriptors_cache_.end() )

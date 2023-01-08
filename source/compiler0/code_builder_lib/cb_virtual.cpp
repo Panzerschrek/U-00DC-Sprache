@@ -543,6 +543,8 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	llvm::Value* const ptr_to_function_ptr= CreateArrayElementGEP( function_context, functions_table_ptr, virtual_table_entry->index_in_table );
 	llvm::LoadInst* const abstract_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr->getType()->getPointerElementType(), ptr_to_function_ptr );
 	abstract_function_ptr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) ); // Function address in virtual table is never null.
+	abstract_function_ptr->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTableFunctionPointerAccessTag() );
+
 	llvm::Value* const function_ptr= function_context.llvm_ir_builder.CreateBitOrPointerCast( abstract_function_ptr, function_type.llvm_type->getPointerTo() );
 
 	// Correct "this" pointer.
