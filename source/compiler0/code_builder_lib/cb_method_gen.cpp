@@ -327,8 +327,8 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 		if( field.is_reference )
 		{
 			// Create simple load-store for references.
-			llvm::Value* const val= function_context.llvm_ir_builder.CreateLoad( field.type.GetLLVMType()->getPointerTo(), src );
-			function_context.llvm_ir_builder.CreateStore( val, dst );
+			llvm::Value* const val= CreateTypedReferenceLoad( function_context, field.type, src );
+			CreateTypedReferenceStore( function_context, field.type, val, dst );
 		}
 		else
 		{
@@ -1059,9 +1059,9 @@ void CodeBuilder::CopyBytes(
 	{
 		// Create simple load-store.
 		if( src->getType() == dst->getType() )
-			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( llvm_type, src ), dst );
+			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
 		else if( src->getType() == dst->getType()->getPointerElementType() )
-			function_context.llvm_ir_builder.CreateStore( src, dst );
+			CreateTypedStore( function_context, type, src, dst );
 		else U_ASSERT(false);
 	}
 	else

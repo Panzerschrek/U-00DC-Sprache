@@ -54,7 +54,7 @@ void CodeBuilder::CreateReferenceVariableDebugInfo(
 
 	// We needs address for reference, so, move it into stack variable.
 	auto address_for_ref= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType()->getPointerTo(), nullptr, variable_name );
-	function_context.llvm_ir_builder.CreateStore( variable.llvm_value, address_for_ref );
+	CreateTypedReferenceStore( function_context, variable.type, variable.llvm_value, address_for_ref );
 
 	debug_info_.builder->insertDeclare(
 		address_for_ref,
