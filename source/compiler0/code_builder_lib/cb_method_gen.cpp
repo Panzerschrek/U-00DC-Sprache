@@ -809,9 +809,9 @@ void CodeBuilder::BuildCopyConstructorPart(
 		// Create simple load-store.
 		if( type == void_type_ ){} // Do nothing for "void".
 		else if( src->getType() == dst->getType() )
-			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( type.GetLLVMType(), src ), dst );
+			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
 		else if( src->getType() == dst->getType()->getPointerElementType() )
-			function_context.llvm_ir_builder.CreateStore( src, dst );
+			CreateTypedStore( function_context, type, src, dst );
 		else U_ASSERT( false );
 	}
 	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
@@ -887,9 +887,9 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		// Create simple load-store.
 		if( type == void_type_ ){} // Do nothing for "void".
 		else if( src->getType() == dst->getType() )
-			function_context.llvm_ir_builder.CreateStore( function_context.llvm_ir_builder.CreateLoad( type.GetLLVMType(), src ), dst );
+			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
 		else if( src->getType() == dst->getType()->getPointerElementType() )
-			function_context.llvm_ir_builder.CreateStore( src, dst );
+			CreateTypedStore( function_context, type, src, dst );
 		else U_ASSERT( false );
 	}
 	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
@@ -965,8 +965,8 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 	}
 	else if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
 	{
-		llvm::Value* const l= function_context.llvm_ir_builder.CreateLoad( llvm_type, l_address );
-		llvm::Value* const r= function_context.llvm_ir_builder.CreateLoad( llvm_type, r_address );
+		llvm::Value* const l= CreateTypedLoad( function_context, type, l_address );
+		llvm::Value* const r= CreateTypedLoad( function_context, type, r_address );
 
 		llvm::Value* const eq=
 			llvm_type->isFloatingPointTy()

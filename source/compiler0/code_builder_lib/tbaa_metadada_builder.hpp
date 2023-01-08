@@ -1,8 +1,11 @@
 #pragma once
 
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/IR/DataLayout.h>
 #include <llvm/IR/MDBuilder.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+
+#include "type.hpp"
 
 namespace U
 {
@@ -10,12 +13,23 @@ namespace U
 class TBAAMetadataBuilder
 {
 public:
-	explicit TBAAMetadataBuilder( llvm::LLVMContext& llvm_context );
+	explicit TBAAMetadataBuilder( llvm::LLVMContext& llvm_context, const llvm::DataLayout& data_layout );
+
+	llvm::MDNode* CreateAccessTag( const Type& type );
 
 private:
-	llvm::MDBuilder md_builder_;
+	llvm::MDNode* GetTypeDescriptor( const Type& type );
+	llvm::MDNode* CreateTypeDescriptor( const Type& type );
 
-	llvm::MDNode* tbaa_root_= nullptr;
+	llvm::MDNode* GetTypeDescriptorForFundamentalType( U_FundamentalType fundamental_type );
+	llvm::MDNode* CreateEnumTypeTypeDescriptor( EnumPtr enum_type );
+	llvm::MDNode* GetEnumTypeBaseTypeDescriptor( EnumPtr enum_type );
+	llvm::MDNode* CreateRawPointerTypeDescriptor( const RawPointerType& raw_pointer_type );
+	llvm::MDNode* CreateFunctionPointerTypeDescriptor( const FunctionPointerType& function_pointer_type );
+
+private:
+	const llvm::DataLayout data_layout_;
+	llvm::MDBuilder md_builder_;
 
 	struct
 	{
@@ -46,7 +60,12 @@ private:
 		llvm::MDNode* f32_= nullptr;
 		llvm::MDNode* f64_= nullptr;
 
-	} funamental_types_descriptors_;
+		// Base for all pointers.
+		llvm::MDNode* ptr_= nullptr;
+
+	} fundamental_types_descriptors_;
+
+	std::unordered_map< Type, llvm::MDNode*, TypeHasher > types_dscriptors_cache_;
 };
 
 } // namespace U

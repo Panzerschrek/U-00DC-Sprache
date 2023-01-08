@@ -1046,7 +1046,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Binding value to reference.
 			llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
 			if( expr.type != void_type_ )
-				function_context.llvm_ir_builder.CreateStore( expr.llvm_value, storage );
+				CreateTypedStore( function_context, expr.type, expr.llvm_value, storage );
 			variable.llvm_value= storage;
 		}
 		else
@@ -1377,7 +1377,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 			U_ASSERT( r_var.location == Variable::Location::LLVMRegister );
 			if( r_var.type != void_type_ )
-				function_context.llvm_ir_builder.CreateStore( r_var.llvm_value, l_var.llvm_value );
+				CreateTypedStore( function_context, r_var.type, r_var.llvm_value, l_var.llvm_value );
 		}
 		else
 		{
@@ -1474,7 +1474,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		U_ASSERT( l_var.location == Variable::Location::Pointer );
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
-		function_context.llvm_ir_builder.CreateStore( value_in_register, l_var.llvm_value );
+		CreateTypedStore( function_context,  r_var.type, value_in_register, l_var.llvm_value );
 	}
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( temp_variables_storage, names, function_context, additive_assignment_operator.src_loc_ );
@@ -1736,7 +1736,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 				: function_context.llvm_ir_builder.CreateSub( value_in_register, one );
 
 		U_ASSERT( variable->location == Variable::Location::Pointer );
-		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );
+		CreateTypedStore( function_context, variable->type, new_value, variable->llvm_value );
 	}
 	else if( const auto raw_poiter_type= variable->type.GetRawPointerType() )
 	{
@@ -1751,7 +1751,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 		llvm::Value* const new_value= function_context.llvm_ir_builder.CreateGEP( raw_poiter_type->type.GetLLVMType(), ptr_value, one );
 
 		U_ASSERT( variable->location == Variable::Location::Pointer );
-		function_context.llvm_ir_builder.CreateStore( new_value, variable->llvm_value );
+		CreateTypedStore( function_context, variable->type, new_value, variable->llvm_value );
 	}
 	else
 	{
