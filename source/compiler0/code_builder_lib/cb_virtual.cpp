@@ -304,7 +304,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr& class_type )
 	if( virtual_table_struct_fields.empty() )
 	{
 		// No parents - create special fields - base offset, type id, etc.
-		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
+		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field. Always use "size_type" here.
 		virtual_table_struct_fields.push_back( polymorph_type_id_table_element_type_->getPointerTo() ); // type_id field
 	}
 
@@ -566,7 +566,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 		}
 
 		llvm::Value* const offset_ptr= CreateClassFiledGEP( function_context, first_root_virtual_table, c_offset_field_number );
-		llvm::Value* const offset= function_context.llvm_ir_builder.CreateLoad( fundamental_llvm_types_.int_ptr, offset_ptr );
+		llvm::Value* const offset= CreateTypedLoad( function_context, size_type_, offset_ptr );
 
 		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
 		llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset );
