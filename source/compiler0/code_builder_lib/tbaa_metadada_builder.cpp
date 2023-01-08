@@ -8,8 +8,12 @@
 namespace U
 {
 
-TBAAMetadataBuilder::TBAAMetadataBuilder( llvm::LLVMContext& llvm_context, const llvm::DataLayout& data_layout )
+TBAAMetadataBuilder::TBAAMetadataBuilder(
+	llvm::LLVMContext& llvm_context,
+	const llvm::DataLayout& data_layout,
+	std::shared_ptr<IMangler> mangler )
 	: data_layout_(data_layout)
+	, mangler_( std::move(mangler) )
 	, md_builder_(llvm_context)
 {
 	llvm::MDNode* const tbaa_root= md_builder_.createTBAARoot( "__U_tbaa_root" );
@@ -73,14 +77,16 @@ llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptor( const Type& type )
 
 llvm::MDNode* TBAAMetadataBuilder::CreateTypeDescriptor( const Type& type )
 {
+	const std::string name= mangler_->MangleType(type);
+
 	if( const auto fundamental_type= type.GetFundamentalType() )
 		return GetTypeDescriptorForFundamentalType( fundamental_type->fundamental_type );
 	if( const auto enum_type= type.GetEnumType() )
-		return CreateEnumTypeTypeDescriptor( enum_type );
-	if( const auto raw_pointer_type= type.GetRawPointerType() )
-		return CreateRawPointerTypeDescriptor( *raw_pointer_type );
-	if( const auto function_pointer_type= type.GetFunctionPointerType() )
-		return CreateFunctionPointerTypeDescriptor( *function_pointer_type );
+		return  md_builder_.createTBAANode( name, GetEnumTypeBaseTypeDescriptor(enum_type) );
+	if( type.GetRawPointerType() != nullptr )
+		return  md_builder_.createTBAANode( name, fundamental_types_descriptors_.ptr_ );
+	if( type.GetFunctionPointerType() != nullptr )
+		return md_builder_.createTBAANode( name, fundamental_types_descriptors_.ptr_ );
 
 	// TODO - support another kinds.
 	return fundamental_types_descriptors_.byte8_;
@@ -120,11 +126,6 @@ llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptorForFundamentalType( const U_
 	return fundamental_types_descriptors_.byte8_;
 }
 
-llvm::MDNode* TBAAMetadataBuilder::CreateEnumTypeTypeDescriptor( const EnumPtr enum_type )
-{
-	return md_builder_.createTBAANode( "some_enum" /* TODO - use mangled name */, GetEnumTypeBaseTypeDescriptor(enum_type) );
-}
-
 llvm::MDNode* TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( const EnumPtr enum_type )
 {
 	switch( enum_type->underlaying_type.fundamental_type )
@@ -148,18 +149,6 @@ llvm::MDNode* TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( const EnumPtr 
 
 	U_ASSERT(false);
 	return fundamental_types_descriptors_.byte8_;
-}
-
-llvm::MDNode* TBAAMetadataBuilder::CreateRawPointerTypeDescriptor( const RawPointerType& raw_pointer_type )
-{
-	(void)raw_pointer_type;
-	return md_builder_.createTBAANode( "some_ptr" /* TODO - use proper name */, fundamental_types_descriptors_.ptr_ );
-}
-
-llvm::MDNode* TBAAMetadataBuilder::CreateFunctionPointerTypeDescriptor( const FunctionPointerType& function_pointer_type )
-{
-	(void)function_pointer_type;
-	return md_builder_.createTBAANode( "some_func_ptr" /* TODO - use proper name */, fundamental_types_descriptors_.ptr_ );
 }
 
 } // namespace U

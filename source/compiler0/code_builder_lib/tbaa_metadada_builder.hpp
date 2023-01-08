@@ -5,6 +5,7 @@
 #include <llvm/IR/MDBuilder.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "mangling.hpp"
 #include "type.hpp"
 
 namespace U
@@ -13,7 +14,10 @@ namespace U
 class TBAAMetadataBuilder
 {
 public:
-	explicit TBAAMetadataBuilder( llvm::LLVMContext& llvm_context, const llvm::DataLayout& data_layout );
+	explicit TBAAMetadataBuilder(
+		llvm::LLVMContext& llvm_context,
+		const llvm::DataLayout& data_layout,
+		std::shared_ptr<IMangler> mangler );
 
 	llvm::MDNode* CreateAccessTag( const Type& type );
 
@@ -22,13 +26,11 @@ private:
 	llvm::MDNode* CreateTypeDescriptor( const Type& type );
 
 	llvm::MDNode* GetTypeDescriptorForFundamentalType( U_FundamentalType fundamental_type );
-	llvm::MDNode* CreateEnumTypeTypeDescriptor( EnumPtr enum_type );
 	llvm::MDNode* GetEnumTypeBaseTypeDescriptor( EnumPtr enum_type );
-	llvm::MDNode* CreateRawPointerTypeDescriptor( const RawPointerType& raw_pointer_type );
-	llvm::MDNode* CreateFunctionPointerTypeDescriptor( const FunctionPointerType& function_pointer_type );
 
 private:
 	const llvm::DataLayout data_layout_;
+	const std::shared_ptr<IMangler> mangler_;
 	llvm::MDBuilder md_builder_;
 
 	struct

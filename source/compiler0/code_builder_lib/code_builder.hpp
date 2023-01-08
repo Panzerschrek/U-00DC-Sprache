@@ -1022,7 +1022,7 @@ private:
 	llvm::StructType* polymorph_type_id_table_element_type_= nullptr;
 
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
-	const std::unique_ptr<IMangler> mangler_;
+	const std::shared_ptr<IMangler> mangler_;
 	TBAAMetadataBuilder tbaa_metadata_builder_;
 
 	FunctionContext* global_function_context_= nullptr;
