@@ -17,6 +17,7 @@
 #include "enum.hpp"
 #include "function_context.hpp"
 #include "mangling.hpp"
+#include "tbaa_metadada_builder.hpp"
 #include "template_signature_param.hpp"
 #include "template_types.hpp"
 
@@ -1019,6 +1020,7 @@ private:
 
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	const std::unique_ptr<IMangler> mangler_;
+	TBAAMetadataBuilder tbaa_metadata_builder_;
 
 	FunctionContext* global_function_context_= nullptr;
 
