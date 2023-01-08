@@ -20,6 +20,7 @@ public:
 		std::shared_ptr<IMangler> mangler );
 
 	llvm::MDNode* CreateAccessTag( const Type& type );
+	llvm::MDNode* CreateReferenceAccessTag( const Type& type );
 
 private:
 	llvm::MDNode* GetTypeDescriptor( const Type& type );

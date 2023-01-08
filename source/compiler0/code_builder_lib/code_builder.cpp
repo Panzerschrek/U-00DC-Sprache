@@ -1292,7 +1292,7 @@ Type CodeBuilder::BuildFuncCode(
 				CreateLifetimeStart( function_context, var.llvm_value );
 
 				if( param.type != void_type_ )
-					function_context.llvm_ir_builder.CreateStore( &llvm_arg, var.llvm_value );
+					CreateTypedStore( function_context, var.type, &llvm_arg, var.llvm_value );
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
@@ -2045,9 +2045,25 @@ llvm::LoadInst* CodeBuilder::CreateTypedLoad( FunctionContext& function_context,
 	return result;
 }
 
+llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
+{
+	llvm::MDNode* const access_tag= tbaa_metadata_builder_.CreateReferenceAccessTag( type );
+	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( address );
+	result->setMetadata( llvm::LLVMContext::MD_tbaa, access_tag );
+	return result;
+}
+
 llvm::StoreInst* CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
 {
 	llvm::MDNode* const access_tag= tbaa_metadata_builder_.CreateAccessTag( type );
+	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
+	result->setMetadata( llvm::LLVMContext::MD_tbaa, access_tag );
+	return result;
+}
+
+llvm::StoreInst* CodeBuilder::CreateTypedReferenceStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
+{
+	llvm::MDNode* const access_tag= tbaa_metadata_builder_.CreateReferenceAccessTag( type );
 	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
 	result->setMetadata( llvm::LLVMContext::MD_tbaa, access_tag );
 	return result;

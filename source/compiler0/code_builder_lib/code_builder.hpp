@@ -924,7 +924,9 @@ private:
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
 
 	llvm::LoadInst* CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* address );
+	llvm::LoadInst* CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* address );
 	llvm::StoreInst* CreateTypedStore( FunctionContext& function_context, const Type& type, llvm::Value* value_to_store, llvm::Value* address );
+	llvm::StoreInst* CreateTypedReferenceStore( FunctionContext& function_context, const Type& type, llvm::Value* value_to_store, llvm::Value* address );
 
 	// If variable is on stack, creates move to rigister instruction.
 	// If variable already in register - does nothing.

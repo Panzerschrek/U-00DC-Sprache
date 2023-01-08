@@ -63,6 +63,15 @@ llvm::MDNode* TBAAMetadataBuilder::CreateAccessTag( const Type& type )
 	return md_builder_.createTBAAStructTagNode( type_descriptor, type_descriptor, 0 );
 }
 
+llvm::MDNode* TBAAMetadataBuilder::CreateReferenceAccessTag( const Type& type )
+{
+	// Create access tags for references as for pointers.
+	RawPointerType raw_pointer_type;
+	raw_pointer_type.type= type;
+
+	return CreateAccessTag( raw_pointer_type );
+}
+
 llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptor( const Type& type )
 {
 	if( const auto it= types_dscriptors_cache_.find(type); it != types_dscriptors_cache_.end() )
