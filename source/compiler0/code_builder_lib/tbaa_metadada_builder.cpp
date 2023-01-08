@@ -21,32 +21,32 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	// byte8 is a base type for all other byte types.
 	// byteN type is base for fundamental types with size N.
 
-	fundamental_types_descriptors_.byte8_  = md_builder_.createTBAANode( Keyword( Keywords::byte8_   ), tbaa_root );
-	fundamental_types_descriptors_.byte16_ = md_builder_.createTBAANode( Keyword( Keywords::byte16_  ), fundamental_types_descriptors_.byte8_   );
-	fundamental_types_descriptors_.byte32_ = md_builder_.createTBAANode( Keyword( Keywords::byte32_  ), fundamental_types_descriptors_.byte16_  );
-	fundamental_types_descriptors_.byte64_ = md_builder_.createTBAANode( Keyword( Keywords::byte64_  ), fundamental_types_descriptors_.byte32_  );
-	fundamental_types_descriptors_.byte128_= md_builder_.createTBAANode( Keyword( Keywords::byte128_ ), fundamental_types_descriptors_.byte64_  );
+	fundamental_types_descriptors_.byte8_  = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte8_   ), tbaa_root );
+	fundamental_types_descriptors_.byte16_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte16_  ), fundamental_types_descriptors_.byte8_   );
+	fundamental_types_descriptors_.byte32_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte32_  ), fundamental_types_descriptors_.byte16_  );
+	fundamental_types_descriptors_.byte64_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte64_  ), fundamental_types_descriptors_.byte32_  );
+	fundamental_types_descriptors_.byte128_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte128_ ), fundamental_types_descriptors_.byte64_  );
 
-	fundamental_types_descriptors_.void_= md_builder_.createTBAANode( Keyword( Keywords::void_ ), fundamental_types_descriptors_.byte8_ );
-	fundamental_types_descriptors_.bool_= md_builder_.createTBAANode( Keyword( Keywords::bool_ ), fundamental_types_descriptors_.byte8_ );
+	fundamental_types_descriptors_.void_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::void_ ), fundamental_types_descriptors_.byte8_ );
+	fundamental_types_descriptors_.bool_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::bool_ ), fundamental_types_descriptors_.byte8_ );
 
-	fundamental_types_descriptors_.i8_  = md_builder_.createTBAANode( Keyword( Keywords::i8_   ), fundamental_types_descriptors_.byte8_   );
-	fundamental_types_descriptors_.u8_  = md_builder_.createTBAANode( Keyword( Keywords::u8_   ), fundamental_types_descriptors_.byte8_   );
-	fundamental_types_descriptors_.i16_ = md_builder_.createTBAANode( Keyword( Keywords::i16_  ), fundamental_types_descriptors_.byte16_  );
-	fundamental_types_descriptors_.u16_ = md_builder_.createTBAANode( Keyword( Keywords::u16_  ), fundamental_types_descriptors_.byte16_  );
-	fundamental_types_descriptors_.i32_ = md_builder_.createTBAANode( Keyword( Keywords::i32_  ), fundamental_types_descriptors_.byte32_  );
-	fundamental_types_descriptors_.u32_ = md_builder_.createTBAANode( Keyword( Keywords::u32_  ), fundamental_types_descriptors_.byte32_  );
-	fundamental_types_descriptors_.i64_ = md_builder_.createTBAANode( Keyword( Keywords::i64_  ), fundamental_types_descriptors_.byte64_  );
-	fundamental_types_descriptors_.u64_ = md_builder_.createTBAANode( Keyword( Keywords::u64_  ), fundamental_types_descriptors_.byte64_  );
-	fundamental_types_descriptors_.i128_= md_builder_.createTBAANode( Keyword( Keywords::i128_ ), fundamental_types_descriptors_.byte128_ );
-	fundamental_types_descriptors_.u128_= md_builder_.createTBAANode( Keyword( Keywords::u128_ ), fundamental_types_descriptors_.byte128_ );
+	fundamental_types_descriptors_.i8_  = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::i8_   ), fundamental_types_descriptors_.byte8_   );
+	fundamental_types_descriptors_.u8_  = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::u8_   ), fundamental_types_descriptors_.byte8_   );
+	fundamental_types_descriptors_.i16_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::i16_  ), fundamental_types_descriptors_.byte16_  );
+	fundamental_types_descriptors_.u16_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::u16_  ), fundamental_types_descriptors_.byte16_  );
+	fundamental_types_descriptors_.i32_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::i32_  ), fundamental_types_descriptors_.byte32_  );
+	fundamental_types_descriptors_.u32_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::u32_  ), fundamental_types_descriptors_.byte32_  );
+	fundamental_types_descriptors_.i64_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::i64_  ), fundamental_types_descriptors_.byte64_  );
+	fundamental_types_descriptors_.u64_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::u64_  ), fundamental_types_descriptors_.byte64_  );
+	fundamental_types_descriptors_.i128_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::i128_ ), fundamental_types_descriptors_.byte128_ );
+	fundamental_types_descriptors_.u128_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::u128_ ), fundamental_types_descriptors_.byte128_ );
 
-	fundamental_types_descriptors_.char8_ = md_builder_.createTBAANode( Keyword( Keywords::char8_  ), fundamental_types_descriptors_.byte8_  );
-	fundamental_types_descriptors_.char16_= md_builder_.createTBAANode( Keyword( Keywords::char16_ ), fundamental_types_descriptors_.byte16_ );
-	fundamental_types_descriptors_.char32_= md_builder_.createTBAANode( Keyword( Keywords::char32_ ), fundamental_types_descriptors_.byte32_ );
+	fundamental_types_descriptors_.char8_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::char8_  ), fundamental_types_descriptors_.byte8_  );
+	fundamental_types_descriptors_.char16_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::char16_ ), fundamental_types_descriptors_.byte16_ );
+	fundamental_types_descriptors_.char32_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::char32_ ), fundamental_types_descriptors_.byte32_ );
 
-	fundamental_types_descriptors_.f32_= md_builder_.createTBAANode( Keyword( Keywords::f32_ ), fundamental_types_descriptors_.byte32_ );
-	fundamental_types_descriptors_.f64_= md_builder_.createTBAANode( Keyword( Keywords::f64_ ), fundamental_types_descriptors_.byte64_ );
+	fundamental_types_descriptors_.f32_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::f32_ ), fundamental_types_descriptors_.byte32_ );
+	fundamental_types_descriptors_.f64_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::f64_ ), fundamental_types_descriptors_.byte64_ );
 
 	fundamental_types_descriptors_.ptr_=
 		data_layout_.getIntPtrType(llvm_context)->getIntegerBitWidth() == 32u
@@ -82,11 +82,11 @@ llvm::MDNode* TBAAMetadataBuilder::CreateTypeDescriptor( const Type& type )
 	if( const auto fundamental_type= type.GetFundamentalType() )
 		return GetTypeDescriptorForFundamentalType( fundamental_type->fundamental_type );
 	if( const auto enum_type= type.GetEnumType() )
-		return  md_builder_.createTBAANode( name, GetEnumTypeBaseTypeDescriptor(enum_type) );
+		return  md_builder_.createTBAAScalarTypeNode( name, GetEnumTypeBaseTypeDescriptor(enum_type) );
 	if( type.GetRawPointerType() != nullptr )
-		return  md_builder_.createTBAANode( name, fundamental_types_descriptors_.ptr_ );
+		return  md_builder_.createTBAAScalarTypeNode( name, fundamental_types_descriptors_.ptr_ );
 	if( type.GetFunctionPointerType() != nullptr )
-		return md_builder_.createTBAANode( name, fundamental_types_descriptors_.ptr_ );
+		return md_builder_.createTBAAScalarTypeNode( name, fundamental_types_descriptors_.ptr_ );
 
 	// TODO - support another kinds.
 	return fundamental_types_descriptors_.byte8_;
