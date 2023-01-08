@@ -57,10 +57,10 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 llvm::MDNode* TBAAMetadataBuilder::CreateAccessTag( const Type& type )
 {
 	llvm::MDNode* const type_descriptor= GetTypeDescriptor( type );
-	// TODO - set "IsImmutable" flag.
-	md_builder_.createTBAAAccessTag( type_descriptor, type_descriptor, 0, data_layout_.getTypeAllocSize( type.GetLLVMType() ) );
 
-	return type_descriptor;
+	// Calng uses this function instead of createTBAAAccessTag. I do not know, how it is correct, but it seems to be working.
+	// TODO - set "IsConstant" flag.
+	return md_builder_.createTBAAStructTagNode( type_descriptor, type_descriptor, 0 );
 }
 
 llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptor( const Type& type )
@@ -82,9 +82,9 @@ llvm::MDNode* TBAAMetadataBuilder::CreateTypeDescriptor( const Type& type )
 	if( const auto fundamental_type= type.GetFundamentalType() )
 		return GetTypeDescriptorForFundamentalType( fundamental_type->fundamental_type );
 	if( const auto enum_type= type.GetEnumType() )
-		return  md_builder_.createTBAAScalarTypeNode( name, GetEnumTypeBaseTypeDescriptor(enum_type) );
+		return md_builder_.createTBAAScalarTypeNode( name, GetEnumTypeBaseTypeDescriptor(enum_type) );
 	if( type.GetRawPointerType() != nullptr )
-		return  md_builder_.createTBAAScalarTypeNode( name, fundamental_types_descriptors_.ptr_ );
+		return md_builder_.createTBAAScalarTypeNode( name, fundamental_types_descriptors_.ptr_ );
 	if( type.GetFunctionPointerType() != nullptr )
 		return md_builder_.createTBAAScalarTypeNode( name, fundamental_types_descriptors_.ptr_ );
 
@@ -145,6 +145,8 @@ llvm::MDNode* TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( const EnumPtr 
 	case U_FundamentalType::i128:
 	case U_FundamentalType::u128:
 		return fundamental_types_descriptors_.byte128_;
+	default:
+		break;
 	}
 
 	U_ASSERT(false);
