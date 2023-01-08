@@ -502,6 +502,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreatePointerCast( this_casted.llvm_value, virtual_table_ptr_type->getPointerTo() );
 	llvm::LoadInst* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( virtual_table_ptr_type, ptr_to_virtual_table_ptr );
 	virtual_table_ptr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) ); // Virtual table pointer is never null.
+	virtual_table_ptr->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag() );
 
 	const unsigned int c_offset_field_number= 0u;
 	[[maybe_unused]] const unsigned int c_type_id_field_number= 1u;
@@ -596,7 +597,8 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 	if( the_class.parents.empty() )
 	{
 		llvm::Value* const vtable_ptr= CreateVirtualTablePointerGEP( function_context, this_ );
-		function_context.llvm_ir_builder.CreateStore( ptr_to_vtable_ptr, vtable_ptr );
+		llvm::StoreInst* const store= function_context.llvm_ir_builder.CreateStore( ptr_to_vtable_ptr, vtable_ptr );
+		store->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag() );
 	}
 }
 

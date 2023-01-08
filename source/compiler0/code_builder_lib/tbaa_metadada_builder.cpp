@@ -72,6 +72,15 @@ llvm::MDNode* TBAAMetadataBuilder::CreateReferenceAccessTag( const Type& type )
 	return CreateAccessTag( raw_pointer_type );
 }
 
+llvm::MDNode* TBAAMetadataBuilder::CreateVirtualTablePointerAccessTag()
+{
+	// Use just base type for all pointers as access tag for virtual table pointers.
+	// Do this in order to allow read virtual table pointers properly via any pointer/reference type.
+	// This is mostly needed in standard library helpers for polymorph classes.
+	const auto type_descriptor= fundamental_types_descriptors_.ptr_;
+	return md_builder_.createTBAAStructTagNode( type_descriptor, type_descriptor, 0 );
+}
+
 llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptor( const Type& type )
 {
 	if( const auto it= types_dscriptors_cache_.find(type); it != types_dscriptors_cache_.end() )

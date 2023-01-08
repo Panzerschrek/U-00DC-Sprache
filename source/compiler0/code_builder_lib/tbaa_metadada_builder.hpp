@@ -22,6 +22,8 @@ public:
 	llvm::MDNode* CreateAccessTag( const Type& type );
 	llvm::MDNode* CreateReferenceAccessTag( const Type& type );
 
+	llvm::MDNode* CreateVirtualTablePointerAccessTag();
+
 private:
 	llvm::MDNode* GetTypeDescriptor( const Type& type );
 	llvm::MDNode* CreateTypeDescriptor( const Type& type );
