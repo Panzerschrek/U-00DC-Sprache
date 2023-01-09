@@ -1,0 +1,60 @@
+import "/composite.u"
+
+import "/keywords.uh"
+import "tbaa_metadata_builder.uh"
+
+namespace U1
+{
+
+fn TBAAMetadataBuilder::constructor( LLVMContextRef llvm_context )
+	( llvm_context_(llvm_context) )
+{
+	unsafe // Because of a lot of C functions calls.
+	{
+		auto tbaa_root= CreateMetadataNode( llvm_context_, ust::make_array( CreateMetadataString(llvm_context_, "__U_tbaa_root" ) ) );
+
+		auto zero_offset_value= LLVMConstInt( LLVMInt64TypeInContext( llvm_context ), 0u64, LLVMBool::False );
+		auto zero_offset_metadata= LLVMValueAsMetadata( zero_offset_value );
+
+		type_descriptors_.byte8_  = MakeTBAATypeDescriptor( llvm_context_, tbaa_root, KeywordToString( Keyword::byte8_ ) );
+		type_descriptors_.byte16_ = MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte8_ , KeywordToString( Keyword::byte16_  ) );
+		type_descriptors_.byte32_ = MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte16_, KeywordToString( Keyword::byte32_  ) );
+		type_descriptors_.byte64_ = MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte32_, KeywordToString( Keyword::byte64_  ) );
+		type_descriptors_.byte128_= MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte64_, KeywordToString( Keyword::byte128_ ) );
+	}
+}
+
+fn TBAAMetadataBuilder::CreateAccessTag( mut this, Type& t ) : LLVMMetadataRef
+{
+	// TODO - implement this properly.
+	return type_descriptors_.byte8_;
+}
+
+fn MakeTBAATypeDescriptor( LLVMContextRef llvm_context, LLVMMetadataRef base_descriptor, ust::array_view_imut</char8/>& name ) unsafe : LLVMMetadataRef
+{
+	unsafe
+	{
+		auto zero_offset_value= LLVMConstInt( LLVMInt64TypeInContext( llvm_context ), 0u64, LLVMBool::False );
+		auto zero_offset_metadata= LLVMValueAsMetadata( zero_offset_value );
+
+		return
+			CreateMetadataNode(
+				llvm_context,
+					ust::make_array(
+						CreateMetadataString( llvm_context, name ),
+						base_descriptor,
+						zero_offset_metadata ) );
+	}
+}
+
+fn CreateMetadataString( LLVMContextRef llvm_context, ust::array_view_imut</char8/>& s ) unsafe : LLVMMetadataRef
+{
+	return unsafe( LLVMMDStringInContext2( llvm_context, s.data(), s.size() ) );
+}
+
+fn CreateMetadataNode( LLVMContextRef llvm_context, ust::array_view_imut</LLVMMetadataRef/>& elements ) unsafe : LLVMMetadataRef
+{
+	return unsafe( LLVMMDNodeInContext2( llvm_context, elements.data(), elements.size() ) );
+}
+
+} // namespace U1

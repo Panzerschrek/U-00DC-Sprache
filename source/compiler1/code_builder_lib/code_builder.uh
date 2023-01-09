@@ -4,6 +4,7 @@ import "constexpr_function_evaluator.uh"
 import "function_context.uh"
 import "mangling.uh"
 import "structs_combined.uh"
+import "tbaa_metadata_builder.uh"
 
 // Macro for loops generation.
 // TODO - use Function instead.
@@ -833,7 +834,7 @@ private:
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
-	fn CreateMoveToLLVMRegisterInstruction( this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateMoveToLLVMRegisterInstruction( mut this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
 	fn CreateFieldGEP( this, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
@@ -876,6 +877,7 @@ private:
 	LLVMTargetDataRef imut data_layout_;
 	ust::string8 imut target_triple_str_; // null-terminated
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
+	TBAAMetadataBuilder tbaa_metadata_builder_;
 	ust::box</IMangler/> mangler_;
 
 	struct FundamentalLLVMTypes

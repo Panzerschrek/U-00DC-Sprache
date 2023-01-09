@@ -51,6 +51,7 @@ fn CodeBuilder::constructor(
 		create_lifetimes_(options.create_lifetimes),
 		generate_lifetime_start_end_debug_calls_(options.generate_lifetime_start_end_debug_calls),
 		constexpr_function_evaluator_(data_layout),
+		tbaa_metadata_builder_(llvm_context),
 		global_things_stack_ptr_(GlobalThingsStack()),
 		build_debug_info_(options.build_debug_info),
 		mangler_(CreateMangler(options.mangling_scheme, data_layout))
@@ -2560,7 +2561,7 @@ fn CodeBuilder::GetZeroGEPIndex( this ) : LLVMValueRef
 	return unsafe( LLVMConstNull( fundamental_llvm_types_.i32_ ) );
 }
 
-fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef
+fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( mut this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef
 {
 	if( variable.constexpr_value != LLVMValueRef::Null )
 	{
@@ -2572,7 +2573,17 @@ fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( this, Variable& variable, F
 	}
 	else if( variable.location == Variable::Location::Pointer )
 	{
-		return unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, variable.llvm_value, "\0"[0] ) );
+		// TODO - remove temporary code.
+		auto load_instruction= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, variable.llvm_value, "\0"[0] ) );
+		auto access_tag= tbaa_metadata_builder_.CreateAccessTag( variable.t );
+
+		auto& name= "tbaa";
+		unsafe( LLVMSetMetadata(
+			load_instruction,
+			LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( typeinfo</typeof(name)/>.element_count ) ),
+			LLVMMetadataAsValue( llvm_context_, access_tag ) ) );
+
+		return load_instruction;
 	}
 	if( variable.location == Variable::Location::LLVMRegister )
 	{
