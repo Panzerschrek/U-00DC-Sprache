@@ -1642,6 +1642,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
 
+	SetCurrentDebugLocation( function_context,  body_syntax_element.src_loc );
+
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.deref();
@@ -1853,6 +1855,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 
 		// Finsih function - add remaining instructions
+		SetCurrentDebugLocation( function_context, block.end_src_loc );
 		unsafe
 		{
 			LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );
