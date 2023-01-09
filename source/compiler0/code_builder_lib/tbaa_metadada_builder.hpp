@@ -33,7 +33,6 @@ private:
 	llvm::MDNode* GetEnumTypeBaseTypeDescriptor( EnumPtr enum_type );
 
 private:
-	const llvm::DataLayout data_layout_;
 	const std::shared_ptr<IMangler> mangler_;
 	llvm::MDBuilder md_builder_;
 
@@ -71,7 +70,7 @@ private:
 
 	} type_descriptors_;
 
-	std::unordered_map< Type, llvm::MDNode*, TypeHasher > types_dscriptors_cache_;
+	std::unordered_map< Type, llvm::MDNode*, TypeHasher > types_descriptors_cache_;
 };
 
 } // namespace U

@@ -1474,7 +1474,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		U_ASSERT( l_var.location == Variable::Location::Pointer );
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
-		CreateTypedStore( function_context,  r_var.type, value_in_register, l_var.llvm_value );
+		CreateTypedStore( function_context, r_var.type, value_in_register, l_var.llvm_value );
 	}
 	// Destruct temporary variables of right and left expressions.
 	CallDestructors( temp_variables_storage, names, function_context, additive_assignment_operator.src_loc_ );

@@ -12,8 +12,7 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
 	std::shared_ptr<IMangler> mangler )
-	: data_layout_(data_layout)
-	, mangler_( std::move(mangler) )
+	: mangler_( std::move(mangler) )
 	, md_builder_(llvm_context)
 {
 	llvm::MDNode* const tbaa_root= md_builder_.createTBAARoot( "__U_tbaa_root" );
@@ -22,10 +21,10 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	// byteN type is base for fundamental types with size N.
 
 	type_descriptors_.byte8_  = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte8_   ), tbaa_root );
-	type_descriptors_.byte16_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte16_  ), type_descriptors_.byte8_   );
-	type_descriptors_.byte32_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte32_  ), type_descriptors_.byte16_  );
-	type_descriptors_.byte64_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte64_  ), type_descriptors_.byte32_  );
-	type_descriptors_.byte128_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte128_ ), type_descriptors_.byte64_  );
+	type_descriptors_.byte16_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte16_  ), type_descriptors_.byte8_  );
+	type_descriptors_.byte32_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte32_  ), type_descriptors_.byte16_ );
+	type_descriptors_.byte64_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte64_  ), type_descriptors_.byte32_ );
+	type_descriptors_.byte128_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte128_ ), type_descriptors_.byte64_ );
 
 	type_descriptors_.void_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::void_ ), type_descriptors_.byte8_ );
 	type_descriptors_.bool_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::bool_ ), type_descriptors_.byte8_ );
@@ -49,7 +48,7 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	type_descriptors_.f64_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::f64_ ), type_descriptors_.byte64_ );
 
 	const auto ptr_base=
-		data_layout_.getIntPtrType(llvm_context)->getIntegerBitWidth() == 32u
+		data_layout.getIntPtrType(llvm_context)->getIntegerBitWidth() == 32u
 			? type_descriptors_.byte32_
 			: type_descriptors_.byte64_;
 
@@ -94,13 +93,13 @@ llvm::MDNode* TBAAMetadataBuilder::CreateVirtualTableFunctionPointerAccessTag()
 
 llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptor( const Type& type )
 {
-	if( const auto it= types_dscriptors_cache_.find(type); it != types_dscriptors_cache_.end() )
+	if( const auto it= types_descriptors_cache_.find(type); it != types_descriptors_cache_.end() )
 	{
 		return it->second;
 	}
 
 	llvm::MDNode* const descriptor= CreateTypeDescriptor(type);
-	types_dscriptors_cache_[type]= descriptor;
+	types_descriptors_cache_[type]= descriptor;
 	return descriptor;
 }
 
