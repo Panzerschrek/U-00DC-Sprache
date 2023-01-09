@@ -23,6 +23,7 @@ function( CompileUSource u_source_file out_object )
 				-filetype=bc
 				-o ${current_subdir}/${u_source_file_relative}.bc
 				-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
+				--verify-module
 				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
@@ -41,6 +42,7 @@ function( CompileUSource u_source_file out_object )
 				${u_source_file}
 				-o ${current_subdir}/${u_source_file_relative}.o
 				-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
+				--verify-module
 				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/

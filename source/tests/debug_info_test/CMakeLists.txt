@@ -9,6 +9,7 @@ add_custom_command(
 		${SPRACHE_COMPILER_PIC_OPTIONS}
 		-O0 # Disable optimization
 		-g # Generate debug info
+		--verify-module
 	)
 
 add_executable( DebugInfoTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${DEBUG_INFO_TEST_FILE} ${DEBUG_INFO_TEST_FILE_OUT} )

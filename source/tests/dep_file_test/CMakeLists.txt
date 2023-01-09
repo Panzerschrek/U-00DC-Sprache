@@ -10,6 +10,7 @@ if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
 			Compiler${CURRENT_COMPILER_GENERATION}
 			${CMAKE_CURRENT_SOURCE_DIR}/dep_main.u -o ${project_subpath}/dep_main.o -MF ${CMAKE_CURRENT_BINARY_DIR}/dep_main.d
 			${SPRACHE_COMPILER_PIC_OPTIONS}
+			--verify-module
 		DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/dep_main.d # This works only for Ninja
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR} # for correct dep_file work
 	)
