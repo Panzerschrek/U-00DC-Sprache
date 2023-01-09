@@ -84,6 +84,7 @@ CodeBuilder::CodeBuilder(
 	, build_debug_info_( options.build_debug_info )
 	, create_lifetimes_( options.create_lifetimes )
 	, generate_lifetime_start_end_debug_calls_( options.generate_lifetime_start_end_debug_calls )
+	, generate_tbaa_metadata_( options.generate_tbaa_metadata )
 	, constexpr_function_evaluator_( data_layout_ )
 	, mangler_( CreateMangler( options.mangling_scheme, data_layout_ ) )
 	, tbaa_metadata_builder_( llvm_context_, data_layout, mangler_ )
@@ -2039,33 +2040,41 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 
 llvm::LoadInst* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
-	llvm::MDNode* const access_tag= tbaa_metadata_builder_.CreateAccessTag( type );
 	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( address );
-	result->setMetadata( llvm::LLVMContext::MD_tbaa, access_tag );
+
+	if( generate_tbaa_metadata_ )
+		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( type ) );
+
 	return result;
 }
 
 llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
-	llvm::MDNode* const access_tag= tbaa_metadata_builder_.CreateReferenceAccessTag( type );
 	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( address );
-	result->setMetadata( llvm::LLVMContext::MD_tbaa, access_tag );
+
+	if( generate_tbaa_metadata_ )
+		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateReferenceAccessTag( type ) );
+
 	return result;
 }
 
 llvm::StoreInst* CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
 {
-	llvm::MDNode* const access_tag= tbaa_metadata_builder_.CreateAccessTag( type );
 	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
-	result->setMetadata( llvm::LLVMContext::MD_tbaa, access_tag );
+
+	if( generate_tbaa_metadata_ )
+		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( type ) );
+
 	return result;
 }
 
 llvm::StoreInst* CodeBuilder::CreateTypedReferenceStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
 {
-	llvm::MDNode* const access_tag= tbaa_metadata_builder_.CreateReferenceAccessTag( type );
 	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
-	result->setMetadata( llvm::LLVMContext::MD_tbaa, access_tag );
+
+	if( generate_tbaa_metadata_ )
+		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateReferenceAccessTag( type ) );
+
 	return result;
 }
 

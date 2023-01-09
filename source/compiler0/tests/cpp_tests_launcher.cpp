@@ -93,6 +93,7 @@ static CodeBuilderOptions GetCodeBuilderOptionsForTests()
 {
 	CodeBuilderOptions options;
 	options.build_debug_info= true;
+	options.generate_tbaa_metadata= true;
 	return options;
 }
 

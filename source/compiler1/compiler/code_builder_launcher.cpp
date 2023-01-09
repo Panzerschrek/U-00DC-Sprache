@@ -114,8 +114,11 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
 	const bool generate_debug_info,
+	const bool generate_tbaa_metadata,
 	const ManglingScheme mangling_scheme )
 {
+	(void)generate_tbaa_metadata; // TODO - use it.
+
 	CodeBuilderLaunchResult result;
 
 	const LLVMModuleRef llvm_module=

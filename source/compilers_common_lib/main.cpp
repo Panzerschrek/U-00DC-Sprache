@@ -330,6 +330,9 @@ int Main( int argc, const char* argv[] )
 		return 1;
 	}
 
+	// Build TBAA metadata only if we perform optimizations, based on this metadata.
+	const bool generate_tbaa_metadata= optimization_level > 0;
+
 	// LLVM stuff initialization.
 	llvm::InitializeAllTargets();
 	llvm::InitializeAllTargetMCs();
@@ -444,6 +447,7 @@ int Main( int argc, const char* argv[] )
 					data_layout,
 					target_triple,
 					Options::generate_debug_info,
+					generate_tbaa_metadata,
 					is_msvc ? ManglingScheme::MSVC : ManglingScheme::ItaniumABI );
 
 			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
