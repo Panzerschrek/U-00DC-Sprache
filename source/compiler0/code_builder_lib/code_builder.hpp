@@ -17,7 +17,7 @@
 #include "enum.hpp"
 #include "function_context.hpp"
 #include "mangling.hpp"
-#include "tbaa_metadada_builder.hpp"
+#include "tbaa_metadata_builder.hpp"
 #include "template_signature_param.hpp"
 #include "template_types.hpp"
 
