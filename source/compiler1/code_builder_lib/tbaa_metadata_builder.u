@@ -6,8 +6,8 @@ import "tbaa_metadata_builder.uh"
 namespace U1
 {
 
-fn TBAAMetadataBuilder::constructor( LLVMContextRef llvm_context )
-	( llvm_context_(llvm_context) )
+fn TBAAMetadataBuilder::constructor( LLVMContextRef llvm_context, ust::box</IMangler/> mut mangler )
+	( llvm_context_(llvm_context), mangler_(move(mangler)) )
 {
 	unsafe // Because of a lot of C functions calls.
 	{
@@ -27,7 +27,32 @@ fn TBAAMetadataBuilder::constructor( LLVMContextRef llvm_context )
 fn TBAAMetadataBuilder::CreateAccessTag( mut this, Type& t ) : LLVMMetadataRef
 {
 	// TODO - implement this properly.
-	return type_descriptors_.byte8_;
+	return GetTypeDescriptor(t);
+}
+
+fn TBAAMetadataBuilder::GetTypeDescriptor( mut this, Type& t ) : LLVMMetadataRef
+{
+	if_var( &cached_descriptor : types_descriptors_cache_.find(t) )
+	{
+		return cached_descriptor;
+	}
+
+	auto descriptor= CreateTypeDescriptor(t);
+	types_descriptors_cache_.insert( t, descriptor );
+	return descriptor;
+}
+
+fn TBAAMetadataBuilder::CreateTypeDescriptor( mut this, Type& t ) : LLVMMetadataRef
+{
+	var ust::string8 mut name= mangler_.deref().MangleType(t);
+	// Remove trailing null char. We do not need it here.
+	if( !name.empty() && name.back() == char8(0) )
+	{
+		name.pop_back();
+	}
+
+	// TODO - use proper base type, process composite types.
+	return unsafe( MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte8_, name.range() ) );
 }
 
 fn MakeTBAATypeDescriptor( LLVMContextRef llvm_context, LLVMMetadataRef base_descriptor, ust::array_view_imut</char8/>& name ) unsafe : LLVMMetadataRef

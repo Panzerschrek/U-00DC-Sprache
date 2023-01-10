@@ -1,4 +1,5 @@
 import "llvm.uh"
+import "mangling.uh"
 import "structs_combined.uh"
 
 namespace U1
@@ -7,9 +8,13 @@ namespace U1
 class TBAAMetadataBuilder
 {
 public:
-	fn constructor( LLVMContextRef llvm_context );
+	fn constructor( LLVMContextRef llvm_context, ust::box</IMangler/> mangler );
 
 	fn CreateAccessTag( mut this, Type& t ) : LLVMMetadataRef;
+
+private:
+	fn GetTypeDescriptor( mut this, Type& t ) : LLVMMetadataRef;
+	fn CreateTypeDescriptor( mut this, Type& t ) : LLVMMetadataRef;
 
 private:
 	struct TypeDescriptors
@@ -22,9 +27,12 @@ private:
 	}
 
 private:
-	LLVMContextRef llvm_context_;
+	LLVMContextRef imut llvm_context_;
+	ust::box</IMangler/> mangler_; // TODO - use shared_ptr instead.
 
 	TypeDescriptors type_descriptors_= zero_init;
+
+	ust::unordered_map</Type, LLVMMetadataRef/> types_descriptors_cache_;
 }
 
 } // namespace U1
