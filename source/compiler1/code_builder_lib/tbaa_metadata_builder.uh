@@ -11,6 +11,7 @@ public:
 	fn constructor( LLVMContextRef llvm_context, LLVMTargetDataRef data_layout, ust::box</IMangler/> mangler );
 
 	fn CreateAccessTag( mut this, Type& t ) : LLVMMetadataRef;
+	fn CreateReferenceAccessTag( mut this, Type& t ) : LLVMMetadataRef;
 
 private:
 	fn GetTypeDescriptor( mut this, Type& t ) : LLVMMetadataRef;

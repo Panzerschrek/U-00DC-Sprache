@@ -65,6 +65,13 @@ fn TBAAMetadataBuilder::CreateAccessTag( mut this, Type& t ) : LLVMMetadataRef
 					CreateI64ZeroMetadata( llvm_context_ ) ) ) );
 }
 
+fn TBAAMetadataBuilder::CreateReferenceAccessTag( mut this, Type& t ) : LLVMMetadataRef
+{
+	// Create access tags for references as for pointers.
+	var RawPointerType mut raw_pointer_type{ .element_type= t };
+	return CreateAccessTag( move(raw_pointer_type) );
+}
+
 fn TBAAMetadataBuilder::GetTypeDescriptor( mut this, Type& t ) : LLVMMetadataRef
 {
 	if_var( &cached_descriptor : types_descriptors_cache_.find(t) )
@@ -88,7 +95,7 @@ fn TBAAMetadataBuilder::CreateTypeDescriptor( mut this, Type& t ) : LLVMMetadata
 
 	if_var( &fundamental_type : t.GetFundamentalType() )
 	{
-		return unsafe( MakeTBAATypeDescriptor( llvm_context_, GetTypeDescriptorForFundamentalType(fundamental_type.fundamental_type), name.range() ) );
+		return GetTypeDescriptorForFundamentalType( fundamental_type.fundamental_type );
 	}
 	if_var( &enum_type : t.GetEnumType() )
 	{

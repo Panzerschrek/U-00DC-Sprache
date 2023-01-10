@@ -830,7 +830,13 @@ private:
 
 	fn SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope );
 
+	fn MarkInstructionWithTBAAMetadata( this, LLVMValueRef instruction, LLVMMetadataRef metadata );
 	fn MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction );
+
+	fn CreateTypedLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef;
+	fn CreateTypedReferenceLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef;
+	fn CreateTypedStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address ) : LLVMValueRef;
+	fn CreateTypedReferenceStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address ) : LLVMValueRef;
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
@@ -844,7 +850,7 @@ private:
 
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 
-	fn CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
+	fn CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
 
 	fn ConstexprCompareEqual(
 		mut this,

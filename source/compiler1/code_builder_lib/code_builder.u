@@ -461,7 +461,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			};
 
 			auto ptr_value= CreateFieldGEP( this_value_corrected, field, function_context );
-			result.llvm_value= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, ptr_value, op_name_nt.front() ) );
+			result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, ptr_value );
 
 			auto node_id= function_context.this_.try_deref().node_id;
 			if( node_id != ReferencesGraph::c_empty_node_id )
@@ -1736,7 +1736,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 						if( out_arg.t != void_type_ )
 						{
-							LLVMBuildStore( function_context.llvm_ir_builder, arg_value, out_arg.llvm_value );
+							CreateTypedStore( function_context, out_arg.t, arg_value, out_arg.llvm_value );
 						}
 					}
 				}
@@ -2518,6 +2518,15 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( this, Name
 	}
 }
 
+fn CodeBuilder::MarkInstructionWithTBAAMetadata( this, LLVMValueRef instruction, LLVMMetadataRef metadata )
+{
+	auto& name= "tbaa";
+	unsafe( LLVMSetMetadata(
+		instruction,
+		LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( typeinfo</typeof(name)/>.element_count ) ),
+		LLVMMetadataAsValue( llvm_context_, metadata ) ) );
+}
+
 fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction )
 {
 	auto& name= "nonnull";
@@ -2525,6 +2534,46 @@ fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_
 		load_instruction,
 		LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( typeinfo</typeof(name)/>.element_count ) ),
 		LLVMMetadataAsValue( llvm_context_, LLVMMDNodeInContext2( llvm_context_, ust::nullptr</LLVMMetadataRef/>(), 0s ) ) ) );
+}
+
+fn CodeBuilder::CreateTypedLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef
+{
+	auto result= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, address, "\0"[0] ) );
+
+	auto access_tag= tbaa_metadata_builder_.CreateAccessTag(t);
+	MarkInstructionWithTBAAMetadata( result, access_tag );
+
+	return result;
+}
+
+fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef
+{
+	auto result= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, address, "\0"[0] ) );
+
+	auto access_tag= tbaa_metadata_builder_.CreateReferenceAccessTag(t);
+	MarkInstructionWithTBAAMetadata( result, access_tag );
+
+	return result;
+}
+
+fn CodeBuilder::CreateTypedStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address ) : LLVMValueRef
+{
+	auto result= unsafe( LLVMBuildStore( function_context.llvm_ir_builder, value_to_store, address ) );
+
+	auto access_tag= tbaa_metadata_builder_.CreateAccessTag(t);
+	MarkInstructionWithTBAAMetadata( result, access_tag );
+
+	return result;
+}
+
+fn CodeBuilder::CreateTypedReferenceStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address ) : LLVMValueRef
+{
+	auto result= unsafe( LLVMBuildStore( function_context.llvm_ir_builder, value_to_store, address ) );
+
+	auto access_tag= tbaa_metadata_builder_.CreateReferenceAccessTag(t);
+	MarkInstructionWithTBAAMetadata( result, access_tag );
+
+	return result;
 }
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
@@ -2573,17 +2622,7 @@ fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( mut this, Variable& variabl
 	}
 	else if( variable.location == Variable::Location::Pointer )
 	{
-		// TODO - remove temporary code.
-		auto load_instruction= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, variable.llvm_value, "\0"[0] ) );
-		auto access_tag= tbaa_metadata_builder_.CreateAccessTag( variable.t );
-
-		auto& name= "tbaa";
-		unsafe( LLVMSetMetadata(
-			load_instruction,
-			LLVMGetMDKindIDInContext( llvm_context_, $<(cast_mut(name[0])), u32( typeinfo</typeof(name)/>.element_count ) ),
-			LLVMMetadataAsValue( llvm_context_, access_tag ) ) );
-
-		return load_instruction;
+		return CreateTypedLoad( function_context, variable.t, variable.llvm_value );
 	}
 	if( variable.location == Variable::Location::LLVMRegister )
 	{
@@ -2730,7 +2769,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 	}
 }
 
-fn CodeBuilder::CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context )
+fn CodeBuilder::CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context )
 {
 	if( t == void_type_ )
 	{
@@ -2749,12 +2788,12 @@ fn CodeBuilder::CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, Fu
 			// Simple scalar - create load/store.
 			if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
 			{
-				auto value = LLVMBuildLoad( function_context.llvm_ir_builder, src, "\0"[0] );
-				LLVMBuildStore( function_context.llvm_ir_builder, value, dst );
+				auto value= CreateTypedLoad( function_context, t, src );
+				CreateTypedStore( function_context, t, value, dst );
 			}
 			else if( LLVMGetElementType( LLVMTypeOf( dst ) ) == LLVMTypeOf( src ) )
 			{
-				LLVMBuildStore( function_context.llvm_ir_builder, src, dst );
+				CreateTypedStore( function_context, t, src, dst );
 			}
 			else{ halt; }
 		}
