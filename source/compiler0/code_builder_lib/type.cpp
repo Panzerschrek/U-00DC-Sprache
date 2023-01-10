@@ -590,7 +590,8 @@ size_t Type::Hash() const
 					hash,
 					function.return_type.Hash(),
 					function.return_value_type,
-					function.unsafe );
+					function.unsafe,
+					function.calling_convention );
 
 			for( const FunctionType::ParamReference& param_reference : function.return_references )
 				hash= llvm::hash_combine( hash, param_reference );
