@@ -731,6 +731,132 @@ op Type::==( Type& l, Type& r ) : bool
 }
 
 //
+// TypeHasher
+//
+
+fn TypeHasher::hash( Type& t ) : size_type
+{
+	if_var( &fundamental_type : t.GetFundamentalType() )
+	{
+		return hash_combine( 0s, hash(fundamental_type) );
+	}
+	if_var( &array_type : t.GetArrayType() )
+	{
+		return hash_combine( 1s, hash(array_type) );
+	}
+	if_var( &tuple_type : t.GetTupleType() )
+	{
+		return hash_combine( 2s, hash(tuple_type) );
+	}
+	if_var( &raw_pointer_type : t.GetRawPointerType() )
+	{
+		return hash_combine( 3s, hash(raw_pointer_type) );
+	}
+	if_var( &function_type : t.GetFunctionType() )
+	{
+		return hash_combine( 4s, hash(function_type) );
+	}
+	if_var( &function_pointer_type : t.GetFunctionPointerType() )
+	{
+		return hash_combine( 5s, hash(function_pointer_type) );
+	}
+	if_var( &class_type : t.GetClassType() )
+	{
+		return hash_combine( 6s, hash(class_type) );
+	}
+	if_var( &enum_type : t.GetEnumType() )
+	{
+		return hash_combine( 7s, hash(enum_type) );
+	}
+
+	// Unhandled type kind.
+	halt;
+}
+
+fn TypeHasher::hash( FundamentalType& t ) : size_type
+{
+	return size_type(t.fundamental_type);
+}
+
+fn TypeHasher::hash( ArrayType& t ) : size_type
+{
+	return hash_combine( size_type(t.element_count), hash(t.element_type) );
+}
+
+fn TypeHasher::hash( TupleType& t ) : size_type
+{
+	auto mut res= 0s;
+	foreach( &element_type : t.element_types )
+	{
+		res= hash_combine( res, hash(element_type) );
+	}
+
+	return res;
+}
+
+fn TypeHasher::hash( RawPointerType& t ) : size_type
+{
+	return hash(t.element_type);
+}
+
+fn TypeHasher::hash( FunctionType& t ) : size_type
+{
+	auto mut res= 0s;
+	foreach( &param : t.params )
+	{
+		res= hash_combine( res, hash(param.t) );
+		res= hash_combine( res, size_type(param.value_type) );
+	}
+
+	res= hash_combine( res, hash(t.return_type) );
+	res= hash_combine( res, size_type(t.return_value_type) );
+
+	res= hash_combine( res, size_type(t.calling_convention) );
+	res= hash_combine( res, select( t.is_unsafe ? 1s : 0s ) );
+
+	foreach( &return_reference : t.return_references )
+	{
+		res= hash_combine( res, size_type(return_reference.param_index) );
+		res= hash_combine( res, size_type(return_reference.reference_index) );
+	}
+	foreach( &reference_pollution : t.references_pollution )
+	{
+		res= hash_combine( res, size_type(reference_pollution.dst.param_index) );
+		res= hash_combine( res, size_type(reference_pollution.dst.reference_index) );
+		res= hash_combine( res, size_type(reference_pollution.src.param_index) );
+		res= hash_combine( res, size_type(reference_pollution.src.reference_index) );
+	}
+
+	return res;
+}
+
+fn TypeHasher::hash( FunctionPointerType& t ) : size_type
+{
+	return hash(t.function_type);
+}
+
+fn TypeHasher::hash( ClassTypePtr& t ) : size_type
+{
+	// Use hash of pointer.
+	return ust::default_hasher::hash(t);
+}
+
+fn TypeHasher::hash( EnumTypePtr& t ) : size_type
+{
+	// Use hash of pointer.
+	return ust::default_hasher::hash(t);
+}
+
+fn TypeHasher::hash_combine( size_type x, size_type y ) : size_type
+{
+	auto shift= 7s;
+	auto hash_bits= typeinfo</size_type/>.size_of * 8s;
+
+	// Use simple XOR and rotate.
+	return x ^ ( (y << shift) | (y >> hash_bits - shift) );
+}
+
+//
 // ClassType
 //
 
