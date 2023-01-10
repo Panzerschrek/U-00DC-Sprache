@@ -577,7 +577,7 @@ fn CodeBuilder::BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr )
 }
 
 fn CodeBuilder::SetupVirtualTablePointers_r(
-	this,
+	mut this,
 	LLVMValueRef this_,
 	LLVMValueRef ptr_to_vtable_ptr,
 	ClassType& class_type,
@@ -615,13 +615,15 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 			var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), GetZeroGEPIndex() ];
 			auto vtable_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, this_, $<(indexes[0]), 2u, "\0"[0] );
 
-			LLVMBuildStore( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_ptr );
+			auto store_inst= LLVMBuildStore( function_context.llvm_ir_builder, ptr_to_vtable_ptr, vtable_ptr );
+			auto access_tag= tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag();
+			MarkInstructionWithTBAAMetadata( store_inst, access_tag );
 		}
 	}
 }
 
 fn CodeBuilder::SetupVirtualTablePointers(
-	this,
+	mut this,
 	LLVMValueRef this_,
 	ClassTypePtr& class_type_ptr,
 	FunctionContext &mut function_context )
@@ -645,7 +647,7 @@ fn CodeBuilder::SetupVirtualTablePointers(
 }
 
 fn CodeBuilder::TryFetchVirtualFunction(
-	this,
+	mut this,
 	Variable& this_,
 	FunctionVariable& function,
 	FunctionContext &mut function_context ) : tup[ Variable, LLVMValueRef ]
@@ -685,6 +687,8 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 		auto virtual_table_ptr= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_to_virtual_table_ptr, "\0"[0] );
 		MarkLoadInstructionWithNonNullMetadata( virtual_table_ptr ); // Virtual table pointer is never null.
+		auto virtual_table_ptr_access_tag= tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag();
+		MarkInstructionWithTBAAMetadata( virtual_table_ptr, virtual_table_ptr_access_tag );
 
 		var ClassType::VirtualTableEntry& first_virtual_table_entry= class_type.virtual_table[ function.virtual_table_index ];
 		auto mut parent_virtual_table_index= first_virtual_table_entry.parent_virtual_table_index;
@@ -761,6 +765,8 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 		auto abstract_function_ptr= LLVMBuildLoad( function_context.llvm_ir_builder, ptr_to_function_ptr, "\0"[0] );
 		MarkLoadInstructionWithNonNullMetadata( abstract_function_ptr ); // Function pointer inside virtual table is never null.
+		auto abstract_function_ptr_access_tag= tbaa_metadata_builder_.CreateVirtualTableFunctionPointerAccessTag();
+		MarkInstructionWithTBAAMetadata( abstract_function_ptr, abstract_function_ptr_access_tag );
 
 		auto function_ptr=
 			LLVMBuildPointerCast(
@@ -801,7 +807,8 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			auto offset_ptr=
 				LLVMBuildGEP( function_context.llvm_ir_builder, first_root_virtual_table, $<(offset_indeces[0]), 2u, "\0"[0] );
 
-			auto offset= LLVMBuildLoad( function_context.llvm_ir_builder, offset_ptr, "\0"[0] );
+			auto offset_type= size_type_;
+			auto offset= CreateTypedLoad( function_context, offset_type, offset_ptr );
 
 			auto this_ptr_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, this_casted.llvm_value, fundamental_llvm_types_.int_ptr, "\0"[0] );
 			auto this_sub_offset= LLVMBuildSub( function_context.llvm_ir_builder, this_ptr_as_int, offset, "\0"[0] );

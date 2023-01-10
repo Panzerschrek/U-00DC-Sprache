@@ -13,6 +13,9 @@ public:
 	fn CreateAccessTag( mut this, Type& t ) : LLVMMetadataRef;
 	fn CreateReferenceAccessTag( mut this, Type& t ) : LLVMMetadataRef;
 
+	fn CreateVirtualTablePointerAccessTag( mut this ) : LLVMMetadataRef;
+	fn CreateVirtualTableFunctionPointerAccessTag( mut this ) : LLVMMetadataRef;
+
 private:
 	fn GetTypeDescriptor( mut this, Type& t ) : LLVMMetadataRef;
 	fn CreateTypeDescriptor( mut this, Type& t ) : LLVMMetadataRef;

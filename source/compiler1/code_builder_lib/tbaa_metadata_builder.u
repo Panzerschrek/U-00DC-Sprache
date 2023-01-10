@@ -59,10 +59,10 @@ fn TBAAMetadataBuilder::CreateAccessTag( mut this, Type& t ) : LLVMMetadataRef
 	return
 		unsafe( CreateMetadataNode(
 			llvm_context_,
-				ust::make_array(
-					type_descriptor,
-					type_descriptor,
-					CreateI64ZeroMetadata( llvm_context_ ) ) ) );
+			ust::make_array(
+				type_descriptor,
+				type_descriptor,
+				CreateI64ZeroMetadata( llvm_context_ ) ) ) );
 }
 
 fn TBAAMetadataBuilder::CreateReferenceAccessTag( mut this, Type& t ) : LLVMMetadataRef
@@ -70,6 +70,34 @@ fn TBAAMetadataBuilder::CreateReferenceAccessTag( mut this, Type& t ) : LLVMMeta
 	// Create access tags for references as for pointers.
 	var RawPointerType mut raw_pointer_type{ .element_type= t };
 	return CreateAccessTag( move(raw_pointer_type) );
+}
+
+fn TBAAMetadataBuilder::CreateVirtualTablePointerAccessTag( mut this ) : LLVMMetadataRef
+{
+	// Use just base type for all pointers as access tag for virtual table pointers.
+	// Do this in order to allow read virtual table pointers properly via any pointer/reference type.
+	// This is mostly needed in standard library helpers for polymorph classes.
+	auto type_descriptor= type_descriptors_.ptr;
+	return
+		unsafe( CreateMetadataNode(
+			llvm_context_,
+			ust::make_array(
+				type_descriptor,
+				type_descriptor,
+				CreateI64ZeroMetadata( llvm_context_ ) ) ) );
+}
+
+fn TBAAMetadataBuilder::CreateVirtualTableFunctionPointerAccessTag( mut this ) : LLVMMetadataRef
+{
+	// Use generic pointer type for virtual table fetches. It's important, becase for simplicity reasons pointers in virtual table are almost untyped.
+	auto type_descriptor= type_descriptors_.ptr;
+	return
+		unsafe( CreateMetadataNode(
+			llvm_context_,
+			ust::make_array(
+				type_descriptor,
+				type_descriptor,
+				CreateI64ZeroMetadata( llvm_context_ ) ) ) );
 }
 
 fn TBAAMetadataBuilder::GetTypeDescriptor( mut this, Type& t ) : LLVMMetadataRef
