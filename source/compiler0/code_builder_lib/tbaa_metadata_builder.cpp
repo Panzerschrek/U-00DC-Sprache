@@ -54,7 +54,7 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 
 	// Use intermediate type for all pointer type (not just raw byte32 or byte64).
 	// Do this in case we add something, like "generic" pointers/references.
-	type_descriptors_.ptr_= md_builder_.createTBAAScalarTypeNode( "__U_any_pointer", ptr_base );
+	type_descriptors_.ptr= md_builder_.createTBAAScalarTypeNode( "__U_any_pointer", ptr_base );
 }
 
 llvm::MDNode* TBAAMetadataBuilder::CreateAccessTag( const Type& type )
@@ -80,14 +80,14 @@ llvm::MDNode* TBAAMetadataBuilder::CreateVirtualTablePointerAccessTag()
 	// Use just base type for all pointers as access tag for virtual table pointers.
 	// Do this in order to allow read virtual table pointers properly via any pointer/reference type.
 	// This is mostly needed in standard library helpers for polymorph classes.
-	const auto type_descriptor= type_descriptors_.ptr_;
+	const auto type_descriptor= type_descriptors_.ptr;
 	return md_builder_.createTBAAStructTagNode( type_descriptor, type_descriptor, 0 );
 }
 
 llvm::MDNode* TBAAMetadataBuilder::CreateVirtualTableFunctionPointerAccessTag()
 {
 	// Use generic pointer type for virtual table fetches. It's important, becase for simplicity reasons pointers in virtual table are almost untyped.
-	const auto type_descriptor= type_descriptors_.ptr_;
+	const auto type_descriptor= type_descriptors_.ptr;
 	return md_builder_.createTBAAStructTagNode( type_descriptor, type_descriptor, 0 );
 }
 
@@ -112,9 +112,9 @@ llvm::MDNode* TBAAMetadataBuilder::CreateTypeDescriptor( const Type& type )
 	if( const auto enum_type= type.GetEnumType() )
 		return md_builder_.createTBAAScalarTypeNode( name, GetEnumTypeBaseTypeDescriptor(enum_type) );
 	if( type.GetRawPointerType() != nullptr )
-		return md_builder_.createTBAAScalarTypeNode( name, type_descriptors_.ptr_ );
+		return md_builder_.createTBAAScalarTypeNode( name, type_descriptors_.ptr );
 	if( type.GetFunctionPointerType() != nullptr )
-		return md_builder_.createTBAAScalarTypeNode( name, type_descriptors_.ptr_ );
+		return md_builder_.createTBAAScalarTypeNode( name, type_descriptors_.ptr );
 
 	// TODO - support another kinds.
 	return type_descriptors_.byte8_;

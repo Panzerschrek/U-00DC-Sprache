@@ -38,12 +38,6 @@ private:
 
 	struct
 	{
-		llvm::MDNode* byte8_  = nullptr;
-		llvm::MDNode* byte16_ = nullptr;
-		llvm::MDNode* byte32_ = nullptr;
-		llvm::MDNode* byte64_ = nullptr;
-		llvm::MDNode* byte128_= nullptr;
-
 		llvm::MDNode* void_= nullptr;
 		llvm::MDNode* bool_= nullptr;
 
@@ -58,15 +52,21 @@ private:
 		llvm::MDNode* i128_= nullptr;
 		llvm::MDNode* u128_= nullptr;
 
+		llvm::MDNode* f32_= nullptr;
+		llvm::MDNode* f64_= nullptr;
+
 		llvm::MDNode* char8_ = nullptr;
 		llvm::MDNode* char16_= nullptr;
 		llvm::MDNode* char32_= nullptr;
 
-		llvm::MDNode* f32_= nullptr;
-		llvm::MDNode* f64_= nullptr;
+		llvm::MDNode* byte8_  = nullptr;
+		llvm::MDNode* byte16_ = nullptr;
+		llvm::MDNode* byte32_ = nullptr;
+		llvm::MDNode* byte64_ = nullptr;
+		llvm::MDNode* byte128_= nullptr;
 
 		// Base for all pointers.
-		llvm::MDNode* ptr_= nullptr;
+		llvm::MDNode* ptr= nullptr;
 
 	} type_descriptors_;
 

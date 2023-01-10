@@ -56,8 +56,8 @@ fn TBAAMetadataBuilder::CreateAccessTag( mut this, Type& t ) : LLVMMetadataRef
 {
 	auto type_descriptor= GetTypeDescriptor(t);
 
-	return
-		unsafe( CreateMetadataNode(
+	return unsafe(
+		CreateMetadataNode(
 			llvm_context_,
 			ust::make_array(
 				type_descriptor,
@@ -78,8 +78,8 @@ fn TBAAMetadataBuilder::CreateVirtualTablePointerAccessTag( mut this ) : LLVMMet
 	// Do this in order to allow read virtual table pointers properly via any pointer/reference type.
 	// This is mostly needed in standard library helpers for polymorph classes.
 	auto type_descriptor= type_descriptors_.ptr;
-	return
-		unsafe( CreateMetadataNode(
+	return unsafe(
+		CreateMetadataNode(
 			llvm_context_,
 			ust::make_array(
 				type_descriptor,
@@ -91,8 +91,8 @@ fn TBAAMetadataBuilder::CreateVirtualTableFunctionPointerAccessTag( mut this ) :
 {
 	// Use generic pointer type for virtual table fetches. It's important, becase for simplicity reasons pointers in virtual table are almost untyped.
 	auto type_descriptor= type_descriptors_.ptr;
-	return
-		unsafe( CreateMetadataNode(
+	return unsafe(
+		CreateMetadataNode(
 			llvm_context_,
 			ust::make_array(
 				type_descriptor,
@@ -139,7 +139,7 @@ fn TBAAMetadataBuilder::CreateTypeDescriptor( mut this, Type& t ) : LLVMMetadata
 	}
 
 	// TODO - support other types.
-	return unsafe( MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte8_, name.range() ) );
+	return type_descriptors_.byte8_;
 }
 
 fn TBAAMetadataBuilder::GetTypeDescriptorForFundamentalType( mut this, U_FundamentalType t ) : LLVMMetadataRef
@@ -201,10 +201,10 @@ fn MakeTBAATypeDescriptor( LLVMContextRef llvm_context, LLVMMetadataRef base_des
 		return
 			CreateMetadataNode(
 				llvm_context,
-					ust::make_array(
-						CreateMetadataString( llvm_context, name ),
-						base_descriptor,
-						zero_offset_metadata ) );
+				ust::make_array(
+					CreateMetadataString( llvm_context, name ),
+					base_descriptor,
+					zero_offset_metadata ) );
 	}
 }
 
