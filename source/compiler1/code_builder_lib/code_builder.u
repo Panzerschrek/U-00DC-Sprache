@@ -463,6 +463,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 			auto ptr_value= CreateFieldGEP( this_value_corrected, field, function_context );
 			result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, ptr_value );
+			MarkLoadInstructionWithNonNullMetadata( result.llvm_value );
 
 			auto node_id= function_context.this_.try_deref().node_id;
 			if( node_id != ReferencesGraph::c_empty_node_id )
