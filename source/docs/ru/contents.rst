@@ -38,3 +38,4 @@
    macros
    modules
    c_interaction
+   unsafe_code_requirements
