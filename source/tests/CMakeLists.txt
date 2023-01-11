@@ -6,7 +6,7 @@ function( CompileUSource u_source_file out_object )
 	add_custom_command(
 		OUTPUT ${object_name}
 		DEPENDS ${u_source_file} Compiler${CURRENT_COMPILER_GENERATION}
-		COMMAND Compiler${CURRENT_COMPILER_GENERATION} ${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} )
+		COMMAND Compiler${CURRENT_COMPILER_GENERATION} ${u_source_file} -o ${object_name} ${SPRACHE_COMPILER_PIC_OPTIONS} --verify-module )
 	set( ${out_object} ${object_name} PARENT_SCOPE )
 endfunction()
 

@@ -207,6 +207,9 @@ type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;
 class Type
 {
 public:
+	type hasher= TypeHasher;
+
+public:
 	fn constructor() = default;
 	fn constructor( mut this, Type &imut other )= default;
 	op=( mut this, Type &imut other )= default;
@@ -258,6 +261,26 @@ private:
 		ClassTypePtr,
 		EnumTypePtr
 	] /> something_;
+}
+
+class TypeHasher
+{
+
+public:
+	fn hash( Type& t ) : size_type;
+
+	fn hash( FundamentalType& t ) : size_type;
+	fn hash( ArrayType& t ) : size_type;
+	fn hash( TupleType& t ) : size_type;
+	fn hash( RawPointerType& t ) : size_type;
+	fn hash( FunctionType& t ) : size_type;
+	fn hash( FunctionPointerType& t ) : size_type;
+	fn hash( ClassTypePtr& t ) : size_type;
+	fn hash( EnumTypePtr& t ) : size_type;
+
+private:
+	// TODO - move it into standard library.
+	fn hash_combine( size_type x, size_type y ) : size_type;
 }
 
 //

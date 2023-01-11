@@ -69,6 +69,7 @@ std::unique_ptr<CodeBuilder> CreateCodeBuilder()
 {
 	CodeBuilderOptions options;
 	options.build_debug_info= true;
+	options.generate_tbaa_metadata= true;
 
 	return
 		std::make_unique<CodeBuilder>(

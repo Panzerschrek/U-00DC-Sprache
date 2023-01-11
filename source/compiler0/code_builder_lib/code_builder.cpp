@@ -84,8 +84,10 @@ CodeBuilder::CodeBuilder(
 	, build_debug_info_( options.build_debug_info )
 	, create_lifetimes_( options.create_lifetimes )
 	, generate_lifetime_start_end_debug_calls_( options.generate_lifetime_start_end_debug_calls )
+	, generate_tbaa_metadata_( options.generate_tbaa_metadata )
 	, constexpr_function_evaluator_( data_layout_ )
 	, mangler_( CreateMangler( options.mangling_scheme, data_layout_ ) )
+	, tbaa_metadata_builder_( llvm_context_, data_layout, mangler_ )
 {
 	fundamental_llvm_types_.i8  = llvm::Type::getInt8Ty  ( llvm_context_ );
 	fundamental_llvm_types_.u8  = llvm::Type::getInt8Ty  ( llvm_context_ );
@@ -1291,7 +1293,7 @@ Type CodeBuilder::BuildFuncCode(
 				CreateLifetimeStart( function_context, var.llvm_value );
 
 				if( param.type != void_type_ )
-					function_context.llvm_ir_builder.CreateStore( &llvm_arg, var.llvm_value );
+					CreateTypedStore( function_context, var.type, &llvm_arg, var.llvm_value );
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
@@ -2036,6 +2038,46 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 	return nullptr;
 }
 
+llvm::LoadInst* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
+{
+	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( address );
+
+	if( generate_tbaa_metadata_ )
+		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( type ) );
+
+	return result;
+}
+
+llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
+{
+	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( address );
+
+	if( generate_tbaa_metadata_ )
+		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateReferenceAccessTag( type ) );
+
+	return result;
+}
+
+llvm::StoreInst* CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
+{
+	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
+
+	if( generate_tbaa_metadata_ )
+		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( type ) );
+
+	return result;
+}
+
+llvm::StoreInst* CodeBuilder::CreateTypedReferenceStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
+{
+	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
+
+	if( generate_tbaa_metadata_ )
+		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateReferenceAccessTag( type ) );
+
+	return result;
+}
+
 llvm::Value* CodeBuilder::CreateMoveToLLVMRegisterInstruction( const Variable& variable, FunctionContext& function_context )
 {
 	// Contant values always are register-values.
@@ -2050,7 +2092,7 @@ llvm::Value* CodeBuilder::CreateMoveToLLVMRegisterInstruction( const Variable& v
 		if( variable.type == void_type_ )
 			return llvm::UndefValue::get(fundamental_llvm_types_.void_);
 		else
-			return function_context.llvm_ir_builder.CreateLoad( variable.type.GetLLVMType(), variable.llvm_value );
+			return CreateTypedLoad( function_context, variable.type, variable.llvm_value );
 	};
 
 	U_ASSERT(false);

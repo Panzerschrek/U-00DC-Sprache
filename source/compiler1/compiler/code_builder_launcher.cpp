@@ -114,6 +114,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
 	const bool generate_debug_info,
+	const bool generate_tbaa_metadata,
 	const ManglingScheme mangling_scheme )
 {
 	CodeBuilderLaunchResult result;
@@ -126,6 +127,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			llvm::wrap(&data_layout ),
 			StringToStringView(target_triple.normalize()),
 			generate_debug_info,
+			generate_tbaa_metadata,
 			mangling_scheme,
 			SourceFilePathProcessingFunction,
 			reinterpret_cast<UserHandle>(&result.dependent_files),

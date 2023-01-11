@@ -419,7 +419,9 @@ fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVM
 
 fn nomangle LLVMSetMetadata(LLVMValueRef Val, u32 KindID, LLVMValueRef Node) unsafe;
 fn nomangle LLVMGetMDKindIDInContext(LLVMContextRef C, $(char8) Name, u32 SLen) unsafe : u32;
+fn nomangle LLVMMDStringInContext2(LLVMContextRef C, $(char8) Str, size_type SLen) unsafe : LLVMMetadataRef;
 fn nomangle LLVMMDNodeInContext2(LLVMContextRef C, $(LLVMMetadataRef) MDs, size_type Count) unsafe : LLVMMetadataRef;
+fn nomangle LLVMValueAsMetadata(LLVMValueRef Val) unsafe : LLVMMetadataRef;
 fn nomangle LLVMMetadataAsValue(LLVMContextRef C, LLVMMetadataRef MD) unsafe : LLVMValueRef;
 
 // Debug info

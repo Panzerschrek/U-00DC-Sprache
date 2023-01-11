@@ -20,7 +20,7 @@ add_custom_command(
 	DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
 	COMMAND
 		Compiler${CURRENT_COMPILER_GENERATION} ${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
-		${BC_FILES} -o ${BC_OBJECT_COMBINED} --input-filetype=bc
+		${BC_FILES} -o ${BC_OBJECT_COMBINED} --input-filetype=bc --verify-module
 	)
 
 add_executable( BitcodeLinkingTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${SOURCES} ${BC_OBJECT_COMBINED} )
@@ -47,7 +47,7 @@ add_custom_command(
 	DEPENDS Compiler${CURRENT_COMPILER_GENERATION}
 	COMMAND
 		Compiler${CURRENT_COMPILER_GENERATION} ${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
-		${LL_FILES} -o ${LL_OBJECT_COMBINED} --input-filetype=ll
+		${LL_FILES} -o ${LL_OBJECT_COMBINED} --input-filetype=ll --verify-module
 	)
 
 add_executable( LLAssebllyLinkingTest${CURRENT_COMPILER_GENERATION} ../dummy.cpp ${SOURCES} ${LL_OBJECT_COMBINED} )

@@ -304,7 +304,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr& class_type )
 	if( virtual_table_struct_fields.empty() )
 	{
 		// No parents - create special fields - base offset, type id, etc.
-		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field.
+		virtual_table_struct_fields.push_back( fundamental_llvm_types_.int_ptr ); // Offset field. Always use "size_type" here.
 		virtual_table_struct_fields.push_back( polymorph_type_id_table_element_type_->getPointerTo() ); // type_id field
 	}
 
@@ -502,6 +502,8 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreatePointerCast( this_casted.llvm_value, virtual_table_ptr_type->getPointerTo() );
 	llvm::LoadInst* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( virtual_table_ptr_type, ptr_to_virtual_table_ptr );
 	virtual_table_ptr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) ); // Virtual table pointer is never null.
+	if( generate_tbaa_metadata_ )
+		virtual_table_ptr->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag() );
 
 	const unsigned int c_offset_field_number= 0u;
 	[[maybe_unused]] const unsigned int c_type_id_field_number= 1u;
@@ -540,8 +542,12 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 
 	// Fetch function.
 	llvm::Value* const ptr_to_function_ptr= CreateArrayElementGEP( function_context, functions_table_ptr, virtual_table_entry->index_in_table );
+
 	llvm::LoadInst* const abstract_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr->getType()->getPointerElementType(), ptr_to_function_ptr );
 	abstract_function_ptr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) ); // Function address in virtual table is never null.
+	if( generate_tbaa_metadata_ )
+		abstract_function_ptr->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTableFunctionPointerAccessTag() );
+
 	llvm::Value* const function_ptr= function_context.llvm_ir_builder.CreateBitOrPointerCast( abstract_function_ptr, function_type.llvm_type->getPointerTo() );
 
 	// Correct "this" pointer.
@@ -563,7 +569,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 		}
 
 		llvm::Value* const offset_ptr= CreateClassFiledGEP( function_context, first_root_virtual_table, c_offset_field_number );
-		llvm::Value* const offset= function_context.llvm_ir_builder.CreateLoad( fundamental_llvm_types_.int_ptr, offset_ptr );
+		llvm::Value* const offset= CreateTypedLoad( function_context, size_type_, offset_ptr );
 
 		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
 		llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset );
@@ -596,7 +602,9 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 	if( the_class.parents.empty() )
 	{
 		llvm::Value* const vtable_ptr= CreateVirtualTablePointerGEP( function_context, this_ );
-		function_context.llvm_ir_builder.CreateStore( ptr_to_vtable_ptr, vtable_ptr );
+		llvm::StoreInst* const store= function_context.llvm_ir_builder.CreateStore( ptr_to_vtable_ptr, vtable_ptr );
+		if( generate_tbaa_metadata_ )
+			store->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag() );
 	}
 }
 

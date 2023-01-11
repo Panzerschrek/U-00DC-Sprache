@@ -33,11 +33,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( variable.t != void_type_ )
 		{
-			unsafe
-			{
-				auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
-				LLVMBuildStore( function_context.llvm_ir_builder, value_in_register, variable.llvm_value );
-			}
+			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
+			CreateTypedStore( function_context, variable.t, value_in_register, variable.llvm_value );
 		}
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
@@ -456,7 +453,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			auto zero_value= LLVMConstNull( variable.t.GetLLVMType() );
 			if( variable.t != void_type_ )
 			{
-				LLVMBuildStore( function_context.llvm_ir_builder, zero_value, variable.llvm_value );
+				CreateTypedStore( function_context, variable.t, zero_value, variable.llvm_value );
 			}
 			return zero_value;
 		}
@@ -827,7 +824,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 
 			if( variable.t != void_type_ )
 			{
-				LLVMBuildStore( function_context.llvm_ir_builder, llvm_value, variable.llvm_value );
+				CreateTypedStore( function_context, variable.t, llvm_value, variable.llvm_value );
 			}
 		}
 
@@ -894,7 +891,8 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		unsafe( LLVMBuildStore( function_context.llvm_ir_builder, CreateMoveToLLVMRegisterInstruction( expr, function_context ), variable.llvm_value ) );
+		auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+		CreateTypedStore( function_context, variable.t, value_in_register, variable.llvm_value );
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 
@@ -1001,7 +999,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 			{
 				value_for_store= LLVMBuildPointerCast( function_context.llvm_ir_builder, value_for_store, variable.t.GetLLVMType(), "\0"[0] );
 			}
-			LLVMBuildStore( function_context.llvm_ir_builder, value_for_store, variable.llvm_value );
+			CreateTypedStore( function_context, variable.t, value_for_store, variable.llvm_value );
 		}
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, initializer_src_loc );
@@ -1089,7 +1087,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 				return LLVMValueRef::Null;
 			}
 
-			unsafe( LLVMBuildStore( function_context.llvm_ir_builder, function_variable.llvm_function, variable.llvm_value ) );
+			CreateTypedStore( function_context, variable.t, function_variable.llvm_function, variable.llvm_value );
 
 			return function_variable.llvm_function;
 		}
@@ -1107,12 +1105,9 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 			}
 
 			// TODO - maybe disable conversion for expression initializer?
-			unsafe
-			{
-				auto ptr_casted= LLVMBuildPointerCast( function_context.llvm_ir_builder, function_variable.llvm_function, variable.t.GetLLVMType(), "\0"[0] );
-				LLVMBuildStore( function_context.llvm_ir_builder, ptr_casted, variable.llvm_value );
-				return ptr_casted;
-			}
+			auto ptr_casted= unsafe( LLVMBuildPointerCast( function_context.llvm_ir_builder, function_variable.llvm_function, variable.t.GetLLVMType(), "\0"[0] ) );
+			CreateTypedStore( function_context, variable.t, ptr_casted, variable.llvm_value );
+			return ptr_casted;
 		}
 		else if( functions_with_conversion.empty() )
 		{
@@ -1177,7 +1172,7 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 
 	auto reference_converted= CreateReferenceCast( initializer_variable.llvm_value, initializer_variable.t, field.t, function_context );
 	auto address_of_reference= CreateFieldGEP( variable.llvm_value, field, function_context );
-	unsafe( LLVMBuildStore( function_context.llvm_ir_builder, reference_converted, address_of_reference ) );
+	CreateTypedReferenceStore( function_context, field.t, reference_converted, address_of_reference );
 
 	if( variable.node_id != ReferencesGraph::c_empty_node_id && initializer_variable.node_id != ReferencesGraph::c_empty_node_id )
 	{

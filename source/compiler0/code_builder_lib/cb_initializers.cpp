@@ -280,7 +280,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		if( variable.type != void_type_ )
 		{
 			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
-			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+			CreateTypedStore( function_context, variable.type, value_for_assignment, variable.llvm_value );
 		}
 
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
@@ -404,7 +404,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		// "0" for numbers, "false" for boolean type, first element for enums, "nullptr" for function pointers.
 		const auto zero_value= llvm::Constant::getNullValue( variable.type.GetLLVMType() );
 		if( variable.type != void_type_ )
-			function_context.llvm_ir_builder.CreateStore( zero_value, variable.llvm_value );
+			CreateTypedStore( function_context, variable.type, zero_value, variable.llvm_value );
 		return zero_value;
 	}
 	else if( const ArrayType* const array_type= variable.type.GetArrayType() )
@@ -733,7 +733,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		} // If needs conversion
 
 		if( variable.type != void_type_ )
-			function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+			CreateTypedStore( function_context, variable.type, value_for_assignment, variable.llvm_value );
 
 		return llvm::dyn_cast<llvm::Constant>(value_for_assignment);
 	}
@@ -753,7 +753,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		function_context.llvm_ir_builder.CreateStore(
+		CreateTypedStore(
+			function_context,
+			variable.type,
 			CreateMoveToLLVMRegisterInstruction( expression_result, function_context ),
 			variable.llvm_value );
 
@@ -953,7 +955,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	llvm::Value* ref_to_store= initializer_variable.llvm_value;
 	if( field.type != initializer_variable.type )
 		ref_to_store= CreateReferenceCast( ref_to_store, initializer_variable.type, field.type, function_context );
-	function_context.llvm_ir_builder.CreateStore( ref_to_store, address_of_reference );
+	CreateTypedReferenceStore( function_context, field.type, ref_to_store, address_of_reference );
 
 	if( initializer_variable.constexpr_value != nullptr )
 	{
@@ -998,7 +1000,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		if( initializer_variable->type != variable.type )
 			value_for_assignment= function_context.llvm_ir_builder.CreatePointerCast( value_for_assignment, variable.type.GetLLVMType() );
 
-		function_context.llvm_ir_builder.CreateStore( value_for_assignment, variable.llvm_value );
+		CreateTypedStore( function_context, variable.type, value_for_assignment, variable.llvm_value );
 		return initializer_variable->constexpr_value;
 	}
 
@@ -1073,7 +1075,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	if( function_variable->type != function_pointer_type.function )
 		function_value= function_context.llvm_ir_builder.CreatePointerCast( function_value, variable.type.GetLLVMType() );
 
-	function_context.llvm_ir_builder.CreateStore( function_value, variable.llvm_value );
+	CreateTypedStore( function_context, variable.type, function_value, variable.llvm_value );
 	return function_variable->llvm_function;
 }
 

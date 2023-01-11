@@ -17,6 +17,7 @@
 #include "enum.hpp"
 #include "function_context.hpp"
 #include "mangling.hpp"
+#include "tbaa_metadata_builder.hpp"
 #include "template_signature_param.hpp"
 #include "template_types.hpp"
 
@@ -28,6 +29,7 @@ struct CodeBuilderOptions
 	bool build_debug_info= false;
 	bool create_lifetimes= true;
 	bool generate_lifetime_start_end_debug_calls= false;
+	bool generate_tbaa_metadata= false;
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
@@ -922,6 +924,11 @@ private:
 
 	llvm::Type* GetFundamentalLLVMType( U_FundamentalType fundmantal_type );
 
+	llvm::LoadInst* CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* address );
+	llvm::LoadInst* CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* address );
+	llvm::StoreInst* CreateTypedStore( FunctionContext& function_context, const Type& type, llvm::Value* value_to_store, llvm::Value* address );
+	llvm::StoreInst* CreateTypedReferenceStore( FunctionContext& function_context, const Type& type, llvm::Value* value_to_store, llvm::Value* address );
+
 	// If variable is on stack, creates move to rigister instruction.
 	// If variable already in register - does nothing.
 	llvm::Value* CreateMoveToLLVMRegisterInstruction( const Variable& variable, FunctionContext& function_context );
@@ -971,6 +978,7 @@ private:
 	const bool build_debug_info_;
 	const bool create_lifetimes_;
 	const bool generate_lifetime_start_end_debug_calls_;
+	const bool generate_tbaa_metadata_;
 
 	struct
 	{
@@ -1018,7 +1026,8 @@ private:
 	llvm::StructType* polymorph_type_id_table_element_type_= nullptr;
 
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
-	const std::unique_ptr<IMangler> mangler_;
+	const std::shared_ptr<IMangler> mangler_;
+	TBAAMetadataBuilder tbaa_metadata_builder_;
 
 	FunctionContext* global_function_context_= nullptr;
 

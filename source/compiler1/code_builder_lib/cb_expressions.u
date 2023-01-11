@@ -463,13 +463,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// TODO - maybe forbid reference casting for ValueType::Value?
 	if( v.location == Variable::Location::LLVMRegister )
 	{
-		unsafe
+		r.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] ) );
+		if( v.t != void_type_ )
 		{
-			r.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] );
-			if( v.t != void_type_ )
-			{
-				LLVMBuildStore( function_context.llvm_ir_builder, v.llvm_value, r.llvm_value );
-			}
+			CreateTypedStore( function_context, v.t, v.llvm_value, r.llvm_value );
 		}
 	}
 	else
@@ -500,13 +497,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// TODO - maybe forbid reference casting for ValueType::Value?
 	if( v.location == Variable::Location::LLVMRegister )
 	{
-		unsafe
+		r.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] ) );
+		if( v.t != void_type_ )
 		{
-			r.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] );
-			if( v.t != void_type_ )
-			{
-				LLVMBuildStore( function_context.llvm_ir_builder, v.llvm_value, r.llvm_value );
-			}
+			CreateTypedStore( function_context, v.t, v.llvm_value, r.llvm_value );
 		}
 	}
 	else
@@ -1391,7 +1385,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 				else
 				{
-					result.llvm_value= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, gep_result, op_name_nt.front() ) );
+					result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, gep_result );
 					MarkLoadInstructionWithNonNullMetadata( result.llvm_value ); // Reference field is never null.
 				}
 
@@ -1677,13 +1671,10 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 	auto mut src_llvm_value= v.llvm_value;
 	if( v.location == Variable::Location::LLVMRegister )
 	{
-		unsafe
+		src_llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] ) );
+		if( v.t != void_type_ )
 		{
-			src_llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] );
-			if( v.t != void_type_ )
-			{
-				LLVMBuildStore( function_context.llvm_ir_builder, v.llvm_value, src_llvm_value );
-			}
+			CreateTypedStore( function_context, v.t, v.llvm_value, src_llvm_value );
 		}
 	}
 
@@ -3140,7 +3131,7 @@ fn CodeBuilder::DoCallFunction(
 				auto temp_storage= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, arg.t.GetLLVMType(), "\0"[0] ) );
 				if( arg.t != void_type_ )
 				{
-					unsafe( LLVMBuildStore( function_context.llvm_ir_builder, arg.llvm_value, temp_storage ) );
+					CreateTypedStore( function_context, arg.t, arg.llvm_value, temp_storage );
 				}
 				llvm_arg= temp_storage;
 				// Do not call here lifetime.start since there is no way to call lifetime.end for this value, because this allocation logically linked with some temp variable and can extend it's lifetime.

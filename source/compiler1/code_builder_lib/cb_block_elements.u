@@ -657,7 +657,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		if( r.t != void_type_ )
 		{
-			unsafe( LLVMBuildStore( function_context.llvm_ir_builder, r_in_register, l.llvm_value ) );
+			CreateTypedStore( function_context, r.t, r_in_register, l.llvm_value );
 		}
 	}
 
@@ -715,11 +715,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			return BlockElementBuildInfo();
 		}
 
-		unsafe (
-			LLVMBuildStore(
-				function_context.llvm_ir_builder,
-				CreateMoveToLLVMRegisterInstruction( op_result_variable, function_context ),
-				l_var.llvm_value ) );
+		auto val= CreateMoveToLLVMRegisterInstruction( op_result_variable, function_context );
+		CreateTypedStore( function_context, l_var.t, val, l_var.llvm_value );
 	}
 
 	CallDestructorsForTopVariablesFrame( names_scope, function_context, additive_assignment_operator.src_loc );
@@ -1421,7 +1418,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				CreateLifetimeStart( function_context, out_variable.llvm_value );
 				if( expr.t != void_type_ )
 				{
-					LLVMBuildStore( function_context.llvm_ir_builder, expr.llvm_value, out_variable.llvm_value );
+					CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
 				}
 			}
 		}
@@ -1721,7 +1718,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 			auto result_value= select( delta > 0
 				? LLVMBuildAdd( function_context.llvm_ir_builder, operand_value, one_value, "++\0"[0] )
 				: LLVMBuildSub( function_context.llvm_ir_builder, operand_value, one_value, "--\0"[0] ) );
-			LLVMBuildStore( function_context.llvm_ir_builder, result_value, variable.llvm_value );
+			CreateTypedStore( function_context, variable.t, result_value, variable.llvm_value );
 		}
 	}
 	else if( !variable.t.GetRawPointerType().empty() )
@@ -1741,7 +1738,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 			var LLVMValueRef
 				mut delta_value= LLVMConstInt( size_type_.GetLLVMType(), u64(i64(delta)), LLVMBool::True ),
 				result_value= LLVMBuildGEP( function_context.llvm_ir_builder, pointer_value, $<(delta_value), 1u, op_name[0] );
-			LLVMBuildStore( function_context.llvm_ir_builder, result_value, variable.llvm_value );
+			CreateTypedStore( function_context, variable.t, result_value, variable.llvm_value );
 		}
 	}
 	else

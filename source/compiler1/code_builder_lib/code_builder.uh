@@ -4,6 +4,7 @@ import "constexpr_function_evaluator.uh"
 import "function_context.uh"
 import "mangling.uh"
 import "structs_combined.uh"
+import "tbaa_metadata_builder.uh"
 
 // Macro for loops generation.
 // TODO - use Function instead.
@@ -66,6 +67,7 @@ struct CodeBuilderOptions
 	bool build_debug_info= false;
 	bool create_lifetimes= true;
 	bool generate_lifetime_start_end_debug_calls= false;
+	bool generate_tbaa_metadata= false;
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 }
 
@@ -699,20 +701,20 @@ private:
 	fn BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr );
 
 	fn SetupVirtualTablePointers_r(
-		this,
+		mut this,
 		LLVMValueRef this_,
 		LLVMValueRef ptr_to_vtable_ptr,
 		ClassType& class_type,
 		FunctionContext &mut function_context );
 
 	fn SetupVirtualTablePointers(
-		this,
+		mut this,
 		LLVMValueRef this_,
 		ClassTypePtr& class_type_ptr,
 		FunctionContext &mut function_context );
 
 	fn TryFetchVirtualFunction(
-		this,
+		mut this,
 		Variable& this_,
 		FunctionVariable& function,
 		FunctionContext &mut function_context ) : tup[ Variable, LLVMValueRef ];
@@ -829,11 +831,17 @@ private:
 
 	fn SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope );
 
+	fn MarkInstructionWithTBAAMetadata( this, LLVMValueRef instruction, LLVMMetadataRef metadata );
 	fn MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction );
+
+	fn CreateTypedLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef;
+	fn CreateTypedReferenceLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef;
+	fn CreateTypedStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address ) : LLVMValueRef;
+	fn CreateTypedReferenceStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address ) : LLVMValueRef;
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
-	fn CreateMoveToLLVMRegisterInstruction( this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateMoveToLLVMRegisterInstruction( mut this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
 	fn CreateFieldGEP( this, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
@@ -843,7 +851,7 @@ private:
 
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 
-	fn CopyBytes( this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
+	fn CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
 
 	fn ConstexprCompareEqual(
 		mut this,
@@ -876,6 +884,8 @@ private:
 	LLVMTargetDataRef imut data_layout_;
 	ust::string8 imut target_triple_str_; // null-terminated
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
+	bool imut generate_tbaa_metadata_;
+	TBAAMetadataBuilder tbaa_metadata_builder_;
 	ust::box</IMangler/> mangler_;
 
 	struct FundamentalLLVMTypes

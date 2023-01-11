@@ -29,6 +29,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::DataLayout& data_layout,
 	const llvm::Triple& target_triple,
 	bool generate_debug_info,
+	bool generate_tbaa_metadata,
 	ManglingScheme mangling_scheme );
 
 uint32_t GetCompilerGeneration();

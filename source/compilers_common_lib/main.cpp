@@ -276,6 +276,12 @@ cl::opt<bool> no_libc_alloc(
 	cl::init(false),
 	cl::cat(options_category) );
 
+cl::opt<bool> verify_module(
+	"verify-module",
+	cl::desc("Run verification for result llvm module (before optimization passes). Allows to find linkage errors and (possible) internal compiler errors."),
+	cl::init(false),
+	cl::cat(options_category) );
+
 } // namespace Options
 
 int Main( int argc, const char* argv[] )
@@ -329,6 +335,9 @@ int Main( int argc, const char* argv[] )
 		std::cerr << "Unknown optimization: " << Options::optimization_level << std::endl;
 		return 1;
 	}
+
+	// Build TBAA metadata only if we perform optimizations, based on this metadata.
+	const bool generate_tbaa_metadata= optimization_level > 0;
 
 	// LLVM stuff initialization.
 	llvm::InitializeAllTargets();
@@ -444,6 +453,7 @@ int Main( int argc, const char* argv[] )
 					data_layout,
 					target_triple,
 					Options::generate_debug_info,
+					generate_tbaa_metadata,
 					is_msvc ? ManglingScheme::MSVC : ManglingScheme::ItaniumABI );
 
 			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
@@ -478,6 +488,31 @@ int Main( int argc, const char* argv[] )
 
 		if( have_some_errors )
 			return 1;
+
+		// Add various flags only for source files build result. Input "ll" or "bc" modules must already have such flags.
+		if( Options::generate_debug_info )
+		{
+			// Dwarf debug info - default format.
+			if( is_msvc )
+				result_module->addModuleFlag( llvm::Module::Warning, "CodeView", 1 );
+			else
+				result_module->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
+		}
+
+		// Add module flags and global constants for compiler version and generation.
+		{
+			const auto constant= llvm::ConstantDataArray::getString( llvm_context, getFullVersion() );
+			result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler version", constant );
+			AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_version" );
+		}
+		{
+			const auto constant=
+				llvm::ConstantInt::get(
+					llvm::IntegerType::getInt32Ty(llvm_context),
+					uint64_t(GetCompilerGeneration()), false );
+			result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler generation", constant );
+			AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_generation" );
+		}
 	}
 	else if(
 		Options::input_files_type == Options::InputFileType::BC ||
@@ -649,28 +684,15 @@ int Main( int argc, const char* argv[] )
 		}
 	}
 
-	if( Options::generate_debug_info )
+	if( Options::verify_module )
 	{
-		// Dwarf debug info - default format.
-		if( is_msvc )
-			result_module->addModuleFlag( llvm::Module::Warning, "CodeView", 1 );
-		else
-			result_module->addModuleFlag( llvm::Module::Warning, "Debug Info Version", 3 );
-	}
-
-	// Add module flags and global constants for compiler version and generation.
-	{
-		const auto constant= llvm::ConstantDataArray::getString( llvm_context, getFullVersion() );
-		result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler version", constant );
-		AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_version" );
-	}
-	{
-		const auto constant=
-			llvm::ConstantInt::get(
-				llvm::IntegerType::getInt32Ty(llvm_context),
-				uint64_t(GetCompilerGeneration()), false );
-		result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler generation", constant );
-		AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_generation" );
+		std::string err_stream_str;
+		llvm::raw_string_ostream err_stream( err_stream_str );
+		if( llvm::verifyModule( *result_module, &err_stream ) )
+		{
+			std::cerr << "Module verify error:\n" << err_stream.str() << std::endl;
+			return 1;
+		}
 	}
 
 	// Create file write passes.

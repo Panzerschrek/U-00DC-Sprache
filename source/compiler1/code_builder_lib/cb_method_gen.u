@@ -371,10 +371,8 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 
 		if( class_field.is_reference )
 		{
-			unsafe( LLVMBuildStore(
-				function_context.llvm_ir_builder,
-				LLVMBuildLoad( function_context.llvm_ir_builder, src_member_value, "\0"[0] ),
-				dst_member_value ) );
+			auto val= CreateTypedReferenceLoad( function_context, class_field.t, src_member_value );
+			CreateTypedReferenceStore( function_context, class_field.t, val, dst_member_value );
 		}
 		else
 		{
@@ -922,13 +920,13 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 			else if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
 			{
 				// two pointers - do load-store
-				auto mut value= LLVMBuildLoad( function_context.llvm_ir_builder, src, "\0"[0] );
-				LLVMBuildStore( function_context.llvm_ir_builder, value, dst );
+				auto mut value= CreateTypedLoad( function_context, t, src );
+				CreateTypedStore( function_context, t, value, dst );
 			}
 			else if( LLVMTypeOf( dst ) == LLVMPointerType( LLVMTypeOf( src ), 0u ) )
 			{
 				// pointer and value in llvm register - do simple store
-				LLVMBuildStore( function_context.llvm_ir_builder, src, dst );
+				CreateTypedStore( function_context, t, src, dst );
 			}
 			else{ halt; }
 		}
@@ -1012,13 +1010,13 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 			else if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
 			{
 				// two pointers - do load-store
-				auto mut value= LLVMBuildLoad( function_context.llvm_ir_builder, src, "\0"[0] );
-				LLVMBuildStore( function_context.llvm_ir_builder, value, dst );
+				auto mut value= CreateTypedLoad( function_context, t, src );
+				CreateTypedStore( function_context, t, value, dst );
 			}
 			else if( LLVMTypeOf( dst ) == LLVMPointerType( LLVMTypeOf( src ), 0u ) )
 			{
 				// pointer and value in llvm register - do simple store
-				LLVMBuildStore( function_context.llvm_ir_builder, src, dst );
+				CreateTypedStore( function_context, t, src, dst );
 			}
 			else{ halt; }
 		}
@@ -1103,8 +1101,8 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 	{
 		unsafe
 		{
-			var LLVMValueRef l= LLVMBuildLoad( function_context.llvm_ir_builder, l_address, "\0"[0] );
-			var LLVMValueRef r= LLVMBuildLoad( function_context.llvm_ir_builder, r_address, "\0"[0] );
+			var LLVMValueRef l= CreateTypedLoad( function_context, t, l_address );
+			var LLVMValueRef r= CreateTypedLoad( function_context, t, r_address );
 
 			var LLVMTypeKind type_kind= LLVMGetTypeKind( t.GetLLVMType() );
 			var bool is_float=

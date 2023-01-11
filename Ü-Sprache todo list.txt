@@ -7,8 +7,7 @@ General:
 *) build-in "for" for array types.
 *) Accessing overloaded operators directly, take pointers to overloaded operators.
 *) switch-case
-*) "Disassembly operator" - declare variables with initializer as members of
-	value of structure type.
+*) "Disassembly operator" - declare variables with initializer as members of value of structure type.
 *) Function to function pointer assignment
 *) Functions references info in "typeinfo".
 *) More float types ( 16 bit, 128 bit )
@@ -30,8 +29,8 @@ Templates:
 *) Template function body generation only if function is selected for call
 *) enable_if for templates
 *) Variadic templates
-*) Function templates with template-dependent reference and mutability modifiers
-	for arguments. Conditional move for such arguments.
+*) Function templates with template-dependent reference and mutability modifiers for arguments. Conditional move for
+	such arguments.
 
 Standart library:
 *) Associative containers - map, set, string_map
@@ -43,9 +42,11 @@ Standart library:
 *) More math functions
 
 Compiler:
-*) Fix non-dethermenistic result of inline functions caused by different addresses of functions with "private" linkage in different compilation units.
-*) Fix non-dethermenistic compilation result caused by non-dethermenistic address of global constant variables, including "typeinfo" variables.
-*) Use TBAA from LLVM.
+*) Fix non-dethermenistic result of inline functions caused by different addresses of functions with "private" linkage
+	in different compilation units.
+*) Fix non-dethermenistic compilation result caused by non-dethermenistic address of global constant variables,
+	including "typeinfo" variables.
+*) Imporve TBAA - use struct path-based TBAA.
 *) Pass/return by-value composite values with single scalar inside.
 *) Faster calling convention for non-cross-language functions.
 *) Fix possible UB in float->int conversion.
@@ -73,5 +74,5 @@ CPP Header converter:
 *) fix "typedef enum { A, B, C } X;"
 
 Documentation:
-*) Macros
+*) Describe unsafe code requirements.
 *) More, then one language
