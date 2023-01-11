@@ -1644,7 +1644,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
 
-	SetCurrentDebugLocation( function_context,  body_syntax_element.src_loc );
+	SetCurrentDebugLocation( function_context, body_syntax_element.src_loc );
 
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();

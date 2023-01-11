@@ -61,7 +61,7 @@ llvm::MDNode* TBAAMetadataBuilder::CreateAccessTag( const Type& type )
 {
 	llvm::MDNode* const type_descriptor= GetTypeDescriptor( type );
 
-	// Calng uses this function instead of createTBAAAccessTag. I do not know, how it is correct, but it seems to be working.
+	// Clang uses this function instead of createTBAAAccessTag. I do not know, is this correct or not, but it seems to be working.
 	// TODO - set "IsConstant" flag.
 	return md_builder_.createTBAAStructTagNode( type_descriptor, type_descriptor, 0 );
 }
@@ -72,7 +72,7 @@ llvm::MDNode* TBAAMetadataBuilder::CreateReferenceAccessTag( const Type& type )
 	RawPointerType raw_pointer_type;
 	raw_pointer_type.type= type;
 
-	return CreateAccessTag( raw_pointer_type );
+	return CreateAccessTag( std::move(raw_pointer_type) );
 }
 
 llvm::MDNode* TBAAMetadataBuilder::CreateVirtualTablePointerAccessTag()
@@ -116,7 +116,7 @@ llvm::MDNode* TBAAMetadataBuilder::CreateTypeDescriptor( const Type& type )
 	if( type.GetFunctionPointerType() != nullptr )
 		return md_builder_.createTBAAScalarTypeNode( name, type_descriptors_.ptr );
 
-	// TODO - support another kinds.
+	// TODO - support another type kinds. Composite types descriptors are needed for struct-path TBAA.
 	return type_descriptors_.byte8_;
 }
 
@@ -174,11 +174,9 @@ llvm::MDNode* TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( const EnumPtr 
 	case U_FundamentalType::u128:
 		return type_descriptors_.byte128_;
 	default:
-		break;
+		U_ASSERT(false);
+		return type_descriptors_.byte8_;
 	}
-
-	U_ASSERT(false);
-	return type_descriptors_.byte8_;
 }
 
 } // namespace U

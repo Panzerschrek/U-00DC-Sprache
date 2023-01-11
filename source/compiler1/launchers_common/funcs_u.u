@@ -347,7 +347,7 @@ namespace U1
 
 fn GetCodeBuilderOptionsForTests() : CodeBuilderOptions
 {
-	var CodeBuilderOptions mut options{ .build_debug_info= true };
+	var CodeBuilderOptions mut options{ .build_debug_info= true, .create_lifetimes= true, .generate_tbaa_metadata= true };
 	return move(options);
 }
 

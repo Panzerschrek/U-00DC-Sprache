@@ -33,7 +33,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( variable.t != void_type_ )
 		{
-			auto value_in_register= unsafe( CreateMoveToLLVMRegisterInstruction( expr_result, function_context ) );
+			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
 			CreateTypedStore( function_context, variable.t, value_in_register, variable.llvm_value );
 		}
 
