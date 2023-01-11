@@ -226,17 +226,17 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	}
 
 	// Finalize incomplete typeinfo.
-	for( auto mut i= 0s; i < typeinfo_cache_.size(); ++i )
+	foreach( &entry : typeinfo_cache_ )
 	{
 		unsafe
 		{
-			auto llvm_type= typeinfo_cache_[i].v.t.GetLLVMType();
+			auto llvm_type= entry.value().t.GetLLVMType();
 			if( LLVMIsOpaqueStruct( llvm_type ) == LLVMBool::True )
 			{
 				LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
 
 				auto initializer= LLVMConstNamedStruct( llvm_type, ust::nullptr</LLVMValueRef/>(), 0u );
-				LLVMSetInitializer( typeinfo_cache_[i].v.llvm_value, initializer );
+				LLVMSetInitializer( entry.value().llvm_value, initializer );
 			}
 		}
 	}

@@ -230,12 +230,10 @@ fn CodeBuilder::BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace 
 
 fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable
 {
-	foreach( &entry : typeinfo_cache_ )
+	// Check if already created.
+	if_var( &v : typeinfo_cache_.find(t) )
 	{
-		if( entry.t == t )
-		{
-			return entry.v;
-		}
+		return v;
 	}
 
 	var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, t, g_typeinfo_root_class_name );
@@ -256,8 +254,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		v.llvm_value= AddGlobalConstantVariable( variable_name, llvm_type, v.constexpr_value );
 	}
 
-	var TypeinfoStruct mut typeinfo_struct{ .t= t, .v= v };
-	typeinfo_cache_.push_back( typeinfo_struct );
+	typeinfo_cache_.insert( t, v );
 
 	// Add type as typedef into class members namespace.
 	// This allows us to get typename itself, using typeinfo variable and use such type as normal.
@@ -283,27 +280,19 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 
 fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 {
-	auto mut entry_index= ~0s;
-	for( auto mut i= 0s; i < typeinfo_cache_.size(); ++i )
-	{
-		if( typeinfo_cache_[i].t == t )
-		{
-			entry_index= i;
-			break;
-		}
-	}
+	var Variable typeinfo_variable_copy= typeinfo_cache_.find(t).try_deref();
 
-	var ClassTypePtr typeinfo_class= typeinfo_cache_[entry_index].v.t.GetClassType().try_deref();
+	var ClassTypePtr typeinfo_class= typeinfo_variable_copy.t.GetClassType().try_deref();
 	if( typeinfo_class.lock_imut().deref().is_complete )
 	{
-		return typeinfo_cache_[entry_index].v;
+		return typeinfo_variable_copy;
 	}
 
 	if( !( EnsureTypeComplete( t ) || !t.GetFunctionType().empty() ) )
 	{
 		// Ignore incomplete types here, generate error in "typeinfo" operator evaluation instead.
 		// TODO - what if user try to access incomplete member of incomplete typeinfo class?
-		return typeinfo_cache_[entry_index].v;
+		return typeinfo_variable_copy;
 	}
 
 	var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
@@ -455,7 +444,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 
 	FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 
-	var Variable &mut v= typeinfo_cache_[entry_index].v;
+	var Variable &mut v= typeinfo_cache_.find(t).try_deref();
 	unsafe
 	{
 		auto initializer= LLVMConstNamedStruct( v.t.GetLLVMType(), fields_initializers.data(), u32(fields_initializers.size()) );

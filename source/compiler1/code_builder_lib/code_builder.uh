@@ -951,9 +951,7 @@ private:
 	// Template things for current source graph node added sequentialy into this vector too.
 	ust::vector</ ust::string8 /> generated_template_things_sequence_;
 
-	// TODO - use unorederd_map
-	struct TypeinfoStruct{ Type t; Variable v; }
-	ust::vector</TypeinfoStruct/> typeinfo_cache_;
+	ust::unordered_map</Type, Variable/> typeinfo_cache_;
 	ust::vector</ ClassTypePtr /> typeinfo_class_table_;
 
 	// Maps string -> llvm::GlobalVariable
