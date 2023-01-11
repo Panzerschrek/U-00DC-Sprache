@@ -148,7 +148,7 @@ llvm::DIType* CodeBuilder::CreateDIType( const FundamentalType& type )
 {
 	U_ASSERT(build_debug_info_);
 
-	if( type.fundamental_type == U_FundamentalType::Void )
+	if( type.fundamental_type == U_FundamentalType::void_ )
 	{
 		// Internal representation of void type is llvm struct with zero elements.
 		return debug_info_.builder->createStructType(
@@ -164,7 +164,7 @@ llvm::DIType* CodeBuilder::CreateDIType( const FundamentalType& type )
 	}
 
 	unsigned int type_encoding= llvm::dwarf::DW_ATE_unsigned;
-	if( type.fundamental_type == U_FundamentalType::Bool )
+	if( type.fundamental_type == U_FundamentalType::bool_ )
 		type_encoding= llvm::dwarf::DW_ATE_boolean;
 	else if( IsSignedInteger( type.fundamental_type ) )
 		type_encoding= llvm::dwarf::DW_ATE_signed;

@@ -295,29 +295,29 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 	case U_FundamentalType::InvalidType:
 	case U_FundamentalType::LastType:
 		return "";
-	case U_FundamentalType::Void: return "v";
-	case U_FundamentalType::Bool: return "b";
-	case U_FundamentalType:: i8: return "a"; // C++ signed char
-	case U_FundamentalType:: u8: return "h"; // C++ unsigned char
-	case U_FundamentalType::i16: return "s";
-	case U_FundamentalType::u16: return "t";
-	case U_FundamentalType::i32: return "i";
-	case U_FundamentalType::u32: return "j";
-	case U_FundamentalType::i64: return "x";
-	case U_FundamentalType::u64: return "y";
-	case U_FundamentalType::i128: return "n";
-	case U_FundamentalType::u128: return "o";
-	case U_FundamentalType::f32: return "f";
-	case U_FundamentalType::f64: return "d";
-	case U_FundamentalType::char8 : return "c"; // C++ char
-	case U_FundamentalType::char16: return "Ds"; // C++ char16_t
-	case U_FundamentalType::char32: return "Di"; // C++ char32_t
+	case U_FundamentalType::void_: return "v";
+	case U_FundamentalType::bool_: return "b";
+	case U_FundamentalType::i8_  : return "a"; // C++ signed char
+	case U_FundamentalType::u8_  : return "h"; // C++ unsigned char
+	case U_FundamentalType::i16_ : return "s";
+	case U_FundamentalType::u16_ : return "t";
+	case U_FundamentalType::i32_ : return "i";
+	case U_FundamentalType::u32_ : return "j";
+	case U_FundamentalType::i64_ : return "x";
+	case U_FundamentalType::u64_ : return "y";
+	case U_FundamentalType::i128_: return "n";
+	case U_FundamentalType::u128_: return "o";
+	case U_FundamentalType::f32_: return "f";
+	case U_FundamentalType::f64_: return "d";
+	case U_FundamentalType::char8_ : return "c"; // C++ char
+	case U_FundamentalType::char16_: return "Ds"; // C++ char16_t
+	case U_FundamentalType::char32_: return "Di"; // C++ char32_t
 	// Use vendor-extended types for "byte" types.
-	case U_FundamentalType::byte8  : return "u5byte8"  ;
-	case U_FundamentalType::byte16 : return "u6byte16" ;
-	case U_FundamentalType::byte32 : return "u6byte32" ;
-	case U_FundamentalType::byte64 : return "u6byte64" ;
-	case U_FundamentalType::byte128: return "u7byte128";
+	case U_FundamentalType::byte8_  : return "u5byte8"  ;
+	case U_FundamentalType::byte16_ : return "u6byte16" ;
+	case U_FundamentalType::byte32_ : return "u6byte32" ;
+	case U_FundamentalType::byte64_ : return "u6byte64" ;
+	case U_FundamentalType::byte128_: return "u7byte128";
 	};
 
 	U_ASSERT(false);
@@ -350,7 +350,7 @@ void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<Functio
 		if(
 			param.value_type == ValueType::Value &&
 			param.type.GetFundamentalType() != nullptr &&
-			param.type.GetFundamentalType()->fundamental_type == U_FundamentalType::Void )
+			param.type.GetFundamentalType()->fundamental_type == U_FundamentalType::void_ )
 		{
 			// We need to distinguish between function with no params (with "v" for params) and function with single "void" param.
 			// So, mark real "void: params with "const".

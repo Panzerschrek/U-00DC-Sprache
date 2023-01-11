@@ -8,21 +8,21 @@ namespace U
 bool IsUnsignedInteger( const U_FundamentalType type )
 {
 	return
-		type == U_FundamentalType::u8  ||
-		type == U_FundamentalType::u16 ||
-		type == U_FundamentalType::u32 ||
-		type == U_FundamentalType::u64 ||
-		type == U_FundamentalType::u128;
+		type == U_FundamentalType::u8_  ||
+		type == U_FundamentalType::u16_ ||
+		type == U_FundamentalType::u32_ ||
+		type == U_FundamentalType::u64_ ||
+		type == U_FundamentalType::u128_;
 }
 
 bool IsSignedInteger( const U_FundamentalType type )
 {
 	return
-		type == U_FundamentalType::i8  ||
-		type == U_FundamentalType::i16 ||
-		type == U_FundamentalType::i32 ||
-		type == U_FundamentalType::i64 ||
-		type == U_FundamentalType::i128;
+		type == U_FundamentalType::i8_  ||
+		type == U_FundamentalType::i16_ ||
+		type == U_FundamentalType::i32_ ||
+		type == U_FundamentalType::i64_ ||
+		type == U_FundamentalType::i128_;
 }
 
 bool IsInteger( const U_FundamentalType type )
@@ -33,8 +33,8 @@ bool IsInteger( const U_FundamentalType type )
 bool IsFloatingPoint( U_FundamentalType type )
 {
 	return
-		type == U_FundamentalType::f32 ||
-		type == U_FundamentalType::f64;
+		type == U_FundamentalType::f32_ ||
+		type == U_FundamentalType::f64_;
 }
 
 bool IsNumericType( const U_FundamentalType type )
@@ -45,19 +45,19 @@ bool IsNumericType( const U_FundamentalType type )
 bool IsChar( const U_FundamentalType type )
 {
 	return
-		type == U_FundamentalType::char8  ||
-		type == U_FundamentalType::char16 ||
-		type == U_FundamentalType::char32;
+		type == U_FundamentalType::char8_  ||
+		type == U_FundamentalType::char16_ ||
+		type == U_FundamentalType::char32_;
 }
 
 bool IsByte( const U_FundamentalType type )
 {
 	return
-		type == U_FundamentalType::byte8  ||
-		type == U_FundamentalType::byte16 ||
-		type == U_FundamentalType::byte32 ||
-		type == U_FundamentalType::byte64 ||
-		type == U_FundamentalType::byte128;
+		type == U_FundamentalType::byte8_  ||
+		type == U_FundamentalType::byte16_ ||
+		type == U_FundamentalType::byte32_ ||
+		type == U_FundamentalType::byte64_ ||
+		type == U_FundamentalType::byte128_;
 }
 
 const std::string g_invalid_type_name= "InvalidType";
@@ -67,28 +67,28 @@ const std::string& GetFundamentalTypeName( const U_FundamentalType type )
 	switch(type)
 	{
 	case U_FundamentalType::InvalidType: return g_invalid_type_name;
-	case U_FundamentalType::Void: return Keyword( Keywords::void_ );
-	case U_FundamentalType::Bool: return Keyword( Keywords::bool_ );
-	case U_FundamentalType::i8  : return Keyword( Keywords::i8_ );
-	case U_FundamentalType::u8  : return Keyword( Keywords::u8_ );
-	case U_FundamentalType::i16 : return Keyword( Keywords::i16_ );
-	case U_FundamentalType::u16 : return Keyword( Keywords::u16_ );
-	case U_FundamentalType::i32 : return Keyword( Keywords::i32_ );
-	case U_FundamentalType::u32 : return Keyword( Keywords::u32_ );
-	case U_FundamentalType::i64 : return Keyword( Keywords::i64_ );
-	case U_FundamentalType::u64 : return Keyword( Keywords::u64_ );
-	case U_FundamentalType::i128: return Keyword( Keywords::i128_ );
-	case U_FundamentalType::u128: return Keyword( Keywords::u128_ );
-	case U_FundamentalType::f32: return Keyword( Keywords::f32_ );
-	case U_FundamentalType::f64: return Keyword( Keywords::f64_ );
-	case U_FundamentalType::char8 : return Keyword( Keywords::char8_  );
-	case U_FundamentalType::char16: return Keyword( Keywords::char16_ );
-	case U_FundamentalType::char32: return Keyword( Keywords::char32_ );
-	case U_FundamentalType::byte8   : return Keyword( Keywords::byte8_   );
-	case U_FundamentalType::byte16  : return Keyword( Keywords::byte16_  );
-	case U_FundamentalType::byte32  : return Keyword( Keywords::byte32_  );
-	case U_FundamentalType::byte64  : return Keyword( Keywords::byte64_  );
-	case U_FundamentalType::byte128 : return Keyword( Keywords::byte128_ );
+	case U_FundamentalType::void_: return Keyword( Keywords::void_ );
+	case U_FundamentalType::bool_: return Keyword( Keywords::bool_ );
+	case U_FundamentalType::i8_  : return Keyword( Keywords::i8_   );
+	case U_FundamentalType::u8_  : return Keyword( Keywords::u8_   );
+	case U_FundamentalType::i16_ : return Keyword( Keywords::i16_  );
+	case U_FundamentalType::u16_ : return Keyword( Keywords::u16_  );
+	case U_FundamentalType::i32_ : return Keyword( Keywords::i32_  );
+	case U_FundamentalType::u32_ : return Keyword( Keywords::u32_  );
+	case U_FundamentalType::i64_ : return Keyword( Keywords::i64_  );
+	case U_FundamentalType::u64_ : return Keyword( Keywords::u64_  );
+	case U_FundamentalType::i128_: return Keyword( Keywords::i128_ );
+	case U_FundamentalType::u128_: return Keyword( Keywords::u128_ );
+	case U_FundamentalType::f32_: return Keyword( Keywords::f32_ );
+	case U_FundamentalType::f64_: return Keyword( Keywords::f64_ );
+	case U_FundamentalType::char8_ : return Keyword( Keywords::char8_  );
+	case U_FundamentalType::char16_: return Keyword( Keywords::char16_ );
+	case U_FundamentalType::char32_: return Keyword( Keywords::char32_ );
+	case U_FundamentalType::byte8_   : return Keyword( Keywords::byte8_   );
+	case U_FundamentalType::byte16_  : return Keyword( Keywords::byte16_  );
+	case U_FundamentalType::byte32_  : return Keyword( Keywords::byte32_  );
+	case U_FundamentalType::byte64_  : return Keyword( Keywords::byte64_  );
+	case U_FundamentalType::byte128_ : return Keyword( Keywords::byte128_ );
 	case U_FundamentalType::LastType: break;
 	};
 
@@ -101,28 +101,28 @@ U_FundamentalType GetFundamentalTypeByName( const std::string& name )
 	// Use here a lot of compare operations, instead of std::unordered_map, because
 	// unordered maps needs be constructed after construction of keywords list.
 	// But for garantee of construction order we needs use static function variable, that requires mutex, which is slow.
-	if( name ==  Keywords::void_ ) return U_FundamentalType::Void;
-	if( name == Keywords::bool_ ) return U_FundamentalType::Bool;
-	if( name == Keywords::i8_   ) return U_FundamentalType::i8  ;
-	if( name == Keywords::u8_   ) return U_FundamentalType::u8  ;
-	if( name == Keywords::i16_  ) return U_FundamentalType::i16 ;
-	if( name == Keywords::u16_  ) return U_FundamentalType::u16 ;
-	if( name == Keywords::i32_  ) return U_FundamentalType::i32 ;
-	if( name == Keywords::u32_  ) return U_FundamentalType::u32 ;
-	if( name == Keywords::i64_  ) return U_FundamentalType::i64 ;
-	if( name == Keywords::u64_  ) return U_FundamentalType::u64 ;
-	if( name == Keywords::i128_ ) return U_FundamentalType::i128;
-	if( name == Keywords::u128_ ) return U_FundamentalType::u128;
-	if( name == Keywords::f32_ ) return U_FundamentalType::f32;
-	if( name == Keywords::f64_ ) return U_FundamentalType::f64;
-	if( name == Keywords::char8_  ) return U_FundamentalType::char8;
-	if( name == Keywords::char16_ ) return U_FundamentalType::char16;
-	if( name == Keywords::char32_ ) return U_FundamentalType::char32;
-	if( name == Keywords::byte8_   ) return U_FundamentalType::byte8  ;
-	if( name == Keywords::byte16_  ) return U_FundamentalType::byte16 ;
-	if( name == Keywords::byte32_  ) return U_FundamentalType::byte32 ;
-	if( name == Keywords::byte64_  ) return U_FundamentalType::byte64 ;
-	if( name == Keywords::byte128_ ) return U_FundamentalType::byte128;
+	if( name == Keywords::void_ ) return U_FundamentalType::void_;
+	if( name == Keywords::bool_ ) return U_FundamentalType::bool_;
+	if( name == Keywords::i8_   ) return U_FundamentalType::i8_  ;
+	if( name == Keywords::u8_   ) return U_FundamentalType::u8_  ;
+	if( name == Keywords::i16_  ) return U_FundamentalType::i16_ ;
+	if( name == Keywords::u16_  ) return U_FundamentalType::u16_ ;
+	if( name == Keywords::i32_  ) return U_FundamentalType::i32_ ;
+	if( name == Keywords::u32_  ) return U_FundamentalType::u32_ ;
+	if( name == Keywords::i64_  ) return U_FundamentalType::i64_ ;
+	if( name == Keywords::u64_  ) return U_FundamentalType::u64_ ;
+	if( name == Keywords::i128_ ) return U_FundamentalType::i128_;
+	if( name == Keywords::u128_ ) return U_FundamentalType::u128_;
+	if( name == Keywords::f32_ ) return U_FundamentalType::f32_;
+	if( name == Keywords::f64_ ) return U_FundamentalType::f64_;
+	if( name == Keywords::char8_  ) return U_FundamentalType::char8_;
+	if( name == Keywords::char16_ ) return U_FundamentalType::char16_;
+	if( name == Keywords::char32_ ) return U_FundamentalType::char32_;
+	if( name == Keywords::byte8_   ) return U_FundamentalType::byte8_  ;
+	if( name == Keywords::byte16_  ) return U_FundamentalType::byte16_ ;
+	if( name == Keywords::byte32_  ) return U_FundamentalType::byte32_ ;
+	if( name == Keywords::byte64_  ) return U_FundamentalType::byte64_ ;
+	if( name == Keywords::byte128_ ) return U_FundamentalType::byte128_;
 
 	return U_FundamentalType::InvalidType;
 }

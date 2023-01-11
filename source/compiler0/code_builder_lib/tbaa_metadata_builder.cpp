@@ -125,28 +125,28 @@ llvm::MDNode* TBAAMetadataBuilder::GetTypeDescriptorForFundamentalType( const U_
 	switch(fundamental_type)
 	{
 	case U_FundamentalType::InvalidType: return type_descriptors_.byte8_;
-	case U_FundamentalType::Void: return type_descriptors_.void_;
-	case U_FundamentalType::Bool: return type_descriptors_.bool_;
-	case U_FundamentalType::i8  : return type_descriptors_.i8_  ;
-	case U_FundamentalType::u8  : return type_descriptors_.u8_  ;
-	case U_FundamentalType::i16 : return type_descriptors_.i16_ ;
-	case U_FundamentalType::u16 : return type_descriptors_.u16_ ;
-	case U_FundamentalType::i32 : return type_descriptors_.i32_ ;
-	case U_FundamentalType::u32 : return type_descriptors_.u32_ ;
-	case U_FundamentalType::i64 : return type_descriptors_.i64_ ;
-	case U_FundamentalType::u64 : return type_descriptors_.u64_ ;
-	case U_FundamentalType::i128: return type_descriptors_.i128_;
-	case U_FundamentalType::u128: return type_descriptors_.u128_;
-	case U_FundamentalType::f32: return type_descriptors_.f32_;
-	case U_FundamentalType::f64: return type_descriptors_.f64_;
-	case U_FundamentalType::char8 : return type_descriptors_.char8_ ;
-	case U_FundamentalType::char16: return type_descriptors_.char16_;
-	case U_FundamentalType::char32: return type_descriptors_.char32_;
-	case U_FundamentalType::byte8   : return type_descriptors_.byte8_  ;
-	case U_FundamentalType::byte16  : return type_descriptors_.byte16_ ;
-	case U_FundamentalType::byte32  : return type_descriptors_.byte32_ ;
-	case U_FundamentalType::byte64  : return type_descriptors_.byte64_ ;
-	case U_FundamentalType::byte128 : return type_descriptors_.byte128_;
+	case U_FundamentalType::void_: return type_descriptors_.void_;
+	case U_FundamentalType::bool_: return type_descriptors_.bool_;
+	case U_FundamentalType::i8_  : return type_descriptors_.i8_  ;
+	case U_FundamentalType::u8_  : return type_descriptors_.u8_  ;
+	case U_FundamentalType::i16_ : return type_descriptors_.i16_ ;
+	case U_FundamentalType::u16_ : return type_descriptors_.u16_ ;
+	case U_FundamentalType::i32_ : return type_descriptors_.i32_ ;
+	case U_FundamentalType::u32_ : return type_descriptors_.u32_ ;
+	case U_FundamentalType::i64_ : return type_descriptors_.i64_ ;
+	case U_FundamentalType::u64_ : return type_descriptors_.u64_ ;
+	case U_FundamentalType::i128_: return type_descriptors_.i128_;
+	case U_FundamentalType::u128_: return type_descriptors_.u128_;
+	case U_FundamentalType::f32_: return type_descriptors_.f32_;
+	case U_FundamentalType::f64_: return type_descriptors_.f64_;
+	case U_FundamentalType::char8_ : return type_descriptors_.char8_ ;
+	case U_FundamentalType::char16_: return type_descriptors_.char16_;
+	case U_FundamentalType::char32_: return type_descriptors_.char32_;
+	case U_FundamentalType::byte8_   : return type_descriptors_.byte8_  ;
+	case U_FundamentalType::byte16_  : return type_descriptors_.byte16_ ;
+	case U_FundamentalType::byte32_  : return type_descriptors_.byte32_ ;
+	case U_FundamentalType::byte64_  : return type_descriptors_.byte64_ ;
+	case U_FundamentalType::byte128_ : return type_descriptors_.byte128_;
 	case U_FundamentalType::LastType: break;
 	}
 
@@ -158,20 +158,20 @@ llvm::MDNode* TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( const EnumPtr 
 {
 	switch( enum_type->underlaying_type.fundamental_type )
 	{
-	case U_FundamentalType::i8  :
-	case U_FundamentalType::u8  :
+	case U_FundamentalType::i8_  :
+	case U_FundamentalType::u8_  :
 		return type_descriptors_.byte8_ ;
-	case U_FundamentalType::i16 :
-	case U_FundamentalType::u16 :
+	case U_FundamentalType::i16_ :
+	case U_FundamentalType::u16_ :
 		return type_descriptors_.byte16_ ;
-	case U_FundamentalType::i32 :
-	case U_FundamentalType::u32 :
+	case U_FundamentalType::i32_ :
+	case U_FundamentalType::u32_ :
 		return type_descriptors_.byte32_ ;
-	case U_FundamentalType::i64 :
-	case U_FundamentalType::u64 :
+	case U_FundamentalType::i64_ :
+	case U_FundamentalType::u64_ :
 		return type_descriptors_.byte64_ ;
-	case U_FundamentalType::i128:
-	case U_FundamentalType::u128:
+	case U_FundamentalType::i128_:
+	case U_FundamentalType::u128_:
 		return type_descriptors_.byte128_;
 	default:
 		U_ASSERT(false);

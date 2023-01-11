@@ -604,7 +604,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 {
 	if( const FundamentalType* const dst_type= variable.type.GetFundamentalType() )
 	{
-		if( dst_type->fundamental_type == U_FundamentalType::Void && synt_args.empty() )
+		if( dst_type->fundamental_type == U_FundamentalType::void_ && synt_args.empty() )
 			return llvm::Constant::getNullValue( dst_type->llvm_type );
 
 		if( synt_args.size() != 1u )
@@ -723,7 +723,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			}
 			else
 			{
-				if( dst_type->fundamental_type == U_FundamentalType::Bool )
+				if( dst_type->fundamental_type == U_FundamentalType::bool_ )
 				{
 					// TODO - error, bool have no constructors from other types
 				}

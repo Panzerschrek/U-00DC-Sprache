@@ -308,7 +308,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr& class_type )
 		virtual_table_struct_fields.push_back( polymorph_type_id_table_element_type_->getPointerTo() ); // type_id field
 	}
 
-	const auto fn_type= llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, true );
+	const auto fn_type= llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, true );
 	const auto fn_ptr_type= llvm::PointerType::get( fn_type, 0u );
 
 	uint32_t own_functions_count= 0u;

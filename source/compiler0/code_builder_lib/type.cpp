@@ -22,28 +22,28 @@ uint64_t GetFundamentalTypeSize( const U_FundamentalType type )
 	switch(type)
 	{
 	case U_FundamentalType::InvalidType: return 0u;
-	case U_FundamentalType::Void: return 0u;
-	case U_FundamentalType::Bool: return 1u;
-	case U_FundamentalType::i8  : return  1u;
-	case U_FundamentalType::u8  : return  1u;
-	case U_FundamentalType::i16 : return  2u;
-	case U_FundamentalType::u16 : return  2u;
-	case U_FundamentalType::i32 : return  4u;
-	case U_FundamentalType::u32 : return  4u;
-	case U_FundamentalType::i64 : return  8u;
-	case U_FundamentalType::u64 : return  8u;
-	case U_FundamentalType::i128: return 16u;
-	case U_FundamentalType::u128: return 16u;
-	case U_FundamentalType::f32: return 4u;
-	case U_FundamentalType::f64: return 8u;
-	case U_FundamentalType::char8 : return 1u;
-	case U_FundamentalType::char16: return 2u;
-	case U_FundamentalType::char32: return 4u;
-	case U_FundamentalType::byte8  : return  1u;
-	case U_FundamentalType::byte16 : return  2u;
-	case U_FundamentalType::byte32 : return  4u;
-	case U_FundamentalType::byte64 : return  8u;
-	case U_FundamentalType::byte128: return 16u;
+	case U_FundamentalType::void_: return 0u;
+	case U_FundamentalType::bool_: return 1u;
+	case U_FundamentalType::i8_  : return  1u;
+	case U_FundamentalType::u8_  : return  1u;
+	case U_FundamentalType::i16_ : return  2u;
+	case U_FundamentalType::u16_ : return  2u;
+	case U_FundamentalType::i32_ : return  4u;
+	case U_FundamentalType::u32_ : return  4u;
+	case U_FundamentalType::i64_ : return  8u;
+	case U_FundamentalType::u64_ : return  8u;
+	case U_FundamentalType::i128_: return 16u;
+	case U_FundamentalType::u128_: return 16u;
+	case U_FundamentalType::f32_: return 4u;
+	case U_FundamentalType::f64_: return 8u;
+	case U_FundamentalType::char8_ : return 1u;
+	case U_FundamentalType::char16_: return 2u;
+	case U_FundamentalType::char32_: return 4u;
+	case U_FundamentalType::byte8_  : return  1u;
+	case U_FundamentalType::byte16_ : return  2u;
+	case U_FundamentalType::byte32_ : return  4u;
+	case U_FundamentalType::byte64_ : return  8u;
+	case U_FundamentalType::byte128_: return 16u;
 	case U_FundamentalType::LastType: break;
 	};
 
@@ -234,7 +234,7 @@ bool Type::ReferenceIsConvertibleTo( const Type& other ) const
 bool Type::IsDefaultConstructible() const
 {
 	if( const auto fundamental_type= GetFundamentalType() )
-		return fundamental_type->fundamental_type == U_FundamentalType::Void;
+		return fundamental_type->fundamental_type == U_FundamentalType::void_;
 	else if( const auto class_type= GetClassType() )
 		return class_type->is_default_constructible;
 	else if( const auto array_type= GetArrayType() )

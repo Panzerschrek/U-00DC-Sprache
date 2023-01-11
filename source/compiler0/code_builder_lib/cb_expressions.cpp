@@ -999,22 +999,22 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const std::string type_suffix= numeric_constant.type_suffix.data();
 
 	if( type_suffix.empty() )
-		type= numeric_constant.has_fractional_point ? U_FundamentalType::f64 : U_FundamentalType::i32;
+		type= numeric_constant.has_fractional_point ? U_FundamentalType::f64_ : U_FundamentalType::i32_;
 	else if( type_suffix == "u" )
-		type= U_FundamentalType::u32;
+		type= U_FundamentalType::u32_;
 	// Suffix for size_type
 	else if( type_suffix == "s" )
 		type= size_type_.GetFundamentalType()->fundamental_type;
 	// Simple "f" suffix for 32bit floats.
 	else if( type_suffix == "f" )
-		type= U_FundamentalType::f32;
+		type= U_FundamentalType::f32_;
 	// Short suffixes for chars
 	else if( type_suffix ==  "c8" )
-		type= U_FundamentalType::char8 ;
+		type= U_FundamentalType::char8_ ;
 	else if( type_suffix == "c16" )
-		type= U_FundamentalType::char16;
+		type= U_FundamentalType::char16_;
 	else if( type_suffix == "c32" )
-		type= U_FundamentalType::char32;
+		type= U_FundamentalType::char32_;
 	else
 		type=GetFundamentalTypeByName( type_suffix );
 
@@ -1083,7 +1083,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( type_suffix.empty() || type_suffix == "u8" )
 	{
-		char_type= U_FundamentalType::char8;
+		char_type= U_FundamentalType::char8_;
 		array_size= string_literal.value_.size();
 		initializer= llvm::ConstantDataArray::getString( llvm_context_, string_literal.value_, false /* not null terminated */ );
 	}
@@ -1092,7 +1092,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		llvm::SmallVector<llvm::UTF16, 32> str;
 		llvm::convertUTF8ToUTF16String( string_literal.value_, str );
 
-		char_type= U_FundamentalType::char16;
+		char_type= U_FundamentalType::char16_;
 		array_size= str.size();
 		initializer= llvm::ConstantDataArray::get( llvm_context_, str );
 	}
@@ -1102,43 +1102,43 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		for( auto it = string_literal.value_.data(), it_end= it + string_literal.value_.size(); it < it_end; )
 			str.push_back( ReadNextUTF8Char( it, it_end ) );
 
-		char_type= U_FundamentalType::char32;
+		char_type= U_FundamentalType::char32_;
 		array_size= str.size();
 		initializer= llvm::ConstantDataArray::get( llvm_context_, str );
 	}
 	// If string literal have char suffix, process it as single char literal.
-	else if( type_suffix ==  "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8  ) )
+	else if( type_suffix ==  "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
 	{
 		if( string_literal.value_.size() == 1u )
 		{
-			char_type= U_FundamentalType::char8 ;
-			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char8 , uint64_t(string_literal.value_[0]), false );
+			char_type= U_FundamentalType::char8_ ;
+			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char8_ , uint64_t(string_literal.value_[0]), false );
 		}
 		else
 			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.src_loc_, string_literal.value_ );
 	}
-	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16 ) )
+	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
 	{
 		const char* it_start= string_literal.value_.data();
 		const char* const it_end= it_start + string_literal.value_.size();
 		const sprache_char c= ReadNextUTF8Char( it_start, it_end );
 		if( it_start == it_end && c <= 65535u )
 		{
-			char_type= U_FundamentalType::char16;
-			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char16, uint64_t(c), false );
+			char_type= U_FundamentalType::char16_;
+			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char16_, uint64_t(c), false );
 		}
 		else
 			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.src_loc_, string_literal.value_ );
 	}
-	else if( type_suffix == "c32" || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32 ) )
+	else if( type_suffix == "c32" || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32_ ) )
 	{
 		const char* it_start= string_literal.value_.data();
 		const char* const it_end= it_start + string_literal.value_.size() ;
 		const sprache_char c= ReadNextUTF8Char( it_start, it_end );
 		if( it_start == it_end )
 		{
-			char_type= U_FundamentalType::char32;
-			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char32, uint64_t(c), false );
+			char_type= U_FundamentalType::char32_;
+			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char32_, uint64_t(c), false );
 		}
 		else
 			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.src_loc_, string_literal.value_ );
@@ -1948,7 +1948,7 @@ Value CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 
-			const bool is_void= l_fundamental_type != nullptr && l_fundamental_type->fundamental_type == U_FundamentalType::Void;
+			const bool is_void= l_fundamental_type != nullptr && l_fundamental_type->fundamental_type == U_FundamentalType::void_;
 			const bool is_float= l_fundamental_type != nullptr && IsFloatingPoint( l_fundamental_type->fundamental_type );
 
 			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
@@ -2101,7 +2101,7 @@ Value CodeBuilder::BuildBinaryOperator(
 			else
 				greater= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
 
-			const auto result_fundamental_type= U_FundamentalType::i32;
+			const auto result_fundamental_type= U_FundamentalType::i32_;
 			const auto result_llvm_type= GetFundamentalLLVMType( result_fundamental_type );
 			const auto zero= llvm::ConstantInt::get( result_llvm_type, uint64_t(0), true );
 			const auto plus_one= llvm::ConstantInt::get( result_llvm_type, uint64_t(1), true );
@@ -2133,7 +2133,7 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 		else
 		{
-			if( !( IsInteger( l_fundamental_type->fundamental_type ) || l_fundamental_type->fundamental_type == U_FundamentalType::Bool ) )
+			if( !( IsInteger( l_fundamental_type->fundamental_type ) || l_fundamental_type->fundamental_type == U_FundamentalType::bool_ ) )
 			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_type );
 				return ErrorValue();
@@ -2330,7 +2330,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 				return ErrorValue();
 			}
 
-			const U_FundamentalType diff_type= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u ? U_FundamentalType::i32 : U_FundamentalType::i64;
+			const U_FundamentalType diff_type= fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u ? U_FundamentalType::i32_ : U_FundamentalType::i64_;
 			llvm::Type* const diff_llvm_type= GetFundamentalLLVMType( diff_type );
 
 			result.type= FundamentalType( diff_type, diff_llvm_type );

@@ -982,37 +982,39 @@ private:
 
 	struct
 	{
-		llvm::IntegerType*  i8;
-		llvm::IntegerType*  u8;
-		llvm::IntegerType* i16;
-		llvm::IntegerType* u16;
-		llvm::IntegerType* i32;
-		llvm::IntegerType* u32;
-		llvm::IntegerType* i64;
-		llvm::IntegerType* u64;
-		llvm::IntegerType* i128;
-		llvm::IntegerType* u128;
-
-		llvm::Type* f32;
-		llvm::Type* f64;
-
-		llvm::IntegerType* char8 ;
-		llvm::IntegerType* char16;
-		llvm::IntegerType* char32;
-
-		llvm::IntegerType* byte8  ;
-		llvm::IntegerType* byte16 ;
-		llvm::IntegerType* byte32 ;
-		llvm::IntegerType* byte64 ;
-		llvm::IntegerType* byte128;
+		llvm::Type* invalid_type_;
 
 		llvm::StructType* void_;
-		llvm::Type* void_for_ret;
-		llvm::Type* invalid_type;
 		llvm::IntegerType* bool_;
 
+		llvm::IntegerType* i8_  ;
+		llvm::IntegerType* u8_  ;
+		llvm::IntegerType* i16_ ;
+		llvm::IntegerType* u16_ ;
+		llvm::IntegerType* i32_ ;
+		llvm::IntegerType* u32_ ;
+		llvm::IntegerType* i64_ ;
+		llvm::IntegerType* u64_ ;
+		llvm::IntegerType* i128_;
+		llvm::IntegerType* u128_;
+
+		llvm::Type* f32_;
+		llvm::Type* f64_;
+
+		llvm::IntegerType* char8_ ;
+		llvm::IntegerType* char16_;
+		llvm::IntegerType* char32_;
+
+		llvm::IntegerType* byte8_  ;
+		llvm::IntegerType* byte16_ ;
+		llvm::IntegerType* byte32_ ;
+		llvm::IntegerType* byte64_ ;
+		llvm::IntegerType* byte128_;
+
+		llvm::Type* void_for_ret_;
+
 		llvm::IntegerType* int_ptr; // Type with width of pointer.
-	} fundamental_llvm_types_;
+	} fundamental_llvm_types_{};
 
 	llvm::Function* halt_func_= nullptr;
 

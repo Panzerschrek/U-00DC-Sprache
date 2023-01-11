@@ -89,32 +89,32 @@ CodeBuilder::CodeBuilder(
 	, mangler_( CreateMangler( options.mangling_scheme, data_layout_ ) )
 	, tbaa_metadata_builder_( llvm_context_, data_layout, mangler_ )
 {
-	fundamental_llvm_types_.i8  = llvm::Type::getInt8Ty  ( llvm_context_ );
-	fundamental_llvm_types_.u8  = llvm::Type::getInt8Ty  ( llvm_context_ );
-	fundamental_llvm_types_.i16 = llvm::Type::getInt16Ty ( llvm_context_ );
-	fundamental_llvm_types_.u16 = llvm::Type::getInt16Ty ( llvm_context_ );
-	fundamental_llvm_types_.i32 = llvm::Type::getInt32Ty ( llvm_context_ );
-	fundamental_llvm_types_.u32 = llvm::Type::getInt32Ty ( llvm_context_ );
-	fundamental_llvm_types_.i64 = llvm::Type::getInt64Ty ( llvm_context_ );
-	fundamental_llvm_types_.u64 = llvm::Type::getInt64Ty ( llvm_context_ );
-	fundamental_llvm_types_.i128= llvm::Type::getInt128Ty( llvm_context_ );
-	fundamental_llvm_types_.u128= llvm::Type::getInt128Ty( llvm_context_ );
+	fundamental_llvm_types_.i8_  = llvm::Type::getInt8Ty  ( llvm_context_ );
+	fundamental_llvm_types_.u8_  = llvm::Type::getInt8Ty  ( llvm_context_ );
+	fundamental_llvm_types_.i16_ = llvm::Type::getInt16Ty ( llvm_context_ );
+	fundamental_llvm_types_.u16_ = llvm::Type::getInt16Ty ( llvm_context_ );
+	fundamental_llvm_types_.i32_ = llvm::Type::getInt32Ty ( llvm_context_ );
+	fundamental_llvm_types_.u32_ = llvm::Type::getInt32Ty ( llvm_context_ );
+	fundamental_llvm_types_.i64_ = llvm::Type::getInt64Ty ( llvm_context_ );
+	fundamental_llvm_types_.u64_ = llvm::Type::getInt64Ty ( llvm_context_ );
+	fundamental_llvm_types_.i128_= llvm::Type::getInt128Ty( llvm_context_ );
+	fundamental_llvm_types_.u128_= llvm::Type::getInt128Ty( llvm_context_ );
 
-	fundamental_llvm_types_.f32= llvm::Type::getFloatTy( llvm_context_ );
-	fundamental_llvm_types_.f64= llvm::Type::getDoubleTy( llvm_context_ );
+	fundamental_llvm_types_.f32_= llvm::Type::getFloatTy( llvm_context_ );
+	fundamental_llvm_types_.f64_= llvm::Type::getDoubleTy( llvm_context_ );
 
-	fundamental_llvm_types_.char8 = llvm::Type::getInt8Ty ( llvm_context_ );
-	fundamental_llvm_types_.char16= llvm::Type::getInt16Ty( llvm_context_ );
-	fundamental_llvm_types_.char32= llvm::Type::getInt32Ty( llvm_context_ );
+	fundamental_llvm_types_.char8_ = llvm::Type::getInt8Ty ( llvm_context_ );
+	fundamental_llvm_types_.char16_= llvm::Type::getInt16Ty( llvm_context_ );
+	fundamental_llvm_types_.char32_= llvm::Type::getInt32Ty( llvm_context_ );
 
-	fundamental_llvm_types_.byte8  = llvm::Type::getInt8Ty  ( llvm_context_ );
-	fundamental_llvm_types_.byte16 = llvm::Type::getInt16Ty ( llvm_context_ );
-	fundamental_llvm_types_.byte32 = llvm::Type::getInt32Ty ( llvm_context_ );
-	fundamental_llvm_types_.byte64 = llvm::Type::getInt64Ty ( llvm_context_ );
-	fundamental_llvm_types_.byte128= llvm::Type::getInt128Ty( llvm_context_ );
+	fundamental_llvm_types_.byte8_  = llvm::Type::getInt8Ty  ( llvm_context_ );
+	fundamental_llvm_types_.byte16_ = llvm::Type::getInt16Ty ( llvm_context_ );
+	fundamental_llvm_types_.byte32_ = llvm::Type::getInt32Ty ( llvm_context_ );
+	fundamental_llvm_types_.byte64_ = llvm::Type::getInt64Ty ( llvm_context_ );
+	fundamental_llvm_types_.byte128_= llvm::Type::getInt128Ty( llvm_context_ );
 
-	fundamental_llvm_types_.invalid_type= llvm::Type::getInt8Ty( llvm_context_ );
-	fundamental_llvm_types_.void_for_ret= llvm::Type::getVoidTy( llvm_context_ );
+	fundamental_llvm_types_.invalid_type_= llvm::Type::getInt8Ty( llvm_context_ );
+	fundamental_llvm_types_.void_for_ret_= llvm::Type::getVoidTy( llvm_context_ );
 	fundamental_llvm_types_.bool_= llvm::Type::getInt1Ty( llvm_context_ );
 
 	// Use empty named structure for "void" type.
@@ -122,13 +122,13 @@ CodeBuilder::CodeBuilder(
 
 	fundamental_llvm_types_.int_ptr= data_layout_.getIntPtrType(llvm_context_);
 
-	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type );
-	void_type_= FundamentalType( U_FundamentalType::Void, fundamental_llvm_types_.void_ );
-	bool_type_= FundamentalType( U_FundamentalType::Bool, fundamental_llvm_types_.bool_ );
+	invalid_type_= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ );
+	void_type_= FundamentalType( U_FundamentalType::void_, fundamental_llvm_types_.void_ );
+	bool_type_= FundamentalType( U_FundamentalType::bool_, fundamental_llvm_types_.bool_ );
 	size_type_=
 		fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u
-		? FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 )
-		: FundamentalType( U_FundamentalType::u64, fundamental_llvm_types_.u64 );
+		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
+		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ );
 
 	// Use named struct for polymorph type id table element, because this is recursive struct.
 	{
@@ -158,7 +158,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	// Prepare halt func.
 	halt_func_=
 		llvm::Function::Create(
-			llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, false ),
+			llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, false ),
 			llvm::Function::ExternalLinkage,
 			"__U_halt",
 			module_.get() );
@@ -170,18 +170,18 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	// Prepare debug lifetime_start/lifetime_end functions.
 	if( create_lifetimes_ && generate_lifetime_start_end_debug_calls_ )
 	{
-		llvm::Type* const arg_types[1]= { fundamental_llvm_types_.u8->getPointerTo() };
+		llvm::Type* const arg_types[1]= { fundamental_llvm_types_.u8_->getPointerTo() };
 
 		lifetime_start_debug_func_=
 			llvm::Function::Create(
-				llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, arg_types, false ),
+				llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, arg_types, false ),
 				llvm::Function::ExternalLinkage,
 				"__U_debug_lifetime_start",
 				module_.get() );
 
 		lifetime_end_debug_func_=
 			llvm::Function::Create(
-				llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret, arg_types, false ),
+				llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, arg_types, false ),
 				llvm::Function::ExternalLinkage,
 				"__U_debug_lifetime_end",
 				module_.get() );
@@ -505,7 +505,7 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 {
 	const SrcLoc fundamental_globals_src_loc( SrcLoc::c_max_file_index, SrcLoc::c_max_line, SrcLoc::c_max_column );
 
-	for( size_t i= size_t(U_FundamentalType::Void); i < size_t(U_FundamentalType::LastType); ++i )
+	for( size_t i= size_t(U_FundamentalType::void_); i < size_t(U_FundamentalType::LastType); ++i )
 	{
 		const U_FundamentalType fundamental_type= U_FundamentalType(i);
 		global_names_scope.AddName(
@@ -1116,9 +1116,9 @@ void CodeBuilder::CheckOverloadedOperator(
 			REPORT_ERROR( InvalidArgumentCountForOperator, errors_container, src_loc );
 		if( !(
 				func_type.return_type.GetFundamentalType() != nullptr &&
-				func_type.return_type.GetFundamentalType()->fundamental_type == U_FundamentalType::i32 &&
+				func_type.return_type.GetFundamentalType()->fundamental_type == U_FundamentalType::i32_ &&
 				func_type.return_value_type == ValueType::Value ) )
-			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, GetFundamentalTypeName( U_FundamentalType::i32 ) );
+			REPORT_ERROR( InvalidReturnTypeForOperator, errors_container, src_loc, GetFundamentalTypeName( U_FundamentalType::i32_ ) );
 		break;
 		
 	case OverloadedOperator::Mul:
@@ -1983,55 +1983,31 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 {
 	switch( fundmantal_type )
 	{
-	case U_FundamentalType::InvalidType:
-		return fundamental_llvm_types_.invalid_type;
+	case U_FundamentalType::InvalidType: return fundamental_llvm_types_.invalid_type_;
+	case U_FundamentalType::void_: return fundamental_llvm_types_.void_;
+	case U_FundamentalType::bool_: return fundamental_llvm_types_.bool_;
+	case U_FundamentalType::i8_  : return fundamental_llvm_types_.i8_  ;
+	case U_FundamentalType::u8_  : return fundamental_llvm_types_.u8_  ;
+	case U_FundamentalType::i16_ : return fundamental_llvm_types_.i16_ ;
+	case U_FundamentalType::u16_ : return fundamental_llvm_types_.u16_ ;
+	case U_FundamentalType::i32_ : return fundamental_llvm_types_.i32_ ;
+	case U_FundamentalType::u32_ : return fundamental_llvm_types_.u32_ ;
+	case U_FundamentalType::i64_ : return fundamental_llvm_types_.i64_ ;
+	case U_FundamentalType::u64_ : return fundamental_llvm_types_.u64_ ;
+	case U_FundamentalType::i128_: return fundamental_llvm_types_.i128_;
+	case U_FundamentalType::u128_: return fundamental_llvm_types_.u128_;
+	case U_FundamentalType::f32_: return fundamental_llvm_types_.f32_;
+	case U_FundamentalType::f64_: return fundamental_llvm_types_.f64_;
+	case U_FundamentalType::char8_ : return fundamental_llvm_types_.char8_ ;
+	case U_FundamentalType::char16_: return fundamental_llvm_types_.char16_;
+	case U_FundamentalType::char32_: return fundamental_llvm_types_.char32_;
+	case U_FundamentalType::byte8_  : return fundamental_llvm_types_.byte8_  ;
+	case U_FundamentalType::byte16_ : return fundamental_llvm_types_.byte16_ ;
+	case U_FundamentalType::byte32_ : return fundamental_llvm_types_.byte32_ ;
+	case U_FundamentalType::byte64_ : return fundamental_llvm_types_.byte64_ ;
+	case U_FundamentalType::byte128_: return fundamental_llvm_types_.byte128_;
 	case U_FundamentalType::LastType:
 		break;
-
-	case U_FundamentalType::Void:
-		return fundamental_llvm_types_.void_;
-	case U_FundamentalType::Bool:
-		return fundamental_llvm_types_.bool_;
-	case U_FundamentalType::i8 :
-		return fundamental_llvm_types_.i8 ;
-	case U_FundamentalType::u8 :
-		return fundamental_llvm_types_.u8 ;
-	case U_FundamentalType::i16:
-		return fundamental_llvm_types_.i16;
-	case U_FundamentalType::u16:
-		return fundamental_llvm_types_.u16;
-	case U_FundamentalType::i32:
-		return fundamental_llvm_types_.i32;
-	case U_FundamentalType::u32:
-		return fundamental_llvm_types_.u32;
-	case U_FundamentalType::i64:
-		return fundamental_llvm_types_.i64;
-	case U_FundamentalType::u64:
-		return fundamental_llvm_types_.u64;
-	case U_FundamentalType::i128:
-		return fundamental_llvm_types_.i128;
-	case U_FundamentalType::u128:
-		return fundamental_llvm_types_.u128;
-	case U_FundamentalType::f32:
-		return fundamental_llvm_types_.f32;
-	case U_FundamentalType::f64:
-		return fundamental_llvm_types_.f64;
-	case U_FundamentalType::char8 :
-		return fundamental_llvm_types_.char8 ;
-	case U_FundamentalType::char16:
-		return fundamental_llvm_types_.char16;
-	case U_FundamentalType::char32:
-		return fundamental_llvm_types_.char32;
-	case U_FundamentalType::byte8:
-		return fundamental_llvm_types_.byte8;
-	case U_FundamentalType::byte16:
-		return fundamental_llvm_types_.byte16;
-	case U_FundamentalType::byte32:
-		return fundamental_llvm_types_.byte32;
-	case U_FundamentalType::byte64:
-		return fundamental_llvm_types_.byte64;
-	case U_FundamentalType::byte128:
-		return fundamental_llvm_types_.byte128;
 	};
 
 	U_ASSERT(false);
@@ -2101,12 +2077,12 @@ llvm::Value* CodeBuilder::CreateMoveToLLVMRegisterInstruction( const Variable& v
 
 llvm::Constant* CodeBuilder::GetZeroGEPIndex()
 {
-	return llvm::Constant::getNullValue( fundamental_llvm_types_.i32 );
+	return llvm::Constant::getNullValue( fundamental_llvm_types_.i32_ );
 }
 
 llvm::Constant* CodeBuilder::GetFieldGEPIndex( const uint64_t field_index )
 {
-	return llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32, llvm::APInt( 32u, field_index ) );
+	return llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32_, llvm::APInt( 32u, field_index ) );
 }
 
 llvm::Value*CodeBuilder:: CreateBaseClassGEP( FunctionContext& function_context, llvm::Value* const class_ptr )
@@ -2149,7 +2125,7 @@ llvm::Value* CodeBuilder::CreateTupleElementGEP( FunctionContext& function_conte
 
 llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* const array_ptr, const uint64_t element_index )
 {
-	return CreateArrayElementGEP( function_context, array_ptr, llvm::ConstantInt::get( fundamental_llvm_types_.u64, element_index ) );
+	return CreateArrayElementGEP( function_context, array_ptr, llvm::ConstantInt::get( fundamental_llvm_types_.u64_, element_index ) );
 }
 
 llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* const array_ptr, llvm::Value* const index )
@@ -2359,7 +2335,7 @@ void CodeBuilder::CreateLifetimeStart( FunctionContext& function_context, llvm::
 	function_context.llvm_ir_builder.CreateLifetimeStart(
 		address,
 		llvm::ConstantInt::get(
-			fundamental_llvm_types_.u64,
+			fundamental_llvm_types_.u64_,
 			data_layout_.getTypeAllocSize(type) ) );
 
 	if( generate_lifetime_start_end_debug_calls_ )
@@ -2385,7 +2361,7 @@ void CodeBuilder::CreateLifetimeEnd( FunctionContext& function_context, llvm::Va
 	function_context.llvm_ir_builder.CreateLifetimeEnd(
 		address,
 		llvm::ConstantInt::get(
-			fundamental_llvm_types_.u64,
+			fundamental_llvm_types_.u64_,
 			data_layout_.getTypeAllocSize(type) ) );
 
 	if( generate_lifetime_start_end_debug_calls_ )

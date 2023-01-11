@@ -27,29 +27,29 @@ std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 	case U_FundamentalType::InvalidType:
 	case U_FundamentalType::LastType:
 		return "";
-	case U_FundamentalType::Void: return "X";
-	case U_FundamentalType::Bool: return "_N";
-	case U_FundamentalType:: i8: return "C"; // C++ "signed char"
-	case U_FundamentalType:: u8: return "E"; // C++ "unsigned char"
-	case U_FundamentalType::i16: return "F"; // C++ "short"
-	case U_FundamentalType::u16: return "G"; // C++ "unsigned short"
-	case U_FundamentalType::i32: return "H"; // C++ "int"
-	case U_FundamentalType::u32: return "I"; // C++ "unsigned short"
-	case U_FundamentalType::i64: return "_J"; // C++ "int64_t"
-	case U_FundamentalType::u64: return "_K"; // C++ "uuint64_t"
-	case U_FundamentalType::i128: return "_L"; // C++ "__int128"
-	case U_FundamentalType::u128: return "_M"; // "unsigned __int128"
-	case U_FundamentalType::f32: return "M";  // C++ "float"
-	case U_FundamentalType::f64: return "N"; // C++ "double"
-	case U_FundamentalType::char8 : return "D"; // C++ "char"
-	case U_FundamentalType::char16: return "_S"; // C++ "char16_t"
-	case U_FundamentalType::char32: return "_U"; // C++ "char32_t"
+	case U_FundamentalType::void_: return "X";
+	case U_FundamentalType::bool_: return "_N";
+	case U_FundamentalType::i8_  : return "C"; // C++ "signed char"
+	case U_FundamentalType::u8_  : return "E"; // C++ "unsigned char"
+	case U_FundamentalType::i16_ : return "F"; // C++ "short"
+	case U_FundamentalType::u16_ : return "G"; // C++ "unsigned short"
+	case U_FundamentalType::i32_ : return "H"; // C++ "int"
+	case U_FundamentalType::u32_ : return "I"; // C++ "unsigned short"
+	case U_FundamentalType::i64_ : return "_J"; // C++ "int64_t"
+	case U_FundamentalType::u64_ : return "_K"; // C++ "uuint64_t"
+	case U_FundamentalType::i128_: return "_L"; // C++ "__int128"
+	case U_FundamentalType::u128_: return "_M"; // "unsigned __int128"
+	case U_FundamentalType::f32_: return "M";  // C++ "float"
+	case U_FundamentalType::f64_: return "N"; // C++ "double"
+	case U_FundamentalType::char8_ : return "D"; // C++ "char"
+	case U_FundamentalType::char16_: return "_S"; // C++ "char16_t"
+	case U_FundamentalType::char32_: return "_U"; // C++ "char32_t"
 	// Encode "byte" types as regular structs in global namspace.
-	case U_FundamentalType::byte8  : return "Ubyte8@@"  ;
-	case U_FundamentalType::byte16 : return "Ubyte16@@" ;
-	case U_FundamentalType::byte32 : return "Ubyte32@@" ;
-	case U_FundamentalType::byte64 : return "Ubyte64@@" ;
-	case U_FundamentalType::byte128: return "Ubyte128@@";
+	case U_FundamentalType::byte8_  : return "Ubyte8@@"  ;
+	case U_FundamentalType::byte16_ : return "Ubyte16@@" ;
+	case U_FundamentalType::byte32_ : return "Ubyte32@@" ;
+	case U_FundamentalType::byte64_ : return "Ubyte64@@" ;
+	case U_FundamentalType::byte128_: return "Ubyte128@@";
 	};
 
 	U_ASSERT(false);
@@ -542,7 +542,7 @@ void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const Functio
 	}
 
 	if( params_empty )
-		mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::Void ) ); // In case of empty params just leave single type - "void" without terminator symbol.
+		mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::void_ ) ); // In case of empty params just leave single type - "void" without terminator symbol.
 	else
 		mangler_state.PushElement( g_terminator ); // Finish list of params.
 

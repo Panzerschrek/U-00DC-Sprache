@@ -1071,7 +1071,7 @@ void CodeBuilder::CopyBytes(
 		function_context.llvm_ir_builder.CreateMemCpy(
 			dst, llvm::MaybeAlign(alignment),
 			src, llvm::MaybeAlign(alignment),
-			llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32, llvm::APInt(32, data_layout_.getTypeAllocSize( llvm_type ) ) ) );
+			llvm::Constant::getIntegerValue( fundamental_llvm_types_.u32_, llvm::APInt(32, data_layout_.getTypeAllocSize( llvm_type ) ) ) );
 	}
 }
 

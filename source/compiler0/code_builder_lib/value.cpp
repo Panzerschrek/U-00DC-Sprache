@@ -49,7 +49,7 @@ std::string ConstantVariableToString( const Variable& variable )
 
 	if( const auto fundamental_type= variable.type.GetFundamentalType() )
 	{
-		if( fundamental_type->fundamental_type == U_FundamentalType::Bool )
+		if( fundamental_type->fundamental_type == U_FundamentalType::bool_ )
 			return variable.constexpr_value->getUniqueInteger().isNullValue() ? "false" : "true";
 		else if( IsFloatingPoint( fundamental_type->fundamental_type ) )
 		{
@@ -57,7 +57,7 @@ std::string ConstantVariableToString( const Variable& variable )
 			{
 				llvm::SmallString<256> str;
 				constant_fp->getValueAPF().toString(str);
-				if( fundamental_type->fundamental_type == U_FundamentalType::f32 )
+				if( fundamental_type->fundamental_type == U_FundamentalType::f32_ )
 					str+= "f";
 				return str.str();
 			}
@@ -65,7 +65,7 @@ std::string ConstantVariableToString( const Variable& variable )
 		else if( IsSignedInteger( fundamental_type->fundamental_type ) )
 		{
 			const std::string suffix=
-				fundamental_type->fundamental_type == U_FundamentalType::i32
+				fundamental_type->fundamental_type == U_FundamentalType::i32_
 					? ""
 					: GetFundamentalTypeName( fundamental_type->fundamental_type );
 
@@ -74,7 +74,7 @@ std::string ConstantVariableToString( const Variable& variable )
 		else if( IsUnsignedInteger( fundamental_type->fundamental_type ) )
 		{
 			const std::string suffix=
-				fundamental_type->fundamental_type == U_FundamentalType::u32
+				fundamental_type->fundamental_type == U_FundamentalType::u32_
 					? "u"
 					: GetFundamentalTypeName( fundamental_type->fundamental_type );
 
@@ -83,11 +83,11 @@ std::string ConstantVariableToString( const Variable& variable )
 		else if( IsChar( fundamental_type->fundamental_type ) )
 		{
 			const char* suffix= "";
-			if( fundamental_type->fundamental_type == U_FundamentalType::char8  )
+			if( fundamental_type->fundamental_type == U_FundamentalType::char8_  )
 				suffix= "c8" ;
-			if( fundamental_type->fundamental_type == U_FundamentalType::char16 )
+			if( fundamental_type->fundamental_type == U_FundamentalType::char16_ )
 				suffix= "c16";
-			if( fundamental_type->fundamental_type == U_FundamentalType::char32 )
+			if( fundamental_type->fundamental_type == U_FundamentalType::char32_ )
 				suffix= "c32";
 
 			return std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() ) + suffix;
@@ -101,11 +101,11 @@ std::string ConstantVariableToString( const Variable& variable )
 			res+= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
 			switch( fundamental_type->fundamental_type )
 			{
-			case U_FundamentalType::byte8  : res+= GetFundamentalTypeName( U_FundamentalType::u8   ); break;
-			case U_FundamentalType::byte16 : res+= GetFundamentalTypeName( U_FundamentalType::u16  ); break;
-			case U_FundamentalType::byte32 : res+= GetFundamentalTypeName( U_FundamentalType::u32  ); break;
-			case U_FundamentalType::byte64 : res+= GetFundamentalTypeName( U_FundamentalType::u64  ); break;
-			case U_FundamentalType::byte128: res+= GetFundamentalTypeName( U_FundamentalType::u128 ); break;
+			case U_FundamentalType::byte8_  : res+= GetFundamentalTypeName( U_FundamentalType::u8_   ); break;
+			case U_FundamentalType::byte16_ : res+= GetFundamentalTypeName( U_FundamentalType::u16_  ); break;
+			case U_FundamentalType::byte32_ : res+= GetFundamentalTypeName( U_FundamentalType::u32_  ); break;
+			case U_FundamentalType::byte64_ : res+= GetFundamentalTypeName( U_FundamentalType::u64_  ); break;
+			case U_FundamentalType::byte128_: res+= GetFundamentalTypeName( U_FundamentalType::u128_ ); break;
 			default: U_ASSERT(false); break;
 			}
 

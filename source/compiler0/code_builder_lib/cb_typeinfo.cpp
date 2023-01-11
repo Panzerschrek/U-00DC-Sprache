@@ -228,8 +228,8 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 		add_bool_field( "is_float"           , IsFloatingPoint  ( fundamental_type->fundamental_type ) );
 		add_bool_field( "is_char"            , IsChar           ( fundamental_type->fundamental_type ) );
 		add_bool_field( "is_byte"            , IsByte           ( fundamental_type->fundamental_type ) );
-		add_bool_field( "is_bool"            , fundamental_type->fundamental_type == U_FundamentalType::Bool );
-		add_bool_field( "is_void"            , fundamental_type->fundamental_type == U_FundamentalType::Void );
+		add_bool_field( "is_bool"            , fundamental_type->fundamental_type == U_FundamentalType::bool_ );
+		add_bool_field( "is_void"            , fundamental_type->fundamental_type == U_FundamentalType::void_ );
 	}
 	else if( const Enum* const enum_type= type.GetEnumType() )
 	{
@@ -367,7 +367,7 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 
 			{
 				ArrayType name_type;
-				name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
+				name_type.type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
 				name_type.size= name.size();
 				name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
 
@@ -399,7 +399,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 	{
 		ArrayType name_type;
-		name_type.type= FundamentalType( U_FundamentalType::char8, fundamental_llvm_types_.char8 );
+		name_type.type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
 		name_type.size= member_name.size();
 		name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
 

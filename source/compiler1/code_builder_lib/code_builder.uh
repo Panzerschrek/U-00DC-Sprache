@@ -890,6 +890,11 @@ private:
 
 	struct FundamentalLLVMTypes
 	{
+		LLVMTypeRef invalid_type_;
+
+		LLVMTypeRef void_;
+		LLVMTypeRef bool_;
+
 		LLVMTypeRef  i8_;
 		LLVMTypeRef  u8_;
 		LLVMTypeRef i16_;
@@ -914,10 +919,7 @@ private:
 		LLVMTypeRef byte64_ ;
 		LLVMTypeRef byte128_;
 
-		LLVMTypeRef void_;
 		LLVMTypeRef void_for_ret_;
-		LLVMTypeRef invalid_type_;
-		LLVMTypeRef bool_;
 
 		LLVMTypeRef int_ptr; // Type with width of pointer.
 	}

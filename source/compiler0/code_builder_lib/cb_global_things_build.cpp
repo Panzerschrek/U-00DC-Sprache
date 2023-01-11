@@ -593,7 +593,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			else
 			{
 				if( !class_field->type.GetLLVMType()->isSized() )
-					fields_llvm_types.emplace_back( fundamental_llvm_types_.i8 );// May be in case of error (such dependency loop )
+					fields_llvm_types.emplace_back( fundamental_llvm_types_.i8_ );// May be in case of error (such dependency loop )
 				else
 					fields_llvm_types.emplace_back( class_field->type.GetLLVMType() );
 			}
@@ -947,7 +947,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 	DETECT_GLOBALS_LOOP( enum_, enum_->members.GetThisNamespaceName(), enum_->syntax_element->src_loc_ );
 
 	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
-	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32, fundamental_llvm_types_.u32 );
+	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
 
 	const Synt::Enum& enum_decl= *enum_->syntax_element;
 	NamesScope& names_scope= *enum_->members.GetParent();

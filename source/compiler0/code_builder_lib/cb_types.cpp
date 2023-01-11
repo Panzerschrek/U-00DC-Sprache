@@ -210,7 +210,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	else if( first_arg_is_sret || function_type.return_type == void_type_ )
 	{
 		// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
-		llvm_function_return_type= fundamental_llvm_types_.void_for_ret;
+		llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
 	}
 
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );

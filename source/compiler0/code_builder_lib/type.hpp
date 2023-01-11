@@ -50,7 +50,7 @@ struct FundamentalType final
 	U_FundamentalType fundamental_type;
 	llvm::Type* llvm_type;
 
-	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::Void, llvm::Type* llvm_type= nullptr );
+	FundamentalType( U_FundamentalType fundamental_type= U_FundamentalType::void_, llvm::Type* llvm_type= nullptr );
 	uint64_t GetSize() const;
 };
 
