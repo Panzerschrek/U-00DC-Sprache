@@ -94,6 +94,7 @@ extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
 	LLVMTargetDataRef data_layout,
 	const U1_StringView& target_triple_str,
 	bool build_debug_info,
+	bool generate_tbaa_metadata,
 	U::ManglingScheme mangling_scheme,
 	SourceFilePathCallback result_source_file_path_callback,
 	UserHandle result_source_file_path_processing_data,

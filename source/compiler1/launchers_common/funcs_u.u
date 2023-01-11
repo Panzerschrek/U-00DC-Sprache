@@ -146,6 +146,7 @@ fn nomangle U1_BuildProgrammUsingVFS(
 	LLVMTargetDataRef data_layout,
 	U1_StringView& target_triple_str,
 	bool build_debug_info,
+	bool generate_tbaa_metadata,
 	U1::ManglingScheme mangling_scheme,
 	SourceFilePathCallback result_source_file_path_callback,
 	UserHandle result_source_file_path_processing_data,
@@ -188,7 +189,13 @@ fn nomangle U1_BuildProgrammUsingVFS(
 		var ust::string8 mut target_triple= U1::StringToArrayView( target_triple_str.data, target_triple_str.size );
 		target_triple+= "\0";
 
-		var U1::CodeBuilderOptions options{ .build_debug_info= build_debug_info, .mangling_scheme= mangling_scheme };
+		var U1::CodeBuilderOptions options
+		{
+			.build_debug_info= build_debug_info,
+			.mangling_scheme= mangling_scheme,
+			.generate_tbaa_metadata= generate_tbaa_metadata,
+		};
+
 		var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options );
 		auto code_builder_res= code_builder.BuildProgram( source_graph );
 

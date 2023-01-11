@@ -52,6 +52,7 @@ fn CodeBuilder::constructor(
 		generate_lifetime_start_end_debug_calls_(options.generate_lifetime_start_end_debug_calls),
 		constexpr_function_evaluator_(data_layout),
 		tbaa_metadata_builder_( llvm_context, data_layout, CreateMangler(options.mangling_scheme, data_layout) ),
+		generate_tbaa_metadata_( options.generate_tbaa_metadata ),
 		global_things_stack_ptr_(GlobalThingsStack()),
 		build_debug_info_(options.build_debug_info),
 		mangler_(CreateMangler(options.mangling_scheme, data_layout))
@@ -2540,8 +2541,11 @@ fn CodeBuilder::CreateTypedLoad( mut this, FunctionContext& function_context, Ty
 {
 	auto result= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, address, "\0"[0] ) );
 
-	auto access_tag= tbaa_metadata_builder_.CreateAccessTag(t);
-	MarkInstructionWithTBAAMetadata( result, access_tag );
+	if( generate_tbaa_metadata_ )
+	{
+		auto access_tag= tbaa_metadata_builder_.CreateAccessTag(t);
+		MarkInstructionWithTBAAMetadata( result, access_tag );
+	}
 
 	return result;
 }
@@ -2550,8 +2554,11 @@ fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_co
 {
 	auto result= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, address, "\0"[0] ) );
 
-	auto access_tag= tbaa_metadata_builder_.CreateReferenceAccessTag(t);
-	MarkInstructionWithTBAAMetadata( result, access_tag );
+	if( generate_tbaa_metadata_ )
+	{
+		auto access_tag= tbaa_metadata_builder_.CreateReferenceAccessTag(t);
+		MarkInstructionWithTBAAMetadata( result, access_tag );
+	}
 
 	return result;
 }
@@ -2560,8 +2567,11 @@ fn CodeBuilder::CreateTypedStore( mut this, FunctionContext& function_context, T
 {
 	auto result= unsafe( LLVMBuildStore( function_context.llvm_ir_builder, value_to_store, address ) );
 
-	auto access_tag= tbaa_metadata_builder_.CreateAccessTag(t);
-	MarkInstructionWithTBAAMetadata( result, access_tag );
+	if( generate_tbaa_metadata_ )
+	{
+		auto access_tag= tbaa_metadata_builder_.CreateAccessTag(t);
+		MarkInstructionWithTBAAMetadata( result, access_tag );
+	}
 
 	return result;
 }
@@ -2570,8 +2580,11 @@ fn CodeBuilder::CreateTypedReferenceStore( mut this, FunctionContext& function_c
 {
 	auto result= unsafe( LLVMBuildStore( function_context.llvm_ir_builder, value_to_store, address ) );
 
-	auto access_tag= tbaa_metadata_builder_.CreateReferenceAccessTag(t);
-	MarkInstructionWithTBAAMetadata( result, access_tag );
+	if( generate_tbaa_metadata_ )
+	{
+		auto access_tag= tbaa_metadata_builder_.CreateReferenceAccessTag(t);
+		MarkInstructionWithTBAAMetadata( result, access_tag );
+	}
 
 	return result;
 }

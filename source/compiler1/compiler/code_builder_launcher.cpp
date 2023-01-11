@@ -117,8 +117,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const bool generate_tbaa_metadata,
 	const ManglingScheme mangling_scheme )
 {
-	(void)generate_tbaa_metadata; // TODO - use it.
-
 	CodeBuilderLaunchResult result;
 
 	const LLVMModuleRef llvm_module=
@@ -129,6 +127,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			llvm::wrap(&data_layout ),
 			StringToStringView(target_triple.normalize()),
 			generate_debug_info,
+			generate_tbaa_metadata,
 			mangling_scheme,
 			SourceFilePathProcessingFunction,
 			reinterpret_cast<UserHandle>(&result.dependent_files),
