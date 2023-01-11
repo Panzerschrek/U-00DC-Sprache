@@ -146,7 +146,7 @@ public:
 	{
 		static_if( is_nullable )
 		{
-			return value_ == nullptr</T/>();
+			return is_nullptr(value_);
 		}
 		else
 		{
@@ -284,7 +284,7 @@ public:
 		{
 			value_= ptr.get_value_ptr();
 			counter_= ptr.get_counter_ptr();
-			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
+			if( !is_nullptr(counter_) )
 			{
 				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
 			}
@@ -298,7 +298,7 @@ public:
 		{
 			value_= ptr.get_value_ptr();
 			counter_= ptr.get_counter_ptr();
-			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
+			if( !is_nullptr(counter_) )
 			{
 				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
 			}
@@ -312,7 +312,7 @@ public:
 	{
 		unsafe
 		{
-			if( ptr.get_value_ptr() != nullptr</U/>() )
+			if( !is_nullptr(ptr.get_value_ptr()) )
 			{
 				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) ); // Convert reference here.
 				counter_= ptr.get_counter_ptr();
@@ -328,7 +328,7 @@ public:
 		{
 			value_= other.get_value_ptr();
 			counter_= other.get_counter_ptr();
-			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
+			if( !is_nullptr(counter_) )
 			{
 				shared_ptr_impl::counter_inc( $>(counter_).use_count_total );
 			}
@@ -339,7 +339,7 @@ public:
 	{
 		unsafe
 		{
-			if( counter_ != nullptr</shared_ptr_impl::counter/>() )
+			if( !is_nullptr(counter_) )
 			{
 				shared_ptr_impl::counter_dec( $>(counter_).use_count_total );
 				if( $>(counter_).use_count_total == 0u )
@@ -366,7 +366,7 @@ public:
 	{
 		unsafe
 		{
-			if( counter_ == nullptr</shared_ptr_impl::counter/>() || $>(counter_).use_count_strong == 0u )
+			if( is_nullptr(counter_) || $>(counter_).use_count_strong == 0u )
 			{
 				return shared_ptr_type();
 			}

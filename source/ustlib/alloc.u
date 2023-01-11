@@ -12,7 +12,7 @@ fn memory_allocate( size_type size_bytes ) unsafe : byte8 &mut
 	unsafe
 	{
 		auto ptr= ust_memory_allocate_impl( size_bytes );
-		halt if( ptr == nullptr</byte8/>() );
+		halt if( is_nullptr(ptr) );
 		return $>(ptr);
 	}
 }
@@ -23,7 +23,7 @@ fn memory_reallocate( byte8& mem, size_type new_size_bytes ) unsafe : byte8 &mut
 	unsafe
 	{
 		auto ptr= ust_memory_reallocate_impl( $<(cast_mut(mem)), new_size_bytes );
-		halt if( ptr == nullptr</byte8/>() );
+		halt if( is_nullptr(ptr) );
 		return $>(ptr);
 	}
 }

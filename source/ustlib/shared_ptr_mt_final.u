@@ -91,7 +91,7 @@ public:
 	{
 		static_if( is_nullable )
 		{
-			return ptr_ == nullptr</storage/>();
+			return is_nullptr(ptr_);
 		}
 		else
 		{

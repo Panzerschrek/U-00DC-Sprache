@@ -96,7 +96,7 @@ public:
 					capacity_= other.size_;
 					// Multiplication overflow check is needed here.
 					auto num_bytes = mul_overflow_check_halt( capacity_, c_element_size_ );
-					if( ptr_ == nullptr</T/>() )
+					if( is_nullptr(ptr_) )
 					{
 						ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( num_bytes ) ) );
 					}
@@ -133,7 +133,7 @@ public:
 			{
 				call_destructor( $>(ptr_ + i) );
 			}
-			if( ptr_ != nullptr</T/>() )
+			if( !is_nullptr(ptr_) )
 			{
 				memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
 			}

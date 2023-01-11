@@ -45,7 +45,7 @@ public:
 	fn destructor()
 	{
 		clear();
-		if( table_ != nullptr</TableValue/>() )
+		if( !is_nullptr(table_) )
 		{
 			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(table_) ) ) );
 		}
@@ -124,7 +124,7 @@ public:
 		unsafe
 		{
 			var ptr_type table_value_ptr= find_key( key );
-			if( table_value_ptr != nullptr</TableValue/>() )
+			if( !is_nullptr(table_value_ptr) )
 			{
 				auto &mut table_value= $>(table_value_ptr);
 				--size_;
@@ -158,7 +158,7 @@ public:
 		unsafe
 		{
 			var ptr_type table_value_ptr= find_key( key );
-			if( table_value_ptr != nullptr</TableValue/>() )
+			if( !is_nullptr(table_value_ptr) )
 			{
 				return optional_ref</ value_type, true  />( $>(table_value_ptr).value_storage );
 			}
@@ -179,7 +179,7 @@ public:
 
 	fn clear( mut this )
 	{
-		if( table_ == nullptr</TableValue/>() ) { return; }
+		if( is_nullptr(table_) ) { return; }
 		unsafe
 		{
 			for( auto mut i= 0s; i < capacity_; ++i )
@@ -232,7 +232,7 @@ private:
 			}
 
 			// Move content of old table into new table.
-			if( table_ != nullptr</TableValue/>() )
+			if( !is_nullptr(table_) )
 			{
 				for( auto mut i= 0s; i < capacity_; ++i )
 				{

@@ -107,7 +107,7 @@ public:
 
 	fn empty( this )  : bool
 	{
-		return ptr_ == nullptr</T/>();
+		return is_nullptr(ptr_);
 	}
 
 	fn reset( mut this )

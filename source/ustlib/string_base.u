@@ -115,7 +115,7 @@ public:
 	{
 		unsafe
 		{
-			if( ptr_ != nullptr</char_type/>() )
+			if( !is_nullptr(ptr_) )
 			{
 				memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
 			}

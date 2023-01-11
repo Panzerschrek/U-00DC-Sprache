@@ -155,7 +155,7 @@ public:
 	{
 		static_if( is_nullable )
 		{
-			return value_ == nullptr</T/>();
+			return is_nullptr(value_);
 		}
 		else
 		{
@@ -291,7 +291,7 @@ public:
 		{
 			value_= ptr.get_value_ptr();
 			counter_= ptr.get_counter_ptr();
-			if( counter_ != nullptr</shared_ptr_mt_impl::counter/>() )
+			if( !is_nullptr(counter_) )
 			{
 				atomic_inc( $>(counter_).use_count_total );
 			}
@@ -305,7 +305,7 @@ public:
 		{
 			value_= ptr.get_value_ptr();
 			counter_= ptr.get_counter_ptr();
-			if( counter_ != nullptr</shared_ptr_mt_impl::counter/>() )
+			if( !is_nullptr(counter_) )
 			{
 				atomic_inc( $>(counter_).use_count_total );
 			}
@@ -319,7 +319,7 @@ public:
 	{
 		unsafe
 		{
-			if( ptr.get_value_ptr() != nullptr</U/>() )
+			if( !is_nullptr(ptr.get_value_ptr()) )
 			{
 				value_= $<( cast_ref</T/>( $>( ptr.get_value_ptr() ) ) );
 				counter_= ptr.get_counter_ptr();
@@ -335,7 +335,7 @@ public:
 		{
 			value_= other.get_value_ptr();
 			counter_= other.get_counter_ptr();
-			if( counter_ != nullptr</shared_ptr_mt_impl::counter/>() )
+			if( !is_nullptr(counter_) )
 			{
 				atomic_inc( $>(counter_).use_count_total );
 			}
@@ -346,7 +346,7 @@ public:
 	{
 		unsafe
 		{
-			if( counter_ != nullptr</shared_ptr_mt_impl::counter/>() )
+			if( !is_nullptr(counter_) )
 			{
 				if( atomic_dec( $>(counter_).use_count_total ) == 1u )
 				{
@@ -373,7 +373,7 @@ public:
 	{
 		unsafe
 		{
-			if( counter_ == nullptr</shared_ptr_mt_impl::counter/>() )
+			if( is_nullptr(counter_) )
 			{
 				return shared_ptr_mt_base</T, true, is_mutable/>();
 			}
