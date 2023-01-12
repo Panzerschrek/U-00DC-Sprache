@@ -534,7 +534,7 @@ void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const ins
 	{
 		uint64_t ptr;
 		std::memcpy( &ptr, data_ptr, size_t(data_layout_.getTypeAllocSize( element_type )) );
-		val.IntVal= llvm::APInt( 64u , ptr );
+		val.IntVal= llvm::APInt( 64u, ptr );
 	}
 	else U_ASSERT(false);
 
@@ -743,8 +743,51 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 		break;
 
 	case llvm::Instruction::BitCast:
-		// Cast function pointer or pointer for memcpy
-		val.IntVal= llvm::APInt( static_cast<unsigned int>(data_layout_.getTypeAllocSizeInBits( dst_type )), op.IntVal.getLimitedValue() );
+		if( dst_type->isFloatingPointTy() && src_type->isIntegerTy() )
+		{
+			if( dst_type->isDoubleTy() )
+			{
+				std::byte bytes[ sizeof(double) ] {};
+				const uint64_t v= op.IntVal.getLimitedValue();
+				std::memcpy(bytes, &v, sizeof(double));
+				std::memcpy(&val.DoubleVal, bytes, sizeof(double));
+			}
+			else if( dst_type->isFloatTy() )
+			{
+				std::byte bytes[ sizeof(float) ] {};
+				const uint32_t v= uint32_t(op.IntVal.getLimitedValue());
+				std::memcpy(bytes, &v, sizeof(float));
+				std::memcpy(&val.FloatVal, bytes, sizeof(float));
+			}
+			else
+				errors_.push_back( "Invalid int to float cast" );
+		}
+		else if( dst_type->isIntegerTy() && src_type->isFloatingPointTy() )
+		{
+			if( src_type->isDoubleTy() )
+			{
+				std::byte bytes[ sizeof(double) ] {};
+				std::memcpy(bytes, &op.DoubleVal, sizeof(double));
+				uint64_t v= 0;
+				std::memcpy(&v, bytes, sizeof(double));
+				val.IntVal= llvm::APInt( sizeof(double) * 8, v );
+			}
+			else if( src_type->isFloatTy() )
+			{
+				std::byte bytes[ sizeof(float) ] {};
+				std::memcpy(bytes, &op.FloatVal, sizeof(float));
+				uint32_t v= 0;
+				std::memcpy(&v, bytes, sizeof(float));
+				val.IntVal= llvm::APInt( sizeof(float) * 8, uint64_t(v) );
+			}
+			else
+				errors_.push_back( "Invalid float to int cast" );
+		}
+		else
+		{
+			// Cast function pointer or pointer for memcpy
+			val.IntVal= llvm::APInt( static_cast<unsigned int>(data_layout_.getTypeAllocSizeInBits( dst_type )), op.IntVal.getLimitedValue() );
+		}
 		break;
 
 	default:

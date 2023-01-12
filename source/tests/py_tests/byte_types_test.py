@@ -73,6 +73,27 @@ def ByteTypesConstruction_Test4():
 	tests_lib.build_program( c_program_text )
 
 
+def ByteTypesConstexprFunctionCast_Test0():
+	c_program_text= """
+		auto a= cast(7.125f);
+		static_assert(a == byte32(0x40E40000u32));
+
+		auto b= cast(byte64(0x4057D33333333333u64));
+		static_assert(b == 95.3);
+
+		fn constexpr cast(f32 x) : byte32
+		{
+			return byte32(x);
+		}
+
+		fn constexpr cast(byte64 x) : f64
+		{
+			return f64(x);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ByteTypesConstruction_Test5():
 	c_program_text= """
 		fn Foo()
