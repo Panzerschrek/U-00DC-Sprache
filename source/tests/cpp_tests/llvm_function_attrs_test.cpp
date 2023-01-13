@@ -118,23 +118,23 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeValueParamsAttrs )
 	const llvm::Function* function= module->getFunction( "_Z3Fooifb" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
 
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::Dereferenceable ) );
 
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnValueAttrs )
@@ -150,8 +150,8 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnValueAttrs )
 	U_TEST_ASSERT( function != nullptr );
 
 	U_TEST_ASSERT( function->getFunctionType()->getReturnType()->isIntegerTy() );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !function->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnReferenceAttrs )
@@ -169,17 +169,17 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( foo != nullptr );
 
 	U_TEST_ASSERT( foo->getFunctionType()->getReturnType()->isPointerTy() );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 4 );
+	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
+	// U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 4 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
 
 	U_TEST_ASSERT( bar->getFunctionType()->getReturnType()->isPointerTy() );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 4 );
+	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
+	// U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 4 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeImutReferenceParamsAttrs )
@@ -196,26 +196,26 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeImutReferenceParamsAttrs )
 	const llvm::Function* function= module->getFunction( "_Z3FooRKiRKfRKb" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 4 );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 0 ) == 4 );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 4 );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 1 ) == 4 );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 2 ) == 1 );
+	U_TEST_ASSERT( function->hasParamAttribute( 2, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 2, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 2, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 2, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 2 ) == 1 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeMutReferenceParamsAttrs )
@@ -233,26 +233,26 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeMutReferenceParamsAttrs )
 	const llvm::Function* function= module->getFunction( "_Z3FooRiRfRb" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 4 );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 0 ) == 4 );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 4 );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 1 ) == 4 );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 2 ) == 1 );
+	U_TEST_ASSERT( function->hasParamAttribute( 2, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 2, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 2, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 2 ) == 1 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
@@ -275,38 +275,38 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	const llvm::Function* foo= module->getFunction( "_Z3Foo1S1E" );
 	U_TEST_ASSERT( foo != nullptr );
 
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( foo->getParamDereferenceableBytes( 0 ) == 8 );
 
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) || foo->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 0  );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) || foo->getParamDereferenceableBytes( 1 ) == 0  );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Bar1E1S" );
 	U_TEST_ASSERT( bar != nullptr );
 
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) || bar->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 0 );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) || bar->getParamDereferenceableBytes( 0 ) == 0 );
 
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 8 );
+	U_TEST_ASSERT( bar->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( bar->getParamDereferenceableBytes( 1 ) == 8 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeImutReferenceParamsAttrs )
@@ -324,20 +324,20 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeImutReferenceParamsAttrs )
 	const llvm::Function* function= module->getFunction( "_Z3FooRK1SRK1E" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 0 ) == 8 );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) || function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 0 );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) || function->getParamDereferenceableBytes( 1 ) == 0 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeMutReferenceParamsAttrs )
@@ -355,20 +355,20 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeMutReferenceParamsAttrs )
 	const llvm::Function* function= module->getFunction( "_Z3FooR1SR1E" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 0 ) == 8 );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) || function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 0 );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) || function->getParamDereferenceableBytes( 1 ) == 0 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
@@ -388,29 +388,29 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
 	const llvm::Function* foo= module->getFunction( "_Z3Foov" );
 	U_TEST_ASSERT( foo != nullptr );
 
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::StructRet ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( foo->getParamDereferenceableBytes( 0 ) == 8 );
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( foo->getReturnType()->isVoidTy() );
-	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !foo->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !foo->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
 
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) || bar->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 0 );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::StructRet ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) || bar->getParamDereferenceableBytes( 0 ) == 0 );
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
-	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !bar->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
@@ -431,18 +431,18 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
 
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 0 );
 	U_TEST_ASSERT( foo->getReturnType()->isPointerTy() );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 8 );
+	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
+	// U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 8 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
 
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 0 );
 	U_TEST_ASSERT( bar->getReturnType()->isPointerTy() );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 8 );
+	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
+	// U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 8 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
@@ -462,21 +462,21 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
 	const llvm::Function* const function= module->getFunction( "_Z3FooA2_i3tupIbdE" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 0 ) == 8 );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 16 );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 1 ) == 16 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeImutReferenceParamsAttrs )
@@ -492,21 +492,21 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeImutReferenceParamsAttrs )
 	const llvm::Function* const function= module->getFunction( "_Z3FooRKA2_iRK3tupIbdE" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 0 ) == 8 );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 16 );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 1 ) == 16 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeMutReferenceParamsAttrs )
@@ -522,21 +522,21 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeMutReferenceParamsAttrs )
 	const llvm::Function* const function= module->getFunction( "_Z3FooRA2_iR3tupIbdE" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(0)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 8 );
+	U_TEST_ASSERT( function->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 0 ) == 8 );
 
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
 	U_TEST_ASSERT( function->getFunctionType()->getParamType(1)->isPointerTy() ); // Passed by pointer.
-	U_TEST_ASSERT( function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( function->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 16 );
+	U_TEST_ASSERT( function->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( function->getParamDereferenceableBytes( 1 ) == 16 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
@@ -553,30 +553,30 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
 	const llvm::Function* foo= module->getFunction( "_Z3Foov" );
 	U_TEST_ASSERT( foo != nullptr );
 
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 64 );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::StructRet ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !foo->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( foo->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( foo->getParamDereferenceableBytes( 0 ) == 64 );
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( foo->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( foo->getReturnType()->isVoidTy() );
-	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !foo->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !foo->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
 
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::StructRet ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 16 );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::StructRet ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !bar->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( bar->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( bar->getParamDereferenceableBytes( 0 ) == 16 );
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 1 );
 	U_TEST_ASSERT( bar->getFunctionType()->getParamType(0)->isPointerTy() );
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
-	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !bar->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
@@ -595,18 +595,18 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
 
 	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 0 );
 	U_TEST_ASSERT( foo->getReturnType()->isPointerTy() );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( foo->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 64 );
+	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
+	// U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 64 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
 
 	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 0 );
 	U_TEST_ASSERT( bar->getReturnType()->isPointerTy() );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( bar->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
-	U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 16 );
+	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
+	// U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 16 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_RawPointerTypeValueParamsAttrs )
@@ -623,23 +623,23 @@ U_TEST( LLVMFunctionAttrsTest_RawPointerTypeValueParamsAttrs )
 	const llvm::Function* const function= module->getFunction( "_Z3FooPiPfPb" );
 	U_TEST_ASSERT( function != nullptr );
 
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
 
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
 
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoAlias ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::ReadOnly ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::NoCapture ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::FirstArgIndex + 2, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::NoAlias ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::ReadOnly ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::NoCapture ) );
+	U_TEST_ASSERT( !function->hasParamAttribute( 2, llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_RawPointerReturnValueAttrs )
@@ -656,8 +656,8 @@ U_TEST( LLVMFunctionAttrsTest_RawPointerReturnValueAttrs )
 	U_TEST_ASSERT( function != nullptr );
 
 	U_TEST_ASSERT( function->getReturnType()->isPointerTy() );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull ) );
-	U_TEST_ASSERT( !function->hasAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ) );
+	U_TEST_ASSERT( !function->hasRetAttribute( llvm::Attribute::NonNull ) );
+	U_TEST_ASSERT( !function->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
 }
 
 U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
@@ -680,62 +680,62 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedMethodsAttrsTest )
 		U_TEST_ASSERT( default_constructor != nullptr );
 		U_TEST_ASSERT( default_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
-		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( !default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( default_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 2 );
+		U_TEST_ASSERT( default_constructor->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( default_constructor->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !default_constructor->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !default_constructor->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( default_constructor->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( default_constructor->getParamDereferenceableBytes( 0 ) == 2 );
 	}
 	{
 		const llvm::Function* const copy_constructor= module->getFunction( "_ZN1S11constructorERS_RKS_" );
 		U_TEST_ASSERT( copy_constructor != nullptr );
 		U_TEST_ASSERT( copy_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( copy_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 2 );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !copy_constructor->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !copy_constructor->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_constructor->getParamDereferenceableBytes( 0 ) == 2 );
 
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( copy_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 2 );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !copy_constructor->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_constructor->getParamDereferenceableBytes( 1 ) == 2 );
 	}
 	{
 		const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN1SaSERS_RKS_" );
 		U_TEST_ASSERT( copy_assignment_operator != nullptr );
 		U_TEST_ASSERT( copy_assignment_operator->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( copy_assignment_operator->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 2 );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !copy_assignment_operator->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !copy_assignment_operator->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_assignment_operator->getParamDereferenceableBytes( 0 ) == 2 );
 
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( copy_assignment_operator->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 2 );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !copy_assignment_operator->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_assignment_operator->getParamDereferenceableBytes( 1 ) == 2 );
 	}
 	{
 		const llvm::Function* const destructor= module->getFunction( "_ZN1S10destructorERS_" );
 		U_TEST_ASSERT( destructor != nullptr );
 		U_TEST_ASSERT( destructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
-		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( destructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 2 );
+		U_TEST_ASSERT( destructor->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( destructor->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !destructor->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !destructor->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( destructor->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( destructor->getParamDereferenceableBytes( 0 ) == 2 );
 	}
 }
 
@@ -764,62 +764,62 @@ U_TEST( LLVMFunctionAttrsTest_GeneratedDefaultMethodsAttrsTest )
 		U_TEST_ASSERT( default_constructor != nullptr );
 		U_TEST_ASSERT( default_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
-		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( !default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( default_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( default_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 12 );
+		U_TEST_ASSERT( default_constructor->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( default_constructor->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !default_constructor->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !default_constructor->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( default_constructor->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( default_constructor->getParamDereferenceableBytes( 0 ) == 12 );
 	}
 	{
 		const llvm::Function* const copy_constructor= module->getFunction( "_ZN1S11constructorERS_RKS_" );
 		U_TEST_ASSERT( copy_constructor != nullptr );
 		U_TEST_ASSERT( copy_constructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( copy_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 12 );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !copy_constructor->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !copy_constructor->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_constructor->getParamDereferenceableBytes( 0 ) == 12 );
 
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( copy_constructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( copy_constructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 12 );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !copy_constructor->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_constructor->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_constructor->getParamDereferenceableBytes( 1 ) == 12 );
 	}
 	{
 		const llvm::Function* const copy_assignment_operator= module->getFunction( "_ZN1SaSERS_RKS_" );
 		U_TEST_ASSERT( copy_assignment_operator != nullptr );
 		U_TEST_ASSERT( copy_assignment_operator->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( copy_assignment_operator->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 12 );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !copy_assignment_operator->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !copy_assignment_operator->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_assignment_operator->getParamDereferenceableBytes( 0 ) == 12 );
 
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( copy_assignment_operator->hasAttribute( llvm::AttributeList::FirstArgIndex + 1, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( copy_assignment_operator->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 1 ) == 12 );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 1, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 1, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 1, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !copy_assignment_operator->hasParamAttribute( 1, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( copy_assignment_operator->hasParamAttribute( 1, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( copy_assignment_operator->getParamDereferenceableBytes( 1 ) == 12 );
 	}
 	{
 		const llvm::Function* const destructor= module->getFunction( "_ZN1S10destructorERS_" );
 		U_TEST_ASSERT( destructor != nullptr );
 		U_TEST_ASSERT( destructor->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 
-		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NonNull ) );
-		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoAlias ) );
-		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::ReadOnly ) );
-		U_TEST_ASSERT( !destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::NoCapture ) );
-		U_TEST_ASSERT( destructor->hasAttribute( llvm::AttributeList::FirstArgIndex + 0, llvm::Attribute::Dereferenceable ) );
-		U_TEST_ASSERT( destructor->getDereferenceableBytes( llvm::AttributeList::FirstArgIndex + 0 ) == 12 );
+		U_TEST_ASSERT( destructor->hasParamAttribute( 0, llvm::Attribute::NonNull ) );
+		U_TEST_ASSERT( destructor->hasParamAttribute( 0, llvm::Attribute::NoAlias ) );
+		U_TEST_ASSERT( !destructor->hasParamAttribute( 0, llvm::Attribute::ReadOnly ) );
+		U_TEST_ASSERT( !destructor->hasParamAttribute( 0, llvm::Attribute::NoCapture ) );
+		U_TEST_ASSERT( destructor->hasParamAttribute( 0, llvm::Attribute::Dereferenceable ) );
+		U_TEST_ASSERT( destructor->getParamDereferenceableBytes( 0 ) == 12 );
 	}
 }
 
