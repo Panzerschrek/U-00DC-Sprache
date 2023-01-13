@@ -59,7 +59,7 @@ std::string ConstantVariableToString( const Variable& variable )
 				constant_fp->getValueAPF().toString(str);
 				if( fundamental_type->fundamental_type == U_FundamentalType::f32_ )
 					str+= "f";
-				return str.str();
+				return str.str().str();
 			}
 		}
 		else if( IsSignedInteger( fundamental_type->fundamental_type ) )

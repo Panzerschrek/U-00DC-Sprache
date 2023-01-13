@@ -1,5 +1,6 @@
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Support/MD5.h>
 #include <llvm/Support/ConvertUTF.h>
@@ -1174,8 +1175,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		llvm::MD5 md5;
 		if( const auto constant_data_array = llvm::dyn_cast<llvm::ConstantDataArray>(initializer) )
 			md5.update( constant_data_array->getRawDataValues() );
-		else if( const auto all_zeros = llvm::dyn_cast<llvm::ConstantAggregateZero>(initializer) )
-			md5.update( std::string( size_t(all_zeros->getNumElements() * FundamentalType( char_type ).GetSize()), '\0' ) );
+		else if( llvm::dyn_cast<llvm::ConstantAggregateZero>(initializer) != nullptr )
+			md5.update( std::string( size_t(array_size * FundamentalType( char_type ).GetSize()), '\0' ) );
 		md5.update( llvm::ArrayRef<uint8_t>( reinterpret_cast<const uint8_t*>(&char_type), sizeof(U_FundamentalType) ) ); // Add type to hash for distinction of zero-sized strings with different types.
 		llvm::MD5::MD5Result md5_result;
 		md5.final(md5_result);
