@@ -2215,34 +2215,33 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
-		const auto arg_attr_index=
-			static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
+		const auto param_attr_index= static_cast<unsigned int>(i + (first_arg_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
 		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
 		// Mark reference params as nonnull.
 		if( param.value_type != ValueType::Value || param_is_composite )
-			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
 		// Mutable reference params or composite value-args must not alias.
 		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
 		if( param.value_type != ValueType::Value || param_is_composite )
-			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
 		// Mark as "readonly" immutable reference params.
 		if( param.value_type == ValueType::ReferenceImut )
-			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ReadOnly );
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ReadOnly );
 		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
 		// It is not possible to capture this reference.
 		if( param.value_type == ValueType::Value && param_is_composite )
-			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoCapture );
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
 	}
 
 	if( first_arg_is_sret )
 	{
-		llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::StructRet );
-		llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::NoAlias );
+		llvm_function->addParamAttr( 0, llvm::Attribute::StructRet );
+		llvm_function->addParamAttr( 0, llvm::Attribute::NoAlias );
 	}
 	if( function_type.return_value_type != ValueType::Value )
-		llvm_function->addAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull );
+		llvm_function->addRetAttr( llvm::Attribute::NonNull );
 
 	// Merge functions with identical code.
 	// We doesn`t need different addresses for different functions.
@@ -2269,8 +2268,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
-		const auto arg_attr_index=
-			static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
+		const auto param_attr_index= static_cast<unsigned int>(i + (first_arg_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
 		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
@@ -2281,7 +2279,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 			if( !llvm_type->isSized() )
 				continue; // May be in case of error.
 
-			llvm_function->addDereferenceableAttr( arg_attr_index, data_layout_.getTypeAllocSize( llvm_type ) );
+			llvm_function->addDereferenceableParamAttr( param_attr_index, data_layout_.getTypeAllocSize( llvm_type ) );
 		}
 	}
 
@@ -2290,9 +2288,13 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 		return; // May be in case of error.
 
 	if( first_arg_is_sret )
-		llvm_function->addDereferenceableAttr( llvm::AttributeList::FirstArgIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
+		llvm_function->addDereferenceableParamAttr( 0, data_layout_.getTypeAllocSize( llvm_ret_type ) );
+
+	// TODO - fix this.
+	/*
 	else if( function_type.return_value_type != ValueType::Value )
 		llvm_function->addDereferenceableAttr( llvm::AttributeList::ReturnIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
+	*/
 }
 
 void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesScope& names_scope )
