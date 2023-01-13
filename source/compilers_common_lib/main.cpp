@@ -387,9 +387,9 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		const std::string cpu_name= ( Options::architecture == "native" && Options::target_cpu.empty() )
+		const std::string cpu_name= (( Options::architecture == "native" && Options::target_cpu.empty() )
 			? llvm::sys::getHostCPUName()
-			: Options::target_cpu;
+			: Options::target_cpu).str();
 
 		const std::string features_str= ( Options::architecture == "native" && Options::target_attributes.empty() )
 			? GetNativeTargetFeaturesStr()
