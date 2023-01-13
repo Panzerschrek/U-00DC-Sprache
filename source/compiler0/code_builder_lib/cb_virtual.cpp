@@ -308,15 +308,12 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr& class_type )
 		virtual_table_struct_fields.push_back( polymorph_type_id_table_element_type_->getPointerTo() ); // type_id field
 	}
 
-	const auto fn_type= llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, true );
-	const auto fn_ptr_type= llvm::PointerType::get( fn_type, 0u );
-
 	uint32_t own_functions_count= 0u;
 	for( const Class::VirtualTableEntry& entry : the_class.virtual_table )
 		if( entry.parent_virtual_table_index == ~0u )
 			++own_functions_count;
 
-	const auto own_virtual_functions_table_type= llvm::ArrayType::get( fn_ptr_type, own_functions_count );
+	const auto own_virtual_functions_table_type= llvm::ArrayType::get( virtual_function_pointer_type_, own_functions_count );
 
 	virtual_table_struct_fields.push_back( own_virtual_functions_table_type );
 
@@ -416,7 +413,6 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_cla
 	}
 
 	const auto array_type= llvm::dyn_cast<llvm::ArrayType>( ancestor_class.virtual_table_llvm_type->getElementType( uint32_t(initializer_values.size() ) ) );
-	const auto fn_type_ptr= array_type->getElementType();
 
 	std::vector<llvm::Constant*> function_pointers_initializer_values;
 	for( const Class::VirtualTableEntry& ancestor_virtual_table_entry : ancestor_class.virtual_table )
@@ -436,7 +432,7 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_cla
 		}
 
 		llvm::Value* const function_pointer_casted=
-			global_function_context_->llvm_ir_builder.CreateBitOrPointerCast( func, fn_type_ptr );
+			global_function_context_->llvm_ir_builder.CreateBitOrPointerCast( func, virtual_function_pointer_type_ );
 
 		function_pointers_initializer_values.push_back( llvm::dyn_cast<llvm::Constant>(function_pointer_casted) );
 	}
@@ -543,7 +539,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	// Fetch function.
 	llvm::Value* const ptr_to_function_ptr= CreateArrayElementGEP( function_context, functions_table_ptr, virtual_table_entry->index_in_table );
 
-	llvm::LoadInst* const abstract_function_ptr= function_context.llvm_ir_builder.CreateLoad( ptr_to_function_ptr->getType()->getPointerElementType(), ptr_to_function_ptr );
+	llvm::LoadInst* const abstract_function_ptr= function_context.llvm_ir_builder.CreateLoad( virtual_function_pointer_type_, ptr_to_function_ptr );
 	abstract_function_ptr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) ); // Function address in virtual table is never null.
 	if( generate_tbaa_metadata_ )
 		abstract_function_ptr->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTableFunctionPointerAccessTag() );
