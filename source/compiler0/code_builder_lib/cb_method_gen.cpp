@@ -810,9 +810,8 @@ void CodeBuilder::BuildCopyConstructorPart(
 		if( type == void_type_ ){} // Do nothing for "void".
 		else if( src->getType() == dst->getType() )
 			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
-		else if( src->getType() == dst->getType()->getPointerElementType() )
+		else // Assume storing value itself.
 			CreateTypedStore( function_context, type, src, dst );
-		else U_ASSERT( false );
 	}
 	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
 	{
@@ -888,9 +887,8 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		if( type == void_type_ ){} // Do nothing for "void".
 		else if( src->getType() == dst->getType() )
 			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
-		else if( src->getType() == dst->getType()->getPointerElementType() )
+		else // Assume storing value itself.
 			CreateTypedStore( function_context, type, src, dst );
-		else U_ASSERT( false );
 	}
 	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
 	{
@@ -1060,9 +1058,8 @@ void CodeBuilder::CopyBytes(
 		// Create simple load-store.
 		if( src->getType() == dst->getType() )
 			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
-		else if( src->getType() == dst->getType()->getPointerElementType() )
+		else // Assume storing value itself.
 			CreateTypedStore( function_context, type, src, dst );
-		else U_ASSERT(false);
 	}
 	else
 	{
