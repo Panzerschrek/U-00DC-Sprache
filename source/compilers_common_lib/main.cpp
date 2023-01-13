@@ -698,7 +698,7 @@ int Main( int argc, const char* argv[] )
 	// Create file write passes.
 	// This file stream must live longer than pass manager.
 	std::error_code file_error_code;
-	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code, llvm::sys::fs::F_None );
+	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
 
 	// Create pass manager for optimizations and output passes.
 	llvm::legacy::PassManager pass_manager;
