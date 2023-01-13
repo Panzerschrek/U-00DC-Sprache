@@ -2,7 +2,6 @@
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Support/Host.h>
-#include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
