@@ -1,4 +1,5 @@
 #include "push_disable_llvm_warnings.hpp"
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Instructions.h>
@@ -39,13 +40,14 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 
 	// Fill arguments
 	size_t i= 0u;
-	for( const llvm::Argument& arg : llvm_function->args() )
+	for( const llvm::Argument& param : llvm_function->args() )
 	{
-		if( arg.hasStructRetAttr() )
+		if( param.hasStructRetAttr() )
 		{
 			U_ASSERT(i == 0u);
-			U_ASSERT(arg.getType()->isPointerTy());
-			return_type= arg.getType()->getPointerElementType();
+			U_ASSERT(param.getType()->isPointerTy());
+			// TODO - fix this.
+			// return_type= param.getType()->getPointerElementType();
 
 			s_ret_ptr= stack_.size();
 			const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
@@ -58,15 +60,15 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 
 			llvm::GenericValue val;
 			val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
-			instructions_map_[ &arg ]= std::move(val);
+			instructions_map_[ &param ]= std::move(val);
 		}
-		else if( arg.getType() == args[i]->getType() )
-			instructions_map_[ &arg ]= GetVal( args[i] );
-		else if( arg.getType()->isPointerTy() && arg.getType()->getPointerElementType() == args[i]->getType() )
+		else if( param.getType() == args[i]->getType() )
+			instructions_map_[ &param ]= GetVal( args[i] );
+		else if( param.getType()->isPointerTy() /* && param.getType()->getPointerElementType() == args[i]->getType() */ )
 		{
 			llvm::GenericValue val;
 			val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
-			instructions_map_[ &arg ]= std::move(val);
+			instructions_map_[ &param ]= std::move(val);
 		}
 		else U_ASSERT(false);
 
@@ -257,9 +259,11 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 			if( element_type->isPointerTy() )
 			{
 				size_t element_ptr= 0;
+				/*
 				if( element_type->getPointerElementType()->isFunctionTy() )
 					errors_.push_back( "passing function pointer to constexpr function" );
-				else if( llvm::ConstantExpr* const constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
+				else
+				*/if( llvm::ConstantExpr* const constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
 				{
 					if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
 						element_ptr= size_t( BuildGEP( constant_expression ).IntVal.getLimitedValue() );
@@ -305,9 +309,11 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	}
 	else if( constant_type->isPointerTy() )
 	{
+		/*
 		if( constant_type->getPointerElementType()->isFunctionTy() )
 			errors_.push_back( "passing function pointer to constexpr function" );
 		else U_ASSERT(false);
+		*/
 		std::memset( constants_stack_.data() + stack_offset, 0, size_t(data_layout_.getTypeAllocSize( constant_type )) );
 	}
 	else U_ASSERT(false);
@@ -390,9 +396,13 @@ llvm::GenericValue ConstexprFunctionEvaluator::BuildGEP( const llvm::User* const
 
 		if( const auto pointer_type= llvm::dyn_cast<llvm::PointerType>(aggregate_type) )
 		{
+			// TODO - fix this
+			(void)pointer_type;
+			/*
 			const auto element_type= pointer_type->getElementType();
 			offset_accumulated+= index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( element_type );
 			aggregate_type= element_type;
+			*/
 		}
 		else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>(aggregate_type) )
 		{
@@ -444,9 +454,13 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 	}
 	else if( const auto constant_zero= llvm::dyn_cast<llvm::ConstantAggregateZero>( val ) )
 	{
-		res.AggregateVal.resize( size_t(constant_zero->getNumElements()) );
+		// TODO - fix this
+		(void)constant_zero;
+		/*
+		res.AggregateVal.resize( size_t(constant_zero->getElementCount()) );
 		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
 			res.AggregateVal[i]= GetVal( constant_zero->getElementValue(i) );
+		*/
 	}
 	else if (const auto undef_value= llvm::dyn_cast<llvm::UndefValue>( val ) )
 	{
@@ -490,7 +504,8 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 
 void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const instruction )
 {
-	llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(instruction->getType())->getElementType();
+	const auto alloca_instruction= llvm::dyn_cast<llvm::AllocaInst>(instruction);
+	llvm::Type* const element_type= alloca_instruction->getAllocatedType();
 
 	const size_t stack_offset= stack_.size();
 	const size_t new_stack_size= stack_.size() + size_t(data_layout_.getTypeAllocSize( element_type ));
@@ -556,7 +571,7 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 
 	const llvm::GenericValue val= GetVal( instruction->getOperand(0u) );
 
-	llvm::Type* const element_type= llvm::dyn_cast<llvm::PointerType>(address->getType())->getElementType();
+	llvm::Type* const element_type= instruction->getType();
 	if( element_type->isIntegerTy() )
 	{
 		if( element_type->getIntegerBitWidth() <= 64 )
