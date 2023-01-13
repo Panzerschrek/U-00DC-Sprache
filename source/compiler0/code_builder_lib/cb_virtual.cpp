@@ -341,7 +341,7 @@ void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class
 		llvm::Value* const gep_indices[]{ GetZeroGEPIndex(), GetZeroGEPIndex() };
 		const auto first_element_address=
 			llvm::ConstantExpr::getGetElementPtr(
-				parent.class_->polymorph_type_id_table->getType()->getPointerElementType(),
+				parent.class_->polymorph_type_id_table_type,
 				parent.class_->polymorph_type_id_table,
 				gep_indices );
 
@@ -365,15 +365,15 @@ void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class
 	// We need this to ensure non-zero result size and give a way to iterate over this table in run-time.
 	table_initializers.push_back( llvm::Constant::getNullValue( polymorph_type_id_table_element_type_ ) );
 
-	llvm::ArrayType* const type_id_table_type= llvm::ArrayType::get( polymorph_type_id_table_element_type_, table_initializers.size() );
+	the_class.polymorph_type_id_table_type= llvm::ArrayType::get( polymorph_type_id_table_element_type_, table_initializers.size() );
 
 	the_class.polymorph_type_id_table=
 		new llvm::GlobalVariable(
 			*module_,
-			type_id_table_type,
+			the_class.polymorph_type_id_table_type,
 			true, // is_constant
 			llvm::GlobalValue::ExternalLinkage,
-			llvm::ConstantArray::get( type_id_table_type, table_initializers ),
+			llvm::ConstantArray::get( the_class.polymorph_type_id_table_type, table_initializers ),
 			"_type_id_for_" + mangler_->MangleType( class_type ) );
 
 	llvm::Comdat* const type_id_comdat= module_->getOrInsertComdat( the_class.polymorph_type_id_table->getName() );
@@ -406,7 +406,7 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_cla
 		llvm::Value* const gep_indices[]{ GetZeroGEPIndex(), GetZeroGEPIndex() };
 		const auto address=
 			llvm::ConstantExpr::getGetElementPtr(
-				dst_class.polymorph_type_id_table->getType()->getPointerElementType(),
+				dst_class.polymorph_type_id_table_type,
 				dst_class.polymorph_type_id_table,
 				gep_indices );
 		initializer_values.push_back( address );
