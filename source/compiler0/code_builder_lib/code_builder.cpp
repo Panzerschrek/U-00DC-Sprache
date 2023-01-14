@@ -2240,7 +2240,8 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 
 	if( first_arg_is_sret )
 	{
-		llvm_function->addParamAttr( 0, llvm::Attribute::StructRet );
+		// TODO - fix this
+		// llvm_function->addParamAttr( 0, llvm::Attribute::StructRet );
 		llvm_function->addParamAttr( 0, llvm::Attribute::NoAlias );
 	}
 	if( function_type.return_value_type != ValueType::Value )
@@ -2254,8 +2255,11 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 
 	llvm_function->setCallingConv( function_type.calling_convention );
 
+	// TODO - fix this
+	/*
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
 		llvm_function->addFnAttr( llvm::Attribute::UWTable );
+	*/
 
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )
