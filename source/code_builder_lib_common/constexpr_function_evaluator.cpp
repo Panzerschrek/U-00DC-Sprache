@@ -569,9 +569,10 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 	else
 		data_ptr= stack_.data() + offset;
 
-	const llvm::GenericValue val= GetVal( instruction->getOperand(0u) );
+	const auto value_operand= instruction->getOperand(0u);
+	const llvm::GenericValue val= GetVal( value_operand );
 
-	llvm::Type* const element_type= instruction->getType();
+	llvm::Type* const element_type= value_operand->getType();
 	if( element_type->isIntegerTy() )
 	{
 		if( element_type->getIntegerBitWidth() <= 64 )
