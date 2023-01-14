@@ -60,8 +60,6 @@ U_TEST(AutoMoveInitializationOptimization_Test1)
 
 U_TEST(AutoMoveInitializationOptimization_Test2)
 {
-	DISABLE_TEST; // TODO - fix this
-
 	static const char c_program_text[]=
 	R"(
 		struct S

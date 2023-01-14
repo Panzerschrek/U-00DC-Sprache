@@ -4,6 +4,7 @@
 #include <llvm/IR/InstrTypes.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/Intrinsics.h>
+#include <llvm/IR/Operator.h>
 #include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib_common/assert.hpp"
@@ -386,12 +387,11 @@ llvm::GenericValue ConstexprFunctionEvaluator::BuildGEP( const llvm::User* const
 
 	llvm::Type* ptr_element_type= nullptr;
 	if( const auto gep_instruction= llvm::dyn_cast<llvm::GetElementPtrInst>(instruction) )
-	{
 		ptr_element_type= gep_instruction->getSourceElementType();
-	}
-	else if( const auto constant_expr= llvm::dyn_cast<llvm::ConstantExpr>(instruction) )
+	else if( const llvm::ConstantExpr* constant_expr= llvm::dyn_cast<llvm::ConstantExpr>(instruction) )
 	{
-		ptr_element_type= constant_expr->getOperand(0)->getType();
+		// TODO - check if this is correct.
+		ptr_element_type= llvm::dyn_cast<llvm::GEPOperator>(constant_expr)->getSourceElementType();
 	}
 
 	llvm::Type* aggregate_type= instruction->getOperand(0u)->getType();
