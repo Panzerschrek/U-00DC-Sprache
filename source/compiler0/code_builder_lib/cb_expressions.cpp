@@ -181,7 +181,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
 
-		result.llvm_value= CreateArrayElementGEP( function_context, variable.llvm_value, index_value );
+		result.llvm_value= CreateArrayElementGEP( function_context, variable.type, variable.llvm_value, index_value );
 
 		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
@@ -233,7 +233,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result.value_type= variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		result.node= variable_lock.TakeNode();
 		result.type= tuple_type->elements[size_t(index_value)];
-		result.llvm_value= CreateTupleElementGEP( function_context, variable.llvm_value, index_value );
+		result.llvm_value= CreateTupleElementGEP( function_context, variable.type, variable.llvm_value, index_value );
 
 		if( variable.constexpr_value != nullptr )
 			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
@@ -320,7 +320,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	llvm::Value* const gep_result= CreateClassFiledGEP( function_context, variable, *field );
+	llvm::Value* const gep_result= CreateClassFieldGEP( function_context, variable, *field );
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
@@ -686,7 +686,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		field_variable.value_type= ( function_context.this_->value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		field_variable.node= function_context.this_->node;
 
-		field_variable.llvm_value= CreateClassFiledGEP( function_context, *function_context.this_, *field );
+		field_variable.llvm_value= CreateClassFieldGEP( function_context, *function_context.this_, *field );
 		if( field_variable.llvm_value == nullptr )
 		{
 			REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
@@ -2969,7 +2969,7 @@ Value CodeBuilder::DoCallFunction(
 			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 			{
 				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
-					MoveConstantToMemory( result.llvm_value, evaluation_result.result_constant, function_context );
+					MoveConstantToMemory( result.type, result.llvm_value, evaluation_result.result_constant, function_context );
 
 				if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 					constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );

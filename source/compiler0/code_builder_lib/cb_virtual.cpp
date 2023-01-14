@@ -489,6 +489,8 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	if( function.virtual_table_index == ~0u )
 		return std::make_pair( std::move(this_casted), function.llvm_function );
 
+	return std::make_pair( std::move(this_casted), function.llvm_function );
+#if 0 // TODO fix this
 	const Class& class_type= *this_casted.type.GetClassType();
 	U_ASSERT( function.virtual_table_index < class_type.virtual_table.size() );
 
@@ -525,7 +527,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 						++field_index;
 			}
 
-			function_virtual_table= CreateClassFiledGEP( function_context, function_virtual_table, field_index );
+			function_virtual_table= CreateClassFieldGEP( function_context, function_virtual_table, field_index );
 
 			const auto next_class= current_class->parents[ virtual_table_entry->parent_virtual_table_index ].class_;
 			virtual_table_entry= &next_class->virtual_table[ virtual_table_entry->index_in_table ];
@@ -534,7 +536,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 		functions_table_field_number= current_class->parents.empty() ? c_funcs_table_field_number : uint32_t(class_type.parents.size());
 	}
 
-	llvm::Value* const functions_table_ptr= CreateClassFiledGEP( function_context, function_virtual_table, functions_table_field_number );
+	llvm::Value* const functions_table_ptr= CreateClassFieldGEP( function_context, function_virtual_table, functions_table_field_number );
 
 	// Fetch function.
 	llvm::Value* const ptr_to_function_ptr= CreateArrayElementGEP( function_context, functions_table_ptr, virtual_table_entry->index_in_table );
@@ -564,15 +566,15 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 				}
 		}
 
-		llvm::Value* const offset_ptr= CreateClassFiledGEP( function_context, first_root_virtual_table, c_offset_field_number );
+		llvm::Value* const offset_ptr= CreateClassFieldGEP( function_context, first_root_virtual_table, c_offset_field_number );
 		llvm::Value* const offset= CreateTypedLoad( function_context, size_type_, offset_ptr );
 
 		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
 		llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset );
 		this_casted.llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, this_casted.type.GetLLVMType()->getPointerTo() );
 	}
-
 	return std::make_pair( std::move(this_casted), function_ptr );
+#endif
 }
 
 void CodeBuilder::SetupVirtualTablePointers_r(
@@ -581,12 +583,17 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 	const Class& the_class,
 	FunctionContext& function_context )
 {
+	(void)this_;
+	(void)ptr_to_vtable_ptr;
+	(void)the_class;
+	(void)function_context;
+#if 0 // TODO - fix this
 	// Setup virtual table pointers for parents.
 	unsigned int vtable_field_number= 1;
 	for( const Class::Parent& parent : the_class.parents )
 	{
-		llvm::Value* const parent_ptr= CreateClassFiledGEP( function_context, this_, parent.field_number );
-		llvm::Value* const vtable_ptr= CreateClassFiledGEP( function_context, ptr_to_vtable_ptr, parent.field_number == 0 ? 0 : vtable_field_number );
+		llvm::Value* const parent_ptr= CreateClassFieldGEP( function_context, &the_class, this_, parent.field_number );
+		llvm::Value* const vtable_ptr= CreateClassFieldGEP( function_context, ptr_to_vtable_ptr, parent.field_number == 0 ? 0 : vtable_field_number );
 
 		SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, *parent.class_, function_context );
 
@@ -602,6 +609,7 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 		if( generate_tbaa_metadata_ )
 			store->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag() );
 	}
+#endif
 }
 
 void CodeBuilder::SetupVirtualTablePointers(

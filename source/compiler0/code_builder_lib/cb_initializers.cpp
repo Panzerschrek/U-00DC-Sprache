@@ -68,7 +68,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 		for( size_t i= 0u; i < initializer.initializers.size(); i++ )
 		{
-			array_member.llvm_value= CreateArrayElementGEP( function_context, variable.llvm_value, i );
+			array_member.llvm_value= CreateArrayElementGEP( function_context, variable.type, variable.llvm_value, i );
 
 			llvm::Constant* const member_constant=
 				ApplyInitializer( array_member, names, function_context, initializer.initializers[i] );
@@ -104,7 +104,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 		for( size_t i= 0u; i < initializer.initializers.size(); ++i )
 		{
-			tuple_element.llvm_value= CreateTupleElementGEP( function_context, variable.llvm_value, i );
+			tuple_element.llvm_value= CreateTupleElementGEP( function_context, variable.type, variable.llvm_value, i );
 			tuple_element.type= tuple_type->elements[i];
 
 			llvm::Constant* const member_constant=
@@ -194,7 +194,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		else
 		{
 			struct_member.type= field->type;
-			struct_member.llvm_value= CreateClassFiledGEP( function_context, variable.llvm_value, field->index );
+			struct_member.llvm_value= CreateClassFieldGEP( function_context, variable.type, variable.llvm_value, field->index );
 
 			constant_initializer=
 				ApplyInitializer( struct_member, names, function_context, member_initializer.initializer );
@@ -227,7 +227,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		else
 		{
 			struct_member.type= field.type;
-			struct_member.llvm_value= CreateClassFiledGEP( function_context, variable.llvm_value, field.index );
+			struct_member.llvm_value= CreateClassFieldGEP( function_context, variable.type, variable.llvm_value, field.index );
 
 			if( field.syntax_element->initializer != nullptr )
 				constant_initializer=
@@ -417,7 +417,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			array_type->size,
 			[&](llvm::Value* const counter_value)
 			{
-				array_member.llvm_value= CreateArrayElementGEP( function_context, variable.llvm_value, counter_value );
+				array_member.llvm_value= CreateArrayElementGEP( function_context, variable.type, variable.llvm_value, counter_value );
 				ApplyInitializer( array_member, names, function_context, initializer );
 			},
 			function_context);
@@ -436,7 +436,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		{
 			const size_t i= size_t( &element_type - tuple_type->elements.data() );
 			tuple_member.type= element_type;
-			tuple_member.llvm_value= CreateTupleElementGEP( function_context, variable.llvm_value, i );
+			tuple_member.llvm_value= CreateTupleElementGEP( function_context, variable.type, variable.llvm_value, i );
 
 			ApplyInitializer( tuple_member, names, function_context, initializer );
 		}
@@ -471,7 +471,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			}
 
 			struct_member.type= field.type;
-			struct_member.llvm_value= CreateClassFiledGEP( function_context, variable.llvm_value, field.index );
+			struct_member.llvm_value= CreateClassFieldGEP( function_context, variable.type, variable.llvm_value, field.index );
 
 			ApplyInitializer( struct_member, names, function_context, initializer );
 		}
@@ -534,7 +534,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 			array_type->size,
 			[&](llvm::Value* const counter_value)
 			{
-				array_member.llvm_value= CreateArrayElementGEP( function_context, variable.llvm_value, counter_value );
+				array_member.llvm_value= CreateArrayElementGEP( function_context, variable.type, variable.llvm_value, counter_value );
 
 				constant_initializer= ApplyEmptyInitializer( variable_name, src_loc, array_member, block_names, function_context );
 			},
@@ -559,7 +559,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		{
 			const size_t i= size_t( &element_type - tuple_type->elements.data() );
 			tuple_member.type= element_type;
-			tuple_member.llvm_value= CreateTupleElementGEP( function_context, variable.llvm_value, i );
+			tuple_member.llvm_value= CreateTupleElementGEP( function_context, variable.type, variable.llvm_value, i );
 
 			llvm::Constant* const constant_initializer=
 				ApplyEmptyInitializer( variable_name, src_loc, tuple_member, block_names, function_context );
@@ -950,7 +950,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		}
 	}
 
-	llvm::Value* const address_of_reference= CreateClassFiledGEP( function_context, variable.llvm_value, field.index );
+	llvm::Value* const address_of_reference= CreateClassFieldGEP( function_context, variable.type, variable.llvm_value, field.index );
 
 	llvm::Value* ref_to_store= initializer_variable.llvm_value;
 	if( field.type != initializer_variable.type )
@@ -1167,7 +1167,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 			Variable field_variable;
 			field_variable.type= class_field.type;
 			field_variable.value_type= ValueType::ReferenceMut;
-			field_variable.llvm_value= CreateClassFiledGEP( function_context, variable_llvm_value, class_field.index );
+			field_variable.llvm_value= CreateClassFieldGEP( function_context, class_type, variable_llvm_value, class_field.index );
 			InitializeClassFieldWithInClassIninitalizer( field_variable, class_field, function_context );
 		}
 	}
