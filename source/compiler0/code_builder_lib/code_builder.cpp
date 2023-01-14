@@ -2124,7 +2124,7 @@ llvm::Value* CodeBuilder::CreateTupleElementGEP( FunctionContext& function_conte
 	return function_context.llvm_ir_builder.CreateGEP(
 		tuple_type.GetLLVMType(),
 		tuple_ptr,
-		{ GetZeroGEPIndex(), llvm::ConstantInt::get( fundamental_llvm_types_.u64_, element_index ) } );
+		{ GetZeroGEPIndex(), GetFieldGEPIndex( element_index ) } );
 }
 
 llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, const Type& array_type, llvm::Value* const array_ptr, const uint64_t element_index )
