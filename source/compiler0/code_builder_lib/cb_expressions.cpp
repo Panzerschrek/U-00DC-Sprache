@@ -339,8 +339,19 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 				result.llvm_value= element;
 
+
 				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
-					result.constexpr_value= global_variable->getInitializer();
+				{
+					if( class_type->typeinfo_type != std::nullopt && member_access_operator.member_name_ == "type_id" )
+					{
+						// HACK!
+						// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.
+						// This is used for type_id in typeinfo classes.
+						result.constexpr_value= global_variable->getInitializer()->getAggregateElement(0u)->getAggregateElement(0u);
+					}
+					else
+						result.constexpr_value= global_variable->getInitializer();
+				}
 				else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
 				{
 					// TODO - what first operand is constant GEP too?
