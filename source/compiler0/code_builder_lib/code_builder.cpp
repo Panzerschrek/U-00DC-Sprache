@@ -2091,11 +2091,6 @@ llvm::Value*CodeBuilder:: CreateBaseClassGEP( FunctionContext& function_context,
 	return CreateClassFieldGEP( function_context, class_type, class_ptr, 0 /* base class is allways first field */ );
 }
 
-llvm::Value*CodeBuilder:: CreateVirtualTablePointerGEP( FunctionContext& function_context, const Type& class_type, llvm::Value* const class_ptr )
-{
-	return CreateClassFieldGEP( function_context, class_type, class_ptr, 0 /* virtual table pointer is allways first field */ );
-}
-
 llvm::Value* CodeBuilder::CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field )
 {
 	ClassPtr actual_field_class= class_variable.type.GetClassType();

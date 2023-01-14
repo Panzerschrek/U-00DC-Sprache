@@ -938,7 +938,6 @@ private:
 	llvm::Constant* GetFieldGEPIndex( uint64_t field_index );
 
 	llvm::Value* CreateBaseClassGEP( FunctionContext& function_context, const Type& class_type, llvm::Value* class_ptr );
-	llvm::Value* CreateVirtualTablePointerGEP( FunctionContext& function_context, const Type& class_type, llvm::Value* class_ptr );
 	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field );
 	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Type& class_type, llvm::Value* class_ptr, uint64_t field_index );
 	llvm::Value* CreateTupleElementGEP( FunctionContext& function_context, const Type& tuple_type, llvm::Value* tuple_ptr, uint64_t element_index );

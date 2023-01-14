@@ -489,8 +489,6 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	if( function.virtual_table_index == ~0u )
 		return std::make_pair( std::move(this_casted), function.llvm_function );
 
-	return std::make_pair( std::move(this_casted), function.llvm_function );
-#if 0 // TODO fix this
 	const Class& class_type= *this_casted.type.GetClassType();
 	U_ASSERT( function.virtual_table_index < class_type.virtual_table.size() );
 
@@ -509,6 +507,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 
 	// Select virtual subtable of class, where function declared first time.
 	llvm::Value* function_virtual_table= virtual_table_ptr;
+	llvm::Type* function_virtual_table_type= nullptr;
 	uint32_t functions_table_field_number= ~0u;
 	const Class::VirtualTableEntry* virtual_table_entry= &class_type.virtual_table[ function.virtual_table_index ];
 	{
@@ -527,19 +526,34 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 						++field_index;
 			}
 
-			function_virtual_table= CreateClassFieldGEP( function_context, function_virtual_table, field_index );
+			function_virtual_table=
+				function_context.llvm_ir_builder.CreateGEP(
+					current_class->virtual_table_llvm_type,
+					function_virtual_table,
+					{ GetZeroGEPIndex(), GetFieldGEPIndex( field_index ) } );
 
 			const auto next_class= current_class->parents[ virtual_table_entry->parent_virtual_table_index ].class_;
 			virtual_table_entry= &next_class->virtual_table[ virtual_table_entry->index_in_table ];
 			current_class= next_class;
 		}
 		functions_table_field_number= current_class->parents.empty() ? c_funcs_table_field_number : uint32_t(class_type.parents.size());
+		function_virtual_table_type= current_class->virtual_table_llvm_type;
+
 	}
 
-	llvm::Value* const functions_table_ptr= CreateClassFieldGEP( function_context, function_virtual_table, functions_table_field_number );
+	// Get functions table poitner from whole virtual table pointer.
+	llvm::Value* const functions_table_ptr=
+		function_context.llvm_ir_builder.CreateGEP(
+			function_virtual_table_type,
+			function_virtual_table,
+			{ GetZeroGEPIndex(), GetFieldGEPIndex( functions_table_field_number ) } );
 
 	// Fetch function.
-	llvm::Value* const ptr_to_function_ptr= CreateArrayElementGEP( function_context, functions_table_ptr, virtual_table_entry->index_in_table );
+	llvm::Value* const ptr_to_function_ptr=
+		function_context.llvm_ir_builder.CreateGEP(
+			function_virtual_table_type->getStructElementType(functions_table_field_number),
+			functions_table_ptr,
+			{ GetZeroGEPIndex(), GetFieldGEPIndex( virtual_table_entry->index_in_table ) } );
 
 	llvm::LoadInst* const abstract_function_ptr= function_context.llvm_ir_builder.CreateLoad( virtual_function_pointer_type_, ptr_to_function_ptr );
 	abstract_function_ptr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) ); // Function address in virtual table is never null.
@@ -554,19 +568,21 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	{
 		// Fetch "this" pointer offset. It is located in deepest first virtual table (actual offset should always be zero).
 		llvm::Value* first_root_virtual_table= virtual_table_ptr;
+		llvm::Type* first_root_virtual_table_type= class_type.virtual_table_llvm_type;
 		for( const Class* current_class= &class_type; !current_class->parents.empty(); )
 		{
-			first_root_virtual_table= CreateBaseClassGEP( function_context, first_root_virtual_table );
+			first_root_virtual_table= function_context.llvm_ir_builder.CreateGEP( first_root_virtual_table_type, first_root_virtual_table, { GetZeroGEPIndex(), GetZeroGEPIndex() } );
 
 			for( const Class::Parent& parent : current_class->parents )
 				if( parent.field_number == 0 )
 				{
 					current_class= parent.class_;
+					first_root_virtual_table_type= current_class->virtual_table_llvm_type;
 					break;
 				}
 		}
 
-		llvm::Value* const offset_ptr= CreateClassFieldGEP( function_context, first_root_virtual_table, c_offset_field_number );
+		llvm::Value* const offset_ptr= function_context.llvm_ir_builder.CreateGEP( first_root_virtual_table_type, first_root_virtual_table, { GetFieldGEPIndex(c_offset_field_number), GetZeroGEPIndex() } );
 		llvm::Value* const offset= CreateTypedLoad( function_context, size_type_, offset_ptr );
 
 		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
@@ -574,26 +590,28 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 		this_casted.llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, this_casted.type.GetLLVMType()->getPointerTo() );
 	}
 	return std::make_pair( std::move(this_casted), function_ptr );
-#endif
 }
 
 void CodeBuilder::SetupVirtualTablePointers_r(
-	llvm::Value* this_,
-	llvm::Value* ptr_to_vtable_ptr,
+	llvm::Value* const this_,
+	llvm::Value* const ptr_to_vtable_ptr,
 	const Class& the_class,
 	FunctionContext& function_context )
 {
-	(void)this_;
-	(void)ptr_to_vtable_ptr;
-	(void)the_class;
-	(void)function_context;
-#if 0 // TODO - fix this
 	// Setup virtual table pointers for parents.
 	unsigned int vtable_field_number= 1;
 	for( const Class::Parent& parent : the_class.parents )
 	{
-		llvm::Value* const parent_ptr= CreateClassFieldGEP( function_context, &the_class, this_, parent.field_number );
-		llvm::Value* const vtable_ptr= CreateClassFieldGEP( function_context, ptr_to_vtable_ptr, parent.field_number == 0 ? 0 : vtable_field_number );
+		llvm::Value* const parent_ptr=
+			function_context.llvm_ir_builder.CreateGEP(
+				the_class.llvm_type,
+				this_,
+				{ GetZeroGEPIndex(), GetFieldGEPIndex( parent.field_number ) } );
+		llvm::Value* const vtable_ptr=
+			function_context.llvm_ir_builder.CreateGEP(
+				the_class.virtual_table_llvm_type,
+				ptr_to_vtable_ptr,
+				{ GetZeroGEPIndex(), GetFieldGEPIndex( parent.field_number == 0 ? 0 : vtable_field_number ) } );
 
 		SetupVirtualTablePointers_r( parent_ptr, vtable_ptr, *parent.class_, function_context );
 
@@ -604,12 +622,15 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 	// Store virtual table pointer only if it allocated in current class.
 	if( the_class.parents.empty() )
 	{
-		llvm::Value* const vtable_ptr= CreateVirtualTablePointerGEP( function_context, this_ );
+		llvm::Value* const vtable_ptr=
+			function_context.llvm_ir_builder.CreateGEP(
+				the_class.llvm_type,
+				this_,
+				{ GetZeroGEPIndex(), GetZeroGEPIndex() /* virtual table pointer is allways first field */ } );
 		llvm::StoreInst* const store= function_context.llvm_ir_builder.CreateStore( ptr_to_vtable_ptr, vtable_ptr );
 		if( generate_tbaa_metadata_ )
 			store->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag() );
 	}
-#endif
 }
 
 void CodeBuilder::SetupVirtualTablePointers(
