@@ -2240,9 +2240,11 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 
 	if( first_arg_is_sret )
 	{
-		// TODO - fix this
-		// llvm_function->addParamAttr( 0, llvm::Attribute::StructRet );
 		llvm_function->addParamAttr( 0, llvm::Attribute::NoAlias );
+
+		llvm::AttrBuilder builder(llvm_context_);
+		builder.addStructRetAttr(function_type.return_type.GetLLVMType());
+		llvm_function->addParamAttrs( 0, builder );
 	}
 	if( function_type.return_value_type != ValueType::Value )
 		llvm_function->addRetAttr( llvm::Attribute::NonNull );

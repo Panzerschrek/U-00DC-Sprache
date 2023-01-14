@@ -29,13 +29,13 @@ ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& 
 
 ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	llvm::Function* const llvm_function,
+	llvm::Type* const return_type,
 	const llvm::ArrayRef<const llvm::Constant*> args )
 {
 	stack_.resize(16u); // reserve null pointer
 
 	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
 
-	llvm::Type* return_type= llvm_function->getReturnType();
 	size_t s_ret_ptr= 0u;
 
 	// Fill arguments
@@ -46,8 +46,6 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 		{
 			U_ASSERT(i == 0u);
 			U_ASSERT(param.getType()->isPointerTy());
-			// TODO - fix this.
-			// return_type= param.getType()->getPointerElementType();
 
 			s_ret_ptr= stack_.size();
 			const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
@@ -259,11 +257,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 			if( element_type->isPointerTy() )
 			{
 				size_t element_ptr= 0;
-				/*
-				if( element_type->getPointerElementType()->isFunctionTy() )
-					errors_.push_back( "passing function pointer to constexpr function" );
-				else
-				*/if( llvm::ConstantExpr* const constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
+				if( llvm::ConstantExpr* const constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
 				{
 					if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
 						element_ptr= size_t( BuildGEP( constant_expression ).IntVal.getLimitedValue() );
@@ -273,6 +267,11 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 					element_ptr= MoveConstantToStack( *global_variable->getInitializer() );
 				else if( element->isNullValue() )
 					element_ptr= 0;
+				else if( element_type->isPointerTy() )
+				{
+					// TODO - check if this is real pointer.
+					errors_.push_back( "passing function pointer to constexpr function" );
+				}
 				else U_ASSERT(false);
 
 				std::memcpy( constants_stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
@@ -385,24 +384,29 @@ llvm::GenericValue ConstexprFunctionEvaluator::BuildGEP( const llvm::User* const
 {
 	U_ASSERT( instruction->getNumOperands() >= 1u );
 
-	const llvm::GenericValue ptr= GetVal( instruction->getOperand(0u) );
+	llvm::Type* ptr_element_type= nullptr;
+	if( const auto gep_instruction= llvm::dyn_cast<llvm::GetElementPtrInst>(instruction) )
+	{
+		ptr_element_type= gep_instruction->getSourceElementType();
+	}
+	else if( const auto constant_expr= llvm::dyn_cast<llvm::ConstantExpr>(instruction) )
+	{
+		ptr_element_type= constant_expr->getOperand(0)->getType();
+	}
 
 	llvm::Type* aggregate_type= instruction->getOperand(0u)->getType();
+	const llvm::GenericValue ptr= GetVal( instruction->getOperand(0u) );
 
 	uint64_t offset_accumulated= 0u;
 	for( llvm::User::const_op_iterator op= std::next(instruction->op_begin()), op_end= instruction->op_end(); op != op_end; ++op)
 	{
 		const llvm::GenericValue index= GetVal( op->get() );
 
-		if( const auto pointer_type= llvm::dyn_cast<llvm::PointerType>(aggregate_type) )
+		if( llvm::dyn_cast<llvm::PointerType>(aggregate_type) != nullptr )
 		{
-			// TODO - fix this
-			(void)pointer_type;
-			/*
-			const auto element_type= pointer_type->getElementType();
+			const auto element_type= ptr_element_type;
 			offset_accumulated+= index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( element_type );
 			aggregate_type= element_type;
-			*/
 		}
 		else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>(aggregate_type) )
 		{
@@ -454,13 +458,9 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 	}
 	else if( const auto constant_zero= llvm::dyn_cast<llvm::ConstantAggregateZero>( val ) )
 	{
-		// TODO - fix this
-		(void)constant_zero;
-		/*
-		res.AggregateVal.resize( size_t(constant_zero->getElementCount()) );
+		res.AggregateVal.resize( size_t(constant_zero->getElementCount().getKnownMinValue()) );
 		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
 			res.AggregateVal[i]= GetVal( constant_zero->getElementValue(i) );
-		*/
 	}
 	else if (const auto undef_value= llvm::dyn_cast<llvm::UndefValue>( val ) )
 	{

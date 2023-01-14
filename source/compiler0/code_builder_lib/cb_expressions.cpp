@@ -2956,7 +2956,10 @@ Value CodeBuilder::DoCallFunction(
 			function_type.return_value_type == ValueType::Value && function_type.return_type.ReferencesTagsCount() == 0u )
 		{
 			const ConstexprFunctionEvaluator::Result evaluation_result=
-				constexpr_function_evaluator_.Evaluate( llvm::dyn_cast<llvm::Function>(function), constant_llvm_args );
+				constexpr_function_evaluator_.Evaluate(
+					llvm::dyn_cast<llvm::Function>(function),
+					function_type.return_type.GetLLVMType(),
+					constant_llvm_args );
 
 			for( const std::string& error_text : evaluation_result.errors )
 			{
