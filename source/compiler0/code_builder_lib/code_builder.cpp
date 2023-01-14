@@ -2335,7 +2335,6 @@ void CodeBuilder::CreateLifetimeStart( FunctionContext& function_context, llvm::
 	if( !create_lifetimes_ )
 		return;
 
-
 	const auto alloca_inst= llvm::dyn_cast<llvm::AllocaInst>(address);
 	if( alloca_inst == nullptr )
 		return;
