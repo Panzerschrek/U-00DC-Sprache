@@ -807,11 +807,9 @@ void CodeBuilder::BuildCopyConstructorPart(
 		type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
-		if( type == void_type_ ){} // Do nothing for "void".
-		else if( src->getType() == dst->getType() )
+		U_ASSERT( src->getType() == dst->getType() );
+		if( type != void_type_ )
 			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
-		else // Assume storing value itself.
-			CreateTypedStore( function_context, type, src, dst );
 	}
 	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
 	{
@@ -884,11 +882,9 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
-		if( type == void_type_ ){} // Do nothing for "void".
-		else if( src->getType() == dst->getType() )
+		U_ASSERT( src->getType() == dst->getType() );
+		if( type != void_type_ )
 			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
-		else // Assume storing value itself.
-			CreateTypedStore( function_context, type, src, dst );
 	}
 	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
 	{
@@ -1055,11 +1051,10 @@ void CodeBuilder::CopyBytes(
 	llvm::Type* const llvm_type= type.GetLLVMType();
 	if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
 	{
+		U_ASSERT( src->getType() == dst->getType() );
 		// Create simple load-store.
-		if( src->getType() == dst->getType() )
+		if( type != void_type_ )
 			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
-		else // Assume storing value itself.
-			CreateTypedStore( function_context, type, src, dst );
 	}
 	else
 	{
