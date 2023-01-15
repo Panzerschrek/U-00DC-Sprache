@@ -2293,12 +2293,12 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 
 	if( first_arg_is_sret )
 		llvm_function->addDereferenceableParamAttr( 0, data_layout_.getTypeAllocSize( llvm_ret_type ) );
-
-	// TODO - fix this.
-	/*
 	else if( function_type.return_value_type != ValueType::Value )
-		llvm_function->addDereferenceableAttr( llvm::AttributeList::ReturnIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
-	*/
+	{
+		llvm::AttrBuilder builder(llvm_context_);
+		builder.addDereferenceableAttr( data_layout_.getTypeAllocSize( llvm_ret_type ) );
+		llvm_function->addRetAttrs(builder);
+	}
 }
 
 void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesScope& names_scope )
