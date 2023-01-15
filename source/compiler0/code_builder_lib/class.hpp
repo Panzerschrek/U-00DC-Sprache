@@ -99,7 +99,6 @@ public:
 	llvm::StructType* virtual_table_llvm_type= nullptr;
 	llvm::GlobalVariable* virtual_table_llvm_variable= nullptr; // May be null for interfaces and abstract classes.
 
-	llvm::ArrayType* polymorph_type_id_table_type= nullptr;
 	llvm::GlobalVariable* polymorph_type_id_table= nullptr; // Exists in polymorph classes.
 };
 
