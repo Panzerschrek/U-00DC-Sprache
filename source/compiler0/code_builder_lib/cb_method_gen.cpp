@@ -1189,27 +1189,26 @@ void CodeBuilder::MoveConstantToMemory(
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{
-		// TODO - support base classes here.
+		U_ASSERT( class_type->parents.empty() ); // Constexpr structs should not have parents.
+		U_ASSERT( class_type->kind == Class::Kind::Struct || class_type->kind == Class::Kind::NonPolymorph ); // It's not possible for polymproh class to be constexpr.
+
 		for( const std::string& field_name : class_type->fields_order )
 		{
 			const size_t field_index= size_t(&field_name - class_type->fields_order.data());
 			const auto field= class_type->members->GetThisScopeValue(field_name)->GetClassField();
+			llvm::Constant* const field_element= constant->getAggregateElement(uint32_t(field_index));
+			llvm::Value* const field_ptr= CreateClassFieldGEP( function_context, type, ptr, field_index );
+
 			if( field->is_reference )
-			{
-				// TODO - process this case
-			}
+				CreateTypedReferenceStore( function_context, field->type, field_element, field_ptr );
 			else
-				MoveConstantToMemory(
-					field->type,
-					CreateClassFieldGEP( function_context, type, ptr, field_index ),
-					constant->getAggregateElement(uint32_t(field_index)),
-					function_context );
+				MoveConstantToMemory( field->type, field_ptr, field_element, function_context );
 		}
 	}
 	else
 	{
 		// Assume this is scalar type.
-		function_context.llvm_ir_builder.CreateStore( constant, ptr );
+		CreateTypedStore( function_context, type, constant, ptr );
 	}
 }
 
