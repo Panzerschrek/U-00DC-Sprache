@@ -2274,11 +2274,12 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 
 	llvm_function->setCallingConv( function_type.calling_convention );
 
-	// TODO - fix this
-	/*
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
-		llvm_function->addFnAttr( llvm::Attribute::UWTable );
-	*/
+	{
+		llvm::AttrBuilder builder(llvm_context_);
+		builder.addUWTableAttr(llvm::UWTableKind::Async);
+		llvm_function->addFnAttrs( builder );
+	}
 
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )
