@@ -1124,7 +1124,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			unsafe
 			{
 				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), index_value ];
-				result.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ); // TODO - maybe add "inbounds" attribute?
+				result.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, variable_array_type.llvm_type, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ); // TODO - maybe add "inbounds" attribute?
 			}
 
 			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
@@ -1797,14 +1797,12 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
+		var Type element_type= res.t.GetRawPointerType().try_deref().element_type;
+		if( !EnsureTypeComplete( element_type ) )
 		{
-			var Type& element_type= res.t.GetRawPointerType().try_deref().element_type;
-			if( !EnsureTypeComplete( element_type ) )
-			{
-				// Complete types required for pointer arithmetic.
-				REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
-				return ErrorValue();
-			}
+			// Complete types required for pointer arithmetic.
+			REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, element_type )
+			return ErrorValue();
 		}
 		if( !IsInteger( int_type ) || int_size > pointer_size )
 		{
@@ -1828,7 +1826,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
-			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, ptr_value, $<(index_value), 1u, "+\0"[0] );
+			res.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), ptr_value, $<(index_value), 1u, "+\0"[0] );
 		}
 	}
 	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() && !r_raw_pointer_type.empty() )

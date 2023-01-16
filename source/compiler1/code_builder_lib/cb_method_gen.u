@@ -943,8 +943,8 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 				unsafe
 				{
 					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
-					dst_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst, $<(indexes[0]), 2u, "[]\0"[0] );
-					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, $<(indexes[0]), 2u, "[]\0"[0] );
+					dst_element_value= LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, dst, $<(indexes[0]), 2u, "[]\0"[0] );
+					src_element_value= LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, src, $<(indexes[0]), 2u, "[]\0"[0] );
 				}
 
 				BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
@@ -1033,8 +1033,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 				unsafe
 				{
 					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
-					dst_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, dst, $<(indexes[0]), 2u, "[]\0"[0] );
-					src_element_value= LLVMBuildGEP( function_context.llvm_ir_builder, src, $<(indexes[0]), 2u, "[]\0"[0] );
+					dst_element_value= LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, dst, $<(indexes[0]), 2u, "[]\0"[0] );
+					src_element_value= LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, src, $<(indexes[0]), 2u, "[]\0"[0] );
 				}
 
 				BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
@@ -1138,8 +1138,8 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 
 				unsafe
 				{
-					l= LLVMBuildGEP( function_context.llvm_ir_builder, l_address, $<(indexes[0]), 2u, "[]\0"[0] );
-					r= LLVMBuildGEP( function_context.llvm_ir_builder, r_address, $<(indexes[0]), 2u, "[]\0"[0] );
+					l= LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, l_address, $<(indexes[0]), 2u, "[]\0"[0] );
+					r= LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, r_address, $<(indexes[0]), 2u, "[]\0"[0] );
 				}
 
 				BuildEqualityCompareOperatorPart( names_scope, function_context, l, r, array_type.element_type, false_basic_block, src_loc );
@@ -1211,7 +1211,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 			array_type.element_count,
 			{
 				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
-				auto element_value= unsafe( LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, "[]\0"[0] ) );
+				auto element_value= unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, value, $<(indexes[0]), 2u, "[]\0"[0] ) );
 
 				BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type, src_loc );
 			}

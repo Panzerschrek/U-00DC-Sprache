@@ -2752,7 +2752,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 					GetZeroGEPIndex(),
 					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
 				];
-				auto element_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr, $<(indexes[0]), 2u, ".\0"[0] );
+				auto element_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, constant_type, ptr, $<(indexes[0]), 2u, ".\0"[0] );
 
 				auto constant_element= LLVMConstExtractValue( constant, i, 1u );
 
@@ -2769,7 +2769,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 					GetZeroGEPIndex(),
 					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
 				];
-				auto element_ptr= LLVMBuildGEP( function_context.llvm_ir_builder, ptr, $<(indexes[0]), 2u, ".\0"[0] );
+				auto element_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, constant_type, ptr, $<(indexes[0]), 2u, ".\0"[0] );
 
 				auto constant_element= LLVMConstExtractValue( constant, i, 1u );
 
