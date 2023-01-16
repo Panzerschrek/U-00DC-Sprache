@@ -70,12 +70,12 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 	// "getABITypeAlignment" "getTypeAllocSize" functions used, as in llvm/lib/IR/DataLayout.cpp:40.
 
 	// Calculate start offset, include parents fields, virtual table pointer.
-	uint64_t current_offst= 0u;
+	uint64_t current_offset= 0u;
 	for( llvm::Type* type : fields_llvm_types )
 	{
 		const uint64_t alignment= data_layout.getABITypeAlignment( type );
-		const uint64_t padding= ( alignment - current_offst % alignment ) % alignment;
-		current_offst+= padding + data_layout.getTypeAllocSize( type );
+		const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
+		current_offset+= padding + data_layout.getTypeAllocSize( type );
 	}
 
 	// Sort fields, minimize paddings and minimize fields reordering.
@@ -88,7 +88,7 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 			const uint64_t alignment= data_layout.getABITypeAlignment( best_field_it->second->is_reference ? it->second->type.GetLLVMType()->getPointerTo() : it->second->type.GetLLVMType() );
 			U_ASSERT( alignment != 0u );
 
-			const uint64_t padding= ( alignment - current_offst % alignment ) % alignment;
+			const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
 			if( padding < best_field_padding )
 			{
 				best_field_padding= padding;
@@ -105,7 +105,7 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 		best_field_it->second->index= field_index;
 		++field_index;
 		fields_llvm_types.push_back( best_field_llvm_type );
-		current_offst+= best_field_padding + data_layout.getTypeAllocSize( best_field_llvm_type );
+		current_offset+= best_field_padding + data_layout.getTypeAllocSize( best_field_llvm_type );
 		fields.erase( best_field_it );
 	}
 }

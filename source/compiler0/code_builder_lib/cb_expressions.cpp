@@ -339,7 +339,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 				result.llvm_value= element;
 
-
 				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
 				{
 					if( class_type->typeinfo_type != std::nullopt && member_access_operator.member_name_ == "type_id" )
