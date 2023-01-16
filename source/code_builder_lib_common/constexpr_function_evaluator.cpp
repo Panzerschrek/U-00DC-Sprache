@@ -63,8 +63,9 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 		}
 		else if( param.getType() == args[i]->getType() )
 			instructions_map_[ &param ]= GetVal( args[i] );
-		else if( param.getType()->isPointerTy() /* && param.getType()->getPointerElementType() == args[i]->getType() */ )
+		else if( param.getType()->isPointerTy() )
 		{
+			// Assume this is reference param.
 			llvm::GenericValue val;
 			val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
 			instructions_map_[ &param ]= std::move(val);
@@ -268,11 +269,8 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 					element_ptr= MoveConstantToStack( *global_variable->getInitializer() );
 				else if( element->isNullValue() )
 					element_ptr= 0;
-				else if( element_type->isPointerTy() )
-				{
-					// TODO - check if this is real pointer.
+				else if( llvm::dyn_cast<llvm::Function>(element) != nullptr )
 					errors_.push_back( "passing function pointer to constexpr function" );
-				}
 				else U_ASSERT(false);
 
 				std::memcpy( constants_stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
@@ -309,11 +307,9 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	}
 	else if( constant_type->isPointerTy() )
 	{
-		/*
-		if( constant_type->getPointerElementType()->isFunctionTy() )
+		if( llvm::dyn_cast<llvm::Function>( &constant ) != nullptr )
 			errors_.push_back( "passing function pointer to constexpr function" );
-		else U_ASSERT(false);
-		*/
+
 		std::memset( constants_stack_.data() + stack_offset, 0, size_t(data_layout_.getTypeAllocSize( constant_type )) );
 	}
 	else U_ASSERT(false);
@@ -383,32 +379,28 @@ llvm::Constant* ConstexprFunctionEvaluator::ReadConstantFromStack( llvm::Type* c
 
 llvm::GenericValue ConstexprFunctionEvaluator::BuildGEP( const llvm::User* const instruction )
 {
-	U_ASSERT( instruction->getNumOperands() >= 1u );
+	U_ASSERT( instruction->getNumOperands() >= 2u );
 
-	llvm::Type* ptr_element_type= nullptr;
-	if( const auto gep_instruction= llvm::dyn_cast<llvm::GetElementPtrInst>(instruction) )
-		ptr_element_type= gep_instruction->getSourceElementType();
-	else if( const llvm::ConstantExpr* constant_expr= llvm::dyn_cast<llvm::ConstantExpr>(instruction) )
-	{
-		// TODO - check if this is correct.
-		ptr_element_type= llvm::dyn_cast<llvm::GEPOperator>(constant_expr)->getSourceElementType();
-	}
+	llvm::User::const_op_iterator op= instruction->op_begin();
+	const llvm::User::const_op_iterator op_end= instruction->op_end();
 
-	llvm::Type* aggregate_type= instruction->getOperand(0u)->getType();
-	const llvm::GenericValue ptr= GetVal( instruction->getOperand(0u) );
+	const llvm::GenericValue ptr= GetVal( op->get() );
+	++op;
 
-	uint64_t offset_accumulated= 0u;
-	for( llvm::User::const_op_iterator op= std::next(instruction->op_begin()), op_end= instruction->op_end(); op != op_end; ++op)
+	const llvm::GenericValue first_index= GetVal( op->get() );
+	++op;
+
+	// TODO - check if this is correct cast.
+	llvm::Type* const ptr_element_type= llvm::dyn_cast<llvm::GEPOperator>(instruction)->getSourceElementType();
+
+	uint64_t offset_accumulated= first_index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( ptr_element_type );
+	llvm::Type* aggregate_type= ptr_element_type;
+
+	for(; op != op_end; ++op)
 	{
 		const llvm::GenericValue index= GetVal( op->get() );
 
-		if( llvm::dyn_cast<llvm::PointerType>(aggregate_type) != nullptr )
-		{
-			const auto element_type= ptr_element_type;
-			offset_accumulated+= index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( element_type );
-			aggregate_type= element_type;
-		}
-		else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>(aggregate_type) )
+		if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>(aggregate_type) )
 		{
 			const auto element_type= array_type->getElementType();
 			offset_accumulated+= index.IntVal.getLimitedValue() * data_layout_.getTypeAllocSize( element_type );
