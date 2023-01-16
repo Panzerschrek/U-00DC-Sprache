@@ -1614,7 +1614,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	unsafe
 	{
-		LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
+		LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
 		LLVMBuildUnreachable( function_context.llvm_ir_builder );
 	}
 
@@ -1647,7 +1647,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, true_block );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, true_block );
 
-		LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
+		LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
 		LLVMBuildUnreachable( function_context.llvm_ir_builder );
 
 		// False branch

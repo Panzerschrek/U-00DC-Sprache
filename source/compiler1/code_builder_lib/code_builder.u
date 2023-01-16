@@ -2540,7 +2540,7 @@ fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_
 
 fn CodeBuilder::CreateTypedLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef
 {
-	auto result= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, address, "\0"[0] ) );
+	auto result= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, t.GetLLVMType(), address, "\0"[0] ) );
 
 	if( generate_tbaa_metadata_ )
 	{
@@ -2553,7 +2553,7 @@ fn CodeBuilder::CreateTypedLoad( mut this, FunctionContext& function_context, Ty
 
 fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef
 {
-	auto result= unsafe( LLVMBuildLoad( function_context.llvm_ir_builder, address, "\0"[0] ) );
+	auto result= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, LLVMPointerType( t.GetLLVMType(), 0u ), address, "\0"[0] ) );
 
 	if( generate_tbaa_metadata_ )
 	{
@@ -2972,11 +2972,11 @@ fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_contex
 		var LLVMValueRef mut ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, "\0"[0] );
 
 		var [ LLVMValueRef, 2 ] mut args[ size_of_value, ptr_converted ];
-		LLVMBuildCall( function_context.llvm_ir_builder, lifetime_start_intrinsic_, $<(args[0]), 2u, "\0"[0] );
+		LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(lifetime_start_intrinsic_), lifetime_start_intrinsic_, $<(args[0]), 2u, "\0"[0] );
 
 		if( generate_lifetime_start_end_debug_calls_ )
 		{
-			LLVMBuildCall( function_context.llvm_ir_builder, lifetime_start_debug_func_, $<(ptr_converted), 1u, "\0"[0] );
+			LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(lifetime_start_debug_func_), lifetime_start_debug_func_, $<(ptr_converted), 1u, "\0"[0] );
 		}
 	}
 }
@@ -3006,11 +3006,11 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 		var LLVMValueRef mut ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, "\0"[0] );
 
 		var [ LLVMValueRef, 2 ] mut args[ size_of_value, ptr_converted ];
-		LLVMBuildCall( function_context.llvm_ir_builder, lifetime_end_intrinsic_, $<(args[0]), 2u, "\0"[0] );
+		LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(lifetime_end_intrinsic_), lifetime_end_intrinsic_, $<(args[0]), 2u, "\0"[0] );
 
 		if( generate_lifetime_start_end_debug_calls_ )
 		{
-			LLVMBuildCall( function_context.llvm_ir_builder, lifetime_end_debug_func_, $<(ptr_converted), 1u, "\0"[0] );
+			LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(lifetime_end_debug_func_), lifetime_end_debug_func_, $<(ptr_converted), 1u, "\0"[0] );
 		}
 	}
 }

@@ -986,7 +986,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 
 				// Call it.
 				var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
-				unsafe( LLVMBuildCall( function_context.llvm_ir_builder, constructor_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] ) );
+				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(constructor_.llvm_function), constructor_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] ) );
 				break;
 			}
 		}
@@ -1076,7 +1076,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 
 				// Call it.
 				var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
-				unsafe( LLVMBuildCall( function_context.llvm_ir_builder, operator_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] ) );
+				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(operator_.llvm_function), operator_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] ) );
 				break;
 			}
 		}
@@ -1183,7 +1183,7 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 			unsafe
 			{
 				var[ LLVMValueRef, 2 ] mut llvm_args[ l_address, r_address ];
-				var LLVMValueRef eq= LLVMBuildCall( function_context.llvm_ir_builder, op_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] );
+				var LLVMValueRef eq= LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(op_.llvm_function), op_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] );
 
 				var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
 
@@ -1236,7 +1236,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 
 		// Call it.
 		auto mut v= value;
-		unsafe( LLVMBuildCall( function_context.llvm_ir_builder, destructor_.llvm_function, $<(v), 1u, "\0"[0] ) );
+		unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(destructor_.llvm_function), destructor_.llvm_function, $<(v), 1u, "\0"[0] ) );
 	}
 }
 

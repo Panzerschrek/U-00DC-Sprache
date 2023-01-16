@@ -1105,7 +1105,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, halt_block );
 					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, halt_block );
 
-					LLVMBuildCall( function_context.llvm_ir_builder, halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
+					LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
 					LLVMBuildUnreachable( function_context.llvm_ir_builder );
 
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, ok_block );
@@ -3303,7 +3303,7 @@ fn CodeBuilder::DoCallFunction(
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
 		{
-			auto call_result= LLVMBuildCall( function_context.llvm_ir_builder, function.llvm_function, llvm_args.data(), u32(llvm_args.size()), "\0"[0] );
+			auto call_result= LLVMBuildCall2( function_context.llvm_ir_builder, function_type.llvm_type, function.llvm_function, llvm_args.data(), u32(llvm_args.size()), "\0"[0] );
 			LLVMSetInstructionCallConv( call_result, function.t.calling_convention );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
 			else if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
