@@ -645,7 +645,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					continue;
 				}
 
-				variable.llvm_value= CreateTupleElementGEP( function_context, sequence_expression.type, sequence_expression.llvm_value, element_index );
+				variable.llvm_value= CreateTupleElementGEP( function_context, sequence_expression, element_index );
 
 				CreateReferenceVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
 
@@ -679,7 +679,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				BuildCopyConstructorPart(
 					variable.llvm_value,
-					CreateTupleElementGEP( function_context, sequence_expression.type, sequence_expression.llvm_value, element_index ),
+					CreateTupleElementGEP( function_context, sequence_expression, element_index ),
 					element_type,
 					function_context );
 			}

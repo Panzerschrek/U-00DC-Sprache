@@ -181,7 +181,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
 
-		result.llvm_value= CreateArrayElementGEP( function_context, variable.type, variable.llvm_value, index_value );
+		result.llvm_value= CreateArrayElementGEP( function_context, variable, index_value );
 
 		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
@@ -233,7 +233,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result.value_type= variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		result.node= variable_lock.TakeNode();
 		result.type= tuple_type->elements[size_t(index_value)];
-		result.llvm_value= CreateTupleElementGEP( function_context, variable.type, variable.llvm_value, index_value );
+		result.llvm_value= CreateTupleElementGEP( function_context, variable, index_value );
 
 		if( variable.constexpr_value != nullptr )
 			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
