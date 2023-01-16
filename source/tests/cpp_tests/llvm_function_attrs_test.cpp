@@ -171,7 +171,7 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( foo->getFunctionType()->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
-	// U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 4 );
+	U_TEST_ASSERT( foo->getAttributeAtIndex( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ).getDereferenceableBytes() == 4 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
@@ -179,7 +179,7 @@ U_TEST( LLVMFunctionAttrsTest_FundamentalTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( bar->getFunctionType()->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
-	// U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 4 );
+	U_TEST_ASSERT( bar->getAttributeAtIndex( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ).getDereferenceableBytes() == 4 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_FundamentalTypeImutReferenceParamsAttrs )
@@ -433,7 +433,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( foo->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
-	// U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 8 );
+	U_TEST_ASSERT( foo->getAttributeAtIndex( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ).getDereferenceableBytes() == 8 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
@@ -442,7 +442,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( bar->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
-	// U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 8 );
+	U_TEST_ASSERT( bar->getAttributeAtIndex( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ).getDereferenceableBytes() == 8 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeValueParamsAttrs )
@@ -597,7 +597,7 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( foo->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( foo->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
-	// U_TEST_ASSERT( foo->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 64 );
+	U_TEST_ASSERT( foo->getAttributeAtIndex( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ).getDereferenceableBytes() == 64 );
 
 	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
 	U_TEST_ASSERT( bar != nullptr );
@@ -606,7 +606,7 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
 	U_TEST_ASSERT( bar->getReturnType()->isPointerTy() );
 	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
-	// U_TEST_ASSERT( bar->getDereferenceableBytes( llvm::AttributeList::ReturnIndex ) == 16 );
+	U_TEST_ASSERT( bar->getAttributeAtIndex( llvm::AttributeList::ReturnIndex, llvm::Attribute::Dereferenceable ).getDereferenceableBytes() == 16 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_RawPointerTypeValueParamsAttrs )
