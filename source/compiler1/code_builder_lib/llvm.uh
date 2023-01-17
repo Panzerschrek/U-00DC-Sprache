@@ -324,7 +324,7 @@ fn nomangle LLVMBuildCondBr(LLVMBuilderRef Builder, LLVMValueRef If, LLVMBasicBl
 fn nomangle LLVMBuildRetVoid(LLVMBuilderRef Builder) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildRet(LLVMBuilderRef Builder, LLVMValueRef V) unsafe : LLVMValueRef;
 
-fn nomangle LLVMBuildLoad2(LLVMBuilderRef Builder, LLVMValueRef Ty, LLVMValueRef PointerVal, NullTerminatedString& name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildLoad2(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef PointerVal, NullTerminatedString& name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildStore(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMValueRef Ptr) unsafe : LLVMValueRef;
 
 fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& name) unsafe : LLVMValueRef;

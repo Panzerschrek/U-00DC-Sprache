@@ -1919,7 +1919,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			}
 			auto mut index_negative= LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, "\0"[0] );
 
-			res.llvm_value= LLVMBuildGEP( function_context.llvm_ir_builder, l_in_register, $<(index_negative), 1u, "-\0"[0] );
+			res.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] );
 		}
 	}
 	else if(
