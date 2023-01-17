@@ -314,6 +314,7 @@ fn nomangle LLVMConstArray(LLVMTypeRef ElementTy, $(LLVMValueRef) ConstantVals, 
 fn nomangle LLVMConstStructInContext(LLVMContextRef C, $(LLVMValueRef) ConstantVals, u32 Count, LLVMBool Packed) unsafe : LLVMValueRef;
 fn nomangle LLVMConstNamedStruct(LLVMTypeRef StructTy, $(LLVMValueRef) ConstantVals, u32 Count) unsafe : LLVMValueRef;
 fn nomangle LLVMConstStringInContext(LLVMContextRef C, $(char8) Str, u32 Length, LLVMBool DontNullTerminate) unsafe : LLVMValueRef;
+fn nomangle LLVMGetAggregateElement(LLVMValueRef C, u32 Idx) : LLVMValueRef;
 
 // Instructions
 

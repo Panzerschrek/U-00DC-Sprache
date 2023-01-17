@@ -2754,7 +2754,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 				];
 				auto element_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, constant_type, ptr, $<(indexes[0]), 2u, ".\0"[0] );
 
-				auto constant_element= LLVMConstExtractValue( constant, i, 1u );
+				auto constant_element= LLVMGetAggregateElement( constant, i );
 
 				MoveConstantToMemory( element_ptr, constant_element, function_context );
 			}
@@ -2771,7 +2771,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 				];
 				auto element_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, constant_type, ptr, $<(indexes[0]), 2u, ".\0"[0] );
 
-				auto constant_element= LLVMConstExtractValue( constant, i, 1u );
+				auto constant_element= LLVMGetAggregateElement( constant, i );
 
 				MoveConstantToMemory( element_ptr, constant_element, function_context );
 			}
@@ -2871,8 +2871,8 @@ fn CodeBuilder::ConstexprCompareEqual(
 			for( auto mut i= 0u64; i < array_type.element_count; ++i )
 			{
 				var u32 index(i);
-				var LLVMValueRef l_element= LLVMConstExtractValue( l, index, 1u );
-				var LLVMValueRef r_element= LLVMConstExtractValue( r, index, 1u );
+				var LLVMValueRef l_element= LLVMGetAggregateElement( l, index );
+				var LLVMValueRef r_element= LLVMGetAggregateElement( r, index );
 				var LLVMValueRef element_res= ConstexprCompareEqual( names_scope, function_context, l_element, r_element, array_type.element_type, src_loc );
 				res= LLVMBuildAnd( function_context.llvm_ir_builder, res, element_res, "\0"[0] );
 			}
@@ -2888,8 +2888,8 @@ fn CodeBuilder::ConstexprCompareEqual(
 			for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 			{
 				var u32 index(i);
-				var LLVMValueRef l_element= LLVMConstExtractValue( l, index, 1u );
-				var LLVMValueRef r_element= LLVMConstExtractValue( r, index, 1u );
+				var LLVMValueRef l_element= LLVMGetAggregateElement( l, index );
+				var LLVMValueRef r_element= LLVMGetAggregateElement( r, index );
 				var LLVMValueRef element_res= ConstexprCompareEqual( names_scope, function_context, l_element, r_element, tuple_type.element_types[i], src_loc );
 				res= LLVMBuildAnd( function_context.llvm_ir_builder, res, element_res, "\0"[0] );
 			}

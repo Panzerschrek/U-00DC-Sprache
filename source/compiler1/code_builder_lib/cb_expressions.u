@@ -1129,7 +1129,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
 			{
-				result.constexpr_value= unsafe( LLVMConstExtractValue( variable.constexpr_value, u32( LLVMConstIntGetZExtValue( index_value ) ), 1u ) );
+				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32( LLVMConstIntGetZExtValue( index_value ) ) ) );
 			}
 
 			// Register variable for references checking.
@@ -1194,7 +1194,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			if( variable.constexpr_value != LLVMValueRef::Null )
 			{
-				result.constexpr_value= unsafe( LLVMConstExtractValue( variable.constexpr_value, u32(type_index), 1u ) );
+				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(type_index) ) );
 			}
 
 			// Register variable for references checking.
@@ -1355,7 +1355,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					{
 						unsafe
 						{
-							result.llvm_value= LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u );
+							result.llvm_value= LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) );
 
 							// References in constexpr structs should be implementing, using global variables or ConstantGEP for global variables.
 							var LLVMValueRef constant_expression= LLVMIsAConstantExpr( result.llvm_value ) ;
@@ -1368,7 +1368,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 								for( var i32 mut i= 2; i < num_operands; ++i ) // Skip first zero index.
 								{
 									auto index= u32( LLVMConstIntGetZExtValue( LLVMGetOperand( constant_expression, u32(i) ) ) );
-									element= LLVMConstExtractValue( element, index, 1u );
+									element= LLVMGetAggregateElement( element, index );
 								}
 								result.constexpr_value= element;
 							}
@@ -1428,7 +1428,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				result.llvm_value= gep_result;
 				if( variable.constexpr_value != LLVMValueRef::Null )
 				{
-					result.constexpr_value= unsafe( LLVMConstExtractValue( variable.constexpr_value, u32(field.index), 1u ) );
+					result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 				}
 
 				result.node_id= variable.node_id;
