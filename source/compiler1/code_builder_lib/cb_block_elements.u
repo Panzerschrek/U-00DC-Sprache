@@ -1064,7 +1064,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				//.constexpr_value= expr.constexpr_value
 			};
 
-			auto src_element_llvm_value= CreateTupleElementGEP( sequence_expression.llvm_value, i, function_context );
+			auto src_element_llvm_value= CreateTupleElementGEP( sequence_expression, i, function_context );
 
 			if( range_for_operator.reference_modifier == Synt::ReferenceModifier::Reference )
 			{

@@ -1188,7 +1188,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.t= variable_tuple_type.element_types[type_index],
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-				.llvm_value= CreateTupleElementGEP( variable.llvm_value, size_type(type_index), function_context ),
+				.llvm_value= CreateTupleElementGEP( variable, size_type(type_index), function_context ),
 				.node_id= result_node_id,
 			};
 
@@ -1333,12 +1333,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						REPORT_ERROR( AccessOfNonThisClassField, names_scope, member_access_operator.src_loc, member_access_operator.member_name )
 						return ErrorValue();
 					}
-					this_value_corrected= CreateBaseClassFieldGEP( this_value_corrected, function_context );
+					this_value_corrected= CreateBaseClassFieldGEP( current_class_type, this_value_corrected, function_context );
 					current_class_type= base_class.try_to_non_nullable();
 				}
 			}
 
-			var LLVMValueRef gep_result= CreateFieldGEP( this_value_corrected, field, function_context );
+			var LLVMValueRef gep_result= CreateClassFieldGEP( class_type, this_value_corrected, field, function_context );
 
 			auto op_name_nt= "." + member_access_operator.member_name + "\0";
 

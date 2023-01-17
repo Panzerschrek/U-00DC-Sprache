@@ -844,10 +844,16 @@ private:
 	fn CreateMoveToLLVMRegisterInstruction( mut this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
-	fn CreateFieldGEP( this, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateParentFieldGEP( this, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateTupleElementGEP( this, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
+	// TODO - avoid using "size_type" here.
+	// TODO - pass function_context first.
+	fn CreateClassFieldGEP( this, Variable& class_variable, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateClassFieldGEP( this, NamesScopeVariable& class_variable, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateClassFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateClassParentFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateBaseClassFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, Variable& tuple_variable, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, NamesScopeVariable& tuple_variable, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, TupleType& t, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
 
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 

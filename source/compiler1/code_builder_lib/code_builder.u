@@ -423,16 +423,16 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		var ClassTypePtr this_class= function_context.this_.try_deref().t.GetClassType().try_deref();
 		auto field_source_class= field.source_class;
-		var ust::shared_ptr_nullable_imut</ClassType/> mut current_class= this_class;
+		var ust::shared_ptr_nullable_mut</ClassType/> mut current_class= this_class;
 		while( !current_class.empty() && current_class != field_source_class )
 		{
 			auto base_class= current_class.try_lock_imut().deref().base_class;
 			if( base_class.empty() )
 			{
-				current_class= ust::shared_ptr_nullable_imut</ClassType/>();
+				current_class= ust::shared_ptr_nullable_mut</ClassType/>();
 				break;
 			}
-			this_value_corrected= CreateBaseClassFieldGEP( this_value_corrected, function_context );
+			this_value_corrected= CreateBaseClassFieldGEP( current_class.try_to_non_nullable(), this_value_corrected, function_context );
 			current_class= base_class;
 		}
 
@@ -461,7 +461,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			};
 
-			auto ptr_value= CreateFieldGEP( this_value_corrected, field, function_context );
+			auto ptr_value= CreateClassFieldGEP( this_class, this_value_corrected, field, function_context );
 			result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, ptr_value );
 			MarkLoadInstructionWithNonNullMetadata( result.llvm_value );
 
@@ -506,7 +506,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				.t= field.t,
 				.location= Variable::Location::Pointer,
 				.value_type= function_context.this_.try_deref().value_type,
-				.llvm_value= CreateFieldGEP( this_value_corrected, field, function_context ),
+				.llvm_value= CreateClassFieldGEP( this_class, this_value_corrected, field, function_context ),
 				.node_id= function_context.this_.try_deref().node_id,
 			};
 
@@ -2665,7 +2665,7 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 				LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
 			];
 
-			sub_ref= LLVMBuildGEP( function_context.llvm_ir_builder, ref, $<(indexes[0]), 2u, "\0"[0] );
+			sub_ref= LLVMBuildGEP2( function_context.llvm_ir_builder, src_class_type.lock_imut().deref().llvm_type, ref, $<(indexes[0]), 2u, "\0"[0] );
 		}
 
 		if( parent.class_ == dst_type )
@@ -2681,7 +2681,17 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 	halt;
 }
 
-fn CodeBuilder::CreateFieldGEP( this, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef
+fn CodeBuilder::CreateClassFieldGEP( this, Variable& class_variable, ClassField& field, FunctionContext& function_context ) : LLVMValueRef
+{
+	return CreateClassFieldGEP( class_variable.t.GetClassType().try_deref(), class_variable.llvm_value, field, function_context );
+}
+
+fn CodeBuilder::CreateClassFieldGEP( this, NamesScopeVariable& class_variable, ClassField& field, FunctionContext& function_context ) : LLVMValueRef
+{
+	return CreateClassFieldGEP( class_variable.t.GetClassType().try_deref(), class_variable.llvm_value, field, function_context );
+}
+
+fn CodeBuilder::CreateClassFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef
 {
 	auto op_name_nt= "." + field.syntax_element.deref().name + "\0";
 	unsafe
@@ -2692,11 +2702,11 @@ fn CodeBuilder::CreateFieldGEP( this, LLVMValueRef value, ClassField& field, Fun
 			LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
 		];
 
-		return LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, op_name_nt.front() );
+		return LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, op_name_nt.front() );
 	}
 }
 
-fn CodeBuilder::CreateParentFieldGEP( this, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef
+fn CodeBuilder::CreateClassParentFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef
 {
 	unsafe
 	{
@@ -2706,11 +2716,11 @@ fn CodeBuilder::CreateParentFieldGEP( this, LLVMValueRef value, ClassType::Paren
 			LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
 		];
 
-		return LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, "\0"[0] );
+		return LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, "\0"[0] );
 	}
 }
 
-fn CodeBuilder::CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef
+fn CodeBuilder::CreateBaseClassFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef
 {
 	var [ LLVMValueRef, 2 ] mut indexes
 	[
@@ -2718,10 +2728,20 @@ fn CodeBuilder::CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionConte
 		GetZeroGEPIndex(), // Base class is always zero field.
 	];
 
-	return unsafe( LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, ".base\0"[0] ) );
+	return unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, ".base\0"[0] ) );
 }
 
-fn CodeBuilder::CreateTupleElementGEP( this, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef
+fn CodeBuilder::CreateTupleElementGEP( this, Variable& tuple_variable, size_type element_index, FunctionContext& function_context ) : LLVMValueRef
+{
+	return CreateTupleElementGEP( tuple_variable.t.GetTupleType().try_deref(), tuple_variable.llvm_value, element_index, function_context );
+}
+
+fn CodeBuilder::CreateTupleElementGEP( this, NamesScopeVariable& tuple_variable, size_type element_index, FunctionContext& function_context ) : LLVMValueRef
+{
+	return CreateTupleElementGEP( tuple_variable.t.GetTupleType().try_deref(), tuple_variable.llvm_value, element_index, function_context );
+}
+
+fn CodeBuilder::CreateTupleElementGEP( this, TupleType& t, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef
 {
 	auto op_name_nt= "[" + ust::to_string8(element_index) + "]\0";
 	unsafe
@@ -2732,7 +2752,7 @@ fn CodeBuilder::CreateTupleElementGEP( this, LLVMValueRef value, size_type eleme
 			LLVMConstInt( fundamental_llvm_types_.u32_, u64(element_index), LLVMBool::False )
 		];
 
-		return LLVMBuildGEP( function_context.llvm_ir_builder, value, $<(indexes[0]), 2u, op_name_nt.front() );
+		return LLVMBuildGEP2( function_context.llvm_ir_builder, t.llvm_type, value, $<(indexes[0]), 2u, op_name_nt.front() );
 	}
 }
 
