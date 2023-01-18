@@ -103,6 +103,8 @@ fn CodeBuilder::constructor(
 		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
 		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ ) );
 
+	virtual_function_pointer_type_= unsafe(LLVMPointerType( LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::True ), 0u ));
+
 	unsafe
 	{
 		polymorph_type_id_table_element_type_= LLVMStructCreateNamed( llvm_context_, "__U_polymorph_type_id_table_element\0"[0] );
