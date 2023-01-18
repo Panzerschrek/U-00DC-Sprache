@@ -308,6 +308,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		unsafe
 		{
 			if( expr.value_type == ValueType::Value &&
+				expr.location == Variable::Location::Pointer &&
 				LLVMTypeOf( expr.llvm_value ) == LLVMPointerType( out_variable.t.GetLLVMType(), 0u ) &&
 				( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null || LLVMIsAArgument( expr.llvm_value ) != LLVMValueRef::Null ) )
 			{
@@ -1451,6 +1452,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		unsafe
 		{
 			if( expr.value_type == ValueType::Value &&
+				expr.location == Variable::Location::Pointer &&
 				LLVMTypeOf( expr.llvm_value ) == LLVMPointerType( out_variable.t.GetLLVMType(), 0u ) &&
 				( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null || LLVMIsAArgument( expr.llvm_value ) != LLVMValueRef::Null ) )
 			{

@@ -914,21 +914,14 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 		!t.GetRawPointerType().empty() ||
 		!t.GetFunctionPointerType().empty() )
 	{
-		unsafe
+		if( t != void_type_ )
 		{
-			if( t == void_type_ ) {}
-			else if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
+			unsafe
 			{
-				// two pointers - do load-store
+				halt if( LLVMTypeOf( dst ) != LLVMTypeOf( src ) ); // TODO - use debug assert
 				auto mut value= CreateTypedLoad( function_context, t, src );
 				CreateTypedStore( function_context, t, value, dst );
 			}
-			else if( LLVMTypeOf( dst ) == LLVMPointerType( LLVMTypeOf( src ), 0u ) )
-			{
-				// pointer and value in llvm register - do simple store
-				CreateTypedStore( function_context, t, src, dst );
-			}
-			else{ halt; }
 		}
 		return;
 	}
@@ -1004,21 +997,14 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 		!t.GetRawPointerType().empty() ||
 		!t.GetFunctionPointerType().empty() )
 	{
-		unsafe
+		if( t != void_type_ )
 		{
-			if( t == void_type_ ) {}
-			else if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
+			unsafe
 			{
-				// two pointers - do load-store
+				halt if( LLVMTypeOf( dst ) != LLVMTypeOf( src ) ); // TODO - use debug assert
 				auto mut value= CreateTypedLoad( function_context, t, src );
 				CreateTypedStore( function_context, t, value, dst );
 			}
-			else if( LLVMTypeOf( dst ) == LLVMPointerType( LLVMTypeOf( src ), 0u ) )
-			{
-				// pointer and value in llvm register - do simple store
-				CreateTypedStore( function_context, t, src, dst );
-			}
-			else{ halt; }
 		}
 		return;
 	}
