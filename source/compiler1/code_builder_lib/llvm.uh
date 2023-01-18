@@ -247,6 +247,8 @@ fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
 
+fn nomangle LLVMGetAllocatedType(LLVMValueRef Alloca) unsafe : LLVMTypeRef;
+
 fn nomangle LLVMSetFunctionCallConv(LLVMValueRef Fn, LLVMCallConvID CC) unsafe;
 fn nomangle LLVMSetInstructionCallConv(LLVMValueRef Instr, LLVMCallConvID CC) unsafe;
 

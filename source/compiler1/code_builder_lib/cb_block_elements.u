@@ -337,10 +337,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 			if( out_variable.llvm_value != expr.llvm_value )
 			{
-				CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
 				if( expr.location == Variable::Location::Pointer )
 				{
+					CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
 					CreateLifetimeEnd( function_context, expr.llvm_value );
+				}
+				else
+				{
+					CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
 				}
 			}
 		}
@@ -1481,10 +1485,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			if( out_variable.llvm_value != expr.llvm_value )
 			{
-				CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
 				if( expr.location == Variable::Location::Pointer )
 				{
+					CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
 					CreateLifetimeEnd( function_context, expr.llvm_value );
+				}
+				else
+				{
+					CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
 				}
 			}
 		}
@@ -1616,7 +1624,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	unsafe
 	{
-		LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
+		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
 		LLVMBuildUnreachable( function_context.llvm_ir_builder );
 	}
 
@@ -1649,7 +1657,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, true_block );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, true_block );
 
-		LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
+		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
 		LLVMBuildUnreachable( function_context.llvm_ir_builder );
 
 		// False branch

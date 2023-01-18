@@ -788,10 +788,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						{
 							function_context.references_graph.MoveNode( branch_result.node_id );
 						}
-						CopyBytes( result.llvm_value, branch_result.llvm_value, result.t, function_context );
+
 						if( branch_result.location == Variable::Location::Pointer )
 						{
+							CopyBytes( result.llvm_value, branch_result.llvm_value, result.t, function_context );
 							CreateLifetimeEnd( function_context, branch_result.llvm_value );
+						}
+						else
+						{
+							CreateTypedStore( function_context, result.t, branch_result.llvm_value, result.llvm_value );
 						}
 					}
 					else
@@ -1105,7 +1110,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, halt_block );
 					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, halt_block );
 
-					LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
+					LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
 					LLVMBuildUnreachable( function_context.llvm_ir_builder );
 
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, ok_block );

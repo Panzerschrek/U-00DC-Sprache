@@ -6,6 +6,11 @@
 #include <llvm/Support/ConvertUTF.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+extern "C" LLVMTypeRef U1_GetFunctionType(const LLVMValueRef f)
+{
+	return llvm::wrap(llvm::dyn_cast<llvm::Function>(llvm::unwrap(f))->getFunctionType());
+}
+
 extern "C" void U1_SetStructName(const LLVMTypeRef t, const char* const name)
 {
 	llvm::dyn_cast<llvm::StructType>(llvm::unwrap(t))->setName(name);

@@ -2445,7 +2445,8 @@ fn CodeBuilder::SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable&
 
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
 	{
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFunctionIndex, "uwtable" );
+		// TODO - fix this.
+		// AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFunctionIndex, "uwtable" );
 	}
 
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
@@ -2824,16 +2825,8 @@ fn CodeBuilder::CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t
 			type_kind == LLVMTypeKind::Pointer )
 		{
 			// Simple scalar - create load/store.
-			if( LLVMTypeOf( dst ) == LLVMTypeOf( src ) )
-			{
-				auto value= CreateTypedLoad( function_context, t, src );
-				CreateTypedStore( function_context, t, value, dst );
-			}
-			else if( LLVMGetElementType( LLVMTypeOf( dst ) ) == LLVMTypeOf( src ) )
-			{
-				CreateTypedStore( function_context, t, src, dst );
-			}
-			else{ halt; }
+			auto value= CreateTypedLoad( function_context, t, src );
+			CreateTypedStore( function_context, t, value, dst );
 		}
 		else
 		{
@@ -2980,12 +2973,13 @@ fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_contex
 
 	unsafe
 	{
-		if( LLVMIsAAllocaInst( llvm_value ) == LLVMValueRef::Null )
+		auto alloca_inst= LLVMIsAAllocaInst( llvm_value );
+		if( alloca_inst == LLVMValueRef::Null )
 		{
 			return;
 		}
 
-		var LLVMTypeRef t= LLVMGetElementType( LLVMTypeOf(llvm_value) );
+		var LLVMTypeRef t= LLVMGetAllocatedType( alloca_inst );
 		if( LLVMTypeIsSized( t ) == LLVMBool::False ) // May be in case of error.
 		{
 			return;
@@ -2996,11 +2990,11 @@ fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_contex
 		var LLVMValueRef mut ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, "\0"[0] );
 
 		var [ LLVMValueRef, 2 ] mut args[ size_of_value, ptr_converted ];
-		LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(lifetime_start_intrinsic_), lifetime_start_intrinsic_, $<(args[0]), 2u, "\0"[0] );
+		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(lifetime_start_intrinsic_), lifetime_start_intrinsic_, $<(args[0]), 2u, "\0"[0] );
 
 		if( generate_lifetime_start_end_debug_calls_ )
 		{
-			LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(lifetime_start_debug_func_), lifetime_start_debug_func_, $<(ptr_converted), 1u, "\0"[0] );
+			LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(lifetime_start_debug_func_), lifetime_start_debug_func_, $<(ptr_converted), 1u, "\0"[0] );
 		}
 	}
 }
@@ -3014,12 +3008,13 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 
 	unsafe
 	{
-		if( LLVMIsAAllocaInst( llvm_value ) == LLVMValueRef::Null )
+		auto alloca_inst= LLVMIsAAllocaInst( llvm_value );
+		if( alloca_inst == LLVMValueRef::Null )
 		{
 			return;
 		}
 
-		var LLVMTypeRef t= LLVMGetElementType( LLVMTypeOf(llvm_value) );
+		var LLVMTypeRef t= LLVMGetAllocatedType( alloca_inst );
 		if( LLVMTypeIsSized( t ) == LLVMBool::False ) // May be in case of error.
 		{
 			return;
@@ -3030,11 +3025,11 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 		var LLVMValueRef mut ptr_converted= LLVMBuildPointerCast( function_context.llvm_ir_builder, llvm_value, lifetime_function_arg_type_, "\0"[0] );
 
 		var [ LLVMValueRef, 2 ] mut args[ size_of_value, ptr_converted ];
-		LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(lifetime_end_intrinsic_), lifetime_end_intrinsic_, $<(args[0]), 2u, "\0"[0] );
+		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(lifetime_end_intrinsic_), lifetime_end_intrinsic_, $<(args[0]), 2u, "\0"[0] );
 
 		if( generate_lifetime_start_end_debug_calls_ )
 		{
-			LLVMBuildCall2( function_context.llvm_ir_builder, LLVMTypeOf(lifetime_end_debug_func_), lifetime_end_debug_func_, $<(ptr_converted), 1u, "\0"[0] );
+			LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(lifetime_end_debug_func_), lifetime_end_debug_func_, $<(ptr_converted), 1u, "\0"[0] );
 		}
 	}
 }

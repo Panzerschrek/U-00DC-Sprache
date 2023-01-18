@@ -440,7 +440,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 			var LLVMValueRef first_element_address=
 				LLVMBuildGEP2(
 					dummy_function_context.llvm_ir_builder,
-					LLVMTypeOf(polymorph_type_id_table),
+					LLVMTypeOf( LLVMGetInitializer(polymorph_type_id_table) ),
 					polymorph_type_id_table,
 					$<(indices[0]), 2u,
 					"\0"[0] );
@@ -515,7 +515,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 			initializer_values.push_back(
 				LLVMBuildGEP2(
 					dummy_function_context.llvm_ir_builder,
-					LLVMTypeOf(dst_class.polymorph_type_id_table),
+					LLVMTypeOf( LLVMGetInitializer(dst_class.polymorph_type_id_table) ),
 					dst_class.polymorph_type_id_table,
 					$<(indices[0]), 2u,
 					"\0"[0] ) );
