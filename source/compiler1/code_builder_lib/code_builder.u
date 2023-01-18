@@ -199,7 +199,9 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 				LLVMDWARFEmissionKind::Full,
 				0u, // DWOId
 				LLVMBool::True, // SplitDebugInlining
-				LLVMBool::False // DebugInfoForProfiling
+				LLVMBool::False, // DebugInfoForProfiling
+				ust::nullptr</char8/>(), 0s, // SysRoot
+				ust::nullptr</char8/>(), 0s  // SDK
 			) );
 	}
 

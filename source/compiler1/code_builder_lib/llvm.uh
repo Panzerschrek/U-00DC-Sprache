@@ -445,7 +445,9 @@ fn nomangle LLVMDIBuilderCreateCompileUnit(
 	LLVMDWARFEmissionKind Kind,
 	u32 DWOId,
 	LLVMBool SplitDebugInlining,
-	LLVMBool DebugInfoForProfiling) unsafe : LLVMMetadataRef;
+	LLVMBool DebugInfoForProfiling,
+	$(char8) SysRoot, size_type SysRootLen,
+	$(char8) SDK, size_type SDKLen) unsafe : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateLexicalBlock(
 	LLVMDIBuilderRef Builder,
@@ -504,7 +506,7 @@ fn nomangle LLVMDIBuilderCreateExpression(LLVMDIBuilderRef Builder, i64& Addr, s
 fn nomangle LLVMDIBuilderCreateBasicType(
 	LLVMDIBuilderRef Builder,
 	$(char8) Name, size_type NameLen,
-	u32 SizeInBits,
+	u64 SizeInBits,
 	LLVMDWARFTypeEncoding Encoding,
 	LLVMDIFlags Flags) unsafe : LLVMMetadataRef;
 
