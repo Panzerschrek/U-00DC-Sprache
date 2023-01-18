@@ -1970,12 +1970,16 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_sco
 				{
 					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
 
-					// Do not create lifetime for variables existing only in llvm register (without any address)
-					unsafe
+					// Do not create lifetime for variables existing only in llvm register (without any address).
+					// TODO - fix  this. This check doesn't work properly for pointers stored directly in NamesScopeVariable.
+					if( variable.t.GetRawPointerType().empty() )
 					{
-						if( LLVMTypeOf( variable.llvm_value ) == LLVMPointerType( variable.t.GetLLVMType(), 0u ) )
+						unsafe
 						{
-							CreateLifetimeEnd( function_context, variable.llvm_value );
+							if( LLVMTypeOf( variable.llvm_value ) == LLVMPointerType( variable.t.GetLLVMType(), 0u ) )
+							{
+								CreateLifetimeEnd( function_context, variable.llvm_value );
+							}
 						}
 					}
 				}
