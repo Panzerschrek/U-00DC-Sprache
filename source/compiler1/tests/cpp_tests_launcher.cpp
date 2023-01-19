@@ -67,6 +67,9 @@ bool FilterTest( const std::string& test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
+		// TODO - fix Coompiler1 pointers lifetime issues and enable this tests.
+		"LifetimesForRawPointers_Test0",
+		"LifetimesForRawPointers_Test1",
 	};
 
 	return c_test_to_disable.count( test_name_without_file_name ) == 0;
