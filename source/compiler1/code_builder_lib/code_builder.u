@@ -2397,12 +2397,22 @@ fn CodeBuilder::AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 inde
 	}
 }
 
+fn CodeBuilder::AddFunctionTypeAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name, LLVMTypeRef t )
+{
+	unsafe
+	{
+		auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.data(), attr_name.size() );
+		auto attr= LLVMCreateTypeAttribute( llvm_context_, attr_kind, t );
+		LLVMAddAttributeAtIndex( llvm_function, index, attr );
+	}
+}
+
 fn CodeBuilder::SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable )
 {
 	var bool is_s_ret= function_variable.t.IsStructRet();
 	if( is_s_ret )
 	{
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret" );
+		AddFunctionTypeAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret", function_variable.t.return_type.GetLLVMType() );
 		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
 	}
 	if( function_variable.t.return_value_type != ValueType::Value )

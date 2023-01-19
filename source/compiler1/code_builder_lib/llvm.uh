@@ -412,6 +412,7 @@ fn nomangle LLVMGetIntrinsicDeclaration(
 
 // Attributes
 fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;
+fn nomangle LLVMCreateTypeAttribute(LLVMContextRef C, u32 KindID, LLVMTypeRef type_ref) unsafe : LLVMAttributeRef;
 fn nomangle LLVMGetEnumAttributeKindForName($(char8) Name, size_type SLen) unsafe : u32;
 
 fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe;
