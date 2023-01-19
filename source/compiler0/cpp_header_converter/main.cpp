@@ -19,7 +19,14 @@ static llvm::cl::opt<std::string> output_file_name(
 
 int main( int argc, const char* argv[] )
 {
-	clang::tooling::CommonOptionsParser options_parser( argc, argv, tool_category );
+	auto options_parser_opt= clang::tooling::CommonOptionsParser::create( argc, argv, tool_category );
+	if( !options_parser_opt )
+	{
+		std::cerr << "Failed to parse options" << std::endl;
+		return 1;
+	}
+
+	auto& options_parser= options_parser_opt.get();
 	clang::tooling::ClangTool tool( options_parser.getCompilations(), options_parser.getSourcePathList() );
 
 	if( output_file_name.getValue().empty() )

@@ -14,7 +14,10 @@ class CppAstConsumer : public clang::ASTConsumer
 public:
 	CppAstConsumer(
 		Synt::ProgramElements& out_elements,
+		const clang::SourceManager& source_manager,
 		clang::Preprocessor& preprocessor,
+		const clang::TargetInfo& target_info,
+		clang::DiagnosticsEngine& diagnostic_engine,
 		const clang::LangOptions& lang_options,
 		const clang::ASTContext& ast_context );
 
@@ -42,7 +45,10 @@ private:
 private:
 	Synt::ProgramElements& root_program_elements_;
 
+	const clang::SourceManager& source_manager_;
 	clang::Preprocessor& preprocessor_;
+	const clang::TargetInfo &target_info_;
+	clang::DiagnosticsEngine& diagnostic_engine_;
 	const clang::LangOptions& lang_options_;
 	const clang::PrintingPolicy printing_policy_;
 	const clang::ASTContext& ast_context_;

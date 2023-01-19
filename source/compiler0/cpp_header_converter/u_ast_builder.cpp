@@ -20,11 +20,17 @@ static const SrcLoc g_dummy_src_loc;
 
 CppAstConsumer::CppAstConsumer(
 	Synt::ProgramElements& out_elements,
+	const clang::SourceManager& source_manager,
 	clang::Preprocessor& preprocessor,
+	const clang::TargetInfo& target_info,
+	clang::DiagnosticsEngine& diagnostic_engine,
 	const clang::LangOptions& lang_options,
 	const clang::ASTContext& ast_context )
 	: root_program_elements_(out_elements)
+	, source_manager_(source_manager)
 	, preprocessor_(preprocessor)
+	, target_info_(target_info)
+	, diagnostic_engine_(diagnostic_engine)
 	, lang_options_(lang_options)
 	, printing_policy_(lang_options_)
 	, ast_context_(ast_context)
@@ -47,7 +53,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	{
 		const clang::IdentifierInfo* ident_info= macro_pair.first;
 
-		const std::string name= ident_info->getName();
+		const std::string name= ident_info->getName().str();
 		if( name.empty() )
 			continue;
 		if( preprocessor_.getPredefines().find( "#define " + name ) != std::string::npos )
@@ -73,7 +79,10 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			clang::NumericLiteralParser numeric_literal_parser(
 				numeric_literal_str,
 				token.getLocation(),
-				preprocessor_ );
+				source_manager_,
+				lang_options_,
+				target_info_,
+				diagnostic_engine_ );
 
 			Synt::AutoVariableDeclaration auto_variable_declaration( g_dummy_src_loc );
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
@@ -137,7 +146,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			Synt::StringLiteral string_constant( g_dummy_src_loc );
 
-			if( string_literal_parser.isAscii() || string_literal_parser.isUTF8() )
+			if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
 			{
 				string_constant.value_= string_literal_parser.GetString();
 				string_constant.value_.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
@@ -554,7 +563,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 		}
 	}
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
-		return TranslateNamedType( typedef_type->getDecl()->getName() );
+		return TranslateNamedType( typedef_type->getDecl()->getName().str() );
 	else if( const auto constna_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
 	{
 		// For arrays with constant size use normal Ü array.
@@ -737,7 +746,7 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 	else if( identifier[0] == '_' )
 		return ( "ü" + identifier ).str();
 
-	return identifier;
+	return identifier.str();
 }
 
 CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )
@@ -750,10 +759,13 @@ std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 {
 	return
 		std::make_unique<CppAstConsumer>(
-			(*out_result_)[in_file],
+			(*out_result_)[in_file.str()],
+			compiler_intance.getSourceManager(),
 			compiler_intance.getPreprocessor(),
+			compiler_intance.getTarget(),
+			compiler_intance.getDiagnostics(),
 			compiler_intance.getLangOpts(),
-			compiler_intance.getASTContext() );
+			compiler_intance.getASTContext());
 }
 
 FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result )
