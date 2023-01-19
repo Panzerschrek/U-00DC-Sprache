@@ -135,6 +135,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, KeywordToString( select( boolean_constant.value ? Keyword::true_ : Keyword::false_ ) ) ),
 	};
 
@@ -326,6 +327,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			.t= FundamentalType( char_type, element_llvm_type ),
 			.location= Variable::Location::LLVMRegister,
+			.value_type= ValueType::Value,
 			.llvm_value= constexpr_value,
 			.constexpr_value= constexpr_value,
 		};
@@ -422,6 +424,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, KeywordToString( Keyword::non_sync_ ) ),
 	};
 
