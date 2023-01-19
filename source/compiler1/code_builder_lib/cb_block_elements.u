@@ -342,7 +342,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 					CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
 					CreateLifetimeEnd( function_context, expr.llvm_value );
 				}
-				else
+				else if( expr.t != void_type_ )
 				{
 					CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
 				}
@@ -362,7 +362,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			{
 				BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, auto_variable_declaration.src_loc );
 			}
-			else
+			else if( expr.t != void_type_ )
 			{
 				CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
 			}
@@ -1497,7 +1497,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
 					CreateLifetimeEnd( function_context, expr.llvm_value );
 				}
-				else
+				else if( expr.t != void_type_ )
 				{
 					CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
 				}
