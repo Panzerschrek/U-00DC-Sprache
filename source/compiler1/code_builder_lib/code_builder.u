@@ -2387,12 +2387,16 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string8& name_null_terminat
 	}
 }
 
+fn CodeBuilder::GetAttributeKindByName( ust::array_view_imut</char8/> attr_name ) : u32
+{
+	return unsafe( LLVMGetEnumAttributeKindForName( attr_name.data(), attr_name.size() ) );
+}
+
 fn CodeBuilder::AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name )
 {
 	unsafe
 	{
-		auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.data(), attr_name.size() );
-		auto attr= LLVMCreateEnumAttribute( llvm_context_, attr_kind, 0u64 );
+		auto attr= LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName(attr_name), 0u64 );
 		LLVMAddAttributeAtIndex( llvm_function, index, attr );
 	}
 }
@@ -2401,8 +2405,7 @@ fn CodeBuilder::AddFunctionTypeAttribute( this, LLVMValueRef llvm_function, u32 
 {
 	unsafe
 	{
-		auto attr_kind= LLVMGetEnumAttributeKindForName( attr_name.data(), attr_name.size() );
-		auto attr= LLVMCreateTypeAttribute( llvm_context_, attr_kind, t );
+		auto attr= LLVMCreateTypeAttribute( llvm_context_, GetAttributeKindByName(attr_name), t );
 		LLVMAddAttributeAtIndex( llvm_function, index, attr );
 	}
 }
@@ -2459,8 +2462,11 @@ fn CodeBuilder::SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable&
 
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
 	{
-		// TODO - fix this.
-		// AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFunctionIndex, "uwtable" );
+		unsafe
+		{
+			auto attr= LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("uwtable"), 2u64 /* async uwtable */ );
+			LLVMAddAttributeAtIndex( function_variable.llvm_function, LLVMAttributeFunctionIndex, attr );
+		}
 	}
 
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
