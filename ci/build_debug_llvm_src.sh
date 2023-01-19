@@ -5,10 +5,15 @@ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/llvm-
 xz -d llvm-15.0.7.src.tar.xz &&\
 tar -xf llvm-15.0.7.src.tar &&\
 \
+# Get llvm cmake modules
+wget https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/cmake-15.0.7.src.tar.xz &&\
+xz -d cmake-15.0.7.src.tar.xz &&\
+tar -xf cmake-15.0.7.src.tar &&\
+\
 # Configure build
 mkdir build-travis &&\
 cd build-travis &&\
-cmake ../source/ -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_LINKER="ld.gold" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=gold" -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=gold" -DCMAKE_MODULE_LINKER_FLAGS="-fuse-ld=gold" -DLLVM_SRC_DIR=../llvm-15.0.7.src/ -DU_BUILD_COMPILER2=YES -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_BUILD_BENCHMARKS=OFF -DLLVM_BUILD_DOCS=OFF -DLLVM_BUILD_EXAMPLES=OFF -DLLVM_BUILD_TESTS=OFF &&\
+cmake ../source/ -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MODULE_PATH=../cmake-15.0.7.src/ -DCMAKE_LINKER="ld.gold" -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=gold" -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=gold" -DCMAKE_MODULE_LINKER_FLAGS="-fuse-ld=gold" -DLLVM_SRC_DIR=../llvm-15.0.7.src/ -DU_BUILD_COMPILER2=YES -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_BUILD_BENCHMARKS=OFF -DLLVM_BUILD_DOCS=OFF -DLLVM_BUILD_EXAMPLES=OFF -DLLVM_BUILD_TESTS=OFF &&\
 \
 # Run build
 cmake --build . -- -j 1 &&\
