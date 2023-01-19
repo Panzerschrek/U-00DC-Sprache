@@ -1326,9 +1326,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
 
 			auto mut this_value_corrected= variable.llvm_value;
+			auto field_source_class= field.source_class;
 			{
 				var ClassTypePtr mut current_class_type= class_type;
-				auto field_source_class= field.source_class;
 				while( current_class_type != field_source_class )
 				{
 					auto base_class= current_class_type.lock_imut().deref().base_class;
@@ -1343,7 +1343,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
-			var LLVMValueRef gep_result= CreateClassFieldGEP( class_type, this_value_corrected, field, function_context );
+			var LLVMValueRef gep_result= CreateClassFieldGEP( field_source_class, this_value_corrected, field, function_context );
 
 			auto op_name_nt= "." + member_access_operator.member_name + "\0";
 

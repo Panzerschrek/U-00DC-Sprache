@@ -358,7 +358,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				return BlockElementBuildInfo();
 			}
 
-			BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, auto_variable_declaration.src_loc );
+			if( expr.location == Variable::Location::Pointer )
+			{
+				BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, auto_variable_declaration.src_loc );
+			}
+			else
+			{
+				CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
+			}
 		}
 	}
 	else { halt; }
@@ -1506,7 +1513,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				return BlockElementBuildInfo();
 			}
 
-			BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, with_operator.src_loc );
+			if( expr.location == Variable::Location::Pointer )
+			{
+				BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, with_operator.src_loc );
+			}
+			else
+			{
+				CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
+			}
 		}
 	}
 	else { halt; }

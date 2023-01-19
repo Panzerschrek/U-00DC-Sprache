@@ -510,7 +510,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				.t= field.t,
 				.location= Variable::Location::Pointer,
 				.value_type= function_context.this_.try_deref().value_type,
-				.llvm_value= CreateClassFieldGEP( this_class, this_value_corrected, field, function_context ),
+				.llvm_value= CreateClassFieldGEP( field_source_class, this_value_corrected, field, function_context ),
 				.node_id= function_context.this_.try_deref().node_id,
 			};
 
