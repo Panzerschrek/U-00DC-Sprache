@@ -1379,7 +1379,17 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 							}
 							else
 							{
-								result.constexpr_value= LLVMGetInitializer( result.llvm_value );
+								if( !class_type.lock_imut().deref().typeinfo_src_type_.empty() && member_access_operator.member_name == "type_id" )
+								{
+									// HACK!
+									// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.
+									// This is used for type_id in typeinfo classes.
+									result.constexpr_value= LLVMGetAggregateElement( LLVMGetAggregateElement( LLVMGetInitializer( result.llvm_value ), 0u ), 0u );
+								}
+								else
+								{
+									result.constexpr_value= LLVMGetInitializer( result.llvm_value );
+								}
 							}
 						}
 					}
