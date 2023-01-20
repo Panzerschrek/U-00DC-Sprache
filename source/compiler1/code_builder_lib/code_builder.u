@@ -1761,7 +1761,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				function_context.args_nodes[arg_n]= out_arg.node_id;
 			}
 
-			function_context.variables_frames.back().push_back( out_arg ); // Register arg for destruction and reference checking.
+			RegisterTopFrameVariable( function_context, out_arg ); // Register arg for destruction and reference checking.
 
 			if( in_param.name == KeywordToString( Keyword::this_ ) && func_variable.is_this_call && !out_arg.t.GetClassType().empty() )
 			{
@@ -1971,16 +1971,9 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_sco
 					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
 
 					// Do not create lifetime for variables existing only in llvm register (without any address).
-					// TODO - fix  this. This check doesn't work properly for pointers stored directly in NamesScopeVariable.
-					if( variable.t.GetRawPointerType().empty() )
+					if( variable.location == Variable::Location::Pointer )
 					{
-						unsafe
-						{
-							if( LLVMTypeOf( variable.llvm_value ) == LLVMPointerType( variable.t.GetLLVMType(), 0u ) )
-							{
-								CreateLifetimeEnd( function_context, variable.llvm_value );
-							}
-						}
+						CreateLifetimeEnd( function_context, variable.llvm_value );
 					}
 				}
 			}
@@ -2035,17 +2028,13 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 
 				if( function_context.references_graph.GetNodeKind( node_id ) == ReferencesGraph::NodeKind::Variable )
 				{
-					var LLVMValueRef llvm_value= function_context.variables_frames.back()[i].llvm_value;
-					var Type t= function_context.variables_frames.back()[i].t;
-					BuildDestructorPart( names_scope, function_context, llvm_value, t, src_loc );
+					var Variable variable= function_context.variables_frames.back()[i];
+					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
 
-					// Do not create lifetime for variables existing only in llvm register (without any address)
-					unsafe
+					// Do not create lifetime for variables existing only in llvm register (without any address).
+					if( variable.location == Variable::Location::Pointer )
 					{
-						if( LLVMTypeOf( llvm_value ) == LLVMPointerType( t.GetLLVMType(), 0u ) )
-						{
-							CreateLifetimeEnd( function_context, llvm_value );
-						}
+						CreateLifetimeEnd( function_context, variable.llvm_value );
 					}
 				}
 			}
@@ -2058,17 +2047,30 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 	}
 }
 
-fn CodeBuilder::RegisterTemporaryVariable( FunctionContext& mut function_context, Variable& variable )
+fn CodeBuilder::RegisterTemporaryVariable( FunctionContext& mut function_context, Variable mut variable )
 {
-	var NamesScopeVariable mut names_scope_variable
+	function_context.variables_frames.back().push_back( move(variable) );
+}
+
+fn CodeBuilder::RegisterTopFrameVariable( FunctionContext& mut function_context, NamesScopeVariable& variable )
+{
+	RegisterFrameVariable( function_context, variable, 0s );
+}
+
+fn CodeBuilder::RegisterFrameVariable( FunctionContext& mut function_context, NamesScopeVariable& variable, size_type frame_index_from_top )
+{
+	var Variable mut v
 	{
 		.t= variable.t,
-		.is_mutable= variable.value_type == ValueType::ReferenceMut,
 		.llvm_value= variable.llvm_value,
 		.constexpr_value= variable.constexpr_value,
+		.value_type= select( variable.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
 		.node_id= variable.node_id,
 	};
-	function_context.variables_frames.back().push_back( move(names_scope_variable) );
+
+	auto frame_index= function_context.variables_frames.size() - frame_index_from_top - 1s;
+	function_context.variables_frames[frame_index].push_back( move(v) );
 }
 
 fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool

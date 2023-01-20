@@ -3560,9 +3560,9 @@ fn CodeBuilder::BuildTempVariableConstruction(
 			.node_id= result.node_id,
 		};
 		result.constexpr_value= BuildConstructorInitializer( names_scope, function_context, names_scope_variable, args, src_loc );
-
-		function_context.variables_frames.back().push_back( move(names_scope_variable) );
 	}
+
+	RegisterTemporaryVariable( function_context, result );
 
 	return move(result);
 }
