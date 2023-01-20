@@ -22,7 +22,7 @@ bool TemplateSignatureParam::TemplateParam::operator==( const TemplateParam& oth
 
 bool TemplateSignatureParam::ArrayParam::operator==( const ArrayParam& other ) const
 {
-	return *this->type == *other.type && *this->size == *other.size;
+	return *this->element_type == *other.element_type && *this->element_count == *other.element_count;
 }
 
 bool TemplateSignatureParam::TupleParam::operator==( const TupleParam& other ) const
@@ -32,7 +32,7 @@ bool TemplateSignatureParam::TupleParam::operator==( const TupleParam& other ) c
 
 bool TemplateSignatureParam::RawPointerParam::operator==( const RawPointerParam& other ) const
 {
-	return *this->type == *other.type;
+	return *this->element_type == *other.element_type;
 }
 
 bool TemplateSignatureParam::FunctionParam::Param::operator==( const Param& other ) const

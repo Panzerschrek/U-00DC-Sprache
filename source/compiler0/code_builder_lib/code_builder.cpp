@@ -660,12 +660,12 @@ void CodeBuilder::CallDestructor(
 	{
 		// SPRACHE_TODO - maybe call destructors of arrays in reverse order?
 		GenerateLoop(
-			array_type->size,
+			array_type->element_count,
 			[&]( llvm::Value* const index )
 			{
 				CallDestructor(
 					CreateArrayElementGEP( function_context, *array_type, ptr, index ),
-					array_type->type,
+					array_type->element_type,
 					function_context,
 					errors_container,
 					src_loc );
@@ -674,11 +674,11 @@ void CodeBuilder::CallDestructor(
 	}
 	else if( const TupleType* const tuple_type= type.GetTupleType() )
 	{
-		for( const Type& element_type : tuple_type->elements )
+		for( const Type& element_type : tuple_type->element_types )
 		{
 			if( element_type.HaveDestructor() )
 				CallDestructor(
-					CreateTupleElementGEP( function_context, *tuple_type, ptr, size_t(&element_type - tuple_type->elements.data()) ),
+					CreateTupleElementGEP( function_context, *tuple_type, ptr, size_t(&element_type - tuple_type->element_types.data()) ),
 					element_type,
 					function_context,
 					errors_container,

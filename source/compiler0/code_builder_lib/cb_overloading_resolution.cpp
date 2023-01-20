@@ -126,8 +126,8 @@ ConversionsCompareResult TemplateSpecializationCompare(
 			return ConversionsCompareResult::LeftIsBetter; // Array is more specialized, then template parameter.
 		else if( const auto r_array= right_template_parameter.GetArray() )
 		{
-			const ConversionsCompareResult size_compare_result= TemplateSpecializationCompare( *l_array->size, *r_array->size );
-			const ConversionsCompareResult type_compare_result= TemplateSpecializationCompare( *l_array->type, *r_array->type );
+			const ConversionsCompareResult size_compare_result= TemplateSpecializationCompare( *l_array->element_count, *r_array->element_count );
+			const ConversionsCompareResult type_compare_result= TemplateSpecializationCompare( *l_array->element_type, *r_array->element_type );
 			if( size_compare_result == ConversionsCompareResult::Incomparable || type_compare_result == ConversionsCompareResult::Incomparable )
 				return ConversionsCompareResult::Incomparable;
 			if( size_compare_result == ConversionsCompareResult::Same )
@@ -177,7 +177,7 @@ ConversionsCompareResult TemplateSpecializationCompare(
 		else if( right_template_parameter.IsTemplateParam() )
 			return ConversionsCompareResult::LeftIsBetter; // Raw pointer is more specialized, then template parameter.
 		else if( const auto r_raw_pointer= right_template_parameter.GetRawPointer() )
-			return TemplateSpecializationCompare( *l_raw_pointer->type, *r_raw_pointer->type );
+			return TemplateSpecializationCompare( *l_raw_pointer->element_type, *r_raw_pointer->element_type );
 		else U_ASSERT(false);
 	}
 	else if( const auto l_function= left_template_parameter.GetFunction() )

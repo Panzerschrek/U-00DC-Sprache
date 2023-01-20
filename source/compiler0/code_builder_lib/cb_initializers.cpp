@@ -47,23 +47,23 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 {
 	if( const ArrayType* const array_type= variable.type.GetArrayType() )
 	{
-		if(  initializer.initializers.size() != array_type->size )
+		if(  initializer.initializers.size() != array_type->element_count )
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				names.GetErrors(),
 				initializer.src_loc_,
-				array_type->size,
+				array_type->element_count,
 				initializer.initializers.size() );
 			return nullptr;
 			// SPRACHE_TODO - add array continious initializers.
 		}
 
 		Variable array_member= variable;
-		array_member.type= array_type->type;
+		array_member.type= array_type->element_type;
 		array_member.location= Variable::Location::Pointer;
 
 
-		bool is_constant= array_type->type.CanBeConstexpr();
+		bool is_constant= array_type->element_type.CanBeConstexpr();
 		std::vector<llvm::Constant*> members_constants;
 
 		for( size_t i= 0u; i < initializer.initializers.size(); i++ )
@@ -86,12 +86,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	}
 	else if( const TupleType* const tuple_type= variable.type.GetTupleType() )
 	{
-		if( initializer.initializers.size() != tuple_type->elements.size() )
+		if( initializer.initializers.size() != tuple_type->element_types.size() )
 		{
 			REPORT_ERROR( TupleInitializersCountMismatch,
 				names.GetErrors(),
 				initializer.src_loc_,
-				tuple_type->elements.size(),
+				tuple_type->element_types.size(),
 				initializer.initializers.size() );
 			return nullptr;
 		}
@@ -105,7 +105,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		for( size_t i= 0u; i < initializer.initializers.size(); ++i )
 		{
 			tuple_element.llvm_value= CreateTupleElementGEP( function_context, variable, i );
-			tuple_element.type= tuple_type->elements[i];
+			tuple_element.type= tuple_type->element_types[i];
 
 			llvm::Constant* const member_constant=
 				ApplyInitializer( tuple_element, names, function_context, initializer.initializers[i] );
@@ -410,11 +410,11 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	else if( const ArrayType* const array_type= variable.type.GetArrayType() )
 	{
 		Variable array_member= variable;
-		array_member.type= array_type->type;
+		array_member.type= array_type->element_type;
 		array_member.location= Variable::Location::Pointer;
 
 		GenerateLoop(
-			array_type->size,
+			array_type->element_count,
 			[&](llvm::Value* const counter_value)
 			{
 				array_member.llvm_value= CreateArrayElementGEP( function_context, variable, counter_value );
@@ -422,7 +422,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			},
 			function_context);
 
-		if( array_type->type.CanBeConstexpr() )
+		if( array_type->element_type.CanBeConstexpr() )
 			return llvm::Constant::getNullValue( array_type->llvm_type );
 		else
 			return nullptr;
@@ -432,9 +432,9 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		Variable tuple_member= variable;
 		tuple_member.location= Variable::Location::Pointer;
 
-		for( const Type& element_type : tuple_type->elements )
+		for( const Type& element_type : tuple_type->element_types )
 		{
-			const size_t i= size_t( &element_type - tuple_type->elements.data() );
+			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
 			tuple_member.type= element_type;
 			tuple_member.llvm_value= CreateTupleElementGEP( function_context, variable, i );
 
@@ -525,13 +525,13 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 	else if( const ArrayType* const array_type= variable.type.GetArrayType() )
 	{
 		Variable array_member= variable;
-		array_member.type= array_type->type;
+		array_member.type= array_type->element_type;
 		array_member.location= Variable::Location::Pointer;
 
 		llvm::Constant* constant_initializer= nullptr;
 
 		GenerateLoop(
-			array_type->size,
+			array_type->element_count,
 			[&](llvm::Value* const counter_value)
 			{
 				array_member.llvm_value= CreateArrayElementGEP( function_context, variable, counter_value );
@@ -543,7 +543,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		if( constant_initializer != nullptr )
 		{
 			std::vector<llvm::Constant*> array_initializers;
-			array_initializers.resize( size_t(array_type->size), constant_initializer );
+			array_initializers.resize( size_t(array_type->element_count), constant_initializer );
 			return llvm::ConstantArray::get( array_type->llvm_type, array_initializers );
 		}
 		return nullptr;
@@ -555,9 +555,9 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 
 		std::vector<llvm::Constant*> constant_initializers;
 
-		for( const Type& element_type : tuple_type->elements )
+		for( const Type& element_type : tuple_type->element_types )
 		{
-			const size_t i= size_t( &element_type - tuple_type->elements.data() );
+			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
 			tuple_member.type= element_type;
 			tuple_member.llvm_value= CreateTupleElementGEP( function_context, variable, i );
 
@@ -568,7 +568,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 				constant_initializers.push_back( constant_initializer );
 		}
 
-		if( constant_initializers.size() == tuple_type->elements.size() )
+		if( constant_initializers.size() == tuple_type->element_types.size() )
 			return llvm::ConstantStruct::get( tuple_type->llvm_type, constant_initializers );
 		return nullptr;
 	}
@@ -989,7 +989,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	{
 		const FunctionPointerType* const intitializer_type= initializer_variable->type.GetFunctionPointerType();
 		if( intitializer_type == nullptr ||
-			!intitializer_type->function.PointerCanBeConvertedTo( function_pointer_type.function ) )
+			!intitializer_type->function_type.PointerCanBeConvertedTo( function_pointer_type.function_type ) )
 		{
 			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), initializer_expression_src_loc, variable.type, initializer_variable->type );
 			return nullptr;
@@ -1024,9 +1024,9 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 
 	for( const FunctionVariable& func : candidate_functions->functions )
 	{
-		if( *func.type.GetFunctionType() == function_pointer_type.function )
+		if( *func.type.GetFunctionType() == function_pointer_type.function_type )
 			exact_match_function_variable= &func;
-		else if( func.type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
+		else if( func.type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function_type ) )
 			convertible_function_variables.push_back(&func);
 	}
 	// Try also select template functions with zero template parameters and template functions with all template parameters known.
@@ -1034,18 +1034,18 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	{
 		if( const auto func= FinishTemplateFunctionParametrization( block_names.GetErrors(), initializer_expression_src_loc, function_template ) )
 		{
-			if( func->type == function_pointer_type.function )
+			if( func->type == function_pointer_type.function_type )
 			{
 				if( exact_match_function_variable != nullptr )
 				{
 					// Error, exists more,then one non-exact match function.
 					// TODO - maybe generate separate error?
-					REPORT_ERROR( TooManySuitableOverloadedFunctions, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function.params) );
+					REPORT_ERROR( TooManySuitableOverloadedFunctions, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function_type.params) );
 					return nullptr;
 				}
 				exact_match_function_variable= func;
 			}
-			else if( func->type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function ) )
+			else if( func->type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function_type ) )
 				convertible_function_variables.push_back(func);
 		}
 	}
@@ -1057,7 +1057,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		{
 			// Error, exist more, then one non-exact match function.
 			// TODO - maybe generate separate error?
-			REPORT_ERROR( TooManySuitableOverloadedFunctions, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function.params) );
+			REPORT_ERROR( TooManySuitableOverloadedFunctions, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function_type.params) );
 			return nullptr;
 		}
 		else if( !convertible_function_variables.empty() )
@@ -1065,14 +1065,14 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	}
 	if( function_variable == nullptr )
 	{
-		REPORT_ERROR( CouldNotSelectOverloadedFunction, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function.params) );
+		REPORT_ERROR( CouldNotSelectOverloadedFunction, block_names.GetErrors(), initializer_expression_src_loc, FunctionParamsToString(function_pointer_type.function_type.params) );
 		return nullptr;
 	}
 	if( function_variable->is_deleted )
 		REPORT_ERROR( AccessingDeletedMethod, block_names.GetErrors(), initializer_expression_src_loc );
 
 	llvm::Value* function_value= function_variable->llvm_function;
-	if( function_variable->type != function_pointer_type.function )
+	if( function_variable->type != function_pointer_type.function_type )
 		function_value= function_context.llvm_ir_builder.CreatePointerCast( function_value, variable.type.GetLLVMType() );
 
 	CreateTypedStore( function_context, variable.type, function_value, variable.llvm_value );

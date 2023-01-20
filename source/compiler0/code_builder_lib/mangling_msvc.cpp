@@ -347,8 +347,8 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 		{
 			if( const auto element_type_as_array_type= element_type->GetArrayType() )
 			{
-				dimensions.push_back( element_type_as_array_type->size );
-				element_type= &element_type_as_array_type->type;
+				dimensions.push_back( element_type_as_array_type->element_count );
+				element_type= &element_type_as_array_type->element_type;
 			}
 			else
 				break;
@@ -364,8 +364,8 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 	{
 		// Encode tuples, like type templates.
 		TemplateArgs template_args;
-		template_args.reserve( tuple_type->elements.size() );
-		for( const Type& element : tuple_type->elements )
+		template_args.reserve( tuple_type->element_types.size() );
+		for( const Type& element : tuple_type->element_types )
 			template_args.push_back( element );
 
 		mangler_state.PushElement( g_class_type_prefix );
@@ -426,13 +426,13 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 		mangler_state.PushElement( g_pointer_prefix );
 		mangler_state.PushElement( pointer_types_modifier_ );
 		mangler_state.PushElement( g_mut_prefix );
-		EncodeType( mangler_state, raw_pointer->type );
+		EncodeType( mangler_state, raw_pointer->element_type );
 	}
 	else if( const auto function_pointer= type.GetFunctionPointerType() )
 	{
 		mangler_state.PushElement( g_pointer_prefix );
 		mangler_state.PushElement( "6" );
-		EncodeFunctionType( mangler_state, function_pointer->function, true );
+		EncodeFunctionType( mangler_state, function_pointer->function_type, true );
 	}
 	else if( const auto function= type.GetFunctionType() )
 		EncodeFunctionType( mangler_state, *function, true );

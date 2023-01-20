@@ -188,18 +188,18 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ArrayType& type )
 	U_ASSERT(build_debug_info_);
 
 	const uint32_t alignment=
-		IsTypeComplete( type.type ) ? uint32_t(data_layout_.getABITypeAlignment( type.llvm_type )) : 0u;
+		IsTypeComplete( type.element_type ) ? uint32_t(data_layout_.getABITypeAlignment( type.llvm_type )) : 0u;
 	const uint64_t size=
-		IsTypeComplete( type.type ) ? data_layout_.getTypeAllocSizeInBits( type.llvm_type ) : uint64_t(0);
+		IsTypeComplete( type.element_type ) ? data_layout_.getTypeAllocSizeInBits( type.llvm_type ) : uint64_t(0);
 
 	llvm::SmallVector<llvm::Metadata*, 1> subscripts;
-	subscripts.push_back( debug_info_.builder->getOrCreateSubrange( 0, int64_t(type.size) ) );
+	subscripts.push_back( debug_info_.builder->getOrCreateSubrange( 0, int64_t(type.element_count) ) );
 
 	return
 		debug_info_.builder->createArrayType(
 			size,
 			8u * alignment,
-			CreateDIType( type.type ),
+			CreateDIType( type.element_type ),
 			debug_info_.builder->getOrCreateArray(subscripts) );
 }
 
@@ -213,16 +213,16 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const TupleType& type )
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( type.llvm_type );
 
 	std::vector<llvm::Metadata*> elements;
-	elements.reserve( type.elements.size() );
+	elements.reserve( type.element_types.size() );
 
 	const auto di_file= GetDIFile(0);
 
-	for( const Type& element_type : type.elements )
+	for( const Type& element_type : type.element_types )
 	{
 		if( !IsTypeComplete( element_type ) )
 			continue;
 
-		const size_t element_index= size_t(&element_type - type.elements.data());
+		const size_t element_index= size_t(&element_type - type.element_types.data());
 		const auto element =
 			debug_info_.builder->createMemberType(
 				debug_info_.compile_unit,
@@ -281,7 +281,7 @@ llvm::DIDerivedType* CodeBuilder::CreateDIType( const RawPointerType& type )
 
 	return
 		debug_info_.builder->createPointerType(
-			CreateDIType(type.type),
+			CreateDIType(type.element_type),
 			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 
@@ -291,7 +291,7 @@ llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointerType& type 
 
 	return
 		debug_info_.builder->createPointerType(
-			CreateDIType(type.function),
+			CreateDIType(type.function_type),
 			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 

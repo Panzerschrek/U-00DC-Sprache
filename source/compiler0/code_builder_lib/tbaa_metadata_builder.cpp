@@ -70,7 +70,7 @@ llvm::MDNode* TBAAMetadataBuilder::CreateReferenceAccessTag( const Type& type )
 {
 	// Create access tags for references as for pointers.
 	RawPointerType raw_pointer_type;
-	raw_pointer_type.type= type;
+	raw_pointer_type.element_type= type;
 
 	return CreateAccessTag( std::move(raw_pointer_type) );
 }

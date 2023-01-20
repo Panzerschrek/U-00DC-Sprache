@@ -129,13 +129,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			const llvm::APInt index_value= index.constexpr_value->getUniqueInteger();
 			if( IsSignedInteger(index_fundamental_type->fundamental_type) )
 			{
-				if( index_value.getLimitedValue() >= array_type->size || index_value.isNegative() )
-					REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value.getSExtValue(), array_type->size );
+				if( index_value.getLimitedValue() >= array_type->element_count || index_value.isNegative() )
+					REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value.getSExtValue(), array_type->element_count );
 			}
 			else
 			{
-				if( index_value.getLimitedValue() >= array_type->size )
-					REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value.getLimitedValue(), array_type->size );
+				if( index_value.getLimitedValue() >= array_type->element_count )
+					REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value.getLimitedValue(), array_type->element_count );
 			}
 		}
 
@@ -148,7 +148,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result.location= Variable::Location::Pointer;
 		result.value_type= variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		result.node= variable_lock.TakeNode();
-		result.type= array_type->type;
+		result.type= array_type->element_type;
 
 		if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
 			result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
@@ -166,7 +166,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			llvm::Value* const condition=
 				function_context.llvm_ir_builder.CreateICmpUGE( // if( index >= array_size ) {halt;}
 					index_value,
-					llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), array_type->size ) ) );
+					llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), array_type->element_count ) ) );
 
 			llvm::BasicBlock* const halt_block= llvm::BasicBlock::Create( llvm_context_ );
 			llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
@@ -213,17 +213,17 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const uint64_t index_value= index_value_raw.getLimitedValue();
 		if( IsSignedInteger(index_fundamental_type->fundamental_type) )
 		{
-			if( index_value >= static_cast<uint64_t>(tuple_type->elements.size()) || index_value_raw.isNegative() )
+			if( index_value >= static_cast<uint64_t>(tuple_type->element_types.size()) || index_value_raw.isNegative() )
 			{
-				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value_raw.getSExtValue(), tuple_type->elements.size() );
+				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value_raw.getSExtValue(), tuple_type->element_types.size() );
 				return ErrorValue();
 			}
 		}
 		else
 		{
-			if( index_value >= static_cast<uint64_t>(tuple_type->elements.size()) )
+			if( index_value >= static_cast<uint64_t>(tuple_type->element_types.size()) )
 			{
-				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value, tuple_type->elements.size() );
+				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value, tuple_type->element_types.size() );
 				return ErrorValue();
 			}
 		}
@@ -232,7 +232,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result.location= Variable::Location::Pointer;
 		result.value_type= variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		result.node= variable_lock.TakeNode();
-		result.type= tuple_type->elements[size_t(index_value)];
+		result.type= tuple_type->element_types[size_t(index_value)];
 		result.llvm_value= CreateTupleElementGEP( function_context, variable, index_value );
 
 		if( variable.constexpr_value != nullptr )
@@ -960,7 +960,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.have_non_constexpr_operations_inside= true;
 
 	RawPointerType raw_pointer_type;
-	raw_pointer_type.type= v.type;
+	raw_pointer_type.element_type= v.type;
 	raw_pointer_type.llvm_type= llvm::PointerType::get( v.type.GetLLVMType(), 0u );
 
 	Variable res;
@@ -992,7 +992,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	Variable res;
-	res.type= raw_pointer_type->type;
+	res.type= raw_pointer_type->element_type;
 	res.llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context );
 	res.value_type= ValueType::ReferenceMut;
 	res.location= Variable::Location::Pointer;
@@ -1173,8 +1173,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	else
 	{
 		ArrayType array_type;
-		array_type.type= FundamentalType( char_type, GetFundamentalLLVMType( char_type ) );
-		array_type.size= array_size;
+		array_type.element_type= FundamentalType( char_type, GetFundamentalLLVMType( char_type ) );
+		array_type.element_count= array_size;
 		array_type.llvm_type= llvm::ArrayType::get( GetFundamentalLLVMType( char_type ), array_size );
 		result.type= std::move(array_type);
 
@@ -2294,7 +2294,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 			return ErrorValue();
 		}
 
-		const Type& element_type= result.type.GetRawPointerType()->type;
+		const Type& element_type= result.type.GetRawPointerType()->element_type;
 		if( !EnsureTypeComplete( element_type ) )
 		{
 			// Complete types required for pointer arithmetic.
@@ -2325,10 +2325,10 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 			return ErrorValue();
 		}
 
-		if( !EnsureTypeComplete( ptr_type->type ) )
+		if( !EnsureTypeComplete( ptr_type->element_type ) )
 		{
 			// Complete types required for pointer arithmetic.
-			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, ptr_type->type );
+			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, ptr_type->element_type );
 			return ErrorValue();
 		}
 
@@ -2346,7 +2346,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 
 			result.type= FundamentalType( diff_type, diff_llvm_type );
 
-			const auto element_size= data_layout_.getTypeAllocSize( ptr_type->type.GetLLVMType() );
+			const auto element_size= data_layout_.getTypeAllocSize( ptr_type->element_type.GetLLVMType() );
 			if( element_size == 0 )
 			{
 				REPORT_ERROR( DifferenceBetweenRawPointersWithZeroElementSize, names.GetErrors(), src_loc, l_var.type );
@@ -2384,7 +2384,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
 			}
 			llvm::Value* const index_value_negative= function_context.llvm_ir_builder.CreateNeg( index_value );
-			result.llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_type->type.GetLLVMType(), l_value_for_op, index_value_negative );
+			result.llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_type->element_type.GetLLVMType(), l_value_for_op, index_value_negative );
 		}
 		else
 		{
@@ -2570,9 +2570,9 @@ Value CodeBuilder::CallFunction(
 			function_context.have_non_constexpr_operations_inside= true; // Calling function, using pointer, is not constexpr. We can not garantee, that called function is constexpr.
 
 			// Call function pointer directly.
-			if( function_pointer->function.params.size() != synt_args.size() )
+			if( function_pointer->function_type.params.size() != synt_args.size() )
 			{
-				REPORT_ERROR( InvalidFunctionArgumentCount, names.GetErrors(), src_loc, synt_args.size(), function_pointer->function.params.size() );
+				REPORT_ERROR( InvalidFunctionArgumentCount, names.GetErrors(), src_loc, synt_args.size(), function_pointer->function_type.params.size() );
 				return ErrorValue();
 			}
 
@@ -2585,7 +2585,7 @@ Value CodeBuilder::CallFunction(
 
 			return
 				DoCallFunction(
-					func_itself, function_pointer->function, src_loc,
+					func_itself, function_pointer->function_type, src_loc,
 					nullptr, args, false,
 					names, function_context );
 		}

@@ -38,7 +38,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope&, FunctionContext&, const Synt::Em
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name )
 {
 	ArrayType array_type;
-	array_type.type= PrepareType( *array_type_name.element_type, names_scope, function_context );
+	array_type.element_type= PrepareType( *array_type_name.element_type, names_scope, function_context );
 
 	const Synt::Expression& num= *array_type_name.size;
 	const SrcLoc num_src_loc= Synt::GetExpressionSrcLoc( num );
@@ -54,7 +54,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 				if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
 					REPORT_ERROR( ArraySizeIsNegative, names_scope.GetErrors(), num_src_loc );
 				else
-					array_type.size= size_value.getLimitedValue();
+					array_type.element_count= size_value.getLimitedValue();
 			}
 			else
 				REPORT_ERROR( ArraySizeIsNotInteger, names_scope.GetErrors(), num_src_loc );
@@ -66,7 +66,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), num_src_loc );
 
 	// TODO - generate error, if total size of type (incuding arrays) is more, than half of address space of target architecture.
-	array_type.llvm_type= llvm::ArrayType::get( array_type.type.GetLLVMType(), array_type.size );
+	array_type.llvm_type= llvm::ArrayType::get( array_type.element_type.GetLLVMType(), array_type.element_count );
 	return std::move(array_type);
 }
 
@@ -88,7 +88,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	const Synt::FunctionType& function_type_name= *function_type_name_ptr;
 
 	FunctionPointerType function_pointer_type;
-	FunctionType& function_type= function_pointer_type.function;
+	FunctionType& function_type= function_pointer_type.function_type;
 
 	if( function_type_name.return_type_ == nullptr )
 		function_type.return_type= void_type_;
@@ -134,7 +134,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name )
 {
 	TupleType tuple;
-	tuple.elements.reserve( tuple_type_name.element_types_.size() );
+	tuple.element_types.reserve( tuple_type_name.element_types_.size() );
 
 	std::vector<llvm::Type*> elements_llvm_types;
 	elements_llvm_types.reserve( tuple_type_name.element_types_.size() );
@@ -146,7 +146,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 			return invalid_type_;
 
 		elements_llvm_types.push_back( element_type.GetLLVMType() );
-		tuple.elements.push_back( std::move(element_type) );
+		tuple.element_types.push_back( std::move(element_type) );
 	}
 
 	tuple.llvm_type= llvm::StructType::get( llvm_context_, elements_llvm_types );
@@ -157,8 +157,8 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name )
 {
 	RawPointerType raw_pointer;
-	raw_pointer.type= PrepareType( *raw_pointer_type_name.element_type, names_scope, function_context );
-	raw_pointer.llvm_type= raw_pointer.type.GetLLVMType()->getPointerTo();
+	raw_pointer.element_type= PrepareType( *raw_pointer_type_name.element_type, names_scope, function_context );
+	raw_pointer.llvm_type= raw_pointer.element_type.GetLLVMType()->getPointerTo();
 
 	return raw_pointer;
 }

@@ -59,7 +59,7 @@ bool operator!=( const FundamentalType& l, const FundamentalType& r );
 
 struct TupleType final
 {
-	std::vector<Type> elements;
+	std::vector<Type> element_types;
 	llvm::StructType* llvm_type= nullptr;
 };
 
@@ -144,8 +144,8 @@ bool operator!=( const Type& l, const Type& r );
 
 struct ArrayType final
 {
-	Type type; // TODO - rename to element_type
-	uint64_t size= 0u;
+	Type element_type;
+	uint64_t element_count= 0u;
 
 	llvm::ArrayType* llvm_type= nullptr;
 };
@@ -155,7 +155,7 @@ bool operator!=( const ArrayType& r, const ArrayType& l );
 
 struct RawPointerType final
 {
-	Type type; // TODO - rename to element_type
+	Type element_type;
 	llvm::PointerType* llvm_type= nullptr;
 };
 
@@ -213,7 +213,7 @@ std::string FunctionParamsToString( const ArgsVector<FunctionType::Param>& param
 
 struct FunctionPointerType
 {
-	FunctionType function;
+	FunctionType function_type;
 	llvm::PointerType* llvm_type= nullptr;
 };
 

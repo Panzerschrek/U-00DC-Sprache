@@ -74,13 +74,13 @@ bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const
 
 	if( const auto array_type= type.GetArrayType() )
 	{
-		const bool is_non_sync= GetTypeNonSyncImpl( prev_types_stack, array_type->type, names_scope, src_loc );
+		const bool is_non_sync= GetTypeNonSyncImpl( prev_types_stack, array_type->element_type, names_scope, src_loc );
 		prev_types_stack.pop_back();
 		return is_non_sync;
 	}
 	if( const auto tuple_type= type.GetTupleType() )
 	{
-		for( const Type& element_type : tuple_type->elements )
+		for( const Type& element_type : tuple_type->element_types )
 		{
 			if( GetTypeNonSyncImpl( prev_types_stack, element_type, names_scope, src_loc ) )
 			{

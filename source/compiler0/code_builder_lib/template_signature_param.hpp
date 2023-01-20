@@ -37,8 +37,8 @@ public:
 
 	struct ArrayParam
 	{
-		std::shared_ptr<const TemplateSignatureParam> size;
-		std::shared_ptr<const TemplateSignatureParam> type;
+		std::shared_ptr<const TemplateSignatureParam> element_count;
+		std::shared_ptr<const TemplateSignatureParam> element_type;
 
 		bool operator==( const ArrayParam& other ) const;
 	};
@@ -52,7 +52,7 @@ public:
 
 	struct RawPointerParam
 	{
-		std::shared_ptr<const TemplateSignatureParam> type;
+		std::shared_ptr<const TemplateSignatureParam> element_type;
 
 		bool operator==( const RawPointerParam& other ) const;
 	};

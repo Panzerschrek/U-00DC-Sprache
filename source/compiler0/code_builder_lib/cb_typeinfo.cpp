@@ -47,13 +47,13 @@ Variable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<Type
 	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
-	list_type.elements.reserve( list.size() );
+	list_type.element_types.reserve( list.size() );
 	list_elements_llvm_types.reserve( list.size() );
 	list_elements_initializers.reserve( list.size() );
 
 	for( const TypeinfoListElement& list_element : list )
 	{
-		list_type.elements.emplace_back( list_element.type );
+		list_type.element_types.emplace_back( list_element.type );
 		list_elements_llvm_types.push_back( list_element.type->llvm_type );
 		list_elements_initializers.push_back( list_element.initializer );
 	}
@@ -119,7 +119,7 @@ Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root
 	if( const auto function_type= type.GetFunctionType() )
 	{
 		FunctionPointerType function_pointer_type;
-		function_pointer_type.function= *function_type;
+		function_pointer_type.function_type= *function_type;
 		function_pointer_type.llvm_type= function_type->llvm_type->getPointerTo();
 		src_type= std::move(function_pointer_type);
 	}
@@ -239,12 +239,12 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	}
 	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
-		add_size_field( "element_count", array_type->size );
-		add_typeinfo_field( "element_type", array_type->type );
+		add_size_field( "element_count", array_type->element_count );
+		add_typeinfo_field( "element_type", array_type->element_type );
 	}
 	else if( const TupleType* const tuple_type= type.GetTupleType() )
 	{
-		add_size_field( "element_count", tuple_type->elements.size() );
+		add_size_field( "element_count", tuple_type->element_types.size() );
 		add_list_field( "elements_list", BuildTypeinfoTupleElements( *tuple_type, root_namespace ) );
 	}
 	else if( const ClassPtr class_type= type.GetClassType() )
@@ -299,11 +299,11 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 	}
 	else if( const RawPointerType* const raw_pointer_type= type.GetRawPointerType() )
 	{
-		add_typeinfo_field( "element_type", raw_pointer_type->type );
+		add_typeinfo_field( "element_type", raw_pointer_type->element_type );
 	}
 	else if( const FunctionPointerType* const function_pointer_type= type.GetFunctionPointerType() )
 	{
-		add_typeinfo_field( "element_type", function_pointer_type->function );
+		add_typeinfo_field( "element_type", function_pointer_type->function_type );
 	}
 	else if( const FunctionType* const function_type= type.GetFunctionType() )
 	{
@@ -367,9 +367,9 @@ Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, N
 
 			{
 				ArrayType name_type;
-				name_type.type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
-				name_type.size= name.size();
-				name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
+				name_type.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
+				name_type.element_count= name.size();
+				name_type.llvm_type= llvm::ArrayType::get( name_type.element_type.GetLLVMType(), name_type.element_count );
 
 				ClassField field( node_type, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false );
 
@@ -399,9 +399,9 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 	{
 		ArrayType name_type;
-		name_type.type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
-		name_type.size= member_name.size();
-		name_type.llvm_type= llvm::ArrayType::get( name_type.type.GetLLVMType(), name_type.size );
+		name_type.element_type= FundamentalType( U_FundamentalType::char8_, fundamental_llvm_types_.char8_ );
+		name_type.element_count= member_name.size();
+		name_type.llvm_type= llvm::ArrayType::get( name_type.element_type.GetLLVMType(), name_type.element_count );
 
 		node_class.members->AddName(
 			g_name_field_name,
@@ -644,7 +644,7 @@ Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr& class_type,
 	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
-	list_type.elements.reserve( class_.parents.size() );
+	list_type.element_types.reserve( class_.parents.size() );
 	list_elements_llvm_types.reserve( class_.parents.size() );
 	list_elements_initializers.reserve( class_.parents.size() );
 
@@ -674,7 +674,7 @@ Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr& class_type,
 
 		FinishTypeinfoClass( node_type, fields_llvm_types );
 
-		list_type.elements.push_back( node_type );
+		list_type.element_types.push_back( node_type );
 		list_elements_llvm_types.push_back( node_type_class.llvm_type );
 		list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 	} // for parents
@@ -696,7 +696,7 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& functi
 	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
-	list_type.elements.reserve( function_type.params.size() );
+	list_type.element_types.reserve( function_type.params.size() );
 	list_elements_llvm_types.reserve( function_type.params.size() );
 	list_elements_initializers.reserve( function_type.params.size() );
 
@@ -734,7 +734,7 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& functi
 
 		FinishTypeinfoClass( node_type, fields_llvm_types );
 
-		list_type.elements.push_back( node_type );
+		list_type.element_types.push_back( node_type );
 		list_elements_llvm_types.push_back( node_type_class.llvm_type );
 		list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 	}
@@ -756,15 +756,15 @@ Variable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, N
 	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
 	std::vector< llvm::Constant* > list_elements_initializers;
-	list_type.elements.reserve( tuple_type.elements.size() );
-	list_elements_llvm_types.reserve( tuple_type.elements.size() );
-	list_elements_initializers.reserve( tuple_type.elements.size() );
+	list_type.element_types.reserve( tuple_type.element_types.size() );
+	list_elements_llvm_types.reserve( tuple_type.element_types.size() );
+	list_elements_initializers.reserve( tuple_type.element_types.size() );
 
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( tuple_type.llvm_type );
 
-	for( const Type& element_type : tuple_type.elements )
+	for( const Type& element_type : tuple_type.element_types )
 	{
-		const size_t element_index= size_t( &element_type - tuple_type.elements.data() );
+		const size_t element_index= size_t( &element_type - tuple_type.element_types.data() );
 
 		const ClassPtr node_type= CreateTypeinfoClass( root_namespace, tuple_type, g_typeinfo_tuple_elements_list_node_class_name + std::to_string(element_index) );
 		Class& node_type_class= *node_type;
@@ -797,7 +797,7 @@ Variable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, N
 		}
 		FinishTypeinfoClass( node_type, fields_llvm_types );
 
-		list_type.elements.push_back( node_type );
+		list_type.element_types.push_back( node_type );
 		list_elements_llvm_types.push_back( node_type_class.llvm_type );
 		list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
 	}

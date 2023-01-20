@@ -375,9 +375,9 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 	{
 		const ManglerState::NodeHolder result_node( mangler_state );
 		mangler_state.Push( "A" );
-		mangler_state.Push( std::to_string( array_type->size ) );
+		mangler_state.Push( std::to_string( array_type->element_count ) );
 		mangler_state.Push( "_" );
-		EncodeTypeName( mangler_state, array_type->type );
+		EncodeTypeName( mangler_state, array_type->element_type );
 	}
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
@@ -389,7 +389,7 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 		}
 
 		mangler_state.Push( "I" );
-		for( const Type& element_type : tuple_type->elements )
+		for( const Type& element_type : tuple_type->element_types )
 			EncodeTypeName( mangler_state, element_type );
 		mangler_state.Push( "E" );
 	}
@@ -431,13 +431,13 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 	{
 		const ManglerState::NodeHolder result_node( mangler_state );
 		mangler_state.Push( "P" );
-		EncodeTypeName( mangler_state, raw_pointer->type );
+		EncodeTypeName( mangler_state, raw_pointer->element_type );
 	}
 	else if( const auto function_pointer= type.GetFunctionPointerType() )
 	{
 		const ManglerState::NodeHolder result_node( mangler_state );
 		mangler_state.Push( "P" );
-		EncodeTypeName( mangler_state, function_pointer->function );
+		EncodeTypeName( mangler_state, function_pointer->function_type );
 	}
 	else if( const auto function= type.GetFunctionType() )
 	{

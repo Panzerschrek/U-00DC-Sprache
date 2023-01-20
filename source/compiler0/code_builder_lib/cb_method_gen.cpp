@@ -816,22 +816,22 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const ArrayType& array_type= *array_type_ptr;
 
 		GenerateLoop(
-			array_type.size,
+			array_type.element_count,
 			[&](llvm::Value* const counter_value)
 			{
 				BuildCopyConstructorPart(
 					CreateArrayElementGEP( function_context, array_type, dst, counter_value ),
 					CreateArrayElementGEP( function_context, array_type, src, counter_value ),
-					array_type.type,
+					array_type.element_type,
 					function_context );
 			},
 			function_context);
 	}
 	else if( const TupleType* const tuple_type= type.GetTupleType() )
 	{
-		for( const Type& element_type : tuple_type->elements )
+		for( const Type& element_type : tuple_type->element_types )
 		{
-			const auto index= size_t(&element_type - tuple_type->elements.data());
+			const auto index= size_t(&element_type - tuple_type->element_types.data());
 			BuildCopyConstructorPart(
 				CreateTupleElementGEP( function_context, *tuple_type, dst, index ),
 				CreateTupleElementGEP( function_context, *tuple_type, src, index ),
@@ -891,22 +891,22 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		const ArrayType& array_type= *array_type_ptr;
 
 		GenerateLoop(
-			array_type.size,
+			array_type.element_count,
 			[&](llvm::Value* const counter_value)
 			{
 				BuildCopyAssignmentOperatorPart(
 					CreateArrayElementGEP( function_context, array_type, dst, counter_value ),
 					CreateArrayElementGEP( function_context, array_type, src, counter_value ),
-					array_type.type,
+					array_type.element_type,
 					function_context );
 			},
 			function_context);
 	}
 	else if( const TupleType* const tuple_type= type.GetTupleType() )
 	{
-		for( const Type& element_type : tuple_type->elements )
+		for( const Type& element_type : tuple_type->element_types )
 		{
-			const auto index= size_t(&element_type - tuple_type->elements.data());
+			const auto index= size_t(&element_type - tuple_type->element_types.data());
 			BuildCopyAssignmentOperatorPart(
 				CreateTupleElementGEP( function_context, *tuple_type, dst, index ),
 				CreateTupleElementGEP( function_context, *tuple_type, src, index ),
@@ -977,13 +977,13 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 	else if( const auto array_type= type.GetArrayType() )
 	{
 		GenerateLoop(
-			array_type->size,
+			array_type->element_count,
 			[&](llvm::Value* const counter_value )
 			{
 				BuildEqualityCompareOperatorPart(
 					CreateArrayElementGEP( function_context, *array_type, l_address, counter_value ),
 					CreateArrayElementGEP( function_context, *array_type, r_address, counter_value ),
-					array_type->type,
+					array_type->element_type,
 					false_basic_block,
 					function_context );
 			},
@@ -991,9 +991,9 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 	}
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
-		for( const Type& element_type : tuple_type->elements )
+		for( const Type& element_type : tuple_type->element_types )
 		{
-			const auto index= size_t(&element_type - tuple_type->elements.data());
+			const auto index= size_t(&element_type - tuple_type->element_types.data());
 			BuildEqualityCompareOperatorPart(
 				CreateTupleElementGEP( function_context, *tuple_type, l_address, index ),
 				CreateTupleElementGEP( function_context, *tuple_type, r_address, index ),
@@ -1087,14 +1087,14 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 	{
 		llvm::Constant* res= llvm::ConstantInt::getTrue( llvm_context_ );
 
-		for( uint64_t i= 0; i < array_type->size; ++i )
+		for( uint64_t i= 0; i < array_type->element_count; ++i )
 			res=
 				llvm::ConstantExpr::getAnd(
 					res,
 					ConstexprCompareEqual(
 						l->getAggregateElement( static_cast<unsigned int>(i) ),
 						r->getAggregateElement( static_cast<unsigned int>(i) ),
-						array_type->type,
+						array_type->element_type,
 						names,
 						src_loc ) );
 
@@ -1104,9 +1104,9 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 	{
 		llvm::Constant* res= llvm::ConstantInt::getTrue( llvm_context_ );
 
-		for( const Type& element_type : tuple_type->elements )
+		for( const Type& element_type : tuple_type->element_types )
 		{
-			const size_t i= size_t( &element_type - tuple_type->elements.data() );
+			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
 			res=
 				llvm::ConstantExpr::getAnd(
 					res,
@@ -1171,18 +1171,18 @@ void CodeBuilder::MoveConstantToMemory(
 
 	if( const auto array_type= type.GetArrayType() )
 	{
-		for( uint64_t i= 0u; i < array_type->size; ++i )
+		for( uint64_t i= 0u; i < array_type->element_count; ++i )
 			MoveConstantToMemory(
-				array_type->type,
+				array_type->element_type,
 				CreateArrayElementGEP( function_context, *array_type, ptr, i ),
 				constant->getAggregateElement(uint32_t(i)),
 				function_context );
 	}
 	else if( const auto tuple_type= type.GetTupleType() )
 	{
-		for( size_t i= 0; i < tuple_type->elements.size(); ++i )
+		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
 			MoveConstantToMemory(
-				tuple_type->elements[i],
+				tuple_type->element_types[i],
 				CreateTupleElementGEP( function_context, *tuple_type, ptr, i ),
 				constant->getAggregateElement(uint32_t(i)),
 				function_context );

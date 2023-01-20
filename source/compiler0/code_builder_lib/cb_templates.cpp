@@ -376,10 +376,10 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	std::vector<bool>& template_parameters_usage_flags )
 {
 	TemplateSignatureParam::ArrayParam array_param;
-	array_param.size= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( *array_type_name.size, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
-	array_param.type= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( *array_type_name.element_type, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
+	array_param.element_count= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( *array_type_name.size, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
+	array_param.element_type= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( *array_type_name.element_type, names_scope, function_context, template_parameters, template_parameters_usage_flags ) );
 
-	if( array_param.size->IsVariable() && array_param.type->IsType() )
+	if( array_param.element_count->IsVariable() && array_param.element_type->IsType() )
 		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, array_type_name ) };
 
 	return std::move(array_param);
@@ -467,7 +467,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	std::vector<bool>& template_parameters_usage_flags )
 {
 	TemplateSignatureParam::RawPointerParam raw_pointer_param;
-	raw_pointer_param.type=
+	raw_pointer_param.element_type=
 		std::make_unique<TemplateSignatureParam>(
 			CreateTemplateSignatureParameter(
 				*raw_pointer_type_name.element_type,
@@ -476,7 +476,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 				template_parameters,
 				template_parameters_usage_flags ) );
 
-	if( raw_pointer_param.type->IsType() )
+	if( raw_pointer_param.element_type->IsType() )
 		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, raw_pointer_type_name ) };
 
 	return raw_pointer_param;
@@ -650,7 +650,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		if( const auto given_array_type= given_type->GetArrayType() )
 		{
-			if( !MatchTemplateArg( template_, args_names_scope, given_array_type->type, src_loc, *template_param.type ) )
+			if( !MatchTemplateArg( template_, args_names_scope, given_array_type->element_type, src_loc, *template_param.element_type ) )
 				return false;
 
 			Variable size_variable;
@@ -658,9 +658,9 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			size_variable.constexpr_value=
 				llvm::ConstantInt::get(
 					size_type_.GetLLVMType(),
-					llvm::APInt( static_cast<unsigned int>(size_type_.GetFundamentalType()->GetSize() * 8), given_array_type->size ) );
+					llvm::APInt( static_cast<unsigned int>(size_type_.GetFundamentalType()->GetSize() * 8), given_array_type->element_count ) );
 
-			if( !MatchTemplateArg( template_, args_names_scope, size_variable, src_loc, *template_param.size ) )
+			if( !MatchTemplateArg( template_, args_names_scope, size_variable, src_loc, *template_param.element_count ) )
 				return false;
 
 			return true;
@@ -681,12 +681,12 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		if( const auto given_tuple_type= given_type->GetTupleType() )
 		{
-			if( given_tuple_type->elements.size() != template_param.element_types.size() )
+			if( given_tuple_type->element_types.size() != template_param.element_types.size() )
 				return false;
 
 			for( size_t i= 0; i < template_param.element_types.size(); ++i )
 			{
-				if( !MatchTemplateArg( template_, args_names_scope, given_tuple_type->elements[i], src_loc, template_param.element_types[i] ) )
+				if( !MatchTemplateArg( template_, args_names_scope, given_tuple_type->element_types[i], src_loc, template_param.element_types[i] ) )
 					return false;
 			}
 
@@ -708,7 +708,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		if( const auto given_raw_ponter_type= given_type->GetRawPointerType() )
 		{
-			return MatchTemplateArg( template_, args_names_scope, given_raw_ponter_type->type, src_loc, *template_param.type );
+			return MatchTemplateArg( template_, args_names_scope, given_raw_ponter_type->element_type, src_loc, *template_param.element_type );
 		}
 	}
 
@@ -726,7 +726,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		if( const auto given_function_pointer_type= given_type->GetFunctionPointerType() )
 		{
-			const FunctionType& given_function_type= given_function_pointer_type->function;
+			const FunctionType& given_function_type= given_function_pointer_type->function_type;
 
 			if( !(
 				given_function_type.unsafe == template_param.is_unsafe &&

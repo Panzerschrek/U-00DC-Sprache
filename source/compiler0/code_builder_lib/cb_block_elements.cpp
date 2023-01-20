@@ -610,14 +610,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( const TupleType* const tuple_type= sequence_expression.type.GetTupleType() )
 	{
-		llvm::BasicBlock* const finish_basic_block= tuple_type->elements.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
+		llvm::BasicBlock* const finish_basic_block= tuple_type->element_types.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
 
 		std::vector<ReferencesGraph> break_variables_states;
 
 		U_ASSERT( sequence_expression.location == Variable::Location::Pointer );
-		for( const Type& element_type : tuple_type->elements )
+		for( const Type& element_type : tuple_type->element_types )
 		{
-			const size_t element_index= size_t( &element_type - tuple_type->elements.data() );
+			const size_t element_index= size_t( &element_type - tuple_type->element_types.data() );
 			const std::string variable_name= for_operator.loop_variable_name_ + std::to_string(element_index);
 			NamesScope loop_names( "", &names );
 			const StackVariablesStorage element_pass_variables_storage( function_context );
@@ -686,7 +686,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			loop_names.AddName( for_operator.loop_variable_name_, Value( std::move(variable), for_operator.src_loc_ ) );
 
-			const bool is_last_iteration= element_index + 1u == tuple_type->elements.size();
+			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
 			llvm::BasicBlock* const next_basic_block=
 				is_last_iteration ? finish_basic_block : llvm::BasicBlock::Create( llvm_context_ );
 			function_context.loops_stack.emplace_back();
@@ -742,7 +742,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 		}
 
-		if( tuple_type->elements.empty() )
+		if( tuple_type->element_types.empty() )
 		{} // Just keep variables state.
 		// Variables state after tuple-for is combination of variables state of all branches with "break" of all iterations.
 		else if( !break_variables_states.empty() )
@@ -1748,15 +1748,15 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	}
 	else if( const auto raw_poiter_type= variable->type.GetRawPointerType() )
 	{
-		if( !EnsureTypeComplete( raw_poiter_type->type ) )
+		if( !EnsureTypeComplete( raw_poiter_type->element_type ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, block_names.GetErrors(), src_loc, raw_poiter_type->type );
+			REPORT_ERROR( UsingIncompleteType, block_names.GetErrors(), src_loc, raw_poiter_type->element_type );
 			return;
 		}
 
 		llvm::Value* const ptr_value= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
 		llvm::Value* const one= llvm::ConstantInt::get( fundamental_llvm_types_.int_ptr, positive ? uint64_t(1u) : ~uint64_t(0), true );
-		llvm::Value* const new_value= function_context.llvm_ir_builder.CreateGEP( raw_poiter_type->type.GetLLVMType(), ptr_value, one );
+		llvm::Value* const new_value= function_context.llvm_ir_builder.CreateGEP( raw_poiter_type->element_type.GetLLVMType(), ptr_value, one );
 
 		U_ASSERT( variable->location == Variable::Location::Pointer );
 		CreateTypedStore( function_context, variable->type, new_value, variable->llvm_value );

@@ -110,7 +110,7 @@ bool operator!=( const FundamentalType& l, const FundamentalType& r )
 
 bool operator==( const TupleType& l, const TupleType& r )
 {
-	return l.elements == r.elements;
+	return l.element_types == r.element_types;
 }
 
 bool operator!=( const TupleType& l, const TupleType& r )
@@ -238,11 +238,11 @@ bool Type::IsDefaultConstructible() const
 	else if( const auto class_type= GetClassType() )
 		return class_type->is_default_constructible;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->size == 0u || array_type->type.IsDefaultConstructible();
+		return array_type->element_count == 0u || array_type->element_type.IsDefaultConstructible();
 	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool default_constructible= true;
-		for( const Type& element : tuple_type->elements )
+		for( const Type& element : tuple_type->element_types )
 			default_constructible= default_constructible && element.IsDefaultConstructible();
 		return default_constructible;
 	}
@@ -260,11 +260,11 @@ bool Type::IsCopyConstructible() const
 	else if( const auto class_type= GetClassType() )
 		return class_type->is_copy_constructible;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->size == 0u || array_type->type.IsCopyConstructible();
+		return array_type->element_count == 0u || array_type->element_type.IsCopyConstructible();
 	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool copy_constructible= true;
-		for( const Type& element : tuple_type->elements )
+		for( const Type& element : tuple_type->element_types )
 			copy_constructible= copy_constructible && element.IsCopyConstructible();
 		return copy_constructible;
 	}
@@ -282,11 +282,11 @@ bool Type::IsCopyAssignable() const
 	else if( const auto class_type= GetClassType() )
 		return class_type->is_copy_assignable;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->size == 0u || array_type->type.IsCopyAssignable();
+		return array_type->element_count == 0u || array_type->element_type.IsCopyAssignable();
 	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool copy_assignable= true;
-		for( const Type& element : tuple_type->elements )
+		for( const Type& element : tuple_type->element_types )
 			copy_assignable= copy_assignable && element.IsCopyAssignable();
 		return copy_assignable;
 	}
@@ -304,11 +304,11 @@ bool Type::IsEqualityComparable() const
 	else if( const auto class_type= GetClassType() )
 		return class_type->is_equality_comparable;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->type.IsEqualityComparable();
+		return array_type->element_type.IsEqualityComparable();
 	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool equality_comparable= true;
-		for( const Type& element : tuple_type->elements )
+		for( const Type& element : tuple_type->element_types )
 			equality_comparable= equality_comparable && element.IsEqualityComparable();
 		return equality_comparable;
 	}
@@ -321,11 +321,11 @@ bool Type::HaveDestructor() const
 	if( const auto class_type= GetClassType() )
 		return class_type->have_destructor;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->type.HaveDestructor();
+		return array_type->element_type.HaveDestructor();
 	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool have_destructor= false;
-		for( const Type& element : tuple_type->elements )
+		for( const Type& element : tuple_type->element_types )
 			have_destructor= have_destructor || element.HaveDestructor();
 		return have_destructor;
 	}
@@ -344,11 +344,11 @@ bool Type::CanBeConstexpr() const
 	else if( const auto class_type= GetClassType() )
 		return class_type->can_be_constexpr;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->type.CanBeConstexpr();
+		return array_type->element_type.CanBeConstexpr();
 	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool can_be_constexpr= true;
-		for( const Type& element : tuple_type->elements )
+		for( const Type& element : tuple_type->element_types )
 			can_be_constexpr= can_be_constexpr && element.CanBeConstexpr();
 		return can_be_constexpr;
 	}
@@ -366,11 +366,11 @@ bool Type::IsAbstract() const
 	else if( const auto class_type= GetClassType() )
 		return class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::Interface;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->size > 0u && array_type->type.IsAbstract();
+		return array_type->element_count > 0u && array_type->element_type.IsAbstract();
 	else if( const auto tuple_type= GetTupleType() )
 	{
 		bool is_abstract= false;
-		for( const Type& element : tuple_type->elements )
+		for( const Type& element : tuple_type->element_types )
 			is_abstract= is_abstract || element.IsAbstract();
 		return is_abstract;
 	}
@@ -388,11 +388,11 @@ InnerReferenceType Type::GetInnerReferenceType() const
 	if( const auto class_type= GetClassType() )
 		return class_type->inner_reference_type;
 	else if( const auto array_type= GetArrayType() )
-		return array_type->type.GetInnerReferenceType();
+		return array_type->element_type.GetInnerReferenceType();
 	else if( const auto tuple_type= GetTupleType() )
 	{
 		InnerReferenceType result= InnerReferenceType::None;
-		for( const Type& element : tuple_type->elements )
+		for( const Type& element : tuple_type->element_types )
 			result= std::max( result, element.GetInnerReferenceType() );
 		return result;
 	}
@@ -422,23 +422,23 @@ std::string Type::ToString() const
 		std::string operator()( const ArrayPtr& array ) const
 		{
 			return
-				"[ " + array->type.ToString() + ", " +
-				std::to_string( array->size ) + " ]";
+				"[ " + array->element_type.ToString() + ", " +
+				std::to_string( array->element_count ) + " ]";
 		}
 
 		std::string operator()( const RawPointerPtr& raw_pointer ) const
 		{
-			return "$( " + raw_pointer->type.ToString() + " )";
+			return "$( " + raw_pointer->element_type.ToString() + " )";
 		}
 
 		std::string operator()( const TupleTypePtr& tuple ) const
 		{
 			std::string res= "tup[ ";
 
-			for( const Type& element_type : tuple->elements )
+			for( const Type& element_type : tuple->element_types )
 			{
 				res+= element_type.ToString();
-				if( &element_type != & tuple->elements.back() )
+				if( &element_type != & tuple->element_types.back() )
 					res+= ", ";
 			}
 			res+= " ]";
@@ -493,7 +493,7 @@ std::string Type::ToString() const
 
 		std::string operator()( const FunctionPointerPtr& function_pointer ) const
 		{
-			return ProcessFunctionType( function_pointer->function );
+			return ProcessFunctionType( function_pointer->function_type );
 		}
 
 	private:
@@ -547,18 +547,18 @@ size_t Type::Hash() const
 
 		size_t operator()( const ArrayPtr& array ) const
 		{
-			return llvm::hash_combine( array->type.Hash(), array->size );
+			return llvm::hash_combine( array->element_type.Hash(), array->element_count );
 		}
 
 		size_t operator()( const RawPointerPtr& raw_pointer ) const
 		{
-			return raw_pointer->type.Hash();
+			return raw_pointer->element_type.Hash();
 		}
 
 		size_t operator()( const TupleTypePtr& tuple ) const
 		{
 			size_t hash= 0;
-			for( const Type& element : tuple->elements )
+			for( const Type& element : tuple->element_types )
 				hash= llvm::hash_combine( hash, element.Hash() );
 			return hash;
 		}
@@ -575,7 +575,7 @@ size_t Type::Hash() const
 
 		size_t operator()( const FunctionPointerPtr& function_pointer ) const
 		{
-			return ProcessFunctionType( function_pointer->function );
+			return ProcessFunctionType( function_pointer->function_type );
 		}
 
 	private:
@@ -659,7 +659,7 @@ bool operator!=( const Type& l, const Type& r )
 
 bool operator==( const ArrayType& l, const ArrayType& r )
 {
-	return l.type == r.type && l.size == r.size;
+	return l.element_type == r.element_type && l.element_count == r.element_count;
 }
 
 bool operator!=( const ArrayType& l, const ArrayType& r )
@@ -669,7 +669,7 @@ bool operator!=( const ArrayType& l, const ArrayType& r )
 
 bool operator==( const RawPointerType& l, const RawPointerType& r )
 {
-	return l.type == r.type;
+	return l.element_type == r.element_type;
 }
 
 bool operator!=( const RawPointerType& l, const RawPointerType& r )
@@ -817,7 +817,7 @@ std::string FunctionParamsToString( const ArgsVector<FunctionType::Param>& param
 
 bool operator==( const FunctionPointerType& l, const FunctionPointerType& r )
 {
-	return l.function == r.function;
+	return l.function_type == r.function_type;
 }
 bool operator!=( const FunctionPointerType& l, const FunctionPointerType& r )
 {
