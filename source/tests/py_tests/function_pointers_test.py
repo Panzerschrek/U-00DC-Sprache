@@ -262,9 +262,11 @@ def FunctionPointerEqualityComparision_Test1():
 			var (fn()) constexpr ptr_0= a;
 			var (fn()) constexpr ptr_1= b;
 			static_assert( ptr_0 == ptr_0 );
-			static_assert( ptr_0 != ptr_1 );
 			static_assert( !( ptr_0 != ptr_0 ) );
-			static_assert( !( ptr_1 == ptr_0 ) );
+
+			// See llvm-15.0.7.src/lib/IR/ConstantFold.cpp:1373. It seems, like "unnamed_addr" functions constant pointers may be equal.
+			//static_assert( ptr_0 != ptr_1 );
+			//static_assert( !( ptr_1 == ptr_0 ) );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

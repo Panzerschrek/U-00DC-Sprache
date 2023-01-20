@@ -52,7 +52,7 @@ bool WriteDepFile(
 	}
 
 	std::error_code file_error_code;
-	llvm::raw_fd_ostream deps_file_stream( dep_file_path, file_error_code, llvm::sys::fs::F_None );
+	llvm::raw_fd_ostream deps_file_stream( dep_file_path, file_error_code );
 	deps_file_stream << str;
 
 	deps_file_stream.flush();

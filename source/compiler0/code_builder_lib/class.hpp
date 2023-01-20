@@ -42,7 +42,7 @@ public:
 		bool is_pure= false;
 		bool is_final= false;
 
-		// Virtual table may consist of many nested structs, because virtual table of child contains wirtual tables of parents.
+		// Virtual table may consist of many nested structs, because virtual table of child contains virtual tables of parents.
 		uint32_t index_in_table = ~0u;
 		uint32_t parent_virtual_table_index= ~0u;
 	};

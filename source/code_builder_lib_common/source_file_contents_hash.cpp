@@ -1,4 +1,5 @@
 #include "push_disable_llvm_warnings.hpp"
+#include <llvm/ADT/SmallString.h>
 #include <llvm/Support/MD5.h>
 #include "pop_llvm_warnings.hpp"
 
@@ -16,7 +17,7 @@ std::string CalculateSourceFileContentsHash( const std::string_view contents )
 
 	llvm::SmallString<32> str_result;
 	llvm::MD5::stringifyResult( result, str_result );
-	return str_result.str();
+	return str_result.str().str();
 }
 
 } // namespace U

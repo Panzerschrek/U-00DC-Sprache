@@ -277,7 +277,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, Variable& typeinfo_variab
 			llvm::Value* const gep_indices[]{ GetZeroGEPIndex(), GetZeroGEPIndex(), GetZeroGEPIndex() };
 			const auto address=
 				llvm::ConstantExpr::getGetElementPtr(
-					class_type->polymorph_type_id_table->getType()->getPointerElementType(),
+					class_type->polymorph_type_id_table->getInitializer()->getType(),
 					class_type->polymorph_type_id_table,
 					gep_indices );
 			fields_initializers.push_back( address );
@@ -625,7 +625,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr& class_typ
 
 				list_elements.push_back(
 					TypeinfoListElement{
-						function.llvm_function->getName(), // Sort, using function mangled name.
+						function.llvm_function->getName().str(), // Sort, using function mangled name.
 						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 						node_type } );
 			} // for functions with same name

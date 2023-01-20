@@ -57,7 +57,7 @@ public:
 	// This needed for reducing exponential expression evaluation complexity.
 	ust::unordered_map</ ust::shared_ptr_final</Synt::Expression/>, VariableTypeExtended /> args_preevaluation_cache;
 
-	type VariablesFrame= ust::vector</ NamesScopeVariable />;
+	type VariablesFrame= ust::vector</ Variable />;
 	ust::vector</VariablesFrame/> variables_frames;
 
 	ReferencesGraph references_graph;

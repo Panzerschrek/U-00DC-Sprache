@@ -299,6 +299,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		if( initializer_experrsion.value_type == ValueType::Value &&
+			initializer_experrsion.location == Variable::Location::Pointer &&
 			initializer_experrsion.llvm_value->getType() == variable.type.GetLLVMType()->getPointerTo() &&
 			( llvm::dyn_cast<llvm::AllocaInst>(initializer_experrsion.llvm_value) != nullptr || llvm::dyn_cast<llvm::Argument>(initializer_experrsion.llvm_value) != nullptr ) )
 		{
@@ -329,7 +330,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( initializer_experrsion.llvm_value != variable.llvm_value )
 			{
-				CopyBytes( variable.llvm_value, initializer_experrsion.llvm_value, variable.type, function_context );
+				if( initializer_experrsion.location == Variable::Location::LLVMRegister )
+					CreateTypedStore( function_context, initializer_experrsion.type, initializer_experrsion.llvm_value, variable.llvm_value );
+				else
+					CopyBytes( variable.llvm_value, initializer_experrsion.llvm_value, variable.type, function_context );
 				if( initializer_experrsion.location == Variable::Location::Pointer )
 					CreateLifetimeEnd( function_context, initializer_experrsion.llvm_value );
 			}
@@ -641,7 +645,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					continue;
 				}
 
-				variable.llvm_value= CreateTupleElementGEP( function_context, sequence_expression.llvm_value, element_index );
+				variable.llvm_value= CreateTupleElementGEP( function_context, sequence_expression, element_index );
 
 				CreateReferenceVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
 
@@ -675,7 +679,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				BuildCopyConstructorPart(
 					variable.llvm_value,
-					CreateTupleElementGEP( function_context, sequence_expression.llvm_value, element_index ),
+					CreateTupleElementGEP( function_context, sequence_expression, element_index ),
 					element_type,
 					function_context );
 			}
@@ -1065,6 +1069,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 		if( expr.value_type == ValueType::Value &&
+			expr.location == Variable::Location::Pointer &&
 			expr.llvm_value->getType() == variable.type.GetLLVMType()->getPointerTo() &&
 			( llvm::dyn_cast<llvm::AllocaInst>(expr.llvm_value) != nullptr || llvm::dyn_cast<llvm::Argument>(expr.llvm_value) != nullptr ) )
 		{
@@ -1093,7 +1098,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( variable.llvm_value != expr.llvm_value )
 			{
-				CopyBytes( variable.llvm_value, expr.llvm_value, variable.type, function_context );
+				if( expr.location == Variable::Location::LLVMRegister )
+					CreateTypedStore( function_context, expr.type, expr.llvm_value, variable.llvm_value );
+				else
+					CopyBytes( variable.llvm_value, expr.llvm_value, variable.type, function_context );
 				if( expr.location == Variable::Location::Pointer )
 					CreateLifetimeEnd( function_context, expr.llvm_value );
 			}

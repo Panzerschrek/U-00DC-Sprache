@@ -133,7 +133,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		base_variable.type= the_class.base_class;
 		base_variable.value_type= ValueType::ReferenceMut;
 
-		base_variable.llvm_value= CreateBaseClassGEP( function_context, this_llvm_value );
+		base_variable.llvm_value= CreateBaseClassGEP( function_context, *class_type, this_llvm_value );
 
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), SrcLoc()/*TODO*/, base_variable, *the_class.members, function_context );
 	}
@@ -160,7 +160,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 			field_variable.type= field.type;
 			field_variable.value_type= ValueType::ReferenceMut;
 
-			field_variable.llvm_value= CreateClassFiledGEP( function_context, this_llvm_value, field.index );
+			field_variable.llvm_value= CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
@@ -308,8 +308,8 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 	if( the_class.base_class != nullptr )
 	{
 		BuildCopyConstructorPart(
-			CreateBaseClassGEP( function_context, this_llvm_value ),
-			CreateBaseClassGEP( function_context, src_llvm_value  ),
+			CreateBaseClassGEP( function_context, *class_type, this_llvm_value ),
+			CreateBaseClassGEP( function_context, *class_type, src_llvm_value  ),
 			the_class.base_class,
 			function_context );
 	}
@@ -321,8 +321,8 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 
 		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->GetClassField();
 
-		const auto dst= CreateClassFiledGEP( function_context, this_llvm_value, field.index );
-		const auto src= CreateClassFiledGEP( function_context, src_llvm_value,  field.index );
+		const auto dst= CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index );
+		const auto src= CreateClassFieldGEP( function_context, *class_type, src_llvm_value,  field.index );
 
 		if( field.is_reference )
 		{
@@ -572,8 +572,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 	if( the_class.base_class != nullptr )
 	{
 		BuildCopyAssignmentOperatorPart(
-			CreateBaseClassGEP( function_context, this_llvm_value ),
-			CreateBaseClassGEP( function_context, src_llvm_value  ),
+			CreateBaseClassGEP( function_context, *class_type, this_llvm_value ),
+			CreateBaseClassGEP( function_context, *class_type, src_llvm_value  ),
 			the_class.base_class,
 			function_context );
 	}
@@ -587,8 +587,8 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 		U_ASSERT( field.type.IsCopyAssignable() );
 
 		BuildCopyAssignmentOperatorPart(
-			CreateClassFiledGEP( function_context, this_llvm_value, field.index ),
-			CreateClassFiledGEP( function_context, src_llvm_value,  field.index ),
+			CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index ),
+			CreateClassFieldGEP( function_context, *class_type, src_llvm_value,  field.index ),
 			field.type,
 			function_context );
 	}
@@ -736,8 +736,8 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 		U_ASSERT( the_class.base_class->is_equality_comparable );
 
 		BuildEqualityCompareOperatorPart(
-			CreateBaseClassGEP( function_context, l_address ),
-			CreateBaseClassGEP( function_context, r_address ),
+			CreateBaseClassGEP( function_context, *class_type, l_address ),
+			CreateBaseClassGEP( function_context, *class_type, r_address ),
 			the_class.base_class,
 			false_basic_block,
 			function_context );
@@ -752,8 +752,8 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 		U_ASSERT( field.type.IsEqualityComparable() );
 
 		BuildEqualityCompareOperatorPart(
-			CreateClassFiledGEP( function_context, l_address, field.index ),
-			CreateClassFiledGEP( function_context, r_address, field.index ),
+			CreateClassFieldGEP( function_context, *class_type, l_address, field.index ),
+			CreateClassFieldGEP( function_context, *class_type, r_address, field.index ),
 			field.type,
 			false_basic_block,
 			function_context );
@@ -807,12 +807,9 @@ void CodeBuilder::BuildCopyConstructorPart(
 		type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
-		if( type == void_type_ ){} // Do nothing for "void".
-		else if( src->getType() == dst->getType() )
+		U_ASSERT( src->getType() == dst->getType() );
+		if( type != void_type_ )
 			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
-		else if( src->getType() == dst->getType()->getPointerElementType() )
-			CreateTypedStore( function_context, type, src, dst );
-		else U_ASSERT( false );
 	}
 	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
 	{
@@ -823,8 +820,8 @@ void CodeBuilder::BuildCopyConstructorPart(
 			[&](llvm::Value* const counter_value)
 			{
 				BuildCopyConstructorPart(
-					CreateArrayElementGEP( function_context, dst, counter_value ),
-					CreateArrayElementGEP( function_context, src, counter_value ),
+					CreateArrayElementGEP( function_context, array_type, dst, counter_value ),
+					CreateArrayElementGEP( function_context, array_type, src, counter_value ),
 					array_type.type,
 					function_context );
 			},
@@ -836,8 +833,8 @@ void CodeBuilder::BuildCopyConstructorPart(
 		{
 			const auto index= size_t(&element_type - tuple_type->elements.data());
 			BuildCopyConstructorPart(
-				CreateTupleElementGEP( function_context, dst, index ),
-				CreateTupleElementGEP( function_context, src, index ),
+				CreateTupleElementGEP( function_context, *tuple_type, dst, index ),
+				CreateTupleElementGEP( function_context, *tuple_type, src, index ),
 				element_type,
 				function_context );
 		}
@@ -885,12 +882,9 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		type.GetFunctionPointerType() != nullptr )
 	{
 		// Create simple load-store.
-		if( type == void_type_ ){} // Do nothing for "void".
-		else if( src->getType() == dst->getType() )
+		U_ASSERT( src->getType() == dst->getType() );
+		if( type != void_type_ )
 			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
-		else if( src->getType() == dst->getType()->getPointerElementType() )
-			CreateTypedStore( function_context, type, src, dst );
-		else U_ASSERT( false );
 	}
 	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
 	{
@@ -901,8 +895,8 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 			[&](llvm::Value* const counter_value)
 			{
 				BuildCopyAssignmentOperatorPart(
-					CreateArrayElementGEP( function_context, dst, counter_value ),
-					CreateArrayElementGEP( function_context, src, counter_value ),
+					CreateArrayElementGEP( function_context, array_type, dst, counter_value ),
+					CreateArrayElementGEP( function_context, array_type, src, counter_value ),
 					array_type.type,
 					function_context );
 			},
@@ -914,8 +908,8 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		{
 			const auto index= size_t(&element_type - tuple_type->elements.data());
 			BuildCopyAssignmentOperatorPart(
-				CreateTupleElementGEP( function_context, dst, index ),
-				CreateTupleElementGEP( function_context, src, index ),
+				CreateTupleElementGEP( function_context, *tuple_type, dst, index ),
+				CreateTupleElementGEP( function_context, *tuple_type, src, index ),
 				element_type,
 				function_context );
 		}
@@ -987,8 +981,8 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 			[&](llvm::Value* const counter_value )
 			{
 				BuildEqualityCompareOperatorPart(
-					CreateArrayElementGEP( function_context, l_address, counter_value ),
-					CreateArrayElementGEP( function_context, r_address, counter_value ),
+					CreateArrayElementGEP( function_context, *array_type, l_address, counter_value ),
+					CreateArrayElementGEP( function_context, *array_type, r_address, counter_value ),
 					array_type->type,
 					false_basic_block,
 					function_context );
@@ -1001,8 +995,8 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 		{
 			const auto index= size_t(&element_type - tuple_type->elements.data());
 			BuildEqualityCompareOperatorPart(
-				CreateTupleElementGEP( function_context, l_address, index ),
-				CreateTupleElementGEP( function_context, r_address, index ),
+				CreateTupleElementGEP( function_context, *tuple_type, l_address, index ),
+				CreateTupleElementGEP( function_context, *tuple_type, r_address, index ),
 				element_type,
 				false_basic_block,
 				function_context );
@@ -1057,12 +1051,10 @@ void CodeBuilder::CopyBytes(
 	llvm::Type* const llvm_type= type.GetLLVMType();
 	if( llvm_type->isIntegerTy() || llvm_type->isFloatingPointTy() || llvm_type->isPointerTy() )
 	{
+		U_ASSERT( src->getType() == dst->getType() );
 		// Create simple load-store.
-		if( src->getType() == dst->getType() )
+		if( type != void_type_ )
 			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
-		else if( src->getType() == dst->getType()->getPointerElementType() )
-			CreateTypedStore( function_context, type, src, dst );
-		else U_ASSERT(false);
 	}
 	else
 	{
@@ -1149,7 +1141,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 		U_ASSERT( op != nullptr );
 
 		const ConstexprFunctionEvaluator::Result evaluation_result=
-			constexpr_function_evaluator_.Evaluate( op->llvm_function, { l, r } );
+			constexpr_function_evaluator_.Evaluate( op->llvm_function, fundamental_llvm_types_.bool_, { l, r } );
 
 		for( const std::string& error_text : evaluation_result.errors )
 		{
@@ -1171,35 +1163,53 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 }
 
 void CodeBuilder::MoveConstantToMemory(
+	const Type& type,
 	llvm::Value* const ptr, llvm::Constant* const constant,
 	FunctionContext& function_context )
 {
-	llvm::Type* const type= constant->getType();
-	if( type->isStructTy() )
+	// TODO - use just "store" instruction.
+
+	if( const auto array_type= type.GetArrayType() )
 	{
-		llvm::StructType* const struct_type= llvm::dyn_cast<llvm::StructType>(type);
-		for( unsigned int i= 0u; i < struct_type->getNumElements(); ++i )
-		{
+		for( uint64_t i= 0u; i < array_type->size; ++i )
 			MoveConstantToMemory(
-				CreateClassFiledGEP( function_context, ptr, i ),
-				constant->getAggregateElement(i),
+				array_type->type,
+				CreateArrayElementGEP( function_context, *array_type, ptr, i ),
+				constant->getAggregateElement(uint32_t(i)),
 				function_context );
+	}
+	else if( const auto tuple_type= type.GetTupleType() )
+	{
+		for( size_t i= 0; i < tuple_type->elements.size(); ++i )
+			MoveConstantToMemory(
+				tuple_type->elements[i],
+				CreateTupleElementGEP( function_context, *tuple_type, ptr, i ),
+				constant->getAggregateElement(uint32_t(i)),
+				function_context );
+	}
+	else if( const auto class_type= type.GetClassType() )
+	{
+		U_ASSERT( class_type->parents.empty() ); // Constexpr structs should not have parents.
+		U_ASSERT( class_type->kind == Class::Kind::Struct || class_type->kind == Class::Kind::NonPolymorph ); // It's not possible for polymproh class to be constexpr.
+
+		for( const std::string& field_name : class_type->fields_order )
+		{
+			const size_t field_index= size_t(&field_name - class_type->fields_order.data());
+			const auto field= class_type->members->GetThisScopeValue(field_name)->GetClassField();
+			llvm::Constant* const field_element= constant->getAggregateElement(uint32_t(field_index));
+			llvm::Value* const field_ptr= CreateClassFieldGEP( function_context, *class_type, ptr, field_index );
+
+			if( field->is_reference )
+				CreateTypedReferenceStore( function_context, field->type, field_element, field_ptr );
+			else
+				MoveConstantToMemory( field->type, field_ptr, field_element, function_context );
 		}
 	}
-	else if( type->isArrayTy() )
+	else
 	{
-		llvm::ArrayType* const array_type= llvm::dyn_cast<llvm::ArrayType>(type);
-		for( unsigned int i= 0u; i < array_type->getNumElements(); ++i )
-		{
-			MoveConstantToMemory(
-				CreateArrayElementGEP( function_context, ptr, i ),
-				constant->getAggregateElement(i),
-				function_context );
-		}
+		// Assume this is scalar type.
+		CreateTypedStore( function_context, type, constant, ptr );
 	}
-	else if( type->isIntegerTy() || type->isFloatingPointTy() )
-		function_context.llvm_ir_builder.CreateStore( constant, ptr );
-	else U_ASSERT(false);
 }
 
 bool CodeBuilder::IsDefaultConstructor( const FunctionType& function_type, const Type& base_class )

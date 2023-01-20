@@ -17,6 +17,7 @@ using ConstexprFunctionEvaluatorErrorHandlerFunc= void(*)( void* user_data, cons
 extern "C" LLVMValueRef U1_ConstexprFunctionEvaluatorEvaluate(
 	U::ConstexprFunctionEvaluator& constexpr_function_evaluator,
 	const LLVMValueRef function,
+	const LLVMTypeRef return_type,
 	const LLVMValueRef* const args_start,
 	const size_t arg_count,
 	const ConstexprFunctionEvaluatorErrorHandlerFunc error_handler_func,
@@ -25,6 +26,7 @@ extern "C" LLVMValueRef U1_ConstexprFunctionEvaluatorEvaluate(
 	const auto res=
 		constexpr_function_evaluator.Evaluate(
 			llvm::dyn_cast<llvm::Function>(llvm::unwrap(function)),
+			llvm::unwrap(return_type),
 			llvm::ArrayRef<const llvm::Constant*>( reinterpret_cast<const llvm::Constant* const*>(args_start), arg_count ) );
 
 	for( const std::string& err : res.errors )

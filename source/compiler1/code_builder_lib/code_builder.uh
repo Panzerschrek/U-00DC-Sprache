@@ -795,7 +795,9 @@ private:
 
 	fn DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc );
 
-	fn RegisterTemporaryVariable( FunctionContext& mut function_context, Variable& variable );
+	fn RegisterTemporaryVariable( FunctionContext& mut function_context, Variable variable );
+	fn RegisterTopFrameVariable( FunctionContext& mut function_context, NamesScopeVariable& variable );
+	fn RegisterFrameVariable( FunctionContext& mut function_context, NamesScopeVariable& variable, size_type frame_index_from_top );
 
 	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool;
 	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc );
@@ -823,7 +825,9 @@ private:
 	fn AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef;
 	fn AddGlobalMutableVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type ) : LLVMValueRef;
 
+	fn GetAttributeKindByName( ust::array_view_imut</char8/> attr_name ) : u32;
 	fn AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name );
+	fn AddFunctionTypeAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name, LLVMTypeRef t );
 
 	fn SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable );
 	// Requires complete types
@@ -844,10 +848,16 @@ private:
 	fn CreateMoveToLLVMRegisterInstruction( mut this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
-	fn CreateFieldGEP( this, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateParentFieldGEP( this, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateBaseClassFieldGEP( this, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateTupleElementGEP( this, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
+	// TODO - avoid using "size_type" here.
+	// TODO - pass function_context first.
+	fn CreateClassFieldGEP( this, Variable& class_variable, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateClassFieldGEP( this, NamesScopeVariable& class_variable, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateClassFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateClassParentFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateBaseClassFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, Variable& tuple_variable, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, NamesScopeVariable& tuple_variable, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, TupleType& t, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
 
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 
@@ -929,6 +939,7 @@ private:
 	Type void_type_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
+	LLVMTypeRef virtual_function_pointer_type_= LLVMTypeRef::Null; // Use common type for all function pointers in virtual table - for simplicity.
 	LLVMTypeRef polymorph_type_id_table_element_type_= LLVMTypeRef::Null;
 
 	LLVMModuleRef module_= LLVMModuleRef::Null;

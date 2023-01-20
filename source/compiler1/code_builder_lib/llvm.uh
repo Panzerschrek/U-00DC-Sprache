@@ -247,6 +247,8 @@ fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
 
+fn nomangle LLVMGetAllocatedType(LLVMValueRef Alloca) unsafe : LLVMTypeRef;
+
 fn nomangle LLVMSetFunctionCallConv(LLVMValueRef Fn, LLVMCallConvID CC) unsafe;
 fn nomangle LLVMSetInstructionCallConv(LLVMValueRef Instr, LLVMCallConvID CC) unsafe;
 
@@ -314,8 +316,7 @@ fn nomangle LLVMConstArray(LLVMTypeRef ElementTy, $(LLVMValueRef) ConstantVals, 
 fn nomangle LLVMConstStructInContext(LLVMContextRef C, $(LLVMValueRef) ConstantVals, u32 Count, LLVMBool Packed) unsafe : LLVMValueRef;
 fn nomangle LLVMConstNamedStruct(LLVMTypeRef StructTy, $(LLVMValueRef) ConstantVals, u32 Count) unsafe : LLVMValueRef;
 fn nomangle LLVMConstStringInContext(LLVMContextRef C, $(char8) Str, u32 Length, LLVMBool DontNullTerminate) unsafe : LLVMValueRef;
-
-fn nomangle LLVMConstExtractValue(LLVMValueRef AggConstant, u32& IdxList, u32 NumIdx) unsafe : LLVMValueRef;
+fn nomangle LLVMGetAggregateElement(LLVMValueRef C, u32 Idx) : LLVMValueRef;
 
 // Instructions
 
@@ -325,14 +326,14 @@ fn nomangle LLVMBuildCondBr(LLVMBuilderRef Builder, LLVMValueRef If, LLVMBasicBl
 fn nomangle LLVMBuildRetVoid(LLVMBuilderRef Builder) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildRet(LLVMBuilderRef Builder, LLVMValueRef V) unsafe : LLVMValueRef;
 
-fn nomangle LLVMBuildLoad(LLVMBuilderRef Builder, LLVMValueRef PointerVal, NullTerminatedString& name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildLoad2(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef PointerVal, NullTerminatedString& name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildStore(LLVMBuilderRef Builder, LLVMValueRef Val, LLVMValueRef Ptr) unsafe : LLVMValueRef;
 
 fn nomangle LLVMBuildAlloca(LLVMBuilderRef Builder, LLVMTypeRef Ty, NullTerminatedString& name) unsafe : LLVMValueRef;
 
-fn nomangle LLVMBuildGEP(LLVMBuilderRef BBuilder, LLVMValueRef Pointer, $(LLVMValueRef) Indices, u32 NumIndices, NullTerminatedString& Name) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildGEP2(LLVMBuilderRef BBuilder, LLVMTypeRef Ty, LLVMValueRef Pointer, $(LLVMValueRef) Indices, u32 NumIndices, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
-fn nomangle LLVMBuildCall(LLVMBuilderRef Builder, LLVMValueRef Fn, $(LLVMValueRef) Args, u32 NumArgs, NullTerminatedString& Name) unsafe: LLVMValueRef;
+fn nomangle LLVMBuildCall2(LLVMBuilderRef Builder, LLVMTypeRef Ty, LLVMValueRef Fn, $(LLVMValueRef) Args, u32 NumArgs, NullTerminatedString& Name) unsafe: LLVMValueRef;
 fn nomangle LLVMBuildSelect(LLVMBuilderRef Builder, LLVMValueRef If, LLVMValueRef Then, LLVMValueRef Else, NullTerminatedString& Name) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildUnreachable(LLVMBuilderRef Builder) unsafe : LLVMValueRef;
 
@@ -411,6 +412,7 @@ fn nomangle LLVMGetIntrinsicDeclaration(
 
 // Attributes
 fn nomangle LLVMCreateEnumAttribute(LLVMContextRef C, u32 KindID, u64 Val) unsafe : LLVMAttributeRef;
+fn nomangle LLVMCreateTypeAttribute(LLVMContextRef C, u32 KindID, LLVMTypeRef type_ref) unsafe : LLVMAttributeRef;
 fn nomangle LLVMGetEnumAttributeKindForName($(char8) Name, size_type SLen) unsafe : u32;
 
 fn nomangle LLVMAddAttributeAtIndex(LLVMValueRef F, LLVMAttributeIndex Idx, LLVMAttributeRef A) unsafe;
@@ -446,7 +448,9 @@ fn nomangle LLVMDIBuilderCreateCompileUnit(
 	LLVMDWARFEmissionKind Kind,
 	u32 DWOId,
 	LLVMBool SplitDebugInlining,
-	LLVMBool DebugInfoForProfiling) unsafe : LLVMMetadataRef;
+	LLVMBool DebugInfoForProfiling,
+	$(char8) SysRoot, size_type SysRootLen,
+	$(char8) SDK, size_type SDKLen) unsafe : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateLexicalBlock(
 	LLVMDIBuilderRef Builder,
@@ -505,7 +509,7 @@ fn nomangle LLVMDIBuilderCreateExpression(LLVMDIBuilderRef Builder, i64& Addr, s
 fn nomangle LLVMDIBuilderCreateBasicType(
 	LLVMDIBuilderRef Builder,
 	$(char8) Name, size_type NameLen,
-	u32 SizeInBits,
+	u64 SizeInBits,
 	LLVMDWARFTypeEncoding Encoding,
 	LLVMDIFlags Flags) unsafe : LLVMMetadataRef;
 

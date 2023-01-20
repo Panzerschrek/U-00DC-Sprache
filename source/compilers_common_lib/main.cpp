@@ -7,18 +7,20 @@
 #include <llvm/Bitcode/BitcodeWriterPass.h>
 #include <llvm/CodeGen/TargetPassConfig.h>
 #include <llvm/InitializePasses.h>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/MC/SubtargetFeature.h>
+#include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/CodeGen.h>
 #include <llvm/Support/CommandLine.h>
+#include <llvm/Support/Host.h>
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Support/raw_os_ostream.h>
 #include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
-#include <llvm/Support/TargetRegistry.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/GlobalDCE.h>
@@ -387,9 +389,9 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		const std::string cpu_name= ( Options::architecture == "native" && Options::target_cpu.empty() )
+		const std::string cpu_name= (( Options::architecture == "native" && Options::target_cpu.empty() )
 			? llvm::sys::getHostCPUName()
-			: Options::target_cpu;
+			: Options::target_cpu).str();
 
 		const std::string features_str= ( Options::architecture == "native" && Options::target_attributes.empty() )
 			? GetNativeTargetFeaturesStr()
@@ -698,7 +700,7 @@ int Main( int argc, const char* argv[] )
 	// Create file write passes.
 	// This file stream must live longer than pass manager.
 	std::error_code file_error_code;
-	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code, llvm::sys::fs::F_None );
+	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
 
 	// Create pass manager for optimizations and output passes.
 	llvm::legacy::PassManager pass_manager;

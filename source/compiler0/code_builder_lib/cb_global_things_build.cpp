@@ -70,25 +70,25 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 	// "getABITypeAlignment" "getTypeAllocSize" functions used, as in llvm/lib/IR/DataLayout.cpp:40.
 
 	// Calculate start offset, include parents fields, virtual table pointer.
-	unsigned int current_offst= 0u;
+	uint64_t current_offset= 0u;
 	for( llvm::Type* type : fields_llvm_types )
 	{
-		const unsigned int alignment= data_layout.getABITypeAlignment( type );
-		const unsigned int padding= ( alignment - current_offst % alignment ) % alignment;
-		current_offst+= padding + static_cast<unsigned int>( data_layout.getTypeAllocSize( type ) );
+		const uint64_t alignment= data_layout.getABITypeAlignment( type );
+		const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
+		current_offset+= padding + data_layout.getTypeAllocSize( type );
 	}
 
 	// Sort fields, minimize paddings and minimize fields reordering.
 	while( !fields.empty() )
 	{
 		FieldsMap::iterator best_field_it= fields.begin();
-		unsigned int best_field_padding= ~0u;
+		uint64_t best_field_padding= ~0u;
 		for( auto it= fields.begin(); it != fields.end(); ++it )
 		{
-			const unsigned int alignment= data_layout.getABITypeAlignment( best_field_it->second->is_reference ? it->second->type.GetLLVMType()->getPointerTo() : it->second->type.GetLLVMType() );
+			const uint64_t alignment= data_layout.getABITypeAlignment( best_field_it->second->is_reference ? it->second->type.GetLLVMType()->getPointerTo() : it->second->type.GetLLVMType() );
 			U_ASSERT( alignment != 0u );
 
-			const unsigned int padding= ( alignment - current_offst % alignment ) % alignment;
+			const uint64_t padding= ( alignment - current_offset % alignment ) % alignment;
 			if( padding < best_field_padding )
 			{
 				best_field_padding= padding;
@@ -105,7 +105,7 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 		best_field_it->second->index= field_index;
 		++field_index;
 		fields_llvm_types.push_back( best_field_llvm_type );
-		current_offst+= best_field_padding + static_cast<unsigned int>(data_layout.getTypeAllocSize( best_field_llvm_type ));
+		current_offset+= best_field_padding + data_layout.getTypeAllocSize( best_field_llvm_type );
 		fields.erase( best_field_it );
 	}
 }

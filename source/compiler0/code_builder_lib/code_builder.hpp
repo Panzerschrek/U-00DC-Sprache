@@ -414,6 +414,7 @@ private:
 		const SrcLoc& src_loc );
 
 	void MoveConstantToMemory(
+		const Type& type,
 		llvm::Value* ptr, llvm::Constant* constant,
 		FunctionContext& function_context );
 
@@ -936,13 +937,17 @@ private:
 	llvm::Constant* GetZeroGEPIndex();
 	llvm::Constant* GetFieldGEPIndex( uint64_t field_index );
 
-	llvm::Value* CreateBaseClassGEP( FunctionContext& function_context, llvm::Value* class_ptr );
-	llvm::Value* CreateVirtualTablePointerGEP( FunctionContext& function_context, llvm::Value* class_ptr );
-	llvm::Value* CreateClassFiledGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field );
-	llvm::Value* CreateClassFiledGEP( FunctionContext& function_context, llvm::Value* class_ptr, uint64_t field_index );
-	llvm::Value* CreateTupleElementGEP( FunctionContext& function_context, llvm::Value* tuple_ptr, uint64_t element_index );
-	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* array_ptr, uint64_t element_index );
-	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* array_ptr, llvm::Value* index );
+	llvm::Value* CreateBaseClassGEP( FunctionContext& function_context, const Class& class_type, llvm::Value* class_ptr );
+	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field );
+	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, uint64_t field_index );
+	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Class& class_type, llvm::Value* class_ptr, uint64_t field_index );
+	llvm::Value* CreateTupleElementGEP( FunctionContext& function_context, const Variable& tuple_variable, uint64_t element_index );
+	llvm::Value* CreateTupleElementGEP( FunctionContext& function_context, const TupleType& tuple_type, llvm::Value* tuple_ptr, uint64_t element_index );
+	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, const Variable& array_variable, uint64_t element_index );
+	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, const Variable& array_variable, llvm::Value* index );
+	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, const ArrayType& array_type, llvm::Value* array_ptr, uint64_t element_index );
+	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, const ArrayType& array_type, llvm::Value* array_ptr, llvm::Value* index );
+	llvm::Value* CreateCompositeElementGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, llvm::Value* index );
 
 	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
@@ -1025,6 +1030,7 @@ private:
 	Type void_type_;
 	Type bool_type_;
 	Type size_type_; // Alias for u32 or u64
+	llvm::PointerType* virtual_function_pointer_type_= nullptr; // Use common type for all function pointers in virtual table - for simplicity.
 	llvm::StructType* polymorph_type_id_table_element_type_= nullptr;
 
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;

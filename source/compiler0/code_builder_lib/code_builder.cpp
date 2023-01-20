@@ -2,7 +2,6 @@
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Support/Host.h>
-#include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
@@ -129,6 +128,8 @@ CodeBuilder::CodeBuilder(
 		fundamental_llvm_types_.int_ptr->getIntegerBitWidth() == 32u
 		? FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ )
 		: FundamentalType( U_FundamentalType::u64_, fundamental_llvm_types_.u64_ );
+
+	virtual_function_pointer_type_= llvm::PointerType::get( llvm::FunctionType::get( fundamental_llvm_types_.void_for_ret_, true ), 0u );
 
 	// Use named struct for polymorph type id table element, because this is recursive struct.
 	{
@@ -663,7 +664,7 @@ void CodeBuilder::CallDestructor(
 			[&]( llvm::Value* const index )
 			{
 				CallDestructor(
-					CreateArrayElementGEP( function_context, ptr, index ),
+					CreateArrayElementGEP( function_context, *array_type, ptr, index ),
 					array_type->type,
 					function_context,
 					errors_container,
@@ -677,7 +678,7 @@ void CodeBuilder::CallDestructor(
 		{
 			if( element_type.HaveDestructor() )
 				CallDestructor(
-					CreateTupleElementGEP( function_context, ptr, size_t(&element_type - tuple_type->elements.data()) ),
+					CreateTupleElementGEP( function_context, *tuple_type, ptr, size_t(&element_type - tuple_type->elements.data()) ),
 					element_type,
 					function_context,
 					errors_container,
@@ -720,7 +721,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 	{
 		U_ASSERT( class_->parents[i].class_->have_destructor ); // Parents are polymorph, polymorph classes always have destructors.
 		CallDestructor(
-			CreateClassFiledGEP( function_context, function_context.this_->llvm_value, class_->parents[i].field_number ),
+			CreateClassFieldGEP( function_context, *function_context.this_, class_->parents[i].field_number ),
 			class_->parents[i].class_,
 			function_context,
 			errors_container,
@@ -737,7 +738,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 			continue;
 
 		CallDestructor(
-			CreateClassFiledGEP( function_context, function_context.this_->llvm_value, field.index ),
+			CreateClassFieldGEP( function_context, *function_context.this_, field.index ),
 			field.type,
 			function_context,
 			errors_container,
@@ -1606,7 +1607,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.location= Variable::Location::Pointer;
 			field_variable.value_type= ValueType::ReferenceMut;
 
-			field_variable.llvm_value= CreateClassFiledGEP( function_context, this_.llvm_value, field.index );
+			field_variable.llvm_value= CreateClassFieldGEP( function_context, this_, field.index );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
@@ -1624,7 +1625,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		base_variable.location= Variable::Location::Pointer;
 		base_variable.value_type= ValueType::ReferenceMut;
 
-		base_variable.llvm_value= CreateBaseClassGEP( function_context, this_.llvm_value );
+		base_variable.llvm_value= CreateBaseClassGEP( function_context, *this_.type.GetClassType(), this_.llvm_value );
 
 		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
@@ -1641,7 +1642,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			base_variable.value_type= ValueType::ReferenceMut;
 			base_variable.node= this_.node;
 
-			base_variable.llvm_value= CreateBaseClassGEP( function_context, this_.llvm_value );
+			base_variable.llvm_value= CreateBaseClassGEP( function_context, *this_.type.GetClassType(), this_.llvm_value );
 
 			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );
 			function_context.base_initialized= true;
@@ -1664,7 +1665,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			field_variable.value_type= ValueType::ReferenceMut;
 			field_variable.node= this_.node;
 
-			field_variable.llvm_value= CreateClassFiledGEP( function_context, this_.llvm_value, field->index );
+			field_variable.llvm_value= CreateClassFieldGEP( function_context, this_, field->index );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
 		}
@@ -2016,7 +2017,7 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 
 llvm::LoadInst* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
-	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( address );
+	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( type.GetLLVMType(), address );
 
 	if( generate_tbaa_metadata_ )
 		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( type ) );
@@ -2026,7 +2027,7 @@ llvm::LoadInst* CodeBuilder::CreateTypedLoad( FunctionContext& function_context,
 
 llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
-	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( address );
+	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( type.GetLLVMType()->getPointerTo(), address );
 
 	if( generate_tbaa_metadata_ )
 		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateReferenceAccessTag( type ) );
@@ -2085,17 +2086,12 @@ llvm::Constant* CodeBuilder::GetFieldGEPIndex( const uint64_t field_index )
 	return llvm::Constant::getIntegerValue( fundamental_llvm_types_.i32_, llvm::APInt( 32u, field_index ) );
 }
 
-llvm::Value*CodeBuilder:: CreateBaseClassGEP( FunctionContext& function_context, llvm::Value* const class_ptr )
+llvm::Value*CodeBuilder::CreateBaseClassGEP( FunctionContext& function_context, const Class& class_type, llvm::Value* const class_ptr )
 {
-	return CreateClassFiledGEP( function_context, class_ptr, 0 /* base class is allways first field */ );
+	return CreateClassFieldGEP( function_context, class_type, class_ptr, 0 /* base class is allways first field */ );
 }
 
-llvm::Value*CodeBuilder:: CreateVirtualTablePointerGEP( FunctionContext& function_context, llvm::Value* const class_ptr )
-{
-	return CreateClassFiledGEP( function_context, class_ptr, 0 /* virtual table pointer is allways first field */ );
-}
-
-llvm::Value* CodeBuilder::CreateClassFiledGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field )
+llvm::Value* CodeBuilder::CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field )
 {
 	ClassPtr actual_field_class= class_variable.type.GetClassType();
 	llvm::Value* actual_field_class_ptr= class_variable.llvm_value;
@@ -2103,37 +2099,62 @@ llvm::Value* CodeBuilder::CreateClassFiledGEP( FunctionContext& function_context
 	{
 		if( actual_field_class->base_class == nullptr )
 			return nullptr;
-		actual_field_class_ptr= CreateBaseClassGEP( function_context, actual_field_class_ptr );
+		actual_field_class_ptr= CreateBaseClassGEP( function_context, *actual_field_class, actual_field_class_ptr );
 		actual_field_class= actual_field_class->base_class;
 	}
 
-	return CreateClassFiledGEP( function_context, actual_field_class_ptr, class_field.index );
+	return CreateClassFieldGEP( function_context, *actual_field_class, actual_field_class_ptr, class_field.index );
 }
 
-llvm::Value* CodeBuilder::CreateClassFiledGEP( FunctionContext& function_context, llvm::Value* const class_ptr, const uint64_t field_index )
+llvm::Value* CodeBuilder::CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const uint64_t field_index )
 {
-	return function_context.llvm_ir_builder.CreateGEP(
-		class_ptr->getType()->getPointerElementType(),
-		class_ptr,
-		{ GetZeroGEPIndex(), GetFieldGEPIndex( field_index ) } );
+	const auto class_type= class_variable.type.GetClassType();
+	U_ASSERT(class_type != nullptr);
+	return CreateClassFieldGEP( function_context, *class_type, class_variable.llvm_value, field_index );
 }
 
-llvm::Value* CodeBuilder::CreateTupleElementGEP( FunctionContext& function_context, llvm::Value* tuple_ptr, const uint64_t element_index )
+llvm::Value* CodeBuilder::CreateClassFieldGEP( FunctionContext& function_context, const Class& class_type, llvm::Value* const class_ptr, const uint64_t field_index )
 {
-	return CreateClassFiledGEP( function_context, tuple_ptr, element_index );
+	return CreateCompositeElementGEP( function_context, class_type.llvm_type, class_ptr, GetFieldGEPIndex( field_index ) );
 }
 
-llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* const array_ptr, const uint64_t element_index )
+llvm::Value* CodeBuilder::CreateTupleElementGEP( FunctionContext& function_context, const Variable& tuple_variable, const uint64_t element_index )
 {
-	return CreateArrayElementGEP( function_context, array_ptr, llvm::ConstantInt::get( fundamental_llvm_types_.u64_, element_index ) );
+	const auto tuple_type= tuple_variable.type.GetTupleType();
+	U_ASSERT(tuple_type != nullptr);
+	return CreateTupleElementGEP( function_context, *tuple_type, tuple_variable.llvm_value, element_index );
 }
 
-llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, llvm::Value* const array_ptr, llvm::Value* const index )
+llvm::Value* CodeBuilder::CreateTupleElementGEP( FunctionContext& function_context, const TupleType& tuple_type, llvm::Value* const tuple_ptr, const uint64_t element_index )
 {
-	return function_context.llvm_ir_builder.CreateGEP(
-		array_ptr->getType()->getPointerElementType(),
-		array_ptr,
-		{ GetZeroGEPIndex(), index } );
+	return CreateCompositeElementGEP( function_context, tuple_type.llvm_type, tuple_ptr, GetFieldGEPIndex( element_index ) );
+}
+
+llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, const Variable& array_variable, const uint64_t element_index )
+{
+	return CreateArrayElementGEP( function_context, array_variable, llvm::ConstantInt::get( fundamental_llvm_types_.u64_, element_index ) );
+}
+
+llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, const Variable& array_variable, llvm::Value* const index )
+{
+	const auto array_type= array_variable.type.GetArrayType();
+	U_ASSERT(array_type != nullptr);
+	return CreateArrayElementGEP( function_context, *array_type, array_variable.llvm_value, index );
+}
+
+llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, const ArrayType& array_type, llvm::Value* const array_ptr, const uint64_t element_index )
+{
+	return CreateArrayElementGEP( function_context, array_type, array_ptr, llvm::ConstantInt::get( fundamental_llvm_types_.u64_, element_index ) );
+}
+
+llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_context, const ArrayType& array_type, llvm::Value* const array_ptr, llvm::Value* const index )
+{
+	return CreateCompositeElementGEP( function_context, array_type.llvm_type, array_ptr, index );
+}
+
+llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_context, llvm::Type* const type, llvm::Value* const value, llvm::Value* const index )
+{
+	return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
 }
 
 llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context )
@@ -2148,7 +2169,7 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 
 	for( const Class::Parent& src_parent_class : src_class_type->parents )
 	{
-		llvm::Value* const sub_ref= CreateClassFiledGEP( function_context, ref, src_parent_class.field_number );
+		llvm::Value* const sub_ref= CreateClassFieldGEP( function_context, *src_class_type, ref, src_parent_class.field_number );
 
 		if( src_parent_class.class_ == dst_type )
 			return sub_ref;
@@ -2214,34 +2235,36 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
-		const auto arg_attr_index=
-			static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
+		const auto param_attr_index= static_cast<unsigned int>(i + (first_arg_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
 		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
 		// Mark reference params as nonnull.
 		if( param.value_type != ValueType::Value || param_is_composite )
-			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NonNull );
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
 		// Mutable reference params or composite value-args must not alias.
 		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
 		if( param.value_type != ValueType::Value || param_is_composite )
-			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoAlias );
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
 		// Mark as "readonly" immutable reference params.
 		if( param.value_type == ValueType::ReferenceImut )
-			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::ReadOnly );
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ReadOnly );
 		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
 		// It is not possible to capture this reference.
 		if( param.value_type == ValueType::Value && param_is_composite )
-			llvm_function->addAttribute( arg_attr_index, llvm::Attribute::NoCapture );
+			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
 	}
 
 	if( first_arg_is_sret )
 	{
-		llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::StructRet );
-		llvm_function->addAttribute( llvm::AttributeList::FirstArgIndex, llvm::Attribute::NoAlias );
+		llvm_function->addParamAttr( 0, llvm::Attribute::NoAlias );
+
+		llvm::AttrBuilder builder(llvm_context_);
+		builder.addStructRetAttr(function_type.return_type.GetLLVMType());
+		llvm_function->addParamAttrs( 0, builder );
 	}
 	if( function_type.return_value_type != ValueType::Value )
-		llvm_function->addAttribute( llvm::AttributeList::ReturnIndex, llvm::Attribute::NonNull );
+		llvm_function->addRetAttr( llvm::Attribute::NonNull );
 
 	// Merge functions with identical code.
 	// We doesn`t need different addresses for different functions.
@@ -2252,7 +2275,11 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 	llvm_function->setCallingConv( function_type.calling_convention );
 
 	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
-		llvm_function->addFnAttr( llvm::Attribute::UWTable );
+	{
+		llvm::AttrBuilder builder(llvm_context_);
+		builder.addUWTableAttr(llvm::UWTableKind::Async);
+		llvm_function->addFnAttrs( builder );
+	}
 
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )
@@ -2268,8 +2295,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
-		const auto arg_attr_index=
-			static_cast<unsigned int>(llvm::AttributeList::FirstArgIndex + i + (first_arg_is_sret ? 1u : 0u ));
+		const auto param_attr_index= static_cast<unsigned int>(i + (first_arg_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
 		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
@@ -2280,7 +2306,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 			if( !llvm_type->isSized() )
 				continue; // May be in case of error.
 
-			llvm_function->addDereferenceableAttr( arg_attr_index, data_layout_.getTypeAllocSize( llvm_type ) );
+			llvm_function->addDereferenceableParamAttr( param_attr_index, data_layout_.getTypeAllocSize( llvm_type ) );
 		}
 	}
 
@@ -2289,9 +2315,13 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 		return; // May be in case of error.
 
 	if( first_arg_is_sret )
-		llvm_function->addDereferenceableAttr( llvm::AttributeList::FirstArgIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
+		llvm_function->addDereferenceableParamAttr( 0, data_layout_.getTypeAllocSize( llvm_ret_type ) );
 	else if( function_type.return_value_type != ValueType::Value )
-		llvm_function->addDereferenceableAttr( llvm::AttributeList::ReturnIndex, data_layout_.getTypeAllocSize( llvm_ret_type ) );
+	{
+		llvm::AttrBuilder builder(llvm_context_);
+		builder.addDereferenceableAttr( data_layout_.getTypeAllocSize( llvm_ret_type ) );
+		llvm_function->addRetAttrs(builder);
+	}
 }
 
 void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesScope& names_scope )
@@ -2325,10 +2355,11 @@ void CodeBuilder::CreateLifetimeStart( FunctionContext& function_context, llvm::
 	if( !create_lifetimes_ )
 		return;
 
-	if( llvm::dyn_cast<llvm::AllocaInst>(address) == nullptr )
+	const auto alloca_inst= llvm::dyn_cast<llvm::AllocaInst>(address);
+	if( alloca_inst == nullptr )
 		return;
 
-	llvm::Type* const type= address->getType()->getPointerElementType();
+	llvm::Type* const type= alloca_inst->getAllocatedType();
 	if( !type->isSized() )
 		return; // May be in case of error.
 
@@ -2351,10 +2382,11 @@ void CodeBuilder::CreateLifetimeEnd( FunctionContext& function_context, llvm::Va
 	if( !create_lifetimes_ )
 		return;
 
-	if( llvm::dyn_cast<llvm::AllocaInst>(address) == nullptr )
+	const auto alloca_inst= llvm::dyn_cast<llvm::AllocaInst>(address);
+	if( alloca_inst == nullptr )
 		return;
 
-	llvm::Type* const type= address->getType()->getPointerElementType();
+	llvm::Type* const type= alloca_inst->getAllocatedType();
 	if( !type->isSized() )
 		return; // May be in case of error.
 

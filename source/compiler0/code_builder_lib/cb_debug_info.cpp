@@ -157,7 +157,7 @@ llvm::DIType* CodeBuilder::CreateDIType( const FundamentalType& type )
 			GetDIFile(0),
 			0u,
 			data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
-			8u * data_layout_.getABITypeAlignment( type.llvm_type ),
+			8u * uint32_t(data_layout_.getABITypeAlignment( type.llvm_type )),
 			llvm::DINode::DIFlags(),
 			nullptr,
 			debug_info_.builder->getOrCreateArray({}).get() );
@@ -188,7 +188,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ArrayType& type )
 	U_ASSERT(build_debug_info_);
 
 	const uint32_t alignment=
-		IsTypeComplete( type.type ) ? data_layout_.getABITypeAlignment( type.llvm_type ) : 0u;
+		IsTypeComplete( type.type ) ? uint32_t(data_layout_.getABITypeAlignment( type.llvm_type )) : 0u;
 	const uint64_t size=
 		IsTypeComplete( type.type ) ? data_layout_.getTypeAllocSizeInBits( type.llvm_type ) : uint64_t(0);
 
@@ -230,7 +230,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const TupleType& type )
 				di_file,
 				0u, // TODO - src_loc
 				data_layout_.getTypeAllocSizeInBits( element_type.GetLLVMType() ),
-				8u * data_layout_.getABITypeAlignment( element_type.GetLLVMType() ),
+				uint32_t(8u * data_layout_.getABITypeAlignment( element_type.GetLLVMType() )),
 				struct_layout.getElementOffsetInBits( uint32_t(element_index) ),
 				llvm::DINode::DIFlags(),
 				CreateDIType( element_type ) );
@@ -244,7 +244,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const TupleType& type )
 		di_file,
 		0u, // TODO - src_loc
 		data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
-		8u * data_layout_.getABITypeAlignment( type.llvm_type ),
+		uint32_t(8u * data_layout_.getABITypeAlignment( type.llvm_type )),
 		llvm::DINode::DIFlags(),
 		nullptr,
 		debug_info_.builder->getOrCreateArray(elements).get() );
@@ -335,7 +335,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr& type )
 					debug_info_.builder->createPointerType(
 						field_type_di,
 						data_layout_.getTypeAllocSizeInBits(field_type_llvm),
-						8u * data_layout_.getABITypeAlignment(field_type_llvm) );
+						uint32_t(8u * data_layout_.getABITypeAlignment(field_type_llvm)) );
 			}
 
 			// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
@@ -346,7 +346,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr& type )
 					di_file,
 					0u, // TODO - src_loc
 					data_layout_.getTypeAllocSizeInBits( field_type_llvm ),
-					8u * data_layout_.getABITypeAlignment( field_type_llvm ),
+					uint32_t(8u * data_layout_.getABITypeAlignment( field_type_llvm )),
 					struct_layout.getElementOffsetInBits(class_field.index),
 					llvm::DINode::DIFlags(),
 					field_type_di );
@@ -366,7 +366,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr& type )
 					di_file,
 					0u, // TODO - src_loc
 					data_layout_.getTypeAllocSizeInBits( parent_type_llvm ),
-					8u * data_layout_.getABITypeAlignment( parent_type_llvm ),
+					uint32_t(8u * data_layout_.getABITypeAlignment( parent_type_llvm )),
 					struct_layout.getElementOffsetInBits( parent.field_number ),
 					llvm::DINode::DIFlags(),
 					parent_type_di );
@@ -381,7 +381,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr& type )
 			di_file,
 			the_class.body_src_loc.GetLine(),
 			data_layout_.getTypeAllocSizeInBits( the_class.llvm_type ),
-			8u * data_layout_.getABITypeAlignment( the_class.llvm_type ),
+			uint32_t(8u * data_layout_.getABITypeAlignment( the_class.llvm_type )),
 			0u,
 			llvm::DINode::DIFlags(),
 			nullptr,
@@ -416,7 +416,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 			elements.push_back(
 				debug_info_.builder->createEnumerator(
 					name,
-					int64_t(variable->constexpr_value->getUniqueInteger().getLimitedValue()),
+					variable->constexpr_value->getUniqueInteger().getLimitedValue(),
 					true ) );
 		} );
 
@@ -430,7 +430,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 			di_file,
 			0u, // TODO - src_loc
 			8u * type->underlaying_type.GetSize(),
-			data_layout_.getABITypeAlignment( type->underlaying_type.llvm_type ),
+			uint32_t(data_layout_.getABITypeAlignment( type->underlaying_type.llvm_type )),
 			debug_info_.builder->getOrCreateArray(elements),
 			CreateDIType( type->underlaying_type ) );
 

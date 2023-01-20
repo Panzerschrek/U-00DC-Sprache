@@ -32,6 +32,7 @@ public:
 
 	Result Evaluate(
 		llvm::Function* const llvm_function,
+		llvm::Type* return_type, // Usable for "s_ret" functions.
 		llvm::ArrayRef<const llvm::Constant*> args );
 
 private:

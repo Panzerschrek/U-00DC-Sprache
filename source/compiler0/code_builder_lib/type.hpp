@@ -144,7 +144,7 @@ bool operator!=( const Type& l, const Type& r );
 
 struct ArrayType final
 {
-	Type type;
+	Type type; // TODO - rename to element_type
 	uint64_t size= 0u;
 
 	llvm::ArrayType* llvm_type= nullptr;
@@ -155,7 +155,7 @@ bool operator!=( const ArrayType& r, const ArrayType& l );
 
 struct RawPointerType final
 {
-	Type type;
+	Type type; // TODO - rename to element_type
 	llvm::PointerType* llvm_type= nullptr;
 };
 

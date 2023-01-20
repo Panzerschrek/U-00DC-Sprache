@@ -1,5 +1,6 @@
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/IR/Constant.h>
+#include <llvm/IR/Constants.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Support/MD5.h>
 #include <llvm/Support/ConvertUTF.h>
@@ -180,7 +181,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
 
-		result.llvm_value= CreateArrayElementGEP( function_context, variable.llvm_value, index_value );
+		result.llvm_value= CreateArrayElementGEP( function_context, variable, index_value );
 
 		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
@@ -232,7 +233,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result.value_type= variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		result.node= variable_lock.TakeNode();
 		result.type= tuple_type->elements[size_t(index_value)];
-		result.llvm_value= CreateTupleElementGEP( function_context, variable.llvm_value, index_value );
+		result.llvm_value= CreateTupleElementGEP( function_context, variable, index_value );
 
 		if( variable.constexpr_value != nullptr )
 			result.constexpr_value= variable.constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
@@ -319,7 +320,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	llvm::Value* const gep_result= CreateClassFiledGEP( function_context, variable, *field );
+	llvm::Value* const gep_result= CreateClassFieldGEP( function_context, variable, *field );
 
 	Variable result;
 	result.location= Variable::Location::Pointer;
@@ -339,7 +340,17 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				result.llvm_value= element;
 
 				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
-					result.constexpr_value= global_variable->getInitializer();
+				{
+					if( class_type->typeinfo_type != std::nullopt && member_access_operator.member_name_ == "type_id" )
+					{
+						// HACK!
+						// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.
+						// This is used for type_id in typeinfo classes.
+						result.constexpr_value= global_variable->getInitializer()->getAggregateElement(0u)->getAggregateElement(0u);
+					}
+					else
+						result.constexpr_value= global_variable->getInitializer();
+				}
 				else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
 				{
 					// TODO - what first operand is constant GEP too?
@@ -685,7 +696,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		field_variable.value_type= ( function_context.this_->value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		field_variable.node= function_context.this_->node;
 
-		field_variable.llvm_value= CreateClassFiledGEP( function_context, *function_context.this_, *field );
+		field_variable.llvm_value= CreateClassFieldGEP( function_context, *function_context.this_, *field );
 		if( field_variable.llvm_value == nullptr )
 		{
 			REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
@@ -1174,8 +1185,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		llvm::MD5 md5;
 		if( const auto constant_data_array = llvm::dyn_cast<llvm::ConstantDataArray>(initializer) )
 			md5.update( constant_data_array->getRawDataValues() );
-		else if( const auto all_zeros = llvm::dyn_cast<llvm::ConstantAggregateZero>(initializer) )
-			md5.update( std::string( size_t(all_zeros->getNumElements() * FundamentalType( char_type ).GetSize()), '\0' ) );
+		else if( llvm::dyn_cast<llvm::ConstantAggregateZero>(initializer) != nullptr )
+			md5.update( std::string( size_t(array_size * FundamentalType( char_type ).GetSize()), '\0' ) );
 		md5.update( llvm::ArrayRef<uint8_t>( reinterpret_cast<const uint8_t*>(&char_type), sizeof(U_FundamentalType) ) ); // Add type to hash for distinction of zero-sized strings with different types.
 		llvm::MD5::MD5Result md5_result;
 		md5.final(md5_result);
@@ -2303,7 +2314,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 			else
 				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
 		}
-		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_value->getType()->getPointerElementType(), ptr_value, index_value );
+		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( element_type.GetLLVMType(), ptr_value, index_value );
 	}
 	else if( binary_operator == BinaryOperatorType::Sub )
 	{
@@ -2373,7 +2384,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
 			}
 			llvm::Value* const index_value_negative= function_context.llvm_ir_builder.CreateNeg( index_value );
-			result.llvm_value= function_context.llvm_ir_builder.CreateGEP( l_value_for_op->getType()->getPointerElementType(), l_value_for_op, index_value_negative );
+			result.llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_type->type.GetLLVMType(), l_value_for_op, index_value_negative );
 		}
 		else
 		{
@@ -2955,7 +2966,10 @@ Value CodeBuilder::DoCallFunction(
 			function_type.return_value_type == ValueType::Value && function_type.return_type.ReferencesTagsCount() == 0u )
 		{
 			const ConstexprFunctionEvaluator::Result evaluation_result=
-				constexpr_function_evaluator_.Evaluate( llvm::dyn_cast<llvm::Function>(function), constant_llvm_args );
+				constexpr_function_evaluator_.Evaluate(
+					llvm::dyn_cast<llvm::Function>(function),
+					function_type.return_type.GetLLVMType(),
+					constant_llvm_args );
 
 			for( const std::string& error_text : evaluation_result.errors )
 			{
@@ -2968,7 +2982,7 @@ Value CodeBuilder::DoCallFunction(
 			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 			{
 				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
-					MoveConstantToMemory( result.llvm_value, evaluation_result.result_constant, function_context );
+					MoveConstantToMemory( result.type, result.llvm_value, evaluation_result.result_constant, function_context );
 
 				if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 					constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );

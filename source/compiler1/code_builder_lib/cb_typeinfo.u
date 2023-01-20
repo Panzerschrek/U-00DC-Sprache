@@ -409,7 +409,12 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 			{
 				auto dummy_function_context= CreateGlobalFunctionContext();
 				var [ LLVMValueRef, 3 ] mut indices[ GetZeroGEPIndex(), GetZeroGEPIndex(), GetZeroGEPIndex() ];
-				var LLVMValueRef address= LLVMBuildGEP( dummy_function_context.llvm_ir_builder, class_.polymorph_type_id_table, $<(indices[0]), 3u, "\0"[0] );
+				var LLVMValueRef address=
+					LLVMBuildGEP2(
+						dummy_function_context.llvm_ir_builder,
+						LLVMTypeOf( LLVMGetInitializer(class_.polymorph_type_id_table) ),
+						class_.polymorph_type_id_table,
+						$<(indices[0]), 3u, "\0"[0] );
 				fields_initializers.push_back( address );
 				fields_llvm_types.push_back( LLVMPointerType( class_field.t.GetLLVMType(), 0u ) );
 			}

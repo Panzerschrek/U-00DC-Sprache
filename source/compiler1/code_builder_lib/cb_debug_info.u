@@ -218,7 +218,7 @@ fn CodeBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 	return unsafe( LLVMDIBuilderCreateBasicType(
 		debug_info_.builder,
 		stub_type_name.data(), stub_type_name.size(),
-		8u,
+		8u64,
 		LLVMDWARFTypeEncoding::unsigned,
 		0u ) );
 }
@@ -259,7 +259,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 	return unsafe( LLVMDIBuilderCreateBasicType(
 		debug_info_.builder,
 		type_name.data(), type_name.size(),
-		u32( t.GetSize() * 8s ),
+		u64( t.GetSize() * 8s ),
 		encoding,
 		0u ) );
 }

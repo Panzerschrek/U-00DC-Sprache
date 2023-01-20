@@ -17,7 +17,7 @@ public:
 		ust::vector</ ust::string8 /> errors;
 	}
 
-	fn Evaluate( mut this, LLVMValueRef function, ust::array_view_imut</LLVMValueRef/> args ) : Result;
+	fn Evaluate( mut this, LLVMValueRef function, LLVMTypeRef return_type, ust::array_view_imut</LLVMValueRef/> args ) : Result;
 
 private:
 	ConstexprFunctionEvaluatorRef impl_= zero_init;

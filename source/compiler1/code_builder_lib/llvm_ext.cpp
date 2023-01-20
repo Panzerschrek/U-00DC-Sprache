@@ -6,6 +6,11 @@
 #include <llvm/Support/ConvertUTF.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+extern "C" LLVMTypeRef U1_GetFunctionType(const LLVMValueRef f)
+{
+	return llvm::wrap(llvm::dyn_cast<llvm::Function>(llvm::unwrap(f))->getFunctionType());
+}
+
 extern "C" void U1_SetStructName(const LLVMTypeRef t, const char* const name)
 {
 	llvm::dyn_cast<llvm::StructType>(llvm::unwrap(t))->setName(name);
@@ -24,7 +29,15 @@ extern "C" bool U1_BasicBlockHasPredecessors(const LLVMBasicBlockRef basic_block
 
 extern "C" void U1_FunctionAddDereferenceableAttr(const LLVMValueRef function, const uint32_t index, const uint64_t bytes)
 {
-	llvm::dyn_cast<llvm::Function>(llvm::unwrap(function))->addDereferenceableAttr(index, bytes);
+	const auto f= llvm::dyn_cast<llvm::Function>(llvm::unwrap(function));
+
+	llvm::AttrBuilder builder( f->getContext() );
+	builder.addDereferenceableAttr( bytes );
+
+	if( index == llvm::AttributeList::ReturnIndex )
+		f->addRetAttrs(builder);
+	else
+		f->addParamAttrs(index - llvm::AttributeList::FirstArgIndex, builder);
 }
 
 extern "C" size_t U1_ConvertUTF8ToUTF16(
