@@ -192,60 +192,60 @@ private:
 		std::vector<bool>& template_parameters_usage_flags );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const Synt::ComplexName& signature_parameter,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags );
+		std::vector<bool>& template_parameters_usage_flags,
+		const Synt::ComplexName& signature_parameter );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const Synt::Expression& template_parameter,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags );
+		std::vector<bool>& template_parameters_usage_flags,
+		const Synt::Expression& template_parameter );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const Synt::TypeName& template_parameter,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags );
+		std::vector<bool>& template_parameters_usage_flags,
+		const Synt::TypeName& template_parameter );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const Synt::EmptyVariant& empty_variant,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags );
+		std::vector<bool>& template_parameters_usage_flags,
+		const Synt::EmptyVariant& empty_variant );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const Synt::ArrayTypeName& array_type_name,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags );
+		std::vector<bool>& template_parameters_usage_flags,
+		const Synt::ArrayTypeName& array_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const Synt::FunctionTypePtr& function_pointer_type_name_ptr,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags );
+		std::vector<bool>& template_parameters_usage_flags,
+		const Synt::FunctionTypePtr& function_pointer_type_name_ptr );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const Synt::TupleType& tuple_type_name,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags );
+		std::vector<bool>& template_parameters_usage_flags,
+		const Synt::TupleType& tuple_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
-		const Synt::RawPointerType& raw_pointer_type_name,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags );
+		std::vector<bool>& template_parameters_usage_flags,
+		const Synt::RawPointerType& raw_pointer_type_name );
 
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope );
 
@@ -854,18 +854,18 @@ private:
 
 	// NamesScope fill
 
-	void NamesScopeFill( const Synt::ProgramElements& namespace_elements, NamesScope& names_scope );
-	void NamesScopeFill( const Synt::NamespacePtr& namespace_, NamesScope& names_scope );
-	void NamesScopeFill( const Synt::VariablesDeclaration& variables_declaration , NamesScope& names_scope );
-	void NamesScopeFill( const Synt::AutoVariableDeclaration& variable_declaration, NamesScope& names_scope );
-	void NamesScopeFill( const Synt::FunctionPtr& function_declaration, NamesScope& names_scope, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFill( const Synt::FunctionTemplate& function_template_declaration, NamesScope& names_scope, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	ClassPtr NamesScopeFill( const Synt::ClassPtr& class_declaration, NamesScope& names_scope );
-	void NamesScopeFill( const Synt::TypeTemplate& type_template_declaration, NamesScope& names_scope, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFill( const Synt::Enum& enum_declaration, NamesScope& names_scope );
-	void NamesScopeFill( const Synt::TypeAlias& type_alias_declaration, NamesScope& names_scope );
-	void NamesScopeFill( const Synt::StaticAssert& static_assert_, NamesScope& names_scope );
-	void NamesScopeFillOutOfLineElements( const Synt::ProgramElements& namespace_elements, NamesScope& names_scope );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionPtr& function_declaration, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::ClassPtr& class_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplate& type_template_declaration, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
+	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
 
 	// Global things build
 

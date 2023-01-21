@@ -6,24 +6,20 @@
 namespace U
 {
 
-void CodeBuilder::NamesScopeFill(
-	const Synt::ProgramElements& namespace_elements,
-	NamesScope& names_scope )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )
 {
 	for( const Synt::ProgramElement& program_element : namespace_elements )
 	{
 		std::visit(
 			[&]( const auto& t )
 			{
-				NamesScopeFill( t, names_scope );
+				NamesScopeFill( names_scope, t );
 			},
 			program_element );
 	}
 }
 
-void CodeBuilder::NamesScopeFill(
-	const Synt::NamespacePtr& namespace_,
-	NamesScope& names_scope )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::NamespacePtr& namespace_  )
 {
 	NamesScope* result_scope= &names_scope;
 	if( const Value* const same_value= names_scope.GetThisScopeValue( namespace_->name_ ) )
@@ -43,12 +39,10 @@ void CodeBuilder::NamesScopeFill(
 		result_scope= new_names_scope.get();
 	}
 
-	NamesScopeFill( namespace_->elements_, *result_scope );
+	NamesScopeFill( *result_scope, namespace_->elements_ );
 }
 
-void CodeBuilder::NamesScopeFill(
-	const Synt::VariablesDeclaration& variables_declaration,
-	NamesScope& names_scope )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
 {
 	for( const Synt::VariablesDeclaration::VariableEntry& variable_declaration : variables_declaration.variables )
 	{
@@ -65,9 +59,7 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-void CodeBuilder::NamesScopeFill(
-	const Synt::AutoVariableDeclaration& variable_declaration,
-	NamesScope& names_scope )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration )
 {
 	if( IsKeyword( variable_declaration.name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), variable_declaration.src_loc_ );
@@ -81,8 +73,8 @@ void CodeBuilder::NamesScopeFill(
 }
 
 void CodeBuilder::NamesScopeFill(
-	const Synt::FunctionPtr& function_declaration_ptr,
 	NamesScope& names_scope,
+	const Synt::FunctionPtr& function_declaration_ptr,
 	const ClassPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
@@ -132,8 +124,8 @@ void CodeBuilder::NamesScopeFill(
 }
 
 void CodeBuilder::NamesScopeFill(
-	const Synt::FunctionTemplate& function_template_declaration,
 	NamesScope& names_scope,
+	const Synt::FunctionTemplate& function_template_declaration,
 	const ClassPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
@@ -171,7 +163,7 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-ClassPtr CodeBuilder::NamesScopeFill( const Synt::ClassPtr& class_declaration_ptr, NamesScope& names_scope )
+ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ClassPtr& class_declaration_ptr )
 {
 	const auto& class_declaration= *class_declaration_ptr;
 
@@ -229,11 +221,11 @@ ClassPtr CodeBuilder::NamesScopeFill( const Synt::ClassPtr& class_declaration_pt
 		}
 		void operator()( const Synt::FunctionPtr& func )
 		{
-			this_.NamesScopeFill( func, *class_type->members, class_type, current_visibility );
+			this_.NamesScopeFill( *class_type->members, func, class_type, current_visibility );
 		}
 		void operator()( const Synt::FunctionTemplate& func_template )
 		{
-			this_.NamesScopeFill( func_template, *class_type->members, class_type, current_visibility );
+			this_.NamesScopeFill( *class_type->members, func_template, class_type, current_visibility );
 		}
 		void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 		{
@@ -243,36 +235,36 @@ ClassPtr CodeBuilder::NamesScopeFill( const Synt::ClassPtr& class_declaration_pt
 		}
 		void operator()( const Synt::TypeTemplate& type_template )
 		{
-			this_.NamesScopeFill( type_template, *class_type->members, class_type, current_visibility );
+			this_.NamesScopeFill( *class_type->members, type_template, class_type, current_visibility );
 		}
 		void operator()( const Synt::Enum& enum_ )
 		{
-			this_.NamesScopeFill( enum_, *class_type->members );
+			this_.NamesScopeFill( *class_type->members, enum_ );
 			class_type->SetMemberVisibility( enum_.name, current_visibility );
 		}
 		void operator()( const Synt::StaticAssert& static_assert_ )
 		{
-			this_.NamesScopeFill( static_assert_, *class_type->members );
+			this_.NamesScopeFill( *class_type->members, static_assert_ );
 		}
 		void operator()( const Synt::TypeAlias& type_alias )
 		{
-			this_.NamesScopeFill( type_alias, *class_type->members );
+			this_.NamesScopeFill( *class_type->members, type_alias );
 			class_type->SetMemberVisibility( type_alias.name, current_visibility );
 		}
 		void operator()( const Synt::VariablesDeclaration& variables_declaration )
 		{
-			this_.NamesScopeFill( variables_declaration, *class_type->members );
+			this_.NamesScopeFill( *class_type->members, variables_declaration );
 			for( const auto& variable_declaration : variables_declaration.variables )
 				class_type->SetMemberVisibility( variable_declaration.name, current_visibility );
 		}
 		void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
 		{
-			this_.NamesScopeFill( auto_variable_declaration, *class_type->members );
+			this_.NamesScopeFill( *class_type->members, auto_variable_declaration );
 			class_type->SetMemberVisibility( auto_variable_declaration.name, current_visibility );
 		}
 		void operator()( const Synt::ClassPtr& inner_class )
 		{
-			this_.NamesScopeFill( inner_class, *class_type->members );
+			this_.NamesScopeFill( *class_type->members, inner_class );
 			class_type->SetMemberVisibility( inner_class->name_, current_visibility );
 		}
 	};
@@ -285,8 +277,8 @@ ClassPtr CodeBuilder::NamesScopeFill( const Synt::ClassPtr& class_declaration_pt
 }
 
 void CodeBuilder::NamesScopeFill(
-	const Synt::TypeTemplate& type_template_declaration,
 	NamesScope& names_scope,
+	const Synt::TypeTemplate& type_template_declaration,
 	const ClassPtr& base_class,
 	const ClassMemberVisibility visibility )
 {
@@ -315,9 +307,7 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-void CodeBuilder::NamesScopeFill(
-	const Synt::Enum& enum_declaration,
-	NamesScope& names_scope )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration )
 {
 	if( IsKeyword( enum_declaration.name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), enum_declaration.src_loc_ );
@@ -331,9 +321,7 @@ void CodeBuilder::NamesScopeFill(
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration.src_loc_, enum_declaration.name );
 }
 
-void CodeBuilder::NamesScopeFill(
-	const Synt::TypeAlias& typedef_declaration,
-	NamesScope& names_scope )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& typedef_declaration )
 {
 	if( IsKeyword( typedef_declaration.name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), typedef_declaration.src_loc_ );
@@ -345,9 +333,7 @@ void CodeBuilder::NamesScopeFill(
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), typedef_declaration.src_loc_, typedef_declaration.name );
 }
 
-void CodeBuilder::NamesScopeFill(
-	const Synt::StaticAssert& static_assert_declaration,
-	NamesScope& names_scope )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration )
 {
 	StaticAssert static_assert_;
 	static_assert_.syntax_element= &static_assert_declaration;
@@ -358,8 +344,8 @@ void CodeBuilder::NamesScopeFill(
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElements(
-	const Synt::ProgramElements& namespace_elements,
-	NamesScope& names_scope )
+	NamesScope& names_scope,
+	const Synt::ProgramElements& namespace_elements )
 {
 	for (const Synt::ProgramElement& program_element : namespace_elements )
 	{
@@ -418,7 +404,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 			if( const Value* const inner_namespace_value= names_scope.GetThisScopeValue( namespace_.name_ ) )
 			{
 				if( const NamesScopePtr inner_namespace= inner_namespace_value->GetNamespace() )
-					NamesScopeFillOutOfLineElements( namespace_.elements_, *inner_namespace );
+					NamesScopeFillOutOfLineElements( *inner_namespace, namespace_.elements_ );
 			}
 		}
 	}
