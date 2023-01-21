@@ -849,15 +849,14 @@ private:
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
 	// TODO - avoid using "size_type" here.
-	// TODO - pass function_context first.
-	fn CreateClassFieldGEP( this, Variable& class_variable, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateClassFieldGEP( this, NamesScopeVariable& class_variable, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateClassFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateClassParentFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, ClassType::Parent& parent, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateBaseClassFieldGEP( this, ClassTypePtr& class_type, LLVMValueRef value, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateTupleElementGEP( this, Variable& tuple_variable, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateTupleElementGEP( this, NamesScopeVariable& tuple_variable, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
-	fn CreateTupleElementGEP( this, TupleType& t, LLVMValueRef value, size_type element_index, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateClassFieldGEP( this, FunctionContext& function_context, Variable& class_variable, ClassField& field ) : LLVMValueRef;
+	fn CreateClassFieldGEP( this, FunctionContext& function_context, NamesScopeVariable& class_variable, ClassField& field ) : LLVMValueRef;
+	fn CreateClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field ) : LLVMValueRef;
+	fn CreateClassParentFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassType::Parent& parent ) : LLVMValueRef;
+	fn CreateBaseClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, FunctionContext& function_context, Variable& tuple_variable, size_type element_index ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, FunctionContext& function_context, NamesScopeVariable& tuple_variable, size_type element_index ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, FunctionContext& function_context, TupleType& t, LLVMValueRef value, size_type element_index ) : LLVMValueRef;
 
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 
