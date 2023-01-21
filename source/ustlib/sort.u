@@ -48,7 +48,7 @@ fn do_sort( ust::random_access_range</T, true/> range, Compare& comp )
 	{
 		var bool mut c= false;
 		{
-			var ust::random_access_range</T, false/> range_copy= range;
+			var ust::random_access_range_imut</T/> range_copy= range;
 			c= comp( range_copy.front(), range_copy.back() );
 		}
 		if( !c )
@@ -64,7 +64,7 @@ fn do_sort( ust::random_access_range</T, true/> range, Compare& comp )
 	{
 		var bool mut c= false;
 		{
-			var ust::random_access_range</T, false/> range_copy= range;
+			var ust::random_access_range_imut</T/> range_copy= range;
 			c= comp( range_copy[lo], range_copy[last] );
 		}
 

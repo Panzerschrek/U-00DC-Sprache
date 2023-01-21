@@ -395,15 +395,15 @@ public:
 	}
 
 	fn enable_if( typeinfo</ T />.references_tags_count == size_type(0) )
-	range(  mut this ) : random_access_range</ T, true  />'this'
+	range(  mut this ) : random_access_range_mut </T/>'this'
 	{
-		return unsafe( random_access_range</ T, true  />( ptr_, size_ ) );
+		return unsafe( random_access_range_mut </T/>( ptr_, size_ ) );
 	}
 
 	fn enable_if( typeinfo</ T />.references_tags_count == size_type(0) )
-	range( imut this ) : random_access_range</ T, false />'this'
+	range( imut this ) : random_access_range_imut</T/>'this'
 	{
-		return unsafe( random_access_range</ T, false />( ptr_, size_ ) );
+		return unsafe( random_access_range_imut</T/>( ptr_, size_ ) );
 	}
 
 	// Access raw data.

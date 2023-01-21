@@ -509,8 +509,8 @@ public:
 	}
 
 private:
-	type range_mut=  random_access_range</ char_type, true  />;
-	type range_imut= random_access_range</ char_type, false />;
+	type range_mut=  random_access_range_mut </char_type/>;
+	type range_imut= random_access_range_imut</char_type/>;
 	auto constexpr c_element_size_= typeinfo</char_type/>.size_of;
 	auto constexpr c_element_alignment_= typeinfo</char_type/>.align_of;
 
