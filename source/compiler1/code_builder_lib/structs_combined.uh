@@ -47,7 +47,7 @@ struct FundamentalType
 struct ArrayType
 {
 	Type element_type;
-	u64 element_count= 0u64;
+	u64 element_count;
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	op==( ArrayType& l, ArrayType& r ) : bool;
@@ -385,7 +385,7 @@ fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />;
 struct NamesScopeVariable
 {
 	Type t;
-	bool is_mutable = false;
+	bool is_mutable;
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 

@@ -180,7 +180,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		{
 			if( class_field.is_reference )
 			{
-				var NamesScopeVariable this_variable{ .t= class_type, .llvm_value= this_llvm_value };
+				var NamesScopeVariable this_variable{ .t= class_type, .llvm_value= this_llvm_value, .is_mutable= true };
 				InitializeReferenceField( class_members_initial, function_context, this_variable, class_field, initializer );
 			}
 			else

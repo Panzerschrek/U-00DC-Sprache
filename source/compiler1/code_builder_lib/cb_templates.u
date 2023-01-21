@@ -898,6 +898,7 @@ fn CodeBuilder::GenTemplateFunction(
 					{
 						.t= v.t,
 						.llvm_value= v.llvm_value,
+						.is_mutable= v.value_type != ValueType::ReferenceImut,
 						.constexpr_value= v.constexpr_value,
 					};
 					template_arg.something= move(out_var);
@@ -992,6 +993,7 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 				{
 					.t= v.t,
 					.llvm_value= v.llvm_value,
+					.is_mutable= v.value_type != ValueType::ReferenceImut,
 					.constexpr_value= v.constexpr_value,
 				};
 				template_arg.something= move(out_var);
@@ -1036,7 +1038,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 			}
 			if_var( &v : something.get</NamesScopeVariable/>() )
 			{
-				var Variable mut out_v{ .t= v.t, .llvm_value= v.llvm_value, .constexpr_value= v.constexpr_value };
+				var Variable mut out_v{ .t= v.t, .llvm_value= v.llvm_value, .constexpr_value= v.constexpr_value, .value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ), .location= Variable::Location::Pointer };
 				result_template_args.push_back( move(out_v) );
 				continue;
 			}
@@ -1326,6 +1328,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				var NamesScopeVariable mut out_var
 				{
 					.t= given_variable.t,
+					.is_mutable= false,
 					.constexpr_value= given_variable.constexpr_value,
 					.llvm_value= AddGlobalConstantVariable( param_name + "\0", given_variable.t.GetLLVMType(), given_variable.constexpr_value ),
 				};

@@ -121,7 +121,13 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 				var [ Variable, 2 ] constructor_args
 				[
-					{ .t= variable.t, .llvm_value= variable.llvm_value, .value_type= ValueType::ReferenceMut, .node_id= variable.node_id },
+					{
+						.t= variable.t,
+						.llvm_value= variable.llvm_value,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.node_id= variable.node_id
+					},
 					expr_result
 				];
 				DoCallFunction(
@@ -167,6 +173,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		var NamesScopeVariable mut element_variable
 		{
 			.t= array_type.element_type,
+			.is_mutable= true,
 			.node_id= variable.node_id,
 		};
 
@@ -228,6 +235,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var NamesScopeVariable element_variable
 			{
 				.t= tuple_type.element_types[i],
+				.is_mutable= true,
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 				.node_id= variable.node_id,
 			};
@@ -343,6 +351,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var NamesScopeVariable member_variable
 			{
 				.t= class_field.t,
+				.is_mutable= true,
 				.llvm_value= CreateClassFieldGEP( function_context, variable, class_field ),
 				.node_id= variable.node_id,
 			};
@@ -389,6 +398,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		var NamesScopeVariable member_variable
 		{
 			.t= field.t,
+			.is_mutable= true,
 			.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
 			.node_id= variable.node_id,
 		};
@@ -466,7 +476,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			{
 				var NamesScopeVariable mut element_variable
 				{
-					.t= array_type.element_type
+					.t= array_type.element_type,
+					.is_mutable= true,
 				};
 
 				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
@@ -489,6 +500,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var NamesScopeVariable element_variable
 			{
 				.t= tuple_type.element_types[i],
+				.is_mutable= true,
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 			};
 
@@ -534,6 +546,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var NamesScopeVariable member_variable
 			{
 				.t= field.t,
+				.is_mutable= true,
 				.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
 			};
 
@@ -577,7 +590,8 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 	{
 		var NamesScopeVariable mut element_variable
 		{
-			.t= array_type.element_type
+			.t= array_type.element_type,
+			.is_mutable= true,
 		};
 
 		var LLVMValueRef mut constant_initializer = LLVMValueRef::Null;
@@ -608,6 +622,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			var NamesScopeVariable element_variable
 			{
 				.t= tuple_type.element_types[i],
+				.is_mutable= true,
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 			};
 
@@ -644,6 +659,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		{
 			.t= variable.t,
 			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.llvm_value= variable.llvm_value,
 		};
 
@@ -956,6 +972,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		{
 			.t= variable.t,
 			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.llvm_value= variable.llvm_value,
 			.node_id= variable.node_id,
 		};
@@ -1343,6 +1360,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 				var NamesScopeVariable this_variable
 				{
 					.t= class_type,
+					.is_mutable= true,
 					.llvm_value= this_.llvm_value,
 					.node_id= this_.node_id,
 				};
@@ -1390,6 +1408,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			var NamesScopeVariable this_copy
 			{
 				.t= this_.t,
+				.is_mutable= true,
 				.llvm_value= this_.llvm_value,
 				.node_id= this_.node_id,
 			};
@@ -1425,6 +1444,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 	var NamesScopeVariable this_variable
 	{
 		.t= class_type,
+		.is_mutable= true,
 		.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, "\0"[0] ) )
 	};
 

@@ -35,10 +35,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ArrayType& array_type ) : Type
 {
-	var ArrayType mut out_array_type
-	{
-		.element_type( PrepareType( names_scope, function_context, array_type.element_type ) )
-	};
+	var Type mut element_type= PrepareType( names_scope, function_context, array_type.element_type );
 
 	var Variable mut index_variable;
 	{
@@ -50,6 +47,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		RestoreInstructionsState( function_context, instructions_state );
 	}
 
+	var u64 mut element_count(0);
 	if( index_variable.constexpr_value != LLVMValueRef::Null )
 	{
 		if( !index_variable.t.GetFundamentalType().empty() && IsInteger( index_variable.t.GetFundamentalType().try_deref().fundamental_type ) )
@@ -59,17 +57,17 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 				auto s= unsafe( LLVMConstIntGetSExtValue( index_variable.constexpr_value ) );
 				if( s >= 0i64 )
 				{
-					out_array_type.element_count= u64(s);
+					element_count= u64(s);
 				}
 				else
 				{
-					out_array_type.element_count= 0u64;
-					REPORT_ERROR( ArraySizeIsNegative, names_scope,  array_type.src_loc  )
+					element_count= 0u64;
+					REPORT_ERROR( ArraySizeIsNegative, names_scope, array_type.src_loc  )
 				}
 			}
 			else
 			{
-				out_array_type.element_count= unsafe( LLVMConstIntGetZExtValue( index_variable.constexpr_value ) );
+				element_count= unsafe( LLVMConstIntGetZExtValue( index_variable.constexpr_value ) );
 			}
 		}
 		else
@@ -82,7 +80,12 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		REPORT_ERROR( ExpectedConstantExpression, names_scope, array_type.src_loc )
 	}
 
-	out_array_type.llvm_type= unsafe( LLVMArrayType( out_array_type.element_type.GetLLVMType(), u32(out_array_type.element_count) ) );
+	var ArrayType mut out_array_type
+	{
+		.llvm_type= unsafe( LLVMArrayType( element_type.GetLLVMType(), u32(element_count) ) ),
+		.element_type= move(element_type),
+		.element_count= element_count,
+	};
 
 	return Type( move(out_array_type) );
 }

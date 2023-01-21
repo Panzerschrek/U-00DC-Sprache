@@ -275,6 +275,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			.t= move(array_type),
 			.location= Variable::Location::Pointer,
+			.value_type= ValueType::ReferenceImut,
 			.llvm_value= global_value,
 			.constexpr_value= constexpr_value,
 		};
@@ -383,6 +384,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			.t= base_type,
 			.value_type= this_.value_type,
+			.location= Variable::Location::Pointer,
 			.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, base_type, function_context ),
 		};
 
@@ -2580,7 +2582,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		CopyBytes( l_var.llvm_value, r_var.llvm_value, r_var.t, function_context );
 		CreateLifetimeEnd( function_context, r_var.llvm_value );
 
-		var Variable mut move_result{ .t= void_type_ };
+		var Variable mut move_result{ .t= void_type_, .value_type= ValueType::Value, .location= Variable::Location::LLVMRegister };
 		return Value( move(move_result) );
 	}
 	else if( args_ref.front().t == args_ref.back().t && ( !args_ref.front().t.GetArrayType().empty() || !args_ref.front().t.GetTupleType().empty() ) )
@@ -2663,7 +2665,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 
-		var Variable mut result{ .t= void_type_ };
+		var Variable mut result{ .t= void_type_, .value_type= ValueType::Value, .location= Variable::Location::LLVMRegister };
 		return move(result);
 	}
 	else if( operator == OverloadedOperator::CompareEqual )

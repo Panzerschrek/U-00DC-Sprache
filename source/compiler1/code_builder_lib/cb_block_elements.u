@@ -578,7 +578,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 				var [ Variable, 2 ] constructor_args
 				[
-					{ .t= ret_type, .llvm_value= function_context.s_ret, .value_type= ValueType::ReferenceMut, .node_id= return_node },
+					{
+						.t= ret_type,
+						.llvm_value= function_context.s_ret,
+						.value_type= ValueType::ReferenceMut,
+						.location= Variable::Location::Pointer,
+						.node_id= return_node
+					},
 					expr,
 				];
 				DoCallFunction(
