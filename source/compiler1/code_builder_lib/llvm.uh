@@ -243,6 +243,7 @@ fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 
 fn nomangle LLVMReplaceAllUsesWith(LLVMValueRef OldVal, LLVMValueRef NewVal) unsafe;
 
+fn nomangle LLVMIsAFunction(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;

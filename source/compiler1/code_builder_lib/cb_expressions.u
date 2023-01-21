@@ -2171,6 +2171,11 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 		// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
 		unsafe
 		{
+			// LLVM constants folder produces wrong compare result for function pointers to "unnamed_addr" functions.
+			// Perform manual constant functions compare instead.
+			auto l_function= LLVMIsAFunction( l_in_register );
+			auto r_function= LLVMIsAFunction( r_in_register );
+
 				 if( operator == BinaryOperatorType::Equal )
 			{
 				if( is_void )
@@ -2180,6 +2185,10 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				else if( is_float )
 				{
 					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l_in_register, r_in_register, "==\0"[0] );
+				}
+				else if( l_function != LLVMValueRef::Null && r_function != LLVMValueRef::Null )
+				{
+					res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, select( l_function == r_function ? 1u64 : 0u64 ), LLVMBool::False );
 				}
 				else
 				{
@@ -2195,6 +2204,10 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				else if( is_float )
 				{
 					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::UNE, l_in_register, r_in_register, "!=\0"[0] );
+				}
+				else if( l_function != LLVMValueRef::Null && r_function != LLVMValueRef::Null )
+				{
+					res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, select( l_function != r_function ? 1u64 : 0u64 ), LLVMBool::False );
 				}
 				else
 				{

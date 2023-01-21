@@ -1962,6 +1962,11 @@ Value CodeBuilder::BuildBinaryOperator(
 			const bool is_void= l_fundamental_type != nullptr && l_fundamental_type->fundamental_type == U_FundamentalType::void_;
 			const bool is_float= l_fundamental_type != nullptr && IsFloatingPoint( l_fundamental_type->fundamental_type );
 
+			// LLVM constants folder produces wrong compare result for function pointers to "unnamed_addr" functions.
+			// Perform manual constant functions compare instead.
+			const auto l_function= llvm::dyn_cast<llvm::Function>( l_value_for_op );
+			const auto r_function= llvm::dyn_cast<llvm::Function>( r_value_for_op );
+
 			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
 			switch( binary_operator )
 			{
@@ -1970,6 +1975,8 @@ Value CodeBuilder::BuildBinaryOperator(
 					result.llvm_value= llvm::ConstantInt::getTrue( llvm_context_ ); // All "void" values are same.
 				else if( is_float )
 					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOEQ( l_value_for_op, r_value_for_op );
+				else if( l_function != nullptr && r_function != nullptr )
+					result.llvm_value= llvm::ConstantInt::getBool( llvm_context_, l_function == r_function );
 				else
 					result.llvm_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
 				break;
@@ -1979,6 +1986,8 @@ Value CodeBuilder::BuildBinaryOperator(
 					result.llvm_value= llvm::ConstantInt::getFalse( llvm_context_ ); // All "void" values are same.
 				else if( is_float )
 					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
+				else if( l_function != nullptr && r_function != nullptr )
+					result.llvm_value= llvm::ConstantInt::getBool( llvm_context_, l_function != r_function );
 				else
 					result.llvm_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
 				break;
