@@ -1196,7 +1196,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.t= variable_tuple_type.element_types[type_index],
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-				.llvm_value= CreateTupleElementGEP( function_context, variable, size_type(type_index) ),
+				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(type_index) ),
 				.node_id= result_node_id,
 			};
 
@@ -1326,7 +1326,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			auto field_lock= field_ptr.try_lock_imut();
 			auto& field= field_lock.deref();
 
-			if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
+			if( field.index == ~0u ){ return ErrorValue(); } // May be in case of error
 
 			auto mut this_value_corrected= variable.llvm_value;
 			auto field_source_class= field.source_class;
@@ -1775,8 +1775,8 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 	if( operator == BinaryOperatorType::Add && ( !l_raw_pointer_type.empty() || !r_raw_pointer_type.empty() ) )
 	{
 		// Add pointer and integer.
-		var size_type pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
-		var size_type mut int_size(0);
+		var u32 pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
+		var u32 mut int_size(0);
 
 		var LLVMValueRef mut ptr_value= LLVMValueRef::Null, mut index_value= LLVMValueRef::Null;
 		var U_FundamentalType mut int_type= U_FundamentalType::InvalidType;
@@ -1863,8 +1863,8 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
-		var size_type pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
-		var U_FundamentalType diff_type= select( pointer_size == 4s ? U_FundamentalType::i32_ : U_FundamentalType::i64_ );
+		var u32 pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
+		var U_FundamentalType diff_type= select( pointer_size == 4u ? U_FundamentalType::i32_ : U_FundamentalType::i64_ );
 		var LLVMTypeRef diff_llvm_type= GetFundamentalLLVMType( diff_type );
 
 		res.t= FundamentalType( diff_type, diff_llvm_type );
@@ -1900,7 +1900,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 
 		var U_FundamentalType int_type= r_fundamental_type.try_deref().fundamental_type;
 
-		var size_type
+		var u32
 			int_size= r_fundamental_type.try_deref().GetSize(),
 			pointer_size= size_type_.GetFundamentalType().try_deref().GetSize();
 
@@ -1957,7 +1957,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )
 			return ErrorValue();
 		}
-		if( l_fundamental_type.try_deref().GetSize() < 4s )
+		if( l_fundamental_type.try_deref().GetSize() < 4u )
 		{
 			// Operation supported only for 32 and 64bit operands
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, l_type )

@@ -41,7 +41,7 @@ struct FundamentalType
 
 	op==( FundamentalType& l, FundamentalType& r ) : bool;
 
-	fn GetSize(this) : size_type;
+	fn GetSize(this) : u32;
 }
 
 struct ArrayType
@@ -408,8 +408,8 @@ struct ClassField
 	Type t;
 	bool is_reference;
 	bool is_mutable;
-	size_type index= ~0s; // for "getelementptr" instruction
-	size_type original_index= ~0s; // Index of class field in class declaration
+	u32 index= ~0u; // for "getelementptr" instruction
+	u32 original_index= ~0u; // Index of class field in class declaration
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 
 	// Class, where this field is defined. May be not same class in case of inheritance.
@@ -534,7 +534,7 @@ struct ParametrizedFunctionTemplate
 
 struct TemplateArg
 {
-	size_type index;
+	u32 index;
 
 	struct NotKnownYet{}
 	ust::variant</ tup[ NotKnownYet, Type, NamesScopeVariable ] /> something;
@@ -548,7 +548,7 @@ class TemplateSignatureParam
 public:
 	struct TemplateParam
 	{
-		size_type index;
+		u32 index;
 	}
 
 	struct TypeParam
@@ -645,7 +645,7 @@ struct GlobalVariable
 	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::VariablesDeclaration /> syntax_element;
-	size_type variable_index;
+	u32 variable_index;
 }
 
 struct GlobalAutoVariable

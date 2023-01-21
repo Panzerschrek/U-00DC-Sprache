@@ -259,7 +259,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 	return unsafe( LLVMDIBuilderCreateBasicType(
 		debug_info_.builder,
 		type_name.data(), type_name.size(),
-		u64( t.GetSize() * 8s ),
+		u64( t.GetSize() * 8u ),
 		encoding,
 		0u ) );
 }
@@ -427,7 +427,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 			auto field_lock= field_pair[1].lock_imut();
 			var ClassField& field= field_lock.deref();
 
-			if( field.index == ~0s ){ continue; } // May be in case of error
+			if( field.index == ~0u ){ continue; } // May be in case of error
 
 			var LLVMMetadataRef mut element_di_type= CreateDIType( field.t );
 			var LLVMTypeRef mut llvm_element_type= field.t.GetLLVMType();

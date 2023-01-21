@@ -228,7 +228,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var NamesScopeVariable element_variable
 			{
 				.t= tuple_type.element_types[i],
-				.llvm_value= CreateTupleElementGEP( function_context, variable, i ),
+				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 				.node_id= variable.node_id,
 			};
 
@@ -324,7 +324,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			return LLVMValueRef::Null;
 		}
 
-		if( class_field.index == ~0s ){ is_constexpr= false; continue; } // May be in case of error
+		if( class_field.index == ~0u ){ is_constexpr= false; continue; } // May be in case of error
 
 		if( class_field.is_reference )
 		{
@@ -384,7 +384,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto field_lock= field_pair[1].lock_imut();
 		var ClassField & field= field_lock.deref();
 
-		if( field.index == ~0s ){ continue; } // May be in case of error
+		if( field.index == ~0u ){ continue; } // May be in case of error
 
 		var NamesScopeVariable member_variable
 		{
@@ -489,7 +489,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			var NamesScopeVariable element_variable
 			{
 				.t= tuple_type.element_types[i],
-				.llvm_value= CreateTupleElementGEP( function_context, variable, i ),
+				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 			};
 
 			BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
@@ -523,7 +523,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			auto field_lock= field_pair[1].lock_imut();
 			var ClassField& field= field_lock.deref();
 
-			if( field.index == ~0s ){ continue; } // May be in case of error
+			if( field.index == ~0u ){ continue; } // May be in case of error
 
 			if( field.is_reference )
 			{
@@ -608,7 +608,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			var NamesScopeVariable element_variable
 			{
 				.t= tuple_type.element_types[i],
-				.llvm_value= CreateTupleElementGEP( function_context, variable, i ),
+				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 			};
 
 			var LLVMValueRef constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, src_loc );
@@ -1315,7 +1315,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		auto field_lock= field_pair[1].lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
-		if( class_field.index == ~0s ){ continue; } // May be in case of error
+		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
 		var NamesScopeVariable field_variable
 		{
@@ -1383,7 +1383,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
-		if( class_field.index == ~0s ){ continue; } // May be in case of error
+		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
 		if( class_field.is_reference )
 		{
@@ -1433,7 +1433,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 		auto field_lock= field_pair[1].lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
-		if( class_field.index == ~0s ){ continue; } // May be in case of error
+		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
 		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )

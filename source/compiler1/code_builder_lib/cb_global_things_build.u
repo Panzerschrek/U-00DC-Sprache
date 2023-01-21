@@ -510,8 +510,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 			// TODO - use libary sorting function.
 			while( !fields_left.empty() )
 			{
-				var size_type mut min_index= ~0s;
-				var size_type mut min_index_index= ~0s;
+				var u32 mut min_index= ~0u;
+				var u32 mut min_index_index= ~0u;
 				for( auto mut i= 0s; i < fields_left.size(); ++i )
 				{
 					auto field_lock= fields_left[i].lock_imut();
@@ -519,13 +519,13 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 					if( field.original_index < min_index )
 					{
 						min_index= field.original_index;
-						min_index_index= i;
+						min_index_index= u32(i);
 					}
 				}
 
 				auto field_ptr= fields_left[min_index_index];
 
-				if( min_index_index + 1s < fields_left.size() )
+				if( min_index_index + 1u < u32(fields_left.size()) )
 				{
 					auto f= fields_left.back();
 					fields_left[min_index_index]= f;
@@ -538,7 +538,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				auto mut llvm_type= field.t.GetLLVMType();
 				if( field.is_reference ) { llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) ); }
 
-				field.index= fields_llvm_types.size();
+				field.index= u32(fields_llvm_types.size());
 				fields_llvm_types.push_back( llvm_type );
 				fields_order.push_back( ust::make_tuple( field.syntax_element.deref().name, field_ptr ) );
 			}
@@ -592,7 +592,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				auto mut llvm_type= field.t.GetLLVMType();
 				if( field.is_reference ) { llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) ); }
 
-				field.index= fields_llvm_types.size();
+				field.index= u32(fields_llvm_types.size());
 				fields_llvm_types.push_back( llvm_type );
 				fields_order.push_back( ust::make_tuple( field.syntax_element.deref().name, field_ptr ) );
 
@@ -1097,7 +1097,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 		enum_elements.insert( element.name, move(out_element) );
 	}
 
-	var u64 bit_width(underlaying_type.GetSize() * 8s);
+	var u64 bit_width(underlaying_type.GetSize() * 8u);
 	if( bit_width < 32u64 ) // Assume that 64 bits are enough for all enums.
 	{
 		auto max_value_plus_one=

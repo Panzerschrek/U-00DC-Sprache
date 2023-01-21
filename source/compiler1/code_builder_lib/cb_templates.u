@@ -92,7 +92,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 		{
 			for( auto mut i= 0s; i < template_params.size(); ++i )
 			{
-				var TemplateSignatureParam::TemplateParam mut p{ .index= i };
+				var TemplateSignatureParam::TemplateParam mut p{ .index= u32(i) };
 				signature_params.push_back( move(p) );
 				template_params_usage_flags[i]= true;
 			}
@@ -322,7 +322,7 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 				{
 					template_params_usage_flags[i]= true;
 
-					var TemplateSignatureParam::TemplateParam mut res{ .index= i };
+					var TemplateSignatureParam::TemplateParam mut res{ .index= u32(i) };
 					return move(res);
 				}
 			}
@@ -663,7 +663,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
 		for( auto mut i= 0s; i < type_template.params.size(); ++i )
 		{
-			var TemplateArg mut template_arg{ .index= i };
+			var TemplateArg mut template_arg{ .index= u32(i) };
 			result_names_scope_lock.deref().AddName( type_template.params[i].name, move(template_arg) );
 		}
 	}
@@ -884,7 +884,7 @@ fn CodeBuilder::GenTemplateFunction(
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
 		for( auto mut i= 0s; i < function_template.params.size(); ++i )
 		{
-			var TemplateArg mut template_arg{ .index= i };
+			var TemplateArg mut template_arg{ .index= u32(i) };
 
 			if( i < known_template_args.size() )
 			{
@@ -980,7 +980,7 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 		auto mut result_names_scope_lock= result_names_scope.lock_mut();
 		for( auto mut i= 0s; i < function_template.params.size(); ++i )
 		{
-			var TemplateArg mut template_arg{ .index= i };
+			var TemplateArg mut template_arg{ .index= u32(i) };
 
 			if_var( &t : known_template_args[i].get</Type/>() )
 			{
@@ -1188,7 +1188,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			auto mut result_names_scope_lock= result_names_scope.lock_mut();
 			for( auto mut i= 0s; i < function_template.params.size(); ++i )
 			{
-				var TemplateArg mut template_arg{ .index= i };
+				var TemplateArg mut template_arg{ .index= u32(i) };
 				result_names_scope_lock.deref().AddName( function_template.params[i].name, move(template_arg) );
 			}
 		}
@@ -1196,7 +1196,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 		auto mut all_ok= true;
 		for( auto mut i= 0s; i < template_args_finished.size(); ++i )
 		{
-			var TemplateSignatureParam::TemplateParam mut signature_param{ .index= i };
+			var TemplateSignatureParam::TemplateParam mut signature_param{ .index= u32(i) };
 			var TemplateSignatureParam signature_param_abstract( move(signature_param) );
 
 			if( !MatchTemplateArgument( result_names_scope, function_template, signature_param_abstract, template_args_finished[i], src_loc ) )

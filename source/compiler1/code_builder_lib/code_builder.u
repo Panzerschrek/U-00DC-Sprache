@@ -415,7 +415,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		auto& field= field_lock.deref();
 		auto& field_name= field.syntax_element.deref().name;
 
-		if( field.index == ~0s ){ return ErrorValue(); } // May be in case of error
+		if( field.index == ~0u ){ return ErrorValue(); } // May be in case of error
 
 		if( function_context.this_.empty() )
 		{
@@ -2758,17 +2758,17 @@ fn CodeBuilder::CreateBaseClassFieldGEP( this, FunctionContext& function_context
 	return unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, ".base\0"[0] ) );
 }
 
-fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, Variable& tuple_variable, size_type element_index ) : LLVMValueRef
+fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, Variable& tuple_variable, u32 element_index ) : LLVMValueRef
 {
 	return CreateTupleElementGEP( function_context, tuple_variable.t.GetTupleType().try_deref(), tuple_variable.llvm_value, element_index );
 }
 
-fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, NamesScopeVariable& tuple_variable, size_type element_index ) : LLVMValueRef
+fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, NamesScopeVariable& tuple_variable, u32 element_index ) : LLVMValueRef
 {
 	return CreateTupleElementGEP( function_context, tuple_variable.t.GetTupleType().try_deref(), tuple_variable.llvm_value, element_index );
 }
 
-fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, TupleType& t, LLVMValueRef value, size_type element_index ) : LLVMValueRef
+fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, TupleType& t, LLVMValueRef value, u32 element_index ) : LLVMValueRef
 {
 	auto op_name_nt= "[" + ust::to_string8(element_index) + "]\0";
 	unsafe

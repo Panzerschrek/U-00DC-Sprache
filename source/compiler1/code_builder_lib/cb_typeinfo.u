@@ -12,7 +12,7 @@ import "code_builder.uh"
 			.t= bool_type_,
 			.is_mutable= true,
 			.is_reference= false,
-			.index= fields_llvm_types.size(),
+			.index= u32(fields_llvm_types.size()),
 			.syntax_element= dummy_syntax_element,
 			.source_class= typeinfo_class,
 		};
@@ -34,7 +34,7 @@ import "code_builder.uh"
 			.t= size_type_,
 			.is_mutable= true,
 			.is_reference= false,
-			.index= fields_llvm_types.size(),
+			.index= u32(fields_llvm_types.size()),
 			.syntax_element= dummy_syntax_element,
 			.source_class= typeinfo_class,
 		};
@@ -57,7 +57,7 @@ import "code_builder.uh"
 			.t= dependent_type_typeinfo.t,
 			.is_mutable= false,
 			.is_reference= true,
-			.index= fields_llvm_types.size(),
+			.index= u32(fields_llvm_types.size()),
 			.syntax_element= dummy_syntax_element,
 			.source_class= typeinfo_class,
 		};
@@ -81,7 +81,7 @@ import "code_builder.uh"
 			.t= list_variable.t,
 			.is_mutable= true,
 			.is_reference= false,
-			.index= fields_llvm_types.size(),
+			.index= u32(fields_llvm_types.size()),
 			.syntax_element= dummy_syntax_element,
 			.source_class= typeinfo_class,
 		};
@@ -112,7 +112,7 @@ import "code_builder.uh"
 			.t= move(array_type),
 			.is_mutable= true,
 			.is_reference= false,
-			.index= fields_llvm_types.size(),
+			.index= u32(fields_llvm_types.size()),
 			.syntax_element= dummy_syntax_element,
 			.source_class= typeinfo_class,
 		};
@@ -400,7 +400,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 				.t= size_type_,
 				.is_mutable= false,
 				.is_reference= true,
-				.index= fields_llvm_types.size(),
+				.index= u32(fields_llvm_types.size()),
 				.syntax_element= dummy_syntax_element,
 				.source_class= typeinfo_class,
 			};
@@ -849,7 +849,7 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 				.t= enum_.underlaying_type,
 				.is_mutable= true,
 				.is_reference= false,
-				.index= fields_llvm_types.size(),
+				.index= u32(fields_llvm_types.size()),
 				.syntax_element= dummy_syntax_element,
 				.source_class= typeinfo_class,
 			};

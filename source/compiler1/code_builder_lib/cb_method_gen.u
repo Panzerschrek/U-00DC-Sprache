@@ -162,7 +162,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		auto field_lock= field_pair[1].lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
-		if( class_field.index == ~0s ){ continue; } // May be in case of error
+		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
 		var NamesScopeVariable field_variable
 		{
@@ -364,7 +364,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 		auto field_lock= field_pair[1].lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
-		if( class_field.index == ~0s ){ continue; } // May be in case of error
+		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
 		auto dst_member_value= CreateClassFieldGEP( function_context, class_type, dst_llvm_value, class_field );
 		auto src_member_value= CreateClassFieldGEP( function_context, class_type, src_llvm_value, class_field );
@@ -554,7 +554,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 		auto field_lock= field_pair[1].lock_imut();
 		var ClassField & class_field= field_lock.deref();
 
-		if( class_field.index == ~0s ){ continue; } // May be in case of error
+		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
 		auto dst_member_value= CreateClassFieldGEP( function_context, class_type, dst_llvm_value, class_field );
 		auto src_member_value= CreateClassFieldGEP( function_context, class_type, src_llvm_value, class_field );
@@ -759,7 +759,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 			auto field_lock= field_pair[1].lock_imut();
 			var ClassField & class_field= field_lock.deref();
 
-			if( class_field.index == ~0s ){ continue; } // May be in case of error
+			if( class_field.index == ~0u ){ continue; } // May be in case of error
 
 			auto l_member= CreateClassFieldGEP( function_context, class_type, l_address, class_field );
 			auto r_member= CreateClassFieldGEP( function_context, class_type, r_address, class_field );
@@ -949,8 +949,8 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			auto dst_element_value= CreateTupleElementGEP( function_context, tuple_type, dst, i );
-			auto src_element_value= CreateTupleElementGEP( function_context, tuple_type, src, i );
+			auto dst_element_value= CreateTupleElementGEP( function_context, tuple_type, dst, u32(i) );
+			auto src_element_value= CreateTupleElementGEP( function_context, tuple_type, src, u32(i) );
 			BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], src_loc );
 		}
 
@@ -1032,8 +1032,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			auto dst_element_value= CreateTupleElementGEP( function_context, tuple_type, dst, i );
-			auto src_element_value= CreateTupleElementGEP( function_context, tuple_type, src, i );
+			auto dst_element_value= CreateTupleElementGEP( function_context, tuple_type, dst, u32(i) );
+			auto src_element_value= CreateTupleElementGEP( function_context, tuple_type, src, u32(i) );
 			BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], src_loc );
 		}
 
@@ -1137,8 +1137,8 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var LLVMValueRef l= CreateTupleElementGEP( function_context, tuple_type, l_address, i );
-			var LLVMValueRef r= CreateTupleElementGEP( function_context, tuple_type, r_address, i );
+			var LLVMValueRef l= CreateTupleElementGEP( function_context, tuple_type, l_address, u32(i) );
+			var LLVMValueRef r= CreateTupleElementGEP( function_context, tuple_type, r_address, u32(i) );
 			BuildEqualityCompareOperatorPart( names_scope, function_context, l, r, tuple_type.element_types[i], false_basic_block, src_loc );
 		}
 
@@ -1207,7 +1207,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var LLVMValueRef element_value= CreateTupleElementGEP( function_context, tuple_type, value, i );
+			var LLVMValueRef element_value= CreateTupleElementGEP( function_context, tuple_type, value, u32(i) );
 			BuildDestructorPart( names_scope, function_context, element_value, tuple_type.element_types[i], src_loc );
 		}
 	}
@@ -1249,7 +1249,7 @@ fn CodeBuilder::BuildMembersDestructors( this, FunctionContext &mut function_con
 		auto field_lock= field_pair[1].lock_imut();
 		var ClassField& class_field= field_lock.deref();
 
-		if( class_field.index == ~0s ){ continue; } // May be in case of error
+		if( class_field.index == ~0u ){ continue; } // May be in case of error
 		if( class_field.is_reference ) { continue; }
 
 		auto field_llvm_value= CreateClassFieldGEP( function_context, class_type, value, class_field );

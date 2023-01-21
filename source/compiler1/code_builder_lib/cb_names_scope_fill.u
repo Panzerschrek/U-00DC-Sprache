@@ -9,7 +9,7 @@ fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr
 {
 	auto mut current_visibility= Synt::ClassVisibility::Public;
 	var bool is_struct= class_type.lock_imut().deref().syntax_element.try_deref().kind_attribute == Synt::Class::KindAttribute::Struct;
-	var size_type mut field_index= 0s;
+	var u32 mut field_index= 0u;
 	foreach( & class_element : class_elements )
 	{
 		variant_visit( & el : class_element )
@@ -354,7 +354,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		var GlobalVariable mut global_variable
 		{
 			.syntax_element= variables_declaration,
-			.variable_index= i,
+			.variable_index= u32(i),
 		};
 
 		var bool mut insert_not_ok= false;
@@ -471,7 +471,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	lock.deref().AddName( namespace_.deref().name, move(names_scope_value) );
 }
 
-fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility, size_type field_index )
+fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility, u32 field_index )
 {
 	var ClassTypePtr class_type_non_null = class_type.try_to_non_nullable();
 
