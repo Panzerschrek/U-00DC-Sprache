@@ -840,8 +840,8 @@ private:
 
 	fn CreateTypedLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef;
 	fn CreateTypedReferenceLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef;
-	fn CreateTypedStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address ) : LLVMValueRef;
-	fn CreateTypedReferenceStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address ) : LLVMValueRef;
+	fn CreateTypedStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address );
+	fn CreateTypedReferenceStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address );
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;

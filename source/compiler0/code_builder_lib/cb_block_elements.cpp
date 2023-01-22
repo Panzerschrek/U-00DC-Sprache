@@ -1049,8 +1049,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			// Binding value to reference.
 			llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-			if( expr.type != void_type_ )
-				CreateTypedStore( function_context, expr.type, expr.llvm_value, storage );
+			CreateTypedStore( function_context, expr.type, expr.llvm_value, storage );
 			variable.llvm_value= storage;
 		}
 		else
@@ -1384,8 +1383,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				return BlockBuildInfo();
 			}
 			U_ASSERT( r_var.location == Variable::Location::LLVMRegister );
-			if( r_var.type != void_type_ )
-				CreateTypedStore( function_context, r_var.type, r_var.llvm_value, l_var.llvm_value );
+			CreateTypedStore( function_context, r_var.type, r_var.llvm_value, l_var.llvm_value );
 		}
 		else
 		{

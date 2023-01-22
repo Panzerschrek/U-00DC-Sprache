@@ -31,11 +31,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			return LLVMValueRef::Null;
 		}
 
-		if( variable.t != void_type_ )
-		{
-			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
-			CreateTypedStore( function_context, variable.t, value_in_register, variable.llvm_value );
-		}
+		auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr_result, function_context );
+		CreateTypedStore( function_context, variable.t, value_in_register, variable.llvm_value );
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 
@@ -461,10 +458,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		unsafe
 		{
 			auto zero_value= LLVMConstNull( variable.t.GetLLVMType() );
-			if( variable.t != void_type_ )
-			{
-				CreateTypedStore( function_context, variable.t, zero_value, variable.llvm_value );
-			}
+			CreateTypedStore( function_context, variable.t, zero_value, variable.llvm_value );
 			return zero_value;
 		}
 	}
@@ -838,10 +832,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				return LLVMValueRef::Null;
 			}
 
-			if( variable.t != void_type_ )
-			{
-				CreateTypedStore( function_context, variable.t, llvm_value, variable.llvm_value );
-			}
+			CreateTypedStore( function_context, variable.t, llvm_value, variable.llvm_value );
 		}
 
 		if( unsafe( LLVMIsConstant( llvm_value ) ) == LLVMBool::True ){ return llvm_value; }

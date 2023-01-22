@@ -277,11 +277,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			return nullptr;
 		}
 
-		if( variable.type != void_type_ )
-		{
-			llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
-			CreateTypedStore( function_context, variable.type, value_for_assignment, variable.llvm_value );
-		}
+		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
+		CreateTypedStore( function_context, variable.type, value_for_assignment, variable.llvm_value );
 
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 
@@ -403,8 +400,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	{
 		// "0" for numbers, "false" for boolean type, first element for enums, "nullptr" for function pointers.
 		const auto zero_value= llvm::Constant::getNullValue( variable.type.GetLLVMType() );
-		if( variable.type != void_type_ )
-			CreateTypedStore( function_context, variable.type, zero_value, variable.llvm_value );
+		CreateTypedStore( function_context, variable.type, zero_value, variable.llvm_value );
 		return zero_value;
 	}
 	else if( const ArrayType* const array_type= variable.type.GetArrayType() )
@@ -732,8 +728,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			}
 		} // If needs conversion
 
-		if( variable.type != void_type_ )
-			CreateTypedStore( function_context, variable.type, value_for_assignment, variable.llvm_value );
+		CreateTypedStore( function_context, variable.type, value_for_assignment, variable.llvm_value );
 
 		return llvm::dyn_cast<llvm::Constant>(value_for_assignment);
 	}

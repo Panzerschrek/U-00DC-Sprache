@@ -861,8 +861,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( result.value_type == ValueType::Value )
 			{
 				// Move or create copy.
-				if( result.type == void_type_ ){}
-				else if(
+				if(
 					result.type.GetFundamentalType() != nullptr ||
 					result.type.GetEnumType() != nullptr ||
 					result.type.GetRawPointerType() != nullptr ||
@@ -1347,8 +1346,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( var.location == Variable::Location::LLVMRegister )
 	{
 		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-		if( var.type != void_type_ )
-			CreateTypedStore( function_context, var.type, var.llvm_value, result.llvm_value );
+		CreateTypedStore( function_context, var.type, var.llvm_value, result.llvm_value );
 	}
 
 	return Value( std::move(result), cast_mut.src_loc_ );
@@ -1367,8 +1365,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( var.location == Variable::Location::LLVMRegister )
 	{
 		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-		if( var.type != void_type_ )
-			CreateTypedStore( function_context, var.type, var.llvm_value, result.llvm_value );
+		CreateTypedStore( function_context, var.type, var.llvm_value, result.llvm_value );
 	}
 
 	return Value( std::move(result), cast_imut.src_loc_ );
@@ -2520,8 +2517,7 @@ Value CodeBuilder::DoReferenceCast(
 	if( var.location == Variable::Location::LLVMRegister )
 	{
 		src_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType() );
-		if( var.type != void_type_ )
-			CreateTypedStore( function_context, var.type, var.llvm_value, src_value );
+		CreateTypedStore( function_context, var.type, var.llvm_value, src_value );
 	}
 
 	if( type == var.type )
@@ -2787,8 +2783,7 @@ Value CodeBuilder::DoCallFunction(
 				{
 					// Bind value to const reference.
 					llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-					if( expr.type != void_type_ )
-						CreateTypedStore( function_context, expr.type, expr.llvm_value, temp_storage );
+					CreateTypedStore( function_context, expr.type, expr.llvm_value, temp_storage );
 					llvm_args[j]= temp_storage;
 					// Do not call here lifetime.start since there is no way to call lifetime.end for this value, because this allocation logically linked with some temp variable and can extend it's lifetime.
 				}
@@ -2867,9 +2862,7 @@ Value CodeBuilder::DoCallFunction(
 				}
 			}
 
-			if( param.type == void_type_ )
-				llvm_args[j]= llvm::UndefValue::get( fundamental_llvm_types_.void_ ); // Hack for interpreter - it can not process regular constant values properly.
-			else if( param.type.GetFundamentalType() != nullptr ||
+			if( param.type.GetFundamentalType() != nullptr ||
 				param.type.GetEnumType() != nullptr ||
 				param.type.GetRawPointerType() != nullptr ||
 				param.type.GetFunctionPointerType() != nullptr )

@@ -808,8 +808,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 	{
 		// Create simple load-store.
 		U_ASSERT( src->getType() == dst->getType() );
-		if( type != void_type_ )
-			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
+		CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
 	}
 	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
 	{
@@ -883,8 +882,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 	{
 		// Create simple load-store.
 		U_ASSERT( src->getType() == dst->getType() );
-		if( type != void_type_ )
-			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
+		CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
 	}
 	else if( const ArrayType* const array_type_ptr= type.GetArrayType() )
 	{
@@ -1053,8 +1051,7 @@ void CodeBuilder::CopyBytes(
 	{
 		U_ASSERT( src->getType() == dst->getType() );
 		// Create simple load-store.
-		if( type != void_type_ )
-			CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
+		CreateTypedStore( function_context, type, CreateTypedLoad( function_context, type, src ), dst );
 	}
 	else
 	{

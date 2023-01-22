@@ -2015,8 +2015,11 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 	return nullptr;
 }
 
-llvm::LoadInst* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
+llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
+	if( type == void_type_ )
+		return llvm::UndefValue::get( fundamental_llvm_types_.void_ );
+
 	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( type.GetLLVMType(), address );
 
 	if( generate_tbaa_metadata_ )
@@ -2035,24 +2038,23 @@ llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function
 	return result;
 }
 
-llvm::StoreInst* CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
+void CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Type& type, llvm::Value* const value_to_store, llvm::Value* const address )
 {
+	if( type == void_type_ )
+		return;
+
 	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
 
 	if( generate_tbaa_metadata_ )
 		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateAccessTag( type ) );
-
-	return result;
 }
 
-llvm::StoreInst* CodeBuilder::CreateTypedReferenceStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
+void CodeBuilder::CreateTypedReferenceStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
 {
 	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
 
 	if( generate_tbaa_metadata_ )
 		result->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateReferenceAccessTag( type ) );
-
-	return result;
 }
 
 llvm::Value* CodeBuilder::CreateMoveToLLVMRegisterInstruction( const Variable& variable, FunctionContext& function_context )
@@ -2066,10 +2068,7 @@ llvm::Value* CodeBuilder::CreateMoveToLLVMRegisterInstruction( const Variable& v
 	case Variable::Location::LLVMRegister:
 		return variable.llvm_value;
 	case Variable::Location::Pointer:
-		if( variable.type == void_type_ )
-			return llvm::UndefValue::get(fundamental_llvm_types_.void_);
-		else
-			return CreateTypedLoad( function_context, variable.type, variable.llvm_value );
+		return CreateTypedLoad( function_context, variable.type, variable.llvm_value );
 	};
 
 	U_ASSERT(false);

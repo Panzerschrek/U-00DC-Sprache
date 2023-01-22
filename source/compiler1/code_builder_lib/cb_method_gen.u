@@ -914,14 +914,11 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 		!t.GetRawPointerType().empty() ||
 		!t.GetFunctionPointerType().empty() )
 	{
-		if( t != void_type_ )
+		unsafe
 		{
-			unsafe
-			{
-				halt if( LLVMTypeOf( dst ) != LLVMTypeOf( src ) ); // TODO - use debug assert
-				auto mut value= CreateTypedLoad( function_context, t, src );
-				CreateTypedStore( function_context, t, value, dst );
-			}
+			halt if( LLVMTypeOf( dst ) != LLVMTypeOf( src ) ); // TODO - use debug assert
+			auto mut value= CreateTypedLoad( function_context, t, src );
+			CreateTypedStore( function_context, t, value, dst );
 		}
 		return;
 	}
@@ -997,14 +994,11 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 		!t.GetRawPointerType().empty() ||
 		!t.GetFunctionPointerType().empty() )
 	{
-		if( t != void_type_ )
+		unsafe
 		{
-			unsafe
-			{
-				halt if( LLVMTypeOf( dst ) != LLVMTypeOf( src ) ); // TODO - use debug assert
-				auto mut value= CreateTypedLoad( function_context, t, src );
-				CreateTypedStore( function_context, t, value, dst );
-			}
+			halt if( LLVMTypeOf( dst ) != LLVMTypeOf( src ) ); // TODO - use debug assert
+			auto mut value= CreateTypedLoad( function_context, t, src );
+			CreateTypedStore( function_context, t, value, dst );
 		}
 		return;
 	}

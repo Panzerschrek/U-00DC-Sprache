@@ -341,7 +341,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 					CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
 					CreateLifetimeEnd( function_context, expr.llvm_value );
 				}
-				else if( expr.t != void_type_ )
+				else
 				{
 					CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
 				}
@@ -361,7 +361,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			{
 				BuildCopyConstructorPart( names_scope, function_context, out_variable.llvm_value, expr.llvm_value, out_variable.t, auto_variable_declaration.src_loc );
 			}
-			else if( expr.t != void_type_ )
+			else
 			{
 				CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
 			}
@@ -671,10 +671,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			REPORT_ERROR( ReferenceProtectionError, names_scope, assignment_operator.src_loc, function_context.references_graph.GetNodeName( l.node_id ) )
 		}
 
-		if( r.t != void_type_ )
-		{
-			CreateTypedStore( function_context, r.t, r_in_register, l.llvm_value );
-		}
+		CreateTypedStore( function_context, r.t, r_in_register, l.llvm_value );
 	}
 
 	CallDestructorsForTopVariablesFrame( names_scope, function_context, assignment_operator.src_loc );
@@ -1427,10 +1424,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				out_variable.llvm_value=
 					LLVMBuildAlloca( function_context.alloca_ir_builder, out_variable.t.GetLLVMType(), (with_operator.variable_name + "\0").front() );
 				CreateLifetimeStart( function_context, out_variable.llvm_value );
-				if( expr.t != void_type_ )
-				{
-					CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
-				}
+				CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
 			}
 		}
 		else
@@ -1496,7 +1490,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					CopyBytes( out_variable.llvm_value, expr.llvm_value, expr.t, function_context );
 					CreateLifetimeEnd( function_context, expr.llvm_value );
 				}
-				else if( expr.t != void_type_ )
+				else
 				{
 					CreateTypedStore( function_context, expr.t, expr.llvm_value, out_variable.llvm_value );
 				}
