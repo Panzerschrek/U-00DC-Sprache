@@ -414,7 +414,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : Variable
 						dummy_function_context.llvm_ir_builder,
 						LLVMTypeOf( LLVMGetInitializer(class_.polymorph_type_id_table) ),
 						class_.polymorph_type_id_table,
-						$<(indices[0]), 3u, "\0"[0] );
+						$<(indices[0]), 3u, g_null_string );
 				fields_initializers.push_back( address );
 				fields_llvm_types.push_back( LLVMPointerType( class_field.t.GetLLVMType(), 0u ) );
 			}

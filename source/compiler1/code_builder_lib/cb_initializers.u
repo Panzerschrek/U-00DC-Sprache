@@ -718,16 +718,16 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 					// We lost here some values in conversions, such i16 => u32, if src_type is signed.
 					if( IsUnsignedInteger( dst_type.fundamental_type ) )
 					{
-						llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+						llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
 					else
 					{
-						llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+						llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
 				}
 				else if( src_type.GetSize() > dst_type.GetSize() )
 				{
-					llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 				}
 				else{} // Same size integers - do nothing
 			}
@@ -736,11 +736,11 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				// float to float
 				if( src_type.GetSize() < dst_type.GetSize() )
 				{
-					llvm_value= LLVMBuildFPExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					llvm_value= LLVMBuildFPExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 				}
 				else if( src_type.GetSize() > dst_type.GetSize() )
 				{
-					llvm_value= LLVMBuildFPTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					llvm_value= LLVMBuildFPTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 				}
 				else{ halt; } // WTF?
 			}
@@ -749,11 +749,11 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				// int to float
 				if( IsSignedInteger( src_type.fundamental_type ) )
 				{
-					llvm_value= LLVMBuildSIToFP( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					llvm_value= LLVMBuildSIToFP( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 				}
 				else
 				{
-					llvm_value= LLVMBuildUIToFP( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					llvm_value= LLVMBuildUIToFP( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 				}
 			}
 			else if( IsInteger( dst_type.fundamental_type ) && IsFloatingPoint( src_type.fundamental_type ) )
@@ -761,11 +761,11 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				// float to int
 				if( IsSignedInteger( dst_type.fundamental_type ) )
 				{
-					llvm_value= LLVMBuildFPToSI( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					llvm_value= LLVMBuildFPToSI( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 				}
 				else
 				{
-					llvm_value= LLVMBuildFPToUI( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					llvm_value= LLVMBuildFPToUI( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 				}
 			}
 			else if( IsChar( dst_type.fundamental_type ) && ( IsInteger( src_type.fundamental_type ) || IsChar( src_type.fundamental_type ) ) )
@@ -773,11 +773,11 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				// int to char or char to char
 				if( src_type.GetSize() < dst_type.GetSize() )
 				{
-					llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 				}
 				else if( src_type.GetSize() > dst_type.GetSize() )
 				{
-					llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 				}
 			}
 			else if( IsInteger( dst_type.fundamental_type ) && IsChar( src_type.fundamental_type ) )
@@ -788,16 +788,16 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 					// We lost here some values in conversions, such i16 => u32, if src_type is signed.
 					if( IsUnsignedInteger( dst_type.fundamental_type ) )
 					{
-						llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+						llvm_value= LLVMBuildZExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
 					else
 					{
-						llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+						llvm_value= LLVMBuildSExt( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 					}
 				}
 				else if( src_type.GetSize() > dst_type.GetSize() )
 				{
-					llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+					llvm_value= LLVMBuildTrunc( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 				}
 				else{} // Same size - do nothing
 			}
@@ -820,7 +820,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				( IsFloatingPoint( dst_type.fundamental_type ) && IsByte( src_type.fundamental_type ) ) ) )
 			{
 				// Perfrom float -> bytes or bytes->float conversion.
-				llvm_value= LLVMBuildBitCast( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, "\0"[0] );
+				llvm_value= LLVMBuildBitCast( function_context.llvm_ir_builder, llvm_value, dst_type.llvm_type, g_null_string );
 			}
 			else
 			{
@@ -1005,7 +1005,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 			auto mut value_for_store= CreateMoveToLLVMRegisterInstruction( initializer_variable, function_context );
 			if( initializer_variable.t != variable.t )
 			{
-				value_for_store= LLVMBuildPointerCast( function_context.llvm_ir_builder, value_for_store, variable.t.GetLLVMType(), "\0"[0] );
+				value_for_store= LLVMBuildPointerCast( function_context.llvm_ir_builder, value_for_store, variable.t.GetLLVMType(), g_null_string );
 			}
 			CreateTypedStore( function_context, variable.t, value_for_store, variable.llvm_value );
 		}
@@ -1113,7 +1113,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 			}
 
 			// TODO - maybe disable conversion for expression initializer?
-			auto ptr_casted= unsafe( LLVMBuildPointerCast( function_context.llvm_ir_builder, function_variable.llvm_function, variable.t.GetLLVMType(), "\0"[0] ) );
+			auto ptr_casted= unsafe( LLVMBuildPointerCast( function_context.llvm_ir_builder, function_variable.llvm_function, variable.t.GetLLVMType(), g_null_string ) );
 			CreateTypedStore( function_context, variable.t, ptr_casted, variable.llvm_value );
 			return ptr_casted;
 		}
@@ -1436,7 +1436,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 	{
 		.t= class_type,
 		.is_mutable= true,
-		.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, "\0"[0] ) )
+		.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, g_null_string ) )
 	};
 
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )

@@ -765,8 +765,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	unsafe
 	{
-		block_after_if= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-		next_condition_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		block_after_if= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		next_condition_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
 		// Break to first condition. We must push terminal instruction at end of current block.
 		LLVMBuildBr( function_context.llvm_ir_builder, next_condition_block );
@@ -781,11 +781,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto& branch= if_operator.branches[i];
 
 		var LLVMBasicBlockRef mut body_block= zero_init, current_condition_block= next_condition_block;
-		body_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] ) );
+		body_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 
 		if( i + 1s < if_operator.branches.size() )
 		{
-			next_condition_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] ) );
+			next_condition_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 		}
 		else
 		{
@@ -931,7 +931,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var LLVMBasicBlockRef mut test_block= zero_init, mut while_block= zero_init, mut block_after_while= zero_init;
 	unsafe
 	{
-		test_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		test_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
 		// Break to test block. We must push terminal instruction at and of current block.
 		LLVMBuildBr( function_context.llvm_ir_builder, test_block );
@@ -962,8 +962,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		unsafe
 		{
-			while_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-			block_after_while= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+			while_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+			block_after_while= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 			LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, while_block, block_after_while );
 		}
 	}
@@ -1051,7 +1051,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto mut finish_basic_block= LLVMBasicBlockRef::Null;
 		if( !tuple_type.element_types.empty() )
 		{
-			finish_basic_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] ) );
+			finish_basic_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 		}
 
 		var ust::vector</ReferencesGraph/> mut references_graphs_for_merge;
@@ -1140,7 +1140,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 			else
 			{
-				next_basic_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] ) );
+				next_basic_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 			}
 
 			var LoopFrame loop_frame
@@ -1259,10 +1259,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var LLVMBasicBlockRef mut test_block= zero_init, mut loop_block= zero_init, mut loop_iteration_block= zero_init, mut block_after_loop= zero_init;
 	unsafe
 	{
-		test_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-		loop_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-		loop_iteration_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-		block_after_loop= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		test_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		loop_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		loop_iteration_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		block_after_loop= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 	}
 
 	// Test block.
@@ -1631,7 +1631,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	unsafe
 	{
-		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
+		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, g_null_string );
 		LLVMBuildUnreachable( function_context.llvm_ir_builder );
 	}
 
@@ -1655,8 +1655,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	unsafe
 	{
-		auto true_block = LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-		auto false_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		auto true_block = LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		auto false_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
 		LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, true_block, false_block );
 
@@ -1664,7 +1664,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, true_block );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, true_block );
 
-		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
+		LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, g_null_string );
 		LLVMBuildUnreachable( function_context.llvm_ir_builder );
 
 		// False branch

@@ -744,7 +744,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 	{
 		var LLVMValueRef l_address= LLVMGetParam( function_variable.llvm_function, 0u );
 		var LLVMValueRef r_address= LLVMGetParam( function_variable.llvm_function, 1u );
-		var LLVMBasicBlockRef false_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		var LLVMBasicBlockRef false_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
 		if( !base_class.empty() )
 		{
@@ -976,7 +976,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 
 				// Call it.
 				var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
-				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, constructor_.t.llvm_type, constructor_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] ) );
+				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, constructor_.t.llvm_type, constructor_.llvm_function, $<(llvm_args[0]), 2u, g_null_string ) );
 				break;
 			}
 		}
@@ -1056,7 +1056,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 
 				// Call it.
 				var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
-				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, operator_.t.llvm_type, operator_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] ) );
+				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, operator_.t.llvm_type, operator_.llvm_function, $<(llvm_args[0]), 2u, g_null_string ) );
 				break;
 			}
 		}
@@ -1095,10 +1095,10 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 
 			var LLVMValueRef eq=
 				select( is_float
-					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, "\0"[0] )
-					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, "\0"[0] ) );
+					? LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l, r, g_null_string )
+					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, g_null_string ) );
 
-			var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+			var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
 			LLVMBuildCondBr( function_context.llvm_ir_builder, eq, next_bb, false_basic_block );
 
@@ -1163,9 +1163,9 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 			unsafe
 			{
 				var[ LLVMValueRef, 2 ] mut llvm_args[ l_address, r_address ];
-				var LLVMValueRef eq= LLVMBuildCall2( function_context.llvm_ir_builder, op_.t.llvm_type, op_.llvm_function, $<(llvm_args[0]), 2u, "\0"[0] );
+				var LLVMValueRef eq= LLVMBuildCall2( function_context.llvm_ir_builder, op_.t.llvm_type, op_.llvm_function, $<(llvm_args[0]), 2u, g_null_string );
 
-				var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+				var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
 				LLVMBuildCondBr( function_context.llvm_ir_builder, eq, next_bb, false_basic_block );
 
@@ -1216,7 +1216,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 
 		// Call it.
 		auto mut v= value;
-		unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, destructor_.t.llvm_type, destructor_.llvm_function, $<(v), 1u, "\0"[0] ) );
+		unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, destructor_.t.llvm_type, destructor_.llvm_function, $<(v), 1u, g_null_string ) );
 	}
 }
 

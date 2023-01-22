@@ -24,6 +24,8 @@ DefineLLVMRef LLVMMetadataRef
 
 type NullTerminatedString= char8;
 
+auto& g_null_string= "\0"[0];
+
 enum LLVMBool : i32
 {
 	False,

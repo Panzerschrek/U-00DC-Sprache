@@ -468,7 +468,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// TODO - maybe forbid reference casting for ValueType::Value?
 	if( v.location == Variable::Location::LLVMRegister )
 	{
-		r.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] ) );
+		r.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
 		CreateTypedStore( function_context, v.t, v.llvm_value, r.llvm_value );
 
 	}
@@ -500,7 +500,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// TODO - maybe forbid reference casting for ValueType::Value?
 	if( v.location == Variable::Location::LLVMRegister )
 	{
-		r.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] ) );
+		r.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
 		CreateTypedStore( function_context, v.t, v.llvm_value, r.llvm_value );
 	}
 	else
@@ -749,9 +749,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var [ LLVMBasicBlockRef, 2 ] mut branches_blocks= zero_init, mut branches_end_blocks= zero_init;
 	unsafe
 	{
-		result_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-		branches_blocks[0]= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-		branches_blocks[1]= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		result_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		branches_blocks[0]= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		branches_blocks[1]= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
 		LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, branches_blocks[0], branches_blocks[1] );
 	}
@@ -1093,24 +1093,24 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					auto size_type_size= size_type_.GetFundamentalType().try_deref().GetSize();
 					if( index_type_size > size_type_size )
 					{
-						index_value_for_compare= LLVMBuildTrunc( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.int_ptr, "\0"[0] );
+						index_value_for_compare= LLVMBuildTrunc( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.int_ptr, g_null_string );
 					}
 					else if( index_type_size < size_type_size )
 					{
-						index_value_for_compare= LLVMBuildZExt( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.int_ptr, "\0"[0] );
+						index_value_for_compare= LLVMBuildZExt( function_context.llvm_ir_builder, index_value_for_compare, fundamental_llvm_types_.int_ptr, g_null_string );
 					}
 
 					auto size_value= LLVMConstInt( fundamental_llvm_types_.int_ptr, variable_array_type.element_count, LLVMBool::False );
-					auto condition= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, index_value_for_compare, size_value, "\0"[0] );
-					auto halt_block = LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-					auto ok_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+					auto condition= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, index_value_for_compare, size_value, g_null_string );
+					auto halt_block = LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+					auto ok_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
 					LLVMBuildCondBr( function_context.llvm_ir_builder, condition, halt_block, ok_block );
 
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, halt_block );
 					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, halt_block );
 
-					LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, "\0"[0] );
+					LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(halt_function_), halt_function_, ust::nullptr</LLVMValueRef/>(), 0u, g_null_string );
 					LLVMBuildUnreachable( function_context.llvm_ir_builder );
 
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, ok_block );
@@ -1686,7 +1686,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 	auto mut src_llvm_value= v.llvm_value;
 	if( v.location == Variable::Location::LLVMRegister )
 	{
-		src_llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), "\0"[0] ) );
+		src_llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
 		CreateTypedStore( function_context, v.t, v.llvm_value, src_llvm_value );
 	}
 
@@ -1719,7 +1719,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 				unsafe
 				{
 					auto dst_pointer_type= LLVMPointerType( t.GetLLVMType(), 0u );
-					r.llvm_value= LLVMBuildPointerCast( function_context.llvm_ir_builder, src_llvm_value, dst_pointer_type, "\0"[0] );
+					r.llvm_value= LLVMBuildPointerCast( function_context.llvm_ir_builder, src_llvm_value, dst_pointer_type, g_null_string );
 				}
 			}
 			else
@@ -1830,11 +1830,11 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				var LLVMTypeRef dst_type= size_type_.GetLLVMType();
 				if( IsSignedInteger( int_type ) )
 				{
-					index_value= LLVMBuildSExt( function_context.llvm_ir_builder, index_value, dst_type, "\0"[0] );
+					index_value= LLVMBuildSExt( function_context.llvm_ir_builder, index_value, dst_type, g_null_string );
 				}
 				else
 				{
-					index_value= LLVMBuildZExt( function_context.llvm_ir_builder, index_value, dst_type, "\0"[0] );
+					index_value= LLVMBuildZExt( function_context.llvm_ir_builder, index_value, dst_type, g_null_string );
 				}
 			}
 
@@ -1874,8 +1874,8 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			var LLVMValueRef
-				l_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, l_in_register, diff_llvm_type, "\0"[0] ),
-				r_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, r_in_register, diff_llvm_type, "\0"[0] ),
+				l_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, l_in_register, diff_llvm_type, g_null_string ),
+				r_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, r_in_register, diff_llvm_type, g_null_string ),
 				diff= LLVMBuildSub( function_context.llvm_ir_builder, l_as_int, r_as_int, "-\0"[0] ),
 				element_size_contant= LLVMConstInt( diff_llvm_type, element_size, LLVMBool::False ),
 				diff_divided= LLVMBuildExactSDiv( function_context.llvm_ir_builder, diff, element_size_contant, "/\0"[0] );
@@ -1922,14 +1922,14 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				var LLVMTypeRef dst_type= size_type_.GetLLVMType();
 				if( IsSignedInteger( int_type ) )
 				{
-					sub_value= LLVMBuildSExt( function_context.llvm_ir_builder, sub_value, dst_type, "\0"[0] );
+					sub_value= LLVMBuildSExt( function_context.llvm_ir_builder, sub_value, dst_type, g_null_string );
 				}
 				else
 				{
-					sub_value= LLVMBuildZExt( function_context.llvm_ir_builder, sub_value, dst_type, "\0"[0] );
+					sub_value= LLVMBuildZExt( function_context.llvm_ir_builder, sub_value, dst_type, g_null_string );
 				}
 			}
-			auto mut index_negative= LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, "\0"[0] );
+			auto mut index_negative= LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, g_null_string );
 
 			res.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] );
 		}
@@ -2109,11 +2109,11 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			// Convert value of shift to type of shifted value. LLVM Reuqired this.
 			if( r_fundamental_type.try_deref().GetSize() > l_fundamental_type.try_deref().GetSize() )
 			{
-				r_value_for_op= LLVMBuildTrunc( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), "\0"[0] );
+				r_value_for_op= LLVMBuildTrunc( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), g_null_string );
 			}
 			else if( r_fundamental_type.try_deref().GetSize() < l_fundamental_type.try_deref().GetSize() )
 			{
-				r_value_for_op= LLVMBuildZExt( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), "\0"[0] );
+				r_value_for_op= LLVMBuildZExt( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), g_null_string );
 			}
 
 			// Cut upper bits of shift value to avoid undefined behaviour.
@@ -2125,21 +2125,21 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 						l_type.GetLLVMType(),
 						u64(l_fundamental_type.try_deref().GetSize()) * 8u64 - 1u64,
 						LLVMBool::False ),
-					"\0"[0] );
+					g_null_string );
 
 			if( operator == BinaryOperatorType::ShiftLeft )
 			{
-				res.llvm_value= LLVMBuildShl( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, "\0"[0] );
+				res.llvm_value= LLVMBuildShl( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
 			}
 			else if( operator == BinaryOperatorType::ShiftRight )
 			{
 				if( IsSignedInteger( l_fundamental_type.try_deref().fundamental_type ) )
 				{
-					res.llvm_value= LLVMBuildAShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, "\0"[0] );
+					res.llvm_value= LLVMBuildAShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
 				}
 				else
 				{
-					res.llvm_value= LLVMBuildLShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, "\0"[0] );
+					res.llvm_value= LLVMBuildLShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
 				}
 			}
 			else{ halt; }
@@ -2359,8 +2359,8 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 					function_context.llvm_ir_builder,
 					less,
 					minus_one,
-					LLVMBuildSelect( function_context.llvm_ir_builder, greater, plus_one, zero, "\0"[0] ),
-					"\0"[0] );
+					LLVMBuildSelect( function_context.llvm_ir_builder, greater, plus_one, zero, g_null_string ),
+					g_null_string );
 
 			res.t= FundamentalType( result_fundamental_type, result_llvm_type );
 		}
@@ -2395,8 +2395,8 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	unsafe
 	{
 		l_part_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
-		r_part_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-		block_after_operator= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+		r_part_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		block_after_operator= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 	}
 
 	auto l_var_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
@@ -2448,7 +2448,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_operator );
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_operator );
 
-		phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, "\0"[0] );
+		phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, g_null_string );
 
 		var [ LLVMValueRef, 2 ] mut incoming_values[ l_var_in_register, r_var_in_register ];
 		var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ l_part_block, r_part_end_block ];
@@ -2469,11 +2469,11 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 		{
 			if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
 			{
-				result.constexpr_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_var_in_register, r_var_in_register, "\0"[0] );
+				result.constexpr_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_var_in_register, r_var_in_register, g_null_string );
 			}
 			else if( binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
 			{
-				result.constexpr_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_var_in_register, r_var_in_register, "\0"[0] );
+				result.constexpr_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_var_in_register, r_var_in_register, g_null_string );
 			}
 			else{ halt; }
 		}
@@ -2712,8 +2712,8 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			}
 			else
 			{
-				var LLVMBasicBlockRef false_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
-				var LLVMBasicBlockRef end_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, "\0"[0] );
+				var LLVMBasicBlockRef false_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+				var LLVMBasicBlockRef end_basic_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
 				BuildEqualityCompareOperatorPart(
 					names_scope,
@@ -2739,7 +2739,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 					LLVMAppendExistingBasicBlock( function_context.llvm_function, end_basic_block );
 					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_basic_block );
 
-					var LLVMValueRef phi= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, "\0"[0] );
+					var LLVMValueRef phi= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, g_null_string );
 
 					var LLVMValueRef false_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
 					var LLVMValueRef true_value = LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False );
@@ -3005,7 +3005,7 @@ fn CodeBuilder::DoCallFunction(
 	var bool is_s_ret= function_type.IsStructRet();
 	if( is_s_ret )
 	{
-		s_ret_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.GetLLVMType(), "\0"[0] ) );
+		s_ret_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.GetLLVMType(), g_null_string ) );
 		llvm_args.push_back( s_ret_value );
 	}
 
@@ -3052,7 +3052,7 @@ fn CodeBuilder::DoCallFunction(
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "converted arg " + arg_number_str ),
-					.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), "\0"[0] ) )
+					.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), g_null_string ) )
 				};
 				CreateLifetimeStart( function_context, arg_converted.llvm_value );
 
@@ -3151,7 +3151,7 @@ fn CodeBuilder::DoCallFunction(
 			if( arg.location == Variable::Location::LLVMRegister )
 			{
 				// Bind value to const reference.
-				auto temp_storage= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, arg.t.GetLLVMType(), "\0"[0] ) );
+				auto temp_storage= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, arg.t.GetLLVMType(), g_null_string ) );
 				CreateTypedStore( function_context, arg.t, arg.llvm_value, temp_storage );
 				llvm_arg= temp_storage;
 				// Do not call here lifetime.start since there is no way to call lifetime.end for this value, because this allocation logically linked with some temp variable and can extend it's lifetime.
@@ -3220,7 +3220,7 @@ fn CodeBuilder::DoCallFunction(
 						return ErrorValue();
 					}
 
-					auto var_copy= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), "\0"[0] ) );
+					auto var_copy= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), g_null_string ) );
 					CreateLifetimeStart( function_context, var_copy );
 					value_args_for_lifetime_end_call.push_back( var_copy );
 
@@ -3319,7 +3319,7 @@ fn CodeBuilder::DoCallFunction(
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
 		{
-			auto call_result= LLVMBuildCall2( function_context.llvm_ir_builder, function_type.llvm_type, function.llvm_function, llvm_args.data(), u32(llvm_args.size()), "\0"[0] );
+			auto call_result= LLVMBuildCall2( function_context.llvm_ir_builder, function_type.llvm_type, function.llvm_function, llvm_args.data(), u32(llvm_args.size()), g_null_string );
 			LLVMSetInstructionCallConv( call_result, function.t.calling_convention );
 			if( !is_s_ret ){  result.llvm_value= call_result;  }
 			if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
