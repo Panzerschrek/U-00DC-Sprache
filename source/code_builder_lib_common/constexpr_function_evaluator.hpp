@@ -48,8 +48,13 @@ private:
 
 	llvm::GenericValue GetVal( const llvm::Value* val );
 	void ProcessAlloca( const llvm::Instruction* instruction );
+
 	void ProcessLoad( const llvm::Instruction* instruction );
+	llvm::GenericValue DoLoad( const void* ptr, llvm::Type* t );
+
 	void ProcessStore( const llvm::Instruction* instruction );
+	void DoStore( void* ptr, const llvm::GenericValue& val, llvm::Type* t );
+
 	void ProcessGEP( const llvm::Instruction* instruction );
 	void ProcessCall( const llvm::Instruction* instruction, size_t stack_depth );
 	void ProcessMemmove( const llvm::Instruction* instruction );

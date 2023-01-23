@@ -2726,8 +2726,6 @@ Value CodeBuilder::DoCallFunction(
 	ArgsVector< ReferencesGraphNodeHolder > args_nodes;
 	ArgsVector< ReferencesGraphNodeHolder > locked_args_inner_references;
 
-	ArgsVector<llvm::Value*> value_args_for_lifetime_end_call;
-
 	for( size_t i= 0u; i < arg_count; ++i )
 	{
 		const size_t j= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
@@ -2898,8 +2896,8 @@ Value CodeBuilder::DoCallFunction(
 					// Do not call copy constructors - just move.
 					if( expr.node != nullptr )
 						function_context.variables_state.MoveNode( expr.node );
-					llvm_args[j]= expr.llvm_value;
-					value_args_for_lifetime_end_call.push_back( expr.llvm_value );
+					llvm_args[j]= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+					CreateLifetimeEnd( function_context, expr.llvm_value );
 				}
 				else
 				{
@@ -2917,20 +2915,29 @@ Value CodeBuilder::DoCallFunction(
 						return ErrorValue();
 					}
 
-					// Create copy of class or tuple value. Call copy constructor.
-					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( param.type.GetLLVMType() );
+					if( expr.constexpr_value != nullptr )
+					{
+						// Copy constructor for constexpr values is trivial. So, we can avoid calling it and use constexpr value itself.
+						llvm_args[j]= expr.constexpr_value;
+					}
+					else
+					{
+						// Create copy of class or tuple value. Call copy constructor.
+						llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( param.type.GetLLVMType() );
 
-					// Create lifetime.start instruction for value arg.
-					// Save it into temporary container to call lifetime.end after call.
-					CreateLifetimeStart( function_context, arg_copy );
-					value_args_for_lifetime_end_call.push_back( arg_copy );
+						// Create lifetime.start instruction for value arg.
+						// Save it into temporary container to call lifetime.end after call.
+						CreateLifetimeStart( function_context, arg_copy );
 
-					llvm_args[j]= arg_copy;
-					BuildCopyConstructorPart(
-						arg_copy,
-						CreateReferenceCast( expr.llvm_value, expr.type, param.type, function_context ),
-						param.type,
-						function_context );
+						BuildCopyConstructorPart(
+							arg_copy,
+							CreateReferenceCast( expr.llvm_value, expr.type, param.type, function_context ),
+							param.type,
+							function_context );
+
+						llvm_args[j]= CreateTypedLoad( function_context, expr.type, expr.llvm_value );
+						CreateLifetimeEnd( function_context, arg_copy );
+					}
 				}
 			}
 			else U_ASSERT( false );
@@ -2984,7 +2991,7 @@ Value CodeBuilder::DoCallFunction(
 			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 			{
 				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
-					MoveConstantToMemory( result.type, result.llvm_value, evaluation_result.result_constant, function_context );
+					CreateTypedStore( function_context, result.type, evaluation_result.result_constant, result.llvm_value );
 
 				if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 					constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
@@ -3009,11 +3016,6 @@ Value CodeBuilder::DoCallFunction(
 
 	// Clear inner references locks. Do this BEFORE result references management.
 	locked_args_inner_references.clear();
-
-	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
-	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
-	for( llvm::Value* const value_arg_var : value_args_for_lifetime_end_call )
-		CreateLifetimeEnd( function_context, value_arg_var );
 
 	if( !return_value_is_sret )
 		result.llvm_value= call_result;

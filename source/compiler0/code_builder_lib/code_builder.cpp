@@ -1284,24 +1284,10 @@ Type CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
-			if( param.type.GetFundamentalType() != nullptr ||
-				param.type.GetEnumType() != nullptr ||
-				param.type.GetRawPointerType() != nullptr ||
-				param.type.GetFunctionPointerType() != nullptr )
-			{
-				// Move parameters to stack for assignment possibility.
-				var.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType(), nullptr, arg_name );
-				CreateLifetimeStart( function_context, var.llvm_value );
-
-				if( param.type != void_type_ )
-					CreateTypedStore( function_context, var.type, &llvm_arg, var.llvm_value );
-			}
-			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
-			{
-				// Composite types use llvm-pointers.
-				var.llvm_value = &llvm_arg;
-			}
-			else U_ASSERT(false);
+			// Move parameters to stack for assignment possibility.
+			var.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType(), nullptr, arg_name );
+			CreateLifetimeStart( function_context, var.llvm_value );
+			CreateTypedStore( function_context, var.type, &llvm_arg, var.llvm_value );
 
 			CreateVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
 		}
@@ -2237,21 +2223,16 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 		const auto param_attr_index= static_cast<unsigned int>(i + (first_arg_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
-		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
 		// Mark reference params as nonnull.
-		if( param.value_type != ValueType::Value || param_is_composite )
+		if( param.value_type != ValueType::Value )
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
-		// Mutable reference params or composite value-args must not alias.
+		// Mutable reference params must not alias.
 		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
-		if( param.value_type != ValueType::Value || param_is_composite )
+		if( param.value_type != ValueType::Value )
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
 		// Mark as "readonly" immutable reference params.
 		if( param.value_type == ValueType::ReferenceImut )
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ReadOnly );
-		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
-		// It is not possible to capture this reference.
-		if( param.value_type == ValueType::Value && param_is_composite )
-			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
 	}
 
 	if( first_arg_is_sret )
@@ -2297,9 +2278,8 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 		const auto param_attr_index= static_cast<unsigned int>(i + (first_arg_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
-		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
-		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
-		if( param.value_type != ValueType::Value || param_is_composite )
+		// Mark reference params with "dereferenceable" attribute.
+		if( param.value_type != ValueType::Value  )
 		{
 			const auto llvm_type= param.type.GetLLVMType();
 			if( !llvm_type->isSized() )

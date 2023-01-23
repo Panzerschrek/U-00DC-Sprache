@@ -524,28 +524,60 @@ void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const ins
 	else
 		data_ptr= stack_.data() + offset;
 
-	llvm::Type* const element_type= instruction->getType();
+	instructions_map_[ instruction ]= DoLoad( data_ptr, instruction->getType() );
+}
+
+llvm::GenericValue ConstexprFunctionEvaluator::DoLoad( const void* ptr, llvm::Type* const t )
+{
 	llvm::GenericValue val;
-	if( element_type->isIntegerTy() )
+	if( t->isIntegerTy() )
 	{
 		uint64_t buff[4];
-		std::memcpy( buff, data_ptr, size_t(data_layout_.getTypeStoreSize( element_type )) );
+		std::memcpy( buff, ptr, size_t(data_layout_.getTypeStoreSize( t )) );
 
-		val.IntVal= llvm::APInt( element_type->getIntegerBitWidth() , buff );
+		val.IntVal= llvm::APInt( t->getIntegerBitWidth() , buff );
 	}
-	else if( element_type->isFloatTy() )
-		std::memcpy( &val.FloatVal, data_ptr, sizeof(float) );
-	else if( element_type->isDoubleTy() )
-		std::memcpy( &val.DoubleVal, data_ptr, sizeof(double) );
-	else if( element_type->isPointerTy() )
+	else if( t->isFloatTy() )
+		std::memcpy( &val.FloatVal, ptr, sizeof(float) );
+	else if( t->isDoubleTy() )
+		std::memcpy( &val.DoubleVal, ptr, sizeof(double) );
+	else if( t->isPointerTy() )
 	{
-		uint64_t ptr;
-		std::memcpy( &ptr, data_ptr, size_t(data_layout_.getTypeAllocSize( element_type )) );
-		val.IntVal= llvm::APInt( 64u, ptr );
+		uint64_t int_ptr;
+		std::memcpy( &int_ptr, ptr, size_t(data_layout_.getTypeAllocSize( t )) );
+		val.IntVal= llvm::APInt( 64u, int_ptr );
+	}
+	else if( t->isStructTy() )
+	{
+		const auto struct_type= llvm::dyn_cast<llvm::StructType>(t);
+		const unsigned int num_elements= struct_type->getNumElements();
+		const llvm::StructLayout *const struct_layout= data_layout_.getStructLayout(struct_type);
+
+		val.AggregateVal.resize(num_elements);
+		for (unsigned int i= 0; i < num_elements; ++i)
+			val.AggregateVal[i]=
+				DoLoad(
+					reinterpret_cast<const char*>(ptr) + struct_layout->getElementOffset(i),
+					struct_type->getElementType(i));
+
+	}
+	else if( t->isArrayTy() )
+	{
+		const auto array_type= llvm::cast<llvm::ArrayType>(t);
+		const uint64_t num_elements= array_type->getNumElements();
+		const auto element_type= array_type->getElementType();
+		const uint64_t element_size= data_layout_.getTypeAllocSize(element_type);
+
+		val.AggregateVal.resize(num_elements);
+		for( uint64_t i= 0; i < num_elements; ++i)
+			val.AggregateVal[i]=
+				DoLoad(
+					reinterpret_cast<const char*>(ptr)+ i * element_size,
+					element_type );
 	}
 	else U_ASSERT(false);
 
-	instructions_map_[ instruction ]= val;
+	return val;
 }
 
 void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const instruction )
@@ -561,32 +593,62 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 	else
 		data_ptr= stack_.data() + offset;
 
-	const auto value_operand= instruction->getOperand(0u);
-	const llvm::GenericValue val= GetVal( value_operand );
+	const auto value_operand= instruction->getOperand(0u);	
+	DoStore( data_ptr, GetVal( value_operand ), value_operand->getType() );
+}
 
-	llvm::Type* const element_type= value_operand->getType();
-	if( element_type->isIntegerTy() )
+void ConstexprFunctionEvaluator::DoStore( void* const ptr, const llvm::GenericValue& val, llvm::Type* const t )
+{
+	if( t->isIntegerTy() )
 	{
-		if( element_type->getIntegerBitWidth() <= 64 )
+		if( t->getIntegerBitWidth() <= 64 )
 		{
 			const uint64_t limited_value= val.IntVal.getLimitedValue();
-			std::memcpy( data_ptr, &limited_value, size_t(data_layout_.getTypeStoreSize( element_type )) );
+			std::memcpy( ptr, &limited_value, size_t(data_layout_.getTypeStoreSize( t )) );
 		}
-		else if( element_type->getIntegerBitWidth() % 64u == 0 )
-			std::memcpy( data_ptr, val.IntVal.getRawData(), element_type->getIntegerBitWidth() / 8u );
+		else if( t->getIntegerBitWidth() % 64u == 0 )
+			std::memcpy( ptr, val.IntVal.getRawData(), t->getIntegerBitWidth() / 8u );
 		else
 		{
 			U_ASSERT(false); // Not implemented yet.
 		}
 	}
-	else if( element_type->isFloatTy() )
-		std::memcpy( data_ptr, &val.FloatVal, size_t(data_layout_.getTypeAllocSize( element_type )) );
-	else if( element_type->isDoubleTy() )
-		std::memcpy( data_ptr, &val.DoubleVal, size_t(data_layout_.getTypeAllocSize( element_type )) );
-	else if( element_type->isPointerTy() )
+	else if( t->isFloatTy() )
+		std::memcpy( ptr, &val.FloatVal, size_t(data_layout_.getTypeAllocSize( t )) );
+	else if( t->isDoubleTy() )
+		std::memcpy( ptr, &val.DoubleVal, size_t(data_layout_.getTypeAllocSize( t )) );
+	else if( t->isPointerTy() )
 	{
-		const uint64_t ptr= val.IntVal.getLimitedValue();
-		std::memcpy( data_ptr, &ptr, size_t(data_layout_.getTypeAllocSize( element_type )) );
+		const uint64_t int_ptr= val.IntVal.getLimitedValue();
+		std::memcpy( ptr, &int_ptr, size_t(data_layout_.getTypeAllocSize( t )) );
+	}
+	else if( t->isStructTy() )
+	{
+		const auto struct_type= llvm::dyn_cast<llvm::StructType>(t);
+		const unsigned int num_elements= struct_type->getNumElements();
+		const llvm::StructLayout *const struct_layout= data_layout_.getStructLayout(struct_type);
+
+		U_ASSERT( val.AggregateVal.size() == num_elements );
+		for (unsigned int i= 0; i < num_elements; ++i)
+			DoStore(
+				reinterpret_cast<char*>(ptr) + struct_layout->getElementOffset(i),
+				val.AggregateVal[i],
+				struct_type->getElementType(i));
+
+	}
+	else if( t->isArrayTy() )
+	{
+		const auto array_type= llvm::cast<llvm::ArrayType>(t);
+		const uint64_t num_elements= array_type->getNumElements();
+		const auto element_type= array_type->getElementType();
+		const uint64_t element_size= data_layout_.getTypeAllocSize(element_type);
+
+		U_ASSERT( val.AggregateVal.size() == num_elements );
+		for( uint64_t i= 0; i < num_elements; ++i)
+				DoStore(
+					reinterpret_cast<char*>(ptr)+ i * element_size,
+					val.AggregateVal[i],
+					element_type );
 	}
 	else U_ASSERT(false);
 }
