@@ -2935,7 +2935,7 @@ Value CodeBuilder::DoCallFunction(
 							param.type,
 							function_context );
 
-						llvm_args[j]= CreateTypedLoad( function_context, expr.type, expr.llvm_value );
+						llvm_args[j]= CreateTypedLoad( function_context, param.type, arg_copy );
 						CreateLifetimeEnd( function_context, arg_copy );
 					}
 				}
