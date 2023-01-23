@@ -194,20 +194,6 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 		llvm::Type* type= param.type.GetLLVMType();
 		if( param.value_type != ValueType::Value )
 			type= type->getPointerTo();
-		else
-		{
-			if( param.type.GetFundamentalType() != nullptr ||
-				param.type.GetEnumType() != nullptr ||
-				param.type.GetRawPointerType() != nullptr ||
-				param.type.GetFunctionPointerType() )
-			{}
-			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
-			{
-				// Mark value-parameters of composite types as pointer.
-				type= type->getPointerTo();
-			}
-			else U_ASSERT( false );
-		}
 		args_llvm_types.push_back( type );
 	}
 

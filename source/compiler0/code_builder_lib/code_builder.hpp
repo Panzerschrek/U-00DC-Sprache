@@ -406,11 +406,6 @@ private:
 		NamesScope& names,
 		const SrcLoc& src_loc );
 
-	void MoveConstantToMemory(
-		const Type& type,
-		llvm::Value* ptr, llvm::Constant* constant,
-		FunctionContext& function_context );
-
 	void TryCallCopyConstructor(
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,

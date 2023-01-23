@@ -1181,56 +1181,6 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 	return nullptr;
 }
 
-void CodeBuilder::MoveConstantToMemory(
-	const Type& type,
-	llvm::Value* const ptr, llvm::Constant* const constant,
-	FunctionContext& function_context )
-{
-	// TODO - use just "store" instruction.
-
-	if( const auto array_type= type.GetArrayType() )
-	{
-		for( uint64_t i= 0u; i < array_type->element_count; ++i )
-			MoveConstantToMemory(
-				array_type->element_type,
-				CreateArrayElementGEP( function_context, *array_type, ptr, i ),
-				constant->getAggregateElement(uint32_t(i)),
-				function_context );
-	}
-	else if( const auto tuple_type= type.GetTupleType() )
-	{
-		for( size_t i= 0; i < tuple_type->element_types.size(); ++i )
-			MoveConstantToMemory(
-				tuple_type->element_types[i],
-				CreateTupleElementGEP( function_context, *tuple_type, ptr, i ),
-				constant->getAggregateElement(uint32_t(i)),
-				function_context );
-	}
-	else if( const auto class_type= type.GetClassType() )
-	{
-		U_ASSERT( class_type->parents.empty() ); // Constexpr structs should not have parents.
-		U_ASSERT( class_type->kind == Class::Kind::Struct || class_type->kind == Class::Kind::NonPolymorph ); // It's not possible for polymproh class to be constexpr.
-
-		for( const std::string& field_name : class_type->fields_order )
-		{
-			const size_t field_index= size_t(&field_name - class_type->fields_order.data());
-			const auto field= class_type->members->GetThisScopeValue(field_name)->GetClassField();
-			llvm::Constant* const field_element= constant->getAggregateElement(uint32_t(field_index));
-			llvm::Value* const field_ptr= CreateClassFieldGEP( function_context, *class_type, ptr, field_index );
-
-			if( field->is_reference )
-				CreateTypedReferenceStore( function_context, field->type, field_element, field_ptr );
-			else
-				MoveConstantToMemory( field->type, field_ptr, field_element, function_context );
-		}
-	}
-	else
-	{
-		// Assume this is scalar type.
-		CreateTypedStore( function_context, type, constant, ptr );
-	}
-}
-
 bool CodeBuilder::IsDefaultConstructor( const FunctionType& function_type, const Type& base_class )
 {
 	return

@@ -354,6 +354,7 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test4)
 
 U_TEST(ArgumentVariableAllocationOptimization_Test0)
 {
+	DISABLE_TEST; // TODO - remove this test completely?
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -420,7 +421,7 @@ U_TEST(ArgumentVariableAllocationOptimization_Test1)
 
 U_TEST(ArgumentVariableAllocationOptimization_Test2)
 {
-	DISABLE_TEST;
+	DISABLE_TEST; // TODO - remove this test completely?
 
 	static const char c_program_text[]=
 	R"(
