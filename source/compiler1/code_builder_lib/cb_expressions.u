@@ -3274,7 +3274,7 @@ fn CodeBuilder::DoCallFunction(
 
 	if( is_constexpr )
 	{
-		auto res= constexpr_function_evaluator_.Evaluate( function.llvm_function, function_type.return_type.GetLLVMType(), constexpr_args.range() );
+		auto res= constexpr_function_evaluator_.Evaluate( function.llvm_function, constexpr_args.range() );
 
 		if( res.errors.empty() )
 		{

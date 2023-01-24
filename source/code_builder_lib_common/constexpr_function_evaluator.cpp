@@ -30,12 +30,13 @@ ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& 
 
 ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	llvm::Function* const llvm_function,
-	llvm::Type* const return_type,
 	const llvm::ArrayRef<const llvm::Constant*> args )
 {
 	stack_.resize(16u); // reserve null pointer
 
 	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
+
+	llvm::Type* return_type= llvm_function->getReturnType();
 
 	size_t s_ret_ptr= 0u;
 
@@ -43,10 +44,11 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	size_t i= 0u;
 	for( const llvm::Argument& param : llvm_function->args() )
 	{
-		if( param.hasStructRetAttr() )
+		if( const auto s_ret_type= param.getParamStructRetType() )
 		{
 			U_ASSERT(i == 0u);
 			U_ASSERT(param.getType()->isPointerTy());
+			return_type= s_ret_type;
 
 			s_ret_ptr= stack_.size();
 			const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
@@ -74,6 +76,8 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 
 		++i;
 	}
+
+	U_ASSERT( !return_type->isPointerTy() ); // Currently can return only values.
 
 	const llvm::GenericValue res= CallFunction( *llvm_function, 0u );
 

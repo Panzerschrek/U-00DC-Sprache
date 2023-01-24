@@ -12,7 +12,6 @@ type ConstexprFunctionEvaluatorErrorHandlerFunc= fn( byte8 &mut user_data, $(cha
 fn nomangle U1_ConstexprFunctionEvaluatorEvaluate(
 	ConstexprFunctionEvaluatorRef constexpr_function_evaluator,
 	LLVMValueRef function,
-	LLVMTypeRef return_type,
 	$(LLVMValueRef) args_start,
 	size_type arg_count,
 	ConstexprFunctionEvaluatorErrorHandlerFunc error_handler_func,

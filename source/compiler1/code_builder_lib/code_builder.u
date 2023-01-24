@@ -2949,7 +2949,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 
 			// TODO - what if "==" is unsafe?
 
-			auto res= constexpr_function_evaluator_.Evaluate( op_.llvm_function, fundamental_llvm_types_.bool_, ust::make_array( l, r ) );
+			auto res= constexpr_function_evaluator_.Evaluate( op_.llvm_function, ust::make_array( l, r ) );
 
 			if( res.errors.empty() )
 			{

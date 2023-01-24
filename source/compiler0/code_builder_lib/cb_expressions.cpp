@@ -2970,7 +2970,6 @@ Value CodeBuilder::DoCallFunction(
 			const ConstexprFunctionEvaluator::Result evaluation_result=
 				constexpr_function_evaluator_.Evaluate(
 					llvm::dyn_cast<llvm::Function>(function),
-					function_type.return_type.GetLLVMType(),
 					constant_llvm_args );
 
 			for( const std::string& error_text : evaluation_result.errors )
