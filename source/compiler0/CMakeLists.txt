@@ -83,7 +83,7 @@ if( U_BUILD_TESTS )
 	file( GLOB TESTS_LAUNCHER0_SOURCES "tests/*" )
 	add_executable( Tests ${TESTS_LAUNCHER0_SOURCES} )
 	target_link_libraries( Tests CodeBuilderLib ${TESTS_LIB_WRAPPED} )
-	#add_custom_command( TARGET Tests POST_BUILD COMMAND Tests )
+	add_custom_command( TARGET Tests POST_BUILD COMMAND Tests )
 
 	if( MSVC )
 		set_target_properties( Tests PROPERTIES LINK_FLAGS /WHOLEARCHIVE:TestsLib )

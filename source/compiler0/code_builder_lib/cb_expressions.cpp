@@ -550,9 +550,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			function_context );
 	if( overloaded_operator_call_try != std::nullopt )
 	{
-		if( auto* call_variable= overloaded_operator_call_try->GetVariable())
+		if( VariablePtr call_variable= overloaded_operator_call_try->GetVariablePtr())
 		{
-			VariableMutPtr variable= std::make_shared<Variable>(*call_variable);
+			const VariableMutPtr variable= std::make_shared<Variable>(*call_variable);
 
 			if( binary_operator.operator_type_ == BinaryOperatorType::NotEqual && variable->type == bool_type_ )
 			{
@@ -587,6 +587,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
 				variable->location= Variable::Location::LLVMRegister;
 			}
+
+			return Value( variable, overloaded_operator_call_try->GetSrcLoc() );
 		}
 
 		return std::move(*overloaded_operator_call_try);
