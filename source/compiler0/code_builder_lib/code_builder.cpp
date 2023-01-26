@@ -608,7 +608,7 @@ void CodeBuilder::CallDestructorsImpl(
 	// Call destructors in reverse order.
 	for( auto it = stack_variables_storage.variables_.rbegin(); it != stack_variables_storage.variables_.rend(); ++it )
 	{
-		const Variable& stored_variable= *it;
+		const Variable& stored_variable= **it;
 
 		if( stored_variable.node->kind == ReferencesGraphNode::Kind::Variable )
 		{
@@ -782,19 +782,19 @@ size_t CodeBuilder::PrepareFunction(
 
 	if( std::get_if<Synt::EmptyVariant>( &func.condition_ ) == nullptr )
 	{
-		const Variable expression= BuildExpressionCodeEnsureVariable( func.condition_, names_scope, *global_function_context_ );
-		if( expression.type == bool_type_ )
+		const VariablePtr expression= BuildExpressionCodeEnsureVariable( func.condition_, names_scope, *global_function_context_ );
+		if( expression->type == bool_type_ )
 		{
-			if( expression.constexpr_value != nullptr )
+			if( expression->constexpr_value != nullptr )
 			{
-				if( expression.constexpr_value->isZeroValue() )
+				if( expression->constexpr_value->isZeroValue() )
 					return ~0u; // Function disabled.
 			}
 			else
 				REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ) );
 		}
 		else
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ), bool_type_, expression.type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ), bool_type_, expression->type );
 	}
 
 	FunctionVariable func_variable;
@@ -1245,7 +1245,6 @@ Type CodeBuilder::BuildFuncCode(
 	SetCurrentDebugLocation( func_variable.body_src_loc, function_context );
 
 	// push args
-	Variable this_;
 	unsigned int arg_number= 0u;
 
 	const bool is_constructor= func_name == Keywords::constructor_;
@@ -1269,18 +1268,18 @@ Type CodeBuilder::BuildFuncCode(
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && param.value_type == ValueType::Value ) );
 
-		Variable var;
-		var.location= Variable::Location::Pointer;
-		var.value_type= ValueType::ReferenceMut;
-		var.type= param.type;
+		VariablePtr var= std::make_shared<Variable>();
+		var->location= Variable::Location::Pointer;
+		var->value_type= ValueType::ReferenceMut;
+		var->type= param.type;
 
 		if( declaration_arg.mutability_modifier_ != MutabilityModifier::Mutable )
-			var.value_type= ValueType::ReferenceImut;
+			var->value_type= ValueType::ReferenceImut;
 
 		if( param.value_type != ValueType::Value )
 		{
-			var.llvm_value= &llvm_arg;
-			CreateReferenceVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
+			var->llvm_value= &llvm_arg;
+			CreateReferenceVariableDebugInfo( *var, arg_name, declaration_arg.src_loc_, function_context );
 		}
 		else
 		{
@@ -1290,20 +1289,20 @@ Type CodeBuilder::BuildFuncCode(
 				param.type.GetFunctionPointerType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
-				var.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType(), nullptr, arg_name );
-				CreateLifetimeStart( function_context, var.llvm_value );
+				var->llvm_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType(), nullptr, arg_name );
+				CreateLifetimeStart( function_context, var->llvm_value );
 
 				if( param.type != void_type_ )
-					CreateTypedStore( function_context, var.type, &llvm_arg, var.llvm_value );
+					CreateTypedStore( function_context, var->type, &llvm_arg, var->llvm_value );
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Composite types use llvm-pointers.
-				var.llvm_value = &llvm_arg;
+				var->llvm_value = &llvm_arg;
 			}
 			else U_ASSERT(false);
 
-			CreateVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
+			CreateVariableDebugInfo( *var, arg_name, declaration_arg.src_loc_, function_context );
 		}
 
 		// Create variable node, because only variable node can have inner reference node.
@@ -1316,11 +1315,11 @@ Type CodeBuilder::BuildFuncCode(
 				param.value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 				arg_name + " reference" );
 			function_context.variables_state.AddLink( var_node, reference_node );
-			var.node= reference_node;
+			var->node= reference_node;
 		}
 		else
 		{
-			var.node= var_node;
+			var->node= var_node;
 			function_context.stack_variables_stack.back()->RegisterVariable( var );
 		}
 
@@ -1340,8 +1339,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( is_this )
 		{
 			// Save "this" in function context for accessing inside class methods.
-			this_= std::move(var);
-			function_context.this_= &this_;
+			function_context.this_= std::move(var);
 		}
 		else
 		{
@@ -1390,7 +1388,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	if( is_destructor )
 	{
-		SetupVirtualTablePointers( this_.llvm_value, *base_class, function_context );
+		SetupVirtualTablePointers( function_context.this_->llvm_value, *base_class, function_context );
 		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
 	}
 

@@ -151,6 +151,7 @@ public:
 
 private:
 	// Store "OverloadedFunctionsSet" indirectly, because it is too hevy, to put it in value together with "variable".
+	// TODO - remove this. This is unnecessary, since "this" is stored via shared_ptr.
 	std::unique_ptr<OverloadedFunctionsSet> overloaded_methods_set_;
 };
 

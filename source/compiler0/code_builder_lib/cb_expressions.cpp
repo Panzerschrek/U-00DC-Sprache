@@ -35,7 +35,7 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 		dummy_result->llvm_value= llvm::UndefValue::get( invalid_type_.GetLLVMType()->getPointerTo() );
 		return dummy_result;
 	}
-	return std::move( result_variable );
+	return result_variable;
 }
 
 Value CodeBuilder::BuildExpressionCode(
@@ -83,7 +83,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( auto res=
 				TryCallOverloadedPostfixOperator(
-					*variable,
+					variable,
 					llvm::ArrayRef<Synt::Expression>(*indexation_operator.index_),
 					OverloadedOperator::Indexing,
 					indexation_operator.src_loc_,
@@ -415,7 +415,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *unary_minus.expression_, names, function_context );
 
-	if( auto res= TryCallOverloadedUnaryOperator( *variable, OverloadedOperator::Sub, unary_minus.src_loc_, names, function_context ) )
+	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::Sub, unary_minus.src_loc_, names, function_context ) )
 		return std::move(*res);
 
 	const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
@@ -467,7 +467,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *logical_not.expression_, names, function_context );
 
-	if( auto res= TryCallOverloadedUnaryOperator( *variable, OverloadedOperator::LogicalNot, logical_not.src_loc_, names, function_context ) )
+	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::LogicalNot, logical_not.src_loc_, names, function_context ) )
 		return std::move(*res);
 
 	if( variable->type != bool_type_ )
@@ -494,7 +494,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *bitwise_not.expression_, names, function_context );
 
-	if( auto res= TryCallOverloadedUnaryOperator( *variable, OverloadedOperator::BitwiseNot, bitwise_not.src_loc_, names, function_context ) )
+	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::BitwiseNot, bitwise_not.src_loc_, names, function_context ) )
 		return std::move(*res);
 
 	const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
@@ -1747,19 +1747,19 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 }
 
 std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
-	const Variable& variable,
+	const VariablePtr& variable,
 	const OverloadedOperator op,
 	const SrcLoc& src_loc,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	if( variable.type.GetClassType() == nullptr )
+	if( variable->type.GetClassType() == nullptr )
 		return std::nullopt;
 
 	ArgsVector<FunctionType::Param> args;
 	args.emplace_back();
-	args.back().type= variable.type;
-	args.back().value_type= variable.value_type;
+	args.back().type= variable->type;
+	args.back().value_type= variable->value_type;
 
 	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, names, src_loc );
 
@@ -1769,7 +1769,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
-	const std::pair<Variable, llvm::Value*> fetch_result=
+	const std::pair<VariablePtr, llvm::Value*> fetch_result=
 		TryFetchVirtualFunction( variable, *overloaded_operator, function_context, names.GetErrors(), src_loc );
 
 	return
@@ -1777,7 +1777,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 			fetch_result.second,
 			*overloaded_operator->type.GetFunctionType(),
 			src_loc,
-			&fetch_result.first,
+			fetch_result.first,
 			{},
 			false,
 			names,
@@ -1785,7 +1785,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 }
 
 std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
-	const Variable& variable,
+	const VariablePtr& variable,
 	const llvm::ArrayRef<Synt::Expression>& synt_args,
 	const OverloadedOperator op,
 	const SrcLoc& src_loc,
@@ -1799,7 +1799,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-		actual_args.push_back( GetArgExtendedType( variable ) );
+		actual_args.push_back( GetArgExtendedType( *variable ) );
 		for( const Synt::Expression& arg_expression : synt_args )
 			actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
 	}
@@ -2571,7 +2571,7 @@ Value CodeBuilder::CallFunction(
 		functions_set= &this_overloaded_methods_set->GetOverloadedFunctionsSet();
 		this_= this_overloaded_methods_set->this_;
 	}
-	else if( const Variable* const callable_variable= function_value.GetVariable() )
+	else if( const VariablePtr callable_variable= function_value.GetVariablePtr() )
 	{
 		if( const FunctionPointerType* const function_pointer= callable_variable->type.GetFunctionPointerType() )
 		{
@@ -2601,7 +2601,7 @@ Value CodeBuilder::CallFunction(
 		// Try to call overloaded () operator.
 		// DO NOT fill "this" here and continue this function because we should process callable object as non-this.
 
-		if( auto res= TryCallOverloadedPostfixOperator( *callable_variable, synt_args, OverloadedOperator::Call, src_loc, names, function_context ) )
+		if( auto res= TryCallOverloadedPostfixOperator( callable_variable, synt_args, OverloadedOperator::Call, src_loc, names, function_context ) )
 			return std::move(*res);
 	}
 
@@ -2665,9 +2665,9 @@ Value CodeBuilder::CallFunction(
 	llvm::Value* llvm_function_ptr= function.llvm_function;
 	if( this_ != nullptr )
 	{
-		auto fetch_result= TryFetchVirtualFunction( *this_, function, function_context, names.GetErrors(), src_loc );
+		auto fetch_result= TryFetchVirtualFunction( this_, function, function_context, names.GetErrors(), src_loc );
 		llvm_function_ptr= fetch_result.second;
-		this_= std::make_shared<Variable>(std::move( fetch_result.first )); // TODO - avoid creating shared_ptr here?
+		this_= fetch_result.first;
 	}
 
 	return

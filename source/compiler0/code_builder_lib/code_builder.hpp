@@ -147,8 +147,8 @@ private:
 	llvm::Constant* BuildClassVirtualTable_r( const Class& ancestor_class, const Class& dst_class, uint64_t offset );
 	void BuildClassVirtualTable( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 
-	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction(
-		const Variable& this_,
+	std::pair<VariablePtr, llvm::Value*> TryFetchVirtualFunction(
+		const VariablePtr& this_,
 		const FunctionVariable& function,
 		FunctionContext& function_context,
 		CodeBuilderErrorsContainer& errors_container,
@@ -551,14 +551,14 @@ private:
 		FunctionContext& function_context );
 
 	std::optional<Value> TryCallOverloadedUnaryOperator(
-		const Variable& variable,
+		const VariablePtr& variable,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
 	std::optional<Value> TryCallOverloadedPostfixOperator(
-		const Variable& variable,
+		const VariablePtr& variable,
 		const llvm::ArrayRef<Synt::Expression>& synt_args,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,

@@ -257,7 +257,7 @@ std::string Value::GetKindName() const
 {
 	struct Visitor final
 	{
-		std::string operator()( const Variable& ) const { return "variable"; }
+		std::string operator()( const VariablePtr& ) const { return "variable"; }
 		std::string operator()( const FunctionVariable& ) const { return "function variable"; }
 		std::string operator()( const OverloadedFunctionsSet& ) const { return "functions set"; }
 		std::string operator()( const Type& ) const { return "typename"; }
@@ -283,13 +283,17 @@ const SrcLoc& Value::GetSrcLoc() const
 Variable* Value::GetVariable()
 {
 	if(const auto* ptr= std::get_if<VariablePtr>( &something_ ) )
-		return **ptr;
+		return ptr->get();
+
+	return nullptr;
 }
 
 const Variable* Value::GetVariable() const
 {
 	if(const auto* ptr= std::get_if<VariablePtr>( &something_ ) )
-		return **ptr;
+		return ptr->get();
+
+	return nullptr;
 }
 
 VariablePtr Value::GetVariablePtr() const

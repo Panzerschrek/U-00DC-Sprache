@@ -246,8 +246,10 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 	while(true)
 	{
 		bool any_node_moved= false;
-		for( const Variable& variable : temporary_variables_storage.variables_ )
+		for( const VariablePtr& variable_ptr : temporary_variables_storage.variables_ )
 		{
+			const Variable& variable= *variable_ptr;
+
 			// Destroy variables without links.
 			// Destroy all references, because all actual references that holds values should not yet be registered.
 			if( !function_context.variables_state.NodeMoved( variable.node )  &&

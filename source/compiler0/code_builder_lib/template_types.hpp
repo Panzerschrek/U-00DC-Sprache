@@ -8,6 +8,7 @@ namespace U
 {
 
 
+// TODO - use here more lightweight structure, rather than "Variable"?
 using TemplateArg= std::variant< VariablePtr, Type >;
 using TemplateArgs= std::vector<TemplateArg>;
 

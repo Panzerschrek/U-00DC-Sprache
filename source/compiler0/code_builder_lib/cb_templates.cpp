@@ -43,8 +43,8 @@ void CreateTemplateErrorsContext(
 			args_description+= template_.template_params[i].name + " = ";
 			if( const Type* const type= std::get_if<Type>( &arg ) )
 				args_description+= type->ToString();
-			else if( const Variable* const variable= std::get_if<Variable>( &arg ) )
-				args_description+= ConstantVariableToString( *variable );
+			else if( const auto variable_ptr= std::get_if<VariablePtr>( &arg ) )
+				args_description+= ConstantVariableToString( **variable_ptr );
 			else U_ASSERT(false);
 
 			if( i + 1u < template_args.size() )
@@ -555,8 +555,10 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	(void)args_names_scope;
 	(void)src_loc;
 
-	if( const auto given_variable= std::get_if<Variable>( &template_arg ) )
+	if( const auto given_variable_ptr_ptr= std::get_if<VariablePtr>( &template_arg ) )
 	{
+		const VariablePtr& given_variable= *given_variable_ptr_ptr;
+
 		return
 			given_variable->type == template_param.v.type &&
 			given_variable->constexpr_value->getUniqueInteger() == template_param.v.constexpr_value->getUniqueInteger();
@@ -587,35 +589,37 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			*value= Value( *given_type, src_loc );
 			return true;
 		}
-		if( const auto given_varaible= std::get_if<Variable>( &template_arg ) )
+		if( const auto given_variable_ptr_ptr= std::get_if<VariablePtr>( &template_arg ) )
 		{
+			const VariablePtr& given_variable= *given_variable_ptr_ptr;
+
 			if( !is_variable_param )
 				return false;
 
-			if( !TypeIsValidForTemplateVariableArgument( given_varaible->type ) )
+			if( !TypeIsValidForTemplateVariableArgument( given_variable->type ) )
 			{
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope.GetErrors(), src_loc, given_varaible->type );
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope.GetErrors(), src_loc, given_variable->type );
 				return false;
 			}
-			if( given_varaible->constexpr_value == nullptr )
+			if( given_variable->constexpr_value == nullptr )
 			{
 				REPORT_ERROR( ExpectedConstantExpression, args_names_scope.GetErrors(), src_loc );
 				return false;
 			}
 
-			if( !MatchTemplateArg( template_, args_names_scope, given_varaible->type, src_loc, *param_type ) )
+			if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, src_loc, *param_type ) )
 				return false;
 
 			VariablePtr variable_for_insertion= std::make_shared<Variable>();
-			variable_for_insertion->type= given_varaible->type;
+			variable_for_insertion->type= given_variable->type;
 			variable_for_insertion->location= Variable::Location::Pointer;
 			variable_for_insertion->value_type= ValueType::ReferenceImut;
 			variable_for_insertion->llvm_value=
 				CreateGlobalConstantVariable(
-					given_varaible->type,
+					given_variable->type,
 					template_.template_params[ template_param.index ].name,
-					given_varaible->constexpr_value );
-			variable_for_insertion->constexpr_value= given_varaible->constexpr_value;
+					given_variable->constexpr_value );
+			variable_for_insertion->constexpr_value= given_variable->constexpr_value;
 
 			*value= Value( std::move(variable_for_insertion), src_loc );
 			return true;
@@ -628,11 +632,13 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	}
 	else if( const auto prev_variable= value->GetVariable() )
 	{
-		if( const auto given_varaible= std::get_if<Variable>( &template_arg ) )
+		if( const auto given_variable_ptr_ptr= std::get_if<VariablePtr>( &template_arg ) )
 		{
+			const VariablePtr& given_variable= *given_variable_ptr_ptr;
+
 			return
-				given_varaible->type == prev_variable->type &&
-				given_varaible->constexpr_value->getUniqueInteger() == prev_variable->constexpr_value->getUniqueInteger();
+				given_variable->type == prev_variable->type &&
+				given_variable->constexpr_value->getUniqueInteger() == prev_variable->constexpr_value->getUniqueInteger();
 		}
 	}
 
@@ -653,9 +659,9 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_array_type->element_type, src_loc, *template_param.element_type ) )
 				return false;
 
-			Variable size_variable;
-			size_variable.type= size_type_;
-			size_variable.constexpr_value=
+			VariablePtr size_variable= std::make_shared<Variable>();
+			size_variable->type= size_type_;
+			size_variable->constexpr_value=
 				llvm::ConstantInt::get(
 					size_type_.GetLLVMType(),
 					llvm::APInt( static_cast<unsigned int>(size_type_.GetFundamentalType()->GetSize() * 8), given_array_type->element_count ) );
@@ -858,8 +864,8 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 
 		if( const Type* const type_name= value.GetTypeName() )
 			result.signature_args[i]= *type_name;
-		else if( const Variable* const variable= value.GetVariable() )
-			result.signature_args[i]= *variable;
+		else if( const auto variable= value.GetVariablePtr() )
+			result.signature_args[i]= variable;
 		else
 		{
 			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), src_loc, value.GetKindName() );
@@ -876,8 +882,8 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 
 		if( const auto type= value->GetTypeName() )
 			result.template_args.push_back( *type );
-		else if( const auto variable= value->GetVariable() )
-			result.template_args.push_back( *variable );
+		else if( const auto variable= value->GetVariablePtr() )
+			result.template_args.push_back( variable );
 		else
 		{
 			// SPRACHE_TODO - maybe not generate this error?
@@ -1060,8 +1066,8 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 
 		if( const auto type= value->GetTypeName() )
 			result.template_args.push_back( *type );
-		else if( const auto variable= value->GetVariable() )
-			result.template_args.push_back( *variable );
+		else if( const auto variable= value->GetVariablePtr() )
+			result.template_args.push_back( variable );
 		else
 		{
 			// SPRACHE_TODO - maybe not generate this error?
@@ -1186,14 +1192,14 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 		const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
 		if( const auto type_name= value.GetTypeName() )
 			template_args.push_back( *type_name );
-		else if( const auto variable= value.GetVariable() )
+		else if( const auto variable= value.GetVariablePtr() )
 		{
 			if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr), variable->type );
 			else if( variable->constexpr_value == nullptr )
 				REPORT_ERROR( ExpectedConstantExpression, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
 			else
-				template_args.push_back( *variable );
+				template_args.push_back( variable );
 		}
 		else
 			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), src_loc, value.GetKindName() );
