@@ -299,16 +299,16 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		SetupReferencesInCopyOrMove( function_context, variable, *expression_result, names.GetErrors(), src_loc );
 
 		// Move or try call copy constructor.
-		if( expression_result.value_type == ValueType::Value && expression_result->type == variable.type )
+		if( expression_result->value_type == ValueType::Value && expression_result->type == variable.type )
 		{
 			if( expression_result->node != nullptr )
 			{
-				U_ASSERT( expression_result.node->kind == ReferencesGraphNode::Kind::Variable );
+				U_ASSERT( expression_result->node->kind == ReferencesGraphNode::Kind::Variable );
 				function_context.variables_state.MoveNode( expression_result->node );
 			}
-			U_ASSERT( expression_result.location == Variable::Location::Pointer );
+			U_ASSERT( expression_result->location == Variable::Location::Pointer );
 			CopyBytes( variable.llvm_value, expression_result->llvm_value, variable.type, function_context );
-			CreateLifetimeEnd( function_context, expression_result.llvm_value );
+			CreateLifetimeEnd( function_context, expression_result->llvm_value );
 
 			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 		}
@@ -322,13 +322,13 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			BuildCopyConstructorPart(
 				variable.llvm_value,
-				expression_result.llvm_value,
+				expression_result->llvm_value,
 				variable.type,
 				function_context );
 		}
 
 		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
-		return expression_result.constexpr_value;
+		return expression_result->constexpr_value;
 	}
 	else if( variable.type.GetClassType() != nullptr )
 	{
@@ -342,7 +342,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result->type, variable.type, names.GetErrors(), src_loc ) )
 		{
 			// Type conversion required.
-			expression_result= ConvertVariable( *expression_result, variable.type, *conversion_constructor, names, function_context, src_loc );
+			expression_result= ConvertVariable( expression_result, variable.type, *conversion_constructor, names, function_context, src_loc );
 		}
 		else
 		{
@@ -350,30 +350,30 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), src_loc );
+		SetupReferencesInCopyOrMove( function_context, variable, *expression_result, names.GetErrors(), src_loc );
 
 		// Move or try call copy constructor.
 		// TODO - produce constant initializer for generated copy constructor, if source is constant.
-		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
+		if( expression_result->value_type == ValueType::Value && expression_result->type == variable.type )
 		{
-			if( expression_result.node != nullptr )
+			if( expression_result->node != nullptr )
 			{
-				U_ASSERT( expression_result.node->kind == ReferencesGraphNode::Kind::Variable );
-				function_context.variables_state.MoveNode( expression_result.node );
+				U_ASSERT( expression_result->node->kind == ReferencesGraphNode::Kind::Variable );
+				function_context.variables_state.MoveNode( expression_result->node );
 			}
-			U_ASSERT( expression_result.location == Variable::Location::Pointer );
-			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
-			CreateLifetimeEnd( function_context, expression_result.llvm_value );
+			U_ASSERT( expression_result->location == Variable::Location::Pointer );
+			CopyBytes( variable.llvm_value, expression_result->llvm_value, variable.type, function_context );
+			CreateLifetimeEnd( function_context, expression_result->llvm_value );
 
 			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 
-			return expression_result.constexpr_value; // Move can preserve constexpr.
+			return expression_result->constexpr_value; // Move can preserve constexpr.
 		}
 		else
 		{
-			llvm::Value* value_for_copy= expression_result.llvm_value;
-			if( expression_result.type != variable.type )
-				value_for_copy= CreateReferenceCast( value_for_copy, expression_result.type, variable.type, function_context );
+			llvm::Value* value_for_copy= expression_result->llvm_value;
+			if( expression_result->type != variable.type )
+				value_for_copy= CreateReferenceCast( value_for_copy, expression_result->type, variable.type, function_context );
 			TryCallCopyConstructor(
 				names.GetErrors(), src_loc, variable.llvm_value, value_for_copy, variable.type.GetClassType(), function_context );
 		}
@@ -579,7 +579,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		U_ASSERT( constructors_set != nullptr );
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
-		this_overloaded_methods_set.this_= variable;
+		this_overloaded_methods_set.this_= std::make_shared<Variable>(variable); // TODO - avoid creation of copy.
 		this_overloaded_methods_set.GetOverloadedFunctionsSet()= *constructors_set;
 
 		CallFunction( std::move(this_overloaded_methods_set), {}, src_loc, block_names, function_context );
@@ -609,23 +609,23 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const Variable src_var= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
+		const VariablePtr src_var= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
 
-		const FundamentalType* src_type= src_var.type.GetFundamentalType();
+		const FundamentalType* src_type= src_var->type.GetFundamentalType();
 		if( src_type == nullptr )
 		{
 			// Allow explicit conversions of enums to ints.
-			if( const Enum* const enum_type= src_var.type.GetEnumType () )
+			if( const Enum* const enum_type= src_var->type.GetEnumType () )
 				src_type= &enum_type->underlaying_type;
 		}
 
 		if( src_type == nullptr )
 		{
-			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), src_loc, variable.type, src_var.type );
+			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), src_loc, variable.type, src_var->type );
 			return nullptr;
 		}
 
-		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
+		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( *src_var, function_context );
 		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), src_loc );
 
 		if( dst_type->fundamental_type != src_type->fundamental_type )
@@ -723,7 +723,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				{
 					// TODO - error, bool have no constructors from other types
 				}
-				REPORT_ERROR( TypesMismatch, block_names.GetErrors(), src_loc, variable.type, src_var.type );
+				REPORT_ERROR( TypesMismatch, block_names.GetErrors(), src_loc, variable.type, src_var->type );
 				return nullptr;
 			}
 		} // If needs conversion
@@ -741,22 +741,22 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const Variable expression_result= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
-		if( expression_result.type != variable.type )
+		const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
+		if( expression_result->type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), src_loc, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), src_loc, variable.type, expression_result->type );
 			return nullptr;
 		}
 
 		CreateTypedStore(
 			function_context,
 			variable.type,
-			CreateMoveToLLVMRegisterInstruction( expression_result, function_context ),
+			CreateMoveToLLVMRegisterInstruction( *expression_result, function_context ),
 			variable.llvm_value );
 
 		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), src_loc );
 
-		return expression_result.constexpr_value;
+		return expression_result->constexpr_value;
 	}
 	else if( variable.type.GetFunctionPointerType() != nullptr )
 	{
@@ -777,24 +777,24 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const Variable expression_result= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
-		if( expression_result.type != variable.type )
+		const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
+		if( expression_result->type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), src_loc, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, block_names.GetErrors(), src_loc, variable.type, expression_result->type );
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, variable, expression_result, block_names.GetErrors(), src_loc );
+		SetupReferencesInCopyOrMove( function_context, variable, *expression_result, block_names.GetErrors(), src_loc );
 
 		// Copy/move initialize array/tuple.
-		if( expression_result.value_type == ValueType::Value )
+		if( expression_result->value_type == ValueType::Value )
 		{
-			if( expression_result.node != nullptr )
-				function_context.variables_state.MoveNode( expression_result.node );
+			if( expression_result->node != nullptr )
+				function_context.variables_state.MoveNode( expression_result->node );
 
-			U_ASSERT( expression_result.location == Variable::Location::Pointer );
-			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
-			CreateLifetimeEnd( function_context, expression_result.llvm_value );
+			U_ASSERT( expression_result->location == Variable::Location::Pointer );
+			CopyBytes( variable.llvm_value, expression_result->llvm_value, variable.type, function_context );
+			CreateLifetimeEnd( function_context, expression_result->llvm_value );
 		}
 		else
 		{
@@ -806,13 +806,13 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 			BuildCopyConstructorPart(
 				variable.llvm_value,
-				expression_result.llvm_value,
+				expression_result->llvm_value,
 				variable.type,
 				function_context );
 		}
 
 		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
-		return expression_result.constexpr_value;
+		return expression_result->constexpr_value;
 	}
 	else if( const Class* const class_type= variable.type.GetClassType() )
 	{
@@ -824,25 +824,25 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-				const Variable initializer_value= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
-				needs_move_constuct= initializer_value.type == variable.type && initializer_value.value_type == ValueType::Value;
+				const VariablePtr initializer_value= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
+				needs_move_constuct= initializer_value->type == variable.type && initializer_value->value_type == ValueType::Value;
 			}
 			RestoreInstructionsState( function_context, state );
 		}
 		if( needs_move_constuct )
 		{
-			const Variable initializer_variable= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
+			const VariablePtr initializer_variable= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
 
-			SetupReferencesInCopyOrMove( function_context, variable, initializer_variable, block_names.GetErrors(), src_loc );
+			SetupReferencesInCopyOrMove( function_context, variable, *initializer_variable, block_names.GetErrors(), src_loc );
 
-			if( initializer_variable.node != nullptr )
-				function_context.variables_state.MoveNode( initializer_variable.node );
+			if( initializer_variable->node != nullptr )
+				function_context.variables_state.MoveNode( initializer_variable->node );
 
-			U_ASSERT( initializer_variable.location == Variable::Location::Pointer );
-			CopyBytes( variable.llvm_value, initializer_variable.llvm_value, variable.type, function_context );
-			CreateLifetimeEnd( function_context, initializer_variable.llvm_value );
+			U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
+			CopyBytes( variable.llvm_value, initializer_variable->llvm_value, variable.type, function_context );
+			CreateLifetimeEnd( function_context, initializer_variable->llvm_value );
 
-			return initializer_variable.constexpr_value; // Move can preserve constexpr.
+			return initializer_variable->constexpr_value; // Move can preserve constexpr.
 		}
 
 		const Value* constructor_value=
@@ -857,7 +857,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		U_ASSERT( constructors_set != nullptr );
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
-		this_overloaded_methods_set.this_= variable;
+		this_overloaded_methods_set.this_= std::make_shared<Variable>(variable); // TODO - avoid creation of copy.
 		this_overloaded_methods_set.GetOverloadedFunctionsSet()= *constructors_set;
 
 		CallFunction( std::move(this_overloaded_methods_set), synt_args, src_loc, block_names, function_context );
@@ -900,29 +900,29 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		return nullptr;
 	}
 
-	const Variable initializer_variable= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
+	const VariablePtr initializer_variable= BuildExpressionCodeEnsureVariable( *initializer_expression, block_names, function_context );
 
 	const SrcLoc initializer_expression_src_loc= Synt::GetExpressionSrcLoc( *initializer_expression );
-	if( !ReferenceIsConvertible( initializer_variable.type, field.type, block_names.GetErrors(), initializer_expression_src_loc ) )
+	if( !ReferenceIsConvertible( initializer_variable->type, field.type, block_names.GetErrors(), initializer_expression_src_loc ) )
 	{
-		REPORT_ERROR( TypesMismatch, block_names.GetErrors(), initializer_expression_src_loc, field.type, initializer_variable.type );
+		REPORT_ERROR( TypesMismatch, block_names.GetErrors(), initializer_expression_src_loc, field.type, initializer_variable->type );
 		return nullptr;
 	}
-	if( initializer_variable.value_type == ValueType::Value )
+	if( initializer_variable->value_type == ValueType::Value )
 	{
 		REPORT_ERROR( ExpectedReferenceValue, block_names.GetErrors(), initializer_expression_src_loc );
 		return nullptr;
 	}
-	U_ASSERT( initializer_variable.location == Variable::Location::Pointer );
+	U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
 
-	if( field.is_mutable && initializer_variable.value_type == ValueType::ReferenceImut )
+	if( field.is_mutable && initializer_variable->value_type == ValueType::ReferenceImut )
 	{
 		REPORT_ERROR( BindingConstReferenceToNonconstReference, block_names.GetErrors(), initializer_expression_src_loc );
 		return nullptr;
 	}
 
 	// Check references.
-	const ReferencesGraphNodePtr& src_node= initializer_variable.node;
+	const ReferencesGraphNodePtr& src_node= initializer_variable->node;
 	const ReferencesGraphNodePtr& dst_node= variable.node;
 	if( src_node != nullptr && dst_node != nullptr )
 	{
@@ -947,19 +947,19 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 
 	llvm::Value* const address_of_reference= CreateClassFieldGEP( function_context, variable, field.index );
 
-	llvm::Value* ref_to_store= initializer_variable.llvm_value;
-	if( field.type != initializer_variable.type )
-		ref_to_store= CreateReferenceCast( ref_to_store, initializer_variable.type, field.type, function_context );
+	llvm::Value* ref_to_store= initializer_variable->llvm_value;
+	if( field.type != initializer_variable->type )
+		ref_to_store= CreateReferenceCast( ref_to_store, initializer_variable->type, field.type, function_context );
 	CreateTypedReferenceStore( function_context, field.type, ref_to_store, address_of_reference );
 
-	if( initializer_variable.constexpr_value != nullptr )
+	if( initializer_variable->constexpr_value != nullptr )
 	{
 		// We needs to store constant somewhere. Create global variable for it.
-		llvm::Constant* constant_stored= CreateGlobalConstantVariable( initializer_variable.type, "_temp_const", initializer_variable.constexpr_value );
+		llvm::Constant* constant_stored= CreateGlobalConstantVariable( initializer_variable->type, "_temp_const", initializer_variable->constexpr_value );
 
-		if( field.type != initializer_variable.type )
+		if( field.type != initializer_variable->type )
 			constant_stored=
-				llvm::dyn_cast<llvm::Constant>( CreateReferenceCast( constant_stored, initializer_variable.type, field.type, function_context ) );
+				llvm::dyn_cast<llvm::Constant>( CreateReferenceCast( constant_stored, initializer_variable->type, field.type, function_context ) );
 
 		return constant_stored;
 	}
@@ -1084,7 +1084,7 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 
 	// Reset "this" for function context.
 	// TODO - maybe reset also other function context fields?
-	const Variable* const prev_this= function_context.this_;
+	const VariablePtr prev_this= function_context.this_;
 	function_context.this_= nullptr;
 
 	llvm::Constant* const result=
@@ -1109,7 +1109,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 
 	// Reset "this" for function context.
 	// TODO - maybe reset also other function context fields?
-	const Variable* const prev_this= function_context.this_;
+	const VariablePtr prev_this= function_context.this_;
 	function_context.this_= nullptr;
 
 	llvm::Constant* const result=

@@ -1139,23 +1139,23 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names_scope, function_context );
 
-			if( !ReferenceIsConvertible( expression_result.type, variable->type, names_scope.GetErrors(), variable_declaration.src_loc ) )
+			if( !ReferenceIsConvertible( expression_result->type, variable->type, names_scope.GetErrors(), variable_declaration.src_loc ) )
 			{
-				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), variable_declaration.src_loc, variable->type, expression_result.type );
+				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), variable_declaration.src_loc, variable->type, expression_result->type );
 				FAIL_RETURN;
 			}
-			if( expression_result.value_type == ValueType::Value )
+			if( expression_result->value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), variable_declaration.src_loc );
 				FAIL_RETURN;
 			}
 
 			// TODO - maybe make copy of varaible address in new llvm register?
-			llvm::Value* result_ref= expression_result.llvm_value;
-			if( variable->type != expression_result.type )
-				result_ref= CreateReferenceCast( result_ref, expression_result.type, variable->type, function_context );
+			llvm::Value* result_ref= expression_result->llvm_value;
+			if( variable->type != expression_result->type )
+				result_ref= CreateReferenceCast( result_ref, expression_result->type, variable->type, function_context );
 			variable->llvm_value= result_ref;
-			variable->constexpr_value= expression_result.constexpr_value;
+			variable->constexpr_value= expression_result->constexpr_value;
 		}
 		else U_ASSERT(false);
 
@@ -1191,22 +1191,22 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
 			const bool type_is_ok=
-				initializer_experrsion.type.GetFundamentalType() != nullptr ||
-				initializer_experrsion.type.GetArrayType() != nullptr ||
-				initializer_experrsion.type.GetTupleType() != nullptr ||
-				initializer_experrsion.type.GetClassType() != nullptr ||
-				initializer_experrsion.type.GetEnumType() != nullptr ||
-				initializer_experrsion.type.GetRawPointerType() != nullptr ||
-				initializer_experrsion.type.GetFunctionPointerType() != nullptr;
-			if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
+				initializer_experrsion->type.GetFundamentalType() != nullptr ||
+				initializer_experrsion->type.GetArrayType() != nullptr ||
+				initializer_experrsion->type.GetTupleType() != nullptr ||
+				initializer_experrsion->type.GetClassType() != nullptr ||
+				initializer_experrsion->type.GetEnumType() != nullptr ||
+				initializer_experrsion->type.GetRawPointerType() != nullptr ||
+				initializer_experrsion->type.GetFunctionPointerType() != nullptr;
+			if( !type_is_ok || initializer_experrsion->type == invalid_type_ )
 			{
-				REPORT_ERROR( InvalidTypeForAutoVariable, names_scope.GetErrors(), auto_variable_declaration->src_loc_, initializer_experrsion.type );
+				REPORT_ERROR( InvalidTypeForAutoVariable, names_scope.GetErrors(), auto_variable_declaration->src_loc_, initializer_experrsion->type );
 				FAIL_RETURN;
 			}
 		}
 
 		VariablePtr variable= std::make_shared<Variable>();
-		variable->type= initializer_experrsion.type;
+		variable->type= initializer_experrsion->type;
 		variable->value_type= is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		variable->location= Variable::Location::Pointer;
 
@@ -1223,14 +1223,14 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		if( auto_variable_declaration->reference_modifier == ReferenceModifier::Reference )
 		{
-			if( initializer_experrsion.value_type == ValueType::Value )
+			if( initializer_experrsion->value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 				FAIL_RETURN;
 			}
 
-			variable->llvm_value= initializer_experrsion.llvm_value;
-			variable->constexpr_value= initializer_experrsion.constexpr_value;
+			variable->llvm_value= initializer_experrsion->llvm_value;
+			variable->constexpr_value= initializer_experrsion->constexpr_value;
 		}
 		else if( auto_variable_declaration->reference_modifier == ReferenceModifier::None )
 		{
@@ -1242,7 +1242,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			variable->llvm_value= global_variable;
 			// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
-			variable->constexpr_value= initializer_experrsion.constexpr_value;
+			variable->constexpr_value= initializer_experrsion->constexpr_value;
 
 			if( variable->constexpr_value != nullptr )
 				global_variable->setInitializer( variable->constexpr_value );

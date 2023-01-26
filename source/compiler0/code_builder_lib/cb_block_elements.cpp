@@ -92,23 +92,23 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 			node_kind= ReferencesGraphNode::Kind::ReferenceImut;
 		// Do not forget to remove node in case of error-return!!!
-		variable.node= function_context.variables_state.AddNode( node_kind, variable_declaration.name );
+		variable->node= function_context.variables_state.AddNode( node_kind, variable_declaration.name );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
-			variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, variable_declaration.name );
+			variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, variable_declaration.name );
 
 			CreateLifetimeStart( function_context, variable->llvm_value );
-			CreateVariableDebugInfo( variable, variable_declaration.name, variable_declaration.src_loc, function_context );
+			CreateVariableDebugInfo( *variable, variable_declaration.name, variable_declaration.src_loc, function_context );
 
 			prev_variables_storage.RegisterVariable( variable );
 
 			if( variable_declaration.initializer != nullptr )
 				variable->constexpr_value=
-					ApplyInitializer( variable, names, function_context, *variable_declaration.initializer );
+					ApplyInitializer( *variable, names, function_context, *variable_declaration.initializer );
 			else
 				variable->constexpr_value=
-					ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names, function_context );
+					ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, *variable, names, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
@@ -123,7 +123,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( variable_declaration.initializer == nullptr )
 			{
 				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), variables_declaration.src_loc_, variable_declaration.name );
-				function_context.variables_state.RemoveNode( variable.node );
+				function_context.variables_state.RemoveNode( variable->node );
 				continue;
 			}
 
@@ -135,7 +135,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( constructor_initializer->arguments.size() != 1u )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names.GetErrors(), constructor_initializer->src_loc_ );
-					function_context.variables_state.RemoveNode( variable.node );
+					function_context.variables_state.RemoveNode( variable->node );
 					continue;
 				}
 				initializer_expression= &constructor_initializer->arguments.front();
@@ -143,57 +143,57 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 			{
 				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), variable_declaration.src_loc );
-				function_context.variables_state.RemoveNode( variable.node );
+				function_context.variables_state.RemoveNode( variable->node );
 				continue;
 			}
 
-			const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names, function_context );
-			if( !ReferenceIsConvertible( expression_result.type, variable.type, names.GetErrors(), variables_declaration.src_loc_ ) )
+			const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names, function_context );
+			if( !ReferenceIsConvertible( expression_result->type, variable->type, names.GetErrors(), variables_declaration.src_loc_ ) )
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), variables_declaration.src_loc_, variable.type, expression_result.type );
-				function_context.variables_state.RemoveNode( variable.node );
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), variables_declaration.src_loc_, variable->type, expression_result->type );
+				function_context.variables_state.RemoveNode( variable->node );
 				continue;
 			}
 
-			if( expression_result.value_type == ValueType::Value )
+			if( expression_result->value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), variables_declaration.src_loc_ );
-				function_context.variables_state.RemoveNode( variable.node );
+				function_context.variables_state.RemoveNode( variable->node );
 				continue;
 			}
-			if( expression_result.value_type == ValueType::ReferenceImut && variable.value_type == ValueType::ReferenceMut )
+			if( expression_result->value_type == ValueType::ReferenceImut && variable->value_type == ValueType::ReferenceMut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), variable_declaration.src_loc );
-				function_context.variables_state.RemoveNode( variable.node );
+				function_context.variables_state.RemoveNode( variable->node );
 				continue;
 			}
 
 			// TODO - maybe make copy of varaible address in new llvm register?
-			llvm::Value* result_ref= expression_result.llvm_value;
-			if( variable.type != expression_result.type )
-				result_ref= CreateReferenceCast( result_ref, expression_result.type, variable.type, function_context );
-			variable.llvm_value= result_ref;
-			variable.constexpr_value= expression_result.constexpr_value;
+			llvm::Value* result_ref= expression_result->llvm_value;
+			if( variable->type != expression_result->type )
+				result_ref= CreateReferenceCast( result_ref, expression_result->type, variable->type, function_context );
+			variable->llvm_value= result_ref;
+			variable->constexpr_value= expression_result->constexpr_value;
 
-			CreateReferenceVariableDebugInfo( variable, variable_declaration.name, variable_declaration.src_loc, function_context );
+			CreateReferenceVariableDebugInfo( *variable, variable_declaration.name, variable_declaration.src_loc, function_context );
 
 			prev_variables_storage.RegisterVariable( variable );
 
-			if( expression_result.node != nullptr && !function_context.variables_state.TryAddLink( expression_result.node, variable.node ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result.node->name );
+			if( expression_result->node != nullptr && !function_context.variables_state.TryAddLink( expression_result->node, variable->node ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result->node->name );
 		}
 		else U_ASSERT(false);
 
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
-			variable.constexpr_value == nullptr )
+			variable->constexpr_value == nullptr )
 		{
 			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names.GetErrors(), variable_declaration.src_loc );
 			continue;
 		}
 
 		// Reset constexpr initial value for mutable variables.
-		if( variable.value_type != ValueType::ReferenceImut )
-			variable.constexpr_value= nullptr;
+		if( variable->value_type != ValueType::ReferenceImut )
+			variable->constexpr_value= nullptr;
 
 		const Value* const inserted_value=
 			names.AddName( variable_declaration.name, Value( variable, variable_declaration.src_loc ) );
@@ -226,12 +226,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( initializer_experrsion->type == invalid_type_ )
 	{
-		REPORT_ERROR( InvalidTypeForAutoVariable, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.type );
+		REPORT_ERROR( InvalidTypeForAutoVariable, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion->type );
 		return BlockBuildInfo();
 	}
 
 	VariablePtr variable= std::make_shared<Variable>();
-	variable->type= initializer_experrsion.type;
+	variable->type= initializer_experrsion->type;
 	variable->value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 	variable->location= Variable::Location::Pointer;
 
@@ -243,126 +243,126 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	else
 		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
 	// Do not forget to remove node in case of error-return!!!
-	variable.node= function_context.variables_state.AddNode( node_kind, auto_variable_declaration.name );
+	variable->node= function_context.variables_state.AddNode( node_kind, auto_variable_declaration.name );
 
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference ||
 		auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 	{
 		// Full completeness required for value-variables and any constexpr variable.
-		if( !EnsureTypeComplete( variable.type ) )
+		if( !EnsureTypeComplete( variable->type ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), auto_variable_declaration.src_loc_, variable.type );
-			function_context.variables_state.RemoveNode(variable.node);
+			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), auto_variable_declaration.src_loc_, variable->type );
+			function_context.variables_state.RemoveNode(variable->node);
 			return BlockBuildInfo();
 		}
 	}
-	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference && variable.type.IsAbstract() )
-		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), auto_variable_declaration.src_loc_, variable.type );
+	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference && variable->type.IsAbstract() )
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), auto_variable_declaration.src_loc_, variable->type );
 
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable.type.CanBeConstexpr() )
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable->type.CanBeConstexpr() )
 	{
 		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names.GetErrors(), auto_variable_declaration.src_loc_ );
-		function_context.variables_state.RemoveNode(variable.node);
+		function_context.variables_state.RemoveNode(variable->node);
 		return BlockBuildInfo();
 	}
 
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
-		if( initializer_experrsion.value_type == ValueType::ReferenceImut && variable.value_type != ValueType::ReferenceImut )
+		if( initializer_experrsion->value_type == ValueType::ReferenceImut && variable->value_type != ValueType::ReferenceImut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), auto_variable_declaration.src_loc_ );
-			function_context.variables_state.RemoveNode(variable.node);
+			function_context.variables_state.RemoveNode(variable->node);
 			return BlockBuildInfo();
 		}
 
-		variable.llvm_value= initializer_experrsion.llvm_value;
-		variable.constexpr_value= initializer_experrsion.constexpr_value;
+		variable->llvm_value= initializer_experrsion->llvm_value;
+		variable->constexpr_value= initializer_experrsion->constexpr_value;
 
-		if( initializer_experrsion.value_type == ValueType::Value )
+		if( initializer_experrsion->value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.src_loc_ );
-			function_context.variables_state.RemoveNode(variable.node);
+			function_context.variables_state.RemoveNode(variable->node);
 			return BlockBuildInfo();
 		}
 
-		CreateReferenceVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
+		CreateReferenceVariableDebugInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
 		prev_variables_storage.RegisterVariable( variable );
 
-		if( initializer_experrsion.node != nullptr && !function_context.variables_state.TryAddLink( initializer_experrsion.node, variable.node ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.node->name );
+		if( initializer_experrsion->node != nullptr && !function_context.variables_state.TryAddLink( initializer_experrsion->node, variable->node ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion->node->name );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
-		if( !variable.type.CanBeConstexpr() )
+		if( !variable->type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
-		if( initializer_experrsion.value_type == ValueType::Value &&
-			initializer_experrsion.location == Variable::Location::Pointer &&
-			initializer_experrsion.llvm_value->getType() == variable.type.GetLLVMType()->getPointerTo() &&
-			( llvm::dyn_cast<llvm::AllocaInst>(initializer_experrsion.llvm_value) != nullptr || llvm::dyn_cast<llvm::Argument>(initializer_experrsion.llvm_value) != nullptr ) )
+		if( initializer_experrsion->value_type == ValueType::Value &&
+			initializer_experrsion->location == Variable::Location::Pointer &&
+			initializer_experrsion->llvm_value->getType() == variable->type.GetLLVMType()->getPointerTo() &&
+			( llvm::dyn_cast<llvm::AllocaInst>(initializer_experrsion->llvm_value) != nullptr || llvm::dyn_cast<llvm::Argument>(initializer_experrsion->llvm_value) != nullptr ) )
 		{
 			// Just reuse "alloca" instruction or function argument for move-initialization, avoid copying value into new memory location.
-			variable.llvm_value= initializer_experrsion.llvm_value;
-			variable.llvm_value->setName( auto_variable_declaration.name );
+			variable->llvm_value= initializer_experrsion->llvm_value;
+			variable->llvm_value->setName( auto_variable_declaration.name );
 		}
 		else
 		{
-			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, auto_variable_declaration.name );
-			CreateLifetimeStart( function_context, variable.llvm_value );
+			variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, auto_variable_declaration.name );
+			CreateLifetimeStart( function_context, variable->llvm_value );
 		}
 
-		CreateVariableDebugInfo( variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
+		CreateVariableDebugInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
 		prev_variables_storage.RegisterVariable( variable );
 
-		SetupReferencesInCopyOrMove( function_context, variable, initializer_experrsion, names.GetErrors(), auto_variable_declaration.src_loc_ );
+		SetupReferencesInCopyOrMove( function_context, *variable, *initializer_experrsion, names.GetErrors(), auto_variable_declaration.src_loc_ );
 
-		if( initializer_experrsion.value_type == ValueType::Value )
+		if( initializer_experrsion->value_type == ValueType::Value )
 		{
-			const ReferencesGraphNodePtr& variable_for_move= initializer_experrsion.node;
+			const ReferencesGraphNodePtr& variable_for_move= initializer_experrsion->node;
 			if( variable_for_move != nullptr )
 			{
 				U_ASSERT(variable_for_move->kind == ReferencesGraphNode::Kind::Variable );
 				function_context.variables_state.MoveNode( variable_for_move );
 			}
 
-			if( initializer_experrsion.llvm_value != variable.llvm_value )
+			if( initializer_experrsion->llvm_value != variable->llvm_value )
 			{
-				if( initializer_experrsion.location == Variable::Location::LLVMRegister )
-					CreateTypedStore( function_context, initializer_experrsion.type, initializer_experrsion.llvm_value, variable.llvm_value );
+				if( initializer_experrsion->location == Variable::Location::LLVMRegister )
+					CreateTypedStore( function_context, initializer_experrsion->type, initializer_experrsion->llvm_value, variable->llvm_value );
 				else
-					CopyBytes( variable.llvm_value, initializer_experrsion.llvm_value, variable.type, function_context );
-				if( initializer_experrsion.location == Variable::Location::Pointer )
-					CreateLifetimeEnd( function_context, initializer_experrsion.llvm_value );
+					CopyBytes( variable->llvm_value, initializer_experrsion->llvm_value, variable->type, function_context );
+				if( initializer_experrsion->location == Variable::Location::Pointer )
+					CreateLifetimeEnd( function_context, initializer_experrsion->llvm_value );
 			}
 		}
 		else
 		{
-			if( !variable.type.IsCopyConstructible() )
+			if( !variable->type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), auto_variable_declaration.src_loc_, variable.type );
+				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), auto_variable_declaration.src_loc_, variable->type );
 				return BlockBuildInfo();
 			}
 			BuildCopyConstructorPart(
-				variable.llvm_value, initializer_experrsion.llvm_value,
-				variable.type,
+				variable->llvm_value, initializer_experrsion->llvm_value,
+				variable->type,
 				function_context );
 		}
 		// constexpr preserved for move/copy.
-		variable.constexpr_value= initializer_experrsion.constexpr_value;
+		variable->constexpr_value= initializer_experrsion->constexpr_value;
 	}
 	else U_ASSERT(false);
 
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && variable.constexpr_value == nullptr )
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && variable->constexpr_value == nullptr )
 	{
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names.GetErrors(), auto_variable_declaration.src_loc_ );
 		return BlockBuildInfo();
 	}
 
 	// Reset constexpr initial value for mutable variables.
-	if( variable.value_type != ValueType::ReferenceImut )
-		variable.constexpr_value= nullptr;
+	if( variable->value_type != ValueType::ReferenceImut )
+		variable->constexpr_value= nullptr;
 
 	const Value* const inserted_value=
 		names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.src_loc_ ) );
@@ -423,8 +423,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Destruction frame for temporary variables of result expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	Variable expression_result= BuildExpressionCodeEnsureVariable( return_operator.expression_, names, function_context );
-	if( expression_result.type == invalid_type_ )
+	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( return_operator.expression_, names, function_context );
+	if( expression_result->type == invalid_type_ )
 	{
 		// Add "ret void", because we do not need to break llvm basic blocks structure.
 		function_context.llvm_ir_builder.CreateRetVoid();
@@ -435,35 +435,35 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( function_context.return_type == std::nullopt )
 	{
 		if( function_context.deduced_return_type == std::nullopt )
-			function_context.deduced_return_type = expression_result.type;
-		else if( *function_context.deduced_return_type != expression_result.type )
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.deduced_return_type, expression_result.type );
+			function_context.deduced_return_type = expression_result->type;
+		else if( *function_context.deduced_return_type != expression_result->type )
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.deduced_return_type, expression_result->type );
 		return block_info;
 	}
 
 	if( function_context.function_type.return_value_type != ValueType::Value )
 	{
-		if( !ReferenceIsConvertible( expression_result.type, *function_context.return_type, names.GetErrors(), return_operator.src_loc_ ) )
+		if( !ReferenceIsConvertible( expression_result->type, *function_context.return_type, names.GetErrors(), return_operator.src_loc_ ) )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.return_type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.return_type, expression_result->type );
 			return block_info;
 		}
 
-		if( expression_result.value_type == ValueType::Value )
+		if( expression_result->value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.src_loc_ );
 			return block_info;
 		}
-		if( expression_result.value_type == ValueType::ReferenceImut && function_context.function_type.return_value_type == ValueType::ReferenceMut )
+		if( expression_result->value_type == ValueType::ReferenceImut && function_context.function_type.return_value_type == ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc_ );
 			return block_info;
 		}
 
 		// Check correctness of returning reference.
-		if( expression_result.node != nullptr )
+		if( expression_result->node != nullptr )
 		{
-			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result.node ) )
+			for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result->node ) )
 			{
 				if( !IsReferenceAllowedForReturn( function_context, var_node ) )
 					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.src_loc_ );
@@ -475,36 +475,36 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context,
 				function_context.function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
 				"return value lock" );
-			if( expression_result.node != nullptr )
-				function_context.variables_state.AddLink( expression_result.node, return_value_lock.Node() );
+			if( expression_result->node != nullptr )
+				function_context.variables_state.AddLink( expression_result->node, return_value_lock.Node() );
 
 			CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
 		} // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
 
 		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
 
-		llvm::Value* ret_value= expression_result.llvm_value;
-		if( expression_result.type != function_context.return_type )
-			ret_value= CreateReferenceCast( ret_value, expression_result.type, *function_context.return_type, function_context );
+		llvm::Value* ret_value= expression_result->llvm_value;
+		if( expression_result->type != function_context.return_type )
+			ret_value= CreateReferenceCast( ret_value, expression_result->type, *function_context.return_type, function_context );
 		function_context.llvm_ir_builder.CreateRet( ret_value );
 	}
 	else
 	{
-		if( expression_result.type != function_context.return_type )
+		if( expression_result->type != function_context.return_type )
 		{
-			if( const auto conversion_contructor = GetConversionConstructor( expression_result.type, *function_context.return_type, names.GetErrors(), return_operator.src_loc_ ) )
+			if( const auto conversion_contructor = GetConversionConstructor( expression_result->type, *function_context.return_type, names.GetErrors(), return_operator.src_loc_ ) )
 				expression_result= ConvertVariable( expression_result, *function_context.return_type, *conversion_contructor, names, function_context, return_operator.src_loc_ );
 			else
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.return_type, expression_result.type );
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.return_type, expression_result->type );
 				return block_info;
 			}
 		}
 
 		// Check correctness of returning references.
-		if( expression_result.type.ReferencesTagsCount() > 0u && expression_result.node != nullptr )
+		if( expression_result->type.ReferencesTagsCount() > 0u && expression_result->node != nullptr )
 		{
-			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result.node ) )
+			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result->node ) )
 			{
 				for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 				{
@@ -516,37 +516,37 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( function_context.s_ret_ != nullptr )
 		{
-			if( expression_result.value_type == ValueType::Value )
+			if( expression_result->value_type == ValueType::Value )
 			{
-				if( expression_result.node != nullptr )
-					function_context.variables_state.MoveNode( expression_result.node );
+				if( expression_result->node != nullptr )
+					function_context.variables_state.MoveNode( expression_result->node );
 
 				// Perform optimization for move-returning.
 				// Allocate returend variable in place of "s_ret".
 				// We can't apply this optimization for more than one allocation since we can't analyze lifetime of different allocations.
-				if( llvm::dyn_cast<llvm::AllocaInst>( expression_result.llvm_value ) != nullptr &&
-					( function_context.return_value_replaced_allocation == nullptr || function_context.return_value_replaced_allocation == expression_result.llvm_value ) )
+				if( llvm::dyn_cast<llvm::AllocaInst>( expression_result->llvm_value ) != nullptr &&
+					( function_context.return_value_replaced_allocation == nullptr || function_context.return_value_replaced_allocation == expression_result->llvm_value ) )
 				{
-					function_context.return_value_replaced_allocation = expression_result.llvm_value;
+					function_context.return_value_replaced_allocation = expression_result->llvm_value;
 				}
 				else
 				{
-					CopyBytes( function_context.s_ret_, expression_result.llvm_value, *function_context.return_type, function_context );
-					if( expression_result.location == Variable::Location::Pointer )
-						CreateLifetimeEnd( function_context, expression_result.llvm_value );
+					CopyBytes( function_context.s_ret_, expression_result->llvm_value, *function_context.return_type, function_context );
+					if( expression_result->location == Variable::Location::Pointer )
+						CreateLifetimeEnd( function_context, expression_result->llvm_value );
 				}
 			}
 			else
 			{
-				if( !expression_result.type.IsCopyConstructible() )
+				if( !expression_result->type.IsCopyConstructible() )
 				{
-					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), return_operator.src_loc_, expression_result.type );
+					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), return_operator.src_loc_, expression_result->type );
 					return block_info;
 				}
 
 				BuildCopyConstructorPart(
 					function_context.s_ret_,
-					CreateReferenceCast( expression_result.llvm_value, expression_result.type, *function_context.return_type, function_context ),
+					CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ),
 					*function_context.return_type,
 					function_context );
 			}
@@ -558,12 +558,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			U_ASSERT(
-				expression_result.type.GetFundamentalType() != nullptr||
-				expression_result.type.GetEnumType() != nullptr ||
-				expression_result.type.GetRawPointerType() != nullptr ||
-				expression_result.type.GetFunctionPointerType() != nullptr );
+				expression_result->type.GetFundamentalType() != nullptr||
+				expression_result->type.GetEnumType() != nullptr ||
+				expression_result->type.GetRawPointerType() != nullptr ||
+				expression_result->type.GetFunctionPointerType() != nullptr );
 
-			if( expression_result.type == void_type_ )
+			if( expression_result->type == void_type_ )
 			{
 				CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
 				CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
@@ -578,7 +578,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 			{
 				// We must read return value before call of destructors.
-				llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
+				llvm::Value* const value_for_return= CreateMoveToLLVMRegisterInstruction( *expression_result, function_context );
 
 				CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
 				CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
@@ -598,22 +598,22 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	BlockBuildInfo block_build_info;
 
 	const StackVariablesStorage temp_variables_storage( function_context );
-	const Variable sequence_expression= BuildExpressionCodeEnsureVariable( for_operator.sequence_, names, function_context );
+	const VariablePtr sequence_expression= BuildExpressionCodeEnsureVariable( for_operator.sequence_, names, function_context );
 
 	std::optional<ReferencesGraphNodeHolder> sequence_lock;
-	if( sequence_expression.node != nullptr )
+	if( sequence_expression->node != nullptr )
 		sequence_lock.emplace(
 			function_context,
-			sequence_expression.value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
-			sequence_expression.node->name + " sequence lock" );
+			sequence_expression->value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+			sequence_expression->node->name + " sequence lock" );
 
-	if( const TupleType* const tuple_type= sequence_expression.type.GetTupleType() )
+	if( const TupleType* const tuple_type= sequence_expression->type.GetTupleType() )
 	{
 		llvm::BasicBlock* const finish_basic_block= tuple_type->element_types.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
 
 		std::vector<ReferencesGraph> break_variables_states;
 
-		U_ASSERT( sequence_expression.location == Variable::Location::Pointer );
+		U_ASSERT( sequence_expression->location == Variable::Location::Pointer );
 		for( const Type& element_type : tuple_type->element_types )
 		{
 			const size_t element_index= size_t( &element_type - tuple_type->element_types.data() );
@@ -621,9 +621,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			NamesScope loop_names( "", &names );
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
-			Variable variable;
-			variable.type= element_type;
-			variable.value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+			VariablePtr variable= std::make_shared<Variable>();
+			variable->type= element_type;
+			variable->value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 			ReferencesGraphNode::Kind node_kind;
 			if( for_operator.reference_modifier_ != ReferenceModifier::Reference )
@@ -633,52 +633,52 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 				node_kind= ReferencesGraphNode::Kind::ReferenceImut;
 			// Do not forget to remove node in case of error-return!!!
-			variable.node= function_context.variables_state.AddNode( node_kind, for_operator.loop_variable_name_ );
+			variable->node= function_context.variables_state.AddNode( node_kind, for_operator.loop_variable_name_ );
 
 			if( for_operator.reference_modifier_ == ReferenceModifier::Reference )
 			{
-				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression.value_type != ValueType::ReferenceMut )
+				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), for_operator.src_loc_ );
-					function_context.variables_state.RemoveNode(variable.node);
+					function_context.variables_state.RemoveNode(variable->node);
 					continue;
 				}
 
-				variable.llvm_value= CreateTupleElementGEP( function_context, sequence_expression, element_index );
+				variable->llvm_value= CreateTupleElementGEP( function_context, *sequence_expression, element_index );
 
-				CreateReferenceVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
+				CreateReferenceVariableDebugInfo( *variable, variable_name, for_operator.src_loc_, function_context );
 
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
-				if( sequence_lock != std::nullopt && !function_context.variables_state.TryAddLink( sequence_lock->Node(), variable.node ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression.node->name );
+				if( sequence_lock != std::nullopt && !function_context.variables_state.TryAddLink( sequence_lock->Node(), variable->node ) )
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression->node->name );
 			}
 			else
 			{
 				if( !EnsureTypeComplete( element_type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), for_operator.src_loc_, element_type );
-					function_context.variables_state.RemoveNode(variable.node);
+					function_context.variables_state.RemoveNode(variable->node);
 					continue;
 				}
 				if( !element_type.IsCopyConstructible() )
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, element_type );
-					function_context.variables_state.RemoveNode(variable.node);
+					function_context.variables_state.RemoveNode(variable->node);
 					continue;
 				}
 
-				variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, variable_name );
-				CreateLifetimeStart( function_context, variable.llvm_value );
-				CreateVariableDebugInfo( variable, variable_name, for_operator.src_loc_, function_context );
+				variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, variable_name );
+				CreateLifetimeStart( function_context, variable->llvm_value );
+				CreateVariableDebugInfo( *variable, variable_name, for_operator.src_loc_, function_context );
 
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
-				SetupReferencesInCopyOrMove( function_context, variable, sequence_expression, names.GetErrors(), for_operator.src_loc_ );
+				SetupReferencesInCopyOrMove( function_context, *variable, *sequence_expression, names.GetErrors(), for_operator.src_loc_ );
 
 				BuildCopyConstructorPart(
-					variable.llvm_value,
-					CreateTupleElementGEP( function_context, sequence_expression, element_index ),
+					variable->llvm_value,
+					CreateTupleElementGEP( function_context, *sequence_expression, element_index ),
 					element_type,
 					function_context );
 			}
@@ -752,7 +752,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	else
 	{
 		// TODO - support array types.
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, sequence_expression.type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, sequence_expression->type );
 		return BlockBuildInfo();
 	}
 
@@ -798,21 +798,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	else
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
-		const Variable condition_expression= BuildExpressionCodeEnsureVariable( c_style_for_operator.loop_condition_, loop_names_scope, function_context );
+		const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( c_style_for_operator.loop_condition_, loop_names_scope, function_context );
 
 		const SrcLoc condition_src_loc= Synt::GetExpressionSrcLoc( c_style_for_operator.loop_condition_ );
-		if( condition_expression.type != bool_type_ )
+		if( condition_expression->type != bool_type_ )
 		{
 			REPORT_ERROR( TypesMismatch,
 					names.GetErrors(),
 					condition_src_loc,
 					bool_type_,
-					condition_expression.type );
+					condition_expression->type );
 			function_context.llvm_ir_builder.CreateBr( loop_block );
 		}
 		else
 		{
-			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
 			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, loop_block, block_after_loop );
 		}
@@ -895,19 +895,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
-		const Variable condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition_, names, function_context );
+		const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( while_operator.condition_, names, function_context );
 
 		const SrcLoc condition_src_loc= Synt::GetExpressionSrcLoc( while_operator.condition_ );
-		if( condition_expression.type != bool_type_ )
+		if( condition_expression->type != bool_type_ )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_src_loc, bool_type_, condition_expression.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_src_loc, bool_type_, condition_expression->type );
 
 			// Create instruction even in case of error, because we needs to store basic blocs somewhere.
 			function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), while_block, block_after_while );
 		}
 		else
 		{
-			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
 			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
 
 			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, while_block, block_after_while );
@@ -1004,12 +1004,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 {
 	StackVariablesStorage variables_storage( function_context );
 
-	const Variable expr= BuildExpressionCodeEnsureVariable( with_operator.expression_, names, function_context );
+	const VariablePtr expr= BuildExpressionCodeEnsureVariable( with_operator.expression_, names, function_context );
 
-	Variable variable;
-	variable.type= expr.type;
-	variable.value_type= with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-	variable.location= Variable::Location::Pointer;
+	VariablePtr variable= std::make_shared<Variable>();
+	variable->type= expr->type;
+	variable->value_type= with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+	variable->location= Variable::Location::Pointer;
 
 	ReferencesGraphNode::Kind node_kind;
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference )
@@ -1019,109 +1019,110 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	else
 		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
 	// Do not forget to remove node in case of error-return!!!
-	variable.node= function_context.variables_state.AddNode( node_kind , with_operator.variable_name_ );
+	variable->node= function_context.variables_state.AddNode( node_kind , with_operator.variable_name_ );
 
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference &&
-		!EnsureTypeComplete( variable.type ) )
+		!EnsureTypeComplete( variable->type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), with_operator.src_loc_, variable.type );
+		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), with_operator.src_loc_, variable->type );
 		function_context.variables_state.RemoveNode( variable.node );
 		return BlockBuildInfo();
 	}
-	if( with_operator.reference_modifier_ != ReferenceModifier::Reference && variable.type.IsAbstract() )
+	if( with_operator.reference_modifier_ != ReferenceModifier::Reference && variable->type.IsAbstract() )
 	{
-		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), with_operator.src_loc_, variable.type );
-		function_context.variables_state.RemoveNode( variable.node );
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), with_operator.src_loc_, variable->type );
+		function_context.variables_state.RemoveNode( variable->node );
 		return BlockBuildInfo();
 	}
 
 	if( with_operator.reference_modifier_ == ReferenceModifier::Reference )
 	{
-		if( expr.value_type == ValueType::ReferenceImut && variable.value_type != ValueType::ReferenceImut )
+		if( expr->value_type == ValueType::ReferenceImut && variable->value_type != ValueType::ReferenceImut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), with_operator.src_loc_ );
-			function_context.variables_state.RemoveNode( variable.node );
+			function_context.variables_state.RemoveNode( variable->node );
 			return BlockBuildInfo();
 		}
 
-		if( expr.location == Variable::Location::LLVMRegister )
+		if( expr->location == Variable::Location::LLVMRegister )
 		{
 			// Binding value to reference.
-			llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-			CreateTypedStore( function_context, expr.type, expr.llvm_value, storage );
-			variable.llvm_value= storage;
+			llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( expr->type.GetLLVMType() );
+			CreateTypedStore( function_context, expr->type, expr->llvm_value, storage );
+			variable->llvm_value= storage;
 		}
 		else
-			variable.llvm_value= expr.llvm_value;
+			variable->llvm_value= expr.llvm_value;
 
-		variable.constexpr_value= expr.constexpr_value;
+		variable->constexpr_value= expr->constexpr_value;
 
-		CreateReferenceVariableDebugInfo( variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
+		CreateReferenceVariableDebugInfo( *variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
-		if( expr.node != nullptr && !function_context.variables_state.TryAddLink( expr.node, variable.node ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr.node->name );
+		if( expr->node != nullptr && !function_context.variables_state.TryAddLink( expr->node, variable->node ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr->node->name );
 	}
 	else if( with_operator.reference_modifier_ == ReferenceModifier::None )
 	{
-		if( !variable.type.CanBeConstexpr() )
+		if( !variable->type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
-		if( expr.value_type == ValueType::Value &&
-			expr.location == Variable::Location::Pointer &&
-			expr.llvm_value->getType() == variable.type.GetLLVMType()->getPointerTo() &&
-			( llvm::dyn_cast<llvm::AllocaInst>(expr.llvm_value) != nullptr || llvm::dyn_cast<llvm::Argument>(expr.llvm_value) != nullptr ) )
+		if( expr->value_type == ValueType::Value &&
+			expr->location == Variable::Location::Pointer &&
+			expr->llvm_value->getType() == variable->type.GetLLVMType()->getPointerTo() &&
+			( llvm::dyn_cast<llvm::AllocaInst>(expr->llvm_value) != nullptr || llvm::dyn_cast<llvm::Argument>(expr->llvm_value) != nullptr ) )
 		{
 			// Just reuse "alloca" instruction or argument for move-initialization, avoid copying value into new memory location.
-			variable.llvm_value= expr.llvm_value;
-			variable.llvm_value->setName( with_operator.variable_name_ );
+			variable->llvm_value= expr->llvm_value;
+			variable->llvm_value->setName( with_operator.variable_name_ );
 		}
 		else
 		{
-			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, with_operator.variable_name_ );
-			CreateLifetimeStart( function_context, variable.llvm_value );
+			variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, with_operator.variable_name_ );
+			CreateLifetimeStart( function_context, variable->llvm_value );
 		}
 
-		CreateVariableDebugInfo( variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
+		CreateVariableDebugInfo( *variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
-		SetupReferencesInCopyOrMove( function_context, variable, expr, names.GetErrors(), with_operator.src_loc_ );
+		SetupReferencesInCopyOrMove( function_context, *variable, *expr, names.GetErrors(), with_operator.src_loc_ );
 
-		if( expr.value_type == ValueType::Value )
+		if( expr->value_type == ValueType::Value )
 		{
-			const ReferencesGraphNodePtr& variable_for_move= expr.node;
+			const ReferencesGraphNodePtr& variable_for_move= expr->node;
 			if( variable_for_move != nullptr )
 			{
 				U_ASSERT(variable_for_move->kind == ReferencesGraphNode::Kind::Variable );
 				function_context.variables_state.MoveNode( variable_for_move );
 			}
 
-			if( variable.llvm_value != expr.llvm_value )
+			if( variable->llvm_value != expr->llvm_value )
 			{
-				if( expr.location == Variable::Location::LLVMRegister )
-					CreateTypedStore( function_context, expr.type, expr.llvm_value, variable.llvm_value );
+				if( expr->location == Variable::Location::LLVMRegister )
+					CreateTypedStore( function_context, expr->type, expr->llvm_value, variable.llvm_value );
 				else
-					CopyBytes( variable.llvm_value, expr.llvm_value, variable.type, function_context );
-				if( expr.location == Variable::Location::Pointer )
-					CreateLifetimeEnd( function_context, expr.llvm_value );
+				{
+					CopyBytes( variable->llvm_value, expr->llvm_value, variable->type, function_context );
+					CreateLifetimeEnd( function_context, expr->llvm_value );
+				}
 			}
 		}
 		else
 		{
-			if( !variable.type.IsCopyConstructible() )
+			if( !variable->type.IsCopyConstructible() )
 				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), with_operator.src_loc_, variable.type );
 			else
 				BuildCopyConstructorPart(
-					variable.llvm_value, expr.llvm_value,
-					variable.type,
+					variable->llvm_value, expr->llvm_value,
+					variable->type,
 					function_context );
 		}
 		// constexpr preserved for move/copy.
-		variable.constexpr_value= expr.constexpr_value;
+		variable->constexpr_value= expr->constexpr_value;
 	}
 	else U_ASSERT(false);
 
 	// Reset constexpr initial value for mutable variables.
-	if( variable.value_type != ValueType::ReferenceImut )
-		variable.constexpr_value= nullptr;
+	if( variable->value_type != ValueType::ReferenceImut )
+		variable->constexpr_value= nullptr;
 
 	if( IsKeyword( with_operator.variable_name_ ) )
 		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), with_operator.src_loc_ );
@@ -1194,21 +1195,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			const StackVariablesStorage temp_variables_storage( function_context );
-			const Variable condition_expression= BuildExpressionCodeEnsureVariable( branch.condition, names, function_context );
-			if( condition_expression.type != bool_type_ )
+			const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( branch.condition, names, function_context );
+			if( condition_expression->type != bool_type_ )
 			{
 				REPORT_ERROR( TypesMismatch,
 					names.GetErrors(),
 					Synt::GetExpressionSrcLoc( branch.condition ),
 					bool_type_,
-					condition_expression.type );
+					condition_expression->type );
 
 				// Create instruction even in case of error, because we needs to store basic blocs somewhere.
 				function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
 			}
 			else
 			{
-				llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+				llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
 				CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch.condition ) );
 
 				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
@@ -1275,19 +1276,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			const StackVariablesStorage temp_variables_storage( function_context );
 
-			const Variable condition_expression= BuildExpressionCodeEnsureVariable( condition, names, function_context );
-			if( condition_expression.type != bool_type_ )
+			const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( condition, names, function_context );
+			if( condition_expression->type != bool_type_ )
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_src_loc, bool_type_, condition_expression.type );
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_src_loc, bool_type_, condition_expression->type );
 				continue;
 			}
-			if( condition_expression.constexpr_value == nullptr )
+			if( condition_expression->constexpr_value == nullptr )
 			{
 				REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), condition_src_loc );
 				continue;
 			}
 
-			if( condition_expression.constexpr_value->getUniqueInteger().getLimitedValue() != 0u )
+			if( condition_expression->constexpr_value->getUniqueInteger().getLimitedValue() != 0u )
 				return BuildBlock( names, function_context, branch.block ); // Ok, this static if produdes block.
 
 			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
@@ -1333,12 +1334,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context ) == std::nullopt )
 	{ // Here process default assignment operator for fundamental types.
 		// Evaluate right part
-		Variable r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value_, names, function_context );
+		VariablePtr r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value_, names, function_context );
 
-		if( r_var.type.GetFundamentalType() != nullptr ||
-			r_var.type.GetEnumType() != nullptr ||
-			r_var.type.GetRawPointerType() != nullptr ||
-			r_var.type.GetFunctionPointerType() != nullptr )
+		// TODO - avoid modifying source variable.
+		if( r_var->type.GetFundamentalType() != nullptr ||
+			r_var->type.GetEnumType() != nullptr ||
+			r_var->type.GetRawPointerType() != nullptr ||
+			r_var->type.GetFunctionPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
 			if( r_var.location != Variable::Location::LLVMRegister )
@@ -1351,12 +1353,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), assignment_operator.src_loc_ ); // Destroy temporaries of right expression.
 
 		// Evaluate left part.
-		const Variable l_var= BuildExpressionCodeEnsureVariable( assignment_operator.l_value_, names, function_context );
+		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( assignment_operator.l_value_, names, function_context );
 
-		if( l_var.type == invalid_type_ || r_var.type == invalid_type_ )
+		if( l_var->type == invalid_type_ || r_var->type == invalid_type_ )
 			return BlockBuildInfo();
 
-		if( l_var.value_type != ValueType::ReferenceMut )
+		if( l_var->value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), assignment_operator.src_loc_ );
 			return BlockBuildInfo();
@@ -1414,31 +1416,32 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			names,
 			function_context ) == std::nullopt )
 	{ // Here process default additive assignment operators for fundamental types or raw pointers.
-		Variable r_var=
+		VariablePtr r_var=
 			BuildExpressionCodeEnsureVariable(
 				additive_assignment_operator.r_value_,
 				names,
 				function_context );
 
-		if( r_var.type.GetFundamentalType() != nullptr || r_var.type.GetRawPointerType() != nullptr )
+		// TODO - avoid modifying existing shared_ptr.
+		if( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetRawPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
-			if( r_var.location != Variable::Location::LLVMRegister )
+			if( r_var->location != Variable::Location::LLVMRegister )
 			{
-				r_var.llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
-				r_var.location= Variable::Location::LLVMRegister;
+				r_var->llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
+				r_var->location= Variable::Location::LLVMRegister;
 			}
 			r_var.value_type= ValueType::Value;
 		}
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), additive_assignment_operator.src_loc_ ); // Destroy temporaries of right expression.
 
-		const Variable l_var=
+		const VariablePtr l_var=
 			BuildExpressionCodeEnsureVariable(
 				additive_assignment_operator.l_value_,
 				names,
 				function_context );
 
-		if( l_var.type == invalid_type_ || r_var.type == invalid_type_ )
+		if( l_var->type == invalid_type_ || r_var->type == invalid_type_ )
 			return BlockBuildInfo();
 
 		if( l_var.value_type != ValueType::ReferenceMut )
@@ -1448,11 +1451,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		// Check references of destination.
-		if( l_var.node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var.node ) )
+		if( l_var->node != nullptr && function_context.variables_state.HaveOutgoingLinks( l_var->node ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.node->name );
 
 		// Allow additive assignment operators only for fundamentals and raw pointers.
-		if( !( l_var.type.GetFundamentalType() != nullptr || l_var.type.GetRawPointerType() != nullptr ) )
+		if( !( l_var->type.GetFundamentalType() != nullptr || l_var->type.GetRawPointerType() != nullptr ) )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.type );
 			return BlockBuildInfo();
@@ -1461,7 +1464,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Generate binary operator and assignment for fundamental types.
 		const Value operation_result_value=
 			BuildBinaryOperator(
-				l_var, r_var,
+				*l_var, *r_var,
 				additive_assignment_operator.additive_operation_,
 				additive_assignment_operator.src_loc_,
 				names,
@@ -1471,13 +1474,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		const Variable& operation_result= *operation_result_value.GetVariable();
 
-		if( operation_result.type != l_var.type )
+		if( operation_result.type != l_var->type )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), additive_assignment_operator.src_loc_, l_var.type, operation_result.type );
 			return BlockBuildInfo();
 		}
 
-		U_ASSERT( l_var.location == Variable::Location::Pointer );
+		U_ASSERT( l_var->location == Variable::Location::Pointer );
 		llvm::Value* const value_in_register= CreateMoveToLLVMRegisterInstruction( operation_result, function_context );
 		CreateTypedStore( function_context, r_var.type, value_in_register, l_var.llvm_value );
 	}
@@ -1527,24 +1530,24 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Destruction frame for temporary variables of static assert expression.
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const Variable variable= BuildExpressionCodeEnsureVariable( static_assert_.expression, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( static_assert_.expression, names, function_context );
 
 	// Destruct temporary variables of right and left expressions.
 	// In non-error case, this call produces no code.
 	CallDestructors( temp_variables_storage, names, function_context, static_assert_.src_loc_ );
 
-	if( variable.type != bool_type_ )
+	if( variable->type != bool_type_ )
 	{
 		REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names.GetErrors(), static_assert_.src_loc_ );
 		return block_info;
 	}
-	if( variable.constexpr_value == nullptr )
+	if( variable->constexpr_value == nullptr )
 	{
 		REPORT_ERROR( StaticAssertExpressionIsNotConstant, names.GetErrors(), static_assert_.src_loc_ );
 		return block_info;
 	}
 
-	if( !variable.constexpr_value->isOneValue() )
+	if( !variable->constexpr_value->isOneValue() )
 	{
 		REPORT_ERROR( StaticAssertionFailed, names.GetErrors(), static_assert_.src_loc_ );
 	}
@@ -1595,19 +1598,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	llvm::BasicBlock* const false_block= llvm::BasicBlock::Create( llvm_context_ );
 
 	const StackVariablesStorage temp_variables_storage( function_context );
-	const Variable condition_expression= BuildExpressionCodeEnsureVariable( halt_if.condition, names, function_context );
+	const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( halt_if.condition, names, function_context );
 	const SrcLoc condition_expression_src_loc= Synt::GetExpressionSrcLoc( halt_if.condition );
-	if( condition_expression.type!= bool_type_ )
+	if( condition_expression->type!= bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch,
 			names.GetErrors(),
 			condition_expression_src_loc,
 			bool_type_,
-			condition_expression.type );
+			condition_expression->type );
 		return block_info;
 	}
 
-	llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+	llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
 	CallDestructors( temp_variables_storage, names, function_context, condition_expression_src_loc );
 
 	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, true_block, false_block );
