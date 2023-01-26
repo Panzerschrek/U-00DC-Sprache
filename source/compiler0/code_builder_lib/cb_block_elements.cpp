@@ -79,7 +79,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		VariablePtr variable= std::make_shared<Variable>();
+		VariableMutPtr variable= std::make_shared<Variable>();
 		variable->type= type;
 		variable->location= Variable::Location::Pointer;
 		variable->value_type= ValueType::ReferenceMut;
@@ -230,7 +230,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return BlockBuildInfo();
 	}
 
-	VariablePtr variable= std::make_shared<Variable>();
+	VariableMutPtr variable= std::make_shared<Variable>();
 	variable->type= initializer_experrsion->type;
 	variable->value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 	variable->location= Variable::Location::Pointer;
@@ -621,7 +621,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			NamesScope loop_names( "", &names );
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
-			VariablePtr variable= std::make_shared<Variable>();
+			VariableMutPtr variable= std::make_shared<Variable>();
 			variable->type= element_type;
 			variable->value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
@@ -1006,7 +1006,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	const VariablePtr expr= BuildExpressionCodeEnsureVariable( with_operator.expression_, names, function_context );
 
-	VariablePtr variable= std::make_shared<Variable>();
+	VariableMutPtr variable= std::make_shared<Variable>();
 	variable->type= expr->type;
 	variable->value_type= with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 	variable->location= Variable::Location::Pointer;
@@ -1336,19 +1336,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Evaluate right part
 		VariablePtr r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value_, names, function_context );
 
-		// TODO - avoid modifying source variable.
 		if( r_var->type.GetFundamentalType() != nullptr ||
 			r_var->type.GetEnumType() != nullptr ||
 			r_var->type.GetRawPointerType() != nullptr ||
 			r_var->type.GetFunctionPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
-			if( r_var->location != Variable::Location::LLVMRegister )
+			auto r_var_copy= std::make_shared<Variable>(*r_var);
+			if( r_var_copy->location != Variable::Location::LLVMRegister )
 			{
-				r_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
-				r_var->location= Variable::Location::LLVMRegister;
+				r_var_copy->llvm_value= CreateMoveToLLVMRegisterInstruction( *r_var_copy, function_context );
+				r_var_copy->location= Variable::Location::LLVMRegister;
 			}
-			r_var->value_type= ValueType::Value;
+			r_var_copy->value_type= ValueType::Value;
+			r_var= std::move(r_var_copy);
 		}
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), assignment_operator.src_loc_ ); // Destroy temporaries of right expression.
 
@@ -1426,12 +1427,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetRawPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
-			if( r_var->location != Variable::Location::LLVMRegister )
+			auto r_var_copy= std::make_shared<Variable>(*r_var);
+			if( r_var_copy->location != Variable::Location::LLVMRegister )
 			{
-				r_var->llvm_value= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
-				r_var->location= Variable::Location::LLVMRegister;
+				r_var_copy->llvm_value= CreateMoveToLLVMRegisterInstruction( *r_var_copy, function_context );
+				r_var_copy->location= Variable::Location::LLVMRegister;
 			}
-			r_var->value_type= ValueType::Value;
+			r_var_copy->value_type= ValueType::Value;
+			r_var= r_var_copy;
 		}
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), additive_assignment_operator.src_loc_ ); // Destroy temporaries of right expression.
 

@@ -112,8 +112,8 @@ struct Variable final
 		llvm::Value* in_llvm_value= nullptr, llvm::Constant* in_constexpr_value= nullptr );
 };
 
-using VariablePtr= std::shared_ptr<Variable>;
-using VariableConstPtr= std::shared_ptr<const Variable>;
+using VariablePtr= std::shared_ptr<const Variable>;
+using VariableMutPtr= std::shared_ptr<Variable>;
 
 // Used for displaying of template args.
 std::string ConstantVariableToString( const Variable& variable );
@@ -202,7 +202,6 @@ public:
 	std::string GetKindName() const;
 	const SrcLoc& GetSrcLoc() const;
 
-	Variable* GetVariable();
 	const Variable* GetVariable() const;
 	VariablePtr GetVariablePtr() const;
 	// Function set

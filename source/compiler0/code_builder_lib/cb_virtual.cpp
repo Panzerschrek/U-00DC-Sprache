@@ -477,7 +477,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	if( !ReferenceIsConvertible( this_->type, function_type.params.front().type, errors_container, src_loc ) )
 		return std::make_pair( this_, function.llvm_function );
 
-	VariablePtr this_casted= this_;
+	VariableMutPtr this_casted= std::make_shared<Variable>(*this_);
 	if( this_->type != function_type.params.front().type )
 	{
 		this_casted= std::make_shared<Variable>(*this_);

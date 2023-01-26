@@ -610,7 +610,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, src_loc, *param_type ) )
 				return false;
 
-			VariablePtr variable_for_insertion= std::make_shared<Variable>();
+			VariableMutPtr variable_for_insertion= std::make_shared<Variable>();
 			variable_for_insertion->type= given_variable->type;
 			variable_for_insertion->location= Variable::Location::Pointer;
 			variable_for_insertion->value_type= ValueType::ReferenceImut;
@@ -659,7 +659,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_array_type->element_type, src_loc, *template_param.element_type ) )
 				return false;
 
-			VariablePtr size_variable= std::make_shared<Variable>();
+			VariableMutPtr size_variable= std::make_shared<Variable>();
 			size_variable->type= size_type_;
 			size_variable->constexpr_value=
 				llvm::ConstantInt::get(

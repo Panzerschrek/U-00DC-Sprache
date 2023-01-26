@@ -386,7 +386,7 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 	llvm::Value* const this_llvm_value= &*destructor_function .llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
-	VariablePtr this_= std::make_shared<Variable>();
+	VariableMutPtr this_= std::make_shared<Variable>();
 	this_->type= class_type;
 	this_->location= Variable::Location::Pointer;
 	this_->value_type= ValueType::ReferenceMut;

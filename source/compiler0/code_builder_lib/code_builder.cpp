@@ -1268,7 +1268,7 @@ Type CodeBuilder::BuildFuncCode(
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && param.value_type == ValueType::Value ) );
 
-		VariablePtr var= std::make_shared<Variable>();
+		VariableMutPtr var= std::make_shared<Variable>();
 		var->location= Variable::Location::Pointer;
 		var->value_type= ValueType::ReferenceMut;
 		var->type= param.type;

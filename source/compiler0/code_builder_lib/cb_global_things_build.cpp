@@ -976,7 +976,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 		if( IsKeyword( in_member.name ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_member.src_loc );
 
-		const VariablePtr var= std::make_shared<Variable>();
+		const VariableMutPtr var= std::make_shared<Variable>();
 
 		var->type= enum_;
 		var->location= Variable::Location::Pointer;
@@ -1082,7 +1082,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		VariablePtr variable= std::make_shared<Variable>();
+		VariableMutPtr variable= std::make_shared<Variable>();
 		variable->type= type;
 		variable->location= Variable::Location::Pointer;
 		variable->value_type= ValueType::ReferenceMut;
@@ -1205,7 +1205,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			}
 		}
 
-		VariablePtr variable= std::make_shared<Variable>();
+		VariableMutPtr variable= std::make_shared<Variable>();
 		variable->type= initializer_experrsion->type;
 		variable->value_type= is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		variable->location= Variable::Location::Pointer;

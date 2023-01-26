@@ -280,14 +280,6 @@ const SrcLoc& Value::GetSrcLoc() const
 	return src_loc_;
 }
 
-Variable* Value::GetVariable()
-{
-	if(const auto* ptr= std::get_if<VariablePtr>( &something_ ) )
-		return ptr->get();
-
-	return nullptr;
-}
-
 const Variable* Value::GetVariable() const
 {
 	if(const auto* ptr= std::get_if<VariablePtr>( &something_ ) )
