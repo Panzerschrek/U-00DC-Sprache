@@ -486,7 +486,7 @@ private:
 		const Synt::StructNamedInitializer* constructor_initialization_list );
 
 	void BuildConstructorInitialization(
-		const Variable& this_,
+		const VariablePtr& this_,
 		const Class& base_class,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
@@ -551,14 +551,14 @@ private:
 		FunctionContext& function_context );
 
 	std::optional<Value> TryCallOverloadedUnaryOperator(
-		const VariablePtr& variable,
+		VariablePtr variable,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
 	std::optional<Value> TryCallOverloadedPostfixOperator(
-		const VariablePtr& variable,
+		VariablePtr variable,
 		const llvm::ArrayRef<Synt::Expression>& synt_args,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,
@@ -634,7 +634,7 @@ private:
 		FunctionContext& function_context );
 
 	VariablePtr ConvertVariable(
-		const VariablePtr& variable,
+		VariablePtr variable,
 		const Type& dst_type,
 		const FunctionVariable& conversion_constructor,
 		NamesScope& names,
@@ -758,49 +758,49 @@ private:
 
 	// Initializers.
 	// Some initializers returns nonnul constant, if initializer is constant.
-	llvm::Constant* ApplyInitializer( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::Initializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::SequenceInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::StructNamedInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ConstructorInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::Expression& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ZeroInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
+	llvm::Constant* ApplyInitializer( VariablePtr variable, NamesScope& names, FunctionContext& function_context, const Synt::Initializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( VariablePtr variable, NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& initializer );
+	llvm::Constant* ApplyInitializerImpl( VariablePtr variable, NamesScope& names, FunctionContext& function_context, const Synt::SequenceInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( VariablePtr variable, NamesScope& names, FunctionContext& function_context, const Synt::StructNamedInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( VariablePtr variable, NamesScope& names, FunctionContext& function_context, const Synt::ConstructorInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( VariablePtr variable, NamesScope& names, FunctionContext& function_context, const Synt::Expression& initializer );
+	llvm::Constant* ApplyInitializerImpl( VariablePtr variable, NamesScope& names, FunctionContext& function_context, const Synt::ZeroInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( VariablePtr variable, NamesScope& names, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
 
 	llvm::Constant* ApplyEmptyInitializer(
 		const std::string& variable_name,
 		const SrcLoc& src_loc,
-		const Variable& variable,
+		VariablePtr variable,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyConstructorInitializer(
-		const Variable& variable,
+		VariablePtr variable,
 		const std::vector<Synt::Expression>& synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeReferenceField(
-		const Variable& variable,
+		VariablePtr variable,
 		const ClassField& field,
 		const Synt::Initializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeFunctionPointer(
-		const Variable& variable,
+		VariablePtr variable,
 		const Synt::Expression& initializer_expression,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeClassFieldWithInClassIninitalizer(
-		const Variable& field_variable,
+		const VariablePtr& field_variable,
 		const ClassField& class_field,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeReferenceClassFieldWithInClassIninitalizer(
-		const Variable& variable,
+		VariablePtr variable,
 		const ClassField& class_field,
 		FunctionContext& function_context );
 

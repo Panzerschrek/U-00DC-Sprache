@@ -1098,9 +1098,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 					: CreateGlobalConstantVariable( type, name_mangled );
 
 			if( variable_declaration.initializer != nullptr )
-				variable->constexpr_value= ApplyInitializer( *variable, names_scope, function_context, *variable_declaration.initializer );
+				variable->constexpr_value= ApplyInitializer( variable, names_scope, function_context, *variable_declaration.initializer );
 			else
-				variable->constexpr_value= ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, *variable, names_scope, function_context );
+				variable->constexpr_value= ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names_scope, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			if( !is_mutable )

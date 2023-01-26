@@ -1366,7 +1366,7 @@ Type CodeBuilder::BuildFuncCode(
 			const Synt::StructNamedInitializer dumy_initialization_list( block.src_loc_ );
 
 			BuildConstructorInitialization(
-				*function_context.this_,
+				function_context.this_,
 				*base_class,
 				function_names,
 				function_context,
@@ -1374,7 +1374,7 @@ Type CodeBuilder::BuildFuncCode(
 		}
 		else
 			BuildConstructorInitialization(
-				*function_context.this_,
+				function_context.this_,
 				*base_class,
 				function_names,
 				function_context,
@@ -1511,7 +1511,7 @@ Type CodeBuilder::BuildFuncCode(
 }
 
 void CodeBuilder::BuildConstructorInitialization(
-	const Variable& this_,
+	const VariablePtr& this_,
 	const Class& base_class,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
@@ -1600,12 +1600,12 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 		else
 		{
-			Variable field_variable;
-			field_variable.type= field.type;
-			field_variable.location= Variable::Location::Pointer;
-			field_variable.value_type= ValueType::ReferenceMut;
+			VariableMutPtr field_variable= std::make_shared<Variable>();
+			field_variable->type= field.type;
+			field_variable->location= Variable::Location::Pointer;
+			field_variable->value_type= ValueType::ReferenceMut;
 
-			field_variable.llvm_value= CreateClassFieldGEP( function_context, this_, field.index );
+			field_variable->llvm_value= CreateClassFieldGEP( function_context, *this_, field.index );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
@@ -1618,12 +1618,12 @@ void CodeBuilder::BuildConstructorInitialization(
 	if( !base_initialized && base_class.base_class != nullptr )
 	{
 		// Apply default initializer for base class.
-		Variable base_variable;
-		base_variable.type= base_class.base_class;
-		base_variable.location= Variable::Location::Pointer;
-		base_variable.value_type= ValueType::ReferenceMut;
+		VariableMutPtr base_variable= std::make_shared<Variable>();
+		base_variable->type= base_class.base_class;
+		base_variable->location= Variable::Location::Pointer;
+		base_variable->value_type= ValueType::ReferenceMut;
 
-		base_variable.llvm_value= CreateBaseClassGEP( function_context, *this_.type.GetClassType(), this_.llvm_value );
+		base_variable->llvm_value= CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value );
 
 		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
@@ -1634,13 +1634,13 @@ void CodeBuilder::BuildConstructorInitialization(
 	{
 		if( field_initializer.name == Keywords::base_ )
 		{
-			Variable base_variable;
-			base_variable.type= base_class.base_class;
-			base_variable.location= Variable::Location::Pointer;
-			base_variable.value_type= ValueType::ReferenceMut;
-			base_variable.node= this_.node;
+			VariableMutPtr base_variable= std::make_shared<Variable>();
+			base_variable->type= base_class.base_class;
+			base_variable->location= Variable::Location::Pointer;
+			base_variable->value_type= ValueType::ReferenceMut;
+			base_variable->node= this_->node;
 
-			base_variable.llvm_value= CreateBaseClassGEP( function_context, *this_.type.GetClassType(), this_.llvm_value );
+			base_variable->llvm_value= CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value );
 
 			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );
 			function_context.base_initialized= true;
@@ -1657,13 +1657,13 @@ void CodeBuilder::BuildConstructorInitialization(
 			InitializeReferenceField( this_, *field, field_initializer.initializer, names_scope, function_context );
 		else
 		{
-			Variable field_variable;
-			field_variable.type= field->type;
-			field_variable.location= Variable::Location::Pointer;
-			field_variable.value_type= ValueType::ReferenceMut;
-			field_variable.node= this_.node;
+			VariableMutPtr field_variable= std::make_shared<Variable>();
+			field_variable->type= field->type;
+			field_variable->location= Variable::Location::Pointer;
+			field_variable->value_type= ValueType::ReferenceMut;
+			field_variable->node= this_->node;
 
-			field_variable.llvm_value= CreateClassFieldGEP( function_context, this_, field->index );
+			field_variable->llvm_value= CreateClassFieldGEP( function_context, *this_, field->index );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
 		}
@@ -1672,7 +1672,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	} // for fields initializers
 
 	CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
-	SetupVirtualTablePointers( this_.llvm_value, base_class, function_context );
+	SetupVirtualTablePointers( this_->llvm_value, base_class, function_context );
 }
 
 void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context )

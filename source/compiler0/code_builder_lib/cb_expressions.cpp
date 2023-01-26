@@ -1330,7 +1330,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	CopyBytes( result->llvm_value, expression_result->llvm_value, result->type, function_context );
 
 	// Construct empty value in old place.
-	ApplyEmptyInitializer( expression_result->node->name, take_operator.src_loc_, *expression_result, names, function_context );
+	ApplyEmptyInitializer( expression_result->node->name, take_operator.src_loc_, expression_result, names, function_context );
 
 	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), take_operator.src_loc_ );
@@ -1759,7 +1759,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 }
 
 std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
-	const VariablePtr& variable,
+	const VariablePtr variable,
 	const OverloadedOperator op,
 	const SrcLoc& src_loc,
 	NamesScope& names,
@@ -1797,7 +1797,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 }
 
 std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
-	const VariablePtr& variable,
+	const VariablePtr variable,
 	const llvm::ArrayRef<Synt::Expression>& synt_args,
 	const OverloadedOperator op,
 	const SrcLoc& src_loc,
@@ -3219,7 +3219,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 
 	CreateLifetimeStart( function_context, variable->llvm_value );
 
-	variable->constexpr_value= ApplyConstructorInitializer( *variable, synt_args, src_loc, names, function_context );
+	variable->constexpr_value= ApplyConstructorInitializer( variable, synt_args, src_loc, names, function_context );
 	variable->value_type= ValueType::Value; // Make value after construction
 
 	RegisterTemporaryVariable( function_context, variable );
@@ -3227,7 +3227,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 }
 
 VariablePtr CodeBuilder::ConvertVariable(
-	const VariablePtr& variable,
+	const VariablePtr variable,
 	const Type& dst_type,
 	const FunctionVariable& conversion_constructor,
 	NamesScope& names,

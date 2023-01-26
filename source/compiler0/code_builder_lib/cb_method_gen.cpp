@@ -129,11 +129,11 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 
 	if( the_class.base_class != nullptr )
 	{
-		Variable base_variable;
-		base_variable.type= the_class.base_class;
-		base_variable.value_type= ValueType::ReferenceMut;
+		VariableMutPtr base_variable= std::make_shared<Variable>();
+		base_variable->type= the_class.base_class;
+		base_variable->value_type= ValueType::ReferenceMut;
 
-		base_variable.llvm_value= CreateBaseClassGEP( function_context, *class_type, this_llvm_value );
+		base_variable->llvm_value= CreateBaseClassGEP( function_context, *class_type, this_llvm_value );
 
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), SrcLoc()/*TODO*/, base_variable, *the_class.members, function_context );
 	}
@@ -148,19 +148,19 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		if( field.is_reference )
 		{
 			U_ASSERT( field.syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
-			Variable variable;
-			variable.type= class_type;
-			variable.value_type= ValueType::ReferenceMut;
-			variable.llvm_value= this_llvm_value;
+			VariableMutPtr variable= std::make_shared<Variable>();
+			variable->type= class_type;
+			variable->value_type= ValueType::ReferenceMut;
+			variable->llvm_value= this_llvm_value;
 			InitializeReferenceClassFieldWithInClassIninitalizer( variable, field, function_context );
 		}
 		else
 		{
-			Variable field_variable;
-			field_variable.type= field.type;
-			field_variable.value_type= ValueType::ReferenceMut;
+			VariableMutPtr field_variable= std::make_shared<Variable>();
+			field_variable->type= field.type;
+			field_variable->value_type= ValueType::ReferenceMut;
 
-			field_variable.llvm_value= CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index );
+			field_variable->llvm_value= CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
