@@ -124,7 +124,7 @@ bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const
 				else
 				{
 					// Process general non_sync expression. This approach can't resolve circular dependency.
-					const Variable v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
+					const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
 					if( v.type != bool_type_ )
 					{
 						REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v.type );
@@ -202,7 +202,7 @@ void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 			// Evaluate non_sync condition using initial class members parent scope.
 			NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
 
-			const Variable v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
+			const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
 			if( v.type != bool_type_ )
 			{
 				REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v.type );

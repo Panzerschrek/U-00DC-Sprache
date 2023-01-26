@@ -79,10 +79,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		Variable variable;
-		variable.type= type;
-		variable.location= Variable::Location::Pointer;
-		variable.value_type= ValueType::ReferenceMut;
+		VariablePtr variable= std::make_shared<Variable>();
+		variable->type= type;
+		variable->location= Variable::Location::Pointer;
+		variable->value_type= ValueType::ReferenceMut;
 
 		ReferencesGraphNode::Kind node_kind;
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference )
@@ -96,30 +96,29 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
-			variable.llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType() );
-			variable.llvm_value->setName( variable_declaration.name );
+			variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType(), nullptr, variable_declaration.name );
 
-			CreateLifetimeStart( function_context, variable.llvm_value );
+			CreateLifetimeStart( function_context, variable->llvm_value );
 			CreateVariableDebugInfo( variable, variable_declaration.name, variable_declaration.src_loc, function_context );
 
 			prev_variables_storage.RegisterVariable( variable );
 
 			if( variable_declaration.initializer != nullptr )
-				variable.constexpr_value=
+				variable->constexpr_value=
 					ApplyInitializer( variable, names, function_context, *variable_declaration.initializer );
 			else
-				variable.constexpr_value=
+				variable->constexpr_value=
 					ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names, function_context );
 
 			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
-				variable.value_type= ValueType::ReferenceImut;
+				variable->value_type= ValueType::ReferenceImut;
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
 			// Mark references immutable before initialization.
 			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
-				variable.value_type= ValueType::ReferenceImut;
+				variable->value_type= ValueType::ReferenceImut;
 
 			if( variable_declaration.initializer == nullptr )
 			{
@@ -223,18 +222,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 	const StackVariablesStorage temp_variables_storage( function_context );
 
-	const Variable initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration.initializer_expression, names, function_context );
+	const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration.initializer_expression, names, function_context );
 
-	if( initializer_experrsion.type == invalid_type_ )
+	if( initializer_experrsion->type == invalid_type_ )
 	{
 		REPORT_ERROR( InvalidTypeForAutoVariable, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion.type );
 		return BlockBuildInfo();
 	}
 
-	Variable variable;
-	variable.type= initializer_experrsion.type;
-	variable.value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-	variable.location= Variable::Location::Pointer;
+	VariablePtr variable= std::make_shared<Variable>();
+	variable->type= initializer_experrsion.type;
+	variable->value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+	variable->location= Variable::Location::Pointer;
 
 	ReferencesGraphNode::Kind node_kind;
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference )

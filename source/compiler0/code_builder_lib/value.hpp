@@ -112,6 +112,9 @@ struct Variable final
 		llvm::Value* in_llvm_value= nullptr, llvm::Constant* in_constexpr_value= nullptr );
 };
 
+using VariablePtr= std::shared_ptr<Variable>;
+using VariableConstPtr= std::shared_ptr<const Variable>;
+
 // Used for displaying of template args.
 std::string ConstantVariableToString( const Variable& variable );
 
@@ -144,7 +147,7 @@ public:
 	const OverloadedFunctionsSet& GetOverloadedFunctionsSet() const;
 
 public:
-	Variable this_;
+	VariablePtr this_;
 
 private:
 	// Store "OverloadedFunctionsSet" indirectly, because it is too hevy, to put it in value together with "variable".
@@ -181,7 +184,7 @@ class Value final
 {
 public:
 	Value() = default;
-	Value( Variable variable, const SrcLoc& src_loc );
+	Value( VariablePtr variable, const SrcLoc& src_loc );
 	Value( OverloadedFunctionsSet functions_set );
 	Value( Type type, const SrcLoc& src_loc );
 	Value( ClassField class_field, const SrcLoc& src_loc );
@@ -200,6 +203,7 @@ public:
 
 	Variable* GetVariable();
 	const Variable* GetVariable() const;
+	VariablePtr GetVariablePtr() const;
 	// Function set
 	OverloadedFunctionsSet* GetFunctionsSet();
 	const OverloadedFunctionsSet* GetFunctionsSet() const;
@@ -235,7 +239,7 @@ public:
 
 private:
 	std::variant<
-		Variable,
+		VariablePtr,
 		OverloadedFunctionsSet,
 		Type,
 		ClassField,

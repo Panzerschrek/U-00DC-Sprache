@@ -493,7 +493,7 @@ private:
 		const Synt::StructNamedInitializer& constructor_initialization_list );
 
 	// Expressions.
-	Variable BuildExpressionCodeEnsureVariable(
+	VariablePtr BuildExpressionCodeEnsureVariable(
 		const Synt::Expression& expression,
 		NamesScope& names,
 		FunctionContext& function_context );
@@ -608,7 +608,7 @@ private:
 		llvm::Value* function,
 		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
-		const Variable* this_, // optional
+		VariablePtr this_, // optional
 		const llvm::ArrayRef<const Synt::Expression*>& args,
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names,
@@ -619,22 +619,22 @@ private:
 		llvm::Value* function,
 		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
-		const llvm::ArrayRef<Variable>& preevaluated_args,
+		const llvm::ArrayRef<VariablePtr>& preevaluated_args,
 		const llvm::ArrayRef<const Synt::Expression*>& args,
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names,
 		FunctionContext& function_context,
 		bool func_is_constexpr= false );
 
-	Variable BuildTempVariableConstruction(
+	VariablePtr BuildTempVariableConstruction(
 		const Type& type,
 		const std::vector<Synt::Expression>& synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	Variable ConvertVariable(
-		const Variable& variable,
+	VariablePtr ConvertVariable(
+		const VariablePtr& variable,
 		const Type& dst_type,
 		const FunctionVariable& conversion_constructor,
 		NamesScope& names,
@@ -837,7 +837,7 @@ private:
 
 	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
-	void RegisterTemporaryVariable( FunctionContext& function_context, Variable variable );
+	void RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable );
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	ReferencesGraph MergeVariablesStateAfterIf(

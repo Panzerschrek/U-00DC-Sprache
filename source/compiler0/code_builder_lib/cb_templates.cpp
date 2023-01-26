@@ -606,16 +606,16 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_varaible->type, src_loc, *param_type ) )
 				return false;
 
-			Variable variable_for_insertion;
-			variable_for_insertion.type= given_varaible->type;
-			variable_for_insertion.location= Variable::Location::Pointer;
-			variable_for_insertion.value_type= ValueType::ReferenceImut;
-			variable_for_insertion.llvm_value=
+			VariablePtr variable_for_insertion= std::make_shared<Variable>();
+			variable_for_insertion->type= given_varaible->type;
+			variable_for_insertion->location= Variable::Location::Pointer;
+			variable_for_insertion->value_type= ValueType::ReferenceImut;
+			variable_for_insertion->llvm_value=
 				CreateGlobalConstantVariable(
 					given_varaible->type,
 					template_.template_params[ template_param.index ].name,
 					given_varaible->constexpr_value );
-			variable_for_insertion.constexpr_value= given_varaible->constexpr_value;
+			variable_for_insertion->constexpr_value= given_varaible->constexpr_value;
 
 			*value= Value( std::move(variable_for_insertion), src_loc );
 			return true;

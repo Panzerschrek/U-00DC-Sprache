@@ -386,18 +386,18 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 	llvm::Value* const this_llvm_value= &*destructor_function .llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
-	Variable this_;
-	this_.type= class_type;
-	this_.location= Variable::Location::Pointer;
-	this_.value_type= ValueType::ReferenceMut;
-	this_.llvm_value= this_llvm_value;
+	VariablePtr this_= std::make_shared<Variable>();
+	this_->type= class_type;
+	this_->location= Variable::Location::Pointer;
+	this_->value_type= ValueType::ReferenceMut;
+	this_->llvm_value= this_llvm_value;
 
 	FunctionContext function_context(
 		destructor_type,
 		destructor_type.return_type,
 		llvm_context_,
 		destructor_function.llvm_function );
-	function_context.this_= &this_;
+	function_context.this_= this_;
 
 	CallMembersDestructors( function_context, the_class.members->GetErrors(), the_class.body_src_loc );
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );

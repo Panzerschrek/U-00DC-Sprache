@@ -233,7 +233,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 	}
 }
 
-void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, Variable variable )
+void CodeBuilder::RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable )
 {
 	function_context.stack_variables_stack.back()->RegisterVariable( std::move(variable) );
 }

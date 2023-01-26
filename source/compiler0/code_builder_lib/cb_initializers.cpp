@@ -270,44 +270,44 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		variable.type.GetRawPointerType() != nullptr ||
 		variable.type.GetEnumType() != nullptr )
 	{
-		const Variable expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
-		if( expression_result.type != variable.type )
+		const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
+		if( expression_result->type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, variable.type, expression_result->type );
 			return nullptr;
 		}
 
-		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( expression_result, function_context );
+		llvm::Value* const value_for_assignment= CreateMoveToLLVMRegisterInstruction( *expression_result, function_context );
 		CreateTypedStore( function_context, variable.type, value_for_assignment, variable.llvm_value );
 
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 
-		if( llvm::Constant* const constexpr_value= expression_result.constexpr_value )
+		if( llvm::Constant* const constexpr_value= expression_result->constexpr_value )
 			return constexpr_value;
 	}
 	else if( variable.type.GetFunctionPointerType() != nullptr )
 		return InitializeFunctionPointer( variable, initializer, names, function_context );
 	else if( variable.type.GetArrayType() != nullptr || variable.type.GetTupleType() != nullptr )
 	{
-		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
-		if( expression_result.type != variable.type )
+		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
+		if( expression_result->type != variable.type )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, variable.type, expression_result->type );
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), src_loc );
+		SetupReferencesInCopyOrMove( function_context, variable, *expression_result, names.GetErrors(), src_loc );
 
 		// Move or try call copy constructor.
-		if( expression_result.value_type == ValueType::Value && expression_result.type == variable.type )
+		if( expression_result.value_type == ValueType::Value && expression_result->type == variable.type )
 		{
-			if( expression_result.node != nullptr )
+			if( expression_result->node != nullptr )
 			{
 				U_ASSERT( expression_result.node->kind == ReferencesGraphNode::Kind::Variable );
-				function_context.variables_state.MoveNode( expression_result.node );
+				function_context.variables_state.MoveNode( expression_result->node );
 			}
 			U_ASSERT( expression_result.location == Variable::Location::Pointer );
-			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
+			CopyBytes( variable.llvm_value, expression_result->llvm_value, variable.type, function_context );
 			CreateLifetimeEnd( function_context, expression_result.llvm_value );
 
 			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
@@ -334,19 +334,19 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	{
 		// Currently we support "=" initializer for copying and moving of structs.
 
-		Variable expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
-		if( expression_result.type == variable.type )
+		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
+		if( expression_result->type == variable.type )
 		{} // Ok, same types.
-		else if( ReferenceIsConvertible( expression_result.type, variable.type, names.GetErrors(), src_loc ) )
+		else if( ReferenceIsConvertible( expression_result->type, variable.type, names.GetErrors(), src_loc ) )
 		{} // Ok, can do reference conversion.
-		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result.type, variable.type, names.GetErrors(), src_loc ) )
+		else if( const FunctionVariable* const conversion_constructor= GetConversionConstructor( expression_result->type, variable.type, names.GetErrors(), src_loc ) )
 		{
 			// Type conversion required.
-			expression_result= ConvertVariable( expression_result, variable.type, *conversion_constructor, names, function_context, src_loc );
+			expression_result= ConvertVariable( *expression_result, variable.type, *conversion_constructor, names, function_context, src_loc );
 		}
 		else
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, variable.type, expression_result.type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, variable.type, expression_result->type );
 			return nullptr;
 		}
 

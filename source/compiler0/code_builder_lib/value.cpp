@@ -178,7 +178,7 @@ const OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSe
 
 static_assert( sizeof(Value) <= 152u, "Value is too heavy!" );
 
-Value::Value( Variable variable, const SrcLoc& src_loc )
+Value::Value( VariablePtr variable, const SrcLoc& src_loc )
 	: src_loc_(src_loc)
 {
 	something_= std::move(variable);
@@ -282,12 +282,22 @@ const SrcLoc& Value::GetSrcLoc() const
 
 Variable* Value::GetVariable()
 {
-	return std::get_if<Variable>( &something_ );
+	if(const auto* ptr= std::get_if<VariablePtr>( &something_ ) )
+		return **ptr;
 }
 
 const Variable* Value::GetVariable() const
 {
-	return std::get_if<Variable>( &something_ );
+	if(const auto* ptr= std::get_if<VariablePtr>( &something_ ) )
+		return **ptr;
+}
+
+VariablePtr Value::GetVariablePtr() const
+{
+	if( const auto ptr= std::get_if<VariablePtr>( &something_ ) )
+		return *ptr;
+
+	return nullptr;
 }
 
 OverloadedFunctionsSet* Value::GetFunctionsSet()

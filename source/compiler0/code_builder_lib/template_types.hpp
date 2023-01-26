@@ -8,7 +8,7 @@ namespace U
 {
 
 
-using TemplateArg= std::variant< Variable, Type >;
+using TemplateArg= std::variant< VariablePtr, Type >;
 using TemplateArgs= std::vector<TemplateArg>;
 
 struct TemplateBase
