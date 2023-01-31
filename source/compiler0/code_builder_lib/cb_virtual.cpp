@@ -472,7 +472,7 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
-	if( this_.llvm_value == nullptr || function_context.is_preevaluation_context )
+	if( function_context.is_functionless_context )
 		return std::make_pair( this_, function.llvm_function );
 
 	const FunctionType& function_type= *function.type.GetFunctionType();

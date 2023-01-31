@@ -306,9 +306,9 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				U_ASSERT( expression_result.node->kind == ReferencesGraphNode::Kind::Variable );
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
-			U_ASSERT( expression_result.location == Variable::Location::Pointer );
 
-			if( !function_context.is_preevaluation_context )
+			U_ASSERT( expression_result.location == Variable::Location::Pointer );
+			if( !function_context.is_functionless_context )
 			{
 				CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
 				CreateLifetimeEnd( function_context, expression_result.llvm_value );
@@ -324,7 +324,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				return nullptr;
 			}
 
-			if( !function_context.is_preevaluation_context )
+			if( !function_context.is_functionless_context )
 			{
 				BuildCopyConstructorPart(
 					variable.llvm_value,
@@ -368,8 +368,9 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				U_ASSERT( expression_result.node->kind == ReferencesGraphNode::Kind::Variable );
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
+
 			U_ASSERT( expression_result.location == Variable::Location::Pointer );
-			if( variable.llvm_value != nullptr && !function_context.is_preevaluation_context )
+			if( !function_context.is_functionless_context )
 			{
 				CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
 				CreateLifetimeEnd( function_context, expression_result.llvm_value );
@@ -807,8 +808,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				function_context.variables_state.MoveNode( expression_result.node );
 
 			U_ASSERT( expression_result.location == Variable::Location::Pointer );
-
-			if( !function_context.is_preevaluation_context )
+			if( !function_context.is_functionless_context )
 			{
 				CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
 				CreateLifetimeEnd( function_context, expression_result.llvm_value );
@@ -822,7 +822,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				return nullptr;
 			}
 
-			if( !function_context.is_preevaluation_context )
+			if( !function_context.is_functionless_context )
 			{
 				BuildCopyConstructorPart(
 					variable.llvm_value,
@@ -841,8 +841,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		bool needs_move_constuct= false;
 		if( synt_args.size() == 1u )
 		{
-			const bool prev_is_preevaluation_context= function_context.is_preevaluation_context;
-			function_context.is_preevaluation_context= true;
+			const bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
 			const auto state= SaveInstructionsState( function_context );
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
@@ -856,7 +856,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
 
 			RestoreInstructionsState( function_context, state );
-			function_context.is_preevaluation_context= prev_is_preevaluation_context;
+			function_context.is_functionless_context= prev_is_functionless_context;
 		}
 		if( needs_move_constuct )
 		{
@@ -868,8 +868,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				function_context.variables_state.MoveNode( initializer_variable.node );
 
 			U_ASSERT( initializer_variable.location == Variable::Location::Pointer );
-
-			if( !function_context.is_preevaluation_context )
+			if( !function_context.is_functionless_context )
 			{
 				CopyBytes( variable.llvm_value, initializer_variable.llvm_value, variable.type, function_context );
 				CreateLifetimeEnd( function_context, initializer_variable.llvm_value );

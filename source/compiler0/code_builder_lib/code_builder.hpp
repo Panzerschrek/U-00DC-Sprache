@@ -449,6 +449,7 @@ private:
 		FunctionContext& function_context,
 		const SrcLoc& src_loc );
 
+	// TODO - avoid passing errors container?
 	void CallDestructor(
 		llvm::Value* ptr,
 		const Type& type,

@@ -74,8 +74,8 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 {
 	Type result;
 
-	const bool prev_is_preevaluation_context= function_context.is_preevaluation_context;
-	function_context.is_preevaluation_context= true;
+	const bool prev_is_functionless_context= function_context.is_functionless_context;
+	function_context.is_functionless_context= true;
 
 	const auto prev_state= SaveInstructionsState( function_context );
 	{
@@ -90,7 +90,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 	RestoreInstructionsState( function_context, prev_state );
 
-	function_context.is_preevaluation_context= prev_is_preevaluation_context;
+	function_context.is_functionless_context= prev_is_functionless_context;
 
 	return result;
 }
