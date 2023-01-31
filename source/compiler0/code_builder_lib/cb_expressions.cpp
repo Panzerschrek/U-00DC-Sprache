@@ -371,10 +371,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		}
 		else
 		{
-			const auto load_res= CreateTypedReferenceLoad( function_context, field->type, gep_result );
-			// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
-			load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
-			result.llvm_value= load_res;
+			if( const auto load_res= CreateTypedReferenceLoad( function_context, field->type, gep_result ) )
+			{
+				// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
+				load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
+				result.llvm_value= load_res;
+			}
 		}
 
 		if( variable.node != nullptr )
@@ -717,7 +719,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		field_variable.node= function_context.this_->node;
 
 		field_variable.llvm_value= CreateClassFieldGEP( function_context, *function_context.this_, *field );
-		if( field_variable.llvm_value == nullptr )
+		if( field_variable.llvm_value == nullptr && !function_context.is_preevaluation_context )
 		{
 			REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
 			return ErrorValue();
@@ -725,12 +727,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		if( field->is_reference )
 		{
-			const auto load_res= CreateTypedReferenceLoad( function_context, field->type, field_variable.llvm_value );
-			// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
-			load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
+			if( const auto load_res= CreateTypedReferenceLoad( function_context, field->type, field_variable.llvm_value ) )
+			{
+				// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
+				load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
 
-			field_variable.value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-			field_variable.llvm_value= load_res;
+				field_variable.value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+				field_variable.llvm_value= load_res;
+			}
 
 			if( function_context.this_->node != nullptr )
 			{
@@ -842,10 +846,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.src_loc_, result.type );
 			return ErrorValue();
 		}
-		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
-		result.llvm_value->setName( "select_result" );
 
-		CreateLifetimeStart( function_context, result.llvm_value );
+		if( !function_context.is_preevaluation_context )
+		{
+			result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
+			result.llvm_value->setName( "select_result" );
+
+			CreateLifetimeStart( function_context, result.llvm_value );
+		}
 	}
 	else if( branches_value_types[0] == ValueType::ReferenceImut || branches_value_types[1] == ValueType::ReferenceImut )
 	{
@@ -860,10 +868,17 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// Do not forget to remove node in case of error-return!!!
 	result.node= function_context.variables_state.AddNode( node_kind, Keyword( Keywords::select_ ) );
 
-	llvm::BasicBlock* const result_block= llvm::BasicBlock::Create( llvm_context_ );
-	llvm::BasicBlock* const branches_basic_blocks[2]{ llvm::BasicBlock::Create( llvm_context_ ), llvm::BasicBlock::Create( llvm_context_ ) };
+	llvm::BasicBlock* result_block= nullptr;
+	llvm::BasicBlock* branches_basic_blocks[2]{nullptr, nullptr};
 
-	function_context.llvm_ir_builder.CreateCondBr( condition_in_register, branches_basic_blocks[0], branches_basic_blocks[1] );
+	if( !function_context.is_preevaluation_context )
+	{
+		result_block= llvm::BasicBlock::Create( llvm_context_ );
+		branches_basic_blocks[0]= llvm::BasicBlock::Create( llvm_context_ );
+		branches_basic_blocks[1]= llvm::BasicBlock::Create( llvm_context_ );
+
+		function_context.llvm_ir_builder.CreateCondBr( condition_in_register, branches_basic_blocks[0], branches_basic_blocks[1] );
+	}
 
 	llvm::Value* branches_reference_values[2] { nullptr, nullptr };
 	llvm::Constant* branches_constexpr_values[2] { nullptr, nullptr };
@@ -876,8 +891,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			const StackVariablesStorage branch_temp_variables_storage( function_context );
 
-			function_context.function->getBasicBlockList().push_back( branches_basic_blocks[i] );
-			function_context.llvm_ir_builder.SetInsertPoint( branches_basic_blocks[i] );
+			if( !function_context.is_preevaluation_context )
+			{
+				function_context.function->getBasicBlockList().push_back( branches_basic_blocks[i] );
+				function_context.llvm_ir_builder.SetInsertPoint( branches_basic_blocks[i] );
+			}
+
 			const Variable branch_result= BuildExpressionCodeEnsureVariable( i == 0u ? *ternary_operator.true_branch : *ternary_operator.false_branch, names, function_context );
 
 			branches_constexpr_values[i]= branch_result.constexpr_value;
@@ -903,8 +922,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						if( branch_result.node != nullptr )
 							function_context.variables_state.MoveNode( branch_result.node );
 						U_ASSERT( branch_result.location == Variable::Location::Pointer );
-						CopyBytes( result.llvm_value, branch_result.llvm_value, result.type, function_context );
-						CreateLifetimeEnd( function_context, branch_result.llvm_value );
+						if( !function_context.is_preevaluation_context )
+						{
+							CopyBytes( result.llvm_value, branch_result.llvm_value, result.type, function_context );
+							CreateLifetimeEnd( function_context, branch_result.llvm_value );
+						}
 					}
 					else
 					{
@@ -915,7 +937,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 							return ErrorValue();
 						}
 
-						BuildCopyConstructorPart( result.llvm_value, branch_result.llvm_value, result.type, function_context );
+						if( !function_context.is_preevaluation_context )
+							BuildCopyConstructorPart( result.llvm_value, branch_result.llvm_value, result.type, function_context );
 					}
 				}
 				else
@@ -933,17 +956,23 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			}
 
 			CallDestructors( branch_temp_variables_storage, names, function_context, ternary_operator.src_loc_ );
-			function_context.llvm_ir_builder.CreateBr( result_block );
+
+			if( !function_context.is_preevaluation_context )
+				function_context.llvm_ir_builder.CreateBr( result_block );
 		}
 		branches_end_basic_blocks[i]= function_context.llvm_ir_builder.GetInsertBlock();
 		branches_variables_state[i]= function_context.variables_state;
 	}
-	function_context.function->getBasicBlockList().push_back( result_block );
-	function_context.llvm_ir_builder.SetInsertPoint( result_block );
+
+	if( !function_context.is_preevaluation_context )
+	{
+		function_context.function->getBasicBlockList().push_back( result_block );
+		function_context.llvm_ir_builder.SetInsertPoint( result_block );
+	}
 
 	function_context.variables_state= MergeVariablesStateAfterIf( branches_variables_state, names.GetErrors(), ternary_operator.src_loc_ );
 
-	if( result.value_type != ValueType::Value )
+	if( result.value_type != ValueType::Value && !function_context.is_preevaluation_context )
 	{
 		llvm::PHINode* const phi= function_context.llvm_ir_builder.CreatePHI( result.type.GetLLVMType()->getPointerTo(), 2u );
 		phi->addIncoming( branches_reference_values[0], branches_end_basic_blocks[0] );
@@ -1590,15 +1619,19 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_real, names.GetErrors(), src_loc );
 
-		if( l_var_real.type.HaveDestructor() )
-			CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, names.GetErrors(), src_loc );
 
 		if( r_var_real.node != nullptr )
 			function_context.variables_state.MoveNode( r_var_real.node );
 
-		U_ASSERT( r_var_real.location == Variable::Location::Pointer );
-		CopyBytes( l_var_real.llvm_value, r_var_real.llvm_value, l_var_real.type, function_context );
-		CreateLifetimeEnd( function_context, r_var_real.llvm_value );
+		if( l_var_real.llvm_value != nullptr && r_var_real.llvm_value != nullptr && !function_context.is_preevaluation_context )
+		{
+			if( l_var_real.type.HaveDestructor() )
+				CallDestructor( l_var_real.llvm_value, l_var_real.type, function_context, names.GetErrors(), src_loc );
+
+			U_ASSERT( r_var_real.location == Variable::Location::Pointer );
+			CopyBytes( l_var_real.llvm_value, r_var_real.llvm_value, l_var_real.type, function_context );
+			CreateLifetimeEnd( function_context, r_var_real.llvm_value );
+		}
 
 		Variable move_result;
 		move_result.type= void_type_;
@@ -2995,7 +3028,7 @@ Value CodeBuilder::DoCallFunction(
 						return ErrorValue();
 					}
 
-					if( expr.llvm_value != nullptr )
+					if( expr.llvm_value != nullptr && !function_context.is_preevaluation_context )
 					{
 						// Create copy of class or tuple value. Call copy constructor.
 						llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( param.type.GetLLVMType() );
@@ -3042,47 +3075,47 @@ Value CodeBuilder::DoCallFunction(
 
 	llvm::Value* call_result= nullptr;
 	llvm::Constant* constant_call_result= nullptr;
-	if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
+
+	// Currently, we can not pass back referenes from constexpr functions evaluator.
+	const auto function_as_real_function= function == nullptr? nullptr : llvm::dyn_cast<llvm::Function>(function);
+	if( func_is_constexpr &&
+		function_as_real_function != nullptr &&
+		constant_llvm_args.size() == function_as_real_function->arg_size() &&
+		function_type.return_value_type == ValueType::Value && function_type.return_type.ReferencesTagsCount() == 0u )
 	{
-		// Currently, we can not pass back referenes from constexpr functions evaluator.
-		if( func_is_constexpr && constant_llvm_args.size() == llvm_args.size() &&
-			function_type.return_value_type == ValueType::Value && function_type.return_type.ReferencesTagsCount() == 0u )
+		const ConstexprFunctionEvaluator::Result evaluation_result=
+			constexpr_function_evaluator_.Evaluate( function_as_real_function, constant_llvm_args );
+
+		for( const std::string& error_text : evaluation_result.errors )
 		{
-			const ConstexprFunctionEvaluator::Result evaluation_result=
-				constexpr_function_evaluator_.Evaluate(
-					llvm::dyn_cast<llvm::Function>(function),
-					constant_llvm_args );
-
-			for( const std::string& error_text : evaluation_result.errors )
-			{
-				CodeBuilderError error;
-				error.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError;
-				error.src_loc= call_src_loc;
-				error.text= error_text;
-				names.GetErrors().push_back( std::move(error) );
-			}
-			if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
-			{
-				if( return_value_is_sret ) // We needs here block of memory with result constant struct.
-					MoveConstantToMemory( result.type, result.llvm_value, evaluation_result.result_constant, function_context );
-
-				if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
-					constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
-				else
-					constant_call_result= evaluation_result.result_constant;
-			}
+			CodeBuilderError error;
+			error.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError;
+			error.src_loc= call_src_loc;
+			error.text= error_text;
+			names.GetErrors().push_back( std::move(error) );
 		}
-		if( constant_call_result != nullptr )
-			call_result= constant_call_result;
-		else if( function != nullptr )
+		if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 		{
-			llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( function_type.llvm_type, function, llvm_args );
-			call_instruction->setCallingConv( function_type.calling_convention );
+			if( return_value_is_sret ) // We needs here block of memory with result constant struct.
+				MoveConstantToMemory( result.type, result.llvm_value, evaluation_result.result_constant, function_context );
 
-			call_result= call_instruction;
 			if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
-				call_result= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
+				constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
+			else
+				constant_call_result= evaluation_result.result_constant;
 		}
+	}
+	else if(
+		function != nullptr &&
+		!function_context.is_preevaluation_context &&
+		std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
+	{
+		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( function_type.llvm_type, function, llvm_args );
+		call_instruction->setCallingConv( function_type.calling_convention );
+
+		call_result= call_instruction;
+		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
+			call_result= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 	}
 	else
 		call_result= llvm::UndefValue::get( function_type.llvm_type->getReturnType() );

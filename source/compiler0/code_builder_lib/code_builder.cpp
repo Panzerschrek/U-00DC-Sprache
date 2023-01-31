@@ -616,12 +616,16 @@ void CodeBuilder::CallDestructorsImpl(
 			{
 				if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
 					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
-				if( stored_variable.type.HaveDestructor() )
-					CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
 
-				// Avoid calling "lifetime.end" for variables without address.
-				if( stored_variable.location == Variable::Location::Pointer )
-					CreateLifetimeEnd( function_context, stored_variable.llvm_value );
+				if( stored_variable.llvm_value != nullptr && !function_context.is_preevaluation_context )
+				{
+					if( stored_variable.type.HaveDestructor() )
+						CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
+
+					// Avoid calling "lifetime.end" for variables without address.
+					if( stored_variable.location == Variable::Location::Pointer )
+						CreateLifetimeEnd( function_context, stored_variable.llvm_value );
+				}
 			}
 		}
 		function_context.variables_state.RemoveNode( stored_variable.node );
@@ -2017,7 +2021,7 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 
 llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
-	if( address == nullptr )
+	if( address == nullptr || function_context.is_preevaluation_context )
 		return nullptr;
 
 	if( type == void_type_ )
@@ -2033,7 +2037,7 @@ llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, co
 
 llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
-	if( address == nullptr )
+	if( address == nullptr || function_context.is_preevaluation_context )
 		return nullptr;
 
 	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( type.GetLLVMType()->getPointerTo(), address );
@@ -2046,7 +2050,7 @@ llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function
 
 void CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Type& type, llvm::Value* const value_to_store, llvm::Value* const address )
 {
-	if( address == nullptr )
+	if( address == nullptr || function_context.is_preevaluation_context )
 		return;
 
 	if( type == void_type_ )
@@ -2060,7 +2064,7 @@ void CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Typ
 
 void CodeBuilder::CreateTypedReferenceStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
 {
-	if( address == nullptr )
+	if( address == nullptr || function_context.is_preevaluation_context )
 		return;
 
 	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
@@ -2168,7 +2172,7 @@ llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_conte
 
 llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_context, llvm::Type* const type, llvm::Value* const value, llvm::Value* const index )
 {
-	if( value == nullptr || index == nullptr )
+	if( value == nullptr || index == nullptr || function_context.is_preevaluation_context )
 		return nullptr;
 
 	return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );

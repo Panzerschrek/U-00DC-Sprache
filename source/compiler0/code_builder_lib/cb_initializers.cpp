@@ -307,8 +307,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
 			U_ASSERT( expression_result.location == Variable::Location::Pointer );
-			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
-			CreateLifetimeEnd( function_context, expression_result.llvm_value );
+
+			if( !function_context.is_preevaluation_context )
+			{
+				CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
+				CreateLifetimeEnd( function_context, expression_result.llvm_value );
+			}
 
 			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 		}
@@ -320,11 +324,14 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				return nullptr;
 			}
 
-			BuildCopyConstructorPart(
-				variable.llvm_value,
-				expression_result.llvm_value,
-				variable.type,
-				function_context );
+			if( !function_context.is_preevaluation_context )
+			{
+				BuildCopyConstructorPart(
+					variable.llvm_value,
+					expression_result.llvm_value,
+					variable.type,
+					function_context );
+			}
 		}
 
 		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
@@ -362,8 +369,11 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
 			U_ASSERT( expression_result.location == Variable::Location::Pointer );
-			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
-			CreateLifetimeEnd( function_context, expression_result.llvm_value );
+			if( variable.llvm_value != nullptr )
+			{
+				CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
+				CreateLifetimeEnd( function_context, expression_result.llvm_value );
+			}
 
 			DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), src_loc );
 
@@ -628,109 +638,113 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		llvm::Value* value_for_assignment= CreateMoveToLLVMRegisterInstruction( src_var, function_context );
 		DestroyUnusedTemporaryVariables( function_context, block_names.GetErrors(), src_loc );
 
-		if( dst_type->fundamental_type != src_type->fundamental_type )
+		if( value_for_assignment != nullptr )
 		{
-			// Perform fundamental types conversion.
-
-			const uint64_t src_size= src_type->GetSize();
-			const uint64_t dst_size= dst_type->GetSize();
-			if( IsInteger( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) )
+			if( dst_type->fundamental_type != src_type->fundamental_type )
 			{
-				// int to int
-				if( src_size < dst_size )
+				// Perform fundamental types conversion.
+
+				const uint64_t src_size= src_type->GetSize();
+				const uint64_t dst_size= dst_type->GetSize();
+				if( IsInteger( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) )
 				{
-					// We lost here some values in conversions, such i16 => u32, if src_type is signed.
-					if( IsUnsignedInteger( dst_type->fundamental_type ) )
-						value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
+					// int to int
+					if( src_size < dst_size )
+					{
+						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
+						if( IsUnsignedInteger( dst_type->fundamental_type ) )
+							value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
+						else
+							value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
+					}
+					else if( src_size > dst_size )
+						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
+				}
+				else if( IsFloatingPoint( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) )
+				{
+					// float to float
+					if( src_size < dst_size )
+						value_for_assignment= function_context.llvm_ir_builder.CreateFPExt( value_for_assignment, dst_type->llvm_type );
+					else if( src_size > dst_size )
+						value_for_assignment= function_context.llvm_ir_builder.CreateFPTrunc( value_for_assignment, dst_type->llvm_type );
+					else U_ASSERT(false);
+				}
+				else if( IsFloatingPoint( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) )
+				{
+					// int to float
+					if( IsSignedInteger( src_type->fundamental_type ) )
+						value_for_assignment= function_context.llvm_ir_builder.CreateSIToFP( value_for_assignment, dst_type->llvm_type );
 					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
+						value_for_assignment= function_context.llvm_ir_builder.CreateUIToFP( value_for_assignment, dst_type->llvm_type );
 				}
-				else if( src_size > dst_size )
-					value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
-			}
-			else if( IsFloatingPoint( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) )
-			{
-				// float to float
-				if( src_size < dst_size )
-					value_for_assignment= function_context.llvm_ir_builder.CreateFPExt( value_for_assignment, dst_type->llvm_type );
-				else if( src_size > dst_size )
-					value_for_assignment= function_context.llvm_ir_builder.CreateFPTrunc( value_for_assignment, dst_type->llvm_type );
-				else U_ASSERT(false);
-			}
-			else if( IsFloatingPoint( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) )
-			{
-				// int to float
-				if( IsSignedInteger( src_type->fundamental_type ) )
-					value_for_assignment= function_context.llvm_ir_builder.CreateSIToFP( value_for_assignment, dst_type->llvm_type );
-				else
-					value_for_assignment= function_context.llvm_ir_builder.CreateUIToFP( value_for_assignment, dst_type->llvm_type );
-			}
-			else if( IsInteger( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) )
-			{
-				// float to int
-				// TODO - fix this. Use something like "llvm.fptosi.sat" to avoid undefined behaviour in cases where result can't fit into destination.
-				if( IsSignedInteger( dst_type->fundamental_type ) )
-					value_for_assignment= function_context.llvm_ir_builder.CreateFPToSI( value_for_assignment, dst_type->llvm_type );
-				else
-					value_for_assignment= function_context.llvm_ir_builder.CreateFPToUI( value_for_assignment, dst_type->llvm_type );
-			}
-			else if( IsChar( dst_type->fundamental_type ) && ( IsInteger( src_type->fundamental_type ) || IsChar( src_type->fundamental_type ) ) )
-			{
-				// int to char or char to char
-				if( src_size < dst_size )
-					value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
-				else if( src_size > dst_size )
-					value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
-			}
-			else if( IsInteger( dst_type->fundamental_type ) && IsChar( src_type->fundamental_type ) )
-			{
-				// char to int
-				if( src_size < dst_size )
+				else if( IsInteger( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) )
 				{
-					// We lost here some values in conversions, such i16 => u32, if src_type is signed.
-					if( IsUnsignedInteger( dst_type->fundamental_type ) )
-						value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
+					// float to int
+					// TODO - fix this. Use something like "llvm.fptosi.sat" to avoid undefined behaviour in cases where result can't fit into destination.
+					if( IsSignedInteger( dst_type->fundamental_type ) )
+						value_for_assignment= function_context.llvm_ir_builder.CreateFPToSI( value_for_assignment, dst_type->llvm_type );
 					else
-						value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
+						value_for_assignment= function_context.llvm_ir_builder.CreateFPToUI( value_for_assignment, dst_type->llvm_type );
 				}
-				else if( src_size > dst_size )
-					value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
-			}
-			else if( src_size == dst_size && (
-				( IsByte( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) ) ||
-				( IsInteger( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
-			{
-				// Perform int -> bytes or bytes -> int conversion.
-				// Do nothing, because internally bytes and int of same size is same type.
-			}
-			else if( src_size == dst_size && (
-				( IsByte( dst_type->fundamental_type ) && IsChar( src_type->fundamental_type ) ) ||
-				( IsChar( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
-			{
-				// Perform char -> bytes or bytes -> char conversion.
-				// Do nothing, because internally bytes and char of same size is same type.
-			}
-			else if( src_size == dst_size && (
-				( IsByte( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) ) ||
-				( IsFloatingPoint( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
-			{
-				// Perfrom float -> bytes or bytes->float conversion.
-				value_for_assignment= function_context.llvm_ir_builder.CreateBitCast( value_for_assignment, dst_type->llvm_type );
-			}
-			else
-			{
-				if( dst_type->fundamental_type == U_FundamentalType::bool_ )
+				else if( IsChar( dst_type->fundamental_type ) && ( IsInteger( src_type->fundamental_type ) || IsChar( src_type->fundamental_type ) ) )
 				{
-					// TODO - error, bool have no constructors from other types
+					// int to char or char to char
+					if( src_size < dst_size )
+						value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
+					else if( src_size > dst_size )
+						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
 				}
-				REPORT_ERROR( TypesMismatch, block_names.GetErrors(), src_loc, variable.type, src_var.type );
-				return nullptr;
-			}
-		} // If needs conversion
+				else if( IsInteger( dst_type->fundamental_type ) && IsChar( src_type->fundamental_type ) )
+				{
+					// char to int
+					if( src_size < dst_size )
+					{
+						// We lost here some values in conversions, such i16 => u32, if src_type is signed.
+						if( IsUnsignedInteger( dst_type->fundamental_type ) )
+							value_for_assignment= function_context.llvm_ir_builder.CreateZExt( value_for_assignment, dst_type->llvm_type );
+						else
+							value_for_assignment= function_context.llvm_ir_builder.CreateSExt( value_for_assignment, dst_type->llvm_type );
+					}
+					else if( src_size > dst_size )
+						value_for_assignment= function_context.llvm_ir_builder.CreateTrunc( value_for_assignment, dst_type->llvm_type );
+				}
+				else if( src_size == dst_size && (
+					( IsByte( dst_type->fundamental_type ) && IsInteger( src_type->fundamental_type ) ) ||
+					( IsInteger( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
+				{
+					// Perform int -> bytes or bytes -> int conversion.
+					// Do nothing, because internally bytes and int of same size is same type.
+				}
+				else if( src_size == dst_size && (
+					( IsByte( dst_type->fundamental_type ) && IsChar( src_type->fundamental_type ) ) ||
+					( IsChar( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
+				{
+					// Perform char -> bytes or bytes -> char conversion.
+					// Do nothing, because internally bytes and char of same size is same type.
+				}
+				else if( src_size == dst_size && (
+					( IsByte( dst_type->fundamental_type ) && IsFloatingPoint( src_type->fundamental_type ) ) ||
+					( IsFloatingPoint( dst_type->fundamental_type ) && IsByte( src_type->fundamental_type ) ) ) )
+				{
+					// Perfrom float -> bytes or bytes->float conversion.
+					value_for_assignment= function_context.llvm_ir_builder.CreateBitCast( value_for_assignment, dst_type->llvm_type );
+				}
+				else
+				{
+					if( dst_type->fundamental_type == U_FundamentalType::bool_ )
+					{
+						// TODO - error, bool have no constructors from other types
+					}
+					REPORT_ERROR( TypesMismatch, block_names.GetErrors(), src_loc, variable.type, src_var.type );
+					return nullptr;
+				}
+			} // If needs conversion
 
-		CreateTypedStore( function_context, variable.type, value_for_assignment, variable.llvm_value );
+			CreateTypedStore( function_context, variable.type, value_for_assignment, variable.llvm_value );
+			return llvm::dyn_cast<llvm::Constant>(value_for_assignment);
+		}
 
-		return llvm::dyn_cast<llvm::Constant>(value_for_assignment);
+		return nullptr;
 	}
 	else if( variable.type.GetEnumType() != nullptr || variable.type.GetRawPointerType() != nullptr )
 	{
@@ -793,8 +807,12 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				function_context.variables_state.MoveNode( expression_result.node );
 
 			U_ASSERT( expression_result.location == Variable::Location::Pointer );
-			CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
-			CreateLifetimeEnd( function_context, expression_result.llvm_value );
+
+			if( !function_context.is_preevaluation_context )
+			{
+				CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
+				CreateLifetimeEnd( function_context, expression_result.llvm_value );
+			}
 		}
 		else
 		{
@@ -804,11 +822,14 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				return nullptr;
 			}
 
-			BuildCopyConstructorPart(
-				variable.llvm_value,
-				expression_result.llvm_value,
-				variable.type,
-				function_context );
+			if( !function_context.is_preevaluation_context )
+			{
+				BuildCopyConstructorPart(
+					variable.llvm_value,
+					expression_result.llvm_value,
+					variable.type,
+					function_context );
+			}
 		}
 
 		// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
