@@ -369,7 +369,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				function_context.variables_state.MoveNode( expression_result.node );
 			}
 			U_ASSERT( expression_result.location == Variable::Location::Pointer );
-			if( variable.llvm_value != nullptr )
+			if( variable.llvm_value != nullptr && !function_context.is_preevaluation_context )
 			{
 				CopyBytes( variable.llvm_value, expression_result.llvm_value, variable.type, function_context );
 				CreateLifetimeEnd( function_context, expression_result.llvm_value );
@@ -850,6 +850,11 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				const Variable initializer_value= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
 				needs_move_constuct= initializer_value.type == variable.type && initializer_value.value_type == ValueType::Value;
 			}
+
+			U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock()->size() == state.current_block_instruction_count );
+			U_ASSERT( function_context.alloca_ir_builder.GetInsertBlock()->size() == state.alloca_block_instructin_count );
+			U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
+
 			RestoreInstructionsState( function_context, state );
 			function_context.is_preevaluation_context= prev_is_preevaluation_context;
 		}
@@ -863,8 +868,12 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				function_context.variables_state.MoveNode( initializer_variable.node );
 
 			U_ASSERT( initializer_variable.location == Variable::Location::Pointer );
-			CopyBytes( variable.llvm_value, initializer_variable.llvm_value, variable.type, function_context );
-			CreateLifetimeEnd( function_context, initializer_variable.llvm_value );
+
+			if( !function_context.is_preevaluation_context )
+			{
+				CopyBytes( variable.llvm_value, initializer_variable.llvm_value, variable.type, function_context );
+				CreateLifetimeEnd( function_context, initializer_variable.llvm_value );
+			}
 
 			return initializer_variable.constexpr_value; // Move can preserve constexpr.
 		}
@@ -1160,9 +1169,6 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 	FunctionContext& function_context= *global_function_context_;
 	const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-	llvm::Value* const variable_llvm_value=
-		function_context.alloca_ir_builder.CreateAlloca( class_.llvm_type );
-
 	for( const std::string& field_name : class_.fields_order )
 	{
 		if( field_name.empty() )
@@ -1178,7 +1184,6 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 			Variable variable;
 			variable.type= class_type;
 			variable.value_type= ValueType::ReferenceMut;
-			variable.llvm_value= variable_llvm_value;
 			InitializeReferenceClassFieldWithInClassIninitalizer( variable, class_field, function_context );
 		}
 		else
@@ -1186,7 +1191,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 			Variable field_variable;
 			field_variable.type= class_field.type;
 			field_variable.value_type= ValueType::ReferenceMut;
-			field_variable.llvm_value= CreateClassFieldGEP( function_context, *class_type, variable_llvm_value, class_field.index );
+			field_variable.llvm_value= CreateClassFieldGEP( function_context, *class_type, nullptr, class_field.index );
 			InitializeClassFieldWithInClassIninitalizer( field_variable, class_field, function_context );
 		}
 	}

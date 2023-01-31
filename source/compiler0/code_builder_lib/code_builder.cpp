@@ -206,6 +206,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 		void_type_,
 		llvm_context_,
 		global_function );
+	global_function_context.is_preevaluation_context= true;
 	const StackVariablesStorage global_function_variables_storage( global_function_context );
 	global_function_context_= &global_function_context;
 
@@ -569,8 +570,14 @@ void CodeBuilder::GenerateLoop(
 		return;
 
 	const auto size_type_llvm= size_type_.GetLLVMType();
-	llvm::Value* const zero_value=
-		llvm::Constant::getNullValue( size_type_llvm );
+	llvm::Value* const zero_value= llvm::Constant::getNullValue( size_type_llvm );
+
+	if( function_context.is_preevaluation_context )
+	{
+		loop_body( zero_value );
+		return;
+	}
+
 	llvm::Value* const one_value=
 		llvm::Constant::getIntegerValue( size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t(1u) ) );
 	llvm::Value* const loop_count_value=
