@@ -44,34 +44,36 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	size_t i= 0u;
 	for( const llvm::Argument& param : llvm_function->args() )
 	{
-		if( const auto s_ret_type= param.getParamStructRetType() )
+		if( param.getType()->isPointerTy() )
 		{
-			U_ASSERT(i == 0u);
-			U_ASSERT(param.getType()->isPointerTy());
-			return_type= s_ret_type;
-
-			s_ret_ptr= stack_.size();
-			const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
-			if( new_stack_size >= g_max_data_stack_size )
+			if( const auto s_ret_type= param.getParamStructRetType() )
 			{
-				ReportDataStackOverflow();
-				continue;
-			}
-			stack_.resize( new_stack_size );
+				U_ASSERT(i == 0u);
+				return_type= s_ret_type;
 
-			llvm::GenericValue val;
-			val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
-			instructions_map_[ &param ]= std::move(val);
+				s_ret_ptr= stack_.size();
+				const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(return_type) );
+				if( new_stack_size >= g_max_data_stack_size )
+				{
+					ReportDataStackOverflow();
+					continue;
+				}
+				stack_.resize( new_stack_size );
+
+				llvm::GenericValue val;
+				val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
+				instructions_map_[ &param ]= std::move(val);
+			}
+			else
+			{
+				// Assume this is reference param.
+				llvm::GenericValue val;
+				val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
+				instructions_map_[ &param ]= std::move(val);
+			}
 		}
 		else if( param.getType() == args[i]->getType() )
 			instructions_map_[ &param ]= GetVal( args[i] );
-		else if( param.getType()->isPointerTy() )
-		{
-			// Assume this is reference param.
-			llvm::GenericValue val;
-			val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
-			instructions_map_[ &param ]= std::move(val);
-		}
 		else U_ASSERT(false);
 
 		++i;
