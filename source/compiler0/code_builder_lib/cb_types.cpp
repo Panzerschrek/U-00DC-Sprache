@@ -73,6 +73,10 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name )
 {
 	Type result;
+
+	const bool prev_is_preevaluation_context= function_context.is_preevaluation_context;
+	function_context.is_preevaluation_context= true;
+
 	const auto prev_state= SaveInstructionsState( function_context );
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
@@ -80,6 +84,9 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		result= std::move(variable.type);
 	}
 	RestoreInstructionsState( function_context, prev_state );
+
+	function_context.is_preevaluation_context= prev_is_preevaluation_context;
+
 	return result;
 }
 

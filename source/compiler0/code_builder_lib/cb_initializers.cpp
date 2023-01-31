@@ -820,6 +820,8 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		bool needs_move_constuct= false;
 		if( synt_args.size() == 1u )
 		{
+			const bool prev_is_preevaluation_context= function_context.is_preevaluation_context;
+			function_context.is_preevaluation_context= true;
 			const auto state= SaveInstructionsState( function_context );
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
@@ -828,6 +830,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 				needs_move_constuct= initializer_value.type == variable.type && initializer_value.value_type == ValueType::Value;
 			}
 			RestoreInstructionsState( function_context, state );
+			function_context.is_preevaluation_context= prev_is_preevaluation_context;
 		}
 		if( needs_move_constuct )
 		{

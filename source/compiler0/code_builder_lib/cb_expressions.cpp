@@ -786,6 +786,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	Type branches_types[2u];
 	ValueType branches_value_types[2u];
 	{
+		const bool prev_is_preevaluation_context= function_context.is_preevaluation_context;
+		function_context.is_preevaluation_context= true;
 		for( size_t i= 0u; i < 2u; ++i )
 		{
 			const auto state= SaveInstructionsState( function_context );
@@ -798,6 +800,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			}
 			RestoreInstructionsState( function_context, state );
 		}
+		function_context.is_preevaluation_context= prev_is_preevaluation_context;
 	}
 
 	if( branches_types[0] != branches_types[1] )
@@ -1515,13 +1518,18 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 {
 	// Know args types.
 	ArgsVector<FunctionType::Param> args;
-	const auto state= SaveInstructionsState( function_context );
 	{
-		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-		for( const Synt::Expression* const in_arg : { &left_expr, &right_expr } )
-			args.push_back( PreEvaluateArg( *in_arg, names, function_context ) );
+		const bool prev_is_preevaluation_context= function_context.is_preevaluation_context;
+		function_context.is_preevaluation_context= true;
+		const auto state= SaveInstructionsState( function_context );
+		{
+			const StackVariablesStorage dummy_stack_variables_storage( function_context );
+			for( const Synt::Expression* const in_arg : { &left_expr, &right_expr } )
+				args.push_back( PreEvaluateArg( *in_arg, names, function_context ) );
+		}
+		RestoreInstructionsState( function_context, state );
+		function_context.is_preevaluation_context= prev_is_preevaluation_context;
 	}
-	RestoreInstructionsState( function_context, state );
 
 	// Apply here move-assignment.
 	if( op == OverloadedOperator::Assign &&
@@ -1792,15 +1800,20 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	ArgsVector<FunctionType::Param> actual_args;
 	actual_args.reserve( 1 + synt_args.size() );
 
-	const auto state= SaveInstructionsState( function_context );
 	{
-		const StackVariablesStorage dummy_stack_variables_storage( function_context );
+		const bool prev_is_preevaluation_context= function_context.is_preevaluation_context;
+		function_context.is_preevaluation_context= true;
+		const auto state= SaveInstructionsState( function_context );
+		{
+			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-		actual_args.push_back( GetArgExtendedType( variable ) );
-		for( const Synt::Expression& arg_expression : synt_args )
-			actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
+			actual_args.push_back( GetArgExtendedType( variable ) );
+			for( const Synt::Expression& arg_expression : synt_args )
+				actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
+		}
+		RestoreInstructionsState( function_context, state );
+		function_context.is_preevaluation_context= prev_is_preevaluation_context;
 	}
-	RestoreInstructionsState( function_context, state );
 
 	const FunctionVariable* const function= GetOverloadedOperator( actual_args, op, names, src_loc );
 	if(function == nullptr )
@@ -2617,17 +2630,22 @@ Value CodeBuilder::CallFunction(
 		ArgsVector<FunctionType::Param> actual_args;
 		actual_args.reserve( total_args );
 
-		const auto state= SaveInstructionsState( function_context );
 		{
-			const StackVariablesStorage dummy_stack_variables_storage( function_context );
+			const bool prev_is_preevaluation_context= function_context.is_preevaluation_context;
+			function_context.is_preevaluation_context= true;
+			const auto state= SaveInstructionsState( function_context );
+			{
+				const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-			if( this_ != nullptr )
-				actual_args.push_back( GetArgExtendedType( *this_ ) );
+				if( this_ != nullptr )
+					actual_args.push_back( GetArgExtendedType( *this_ ) );
 
-			for( const Synt::Expression& arg_expression : synt_args )
-				actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
+				for( const Synt::Expression& arg_expression : synt_args )
+					actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
+			}
+			RestoreInstructionsState( function_context, state );
+			function_context.is_preevaluation_context= prev_is_preevaluation_context;
 		}
-		RestoreInstructionsState( function_context, state );
 
 		function_ptr=
 			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, names.GetErrors(), src_loc );

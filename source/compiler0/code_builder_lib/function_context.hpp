@@ -92,6 +92,8 @@ struct FunctionContext
 	llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 
 	llvm::DIScope* current_debug_info_scope= nullptr;
+
+	bool is_preevaluation_context= false;
 };
 
 } // namespace U
