@@ -153,35 +153,38 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
 			result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
 
-		// If index is not constant - check bounds.
-		if( index.constexpr_value == nullptr )
+		if( variable.llvm_value != nullptr && index_value != nullptr )
 		{
-			const uint64_t index_size= index_fundamental_type->GetSize();
-			const uint64_t size_type_size= size_type_.GetFundamentalType()->GetSize();
-			if( index_size > size_type_size )
-				index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, size_type_.GetLLVMType() );
-			else if( index_size < size_type_size )
-				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, size_type_.GetLLVMType() );
+			// If index is not constant - check bounds.
+			if( index.constexpr_value == nullptr )
+			{
+				const uint64_t index_size= index_fundamental_type->GetSize();
+				const uint64_t size_type_size= size_type_.GetFundamentalType()->GetSize();
+				if( index_size > size_type_size )
+					index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, size_type_.GetLLVMType() );
+				else if( index_size < size_type_size )
+					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, size_type_.GetLLVMType() );
 
-			llvm::Value* const condition=
-				function_context.llvm_ir_builder.CreateICmpUGE( // if( index >= array_size ) {halt;}
-					index_value,
-					llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), array_type->element_count ) ) );
+				llvm::Value* const condition=
+					function_context.llvm_ir_builder.CreateICmpUGE( // if( index >= array_size ) {halt;}
+						index_value,
+						llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), array_type->element_count ) ) );
 
-			llvm::BasicBlock* const halt_block= llvm::BasicBlock::Create( llvm_context_ );
-			llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
-			function_context.llvm_ir_builder.CreateCondBr( condition, halt_block, block_after_if );
+				llvm::BasicBlock* const halt_block= llvm::BasicBlock::Create( llvm_context_ );
+				llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
+				function_context.llvm_ir_builder.CreateCondBr( condition, halt_block, block_after_if );
 
-			function_context.function->getBasicBlockList().push_back( halt_block );
-			function_context.llvm_ir_builder.SetInsertPoint( halt_block );
-			function_context.llvm_ir_builder.CreateCall( halt_func_ );
-			function_context.llvm_ir_builder.CreateUnreachable(); // terminate block.
+				function_context.function->getBasicBlockList().push_back( halt_block );
+				function_context.llvm_ir_builder.SetInsertPoint( halt_block );
+				function_context.llvm_ir_builder.CreateCall( halt_func_ );
+				function_context.llvm_ir_builder.CreateUnreachable(); // terminate block.
 
-			function_context.function->getBasicBlockList().push_back( block_after_if );
-			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
+				function_context.function->getBasicBlockList().push_back( block_after_if );
+				function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
+			}
+
+			result.llvm_value= CreateArrayElementGEP( function_context, variable, index_value );
 		}
-
-		result.llvm_value= CreateArrayElementGEP( function_context, variable, index_value );
 
 		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
@@ -438,13 +441,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
 
-	llvm::Value* const value_for_neg= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-	if( is_float )
-		result.llvm_value= function_context.llvm_ir_builder.CreateFNeg( value_for_neg );
-	else
-		result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
+	if( llvm::Value* const value_for_neg= CreateMoveToLLVMRegisterInstruction( variable, function_context ) )
+	{
+		if( is_float )
+			result.llvm_value= function_context.llvm_ir_builder.CreateFNeg( value_for_neg );
+		else
+			result.llvm_value= function_context.llvm_ir_builder.CreateNeg( value_for_neg );
 
-	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
+		result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
+	}
 
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, OverloadedOperatorToString(OverloadedOperator::Sub) );
 	RegisterTemporaryVariable( function_context, result );
@@ -480,8 +485,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.type= variable.type;
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
-	result.llvm_value= function_context.llvm_ir_builder.CreateNot( CreateMoveToLLVMRegisterInstruction( variable, function_context ) );
-	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
+
+	if( const auto src_val= CreateMoveToLLVMRegisterInstruction( variable, function_context ) )
+	{
+		result.llvm_value= function_context.llvm_ir_builder.CreateNot( src_val );
+		result.constexpr_value= llvm::dyn_cast<llvm::Constant>( result.llvm_value );
+	}
+
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, OverloadedOperatorToString(OverloadedOperator::LogicalNot) );
 	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), logical_not.src_loc_ );
@@ -513,8 +523,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.type= variable.type;
 	result.location= Variable::Location::LLVMRegister;
 	result.value_type= ValueType::Value;
-	result.llvm_value= function_context.llvm_ir_builder.CreateNot( CreateMoveToLLVMRegisterInstruction( variable, function_context ) );
-	result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
+
+	if( const auto src_val= CreateMoveToLLVMRegisterInstruction( variable, function_context ) )
+	{
+		result.llvm_value= function_context.llvm_ir_builder.CreateNot( src_val );
+		result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
+	}
+
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, OverloadedOperatorToString(OverloadedOperator::BitwiseNot) );
 	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), bitwise_not.src_loc_ );
@@ -555,34 +570,39 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( binary_operator.operator_type_ == BinaryOperatorType::NotEqual && variable->type == bool_type_ )
 			{
 				// "!=" is implemented via "==", so, invert result.
-				variable->llvm_value= function_context.llvm_ir_builder.CreateNot( CreateMoveToLLVMRegisterInstruction( *variable, function_context ) );
-				variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
+				if( const auto src_val= CreateMoveToLLVMRegisterInstruction( *variable, function_context ) )
+				{
+					variable->llvm_value= function_context.llvm_ir_builder.CreateNot( src_val );
+					variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
+				}
 			}
 
 			if( overloaded_operator == OverloadedOperator::CompareOrder &&
 				variable->type.GetFundamentalType() != nullptr &&
 				IsSignedInteger( variable->type.GetFundamentalType()->fundamental_type ) )
 			{
-				const auto value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context );
-
-				if( binary_operator.operator_type_ == BinaryOperatorType::CompareOrder )
-					variable->llvm_value= value_in_register;
-				else
+				if( const auto value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context ) )
 				{
-					const auto zero= llvm::Constant::getNullValue( variable->type.GetLLVMType() );
-					if( binary_operator.operator_type_ == BinaryOperatorType::Less )
-						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( value_in_register, zero );
-					else if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
-						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( value_in_register, zero );
-					else if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
-						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( value_in_register, zero );
-					else if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
-						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( value_in_register, zero );
-					else U_ASSERT(false);
-					variable->type= bool_type_;
+					if( binary_operator.operator_type_ == BinaryOperatorType::CompareOrder )
+						variable->llvm_value= value_in_register;
+					else
+					{
+						const auto zero= llvm::Constant::getNullValue( variable->type.GetLLVMType() );
+						if( binary_operator.operator_type_ == BinaryOperatorType::Less )
+							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( value_in_register, zero );
+						else if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
+							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( value_in_register, zero );
+						else if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
+							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( value_in_register, zero );
+						else if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
+							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( value_in_register, zero );
+						else U_ASSERT(false);
+						variable->type= bool_type_;
+					}
+
+					variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
 				}
 
-				variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
 				variable->location= Variable::Location::LLVMRegister;
 			}
 		}
@@ -1314,16 +1334,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	result.location= Variable::Location::Pointer;
 	result.type= expression_result.type;
 	result.value_type= ValueType::Value;
-	result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
+
 	result.node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, "_moved_" + expression_result.node->name );
-	result.llvm_value->setName( result.node->name );
-
-	CreateLifetimeStart( function_context, result.llvm_value );
-
 	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc_ );
 
-	// Copy content to new variable.
-	CopyBytes( result.llvm_value, expression_result.llvm_value, result.type, function_context );
+	if( expression_result.llvm_value != nullptr )
+	{
+		result.llvm_value= function_context.alloca_ir_builder.CreateAlloca( result.type.GetLLVMType() );
+		result.llvm_value->setName( result.node->name );
+
+		CreateLifetimeStart( function_context, result.llvm_value );
+
+		// Copy content to new variable.
+		CopyBytes( result.llvm_value, expression_result.llvm_value, result.type, function_context );
+	}
 
 	// Construct empty value in old place.
 	ApplyEmptyInitializer( expression_result.node->name, take_operator.src_loc_, expression_result, names, function_context );
@@ -1902,51 +1926,54 @@ Value CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 
-			const bool is_signed= IsSignedInteger( l_fundamental_type->fundamental_type );
-
-			switch( binary_operator )
+			if( l_value_for_op != nullptr && r_value_for_op != nullptr )
 			{
-			case BinaryOperatorType::Add:
-				if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFAdd( l_value_for_op, r_value_for_op );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
-				break;
+				const bool is_signed= IsSignedInteger( l_fundamental_type->fundamental_type );
 
-			case BinaryOperatorType::Sub:
-				if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFSub( l_value_for_op, r_value_for_op );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
-				break;
+				switch( binary_operator )
+				{
+				case BinaryOperatorType::Add:
+					if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFAdd( l_value_for_op, r_value_for_op );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateAdd( l_value_for_op, r_value_for_op );
+					break;
 
-			case BinaryOperatorType::Div:
-				if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFDiv( l_value_for_op, r_value_for_op );
-				else if( is_signed )
-					result.llvm_value= function_context.llvm_ir_builder.CreateSDiv( l_value_for_op, r_value_for_op );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateUDiv( l_value_for_op, r_value_for_op );
-				break;
+				case BinaryOperatorType::Sub:
+					if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFSub( l_value_for_op, r_value_for_op );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateSub( l_value_for_op, r_value_for_op );
+					break;
 
-			case BinaryOperatorType::Mul:
-				if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFMul( l_value_for_op, r_value_for_op );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
-				break;
+				case BinaryOperatorType::Div:
+					if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFDiv( l_value_for_op, r_value_for_op );
+					else if( is_signed )
+						result.llvm_value= function_context.llvm_ir_builder.CreateSDiv( l_value_for_op, r_value_for_op );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateUDiv( l_value_for_op, r_value_for_op );
+					break;
 
-			case BinaryOperatorType::Rem:
-				if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFRem( l_value_for_op, r_value_for_op );
-				else if( is_signed )
-					result.llvm_value= function_context.llvm_ir_builder.CreateSRem( l_value_for_op, r_value_for_op );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateURem( l_value_for_op, r_value_for_op );
-				break;
+				case BinaryOperatorType::Mul:
+					if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFMul( l_value_for_op, r_value_for_op );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateMul( l_value_for_op, r_value_for_op );
+					break;
 
-			default: U_ASSERT( false ); break;
-			};
+				case BinaryOperatorType::Rem:
+					if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFRem( l_value_for_op, r_value_for_op );
+					else if( is_signed )
+						result.llvm_value= function_context.llvm_ir_builder.CreateSRem( l_value_for_op, r_value_for_op );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateURem( l_value_for_op, r_value_for_op );
+					break;
+
+				default: U_ASSERT( false ); break;
+				};
+			}
 
 			result.type= r_var.type;
 		}
@@ -1969,41 +1996,44 @@ Value CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 
-			const bool is_void= l_fundamental_type != nullptr && l_fundamental_type->fundamental_type == U_FundamentalType::void_;
-			const bool is_float= l_fundamental_type != nullptr && IsFloatingPoint( l_fundamental_type->fundamental_type );
-
-			// LLVM constants folder produces wrong compare result for function pointers to "unnamed_addr" functions.
-			// Perform manual constant functions compare instead.
-			const auto l_function= llvm::dyn_cast<llvm::Function>( l_value_for_op );
-			const auto r_function= llvm::dyn_cast<llvm::Function>( r_value_for_op );
-
-			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
-			switch( binary_operator )
+			if( l_value_for_op != nullptr && r_value_for_op != nullptr )
 			{
-			case BinaryOperatorType::Equal:
-				if( is_void )
-					result.llvm_value= llvm::ConstantInt::getTrue( llvm_context_ ); // All "void" values are same.
-				else if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOEQ( l_value_for_op, r_value_for_op );
-				else if( l_function != nullptr && r_function != nullptr )
-					result.llvm_value= llvm::ConstantInt::getBool( llvm_context_, l_function == r_function );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
-				break;
+				const bool is_void= l_fundamental_type != nullptr && l_fundamental_type->fundamental_type == U_FundamentalType::void_;
+				const bool is_float= l_fundamental_type != nullptr && IsFloatingPoint( l_fundamental_type->fundamental_type );
 
-			case BinaryOperatorType::NotEqual:
-				if( is_void )
-					result.llvm_value= llvm::ConstantInt::getFalse( llvm_context_ ); // All "void" values are same.
-				else if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
-				else if( l_function != nullptr && r_function != nullptr )
-					result.llvm_value= llvm::ConstantInt::getBool( llvm_context_, l_function != r_function );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
-				break;
+				// LLVM constants folder produces wrong compare result for function pointers to "unnamed_addr" functions.
+				// Perform manual constant functions compare instead.
+				const auto l_function= llvm::dyn_cast<llvm::Function>( l_value_for_op );
+				const auto r_function= llvm::dyn_cast<llvm::Function>( r_value_for_op );
 
-			default: U_ASSERT( false ); break;
-			};
+				// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
+				switch( binary_operator )
+				{
+				case BinaryOperatorType::Equal:
+					if( is_void )
+						result.llvm_value= llvm::ConstantInt::getTrue( llvm_context_ ); // All "void" values are same.
+					else if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOEQ( l_value_for_op, r_value_for_op );
+					else if( l_function != nullptr && r_function != nullptr )
+						result.llvm_value= llvm::ConstantInt::getBool( llvm_context_, l_function == r_function );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateICmpEQ( l_value_for_op, r_value_for_op );
+					break;
+
+				case BinaryOperatorType::NotEqual:
+					if( is_void )
+						result.llvm_value= llvm::ConstantInt::getFalse( llvm_context_ ); // All "void" values are same.
+					else if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFCmpUNE( l_value_for_op, r_value_for_op );
+					else if( l_function != nullptr && r_function != nullptr )
+						result.llvm_value= llvm::ConstantInt::getBool( llvm_context_, l_function != r_function );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateICmpNE( l_value_for_op, r_value_for_op );
+					break;
+
+				default: U_ASSERT( false ); break;
+				};
+			}
 
 			result.type= bool_type_;
 		}
@@ -2040,47 +2070,50 @@ Value CodeBuilder::BuildBinaryOperator(
 			else if( const auto enum_type= l_type.GetEnumType() )
 				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
 
-			switch( binary_operator )
+			if( l_value_for_op != nullptr && r_value_for_op != nullptr )
 			{
-			// Use ordered floating point compare operations, which result is false for NaN.
-			case BinaryOperatorType::Less:
-				if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOLT( l_value_for_op, r_value_for_op );
-				else if( is_signed )
-					result.llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
-				break;
+				switch( binary_operator )
+				{
+				// Use ordered floating point compare operations, which result is false for NaN.
+				case BinaryOperatorType::Less:
+					if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOLT( l_value_for_op, r_value_for_op );
+					else if( is_signed )
+						result.llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
+					break;
 
-			case BinaryOperatorType::LessEqual:
-				if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOLE( l_value_for_op, r_value_for_op );
-				else if( is_signed )
-					result.llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( l_value_for_op, r_value_for_op );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateICmpULE( l_value_for_op, r_value_for_op );
-				break;
+				case BinaryOperatorType::LessEqual:
+					if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOLE( l_value_for_op, r_value_for_op );
+					else if( is_signed )
+						result.llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( l_value_for_op, r_value_for_op );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateICmpULE( l_value_for_op, r_value_for_op );
+					break;
 
-			case BinaryOperatorType::Greater:
-				if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOGT( l_value_for_op, r_value_for_op );
-				else if( is_signed )
-					result.llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
-				break;
+				case BinaryOperatorType::Greater:
+					if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOGT( l_value_for_op, r_value_for_op );
+					else if( is_signed )
+						result.llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
+					break;
 
-			case BinaryOperatorType::GreaterEqual:
-				if( is_float )
-					result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOGE( l_value_for_op, r_value_for_op );
-				else if( is_signed )
-					result.llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( l_value_for_op, r_value_for_op );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateICmpUGE( l_value_for_op, r_value_for_op );
-				break;
+				case BinaryOperatorType::GreaterEqual:
+					if( is_float )
+						result.llvm_value= function_context.llvm_ir_builder.CreateFCmpOGE( l_value_for_op, r_value_for_op );
+					else if( is_signed )
+						result.llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( l_value_for_op, r_value_for_op );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateICmpUGE( l_value_for_op, r_value_for_op );
+					break;
 
-			default: U_ASSERT( false ); break;
-			};
+				default: U_ASSERT( false ); break;
+				};
+			}
 
 			result.type= bool_type_;
 		}
@@ -2114,34 +2147,38 @@ Value CodeBuilder::BuildBinaryOperator(
 			else if( const auto enum_type= l_type.GetEnumType() )
 				is_signed= IsSignedInteger( enum_type->underlaying_type.fundamental_type );
 
-			llvm::Value* less= nullptr;
-			llvm::Value* greater= nullptr;
-
-			if( is_float )
-				less= function_context.llvm_ir_builder.CreateFCmpOLT( l_value_for_op, r_value_for_op );
-			else if( is_signed )
-				less= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
-			else
-				less= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
-
-			if( is_float )
-				greater= function_context.llvm_ir_builder.CreateFCmpOGT( l_value_for_op, r_value_for_op );
-			else if( is_signed )
-				greater= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
-			else
-				greater= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
-
 			const auto result_fundamental_type= U_FundamentalType::i32_;
 			const auto result_llvm_type= GetFundamentalLLVMType( result_fundamental_type );
-			const auto zero= llvm::ConstantInt::get( result_llvm_type, uint64_t(0), true );
-			const auto plus_one= llvm::ConstantInt::get( result_llvm_type, uint64_t(1), true );
-			const auto minus_one= llvm::ConstantInt::get( result_llvm_type, uint64_t(int64_t(-1)), true );
 
-			result.llvm_value=
-				function_context.llvm_ir_builder.CreateSelect(
-					less,
-					minus_one,
-					function_context.llvm_ir_builder.CreateSelect( greater, plus_one, zero ) );
+			if( l_value_for_op != nullptr && r_value_for_op != nullptr )
+			{
+				llvm::Value* less= nullptr;
+				llvm::Value* greater= nullptr;
+
+				if( is_float )
+					less= function_context.llvm_ir_builder.CreateFCmpOLT( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					less= function_context.llvm_ir_builder.CreateICmpSLT( l_value_for_op, r_value_for_op );
+				else
+					less= function_context.llvm_ir_builder.CreateICmpULT( l_value_for_op, r_value_for_op );
+
+				if( is_float )
+					greater= function_context.llvm_ir_builder.CreateFCmpOGT( l_value_for_op, r_value_for_op );
+				else if( is_signed )
+					greater= function_context.llvm_ir_builder.CreateICmpSGT( l_value_for_op, r_value_for_op );
+				else
+					greater= function_context.llvm_ir_builder.CreateICmpUGT( l_value_for_op, r_value_for_op );
+
+				const auto zero= llvm::ConstantInt::get( result_llvm_type, uint64_t(0), true );
+				const auto plus_one= llvm::ConstantInt::get( result_llvm_type, uint64_t(1), true );
+				const auto minus_one= llvm::ConstantInt::get( result_llvm_type, uint64_t(int64_t(-1)), true );
+
+				result.llvm_value=
+					function_context.llvm_ir_builder.CreateSelect(
+						less,
+						minus_one,
+						function_context.llvm_ir_builder.CreateSelect( greater, plus_one, zero ) );
+			}
 
 			result.type= FundamentalType( result_fundamental_type, result_llvm_type );
 		}
@@ -2169,22 +2206,25 @@ Value CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 			}
 
-			switch( binary_operator )
+			if( l_value_for_op != nullptr && r_value_for_op != nullptr )
 			{
-			case BinaryOperatorType::And:
-				result.llvm_value= function_context.llvm_ir_builder.CreateAnd( l_value_for_op, r_value_for_op );
-				break;
+				switch( binary_operator )
+				{
+				case BinaryOperatorType::And:
+					result.llvm_value= function_context.llvm_ir_builder.CreateAnd( l_value_for_op, r_value_for_op );
+					break;
 
-			case BinaryOperatorType::Or:
-				result.llvm_value= function_context.llvm_ir_builder.CreateOr( l_value_for_op, r_value_for_op );
-				break;
+				case BinaryOperatorType::Or:
+					result.llvm_value= function_context.llvm_ir_builder.CreateOr( l_value_for_op, r_value_for_op );
+					break;
 
-			case BinaryOperatorType::Xor:
-				result.llvm_value= function_context.llvm_ir_builder.CreateXor( l_value_for_op, r_value_for_op );
-				break;
+				case BinaryOperatorType::Xor:
+					result.llvm_value= function_context.llvm_ir_builder.CreateXor( l_value_for_op, r_value_for_op );
+					break;
 
-			default: U_ASSERT( false ); break;
-			};
+				default: U_ASSERT( false ); break;
+				};
+			}
 
 			result.type= l_type;
 		}
@@ -2203,33 +2243,37 @@ Value CodeBuilder::BuildBinaryOperator(
 				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, r_type );
 				return ErrorValue();
 			}
-			const uint64_t l_type_size= l_fundamental_type->GetSize();
-			const uint64_t r_type_size= r_fundamental_type->GetSize();
 
-			llvm::Value* r_value_converted= r_value_for_op;
-
-			// Convert value of shift to type of shifted value. LLVM Reuqired this.
-			if( r_type_size > l_type_size )
-				r_value_converted= function_context.llvm_ir_builder.CreateTrunc( r_value_converted, l_var.type.GetLLVMType() );
-			else if( r_type_size < l_type_size )
-				r_value_converted= function_context.llvm_ir_builder.CreateZExt( r_value_converted, l_var.type.GetLLVMType() );
-
-			// Cut upper bits of shift value to avoid undefined behaviour.
-			r_value_converted =
-				function_context.llvm_ir_builder.CreateAnd(
-					r_value_converted,
-					llvm::ConstantInt::get( l_var.type.GetLLVMType(), l_type_size * 8 - 1 ) );
-
-			if( binary_operator == BinaryOperatorType::ShiftLeft )
-				result.llvm_value= function_context.llvm_ir_builder.CreateShl( l_value_for_op, r_value_converted );
-			else if( binary_operator == BinaryOperatorType::ShiftRight )
+			if( l_value_for_op != nullptr && r_value_for_op != nullptr )
 			{
-				if( IsSignedInteger( l_fundamental_type->fundamental_type ) )
-					result.llvm_value= function_context.llvm_ir_builder.CreateAShr( l_value_for_op, r_value_converted );
-				else
-					result.llvm_value= function_context.llvm_ir_builder.CreateLShr( l_value_for_op, r_value_converted );
+				const uint64_t l_type_size= l_fundamental_type->GetSize();
+				const uint64_t r_type_size= r_fundamental_type->GetSize();
+
+				llvm::Value* r_value_converted= r_value_for_op;
+
+				// Convert value of shift to type of shifted value. LLVM Reuqired this.
+				if( r_type_size > l_type_size )
+					r_value_converted= function_context.llvm_ir_builder.CreateTrunc( r_value_converted, l_var.type.GetLLVMType() );
+				else if( r_type_size < l_type_size )
+					r_value_converted= function_context.llvm_ir_builder.CreateZExt( r_value_converted, l_var.type.GetLLVMType() );
+
+				// Cut upper bits of shift value to avoid undefined behaviour.
+				r_value_converted =
+					function_context.llvm_ir_builder.CreateAnd(
+						r_value_converted,
+						llvm::ConstantInt::get( l_var.type.GetLLVMType(), l_type_size * 8 - 1 ) );
+
+				if( binary_operator == BinaryOperatorType::ShiftLeft )
+					result.llvm_value= function_context.llvm_ir_builder.CreateShl( l_value_for_op, r_value_converted );
+				else if( binary_operator == BinaryOperatorType::ShiftRight )
+				{
+					if( IsSignedInteger( l_fundamental_type->fundamental_type ) )
+						result.llvm_value= function_context.llvm_ir_builder.CreateAShr( l_value_for_op, r_value_converted );
+					else
+						result.llvm_value= function_context.llvm_ir_builder.CreateLShr( l_value_for_op, r_value_converted );
+				}
+				else U_ASSERT(false);
 			}
-			else U_ASSERT(false);
 
 			result.type= l_type;
 		}
@@ -2242,7 +2286,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	};
 
 	// Produce constexpr value only for constexpr arguments.
-	if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr )
+	if( l_var.constexpr_value != nullptr && r_var.constexpr_value != nullptr && result.llvm_value != nullptr )
 		result.constexpr_value= llvm::dyn_cast<llvm::Constant>(result.llvm_value);
 
 	if( result.constexpr_value != nullptr )
@@ -2326,14 +2370,17 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 			return ErrorValue();
 		}
 
-		if( int_size < ptr_size )
+		if( ptr_value != nullptr && index_value != nullptr )
 		{
-			if( IsSignedInteger( int_type ) )
-				index_value= function_context.llvm_ir_builder.CreateSExt( index_value, fundamental_llvm_types_.int_ptr );
-			else
-				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
+			if( int_size < ptr_size )
+			{
+				if( IsSignedInteger( int_type ) )
+					index_value= function_context.llvm_ir_builder.CreateSExt( index_value, fundamental_llvm_types_.int_ptr );
+				else
+					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
+			}
+			result.llvm_value= function_context.llvm_ir_builder.CreateGEP( element_type.GetLLVMType(), ptr_value, index_value );
 		}
-		result.llvm_value= function_context.llvm_ir_builder.CreateGEP( element_type.GetLLVMType(), ptr_value, index_value );
 	}
 	else if( binary_operator == BinaryOperatorType::Sub )
 	{
@@ -2372,12 +2419,15 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 				return ErrorValue();
 			}
 
-			llvm::Value* const l_as_int= function_context.llvm_ir_builder.CreatePtrToInt( l_value_for_op, diff_llvm_type );
-			llvm::Value* const r_as_int= function_context.llvm_ir_builder.CreatePtrToInt( r_value_for_op, diff_llvm_type );
-			llvm::Value* const diff= function_context.llvm_ir_builder.CreateSub( l_as_int, r_as_int );
-			llvm::Value* const element_size_constant= llvm::ConstantInt::get( diff_llvm_type, uint64_t(element_size), false );
-			llvm::Value* const diff_divided= function_context.llvm_ir_builder.CreateSDiv( diff, element_size_constant, "", true /* exact */ );
-			result.llvm_value= diff_divided;
+			if( l_value_for_op != nullptr && r_value_for_op != nullptr )
+			{
+				llvm::Value* const l_as_int= function_context.llvm_ir_builder.CreatePtrToInt( l_value_for_op, diff_llvm_type );
+				llvm::Value* const r_as_int= function_context.llvm_ir_builder.CreatePtrToInt( r_value_for_op, diff_llvm_type );
+				llvm::Value* const diff= function_context.llvm_ir_builder.CreateSub( l_as_int, r_as_int );
+				llvm::Value* const element_size_constant= llvm::ConstantInt::get( diff_llvm_type, uint64_t(element_size), false );
+				llvm::Value* const diff_divided= function_context.llvm_ir_builder.CreateSDiv( diff, element_size_constant, "", true /* exact */ );
+				result.llvm_value= diff_divided;
+			}
 		}
 		else if( const auto r_fundamental_type= r_var.type.GetFundamentalType() )
 		{
@@ -2394,16 +2444,19 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 
 			result.type= l_var.type;
 
-			llvm::Value* index_value= r_value_for_op;
-			if( int_size < ptr_size )
+			if( l_value_for_op != nullptr && r_value_for_op != nullptr )
 			{
-				if( IsSignedInteger( r_fundamental_type->fundamental_type ) )
-					index_value= function_context.llvm_ir_builder.CreateSExt( index_value, fundamental_llvm_types_.int_ptr );
-				else
-					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
+				llvm::Value* index_value= r_value_for_op;
+				if( int_size < ptr_size )
+				{
+					if( IsSignedInteger( r_fundamental_type->fundamental_type ) )
+						index_value= function_context.llvm_ir_builder.CreateSExt( index_value, fundamental_llvm_types_.int_ptr );
+					else
+						index_value= function_context.llvm_ir_builder.CreateZExt( index_value, fundamental_llvm_types_.int_ptr );
+				}
+				llvm::Value* const index_value_negative= function_context.llvm_ir_builder.CreateNeg( index_value );
+				result.llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_type->element_type.GetLLVMType(), l_value_for_op, index_value_negative );
 			}
-			llvm::Value* const index_value_negative= function_context.llvm_ir_builder.CreateNeg( index_value );
-			result.llvm_value= function_context.llvm_ir_builder.CreateGEP( ptr_type->element_type.GetLLVMType(), l_value_for_op, index_value_negative );
 		}
 		else
 		{
@@ -2546,10 +2599,14 @@ Value CodeBuilder::DoReferenceCast(
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, var.type );
 
 		if( ReferenceIsConvertible( var.type, type, names.GetErrors(), src_loc ) )
-			result.llvm_value= CreateReferenceCast( src_value, var.type, type, function_context );
+		{
+			if( src_value != nullptr )
+				result.llvm_value= CreateReferenceCast( src_value, var.type, type, function_context );
+		}
 		else
 		{
-			result.llvm_value= function_context.llvm_ir_builder.CreatePointerCast( src_value, type.GetLLVMType()->getPointerTo() );
+			if( src_value != nullptr )
+				result.llvm_value= function_context.llvm_ir_builder.CreatePointerCast( src_value, type.GetLLVMType()->getPointerTo() );
 			if( !enable_unsafe )
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, type, var.type );
 		}
@@ -2799,11 +2856,14 @@ Value CodeBuilder::DoCallFunction(
 			{
 				if( expr.value_type == ValueType::Value && expr.location == Variable::Location::LLVMRegister )
 				{
-					// Bind value to const reference.
-					llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
-					CreateTypedStore( function_context, expr.type, expr.llvm_value, temp_storage );
-					llvm_args[j]= temp_storage;
-					// Do not call here lifetime.start since there is no way to call lifetime.end for this value, because this allocation logically linked with some temp variable and can extend it's lifetime.
+					if( expr.llvm_value != nullptr )
+					{
+						// Bind value to const reference.
+						llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr.type.GetLLVMType() );
+						CreateTypedStore( function_context, expr.type, expr.llvm_value, temp_storage );
+						llvm_args[j]= temp_storage;
+						// Do not call here lifetime.start since there is no way to call lifetime.end for this value, because this allocation logically linked with some temp variable and can extend it's lifetime.
+					}
 				}
 				else
 					llvm_args[j]= expr.llvm_value;
@@ -2935,20 +2995,23 @@ Value CodeBuilder::DoCallFunction(
 						return ErrorValue();
 					}
 
-					// Create copy of class or tuple value. Call copy constructor.
-					llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( param.type.GetLLVMType() );
+					if( expr.llvm_value != nullptr )
+					{
+						// Create copy of class or tuple value. Call copy constructor.
+						llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( param.type.GetLLVMType() );
 
-					// Create lifetime.start instruction for value arg.
-					// Save it into temporary container to call lifetime.end after call.
-					CreateLifetimeStart( function_context, arg_copy );
-					value_args_for_lifetime_end_call.push_back( arg_copy );
+						// Create lifetime.start instruction for value arg.
+						// Save it into temporary container to call lifetime.end after call.
+						CreateLifetimeStart( function_context, arg_copy );
+						value_args_for_lifetime_end_call.push_back( arg_copy );
 
-					llvm_args[j]= arg_copy;
-					BuildCopyConstructorPart(
-						arg_copy,
-						CreateReferenceCast( expr.llvm_value, expr.type, param.type, function_context ),
-						param.type,
-						function_context );
+						llvm_args[j]= arg_copy;
+						BuildCopyConstructorPart(
+							arg_copy,
+							CreateReferenceCast( expr.llvm_value, expr.type, param.type, function_context ),
+							param.type,
+							function_context );
+					}
 				}
 			}
 			else U_ASSERT( false );
@@ -3011,7 +3074,7 @@ Value CodeBuilder::DoCallFunction(
 		}
 		if( constant_call_result != nullptr )
 			call_result= constant_call_result;
-		else
+		else if( function != nullptr )
 		{
 			llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( function_type.llvm_type, function, llvm_args );
 			call_instruction->setCallingConv( function_type.calling_convention );

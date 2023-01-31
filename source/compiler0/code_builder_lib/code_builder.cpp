@@ -2017,6 +2017,9 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 
 llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
+	if( address == nullptr )
+		return nullptr;
+
 	if( type == void_type_ )
 		return llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 
@@ -2030,6 +2033,9 @@ llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, co
 
 llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
+	if( address == nullptr )
+		return nullptr;
+
 	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( type.GetLLVMType()->getPointerTo(), address );
 
 	if( generate_tbaa_metadata_ )
@@ -2040,6 +2046,9 @@ llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function
 
 void CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Type& type, llvm::Value* const value_to_store, llvm::Value* const address )
 {
+	if( address == nullptr )
+		return;
+
 	if( type == void_type_ )
 		return;
 
@@ -2051,6 +2060,9 @@ void CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Typ
 
 void CodeBuilder::CreateTypedReferenceStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
 {
+	if( address == nullptr )
+		return;
+
 	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
 
 	if( generate_tbaa_metadata_ )
@@ -2062,6 +2074,9 @@ llvm::Value* CodeBuilder::CreateMoveToLLVMRegisterInstruction( const Variable& v
 	// Contant values always are register-values.
 	if( variable.constexpr_value != nullptr )
 		return variable.constexpr_value;
+
+	if( variable.llvm_value == nullptr )
+		return nullptr;
 
 	switch( variable.location )
 	{
@@ -2153,12 +2168,18 @@ llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_conte
 
 llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_context, llvm::Type* const type, llvm::Value* const value, llvm::Value* const index )
 {
+	if( value == nullptr || index == nullptr )
+		return nullptr;
+
 	return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
 }
 
 llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context )
 {
 	U_ASSERT( src_type.ReferenceIsConvertibleTo( dst_type ) );
+
+	if( ref == nullptr )
+		return nullptr;
 
 	if( src_type == dst_type )
 		return ref;
