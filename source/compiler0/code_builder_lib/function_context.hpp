@@ -96,7 +96,6 @@ struct FunctionContext
 	bool have_non_constexpr_operations_inside= false; // While building code, may set to "true".
 	bool is_in_unsafe_block= false;
 	bool is_functionless_context= false; // True for global function context or for function context, used for args preevaluation or typeof operator.
-
 };
 
 } // namespace U

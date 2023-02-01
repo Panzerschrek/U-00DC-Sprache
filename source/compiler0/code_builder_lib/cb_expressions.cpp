@@ -3148,12 +3148,13 @@ Value CodeBuilder::DoCallFunction(
 				constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
 			else
 				constant_call_result= evaluation_result.result_constant;
+
+			call_result= constant_call_result;
 		}
 	}
-	else if(
-		function != nullptr &&
-		!function_context.is_functionless_context &&
-		std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
+	else if( function_context.is_functionless_context )
+		call_result= nullptr;
+	else if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
 	{
 		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( function_type.llvm_type, function, llvm_args );
 		call_instruction->setCallingConv( function_type.calling_convention );

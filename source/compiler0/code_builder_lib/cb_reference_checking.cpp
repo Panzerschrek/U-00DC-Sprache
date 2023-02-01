@@ -254,7 +254,7 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 				( variable.node->kind != ReferencesGraphNode::Kind::Variable ||
 					!function_context.variables_state.HaveOutgoingLinks( variable.node ) ) )
 			{
-				if( variable.node->kind == ReferencesGraphNode::Kind::Variable &&  !function_context.is_functionless_context )
+				if( variable.node->kind == ReferencesGraphNode::Kind::Variable && !function_context.is_functionless_context )
 				{
 					if( variable.type.HaveDestructor() )
 						CallDestructor( variable.llvm_value, variable.type, function_context, errors_container, src_loc );
