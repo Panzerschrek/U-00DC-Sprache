@@ -153,38 +153,35 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( variable.constexpr_value != nullptr && index.constexpr_value != nullptr )
 			result.constexpr_value= variable.constexpr_value->getAggregateElement( index.constexpr_value );
 
-		if( !function_context.is_functionless_context )
+		// If index is not constant - check bounds.
+		if( index.constexpr_value == nullptr && !function_context.is_functionless_context )
 		{
-			// If index is not constant - check bounds.
-			if( index.constexpr_value == nullptr )
-			{
-				const uint64_t index_size= index_fundamental_type->GetSize();
-				const uint64_t size_type_size= size_type_.GetFundamentalType()->GetSize();
-				if( index_size > size_type_size )
-					index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, size_type_.GetLLVMType() );
-				else if( index_size < size_type_size )
-					index_value= function_context.llvm_ir_builder.CreateZExt( index_value, size_type_.GetLLVMType() );
+			const uint64_t index_size= index_fundamental_type->GetSize();
+			const uint64_t size_type_size= size_type_.GetFundamentalType()->GetSize();
+			if( index_size > size_type_size )
+				index_value= function_context.llvm_ir_builder.CreateTrunc( index_value, size_type_.GetLLVMType() );
+			else if( index_size < size_type_size )
+				index_value= function_context.llvm_ir_builder.CreateZExt( index_value, size_type_.GetLLVMType() );
 
-				llvm::Value* const condition=
-					function_context.llvm_ir_builder.CreateICmpUGE( // if( index >= array_size ) {halt;}
-						index_value,
-						llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), array_type->element_count ) ) );
+			llvm::Value* const condition=
+				function_context.llvm_ir_builder.CreateICmpUGE( // if( index >= array_size ) {halt;}
+					index_value,
+					llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), array_type->element_count ) ) );
 
-				llvm::BasicBlock* const halt_block= llvm::BasicBlock::Create( llvm_context_ );
-				llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
-				function_context.llvm_ir_builder.CreateCondBr( condition, halt_block, block_after_if );
+			llvm::BasicBlock* const halt_block= llvm::BasicBlock::Create( llvm_context_ );
+			llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
+			function_context.llvm_ir_builder.CreateCondBr( condition, halt_block, block_after_if );
 
-				function_context.function->getBasicBlockList().push_back( halt_block );
-				function_context.llvm_ir_builder.SetInsertPoint( halt_block );
-				function_context.llvm_ir_builder.CreateCall( halt_func_ );
-				function_context.llvm_ir_builder.CreateUnreachable(); // terminate block.
+			function_context.function->getBasicBlockList().push_back( halt_block );
+			function_context.llvm_ir_builder.SetInsertPoint( halt_block );
+			function_context.llvm_ir_builder.CreateCall( halt_func_ );
+			function_context.llvm_ir_builder.CreateUnreachable(); // terminate block.
 
-				function_context.function->getBasicBlockList().push_back( block_after_if );
-				function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
-			}
-
-			result.llvm_value= CreateArrayElementGEP( function_context, variable, index_value );
+			function_context.function->getBasicBlockList().push_back( block_after_if );
+			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
+
+		result.llvm_value= CreateArrayElementGEP( function_context, variable, index_value );
 
 		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );

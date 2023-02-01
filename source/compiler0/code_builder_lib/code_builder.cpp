@@ -2176,7 +2176,11 @@ llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_conte
 
 llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_context, llvm::Type* const type, llvm::Value* const value, llvm::Value* const index )
 {
-	if( value == nullptr || index == nullptr || function_context.is_functionless_context )
+	if( value == nullptr || index == nullptr )
+		return nullptr;
+
+	// Allow only constant GEP in functionless context.
+	if( function_context.is_functionless_context && !(llvm::isa<llvm::Constant>(value) && llvm::isa<llvm::Constant>(index) ) )
 		return nullptr;
 
 	return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
