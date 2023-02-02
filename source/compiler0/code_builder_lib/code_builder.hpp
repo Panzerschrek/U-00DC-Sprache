@@ -964,18 +964,16 @@ private:
 	void CreateLifetimeStart( FunctionContext& function_context, llvm::Value* address );
 	void CreateLifetimeEnd( FunctionContext& function_context, llvm::Value* address );
 
-	struct InstructionsState
+	struct FunctionContextState
 	{
 		ReferencesGraph variables_state;
-		size_t current_block_instruction_count;
-		size_t alloca_block_instructin_count;
-		size_t block_count;
+		size_t current_block_instruction_count= 0;
+		size_t alloca_block_instructin_count= 0;
+		size_t block_count= 0;
 	};
 
-	InstructionsState SaveInstructionsState( FunctionContext& function_context );
-	void RestoreInstructionsState(
-		FunctionContext& function_context,
-		const InstructionsState& state );
+	FunctionContextState SaveFunctionContextState( FunctionContext& function_context );
+	void RestoreFunctionContextState( FunctionContext& function_context, const FunctionContextState& state );
 
 private:
 	llvm::LLVMContext& llvm_context_;

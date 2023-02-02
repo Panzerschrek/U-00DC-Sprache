@@ -811,7 +811,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.is_functionless_context= true;
 		for( size_t i= 0u; i < 2u; ++i )
 		{
-			const auto state= SaveInstructionsState( function_context );
+			const auto state= SaveFunctionContextState( function_context );
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
 				const Variable var= BuildExpressionCodeEnsureVariable( i == 0u ? *ternary_operator.true_branch : *ternary_operator.false_branch, names, function_context );
@@ -819,12 +819,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				branches_value_types[i]= var.value_type;
 				DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), ternary_operator.src_loc_ );
 			}
-
-			U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock()->size() == state.current_block_instruction_count );
-			U_ASSERT( function_context.alloca_ir_builder.GetInsertBlock()->size() == state.alloca_block_instructin_count );
-			U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
-
-			RestoreInstructionsState( function_context, state );
+			RestoreFunctionContextState( function_context, state );
 		}
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
@@ -1582,18 +1577,14 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	{
 		const bool prev_is_functionless_context= function_context.is_functionless_context;
 		function_context.is_functionless_context= true;
-		const auto state= SaveInstructionsState( function_context );
+		const auto state= SaveFunctionContextState( function_context );
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 			for( const Synt::Expression* const in_arg : { &left_expr, &right_expr } )
 				args.push_back( PreEvaluateArg( *in_arg, names, function_context ) );
 		}
 
-		U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock()->size() == state.current_block_instruction_count );
-		U_ASSERT( function_context.alloca_ir_builder.GetInsertBlock()->size() == state.alloca_block_instructin_count );
-		U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
-
-		RestoreInstructionsState( function_context, state );
+		RestoreFunctionContextState( function_context, state );
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
@@ -1873,7 +1864,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	{
 		const bool prev_is_functionless_context= function_context.is_functionless_context;
 		function_context.is_functionless_context= true;
-		const auto state= SaveInstructionsState( function_context );
+		const auto state= SaveFunctionContextState( function_context );
 		{
 			const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
@@ -1882,11 +1873,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 				actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
 		}
 
-		U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock()->size() == state.current_block_instruction_count );
-		U_ASSERT( function_context.alloca_ir_builder.GetInsertBlock()->size() == state.alloca_block_instructin_count );
-		U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
-
-		RestoreInstructionsState( function_context, state );
+		RestoreFunctionContextState( function_context, state );
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
@@ -2754,7 +2741,7 @@ Value CodeBuilder::CallFunction(
 		{
 			const bool prev_is_functionless_context= function_context.is_functionless_context;
 			function_context.is_functionless_context= true;
-			const auto state= SaveInstructionsState( function_context );
+			const auto state= SaveFunctionContextState( function_context );
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
@@ -2765,11 +2752,7 @@ Value CodeBuilder::CallFunction(
 					actual_args.push_back( PreEvaluateArg( arg_expression, names, function_context ) );
 			}
 
-			U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock()->size() == state.current_block_instruction_count );
-			U_ASSERT( function_context.alloca_ir_builder.GetInsertBlock()->size() == state.alloca_block_instructin_count );
-			U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
-
-			RestoreInstructionsState( function_context, state );
+			RestoreFunctionContextState( function_context, state );
 			function_context.is_functionless_context= prev_is_functionless_context;
 		}
 

@@ -77,19 +77,14 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	const bool prev_is_functionless_context= function_context.is_functionless_context;
 	function_context.is_functionless_context= true;
 
-	const auto prev_state= SaveInstructionsState( function_context );
+	const auto state= SaveFunctionContextState( function_context );
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
 		const Variable variable= BuildExpressionCodeEnsureVariable( *typeof_type_name.expression, names_scope, function_context );
 		result= std::move(variable.type);
 	}
 
-	U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock()->size() == prev_state.current_block_instruction_count );
-	U_ASSERT( function_context.alloca_ir_builder.GetInsertBlock()->size() == prev_state.alloca_block_instructin_count );
-	U_ASSERT( function_context.function->getBasicBlockList().size() == prev_state.block_count );
-
-	RestoreInstructionsState( function_context, prev_state );
-
+	RestoreFunctionContextState( function_context, state );
 	function_context.is_functionless_context= prev_is_functionless_context;
 
 	return result;
