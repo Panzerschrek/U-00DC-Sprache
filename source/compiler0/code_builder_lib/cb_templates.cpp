@@ -804,8 +804,19 @@ Value* CodeBuilder::GenTemplateType(
 {
 	std::vector<Value> arguments_calculated;
 	arguments_calculated.reserve( template_arguments.size() );
-	for( const Synt::Expression& expr : template_arguments )
-		arguments_calculated.push_back( BuildExpressionCode( expr, arguments_names_scope, function_context ) );
+
+	{
+		const bool prev_is_functionless_context= function_context.is_functionless_context;
+		function_context.is_functionless_context= true;
+
+		const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+		for( const Synt::Expression& expr : template_arguments )
+			arguments_calculated.push_back( BuildExpressionCode( expr, arguments_names_scope, function_context ) );
+
+		DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
+		function_context.is_functionless_context= prev_is_functionless_context;
+	}
 
 	std::vector<TemplateTypePreparationResult> prepared_types;
 	for( const TypeTemplatePtr& type_template : type_templates_set.type_templates )
@@ -1187,24 +1198,34 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 	U_ASSERT( !function_templates.empty() );
 
 	TemplateArgs template_args;
-	for( const Synt::Expression& expr : template_arguments )
-	{
-		const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
-		if( const auto type_name= value.GetTypeName() )
-			template_args.push_back( *type_name );
-		else if( const auto variable= value.GetVariablePtr() )
-		{
-			if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr), variable->type );
-			else if( variable->constexpr_value == nullptr )
-				REPORT_ERROR( ExpectedConstantExpression, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
-			else
-				template_args.push_back( variable );
-		}
-		else
-			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), src_loc, value.GetKindName() );
 
-	} // for given template arguments.
+	{
+		const bool prev_is_functionless_context= function_context.is_functionless_context;
+		function_context.is_functionless_context= true;
+
+		const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+		for( const Synt::Expression& expr : template_arguments )
+		{
+			const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
+			if( const auto type_name= value.GetTypeName() )
+				template_args.push_back( *type_name );
+			else if( const auto variable= value.GetVariablePtr() )
+			{
+				if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
+					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr), variable->type );
+				else if( variable->constexpr_value == nullptr )
+					REPORT_ERROR( ExpectedConstantExpression, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
+				else
+					template_args.push_back( variable );
+			}
+			else
+				REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), src_loc, value.GetKindName() );
+		} // for given template arguments.
+
+		DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
+		function_context.is_functionless_context= prev_is_functionless_context;
+	}
 
 	if( template_args.size() != template_arguments.size() )
 		return nullptr;
