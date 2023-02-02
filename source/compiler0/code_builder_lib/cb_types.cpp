@@ -73,13 +73,20 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name )
 {
 	Type result;
-	const auto prev_state= SaveInstructionsState( function_context );
+
+	const bool prev_is_functionless_context= function_context.is_functionless_context;
+	function_context.is_functionless_context= true;
+
+	const auto state= SaveFunctionContextState( function_context );
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
 		const Variable variable= BuildExpressionCodeEnsureVariable( *typeof_type_name.expression, names_scope, function_context );
 		result= std::move(variable.type);
 	}
-	RestoreInstructionsState( function_context, prev_state );
+
+	RestoreFunctionContextState( function_context, state );
+	function_context.is_functionless_context= prev_is_functionless_context;
+
 	return result;
 }
 

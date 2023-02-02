@@ -206,6 +206,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 		void_type_,
 		llvm_context_,
 		global_function );
+	global_function_context.is_functionless_context= true;
 	const StackVariablesStorage global_function_variables_storage( global_function_context );
 	global_function_context_= &global_function_context;
 
@@ -569,8 +570,14 @@ void CodeBuilder::GenerateLoop(
 		return;
 
 	const auto size_type_llvm= size_type_.GetLLVMType();
-	llvm::Value* const zero_value=
-		llvm::Constant::getNullValue( size_type_llvm );
+	llvm::Value* const zero_value= llvm::Constant::getNullValue( size_type_llvm );
+
+	if( function_context.is_functionless_context )
+	{
+		loop_body( zero_value );
+		return;
+	}
+
 	llvm::Value* const one_value=
 		llvm::Constant::getIntegerValue( size_type_llvm, llvm::APInt( size_type_llvm->getIntegerBitWidth(), uint64_t(1u) ) );
 	llvm::Value* const loop_count_value=
@@ -616,12 +623,16 @@ void CodeBuilder::CallDestructorsImpl(
 			{
 				if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
 					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
-				if( stored_variable.type.HaveDestructor() )
-					CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
 
-				// Avoid calling "lifetime.end" for variables without address.
-				if( stored_variable.location == Variable::Location::Pointer )
-					CreateLifetimeEnd( function_context, stored_variable.llvm_value );
+				if( !function_context.is_functionless_context )
+				{
+					if( stored_variable.type.HaveDestructor() )
+						CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
+
+					// Avoid calling "lifetime.end" for variables without address.
+					if( stored_variable.location == Variable::Location::Pointer )
+						CreateLifetimeEnd( function_context, stored_variable.llvm_value );
+				}
 			}
 		}
 		function_context.variables_state.RemoveNode( stored_variable.node );
@@ -2017,6 +2028,9 @@ llvm::Type* CodeBuilder::GetFundamentalLLVMType( const U_FundamentalType fundman
 
 llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
+	if( address == nullptr || function_context.is_functionless_context )
+		return nullptr;
+
 	if( type == void_type_ )
 		return llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 
@@ -2030,6 +2044,9 @@ llvm::Value* CodeBuilder::CreateTypedLoad( FunctionContext& function_context, co
 
 llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function_context, const Type& type, llvm::Value* const address )
 {
+	if( address == nullptr || function_context.is_functionless_context )
+		return nullptr;
+
 	llvm::LoadInst* const result= function_context.llvm_ir_builder.CreateLoad( type.GetLLVMType()->getPointerTo(), address );
 
 	if( generate_tbaa_metadata_ )
@@ -2040,6 +2057,9 @@ llvm::LoadInst* CodeBuilder::CreateTypedReferenceLoad( FunctionContext& function
 
 void CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Type& type, llvm::Value* const value_to_store, llvm::Value* const address )
 {
+	if( address == nullptr || function_context.is_functionless_context )
+		return;
+
 	if( type == void_type_ )
 		return;
 
@@ -2051,6 +2071,9 @@ void CodeBuilder::CreateTypedStore( FunctionContext& function_context, const Typ
 
 void CodeBuilder::CreateTypedReferenceStore( FunctionContext& function_context, const Type& type,  llvm::Value* const value_to_store, llvm::Value* const address )
 {
+	if( address == nullptr || function_context.is_functionless_context )
+		return;
+
 	llvm::StoreInst* const result= function_context.llvm_ir_builder.CreateStore( value_to_store, address );
 
 	if( generate_tbaa_metadata_ )
@@ -2153,12 +2176,22 @@ llvm::Value* CodeBuilder::CreateArrayElementGEP( FunctionContext& function_conte
 
 llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_context, llvm::Type* const type, llvm::Value* const value, llvm::Value* const index )
 {
+	if( value == nullptr || index == nullptr )
+		return nullptr;
+
+	// Allow only constant GEP in functionless context.
+	if( function_context.is_functionless_context && !(llvm::isa<llvm::Constant>(value) && llvm::isa<llvm::Constant>(index) ) )
+		return nullptr;
+
 	return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
 }
 
 llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context )
 {
 	U_ASSERT( src_type.ReferenceIsConvertibleTo( dst_type ) );
+
+	if( ref == nullptr )
+		return nullptr;
 
 	if( src_type == dst_type )
 		return ref;
@@ -2403,9 +2436,9 @@ void CodeBuilder::CreateLifetimeEnd( FunctionContext& function_context, llvm::Va
 			} );
 }
 
-CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionContext& function_context )
+CodeBuilder::FunctionContextState CodeBuilder::SaveFunctionContextState( FunctionContext& function_context )
 {
-	InstructionsState result;
+	FunctionContextState result;
 	result.variables_state= function_context.variables_state;
 	result.current_block_instruction_count= function_context.llvm_ir_builder.GetInsertBlock()->size();
 	result.alloca_block_instructin_count= function_context.alloca_ir_builder.GetInsertBlock()->size();
@@ -2413,30 +2446,14 @@ CodeBuilder::InstructionsState CodeBuilder::SaveInstructionsState( FunctionConte
 	return result;
 }
 
-void CodeBuilder::RestoreInstructionsState(
-	FunctionContext& function_context,
-	const InstructionsState& state )
+void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context, const FunctionContextState& state )
 {
 	function_context.variables_state= state.variables_state;
 
-	// Remove instructions of some operations, that must be discarded.
-
-	auto& bb_list= function_context.function->getBasicBlockList();
-	while( bb_list.size() > state.block_count )
-	{
-		for( const auto use : bb_list.back().users() )
-			use->dropAllReferences();
-		bb_list.pop_back();
-	}
-
-	auto& inst_list= bb_list.back().getInstList();
-	while( inst_list.size() > state.current_block_instruction_count )
-		inst_list.pop_back();
-	function_context.llvm_ir_builder.SetInsertPoint( &bb_list.back(), bb_list.back().end() );
-
-	while( function_context.alloca_basic_block->getInstList().size() > state.alloca_block_instructin_count )
-		function_context.alloca_basic_block->getInstList().pop_back();
-	function_context.alloca_ir_builder.SetInsertPoint( function_context.alloca_basic_block, function_context.alloca_basic_block->end() );
+	// Make sure no new instructions or basic blocks were added.
+	U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock()->size() == state.current_block_instruction_count );
+	U_ASSERT( function_context.alloca_ir_builder.GetInsertBlock()->size() == state.alloca_block_instructin_count );
+	U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
 }
 
 } // namespace U

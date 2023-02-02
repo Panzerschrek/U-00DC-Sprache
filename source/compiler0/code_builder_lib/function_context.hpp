@@ -62,9 +62,6 @@ struct FunctionContext
 	llvm::Value* return_value_replaced_allocation= nullptr;
 
 	std::unordered_set<std::string> uninitialized_this_fields;
-	bool base_initialized= false;
-	bool whole_this_is_unavailable= false; // May be true in constructor initializer list, in body of constructors and destructors of abstract classes.
-	bool have_non_constexpr_operations_inside= false; // While building code, may set to "true".
 
 	llvm::Function* const function;
 
@@ -75,7 +72,6 @@ struct FunctionContext
 	llvm::IRBuilder<> llvm_ir_builder; // Use this builder for all instructions, except "alloca"
 
 	std::vector<LoopFrame> loops_stack;
-	bool is_in_unsafe_block= false;
 
 	// Stack for stack variables.
 	// First entry is set of function arguments.
@@ -92,6 +88,14 @@ struct FunctionContext
 	llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 
 	llvm::DIScope* current_debug_info_scope= nullptr;
+
+	// Keep "bool" fields last in order to reduce gaps between fields.
+
+	bool base_initialized= false;
+	bool whole_this_is_unavailable= false; // May be true in constructor initializer list, in body of constructors and destructors of abstract classes.
+	bool have_non_constexpr_operations_inside= false; // While building code, may set to "true".
+	bool is_in_unsafe_block= false;
+	bool is_functionless_context= false; // True for global function context or for function context, used for args preevaluation or typeof operator.
 };
 
 } // namespace U
