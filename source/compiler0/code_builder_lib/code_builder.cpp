@@ -1496,9 +1496,6 @@ Type CodeBuilder::BuildFuncCode(
 		}
 	}
 
-
-	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
-
 	if( is_destructor )
 	{
 		// Fill destructors block.
@@ -1509,6 +1506,8 @@ Type CodeBuilder::BuildFuncCode(
 		CallMembersDestructors( function_context, function_names.GetErrors(), block.end_src_loc_ );
 		function_context.llvm_ir_builder.CreateRetVoid();
 	}
+
+	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
 	// Replace return value allocation at end of function build process.
 	// We can do this only now, because now there is no "llvm_value" for this allocation stored in some intermediate structs.
@@ -2177,11 +2176,34 @@ llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_c
 	if( value == nullptr || index == nullptr )
 		return nullptr;
 
-	// Allow only constant GEP in functionless context.
-	if( function_context.is_functionless_context && !(llvm::isa<llvm::Constant>(value) && llvm::isa<llvm::Constant>(index) ) )
+	const bool value_is_constant= llvm::isa<llvm::Constant>(value);
+	const bool index_is_constant= llvm::isa<llvm::Constant>(index);
+	if( value_is_constant && index_is_constant )
+	{
+		// Constant will be folded properly and no instruction will be actiually inserted.
+		return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
+	}
+
+	if( function_context.is_functionless_context )
 		return nullptr;
 
-	return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
+	auto gep= llvm::GetElementPtrInst::Create( type, value, { GetZeroGEPIndex(), index } );
+
+	if( index_is_constant )
+	{
+		// Try to insert "GEP" instruction with constant index directly after of value calculation.
+		// This is needed in order to have possibility to reuse this instruction in diffirent basic blocks.
+		if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( value ) )
+			gep->insertAfter( instruction );
+		else if( llvm::isa<llvm::Argument>( value ) )
+			function_context.alloca_ir_builder.Insert( gep );
+		else
+			function_context.llvm_ir_builder.Insert( gep ); // TODO - maybe add assert here?
+	}
+	else
+		function_context.llvm_ir_builder.Insert( gep ); // Array indexing (with non-constant index).
+
+	return gep;
 }
 
 llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context )
