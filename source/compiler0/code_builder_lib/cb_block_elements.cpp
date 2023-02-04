@@ -84,13 +84,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		variable->location= Variable::Location::Pointer;
 		variable->value_type= ValueType::ReferenceMut;
 
-		ReferencesGraphNode::Kind node_kind;
+		ReferencesGraphNodeKind node_kind;
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference )
-			node_kind= ReferencesGraphNode::Kind::Variable;
+			node_kind= ReferencesGraphNodeKind::Variable;
 		else if( variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
-			node_kind= ReferencesGraphNode::Kind::ReferenceMut;
+			node_kind= ReferencesGraphNodeKind::ReferenceMut;
 		else
-			node_kind= ReferencesGraphNode::Kind::ReferenceImut;
+			node_kind= ReferencesGraphNodeKind::ReferenceImut;
 		// Do not forget to remove node in case of error-return!!!
 		variable->node= function_context.variables_state.AddNode( node_kind, variable_declaration.name );
 
@@ -235,13 +235,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	variable->value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 	variable->location= Variable::Location::Pointer;
 
-	ReferencesGraphNode::Kind node_kind;
+	ReferencesGraphNodeKind node_kind;
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference )
-		node_kind= ReferencesGraphNode::Kind::Variable;
+		node_kind= ReferencesGraphNodeKind::Variable;
 	else if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
-		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
+		node_kind= ReferencesGraphNodeKind::ReferenceMut;
 	else
-		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
+		node_kind= ReferencesGraphNodeKind::ReferenceImut;
 	// Do not forget to remove node in case of error-return!!!
 	variable->node= function_context.variables_state.AddNode( node_kind, auto_variable_declaration.name );
 
@@ -323,7 +323,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			const ReferencesGraphNodePtr& variable_for_move= initializer_experrsion->node;
 			if( variable_for_move != nullptr )
 			{
-				U_ASSERT(variable_for_move->kind == ReferencesGraphNode::Kind::Variable );
+				U_ASSERT(variable_for_move->kind == ReferencesGraphNodeKind::Variable );
 				function_context.variables_state.MoveNode( variable_for_move );
 			}
 
@@ -473,7 +473,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{ // Lock references to return value variables.
 			ReferencesGraphNodeHolder return_value_lock(
 				function_context,
-				function_context.function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				function_context.function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 				"return value lock" );
 			if( expression_result->node != nullptr )
 				function_context.variables_state.AddLink( expression_result->node, return_value_lock.Node() );
@@ -604,7 +604,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( sequence_expression->node != nullptr )
 		sequence_lock.emplace(
 			function_context,
-			sequence_expression->value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+			sequence_expression->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 			sequence_expression->node->name + " sequence lock" );
 
 	if( const TupleType* const tuple_type= sequence_expression->type.GetTupleType() )
@@ -625,13 +625,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			variable->type= element_type;
 			variable->value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
-			ReferencesGraphNode::Kind node_kind;
+			ReferencesGraphNodeKind node_kind;
 			if( for_operator.reference_modifier_ != ReferenceModifier::Reference )
-				node_kind= ReferencesGraphNode::Kind::Variable;
+				node_kind= ReferencesGraphNodeKind::Variable;
 			else if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable )
-				node_kind= ReferencesGraphNode::Kind::ReferenceMut;
+				node_kind= ReferencesGraphNodeKind::ReferenceMut;
 			else
-				node_kind= ReferencesGraphNode::Kind::ReferenceImut;
+				node_kind= ReferencesGraphNodeKind::ReferenceImut;
 			// Do not forget to remove node in case of error-return!!!
 			variable->node= function_context.variables_state.AddNode( node_kind, for_operator.loop_variable_name_ );
 
@@ -1011,13 +1011,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	variable->value_type= with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 	variable->location= Variable::Location::Pointer;
 
-	ReferencesGraphNode::Kind node_kind;
+	ReferencesGraphNodeKind node_kind;
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference )
-		node_kind= ReferencesGraphNode::Kind::Variable;
+		node_kind= ReferencesGraphNodeKind::Variable;
 	else if( with_operator.mutability_modifier_ == MutabilityModifier::Mutable )
-		node_kind= ReferencesGraphNode::Kind::ReferenceMut;
+		node_kind= ReferencesGraphNodeKind::ReferenceMut;
 	else
-		node_kind= ReferencesGraphNode::Kind::ReferenceImut;
+		node_kind= ReferencesGraphNodeKind::ReferenceImut;
 	// Do not forget to remove node in case of error-return!!!
 	variable->node= function_context.variables_state.AddNode( node_kind , with_operator.variable_name_ );
 
@@ -1090,7 +1090,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			const ReferencesGraphNodePtr& variable_for_move= expr->node;
 			if( variable_for_move != nullptr )
 			{
-				U_ASSERT(variable_for_move->kind == ReferencesGraphNode::Kind::Variable );
+				U_ASSERT(variable_for_move->kind == ReferencesGraphNodeKind::Variable );
 				function_context.variables_state.MoveNode( variable_for_move );
 			}
 

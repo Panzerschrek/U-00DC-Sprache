@@ -210,7 +210,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 
 	bool node_is_mutable= false;
 	for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
-		node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut;
+		node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNodeKind::ReferenceMut;
 
 	for( const ReferencesGraphNodePtr& dst_variable_node : dst_variable_nodes )
 	{
@@ -218,11 +218,11 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 		if( dst_node_inner_reference == nullptr )
 		{
 			dst_node_inner_reference=
-				function_context.variables_state.CreateNodeInnerReference( dst_node, node_is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				function_context.variables_state.CreateNodeInnerReference( dst_node, node_is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
 		}
 
-		if( ( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && !node_is_mutable ) ||
-			( dst_node_inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut &&  node_is_mutable ) )
+		if( ( dst_node_inner_reference->kind == ReferencesGraphNodeKind::ReferenceMut  && !node_is_mutable ) ||
+			( dst_node_inner_reference->kind == ReferencesGraphNodeKind::ReferenceImut &&  node_is_mutable ) )
 			REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, dst_node_inner_reference->name );
 
 		for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
@@ -253,10 +253,10 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 			// Destroy variables without links.
 			// Destroy all references, because all actual references that holds values should not yet be registered.
 			if( !function_context.variables_state.NodeMoved( variable.node )  &&
-				( variable.node->kind != ReferencesGraphNode::Kind::Variable ||
+				( variable.node->kind != ReferencesGraphNodeKind::Variable ||
 					!function_context.variables_state.HaveOutgoingLinks( variable.node ) ) )
 			{
-				if( variable.node->kind == ReferencesGraphNode::Kind::Variable && !function_context.is_functionless_context )
+				if( variable.node->kind == ReferencesGraphNodeKind::Variable && !function_context.is_functionless_context )
 				{
 					if( variable.type.HaveDestructor() )
 						CallDestructor( variable.llvm_value, variable.type, function_context, errors_container, src_loc );

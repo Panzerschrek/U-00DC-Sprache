@@ -36,7 +36,7 @@ std::unique_ptr<IMangler> CreateMangler(const ManglingScheme scheme, const llvm:
 
 CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder(
 	FunctionContext& function_context,
-	const ReferencesGraphNode::Kind node_kind,
+	const ReferencesGraphNodeKind node_kind,
 	std::string node_name )
 	: node_( function_context.variables_state.AddNode( node_kind, std::move(node_name) ) )
 	, function_context_(function_context)
@@ -617,7 +617,7 @@ void CodeBuilder::CallDestructorsImpl(
 	{
 		const Variable& stored_variable= **it;
 
-		if( stored_variable.node->kind == ReferencesGraphNode::Kind::Variable )
+		if( stored_variable.node->kind == ReferencesGraphNodeKind::Variable )
 		{
 			if( !function_context.variables_state.NodeMoved( stored_variable.node ) )
 			{
@@ -1318,12 +1318,12 @@ Type CodeBuilder::BuildFuncCode(
 
 		// Create variable node, because only variable node can have inner reference node.
 		// Register arg on stack, only if it is value-argument.
-		const auto var_node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, arg_name );
+		const auto var_node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, arg_name );
 		function_context.args_nodes[ arg_number ].first= var_node;
 		if( param.value_type != ValueType::Value )
 		{
 			const auto reference_node= function_context.variables_state.AddNode(
-				param.value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
+				param.value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 				arg_name + " reference" );
 			function_context.variables_state.AddLink( var_node, reference_node );
 			var->node= reference_node;
@@ -1337,11 +1337,11 @@ Type CodeBuilder::BuildFuncCode(
 		if (param.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.
-			const auto accesible_variable= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable , arg_name + " referenced variable" );
+			const auto accesible_variable= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable , arg_name + " referenced variable" );
 
 			const auto inner_reference= function_context.variables_state.CreateNodeInnerReference(
 				var_node,
-				param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
 			function_context.args_nodes[ arg_number ].second= accesible_variable;

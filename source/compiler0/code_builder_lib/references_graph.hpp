@@ -4,31 +4,23 @@
 #include <unordered_set>
 #include <vector>
 #include "../../code_builder_lib_common/code_builder_errors.hpp"
+#include "value.hpp"
 
 namespace U
 {
 
 struct ReferencesGraphNode
 {
-	enum class Kind
-	{
-		Variable,
-		ReferenceMut,
-		ReferenceImut,
-	};
-
 	const std::string name;
-	const Kind kind= Kind::Variable;
+	const ReferencesGraphNodeKind kind= ReferencesGraphNodeKind::Variable;
 
-	ReferencesGraphNode( std::string in_name, Kind in_kind ) : name(std::move(in_name)), kind(in_kind) {}
+	ReferencesGraphNode( std::string in_name, ReferencesGraphNodeKind in_kind ) : name(std::move(in_name)), kind(in_kind) {}
 };
-
-using ReferencesGraphNodePtr= std::shared_ptr<const ReferencesGraphNode>;
 
 class ReferencesGraph
 {
 public:
-	ReferencesGraphNodePtr AddNode( ReferencesGraphNode::Kind kind, std::string name );
+	ReferencesGraphNodePtr AddNode( ReferencesGraphNodeKind kind, std::string name );
 	void RemoveNode( const ReferencesGraphNodePtr& node );
 
 	void AddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
@@ -38,7 +30,7 @@ public:
 	bool TryAddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
 
 	ReferencesGraphNodePtr GetNodeInnerReference( const ReferencesGraphNodePtr& node ) const;
-	ReferencesGraphNodePtr CreateNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNode::Kind kind );
+	ReferencesGraphNodePtr CreateNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNodeKind kind );
 
 	// Each access to variable must produce temporary reference to it.
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.

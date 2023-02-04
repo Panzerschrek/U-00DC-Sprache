@@ -302,7 +302,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		{
 			if( expression_result->node != nullptr )
 			{
-				U_ASSERT( expression_result->node->kind == ReferencesGraphNode::Kind::Variable );
+				U_ASSERT( expression_result->node->kind == ReferencesGraphNodeKind::Variable );
 				function_context.variables_state.MoveNode( expression_result->node );
 			}
 
@@ -364,7 +364,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		{
 			if( expression_result->node != nullptr )
 			{
-				U_ASSERT( expression_result->node->kind == ReferencesGraphNode::Kind::Variable );
+				U_ASSERT( expression_result->node->kind == ReferencesGraphNodeKind::Variable );
 				function_context.variables_state.MoveNode( expression_result->node );
 			}
 
@@ -957,11 +957,11 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		{
 			ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
 			if( inner_reference == nullptr )
-				inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+				inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
 			else
 			{
-				if( ( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceImut &&  field.is_mutable ) ||
-					( inner_reference->kind == ReferencesGraphNode::Kind::ReferenceMut  && !field.is_mutable ))
+				if( ( inner_reference->kind == ReferencesGraphNodeKind::ReferenceImut &&  field.is_mutable ) ||
+					( inner_reference->kind == ReferencesGraphNodeKind::ReferenceMut  && !field.is_mutable ))
 				{
 					REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference->name );
 					return nullptr;

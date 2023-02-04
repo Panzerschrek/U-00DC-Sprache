@@ -5,7 +5,6 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/syntax_elements.hpp"
-#include "references_graph.hpp"
 #include "type.hpp"
 
 
@@ -88,6 +87,16 @@ struct TypeTemplatesSet
 	std::vector<const Synt::TypeTemplate*> syntax_elements;
 };
 
+enum class ReferencesGraphNodeKind : uint8_t
+{
+	Variable,
+	ReferenceMut,
+	ReferenceImut,
+};
+
+struct ReferencesGraphNode;
+using ReferencesGraphNodePtr= std::shared_ptr<const ReferencesGraphNode>;
+
 struct Variable final
 {
 	enum class Location
@@ -104,12 +113,21 @@ struct Variable final
 	// Exists only for constant expressions.
 	llvm::Constant* constexpr_value= nullptr;
 
-	ReferencesGraphNodePtr node; // May be null for global variables.
+	ReferencesGraphNodePtr node; // TODO - remove this.
+
+	std::string name;
+	ReferencesGraphNodeKind node_kind= ReferencesGraphNodeKind::Variable;
 
 	Variable()= default;
-	Variable(Type in_type,
-		Location in_location= Location::Pointer, ValueType in_value_type= ValueType::ReferenceImut,
-		llvm::Value* in_llvm_value= nullptr, llvm::Constant* in_constexpr_value= nullptr );
+
+	Variable(
+		Type in_type,
+		ValueType in_value_type,
+		Location in_location,
+		ReferencesGraphNodeKind in_node_kind,
+		std::string in_name= "",
+		llvm::Value* in_llvm_value= nullptr,
+		llvm::Constant* in_constexpr_value= nullptr );
 };
 
 using VariablePtr= std::shared_ptr<const Variable>;

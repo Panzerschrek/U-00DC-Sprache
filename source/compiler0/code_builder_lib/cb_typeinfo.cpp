@@ -64,8 +64,10 @@ Variable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<Type
 	return
 		Variable(
 			std::move(list_type),
-			Variable::Location::LLVMRegister,
 			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			"",
 			initializer,
 			initializer );
 }
@@ -104,7 +106,7 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 Variable CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace )
 {
 	const ClassPtr typeinfo_class= CreateTypeinfoClass( root_namespace, type, g_typeinfo_root_class_name );
-	Variable result( typeinfo_class, Variable::Location::Pointer, ValueType::ReferenceImut );
+	Variable result( typeinfo_class, ValueType::ReferenceImut, Variable::Location::Pointer, ReferencesGraphNodeKind::Variable );
 
 	result.constexpr_value= llvm::UndefValue::get( typeinfo_class->llvm_type ); // Currently uninitialized.
 	result.llvm_value=
@@ -682,11 +684,14 @@ Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr& class_type,
 	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
 	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
 
+	// TODO - avoid using class "variable" here?
 	return
 		Variable(
 			std::move(list_type),
-			Variable::Location::LLVMRegister,
 			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			"",
 			initializer,
 			initializer );
 }
@@ -742,11 +747,14 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& functi
 	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
 	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
 
+	// TODO - avoid using class "variable" here?
 	return
 		Variable(
 			std::move(list_type),
-			Variable::Location::LLVMRegister,
 			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			"",
 			initializer,
 			initializer );
 }
@@ -805,11 +813,14 @@ Variable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, N
 	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
 	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
 
+	// TODO - avoid using class "variable" here?
 	return
 		Variable(
 			std::move(list_type),
-			Variable::Location::LLVMRegister,
 			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			"",
 			initializer,
 			initializer );
 }
