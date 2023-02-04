@@ -129,12 +129,14 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 
 	if( the_class.base_class != nullptr )
 	{
-		VariableMutPtr base_variable= std::make_shared<Variable>();
-		base_variable->type= the_class.base_class;
-		base_variable->value_type= ValueType::ReferenceMut;
-
-		base_variable->llvm_value= CreateBaseClassGEP( function_context, *class_type, this_llvm_value );
-
+		const VariableMutPtr base_variable=
+			std::make_shared<Variable>(
+				the_class.base_class,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::ReferenceMut,
+				"",
+				CreateBaseClassGEP( function_context, *class_type, this_llvm_value ) );
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), SrcLoc()/*TODO*/, base_variable, *the_class.members, function_context );
 	}
 
@@ -148,19 +150,27 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		if( field.is_reference )
 		{
 			U_ASSERT( field.syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
-			VariableMutPtr variable= std::make_shared<Variable>();
-			variable->type= class_type;
-			variable->value_type= ValueType::ReferenceMut;
-			variable->llvm_value= this_llvm_value;
-			InitializeReferenceClassFieldWithInClassIninitalizer( variable, field, function_context );
+
+			const VariableMutPtr this_variable=
+				std::make_shared<Variable>(
+					class_type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					this_llvm_value );
+			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, field, function_context );
 		}
 		else
 		{
-			VariableMutPtr field_variable= std::make_shared<Variable>();
-			field_variable->type= field.type;
-			field_variable->value_type= ValueType::ReferenceMut;
-
-			field_variable->llvm_value= CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index );
+			const VariableMutPtr field_variable=
+				std::make_shared<Variable>(
+					field.type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index ) );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
@@ -386,11 +396,14 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 	llvm::Value* const this_llvm_value= &*destructor_function .llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
-	VariableMutPtr this_= std::make_shared<Variable>();
-	this_->type= class_type;
-	this_->location= Variable::Location::Pointer;
-	this_->value_type= ValueType::ReferenceMut;
-	this_->llvm_value= this_llvm_value;
+	const VariableMutPtr this_=
+		std::make_shared<Variable>(
+			class_type,
+			ValueType::ReferenceMut,
+			Variable::Location::Pointer,
+			ReferencesGraphNodeKind::ReferenceMut,
+			"",
+			this_llvm_value );
 
 	FunctionContext function_context(
 		destructor_type,

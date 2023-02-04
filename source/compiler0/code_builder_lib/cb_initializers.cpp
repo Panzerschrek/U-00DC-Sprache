@@ -58,9 +58,13 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			// SPRACHE_TODO - add array continious initializers.
 		}
 
-		VariableMutPtr array_member= std::make_shared<Variable>(*variable);
-		array_member->type= array_type->element_type;
-		array_member->location= Variable::Location::Pointer;
+		const VariableMutPtr array_member=
+			std::make_shared<Variable>(
+				array_type->element_type,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::ReferenceMut );
+		array_member->node= variable->node;
 
 		bool is_constant= array_type->element_type.CanBeConstexpr();
 		std::vector<llvm::Constant*> members_constants;
@@ -95,16 +99,20 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			return nullptr;
 		}
 
-		VariableMutPtr tuple_element= std::make_shared<Variable>(*variable);
-		tuple_element->location= Variable::Location::Pointer;
-
 		bool is_constant= variable->type.CanBeConstexpr();
 		std::vector<llvm::Constant*> members_constants;
 
 		for( size_t i= 0u; i < initializer.initializers.size(); ++i )
 		{
-			tuple_element->llvm_value= CreateTupleElementGEP( function_context, *variable, i );
-			tuple_element->type= tuple_type->element_types[i];
+			const VariableMutPtr tuple_element=
+				std::make_shared<Variable>(
+					tuple_type->element_types[i],
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					CreateTupleElementGEP( function_context, *variable, i ) );
+			tuple_element->node= variable->node;
 
 			llvm::Constant* const member_constant=
 				ApplyInitializer( tuple_element, names, function_context, initializer.initializers[i] );
@@ -155,9 +163,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		all_fields_are_constant= true;
 	}
 
-	VariableMutPtr struct_member= std::make_shared<Variable>(*variable);
-	struct_member->location= Variable::Location::Pointer;
-
 	for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 	{
 		if( initialized_members_names.count( member_initializer.name ) != 0 )
@@ -192,8 +197,15 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				InitializeReferenceField( variable, *field, member_initializer.initializer, names, function_context );
 		else
 		{
-			struct_member->type= field->type;
-			struct_member->llvm_value= CreateClassFieldGEP( function_context, *variable, field->index );
+			const VariableMutPtr struct_member=
+				std::make_shared<Variable>(
+					field->type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					CreateClassFieldGEP( function_context, *variable, field->index ) );
+			struct_member->node= variable->node;
 
 			constant_initializer=
 				ApplyInitializer( struct_member, names, function_context, member_initializer.initializer );
@@ -225,8 +237,15 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		}
 		else
 		{
-			struct_member->type= field.type;
-			struct_member->llvm_value= CreateClassFieldGEP( function_context, *variable, field.index );
+			const VariableMutPtr struct_member=
+				std::make_shared<Variable>(
+					field.type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					CreateClassFieldGEP( function_context, *variable, field.index ) );
+			struct_member->node= variable->node;
 
 			if( field.syntax_element->initializer != nullptr )
 				constant_initializer=
@@ -415,9 +434,13 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	}
 	else if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
-		VariableMutPtr array_member= std::make_shared<Variable>(*variable);
-		array_member->type= array_type->element_type;
-		array_member->location= Variable::Location::Pointer;
+		const VariableMutPtr array_member=
+			std::make_shared<Variable>(
+				array_type->element_type,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::ReferenceMut );
+		array_member->node= variable->node;
 
 		GenerateLoop(
 			array_type->element_count,
@@ -435,16 +458,20 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
-		VariableMutPtr tuple_member= std::make_shared<Variable>(*variable);
-		tuple_member->location= Variable::Location::Pointer;
-
 		for( const Type& element_type : tuple_type->element_types )
 		{
 			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
-			tuple_member->type= element_type;
-			tuple_member->llvm_value= CreateTupleElementGEP( function_context, *variable, i );
+			const VariableMutPtr tuple_element=
+				std::make_shared<Variable>(
+					tuple_type->element_types[i],
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					CreateTupleElementGEP( function_context, *variable, i ) );
+			tuple_element->node= variable->node;
 
-			ApplyInitializer( tuple_member, names, function_context, initializer );
+			ApplyInitializer( tuple_element, names, function_context, initializer );
 		}
 
 		if( variable->type.CanBeConstexpr() )
@@ -458,9 +485,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.src_loc_ );
 		if( class_type->kind != Class::Kind::Struct )
 			REPORT_ERROR( ZeroInitializerForClass, names.GetErrors(), initializer.src_loc_ );
-
-		VariableMutPtr struct_member= std::make_shared<Variable>(*variable);
-		struct_member->location= Variable::Location::Pointer;
 
 		bool all_fields_are_constant= variable->type.CanBeConstexpr();
 		for( const std::string& field_name : class_type->fields_order )
@@ -476,8 +500,15 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				continue;
 			}
 
-			struct_member->type= field.type;
-			struct_member->llvm_value= CreateClassFieldGEP( function_context, *variable, field.index );
+			const VariableMutPtr struct_member=
+				std::make_shared<Variable>(
+					field.type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					CreateClassFieldGEP( function_context, *variable, field.index ) );
+			struct_member->node= variable->node;
 
 			ApplyInitializer( struct_member, names, function_context, initializer );
 		}
@@ -530,9 +561,13 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 	}
 	else if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
-		VariableMutPtr array_member= std::make_shared<Variable>(*variable);
-		array_member->type= array_type->element_type;
-		array_member->location= Variable::Location::Pointer;
+		const VariableMutPtr array_member=
+			std::make_shared<Variable>(
+				array_type->element_type,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::ReferenceMut );
+		array_member->node= variable->node;
 
 		llvm::Constant* constant_initializer= nullptr;
 
@@ -541,7 +576,6 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 			[&](llvm::Value* const counter_value)
 			{
 				array_member->llvm_value= CreateArrayElementGEP( function_context, *variable, counter_value );
-
 				constant_initializer= ApplyEmptyInitializer( variable_name, src_loc, array_member, block_names, function_context );
 			},
 			function_context );
@@ -556,19 +590,23 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
-		VariableMutPtr tuple_member= std::make_shared<Variable>(*variable);
-		tuple_member->location= Variable::Location::Pointer;
-
 		std::vector<llvm::Constant*> constant_initializers;
 
 		for( const Type& element_type : tuple_type->element_types )
 		{
 			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
-			tuple_member->type= element_type;
-			tuple_member->llvm_value= CreateTupleElementGEP( function_context, *variable, i );
+			const VariableMutPtr tuple_element=
+				std::make_shared<Variable>(
+					tuple_type->element_types[i],
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					CreateTupleElementGEP( function_context, *variable, i ) );
+			tuple_element->node= variable->node;
 
 			llvm::Constant* const constant_initializer=
-				ApplyEmptyInitializer( variable_name, src_loc, tuple_member, block_names, function_context );
+				ApplyEmptyInitializer( variable_name, src_loc, tuple_element, block_names, function_context );
 
 			if( constant_initializer != nullptr )
 				constant_initializers.push_back( constant_initializer );
@@ -1175,17 +1213,22 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 
 		if( class_field.is_reference )
 		{
-			VariableMutPtr variable= std::make_shared<Variable>();
-			variable->type= class_type;
-			variable->value_type= ValueType::ReferenceMut;
-			InitializeReferenceClassFieldWithInClassIninitalizer( variable, class_field, function_context );
+			const VariableMutPtr this_variable=
+				std::make_shared<Variable>(
+					class_type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut );
+			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, class_field, function_context );
 		}
 		else
 		{
-			VariableMutPtr field_variable= std::make_shared<Variable>();
-			field_variable->type= class_field.type;
-			field_variable->value_type= ValueType::ReferenceMut;
-			field_variable->llvm_value= CreateClassFieldGEP( function_context, *class_type, nullptr, class_field.index );
+			const VariableMutPtr field_variable=
+				std::make_shared<Variable>(
+					class_field.type,
+					ValueType::ReferenceMut,
+					Variable::Location::LLVMRegister,
+					ReferencesGraphNodeKind::ReferenceMut );
 			InitializeClassFieldWithInClassIninitalizer( field_variable, class_field, function_context );
 		}
 	}

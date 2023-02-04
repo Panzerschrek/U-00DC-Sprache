@@ -30,10 +30,14 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 		if( result.GetErrorValue() == nullptr )
 			REPORT_ERROR( ExpectedVariable, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ), result.GetKindName() );
 
-		VariableMutPtr dummy_result= std::make_shared<Variable>();
-		dummy_result->type= invalid_type_;
-		dummy_result->llvm_value= llvm::UndefValue::get( invalid_type_.GetLLVMType()->getPointerTo() );
-		return dummy_result;
+		return
+			std::make_shared<Variable>(
+				invalid_type_,
+				ValueType::Value,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::Variable,
+				"",
+				llvm::UndefValue::get( invalid_type_.GetLLVMType()->getPointerTo() ) );
 	}
 	return result_variable;
 }
@@ -144,11 +148,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc_ ); // Destroy temporaries of index expression.
 
-		VariableMutPtr result= std::make_shared<Variable>();
-		result->location= Variable::Location::Pointer;
-		result->value_type= variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		VariableMutPtr result=
+			std::make_shared<Variable>(
+				array_type->element_type,
+				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				variable_lock.Node()->kind );
 		result->node= variable_lock.TakeNode();
-		result->type= array_type->element_type;
 
 		if( variable->constexpr_value != nullptr && index->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( index->constexpr_value );
@@ -228,11 +234,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			}
 		}
 
-		VariableMutPtr result= std::make_shared<Variable>();
-		result->location= Variable::Location::Pointer;
-		result->value_type= variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		VariableMutPtr result=
+			std::make_shared<Variable>(
+				tuple_type->element_types[size_t(index_value)],
+				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				variable_lock.Node()->kind );
 		result->node= variable_lock.TakeNode();
-		result->type= tuple_type->element_types[size_t(index_value)];
 		result->llvm_value= CreateTupleElementGEP( function_context, *variable, index_value );
 
 		if( variable->constexpr_value != nullptr )
@@ -435,10 +443,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	// TODO - maybe not support unary minus for 8 and 16 bit integer types?
 
-	VariableMutPtr result= std::make_shared<Variable>();
-	result->type= variable->type;
-	result->location= Variable::Location::LLVMRegister;
-	result->value_type= ValueType::Value;
+	VariableMutPtr result=
+		std::make_shared<Variable>(
+			variable->type,
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			OverloadedOperatorToString(OverloadedOperator::Sub) );
 
 	if( llvm::Value* const value_for_neg= CreateMoveToLLVMRegisterInstruction( *variable, function_context ) )
 	{
@@ -450,7 +461,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->constexpr_value= llvm::dyn_cast<llvm::Constant>(result->llvm_value);
 	}
 
-	result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, OverloadedOperatorToString(OverloadedOperator::Sub) );
+	result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), unary_minus.src_loc_ );
 }
@@ -480,10 +491,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	VariableMutPtr result= std::make_shared<Variable>();
-	result->type= variable->type;
-	result->location= Variable::Location::LLVMRegister;
-	result->value_type= ValueType::Value;
+	VariableMutPtr result=
+		std::make_shared<Variable>(
+			variable->type,
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			OverloadedOperatorToString(OverloadedOperator::LogicalNot) );
 
 	if( const auto src_val= CreateMoveToLLVMRegisterInstruction( *variable, function_context ) )
 	{
@@ -491,8 +505,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->constexpr_value= llvm::dyn_cast<llvm::Constant>( result->llvm_value );
 	}
 
-	result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, OverloadedOperatorToString(OverloadedOperator::LogicalNot) );
-
+	result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), logical_not.src_loc_ );
 }
@@ -519,10 +532,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	VariableMutPtr result= std::make_shared<Variable>();
-	result->type= variable->type;
-	result->location= Variable::Location::LLVMRegister;
-	result->value_type= ValueType::Value;
+	VariableMutPtr result=
+		std::make_shared<Variable>(
+			variable->type,
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			OverloadedOperatorToString(OverloadedOperator::BitwiseNot) );
 
 	if( const auto src_val= CreateMoveToLLVMRegisterInstruction( *variable, function_context ) )
 	{
@@ -530,7 +546,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->constexpr_value= llvm::dyn_cast<llvm::Constant>(result->llvm_value);
 	}
 
-	result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, OverloadedOperatorToString(OverloadedOperator::BitwiseNot) );
+	result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 
 	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), bitwise_not.src_loc_ );
@@ -839,7 +855,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	VariableMutPtr result= std::make_shared<Variable>();;
+	VariableMutPtr result= std::make_shared<Variable>();
 	result->type= branches_types[0];
 	result->location= Variable::Location::Pointer;
 	ReferencesGraphNodeKind node_kind;
@@ -1020,12 +1036,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	raw_pointer_type.element_type= v->type;
 	raw_pointer_type.llvm_type= llvm::PointerType::get( v->type.GetLLVMType(), 0u );
 
-	VariableMutPtr result= std::make_shared<Variable>();
-	result->type= std::move(raw_pointer_type);
-	result->llvm_value= v->llvm_value;
-	result->value_type= ValueType::Value;
-	result->location= Variable::Location::LLVMRegister;
-	result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, "ptr" );
+	VariableMutPtr result=
+		std::make_shared<Variable>(
+			std::move(raw_pointer_type),
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			"ptr",
+			v->llvm_value );
+
+	result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 	RegisterTemporaryVariable( function_context, result );
 
 	return Value( std::move(result), reference_to_raw_pointer_operator.src_loc_ );
@@ -1048,12 +1068,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	VariableMutPtr result= std::make_shared<Variable>();
-	result->type= raw_pointer_type->element_type;
-	result->llvm_value= CreateMoveToLLVMRegisterInstruction( *v, function_context );
-	result->value_type= ValueType::ReferenceMut;
-	result->location= Variable::Location::Pointer;
-	result->node= nullptr; // There is no reference graph node associated with raw pointer.
+	VariableMutPtr result=
+		std::make_shared<Variable>(
+			raw_pointer_type->element_type,
+			ValueType::ReferenceMut,
+			Variable::Location::Pointer,
+			ReferencesGraphNodeKind::ReferenceMut, // TODO - which kind should be this variable?
+			"",
+			CreateMoveToLLVMRegisterInstruction( *v, function_context ) );
 
 	return Value( std::move(result), raw_pointer_to_reference_operator.src_loc_ );
 }
@@ -1093,10 +1115,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
 
-	VariableMutPtr result= std::make_shared<Variable>();;
-	result->location= Variable::Location::LLVMRegister;
-	result->value_type= ValueType::Value;
-	result->type= FundamentalType( type, llvm_type );
+	VariableMutPtr result=
+		std::make_shared<Variable>(
+			FundamentalType( type, llvm_type ),
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			"numeric constant " + std::to_string(numeric_constant.value_double) );
 
 	if( IsInteger( type ) || IsChar( type ) )
 		result->constexpr_value=
@@ -1109,7 +1134,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	result->llvm_value= result->constexpr_value;
 
-	result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, "numeric constant " + std::to_string(numeric_constant.value_double) );
+	result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), numeric_constant.src_loc_ );
 }
@@ -1121,17 +1146,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	U_UNUSED(names);
 	
-	VariableMutPtr result= std::make_shared<Variable>();;
-	result->location= Variable::Location::LLVMRegister;
-	result->value_type= ValueType::Value;
-	result->type= bool_type_;
+	VariableMutPtr result=
+		std::make_shared<Variable>(
+			bool_type_,
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ) );
 
 	result->llvm_value= result->constexpr_value=
 		llvm::Constant::getIntegerValue(
 			fundamental_llvm_types_.bool_ ,
 			llvm::APInt( 1u, uint64_t(boolean_constant.value_) ) );
 
-	result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ) );
+	result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 	RegisterTemporaryVariable( function_context, result );
 	return Value ( std::move(result), boolean_constant.src_loc_ );
 }
@@ -1217,7 +1245,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( initializer == nullptr )
 		return ErrorValue();
 
-	VariableMutPtr result= std::make_shared<Variable>();;
+	VariableMutPtr result= std::make_shared<Variable>();
 	result->constexpr_value= initializer;
 	if( array_size == ~0u )
 	{
@@ -1365,16 +1393,19 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	// Allocate variable for result.
-	VariableMutPtr result= std::make_shared<Variable>();;
-	result->location= Variable::Location::Pointer;
-	result->type= expression_result->type;
-	result->value_type= ValueType::Value;
+	VariableMutPtr result=
+		std::make_shared<Variable>(
+			expression_result->type,
+			ValueType::Value,
+			Variable::Location::Pointer,
+			ReferencesGraphNodeKind::Variable,
+			"_moved_" + expression_result->node->name );
 
 	// Copy content to new variable.
-	result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, "_moved_" + expression_result->node->name );
+	result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 	SetupReferencesInCopyOrMove( function_context, *result, *expression_result, names.GetErrors(), take_operator.src_loc_ );
 
-	if( expression_result->llvm_value != nullptr && !function_context.is_functionless_context )
+	if( !function_context.is_functionless_context )
 	{
 		result->llvm_value= function_context.alloca_ir_builder.CreateAlloca( result->type.GetLLVMType() );
 		result->llvm_value->setName( result->node->name );
@@ -1492,17 +1523,17 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Type type= PrepareType( *non_sync_expression.type_, names, function_context );
 	const bool is_non_sync= GetTypeNonSync( type, names, non_sync_expression.src_loc_ );
 
-	VariableMutPtr result= std::make_shared<Variable>();;
-	result->location= Variable::Location::LLVMRegister;
-	result->value_type= ValueType::Value;
-	result->type= bool_type_;
+	VariableMutPtr result=
+		std::make_shared<Variable>(
+			bool_type_,
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			Keyword( Keywords::non_sync_ ) );
 
-	result->llvm_value= result->constexpr_value=
-		llvm::Constant::getIntegerValue(
-			fundamental_llvm_types_.bool_ ,
-			llvm::APInt( 1u, uint64_t(is_non_sync) ) );
+	result->llvm_value= result->constexpr_value= llvm::ConstantInt::getBool( llvm_context_, is_non_sync );
 
-	result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, Keyword( Keywords::non_sync_ ) );
+	result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), non_sync_expression.src_loc_ );
 }
@@ -1655,8 +1686,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			CreateLifetimeEnd( function_context, r_var_real.llvm_value );
 		}
 
-		VariableMutPtr move_result= std::make_shared<Variable>();
-		move_result->type= void_type_;
+		VariableMutPtr move_result=
+			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister, ReferencesGraphNodeKind::Variable );
 		return Value( std::move(move_result), src_loc );
 	}
 	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
@@ -1736,8 +1767,8 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			l_var->type,
 			function_context );
 
-		VariableMutPtr result= std::make_shared<Variable>();;
-		result->type= void_type_;
+		VariableMutPtr result=
+			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister, ReferencesGraphNodeKind::Variable );
 		return Value( std::move(result), src_loc );
 	}
 	else if( op == OverloadedOperator::CompareEqual )
@@ -1769,9 +1800,13 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		U_ASSERT( l_var->location == Variable::Location::Pointer );
 		U_ASSERT( r_var->location == Variable::Location::Pointer );
 
-		VariableMutPtr result= std::make_shared<Variable>();;
-		result->type= bool_type_;
-		result->location= Variable::Location::LLVMRegister;
+		VariableMutPtr result=
+			std::make_shared<Variable>(
+				bool_type_,
+				ValueType::Value,
+				Variable::Location::LLVMRegister,
+				ReferencesGraphNodeKind::Variable,
+				OverloadedOperatorToString(op) );
 
 		if( l_var->constexpr_value != nullptr && r_var->constexpr_value != nullptr )
 			result->llvm_value= result->constexpr_value= ConstexprCompareEqual( l_var->constexpr_value, r_var->constexpr_value, l_var->type, names, src_loc );
@@ -1817,7 +1852,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			}
 		}
 
-		result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, OverloadedOperatorToString(op) );
+		result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 		RegisterTemporaryVariable( function_context, result );
 
 		return Value( std::move(result), src_loc );
@@ -3350,11 +3385,14 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 	else if( type.IsAbstract() )
 		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, type );
 
-	VariableMutPtr variable= std::make_shared<Variable>();
-	variable->type= type;
-	variable->location= Variable::Location::Pointer;
-	variable->value_type= ValueType::ReferenceMut;
-	variable->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, "temp " + type.ToString() );
+	VariableMutPtr variable=
+		std::make_shared<Variable>(
+			type,
+			ValueType::ReferenceMut, // Make "Value" for construction.
+			Variable::Location::Pointer,
+			ReferencesGraphNodeKind::Variable,
+			"temp " + type.ToString() );
+	variable->node= function_context.variables_state.AddNode( variable->node_kind, variable->name );
 
 	if( !function_context.is_functionless_context )
 	{
@@ -3363,7 +3401,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 	}
 
 	variable->constexpr_value= ApplyConstructorInitializer( variable, synt_args, src_loc, names, function_context );
-	variable->value_type= ValueType::Value; // Make value after construction
+	variable->value_type= ValueType::Value; // Make "value" after construction.
 
 	RegisterTemporaryVariable( function_context, variable );
 	return variable;
@@ -3383,11 +3421,15 @@ VariablePtr CodeBuilder::ConvertVariable(
 		return nullptr;
 	}
 
-	VariableMutPtr result= std::make_shared<Variable>();;
-	result->type= dst_type;
-	result->location= Variable::Location::Pointer;
-	result->value_type= ValueType::ReferenceMut;
-	result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, "temp " + dst_type.ToString() );
+	VariableMutPtr result=
+		std::make_shared<Variable>(
+			dst_type,
+			ValueType::ReferenceMut, // Make "Value" for construction.
+			Variable::Location::Pointer,
+			ReferencesGraphNodeKind::Variable,
+			"temp " + dst_type.ToString() );
+
+	result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 
 	if( !function_context.is_functionless_context )
 	{
@@ -3413,7 +3455,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 		CallDestructors( temp_variables_storage, names, function_context, src_loc );
 	}
 
-	result->value_type= ValueType::Value; // Make value after construction
+	result->value_type= ValueType::Value; // Make "Value" after construction.
 	RegisterTemporaryVariable( function_context, result );
 	return result;
 }

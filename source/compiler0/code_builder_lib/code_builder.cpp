@@ -1279,13 +1279,12 @@ Type CodeBuilder::BuildFuncCode(
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && param.value_type == ValueType::Value ) );
 
-		VariableMutPtr var= std::make_shared<Variable>();
-		var->location= Variable::Location::Pointer;
-		var->value_type= ValueType::ReferenceMut;
-		var->type= param.type;
-
-		if( declaration_arg.mutability_modifier_ != MutabilityModifier::Mutable )
-			var->value_type= ValueType::ReferenceImut;
+		VariableMutPtr var=
+			std::make_shared<Variable>(
+				param.type,
+				declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::Variable /* actual value set later */ );
 
 		if( param.value_type != ValueType::Value )
 		{
@@ -1610,12 +1609,15 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 		else
 		{
-			VariableMutPtr field_variable= std::make_shared<Variable>();
-			field_variable->type= field.type;
-			field_variable->location= Variable::Location::Pointer;
-			field_variable->value_type= ValueType::ReferenceMut;
-
-			field_variable->llvm_value= CreateClassFieldGEP( function_context, *this_, field.index );
+			const VariableMutPtr field_variable=
+				std::make_shared<Variable>(
+					field.type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					CreateClassFieldGEP( function_context, *this_, field.index ) );
+			field_variable->node= this_->node;
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
@@ -1628,12 +1630,15 @@ void CodeBuilder::BuildConstructorInitialization(
 	if( !base_initialized && base_class.base_class != nullptr )
 	{
 		// Apply default initializer for base class.
-		VariableMutPtr base_variable= std::make_shared<Variable>();
-		base_variable->type= base_class.base_class;
-		base_variable->location= Variable::Location::Pointer;
-		base_variable->value_type= ValueType::ReferenceMut;
-
-		base_variable->llvm_value= CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value );
+		const VariableMutPtr base_variable=
+			std::make_shared<Variable>(
+				base_class.base_class,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::ReferenceMut,
+				"",
+				CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
+		base_variable->node= this_->node;
 
 		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
@@ -1644,13 +1649,15 @@ void CodeBuilder::BuildConstructorInitialization(
 	{
 		if( field_initializer.name == Keywords::base_ )
 		{
-			VariableMutPtr base_variable= std::make_shared<Variable>();
-			base_variable->type= base_class.base_class;
-			base_variable->location= Variable::Location::Pointer;
-			base_variable->value_type= ValueType::ReferenceMut;
+			const VariableMutPtr base_variable=
+				std::make_shared<Variable>(
+					base_class.base_class,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
 			base_variable->node= this_->node;
-
-			base_variable->llvm_value= CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value );
 
 			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );
 			function_context.base_initialized= true;
@@ -1667,13 +1674,15 @@ void CodeBuilder::BuildConstructorInitialization(
 			InitializeReferenceField( this_, *field, field_initializer.initializer, names_scope, function_context );
 		else
 		{
-			VariableMutPtr field_variable= std::make_shared<Variable>();
-			field_variable->type= field->type;
-			field_variable->location= Variable::Location::Pointer;
-			field_variable->value_type= ValueType::ReferenceMut;
+			const VariableMutPtr field_variable=
+				std::make_shared<Variable>(
+					field->type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::ReferenceMut,
+					"",
+					CreateClassFieldGEP( function_context, *this_, field->index ) );
 			field_variable->node= this_->node;
-
-			field_variable->llvm_value= CreateClassFieldGEP( function_context, *this_, field->index );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
 		}

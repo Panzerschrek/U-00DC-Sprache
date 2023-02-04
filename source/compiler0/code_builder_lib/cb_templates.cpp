@@ -610,15 +610,17 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, src_loc, *param_type ) )
 				return false;
 
-			VariableMutPtr variable_for_insertion= std::make_shared<Variable>();
-			variable_for_insertion->type= given_variable->type;
-			variable_for_insertion->location= Variable::Location::Pointer;
-			variable_for_insertion->value_type= ValueType::ReferenceImut;
-			variable_for_insertion->llvm_value=
-				CreateGlobalConstantVariable(
+			VariableMutPtr variable_for_insertion=
+				std::make_shared<Variable>(
 					given_variable->type,
-					template_.template_params[ template_param.index ].name,
-					given_variable->constexpr_value );
+					ValueType::ReferenceImut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::Variable,
+					"",
+					CreateGlobalConstantVariable(
+						given_variable->type,
+						template_.template_params[ template_param.index ].name,
+						given_variable->constexpr_value ));
 			variable_for_insertion->constexpr_value= given_variable->constexpr_value;
 
 			*value= Value( std::move(variable_for_insertion), src_loc );
@@ -659,8 +661,12 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_array_type->element_type, src_loc, *template_param.element_type ) )
 				return false;
 
-			VariableMutPtr size_variable= std::make_shared<Variable>();
-			size_variable->type= size_type_;
+			VariableMutPtr size_variable=
+				std::make_shared<Variable>(
+					size_type_,
+					ValueType::ReferenceImut,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::Variable );
 			size_variable->constexpr_value=
 				llvm::ConstantInt::get(
 					size_type_.GetLLVMType(),
