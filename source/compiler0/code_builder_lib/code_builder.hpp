@@ -88,25 +88,6 @@ private:
 		{}
 	};
 
-	class ReferencesGraphNodeHolder final
-	{
-	public:
-		ReferencesGraphNodeHolder( FunctionContext& function_context, ReferencesGraphNodeKind node_kind, std::string node_name );
-		ReferencesGraphNodeHolder( const ReferencesGraphNodeHolder& )= delete;
-		ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other ) noexcept;
-
-		ReferencesGraphNodeHolder& operator=( const ReferencesGraphNodeHolder& )= delete;
-		ReferencesGraphNodeHolder& operator=( ReferencesGraphNodeHolder&& other ) noexcept;
-		~ReferencesGraphNodeHolder();
-
-		const ReferencesGraphNodePtr& Node() const { return node_; }
-		ReferencesGraphNodePtr TakeNode();
-
-	private:
-		ReferencesGraphNodePtr node_;
-		FunctionContext& function_context_;
-	};
-
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );
 
@@ -846,7 +827,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
-	bool IsReferenceAllowedForReturn( FunctionContext& function_context, const ReferencesGraphNodePtr& variable_node );
+	bool IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node );
 
 	void CheckReferencesPollutionBeforeReturn(
 		FunctionContext& function_context,

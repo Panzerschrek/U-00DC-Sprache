@@ -1027,13 +1027,13 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 
 	// Check references.
-	const ReferencesGraphNodePtr& src_node= initializer_variable;
-	const ReferencesGraphNodePtr& dst_node= variable;
+	const VariablePtr& src_node= initializer_variable;
+	const VariablePtr& dst_node= variable;
 	if( src_node != nullptr && dst_node != nullptr )
 	{
-		for( const ReferencesGraphNodePtr& dst_variable_node : function_context.variables_state.GetAllAccessibleVariableNodes( dst_node ) )
+		for( const VariablePtr& dst_variable_node : function_context.variables_state.GetAllAccessibleVariableNodes( dst_node ) )
 		{
-			ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
+			VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
 			if( inner_reference == nullptr )
 				inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
 			else

@@ -34,44 +34,6 @@ std::unique_ptr<IMangler> CreateMangler(const ManglingScheme scheme, const llvm:
 
 } // namespace
 
-CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder(
-	FunctionContext& function_context,
-	const ReferencesGraphNodeKind node_kind,
-	std::string node_name )
-	: node_( function_context.variables_state.AddNode( node_kind, std::move(node_name) ) )
-	, function_context_(function_context)
-{
-}
-
-CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other) noexcept
-	: node_(other.node_), function_context_(other.function_context_)
-{
-	other.node_= nullptr;
-}
-
-CodeBuilder::ReferencesGraphNodeHolder& CodeBuilder::ReferencesGraphNodeHolder::operator=( ReferencesGraphNodeHolder&& other ) noexcept
-{
-	if( this->node_ != nullptr )
-		function_context_.variables_state.RemoveNode( node_ );
-
-	this->node_= other.node_;
-	other.node_= nullptr;
-	return *this;
-}
-
-CodeBuilder::ReferencesGraphNodeHolder::~ReferencesGraphNodeHolder()
-{
-	if( node_ != nullptr )
-		function_context_.variables_state.RemoveNode( node_ );
-}
-
-ReferencesGraphNodePtr CodeBuilder::ReferencesGraphNodeHolder::TakeNode()
-{
-	auto res= node_;
-	node_= nullptr;
-	return res;
-}
-
 CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
@@ -1319,7 +1281,7 @@ Type CodeBuilder::BuildFuncCode(
 
 		// Create variable node, because only variable node can have inner reference node.
 		// Register arg on stack, only if it is value-argument.
-		auto var_node= var;
+		VariablePtr var_node= var;
 		function_context.args_nodes[ arg_number ].first= var_node;
 		if( param.value_type != ValueType::Value )
 		{

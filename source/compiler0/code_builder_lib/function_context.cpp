@@ -13,7 +13,7 @@ StackVariablesStorage::StackVariablesStorage( FunctionContext& in_function_conte
 StackVariablesStorage::~StackVariablesStorage()
 {
 	for( const VariablePtr& variable : variables_ )
-		function_context_.variables_state.RemoveNode( variable->node );
+		function_context_.variables_state.RemoveNode( variable );
 	function_context_.stack_variables_stack.pop_back();
 }
 

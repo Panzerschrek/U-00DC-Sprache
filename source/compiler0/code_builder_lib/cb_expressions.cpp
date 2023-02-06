@@ -100,12 +100,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	// Lock variable. We must prevent modification of this variable in index calcualtion.
-	// You SHOULD register variable in case if you call "TakeNode".
-	ReferencesGraphNodeHolder variable_lock(
-		function_context,
+	// Do not forget to unregister it in case of error-return!
+	const VariablePtr variable_lock= std::make_shared<Variable>(
+		variable->type,
+		variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+		variable->location,
 		variable->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
-		"[]" );
-	if( !function_context.variables_state.TryAddLink( variable, variable_lock.Node() ) )
+		variable->name + " lock" );
+
+	function_context.variables_state.AddNode( variable_lock );
+	if( !function_context.variables_state.TryAddLink( variable, variable_lock ) )
 		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable->name );
 
 	const VariablePtr index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
@@ -118,12 +122,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			( index->constexpr_value == nullptr && IsUnsignedInteger( index_fundamental_type->fundamental_type ) ) ) ) )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc_, "any unsigned integer", index->type );
-			return ErrorValue();
-		}
-
-		if( variable->location != Variable::Location::Pointer )
-		{
-			// TODO - Strange variable location.
+			function_context.variables_state.RemoveNode( variable_lock );
 			return ErrorValue();
 		}
 
@@ -153,7 +152,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				array_type->element_type,
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				variable_lock.Node()->node_kind );
+				variable_lock->node_kind );
 
 		if( variable->constexpr_value != nullptr && index->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( index->constexpr_value );
@@ -189,8 +188,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->llvm_value= CreateArrayElementGEP( function_context, *variable, index_value );
 
 		function_context.variables_state.AddNode( result );
-		if( !function_context.variables_state.TryAddLink( variable_lock.Node(), result ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable_lock.Node()->name );
+		if( !function_context.variables_state.TryAddLink( variable_lock, result ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable_lock->name );
+
+		function_context.variables_state.RemoveNode( variable_lock );
 
 		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
@@ -203,6 +204,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( index_fundamental_type == nullptr || !IsInteger( index_fundamental_type->fundamental_type ) )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc_, "any integer", index->type );
+			function_context.variables_state.RemoveNode( variable_lock );
 			return ErrorValue();
 		}
 
@@ -225,6 +227,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( index_value >= static_cast<uint64_t>(tuple_type->element_types.size()) || index_value_raw.isNegative() )
 			{
 				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value_raw.getSExtValue(), tuple_type->element_types.size() );
+				function_context.variables_state.RemoveNode( variable_lock );
 				return ErrorValue();
 			}
 		}
@@ -233,6 +236,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( index_value >= static_cast<uint64_t>(tuple_type->element_types.size()) )
 			{
 				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value, tuple_type->element_types.size() );
+				function_context.variables_state.RemoveNode( variable_lock );
 				return ErrorValue();
 			}
 		}
@@ -242,14 +246,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				tuple_type->element_types[size_t(index_value)],
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				variable_lock.Node()->node_kind );
+				variable_lock->node_kind );
 
 		if( variable->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
 
 		function_context.variables_state.AddNode( result );
-		if( !function_context.variables_state.TryAddLink( variable_lock.Node(), result ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable_lock.Node()->name );
+		if( !function_context.variables_state.TryAddLink( variable_lock, result ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable_lock->name );
+
+		function_context.variables_state.RemoveNode( variable_lock );
 
 		RegisterTemporaryVariable( function_context, result );
 		return Value( std::move(result), indexation_operator.src_loc_ );
@@ -257,6 +263,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	else
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), indexation_operator.src_loc_, variable->type );
+		function_context.variables_state.RemoveNode( variable_lock );
 		return ErrorValue();
 	}
 }
@@ -393,7 +400,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->node_kind= field->is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut;
 		function_context.variables_state.AddNode( result );
 
-		for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable ) )
+		for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable ) )
 		{
 			if( !function_context.variables_state.TryAddLink( inner_reference, result ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), member_access_operator.src_loc_, inner_reference->name );
@@ -774,7 +781,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			field_variable->node_kind= field->is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut;
 			function_context.variables_state.AddNode( field_variable );
 
-			for( const ReferencesGraphNodePtr& node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( function_context.this_ ) )
+			for( const VariablePtr& node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( function_context.this_ ) )
 			{
 				if( !function_context.variables_state.TryAddLink( node, field_variable ) )
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), named_operand.src_loc_, node->name );
@@ -1668,17 +1675,25 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
 		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names, function_context ).GetVariablePtr();
 
-		ReferencesGraphNodeHolder r_var_lock(
-			function_context,
-			ReferencesGraphNodeKind::ReferenceImut,
-			r_var_real->name + " lock" );
-		if( !function_context.variables_state.TryAddLink( r_var_real, r_var_lock.Node() ) )
+		const VariablePtr r_var_lock=
+			std::make_shared<Variable>(
+				r_var_real->type,
+				ValueType::ReferenceMut,
+				r_var_real->location,
+				ReferencesGraphNodeKind::ReferenceMut,
+				r_var_real->name + " lock",
+				r_var_real->llvm_value );
+
+		function_context.variables_state.AddNode( r_var_lock );
+
+		if( !function_context.variables_state.TryAddLink( r_var_real, r_var_lock ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var_real->name );
 
 		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names, function_context ).GetVariablePtr();
 
-		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_real, names.GetErrors(), src_loc );
+		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_lock, names.GetErrors(), src_loc );
 
+		function_context.variables_state.RemoveNode( r_var_lock );
 		function_context.variables_state.MoveNode( r_var_real );
 
 		if( !function_context.is_functionless_context )
@@ -1738,11 +1753,19 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	if( op == OverloadedOperator::Assign )
 	{
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
-		ReferencesGraphNodeHolder r_var_lock(
-			function_context,
-			ReferencesGraphNodeKind::ReferenceImut,
-			r_var->name + " lock" );
-		if( !function_context.variables_state.TryAddLink( r_var, r_var_lock.Node() ) )
+
+		const VariablePtr r_var_lock=
+			std::make_shared<Variable>(
+				r_var->type,
+				ValueType::ReferenceImut,
+				r_var->location,
+				ReferencesGraphNodeKind::ReferenceImut,
+				r_var->name + " lock",
+				r_var->llvm_value );
+
+		function_context.variables_state.AddNode( r_var_lock );
+
+		if( !function_context.variables_state.TryAddLink( r_var, r_var_lock ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var->name );
 
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
@@ -1761,12 +1784,14 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			return ErrorValue();
 		}
 
-		SetupReferencesInCopyOrMove( function_context, l_var, r_var, names.GetErrors(), src_loc );
+		SetupReferencesInCopyOrMove( function_context, l_var, r_var_lock, names.GetErrors(), src_loc );
 
 		BuildCopyAssignmentOperatorPart(
 			l_var->llvm_value, r_var->llvm_value,
 			l_var->type,
 			function_context );
+
+		function_context.variables_state.RemoveNode( r_var_lock );
 
 		VariableMutPtr result=
 			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister, ReferencesGraphNodeKind::Variable );
@@ -1775,16 +1800,25 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	else if( op == OverloadedOperator::CompareEqual )
 	{
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable(  left_expr, names, function_context );
-		ReferencesGraphNodeHolder l_var_lock(
-			function_context,
-			ReferencesGraphNodeKind::ReferenceImut,
-			l_var->name + " lock" );
-		if( !function_context.variables_state.TryAddLink( l_var, l_var_lock.Node() ) )
+		const VariablePtr l_var_lock=
+			std::make_shared<Variable>(
+				l_var->type,
+				ValueType::ReferenceImut,
+				l_var->location,
+				ReferencesGraphNodeKind::ReferenceImut,
+				l_var->name + " lock",
+				l_var->llvm_value );
+
+		function_context.variables_state.AddNode( l_var_lock );
+
+		if( !function_context.variables_state.TryAddLink( l_var, l_var_lock ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, l_var->name );
 
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 		if( function_context.variables_state.HaveOutgoingMutableNodes( r_var ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var->name );
+
+		function_context.variables_state.RemoveNode( l_var_lock );
 
 		U_ASSERT( r_var->type == l_var->type ); // Checked before.
 
@@ -2911,28 +2945,31 @@ Value CodeBuilder::DoCallFunction(
 	ArgsVector<llvm::Constant*> constant_llvm_args;
 	llvm_args.resize( arg_count, nullptr );
 
-	ArgsVector< ReferencesGraphNodeHolder > args_nodes;
-	ArgsVector< ReferencesGraphNodeHolder > locked_args_inner_references;
+	// TODO - use vector of pairs instead.
+	ArgsVector< VariablePtr > args_nodes;
+	args_nodes.resize( arg_count, nullptr );
+	ArgsVector< VariablePtr > locked_args_inner_references;
+	locked_args_inner_references.resize( arg_count, nullptr );
 
 	ArgsVector<llvm::Value*> value_args_for_lifetime_end_call;
 
 	for( size_t i= 0u; i < arg_count; ++i )
 	{
-		const size_t j= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
+		const size_t arg_number= evaluate_args_in_reverse_order ? arg_count - i - 1u : i;
 
-		const FunctionType::Param& param= function_type.params[j];
+		const FunctionType::Param& param= function_type.params[arg_number];
 
 		VariablePtr expr;
 		SrcLoc src_loc;
-		if( j < preevaluated_args.size() )
+		if( arg_number < preevaluated_args.size() )
 		{
-			expr= preevaluated_args[j];
+			expr= preevaluated_args[arg_number];
 			src_loc= call_src_loc;
 		}
 		else
 		{
-			expr= BuildExpressionCodeEnsureVariable( *args[ j - preevaluated_args.size() ], names, function_context );
-			src_loc= Synt::GetExpressionSrcLoc( *args[ j - preevaluated_args.size() ] );
+			expr= BuildExpressionCodeEnsureVariable( *args[ arg_number - preevaluated_args.size() ], names, function_context );
+			src_loc= Synt::GetExpressionSrcLoc( *args[ arg_number - preevaluated_args.size() ] );
 		}
 
 		if( expr->constexpr_value != nullptr && param.value_type != ValueType::ReferenceMut )
@@ -2944,7 +2981,7 @@ Value CodeBuilder::DoCallFunction(
 				GetConversionConstructor( expr->type, param.type, names.GetErrors(), src_loc ) == nullptr )
 			{
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, param.type, expr->type );
-				return ErrorValue();
+				continue;
 			}
 
 			if( param.value_type == ValueType::ReferenceMut )
@@ -2952,18 +2989,18 @@ Value CodeBuilder::DoCallFunction(
 				if( expr->value_type == ValueType::Value )
 				{
 					REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
-					return ErrorValue();
+					continue;
 				}
 				if( expr->value_type == ValueType::ReferenceImut )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
-					return ErrorValue();
+					continue;
 				}
 
 				if( expr->type == param.type )
-					llvm_args[j]= expr->llvm_value;
+					llvm_args[arg_number]= expr->llvm_value;
 				else
-					llvm_args[j]= CreateReferenceCast( expr->llvm_value, expr->type, param.type, function_context );
+					llvm_args[arg_number]= CreateReferenceCast( expr->llvm_value, expr->type, param.type, function_context );
 			}
 			else
 			{
@@ -2974,34 +3011,39 @@ Value CodeBuilder::DoCallFunction(
 						// Bind value to const reference.
 						llvm::Value* const temp_storage= function_context.alloca_ir_builder.CreateAlloca( expr->type.GetLLVMType() );
 						CreateTypedStore( function_context, expr->type, expr->llvm_value, temp_storage );
-						llvm_args[j]= temp_storage;
+						llvm_args[arg_number]= temp_storage;
 						// Do not call here lifetime.start since there is no way to call lifetime.end for this value, because this allocation logically linked with some temp variable and can extend it's lifetime.
 					}
 				}
 				else
-					llvm_args[j]= expr->llvm_value;
+					llvm_args[arg_number]= expr->llvm_value;
 
 				if( expr->type != param.type )
 				{
 					if( expr->type.ReferenceIsConvertibleTo( param.type ) )
-						llvm_args[j]= CreateReferenceCast( llvm_args[j], expr->type, param.type, function_context );
+						llvm_args[arg_number]= CreateReferenceCast( llvm_args[arg_number], expr->type, param.type, function_context );
 					else
 					{
 						const auto conversion_constructor= GetConversionConstructor( expr->type, param.type, names.GetErrors(), src_loc );
 						U_ASSERT( conversion_constructor != nullptr );
 						expr= ConvertVariable( expr, param.type, *conversion_constructor, names, function_context, src_loc );
-						llvm_args[j]= expr->llvm_value;
+						llvm_args[arg_number]= expr->llvm_value;
 					}
 				}
 			}
 
 			// Lock references.
-			args_nodes.emplace_back(
-				function_context,
+			args_nodes[arg_number]=
+				std::make_shared<Variable>(
+				param.type,
+				param.value_type,
+				Variable::Location::Pointer,
 				param.value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 				"reference_arg " + std::to_string(i) );
 
-			if( !function_context.variables_state.TryAddLink( expr, args_nodes.back().Node() ) )
+			function_context.variables_state.AddNode( args_nodes[arg_number] );
+
+			if( !function_context.variables_state.TryAddLink( expr, args_nodes[arg_number] ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, expr->name );
 
 			// Lock inner references.
@@ -3012,17 +3054,20 @@ Value CodeBuilder::DoCallFunction(
 				if( param.type.ReferencesTagsCount() > 0 )
 				{
 					bool is_mutable= false;
-					for( const ReferencesGraphNodePtr& inner_reference : inner_references )
+					for( const VariablePtr& inner_reference : inner_references )
 						is_mutable= is_mutable || inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut;
 
-					locked_args_inner_references.emplace_back(
-						function_context,
-						is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
-						"inner reference lock " + std::to_string(i) );
+					locked_args_inner_references[arg_number]=
+						std::make_shared<Variable>(
+							invalid_type_,
+							ValueType::Value,
+							Variable::Location::Pointer, // TODO - is this correct?
+							is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
+							"inner reference lock " + std::to_string(i) );
 
-					for( const ReferencesGraphNodePtr& inner_reference : inner_references )
+					for( const VariablePtr& inner_reference : inner_references )
 					{
-						if( !function_context.variables_state.TryAddLink( inner_reference, locked_args_inner_references.back().Node() ) )
+						if( !function_context.variables_state.TryAddLink( inner_reference, locked_args_inner_references[arg_number] ) )
 							REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
 					}
 				}
@@ -3030,13 +3075,21 @@ Value CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			args_nodes.emplace_back( function_context, ReferencesGraphNodeKind::Variable, "value_arg_" + std::to_string(i) );
+			args_nodes[arg_number]=
+				std::make_shared<Variable>(
+					param.type,
+					ValueType::Value,
+					Variable::Location::Pointer, // TODO - is this correct?
+					ReferencesGraphNodeKind::Variable,
+					"value_arg_" + std::to_string(i) );
+
+			function_context.variables_state.AddNode( args_nodes[arg_number] );
 
 			if( !ReferenceIsConvertible( expr->type, param.type, names.GetErrors(), call_src_loc ) &&
 				GetConversionConstructor( expr->type, param.type, names.GetErrors(), src_loc ) == nullptr )
 			{
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, param.type, expr->type );
-				return ErrorValue();
+				continue;
 			}
 
 			if( expr->type != param.type )
@@ -3054,7 +3107,7 @@ Value CodeBuilder::DoCallFunction(
 				param.type.GetEnumType() != nullptr ||
 				param.type.GetRawPointerType() != nullptr ||
 				param.type.GetFunctionPointerType() != nullptr )
-				llvm_args[j]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+				llvm_args[arg_number]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Lock inner references.
@@ -3067,13 +3120,13 @@ Value CodeBuilder::DoCallFunction(
 					if( !inner_references.empty() )
 					{
 						bool is_mutable= false;
-						for( const ReferencesGraphNodePtr& inner_reference : inner_references )
+						for( const VariablePtr& inner_reference : inner_references )
 							is_mutable= is_mutable || inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut;
 
 						const auto value_arg_inner_node=
-							function_context.variables_state.CreateNodeInnerReference( args_nodes.back().Node(), is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
+							function_context.variables_state.CreateNodeInnerReference( args_nodes[arg_number], is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
 
-						for( const ReferencesGraphNodePtr inner_reference : inner_references )
+						for( const VariablePtr inner_reference : inner_references )
 						{
 							if( !function_context.variables_state.TryAddLink( inner_reference, value_arg_inner_node ) )
 								REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
@@ -3085,7 +3138,7 @@ Value CodeBuilder::DoCallFunction(
 				{
 					// Do not call copy constructors - just move.
 					function_context.variables_state.MoveNode( expr );
-					llvm_args[j]= expr->llvm_value;
+					llvm_args[arg_number]= expr->llvm_value;
 
 					if( !function_context.is_functionless_context )
 						value_args_for_lifetime_end_call.push_back( expr->llvm_value );
@@ -3097,13 +3150,13 @@ Value CodeBuilder::DoCallFunction(
 						// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
 						// TODO - print more reliable message.
 						REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, param.type );
-						return ErrorValue();
+						continue;
 					}
 					// Allow value params of abstract types (it is useful in templates) but disallow call of such functions.
 					if( param.type.IsAbstract() )
 					{
 						REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, param.type );
-						return ErrorValue();
+						continue;
 					}
 
 					if( !function_context.is_functionless_context )
@@ -3116,7 +3169,7 @@ Value CodeBuilder::DoCallFunction(
 						CreateLifetimeStart( function_context, arg_copy );
 						value_args_for_lifetime_end_call.push_back( arg_copy );
 
-						llvm_args[j]= arg_copy;
+						llvm_args[arg_number]= arg_copy;
 						BuildCopyConstructorPart(
 							arg_copy,
 							CreateReferenceCast( expr->llvm_value, expr->type, param.type, function_context ),
@@ -3132,8 +3185,12 @@ Value CodeBuilder::DoCallFunction(
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
 	} // for args
 	U_ASSERT( args_nodes.size() == arg_count );
+	U_ASSERT( locked_args_inner_references.size() == arg_count );
 	if( evaluate_args_in_reverse_order )
+	{
 		std::reverse( args_nodes.begin(), args_nodes.end() );
+		std::reverse( locked_args_inner_references.begin(), locked_args_inner_references.end() );
+	}
 
 	const bool return_value_is_sret= function_type.IsStructRet();
 
@@ -3220,6 +3277,8 @@ Value CodeBuilder::DoCallFunction(
 		call_result= llvm::UndefValue::get( function_type.llvm_type->getReturnType() );
 
 	// Clear inner references locks. Do this BEFORE result references management.
+	for( const VariablePtr& node : locked_args_inner_references )
+		function_context.variables_state.RemoveNode( node );
 	locked_args_inner_references.clear();
 
 	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
@@ -3238,13 +3297,13 @@ Value CodeBuilder::DoCallFunction(
 		{
 			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
 			{
-				const auto node= args_nodes[arg_reference.first].Node();
+				const auto node= args_nodes[arg_reference.first];
 				if( !function_context.variables_state.TryAddLink( node, result ) )
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, node->name );
 			}
 			else
 			{
-				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first].Node() ) )
+				for( const VariablePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first] ) )
 				{
 					if( !function_context.variables_state.TryAddLink( accesible_node, result ) )
 						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, accesible_node->name );
@@ -3261,7 +3320,7 @@ Value CodeBuilder::DoCallFunction(
 		{
 			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
 			{
-				const auto node_kind= args_nodes[arg_reference.first].Node()->node_kind;
+				const auto node_kind= args_nodes[arg_reference.first]->node_kind;
 
 				if( node_kind == ReferencesGraphNodeKind::Variable ||
 					node_kind == ReferencesGraphNodeKind::ReferenceMut )
@@ -3271,7 +3330,7 @@ Value CodeBuilder::DoCallFunction(
 			}
 			else
 			{
-				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first].Node() ) )
+				for( const VariablePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first] ) )
 				{
 					if( accesible_node->node_kind == ReferencesGraphNodeKind::Variable ||
 						accesible_node->node_kind == ReferencesGraphNodeKind::ReferenceMut )
@@ -3290,12 +3349,12 @@ Value CodeBuilder::DoCallFunction(
 		{
 			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
 			{
-				const auto node= args_nodes[arg_reference.first].Node();
+				const auto node= args_nodes[arg_reference.first];
 				if( !function_context.variables_state.TryAddLink( node, inner_reference_node ) )
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, node->name );
 			}
 			else
-				for( const ReferencesGraphNodePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first].Node() ) )
+				for( const VariablePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first] ) )
 				{
 					if( !function_context.variables_state.TryAddLink( accesible_node, inner_reference_node ) )
 						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, accesible_node->name );
@@ -3319,7 +3378,7 @@ Value CodeBuilder::DoCallFunction(
 		{
 			// Reference-arg itself
 			U_ASSERT( function_type.params[ referene_pollution.src.first ].value_type != ValueType::Value );
-			src_nodes.emplace( args_nodes[ referene_pollution.src.first ].Node() );
+			src_nodes.emplace( args_nodes[ referene_pollution.src.first ] );
 
 			if( function_type.params[ referene_pollution.src.first ].value_type == ValueType::ReferenceMut )
 				src_variables_is_mut= true;
@@ -3332,7 +3391,7 @@ Value CodeBuilder::DoCallFunction(
 			if( function_type.params[ referene_pollution.src.first ].type.ReferencesTagsCount() == 0 )
 				continue;
 
-			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[ referene_pollution.src.first ].Node() ) )
+			for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[ referene_pollution.src.first ] ) )
 			{
 				src_nodes.insert( inner_reference );
 				if( inner_reference->node_kind != ReferencesGraphNodeKind::ReferenceImut )
@@ -3346,9 +3405,9 @@ Value CodeBuilder::DoCallFunction(
 			// Even if reference-pollution is mutable, but if src vars is immutable, link as immutable.
 			const bool result_node_is_mut= src_variables_is_mut && dst_inner_reference_is_mut;
 
-			for( const ReferencesGraphNodePtr& dst_node : function_context.variables_state.GetAllAccessibleVariableNodes( args_nodes[ dst_arg ].Node() ) )
+			for( const VariablePtr& dst_node : function_context.variables_state.GetAllAccessibleVariableNodes( args_nodes[ dst_arg ] ) )
 			{
-				ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
+				VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_node );
 				if( inner_reference == nullptr )
 				{
 					inner_reference=
@@ -3360,7 +3419,7 @@ Value CodeBuilder::DoCallFunction(
 					( inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceImut &&  result_node_is_mut ))
 					REPORT_ERROR( InnerReferenceMutabilityChanging, names.GetErrors(), call_src_loc, inner_reference->name );
 
-				for( const ReferencesGraphNodePtr& src_node : src_nodes )
+				for( const VariablePtr& src_node : src_nodes )
 				{
 					if( !function_context.variables_state.TryAddLink( src_node, inner_reference ) )
 						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, src_node->name );
@@ -3373,7 +3432,10 @@ Value CodeBuilder::DoCallFunction(
 		}
 	}
 
+	for( const VariablePtr& node : args_nodes )
+		function_context.variables_state.RemoveNode( node );
 	args_nodes.clear();
+
 	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
 	RegisterTemporaryVariable( function_context, result );
 

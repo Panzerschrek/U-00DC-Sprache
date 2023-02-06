@@ -197,9 +197,9 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 
 void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
-	const ReferencesGraphNodePtr& src_node= src_variable;
-	const ReferencesGraphNodePtr& dst_node= dst_variable;
-	if( src_node == nullptr || dst_node == nullptr || dst_variable.type.ReferencesTagsCount() == 0u )
+	const VariablePtr& src_node= src_variable;
+	const VariablePtr& dst_node= dst_variable;
+	if( src_node == nullptr || dst_node == nullptr || dst_variable->type.ReferencesTagsCount() == 0u )
 		return;
 
 	const ReferencesGraph::NodesSet src_node_inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( src_node );
@@ -209,12 +209,12 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 		return;
 
 	bool node_is_mutable= false;
-	for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+	for( const VariablePtr& src_node_inner_reference : src_node_inner_references )
 		node_is_mutable= node_is_mutable || src_node_inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut;
 
-	for( const ReferencesGraphNodePtr& dst_variable_node : dst_variable_nodes )
+	for( const VariablePtr& dst_variable_node : dst_variable_nodes )
 	{
-		ReferencesGraphNodePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
+		VariablePtr dst_node_inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
 		if( dst_node_inner_reference == nullptr )
 		{
 			dst_node_inner_reference=
@@ -225,7 +225,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 			( dst_node_inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceImut &&  node_is_mutable ) )
 			REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, dst_node_inner_reference->name );
 
-		for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
+		for( const VariablePtr& src_node_inner_reference : src_node_inner_references )
 		{
 			if( !function_context.variables_state.TryAddLink( src_node_inner_reference, dst_node_inner_reference ) )
 				REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, src_node_inner_reference->name );
@@ -256,7 +256,7 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 				( variable.node_kind != ReferencesGraphNodeKind::Variable ||
 					!function_context.variables_state.HaveOutgoingLinks( variable_ptr ) ) )
 			{
-				if( variable.node->kind == ReferencesGraphNodeKind::Variable && !function_context.is_functionless_context )
+				if( variable.node_kind == ReferencesGraphNodeKind::Variable && !function_context.is_functionless_context )
 				{
 					if( variable.type.HaveDestructor() )
 						CallDestructor( variable.llvm_value, variable.type, function_context, errors_container, src_loc );
@@ -283,7 +283,7 @@ ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
 	return std::move(res.first);
 }
 
-bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context, const ReferencesGraphNodePtr& variable_node )
+bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node )
 {
 	for( const FunctionType::ParamReference& param_and_tag : function_context.function_type.return_references )
 	{
@@ -309,11 +309,11 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 
 		const auto& node_pair= function_context.args_nodes[i];
 
-		const ReferencesGraphNodePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node_pair.first );
+		const VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( node_pair.first );
 		if( inner_reference == nullptr )
 			continue;
 
-		for( const ReferencesGraphNodePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
+		for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 		{
 			if( accesible_variable == node_pair.second )
 				continue;

@@ -465,20 +465,27 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 
 		// Check correctness of returning reference.
-		for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result ) )
+		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result ) )
 		{
 			if( !IsReferenceAllowedForReturn( function_context, var_node ) )
 				REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.src_loc_ );
 		}
 
 		{ // Lock references to return value variables.
-			ReferencesGraphNodeHolder return_value_lock(
-				function_context,
-				function_context.function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
-				"return value lock" );
-			function_context.variables_state.AddLink( expression_result, return_value_lock.Node() );
+			const VariablePtr return_value_lock=
+				std::make_shared<Variable>(
+					*function_context.return_type,
+					function_context.function_type.return_value_type,
+					Variable::Location::Pointer,
+					function_context.function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
+					"return value lock" );
+
+			function_context.variables_state.AddNode( return_value_lock );
+			// TODO - shouldn't we check for reference protection errors here?
+			function_context.variables_state.AddLink( expression_result, return_value_lock );
 
 			CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
+			function_context.variables_state.RemoveNode( return_value_lock );
 		} // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
 
 		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
@@ -504,9 +511,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Check correctness of returning references.
 		if( expression_result->type.ReferencesTagsCount() > 0u )
 		{
-			for( const ReferencesGraphNodePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result ) )
+			for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result ) )
 			{
-				for( const ReferencesGraphNodePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
+				for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 				{
 					if( !IsReferenceAllowedForReturn( function_context, var_node ) )
 						REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.src_loc_ );
@@ -599,10 +606,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const StackVariablesStorage temp_variables_storage( function_context );
 	const VariablePtr sequence_expression= BuildExpressionCodeEnsureVariable( for_operator.sequence_, names, function_context );
 
-	ReferencesGraphNodeHolder sequence_lock(
-		function_context,
-		sequence_expression->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
-		sequence_expression->name + " sequence lock" );
+	const VariablePtr sequence_lock=
+		std::make_shared<Variable>(
+			sequence_expression->type,
+			sequence_expression->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			sequence_expression->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
+			sequence_expression->name + " sequence lock" );
+
+	function_context.variables_state.AddNode( sequence_lock );
+	if( !function_context.variables_state.TryAddLink( sequence_expression, sequence_lock ) )
+		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression->name );
+
+	function_context.variables_state.RemoveNode( sequence_lock );
 
 	if( const TupleType* const tuple_type= sequence_expression->type.GetTupleType() )
 	{
@@ -642,7 +658,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), for_operator.src_loc_ );
-					function_context.variables_state.RemoveNode(variable);
+					function_context.variables_state.RemoveNode( sequence_lock );
+					function_context.variables_state.RemoveNode( variable );
 					continue;
 				}
 
@@ -652,7 +669,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
-				if( !function_context.variables_state.TryAddLink( sequence_lock.Node(), variable ) )
+				if( !function_context.variables_state.TryAddLink( sequence_lock, variable ) )
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression->name );
 			}
 			else
@@ -660,13 +677,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( !EnsureTypeComplete( element_type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), for_operator.src_loc_, element_type );
-					function_context.variables_state.RemoveNode(variable);
+					function_context.variables_state.RemoveNode( sequence_lock );
+					function_context.variables_state.RemoveNode( variable );
 					continue;
 				}
 				if( !element_type.IsCopyConstructible() )
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, element_type );
-					function_context.variables_state.RemoveNode(variable);
+					function_context.variables_state.RemoveNode( sequence_lock );
+					function_context.variables_state.RemoveNode( variable );
 					continue;
 				}
 
@@ -755,8 +774,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		// TODO - support array types.
 		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, sequence_expression->type );
+		function_context.variables_state.RemoveNode( sequence_lock );
 		return BlockBuildInfo();
 	}
+
+	function_context.variables_state.RemoveNode( sequence_lock );
 
 	if( !block_build_info.have_terminal_instruction_inside )
 		CallDestructors( temp_variables_storage, names, function_context, for_operator.src_loc_ );

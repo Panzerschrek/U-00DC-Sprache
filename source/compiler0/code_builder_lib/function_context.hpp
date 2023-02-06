@@ -53,7 +53,7 @@ struct FunctionContext
 
 	// For reference checks.
 	// arg variable node + optional inner reference variable node.
-	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes;
+	ArgsVector< std::pair< VariablePtr, VariablePtr > > args_nodes;
 
 	VariablePtr this_= nullptr; // null for nonclass functions or static member functions.
 	llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions.
