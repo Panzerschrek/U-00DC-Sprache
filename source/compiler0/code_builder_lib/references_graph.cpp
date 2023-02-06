@@ -19,14 +19,10 @@ size_t ReferencesGraph::LinkHasher::operator()( const Link& link ) const
 	return llvm::hash_combine( reinterpret_cast<uintptr_t>(link.src.get()), reinterpret_cast<uintptr_t>(link.dst.get()) );
 }
 
-ReferencesGraphNodePtr ReferencesGraph::AddNode( const ReferencesGraphNodeKind kind, std::string name )
+void ReferencesGraph::AddNode( const ReferencesGraphNodePtr& node )
 {
-	const auto node= std::make_shared<ReferencesGraphNode>( std::move(name), kind );
-
 	U_ASSERT( nodes_.count(node) == 0 );
 	nodes_.emplace( node, NodeState() );
-
-	return node;
 }
 
 void ReferencesGraph::RemoveNode( const ReferencesGraphNodePtr& node )
@@ -66,7 +62,7 @@ void ReferencesGraph::RemoveLink( const ReferencesGraphNodePtr& from, const Refe
 
 bool ReferencesGraph::TryAddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to )
 {
-	if( (to->kind == ReferencesGraphNodeKind::ReferenceMut && HaveOutgoingLinks( from ) ) ||
+	if( (to->node_kind == ReferencesGraphNodeKind::ReferenceMut && HaveOutgoingLinks( from ) ) ||
 		HaveOutgoingMutableNodes( from ) )
 		return false;
 
@@ -85,7 +81,15 @@ ReferencesGraphNodePtr ReferencesGraph::CreateNodeInnerReference( const Referenc
 {
 	U_ASSERT( kind != ReferencesGraphNodeKind::Variable );
 
-	const auto inner_node= AddNode( kind, node->name + " inner reference" );
+	const auto inner_node=
+		std::make_shared<Variable>(
+			FundamentalType( U_FundamentalType::InvalidType ),
+			kind == ReferencesGraphNodeKind::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			kind,
+			node->name + " inner reference" );
+
+	AddNode( inner_node );
 
 	const auto it= nodes_.find( node );
 	U_ASSERT( it != nodes_.end() );
@@ -110,7 +114,7 @@ bool ReferencesGraph::HaveOutgoingMutableNodes( const ReferencesGraphNodePtr& fr
 {
 	for( const auto& link : links_ )
 	{
-		if( link.src == from && link.dst->kind == ReferencesGraphNodeKind::ReferenceMut  )
+		if( link.src == from && link.dst->node_kind == ReferencesGraphNodeKind::ReferenceMut  )
 			return true;
 	}
 
@@ -167,7 +171,7 @@ void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 	if( !visited_nodes_set.insert(node).second )
 		return; // Already visited
 
-	if( node->kind == ReferencesGraphNodeKind::Variable )
+	if( node->node_kind == ReferencesGraphNodeKind::Variable )
 		result_set.emplace( node );
 
 	for( const auto& link : links_ )
@@ -185,7 +189,7 @@ void ReferencesGraph::GetAccessibleVariableNodesInnerReferences_r(
 	if( !visited_nodes_set.insert(node).second )
 		return; // Already visited
 
-	if( node->kind == ReferencesGraphNodeKind::Variable )
+	if( node->node_kind == ReferencesGraphNodeKind::Variable )
 	{
 		if( auto inner_node= GetNodeInnerReference( node ) )
 			result_set.emplace( inner_node );
@@ -228,7 +232,7 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 				// Variable inner reference created in multiple braches.
 
 				// If linked as mutable and as immutable in different branches - result is mutable.
-				if( ( result_state.inner_reference->kind != ReferencesGraphNodeKind::ReferenceMut && src_state.inner_reference->kind == ReferencesGraphNodeKind::ReferenceMut ) )
+				if( ( result_state.inner_reference->node_kind != ReferencesGraphNodeKind::ReferenceMut && src_state.inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut ) )
 					replaced_nodes.emplace_back( result_state.inner_reference, src_state.inner_reference );
 				// else - remove duplicated nodes with same kind.
 				else if( result_state.inner_reference != src_state.inner_reference )
@@ -273,7 +277,7 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 		{
 			if( link.src == node.first )
 			{
-				if( link.dst->kind == ReferencesGraphNodeKind::ReferenceMut )
+				if( link.dst->node_kind == ReferencesGraphNodeKind::ReferenceMut )
 					++mutable_links_count;
 				else
 					++immutable_links_count;

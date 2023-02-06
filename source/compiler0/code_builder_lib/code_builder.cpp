@@ -615,14 +615,15 @@ void CodeBuilder::CallDestructorsImpl(
 	// Call destructors in reverse order.
 	for( auto it = stack_variables_storage.variables_.rbegin(); it != stack_variables_storage.variables_.rend(); ++it )
 	{
-		const Variable& stored_variable= **it;
+		const VariablePtr& stored_variable_ptr= *it;
+		const Variable& stored_variable= *stored_variable_ptr;
 
-		if( stored_variable.node->kind == ReferencesGraphNodeKind::Variable )
+		if( stored_variable.node_kind == ReferencesGraphNodeKind::Variable )
 		{
-			if( !function_context.variables_state.NodeMoved( stored_variable.node ) )
+			if( !function_context.variables_state.NodeMoved( stored_variable_ptr ) )
 			{
-				if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
-					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
+				if( function_context.variables_state.HaveOutgoingLinks( stored_variable_ptr ) )
+					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable_ptr->name );
 
 				if( !function_context.is_functionless_context )
 				{
@@ -635,7 +636,7 @@ void CodeBuilder::CallDestructorsImpl(
 				}
 			}
 		}
-		function_context.variables_state.RemoveNode( stored_variable.node );
+		function_context.variables_state.RemoveNode( stored_variable_ptr );
 	}
 }
 
@@ -1279,12 +1280,13 @@ Type CodeBuilder::BuildFuncCode(
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && param.value_type == ValueType::Value ) );
 
-		VariableMutPtr var=
+		const VariableMutPtr var=
 			std::make_shared<Variable>(
 				param.type,
 				declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::Variable /* actual value set later */ );
+				ReferencesGraphNodeKind::Variable /* actual value set later */,
+				arg_name );
 
 		if( param.value_type != ValueType::Value )
 		{
@@ -1317,26 +1319,38 @@ Type CodeBuilder::BuildFuncCode(
 
 		// Create variable node, because only variable node can have inner reference node.
 		// Register arg on stack, only if it is value-argument.
-		const auto var_node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, arg_name );
+		auto var_node= var;
 		function_context.args_nodes[ arg_number ].first= var_node;
 		if( param.value_type != ValueType::Value )
 		{
-			const auto reference_node= function_context.variables_state.AddNode(
-				param.value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
-				arg_name + " reference" );
-			function_context.variables_state.AddLink( var_node, reference_node );
-			var->node= reference_node;
+			const VariablePtr reference_node=
+				std::make_shared<Variable>(
+					param.type,
+					var->value_type,
+					Variable::Location::Pointer,
+					var->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
+					arg_name + " reference" );
+
+			function_context.variables_state.AddNode( reference_node );
+			function_context.variables_state.AddLink( var, reference_node );
+			var_node= reference_node;
 		}
 		else
 		{
-			var->node= var_node;
 			function_context.stack_variables_stack.back()->RegisterVariable( var );
 		}
 
 		if (param.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.
-			const auto accesible_variable= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable , arg_name + " referenced variable" );
+			const VariablePtr accesible_variable=
+				std::make_shared<Variable>(
+					invalid_type_,
+					ValueType::Value,
+					Variable::Location::Pointer,
+					ReferencesGraphNodeKind::Variable,
+					arg_name + " referenced variable" );
+			function_context.variables_state.AddNode( accesible_variable );
 
 			const auto inner_reference= function_context.variables_state.CreateNodeInnerReference(
 				var_node,
@@ -1615,14 +1629,19 @@ void CodeBuilder::BuildConstructorInitialization(
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::ReferenceMut,
-					"",
+					 this_->name + "." + field_name,
 					CreateClassFieldGEP( function_context, *this_, field.index ) );
-			field_variable->node= this_->node;
+
+			function_context.variables_state.AddNode( field_variable );
+			if( !function_context.variables_state.TryAddLink( this_, field_variable ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), constructor_initialization_list.src_loc_, this_->name );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
 			else
 				ApplyEmptyInitializer( field_name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
+
+			function_context.variables_state.RemoveNode( field_variable );
 		}
 	}
 
@@ -1638,10 +1657,14 @@ void CodeBuilder::BuildConstructorInitialization(
 				ReferencesGraphNodeKind::ReferenceMut,
 				"",
 				CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
-		base_variable->node= this_->node;
+
+		function_context.variables_state.AddNode( base_variable );
+		if( !function_context.variables_state.TryAddLink( this_, base_variable ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), constructor_initialization_list.src_loc_, this_->name );
 
 		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
+		function_context.variables_state.RemoveNode( base_variable );
 	}
 
 	// Initialize fields listed in the initializer.
@@ -1657,10 +1680,14 @@ void CodeBuilder::BuildConstructorInitialization(
 					ReferencesGraphNodeKind::ReferenceMut,
 					"",
 					CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
-			base_variable->node= this_->node;
+
+			function_context.variables_state.AddNode( base_variable );
+			if( !function_context.variables_state.TryAddLink( this_, base_variable ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), constructor_initialization_list.src_loc_, this_->name );
 
 			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );
 			function_context.base_initialized= true;
+			function_context.variables_state.RemoveNode( base_variable );
 			continue;
 		}
 
@@ -1680,11 +1707,16 @@ void CodeBuilder::BuildConstructorInitialization(
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::ReferenceMut,
-					"",
+					this_->name + "." + field_initializer.name,
 					CreateClassFieldGEP( function_context, *this_, field->index ) );
-			field_variable->node= this_->node;
+
+			function_context.variables_state.AddNode( field_variable );
+			if( !function_context.variables_state.TryAddLink( this_, field_variable ) )
+				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), constructor_initialization_list.src_loc_, this_->name );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
+
+			function_context.variables_state.RemoveNode( field_variable );
 		}
 
 		function_context.uninitialized_this_fields.erase( field->syntax_element->name );

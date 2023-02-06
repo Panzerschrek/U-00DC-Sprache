@@ -836,7 +836,7 @@ private:
 		const Synt::FunctionType& func,
 		FunctionType& function_type );
 
-	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	void RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable );
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );

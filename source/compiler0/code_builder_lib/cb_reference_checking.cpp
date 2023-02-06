@@ -195,10 +195,10 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	} // for pollution
 }
 
-void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
+void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
-	const ReferencesGraphNodePtr& src_node= src_variable.node;
-	const ReferencesGraphNodePtr& dst_node= dst_variable.node;
+	const ReferencesGraphNodePtr& src_node= src_variable;
+	const ReferencesGraphNodePtr& dst_node= dst_variable;
 	if( src_node == nullptr || dst_node == nullptr || dst_variable.type.ReferencesTagsCount() == 0u )
 		return;
 
@@ -210,7 +210,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 
 	bool node_is_mutable= false;
 	for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
-		node_is_mutable= node_is_mutable || src_node_inner_reference->kind == ReferencesGraphNodeKind::ReferenceMut;
+		node_is_mutable= node_is_mutable || src_node_inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut;
 
 	for( const ReferencesGraphNodePtr& dst_variable_node : dst_variable_nodes )
 	{
@@ -221,8 +221,8 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 				function_context.variables_state.CreateNodeInnerReference( dst_node, node_is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
 		}
 
-		if( ( dst_node_inner_reference->kind == ReferencesGraphNodeKind::ReferenceMut  && !node_is_mutable ) ||
-			( dst_node_inner_reference->kind == ReferencesGraphNodeKind::ReferenceImut &&  node_is_mutable ) )
+		if( ( dst_node_inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut  && !node_is_mutable ) ||
+			( dst_node_inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceImut &&  node_is_mutable ) )
 			REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, dst_node_inner_reference->name );
 
 		for( const ReferencesGraphNodePtr& src_node_inner_reference : src_node_inner_references )
@@ -252,9 +252,9 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 
 			// Destroy variables without links.
 			// Destroy all references, because all actual references that holds values should not yet be registered.
-			if( !function_context.variables_state.NodeMoved( variable.node )  &&
-				( variable.node->kind != ReferencesGraphNodeKind::Variable ||
-					!function_context.variables_state.HaveOutgoingLinks( variable.node ) ) )
+			if( !function_context.variables_state.NodeMoved( variable_ptr ) &&
+				( variable.node_kind != ReferencesGraphNodeKind::Variable ||
+					!function_context.variables_state.HaveOutgoingLinks( variable_ptr ) ) )
 			{
 				if( variable.node->kind == ReferencesGraphNodeKind::Variable && !function_context.is_functionless_context )
 				{
@@ -263,7 +263,7 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 					if( variable.location == Variable::Location::Pointer )
 						CreateLifetimeEnd( function_context, variable.llvm_value );
 				}
-				function_context.variables_state.MoveNode( variable.node );
+				function_context.variables_state.MoveNode( variable_ptr );
 				any_node_moved= true;
 			}
 		}

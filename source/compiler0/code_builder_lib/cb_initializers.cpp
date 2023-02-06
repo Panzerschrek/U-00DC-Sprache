@@ -63,8 +63,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::ReferenceMut );
-		array_member->node= variable->node;
+				ReferencesGraphNodeKind::ReferenceMut,
+				variable->name + "[]" );
+
+		function_context.variables_state.AddNode( array_member );
+		if( !function_context.variables_state.TryAddLink( variable, array_member ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
 
 		bool is_constant= array_type->element_type.CanBeConstexpr();
 		std::vector<llvm::Constant*> members_constants;
@@ -81,6 +85,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			else
 				is_constant= false;
 		}
+
+		function_context.variables_state.RemoveNode( array_member );
 
 		U_ASSERT( members_constants.size() == initializer.initializers.size() || !is_constant );
 
@@ -110,9 +116,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::ReferenceMut,
-					"",
+					variable->name + "[" + std::to_string(i) + "]",
 					CreateTupleElementGEP( function_context, *variable, i ) );
-			tuple_element->node= variable->node;
+
+			function_context.variables_state.AddNode( tuple_element );
+			if( !function_context.variables_state.TryAddLink( variable, tuple_element ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
 
 			llvm::Constant* const member_constant=
 				ApplyInitializer( tuple_element, names, function_context, initializer.initializers[i] );
@@ -121,6 +130,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				members_constants.push_back( member_constant );
 			else
 				is_constant= false;
+
+			function_context.variables_state.RemoveNode( tuple_element );
 		}
 
 		U_ASSERT( members_constants.size() == initializer.initializers.size() || !is_constant );
@@ -203,12 +214,17 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::ReferenceMut,
-					"",
+					variable->name + "." + member_initializer.name,
 					CreateClassFieldGEP( function_context, *variable, field->index ) );
-			struct_member->node= variable->node;
+
+			function_context.variables_state.AddNode( struct_member );
+			if( !function_context.variables_state.TryAddLink( variable, struct_member ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
 
 			constant_initializer=
 				ApplyInitializer( struct_member, names, function_context, member_initializer.initializer );
+
+			function_context.variables_state.RemoveNode( struct_member );
 		}
 
 		if( constant_initializer == nullptr )
@@ -243,9 +259,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::ReferenceMut,
-					"",
+					variable->name + "." +field_name,
 					CreateClassFieldGEP( function_context, *variable, field.index ) );
-			struct_member->node= variable->node;
+
+			function_context.variables_state.AddNode( struct_member );
+			if( !function_context.variables_state.TryAddLink( variable, struct_member ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
 
 			if( field.syntax_element->initializer != nullptr )
 				constant_initializer=
@@ -253,6 +272,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			else
 				constant_initializer=
 					ApplyEmptyInitializer( field_name, initializer.src_loc_, struct_member, names, function_context );
+
+			function_context.variables_state.RemoveNode( struct_member );
 		}
 
 		if( constant_initializer == nullptr )
@@ -314,16 +335,13 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, *variable, *expression_result, names.GetErrors(), src_loc );
+		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), src_loc );
 
 		// Move or try call copy constructor.
 		if( expression_result->value_type == ValueType::Value && expression_result->type == variable->type )
 		{
-			if( expression_result->node != nullptr )
-			{
-				U_ASSERT( expression_result->node->kind == ReferencesGraphNodeKind::Variable );
-				function_context.variables_state.MoveNode( expression_result->node );
-			}
+			U_ASSERT( expression_result->node_kind == ReferencesGraphNodeKind::Variable );
+			function_context.variables_state.MoveNode( expression_result );
 
 			U_ASSERT( expression_result->location == Variable::Location::Pointer );
 			if( !function_context.is_functionless_context )
@@ -375,17 +393,14 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, *variable, *expression_result, names.GetErrors(), src_loc );
+		SetupReferencesInCopyOrMove( function_context, variable, expression_result, names.GetErrors(), src_loc );
 
 		// Move or try call copy constructor.
 		// TODO - produce constant initializer for generated copy constructor, if source is constant.
 		if( expression_result->value_type == ValueType::Value && expression_result->type == variable->type )
 		{
-			if( expression_result->node != nullptr )
-			{
-				U_ASSERT( expression_result->node->kind == ReferencesGraphNodeKind::Variable );
-				function_context.variables_state.MoveNode( expression_result->node );
-			}
+			U_ASSERT( expression_result->node_kind == ReferencesGraphNodeKind::Variable );
+			function_context.variables_state.MoveNode( expression_result );
 
 			U_ASSERT( expression_result->location == Variable::Location::Pointer );
 			if( !function_context.is_functionless_context )
@@ -439,8 +454,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::ReferenceMut );
-		array_member->node= variable->node;
+				ReferencesGraphNodeKind::ReferenceMut,
+				variable->name + "[]" );
+
+		function_context.variables_state.AddNode( array_member );
+		if( !function_context.variables_state.TryAddLink( variable, array_member ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
 
 		GenerateLoop(
 			array_type->element_count,
@@ -450,6 +469,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				ApplyInitializer( array_member, names, function_context, initializer );
 			},
 			function_context);
+
+			function_context.variables_state.RemoveNode( array_member );
 
 		if( array_type->element_type.CanBeConstexpr() )
 			return llvm::Constant::getNullValue( array_type->llvm_type );
@@ -467,11 +488,16 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::ReferenceMut,
-					"",
+					variable->name + "[" + std::to_string(i) + "]",
 					CreateTupleElementGEP( function_context, *variable, i ) );
-			tuple_element->node= variable->node;
+
+			function_context.variables_state.AddNode( tuple_element );
+			if( !function_context.variables_state.TryAddLink( variable, tuple_element ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
 
 			ApplyInitializer( tuple_element, names, function_context, initializer );
+
+			function_context.variables_state.RemoveNode( tuple_element );
 		}
 
 		if( variable->type.CanBeConstexpr() )
@@ -506,11 +532,16 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::ReferenceMut,
-					"",
+					variable->name + "." + field_name,
 					CreateClassFieldGEP( function_context, *variable, field.index ) );
-			struct_member->node= variable->node;
+
+			function_context.variables_state.AddNode( struct_member );
+			if( !function_context.variables_state.TryAddLink( variable, struct_member ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
 
 			ApplyInitializer( struct_member, names, function_context, initializer );
+
+			function_context.variables_state.RemoveNode( struct_member );
 		}
 
 		if( all_fields_are_constant )
@@ -566,8 +597,12 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::ReferenceMut );
-		array_member->node= variable->node;
+				ReferencesGraphNodeKind::ReferenceMut,
+				variable->name + "[]" );
+
+		function_context.variables_state.AddNode( array_member );
+		if( !function_context.variables_state.TryAddLink( variable, array_member ) )
+			REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->name );
 
 		llvm::Constant* constant_initializer= nullptr;
 
@@ -579,6 +614,8 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 				constant_initializer= ApplyEmptyInitializer( variable_name, src_loc, array_member, block_names, function_context );
 			},
 			function_context );
+
+			function_context.variables_state.RemoveNode( array_member );
 
 		if( constant_initializer != nullptr )
 		{
@@ -601,15 +638,20 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::ReferenceMut,
-					"",
+					variable->name + "[" + std::to_string(i) + "]",
 					CreateTupleElementGEP( function_context, *variable, i ) );
-			tuple_element->node= variable->node;
+
+			function_context.variables_state.AddNode( tuple_element );
+			if( !function_context.variables_state.TryAddLink( variable, tuple_element ) )
+				REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->name );
 
 			llvm::Constant* const constant_initializer=
 				ApplyEmptyInitializer( variable_name, src_loc, tuple_element, block_names, function_context );
 
 			if( constant_initializer != nullptr )
 				constant_initializers.push_back( constant_initializer );
+
+			function_context.variables_state.RemoveNode( tuple_element );
 		}
 
 		if( constant_initializers.size() == tuple_type->element_types.size() )
@@ -836,13 +878,12 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		SetupReferencesInCopyOrMove( function_context, *variable, *expression_result, block_names.GetErrors(), src_loc );
+		SetupReferencesInCopyOrMove( function_context, variable, expression_result, block_names.GetErrors(), src_loc );
 
 		// Copy/move initialize array/tuple.
 		if( expression_result->value_type == ValueType::Value )
 		{
-			if( expression_result->node != nullptr )
-				function_context.variables_state.MoveNode( expression_result->node );
+			function_context.variables_state.MoveNode( expression_result );
 
 			U_ASSERT( expression_result->location == Variable::Location::Pointer );
 			if( !function_context.is_functionless_context )
@@ -895,10 +936,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		{
 			const VariablePtr initializer_variable= BuildExpressionCodeEnsureVariable( synt_args.front(), block_names, function_context );
 
-			SetupReferencesInCopyOrMove( function_context, *variable, *initializer_variable, block_names.GetErrors(), src_loc );
+			SetupReferencesInCopyOrMove( function_context, variable, initializer_variable, block_names.GetErrors(), src_loc );
 
-			if( initializer_variable->node != nullptr )
-				function_context.variables_state.MoveNode( initializer_variable->node );
+			function_context.variables_state.MoveNode( initializer_variable );
 
 			U_ASSERT( initializer_variable->location == Variable::Location::Pointer );
 			if( !function_context.is_functionless_context )
@@ -987,8 +1027,8 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	}
 
 	// Check references.
-	const ReferencesGraphNodePtr& src_node= initializer_variable->node;
-	const ReferencesGraphNodePtr& dst_node= variable->node;
+	const ReferencesGraphNodePtr& src_node= initializer_variable;
+	const ReferencesGraphNodePtr& dst_node= variable;
 	if( src_node != nullptr && dst_node != nullptr )
 	{
 		for( const ReferencesGraphNodePtr& dst_variable_node : function_context.variables_state.GetAllAccessibleVariableNodes( dst_node ) )
@@ -998,8 +1038,8 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 				inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
 			else
 			{
-				if( ( inner_reference->kind == ReferencesGraphNodeKind::ReferenceImut &&  field.is_mutable ) ||
-					( inner_reference->kind == ReferencesGraphNodeKind::ReferenceMut  && !field.is_mutable ))
+				if( ( inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceImut &&  field.is_mutable ) ||
+					( inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut  && !field.is_mutable ))
 				{
 					REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference->name );
 					return nullptr;

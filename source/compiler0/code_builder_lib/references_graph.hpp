@@ -9,18 +9,12 @@
 namespace U
 {
 
-struct ReferencesGraphNode
-{
-	const std::string name;
-	const ReferencesGraphNodeKind kind= ReferencesGraphNodeKind::Variable;
-
-	ReferencesGraphNode( std::string in_name, ReferencesGraphNodeKind in_kind ) : name(std::move(in_name)), kind(in_kind) {}
-};
+using ReferencesGraphNodePtr= VariablePtr;
 
 class ReferencesGraph
 {
 public:
-	ReferencesGraphNodePtr AddNode( ReferencesGraphNodeKind kind, std::string name );
+	void AddNode( const ReferencesGraphNodePtr& node );
 	void RemoveNode( const ReferencesGraphNodePtr& node );
 
 	void AddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );

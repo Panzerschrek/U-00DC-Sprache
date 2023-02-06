@@ -94,9 +94,6 @@ enum class ReferencesGraphNodeKind : uint8_t
 	ReferenceImut,
 };
 
-struct ReferencesGraphNode;
-using ReferencesGraphNodePtr= std::shared_ptr<const ReferencesGraphNode>;
-
 struct Variable final
 {
 	enum class Location
@@ -112,8 +109,6 @@ struct Variable final
 
 	// Exists only for constant expressions.
 	llvm::Constant* constexpr_value= nullptr;
-
-	ReferencesGraphNodePtr node; // TODO - remove this.
 
 	std::string name;
 	ReferencesGraphNodeKind node_kind= ReferencesGraphNodeKind::Variable;
