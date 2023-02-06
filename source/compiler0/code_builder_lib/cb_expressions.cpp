@@ -700,9 +700,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			}
 
 			// TODO - maybe put "base" shared_pointer into "this" as field?
-			VariableMutPtr base= std::make_shared<Variable>(*function_context.this_);
-			base->type= class_.base_class;
-			base->llvm_value= CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, base->type, function_context );
+			const VariableMutPtr base=
+				std::make_shared<Variable>(
+					class_.base_class,
+					function_context.this_->value_type,
+					Variable::Location::Pointer,
+					function_context.this_->node_kind,
+					Keyword( Keywords::base_ ),
+					CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, class_.base_class, function_context ) );
+			base->node= function_context.this_->node;
+
 			return Value( std::move(base), named_operand.src_loc_ );
 		}
 	}
@@ -734,13 +741,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			return ErrorValue();
 		}
 
-		VariableMutPtr field_variable= std::make_shared<Variable>();
-		field_variable->type= field->type;
-		field_variable->location= Variable::Location::Pointer;
-		field_variable->value_type= ( function_context.this_->value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		const VariableMutPtr field_variable=
+			std::make_shared<Variable>(
+				field->type,
+				( function_context.this_->value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				function_context.this_->node_kind,
+				"",
+				CreateClassFieldGEP( function_context, *function_context.this_, *field ) );
 		field_variable->node= function_context.this_->node;
 
-		field_variable->llvm_value= CreateClassFieldGEP( function_context, *function_context.this_, *field );
 		if( field_variable->llvm_value == nullptr && !function_context.is_functionless_context )
 		{
 			REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
@@ -1978,7 +1988,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
-	VariableMutPtr result= std::make_shared<Variable>();;
+	VariableMutPtr result= std::make_shared<Variable>();
 	result->location= Variable::Location::LLVMRegister;
 	result->value_type= ValueType::Value;
 
@@ -2407,7 +2417,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 	llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
-	VariableMutPtr result= std::make_shared<Variable>();;
+	VariableMutPtr result= std::make_shared<Variable>();
 	result->location= Variable::Location::LLVMRegister;
 	result->value_type= ValueType::Value;
 
@@ -2621,10 +2631,13 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	}
 	function_context.variables_state= MergeVariablesStateAfterIf( { variables_state_before_r_branch, function_context.variables_state }, names.GetErrors(), src_loc );
 
-	VariableMutPtr result= std::make_shared<Variable>();;
-	result->type= bool_type_;
-	result->location= Variable::Location::LLVMRegister;
-	result->value_type= ValueType::Value;
+	const VariableMutPtr result=
+		std::make_shared<Variable>(
+			bool_type_,
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			ReferencesGraphNodeKind::Variable,
+			BinaryOperatorToString(binary_operator.operator_type_) );
 
 	if( !function_context.is_functionless_context )
 	{
@@ -2652,7 +2665,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 			U_ASSERT(false);
 	}
 
-	result->node= function_context.variables_state.AddNode( ReferencesGraphNodeKind::Variable, BinaryOperatorToString(binary_operator.operator_type_));
+	result->node= function_context.variables_state.AddNode( result->node_kind, result->name );
 	RegisterTemporaryVariable( function_context, result );
 	return Value( std::move(result), src_loc );
 }
@@ -2672,10 +2685,12 @@ Value CodeBuilder::DoReferenceCast(
 
 	const VariablePtr var= BuildExpressionCodeEnsureVariable( expression, names, function_context );
 
-	VariableMutPtr result= std::make_shared<Variable>();;
-	result->type= type;
-	result->value_type= var->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut; // "ValueType" here converts into ConstReference.
-	result->location= Variable::Location::Pointer;
+	const VariableMutPtr result=
+		std::make_shared<Variable>(
+			type,
+			var->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut, // "ValueType" here converts into ConstReference
+			Variable::Location::Pointer,
+			var->node_kind );
 	result->node= var->node;
 
 	llvm::Value* src_value= var->llvm_value;
@@ -2692,7 +2707,7 @@ Value CodeBuilder::DoReferenceCast(
 		result->llvm_value= src_value;
 	else
 	{
-		// Complete types required for both safe and unsafe casting, except unsafe void to anything cast.
+		// Complete types required for both safe and unsafe casting.
 		// This needs, becasue we must emit same code for places where types yet not complete, and where they are complete.
 		if( !EnsureTypeComplete( type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, type );

@@ -976,11 +976,13 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 		if( IsKeyword( in_member.name ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_member.src_loc );
 
-		const VariableMutPtr var= std::make_shared<Variable>();
+		const VariableMutPtr var=
+			std::make_shared<Variable>(
+				enum_,
+				ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::Variable );
 
-		var->type= enum_;
-		var->location= Variable::Location::Pointer;
-		var->value_type= ValueType::ReferenceImut;
 		var->constexpr_value=
 			llvm::Constant::getIntegerValue(
 				enum_->underlaying_type.llvm_type,
@@ -1082,10 +1084,12 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		VariableMutPtr variable= std::make_shared<Variable>();
-		variable->type= type;
-		variable->location= Variable::Location::Pointer;
-		variable->value_type= ValueType::ReferenceMut;
+		const VariableMutPtr variable=
+			std::make_shared<Variable>(
+				type,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::Variable );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -1205,10 +1209,12 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			}
 		}
 
-		VariableMutPtr variable= std::make_shared<Variable>();
-		variable->type= initializer_experrsion->type;
-		variable->value_type= is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-		variable->location= Variable::Location::Pointer;
+		const VariableMutPtr variable=
+			std::make_shared<Variable>(
+				initializer_experrsion->type,
+				is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::Variable );
 
 		if( !EnsureTypeComplete( variable->type ) ) // Type completeness required for variable or reference declaration.
 		{

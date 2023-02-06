@@ -79,11 +79,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		VariableMutPtr variable= std::make_shared<Variable>();
-		variable->type= type;
-		variable->location= Variable::Location::Pointer;
-		variable->value_type= ValueType::ReferenceMut;
-
 		ReferencesGraphNodeKind node_kind;
 		if( variable_declaration.reference_modifier != ReferenceModifier::Reference )
 			node_kind= ReferencesGraphNodeKind::Variable;
@@ -91,8 +86,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			node_kind= ReferencesGraphNodeKind::ReferenceMut;
 		else
 			node_kind= ReferencesGraphNodeKind::ReferenceImut;
+
+		const VariableMutPtr variable=
+			std::make_shared<Variable>(
+				type,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				node_kind,
+				variable_declaration.name );
+
 		// Do not forget to remove node in case of error-return!!!
-		variable->node= function_context.variables_state.AddNode( node_kind, variable_declaration.name );
+		variable->node= function_context.variables_state.AddNode( variable->node_kind, variable->name );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -230,11 +234,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return BlockBuildInfo();
 	}
 
-	VariableMutPtr variable= std::make_shared<Variable>();
-	variable->type= initializer_experrsion->type;
-	variable->value_type= auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-	variable->location= Variable::Location::Pointer;
-
 	ReferencesGraphNodeKind node_kind;
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference )
 		node_kind= ReferencesGraphNodeKind::Variable;
@@ -242,8 +241,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		node_kind= ReferencesGraphNodeKind::ReferenceMut;
 	else
 		node_kind= ReferencesGraphNodeKind::ReferenceImut;
+
+	const VariableMutPtr variable=
+		std::make_shared<Variable>(
+			initializer_experrsion->type,
+			auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			node_kind,
+			auto_variable_declaration.name );
+
 	// Do not forget to remove node in case of error-return!!!
-	variable->node= function_context.variables_state.AddNode( node_kind, auto_variable_declaration.name );
+	variable->node= function_context.variables_state.AddNode( variable->node_kind, variable->name );
 
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference ||
 		auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
@@ -621,10 +629,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			NamesScope loop_names( "", &names );
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
-			VariableMutPtr variable= std::make_shared<Variable>();
-			variable->type= element_type;
-			variable->value_type= for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-
 			ReferencesGraphNodeKind node_kind;
 			if( for_operator.reference_modifier_ != ReferenceModifier::Reference )
 				node_kind= ReferencesGraphNodeKind::Variable;
@@ -632,8 +636,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				node_kind= ReferencesGraphNodeKind::ReferenceMut;
 			else
 				node_kind= ReferencesGraphNodeKind::ReferenceImut;
+
+			const VariableMutPtr variable=
+				std::make_shared<Variable>(
+					element_type,
+					for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+					Variable::Location::Pointer,
+					node_kind,
+					for_operator.loop_variable_name_ );
+
 			// Do not forget to remove node in case of error-return!!!
-			variable->node= function_context.variables_state.AddNode( node_kind, for_operator.loop_variable_name_ );
+			variable->node= function_context.variables_state.AddNode( variable->node_kind, variable->name );
 
 			if( for_operator.reference_modifier_ == ReferenceModifier::Reference )
 			{
@@ -1006,10 +1019,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	const VariablePtr expr= BuildExpressionCodeEnsureVariable( with_operator.expression_, names, function_context );
 
-	VariableMutPtr variable= std::make_shared<Variable>();
-	variable->type= expr->type;
-	variable->value_type= with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-	variable->location= Variable::Location::Pointer;
 
 	ReferencesGraphNodeKind node_kind;
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference )
@@ -1018,8 +1027,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		node_kind= ReferencesGraphNodeKind::ReferenceMut;
 	else
 		node_kind= ReferencesGraphNodeKind::ReferenceImut;
+
+	const VariableMutPtr variable=
+		std::make_shared<Variable>(
+			expr->type,
+			with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			node_kind,
+			with_operator.variable_name_ );
+
 	// Do not forget to remove node in case of error-return!!!
-	variable->node= function_context.variables_state.AddNode( node_kind , with_operator.variable_name_ );
+	variable->node= function_context.variables_state.AddNode( variable->node_kind, variable->name );
 
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference &&
 		!EnsureTypeComplete( variable->type ) )
