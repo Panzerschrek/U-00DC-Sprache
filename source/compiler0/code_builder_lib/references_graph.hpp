@@ -13,6 +13,7 @@ class ReferencesGraph
 {
 public:
 	void AddNode( const VariablePtr& node );
+	void AddNodeIfNotExists( const VariablePtr& node );
 	void RemoveNode( const VariablePtr& node );
 
 	void AddLink( const VariablePtr& from, const VariablePtr& to );

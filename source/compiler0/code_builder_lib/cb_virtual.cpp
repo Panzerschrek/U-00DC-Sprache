@@ -480,6 +480,10 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	if( !ReferenceIsConvertible( this_->type, function_type.params.front().type, errors_container, src_loc ) )
 		return std::make_pair( this_, function.llvm_function );
 
+	if( function.virtual_table_index == ~0u && this_->type == function_type.params.front().type )
+		return std::make_pair( std::move(this_), function.llvm_function );
+
+	// TODO - fix this. Setup references properly.
 	VariableMutPtr this_casted= std::make_shared<Variable>(*this_);
 	if( this_->type != function_type.params.front().type )
 	{

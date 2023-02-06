@@ -1279,6 +1279,8 @@ Type CodeBuilder::BuildFuncCode(
 			CreateVariableDebugInfo( *var, arg_name, declaration_arg.src_loc_, function_context );
 		}
 
+		function_context.variables_state.AddNode( var );
+
 		// Create variable node, because only variable node can have inner reference node.
 		// Register arg on stack, only if it is value-argument.
 		VariablePtr var_node= var;

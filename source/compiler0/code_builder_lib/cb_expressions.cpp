@@ -416,7 +416,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->node_kind= variable->node_kind;
 		function_context.variables_state.AddNode( result );
 
-		if( !function_context.variables_state.TryAddLink( function_context.this_, result ) )
+		if( !function_context.variables_state.TryAddLink( variable, result ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), member_access_operator.src_loc_, variable->name );
 	}
 
@@ -825,6 +825,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) != nullptr &&
 			!function_context.is_in_unsafe_block )
 			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), named_operand.src_loc_ );
+
+		if( llvm::isa<llvm::Constant>( variable->llvm_value ) && variable->location == Variable::Location::Pointer )
+		{
+			// Asume this is global variable. Add global constant nodes lazily.
+			function_context.variables_state.AddNodeIfNotExists( variable );
+		}
 	}
 
 	return value_entry;

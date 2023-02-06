@@ -21,8 +21,15 @@ size_t ReferencesGraph::LinkHasher::operator()( const Link& link ) const
 
 void ReferencesGraph::AddNode( const VariablePtr& node )
 {
+	U_ASSERT( node != nullptr );
 	U_ASSERT( nodes_.count(node) == 0 );
 	nodes_.emplace( node, NodeState() );
+}
+
+void ReferencesGraph::AddNodeIfNotExists( const VariablePtr& node )
+{
+	if( nodes_.count( node ) == 0 )
+		nodes_.emplace( node, NodeState() );
 }
 
 void ReferencesGraph::RemoveNode( const VariablePtr& node )
@@ -40,6 +47,8 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 
 void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
 {
+	U_ASSERT( from != nullptr );
+	U_ASSERT( to != nullptr );
 	U_ASSERT( nodes_.count(from) != 0 );
 	U_ASSERT( nodes_.count(to  ) != 0 );
 
@@ -51,6 +60,8 @@ void ReferencesGraph::AddLink( const VariablePtr& from, const VariablePtr& to )
 
 void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to )
 {
+	U_ASSERT( from != nullptr );
+	U_ASSERT( to != nullptr );
 	U_ASSERT( nodes_.count(from) != 0 );
 	U_ASSERT( nodes_.count(to  ) != 0 );
 

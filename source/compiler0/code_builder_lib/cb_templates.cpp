@@ -616,7 +616,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 					ValueType::ReferenceImut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::Variable,
-					"",
+					template_.template_params[ template_param.index ].name,
 					CreateGlobalConstantVariable(
 						given_variable->type,
 						template_.template_params[ template_param.index ].name,
