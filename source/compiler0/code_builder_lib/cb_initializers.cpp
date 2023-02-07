@@ -1258,8 +1258,11 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut );
+					ReferencesGraphNodeKind::ReferenceMut,
+					field_name );
+			function_context.variables_state.AddNode( this_variable );
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, class_field, function_context );
+			function_context.variables_state.RemoveNode( this_variable );
 		}
 		else
 		{
@@ -1268,8 +1271,11 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 					class_field.type,
 					ValueType::ReferenceMut,
 					Variable::Location::LLVMRegister,
-					ReferencesGraphNodeKind::ReferenceMut );
+					ReferencesGraphNodeKind::ReferenceMut,
+					field_name );
+			function_context.variables_state.AddNode( field_variable );
 			InitializeClassFieldWithInClassIninitalizer( field_variable, class_field, function_context );
+			function_context.variables_state.RemoveNode( field_variable );
 		}
 	}
 }

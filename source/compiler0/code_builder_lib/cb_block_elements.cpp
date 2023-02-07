@@ -618,8 +618,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( !function_context.variables_state.TryAddLink( sequence_expression, sequence_lock ) )
 		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression->name );
 
-	function_context.variables_state.RemoveNode( sequence_lock );
-
 	if( const TupleType* const tuple_type= sequence_expression->type.GetTupleType() )
 	{
 		llvm::BasicBlock* const finish_basic_block= tuple_type->element_types.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
@@ -658,7 +656,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), for_operator.src_loc_ );
-					function_context.variables_state.RemoveNode( sequence_lock );
 					function_context.variables_state.RemoveNode( variable );
 					continue;
 				}
@@ -677,14 +674,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( !EnsureTypeComplete( element_type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), for_operator.src_loc_, element_type );
-					function_context.variables_state.RemoveNode( sequence_lock );
 					function_context.variables_state.RemoveNode( variable );
 					continue;
 				}
 				if( !element_type.IsCopyConstructible() )
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, element_type );
-					function_context.variables_state.RemoveNode( sequence_lock );
 					function_context.variables_state.RemoveNode( variable );
 					continue;
 				}

@@ -30,7 +30,7 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 		if( result.GetErrorValue() == nullptr )
 			REPORT_ERROR( ExpectedVariable, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ), result.GetKindName() );
 
-		return
+		const VariablePtr dummy_result=
 			std::make_shared<Variable>(
 				invalid_type_,
 				ValueType::Value,
@@ -38,6 +38,10 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 				ReferencesGraphNodeKind::Variable,
 				"",
 				llvm::UndefValue::get( invalid_type_.GetLLVMType()->getPointerTo() ) );
+
+		function_context.variables_state.AddNode( dummy_result );
+
+		return dummy_result;
 	}
 	return result_variable;
 }
@@ -246,7 +250,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				tuple_type->element_types[size_t(index_value)],
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				variable_lock->node_kind );
+				variable_lock->node_kind,
+				variable->name + "[" + std::to_string(index_value) + "]",
+				CreateTupleElementGEP( function_context, *variable, index_value ) );
 
 		if( variable->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
@@ -590,50 +596,69 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			function_context );
 	if( overloaded_operator_call_try != std::nullopt )
 	{
-		if( VariablePtr call_variable= overloaded_operator_call_try->GetVariablePtr())
+		if( const VariablePtr call_variable= overloaded_operator_call_try->GetVariablePtr())
 		{
-			const VariableMutPtr variable= std::make_shared<Variable>(*call_variable);
+			const auto call_value_in_register= CreateMoveToLLVMRegisterInstruction( *call_variable, function_context );
 
-			if( binary_operator.operator_type_ == BinaryOperatorType::NotEqual && variable->type == bool_type_ )
+			if( binary_operator.operator_type_ == BinaryOperatorType::NotEqual && call_variable->type == bool_type_ )
 			{
+				const VariableMutPtr variable=
+					std::make_shared<Variable>(
+						bool_type_,
+						ValueType::Value,
+						Variable::Location::LLVMRegister,
+						ReferencesGraphNodeKind::Variable,
+						OverloadedOperatorToString( overloaded_operator ) );
+
 				// "!=" is implemented via "==", so, invert result.
-				if( const auto src_val= CreateMoveToLLVMRegisterInstruction( *variable, function_context ) )
+				if( call_value_in_register != nullptr )
 				{
-					variable->llvm_value= function_context.llvm_ir_builder.CreateNot( src_val );
-					variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
+					variable->llvm_value= function_context.llvm_ir_builder.CreateNot( call_value_in_register );
+					variable->constexpr_value= llvm::dyn_cast<llvm::Constant>( variable->llvm_value );
 				}
-			}
 
-			if( overloaded_operator == OverloadedOperator::CompareOrder &&
-				variable->type.GetFundamentalType() != nullptr &&
-				IsSignedInteger( variable->type.GetFundamentalType()->fundamental_type ) )
+				function_context.variables_state.AddNode( variable );
+				RegisterTemporaryVariable( function_context, variable );
+				return Value( variable, overloaded_operator_call_try->GetSrcLoc() );
+
+			}
+			else if( overloaded_operator == OverloadedOperator::CompareOrder &&
+				call_variable->type.GetFundamentalType() != nullptr &&
+				IsSignedInteger( call_variable->type.GetFundamentalType()->fundamental_type ) )
 			{
-				if( const auto value_in_register= CreateMoveToLLVMRegisterInstruction( *variable, function_context ) )
+				const VariableMutPtr variable=
+					std::make_shared<Variable>(
+						binary_operator.operator_type_ == BinaryOperatorType::CompareOrder ? call_variable->type : bool_type_,
+						ValueType::Value,
+						Variable::Location::LLVMRegister,
+						ReferencesGraphNodeKind::Variable,
+						OverloadedOperatorToString( overloaded_operator ) );
+
+				if( call_value_in_register != nullptr )
 				{
 					if( binary_operator.operator_type_ == BinaryOperatorType::CompareOrder )
-						variable->llvm_value= value_in_register;
+						variable->llvm_value= call_value_in_register;
 					else
 					{
-						const auto zero= llvm::Constant::getNullValue( variable->type.GetLLVMType() );
+						const auto zero= llvm::Constant::getNullValue( call_variable->type.GetLLVMType() );
 						if( binary_operator.operator_type_ == BinaryOperatorType::Less )
-							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( value_in_register, zero );
+							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( call_value_in_register, zero );
 						else if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
-							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( value_in_register, zero );
+							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( call_value_in_register, zero );
 						else if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
-							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( value_in_register, zero );
+							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( call_value_in_register, zero );
 						else if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
-							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( value_in_register, zero );
+							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( call_value_in_register, zero );
 						else U_ASSERT(false);
-						variable->type= bool_type_;
 					}
 
-					variable->constexpr_value= llvm::dyn_cast<llvm::Constant>(variable->llvm_value);
+					variable->constexpr_value= llvm::dyn_cast<llvm::Constant>( variable->llvm_value );
 				}
 
-				variable->location= Variable::Location::LLVMRegister;
+				function_context.variables_state.AddNode( variable );
+				RegisterTemporaryVariable( function_context, variable );
+				return Value( variable, overloaded_operator_call_try->GetSrcLoc() );
 			}
-
-			return Value( variable, overloaded_operator_call_try->GetSrcLoc() );
 		}
 
 		return std::move(*overloaded_operator_call_try);
@@ -651,16 +676,25 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		l_var->type.GetFunctionPointerType() != nullptr )
 	{
 		// Save l_var in register, because build-in binary operators require value-parameters.
-		auto l_var_copy= std::make_shared<Variable>(*l_var);
-		if( l_var_copy->location == Variable::Location::Pointer )
-		{
-			l_var_copy->llvm_value= CreateMoveToLLVMRegisterInstruction( *l_var_copy, function_context );
-			l_var_copy->location= Variable::Location::LLVMRegister;
-		}
-		l_var_copy->value_type= ValueType::Value;
-		l_var= l_var_copy;
+		l_var=
+			std::make_shared<Variable>(
+				l_var->type,
+				ValueType::Value,
+				Variable::Location::LLVMRegister,
+				ReferencesGraphNodeKind::Variable,
+				l_var->name + " in register",
+				l_var->location == Variable::Location::LLVMRegister
+					? l_var->llvm_value
+					: CreateMoveToLLVMRegisterInstruction( *l_var, function_context ),
+				l_var->constexpr_value );
+
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), binary_operator.src_loc_ );
+
+		function_context.variables_state.AddNode( l_var );
+		RegisterTemporaryVariable( function_context, l_var );
 	}
-	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), binary_operator.src_loc_ );
+	else
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), binary_operator.src_loc_ );
 
 	const VariablePtr r_var=
 		BuildExpressionCodeEnsureVariable(
@@ -1099,6 +1133,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			"",
 			CreateMoveToLLVMRegisterInstruction( *v, function_context ) );
 
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+
 	return Value( std::move(result), raw_pointer_to_reference_operator.src_loc_ );
 }
 
@@ -1374,7 +1411,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( content, variable_for_move->node_kind );
 		function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
 	}
-	function_context.variables_state.MoveNode( content );
+	function_context.variables_state.MoveNode( variable_for_move );
 
 	RegisterTemporaryVariable( function_context, content );
 	return Value( std::move(content), move_operator.src_loc_ );
@@ -1456,9 +1493,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	const VariablePtr var= BuildExpressionCodeEnsureVariable( *cast_mut.expression_, names, function_context );
 
-	VariableMutPtr result= std::make_shared<Variable>(*var);
-	result->constexpr_value= nullptr; // Reset constexprness for mutable reference.
-	result->value_type= ValueType::ReferenceMut;
+	const VariableMutPtr result=
+		std::make_shared<Variable>(
+			var->type,
+			ValueType::ReferenceMut,
+			Variable::Location::Pointer,
+			ReferencesGraphNodeKind::ReferenceMut,
+			"cast_mut( " + var->name + " )",
+			var->llvm_value,
+			nullptr ); // Reset constexprness for mutable reference.
 
 	if( var->location == Variable::Location::LLVMRegister )
 	{
@@ -1468,6 +1511,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			CreateTypedStore( function_context, var->type, var->llvm_value, result->llvm_value );
 		}
 	}
+
+	function_context.variables_state.AddNode( result );
+	if( !function_context.variables_state.TryAddLink( var, result ) )
+		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), cast_mut.src_loc_, var->name );
+
+	RegisterTemporaryVariable( function_context, result );
 
 	return Value( std::move(result), cast_mut.src_loc_ );
 }
@@ -1535,7 +1584,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	BuildFullTypeinfo( type, var, root_namespace );
 
 	// TODO - store VariablePtr inside typeinfo cache.
-	return Value( std::make_shared<Variable>(var), typeinfo.src_loc_ );
+	const VariablePtr var_ptr= std::make_shared<Variable>(var);
+	function_context.variables_state.AddNode( var_ptr );
+
+	return Value( var_ptr, typeinfo.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
