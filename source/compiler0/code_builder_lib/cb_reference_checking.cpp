@@ -294,6 +294,14 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 		if( param_and_tag.second == 0u && variable_node == function_context.args_nodes[arg_n].second )
 			return true;
 	}
+
+	// TODO - extract check for global variable node into separate function.
+	if( variable_node->llvm_value != nullptr && llvm::isa<llvm::Constant>( variable_node->llvm_value ) && variable_node->location == Variable::Location::Pointer )
+	{
+		// Asume this is global variable. Allow to return global variables.
+		return true;
+	}
+
 	return false;
 }
 

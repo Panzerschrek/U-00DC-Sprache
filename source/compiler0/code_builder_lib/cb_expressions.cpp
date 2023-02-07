@@ -755,6 +755,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( !function_context.variables_state.TryAddLink( function_context.this_, base ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), named_operand.src_loc_, function_context.this_->name );
 
+			RegisterTemporaryVariable( function_context, base );
+
 			return Value( std::move(base), named_operand.src_loc_ );
 		}
 	}
@@ -3244,13 +3246,6 @@ Value CodeBuilder::DoCallFunction(
 		// Destroy unused temporary variables after each argument evaluation.
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
 	} // for args
-	U_ASSERT( args_nodes.size() == arg_count );
-	U_ASSERT( locked_args_inner_references.size() == arg_count );
-	if( evaluate_args_in_reverse_order )
-	{
-		std::reverse( args_nodes.begin(), args_nodes.end() );
-		std::reverse( locked_args_inner_references.begin(), locked_args_inner_references.end() );
-	}
 
 	const bool return_value_is_sret= function_type.IsStructRet();
 
