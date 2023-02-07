@@ -481,9 +481,8 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 		return std::make_pair( this_, function.llvm_function );
 
 	if( function.virtual_table_index == ~0u && this_->type == function_type.params.front().type )
-		return std::make_pair( std::move(this_), function.llvm_function );
+		return std::make_pair( this_, function.llvm_function );
 
-	// TODO - fix this. Setup references properly.
 	VariableMutPtr this_casted= std::make_shared<Variable>(*this_);
 	if( this_->type != function_type.params.front().type )
 	{
@@ -491,6 +490,13 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 		this_casted->type= function_type.params.front().type;
 		this_casted->llvm_value= CreateReferenceCast( this_->llvm_value, this_->type, this_casted->type, function_context );
 	}
+
+	function_context.variables_state.AddNode( this_casted );
+	if( !function_context.variables_state.TryAddLink( this_, this_casted ) )
+		REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, this_->name );
+
+	RegisterTemporaryVariable( function_context, this_casted );
+
 	if( function.virtual_table_index == ~0u )
 		return std::make_pair( std::move(this_casted), function.llvm_function );
 

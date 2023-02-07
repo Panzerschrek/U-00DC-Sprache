@@ -3123,6 +3123,8 @@ Value CodeBuilder::DoCallFunction(
 							is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 							"inner reference lock " + std::to_string(i) );
 
+					function_context.variables_state.AddNode( locked_args_inner_references[arg_number] );
+
 					for( const VariablePtr& inner_reference : inner_references )
 					{
 						if( !function_context.variables_state.TryAddLink( inner_reference, locked_args_inner_references[arg_number] ) )
