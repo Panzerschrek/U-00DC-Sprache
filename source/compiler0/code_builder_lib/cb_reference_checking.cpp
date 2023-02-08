@@ -295,10 +295,9 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 			return true;
 	}
 
-	// TODO - extract check for global variable node into separate function.
-	if( variable_node->llvm_value != nullptr && llvm::isa<llvm::Constant>( variable_node->llvm_value ) && variable_node->location == Variable::Location::Pointer )
+	if( IsGlobalVariable(variable_node) )
 	{
-		// Asume this is global variable. Allow to return global variables.
+		//  Allow to return global variables.
 		return true;
 	}
 
@@ -324,6 +323,9 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 		for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 		{
 			if( accesible_variable == node_pair.second )
+				continue;
+
+			if( IsGlobalVariable( accesible_variable ) )
 				continue;
 
 			std::optional<FunctionType::ParamReference> reference;

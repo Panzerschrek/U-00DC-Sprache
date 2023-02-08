@@ -2285,6 +2285,14 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 	return var;
 }
 
+bool CodeBuilder::IsGlobalVariable( const VariablePtr& variable )
+{
+	return
+		variable->llvm_value != nullptr &&
+		llvm::isa<llvm::Constant>( variable->llvm_value ) &&
+		variable->location == Variable::Location::Pointer;
+}
+
 void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
 {
 	const auto llvm_function= function_variable.llvm_function;

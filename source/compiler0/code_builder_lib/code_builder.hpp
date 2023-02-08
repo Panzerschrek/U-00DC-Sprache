@@ -936,6 +936,8 @@ private:
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );
 	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name );
 
+	bool IsGlobalVariable( const VariablePtr& variable );
+
 	void SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
 	// Requires complete types
 	void SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable );

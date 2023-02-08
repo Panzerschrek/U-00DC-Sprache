@@ -862,9 +862,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			!function_context.is_in_unsafe_block )
 			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), named_operand.src_loc_ );
 
-		if( variable->llvm_value != nullptr && llvm::isa<llvm::Constant>( variable->llvm_value ) && variable->location == Variable::Location::Pointer )
+		if( IsGlobalVariable(variable) )
 		{
-			// Asume this is global variable. Add global constant nodes lazily.
+			// Add global constant nodes lazily.
 			function_context.variables_state.AddNodeIfNotExists( variable );
 		}
 	}
@@ -1556,6 +1556,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->llvm_value= var->llvm_value;
 
 	function_context.variables_state.AddNode( result );
+	if( !function_context.variables_state.TryAddLink( var, result ) )
+		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), cast_imut.src_loc_, var->name );
+
 	RegisterTemporaryVariable( function_context, result );
 
 	return Value( std::move(result), cast_imut.src_loc_ );
