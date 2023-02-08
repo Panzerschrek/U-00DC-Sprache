@@ -653,7 +653,7 @@ def InheritanceTest_InitializeBaseClass_Test4():
 		class B : A
 		{
 			i32 b;
-			fn constructor()(  b= a ){}   // Must access parent class field after implicit base initialization.
+			fn constructor()( b= a ){}   // Must access parent class field after implicit base initialization.
 		}
 
 		fn Foo()
@@ -701,7 +701,7 @@ def InheritanceTest_InitializeBaseClass_Test6():
 		class B : A
 		{
 			i32 b;
-			fn constructor()(  b= base.a ){}   // Must access "base" after implicit "base" initialization.
+			fn constructor()( b= base.a ){}   // Must access "base" after implicit "base" initialization.
 		}
 
 		fn Foo()

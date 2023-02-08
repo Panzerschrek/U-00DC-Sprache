@@ -172,6 +172,7 @@ def TakenVariableHaveReferences_Test0():
 		struct S
 		{
 			i32 x;
+			fn constructor() ( x = 0 ) {}
 			fn constructor( i32 in_x ) ( x= in_x ) {}
 			fn constructor( mut this, S &imut other )= delete;
 			op=( mut this, S &imut other )= delete;
@@ -187,7 +188,7 @@ def TakenVariableHaveReferences_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
-	assert( errors_list[0].src_loc.line == 14 )
+	assert( errors_list[0].src_loc.line == 15 )
 
 
 def TakenVariableHaveReferences_Test1():
@@ -195,6 +196,7 @@ def TakenVariableHaveReferences_Test1():
 		struct S
 		{
 			i32 x;
+			fn constructor() ( x = 0 ) {}
 			fn constructor( i32 in_x ) ( x= in_x ) {}
 			fn constructor( mut this, S &imut other )= delete;
 			op=( mut this, S &imut other )= delete;
@@ -210,7 +212,7 @@ def TakenVariableHaveReferences_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
-	assert( errors_list[0].src_loc.line == 14 )
+	assert( errors_list[0].src_loc.line == 15 )
 
 
 def TakenVariableHaveReferences_Test2():
@@ -218,6 +220,7 @@ def TakenVariableHaveReferences_Test2():
 		struct S
 		{
 			i32 x;
+			fn constructor() ( x = 0 ) {}
 			fn constructor( i32 in_x ) ( x= in_x ) {}
 			fn constructor( mut this, S &imut other )= delete;
 			op=( mut this, S &imut other )= delete;
@@ -233,7 +236,7 @@ def TakenVariableHaveReferences_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "MovedVariableHaveReferences" )
-	assert( errors_list[0].src_loc.line == 14 )
+	assert( errors_list[0].src_loc.line == 15 )
 
 
 def TakenVariableHaveReferences_Test3():
