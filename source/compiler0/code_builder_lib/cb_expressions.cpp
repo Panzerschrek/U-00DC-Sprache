@@ -862,7 +862,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			!function_context.is_in_unsafe_block )
 			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), named_operand.src_loc_ );
 
-		if( llvm::isa<llvm::Constant>( variable->llvm_value ) && variable->location == Variable::Location::Pointer )
+		if( variable->llvm_value != nullptr && llvm::isa<llvm::Constant>( variable->llvm_value ) && variable->location == Variable::Location::Pointer )
 		{
 			// Asume this is global variable. Add global constant nodes lazily.
 			function_context.variables_state.AddNodeIfNotExists( variable );
@@ -1266,7 +1266,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		initializer= llvm::ConstantDataArray::get( llvm_context_, str );
 	}
 	// If string literal have char suffix, process it as single char literal.
-	else if( type_suffix ==  "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
+	else if( type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
 	{
 		if( string_literal.value_.size() == 1u )
 		{
@@ -1308,7 +1308,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( initializer == nullptr )
 		return ErrorValue();
 
-	VariableMutPtr result= std::make_shared<Variable>();
+	const VariableMutPtr result= std::make_shared<Variable>();
 	result->constexpr_value= initializer;
 	if( array_size == ~0u )
 	{
@@ -1317,6 +1317,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->value_type= ValueType::Value;
 		result->location= Variable::Location::LLVMRegister;
 		result->llvm_value= initializer;
+		result->node_kind= ReferencesGraphNodeKind::Variable;
 	}
 	else
 	{
@@ -1328,6 +1329,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		result->value_type= ValueType::ReferenceImut;
 		result->location= Variable::Location::Pointer;
+		result->node_kind= ReferencesGraphNodeKind::ReferenceImut;
 
 		// Use md5 for string literal names.
 		llvm::MD5 md5;
@@ -1343,6 +1345,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->llvm_value= CreateGlobalConstantVariable( result->type, literal_name, result->constexpr_value );
 	}
 
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+
 	return Value( std::move(result), string_literal.src_loc_ );
 }
 
@@ -1356,7 +1361,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	const Value resolved_value= ResolveValue( names, function_context, complex_name );
 	const VariablePtr variable_for_move= resolved_value.GetVariablePtr();
-	if( variable_for_move->node_kind != ReferencesGraphNodeKind::Variable )
+	if( variable_for_move == nullptr || variable_for_move->node_kind != ReferencesGraphNodeKind::Variable )
 	{
 		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
 		return ErrorValue();
@@ -1410,7 +1415,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// TODO - maybe reset inner node of moved variable?
 	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( variable_for_move ) )
 	{
-		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( content, variable_for_move->node_kind );
+		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( content, move_variable_inner_node->node_kind );
 		function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
 	}
 	function_context.variables_state.MoveNode( variable_for_move );
@@ -1530,8 +1535,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const VariablePtr var= BuildExpressionCodeEnsureVariable( *cast_imut.expression_, names, function_context );
 
-	VariableMutPtr result= std::make_shared<Variable>(*var);
-	result->value_type= ValueType::ReferenceImut;
+	const VariableMutPtr result=
+		std::make_shared<Variable>(
+			var->type,
+			ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			ReferencesGraphNodeKind::ReferenceImut,
+			"cast_imut(" + var->name + ")",
+			nullptr,
+			var->constexpr_value );
 
 	if( var->location == Variable::Location::LLVMRegister )
 	{
@@ -1541,6 +1553,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			CreateTypedStore( function_context, var->type, var->llvm_value, result->llvm_value );
 		}
 	}
+	else
+		result->llvm_value= var->llvm_value;
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
 
 	return Value( std::move(result), cast_imut.src_loc_ );
 }
@@ -1645,12 +1662,32 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.is_in_unsafe_block= prev_unsafe;
 
 	// Avoid passing constexpr values trough unsafe expression.
-	if(auto variable_ptr= result.GetVariable() )
+	// TODO - do we really needs this?
+	if( const VariablePtr variable_ptr= result.GetVariablePtr() )
 	{
 		if( variable_ptr->constexpr_value != nullptr )
 		{
-			auto variable_copy= std::make_shared<Variable>(*variable_ptr);
-			variable_copy->constexpr_value= nullptr;
+			const VariablePtr variable_copy=
+				std::make_shared<Variable>(
+				variable_ptr->type,
+				variable_ptr->value_type,
+				variable_ptr->location,
+				variable_ptr->node_kind,
+				"unsafe(" + variable_ptr->name + ")",
+				variable_ptr->llvm_value,
+				nullptr );
+
+			function_context.variables_state.AddNode( variable_copy );
+
+			if( const auto variable_inner_node= function_context.variables_state.GetNodeInnerReference( variable_ptr ) )
+			{
+				const auto inner_node= function_context.variables_state.CreateNodeInnerReference( variable_copy, variable_ptr->node_kind );
+				function_context.variables_state.AddLink( variable_inner_node, inner_node );
+			}
+			function_context.variables_state.MoveNode( variable_ptr );
+
+			RegisterTemporaryVariable( function_context, variable_copy );
+
 			return Value( variable_copy, result.GetSrcLoc() );
 		}
 	}

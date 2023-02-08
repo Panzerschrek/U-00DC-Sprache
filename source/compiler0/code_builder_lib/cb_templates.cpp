@@ -574,7 +574,9 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const SrcLoc& src_loc,
 	const TemplateSignatureParam::TemplateParam& template_param )
 {
-	Value* const value= args_names_scope.GetThisScopeValue( template_.template_params[ template_param.index ].name );
+	const std::string& name= template_.template_params[ template_param.index ].name;
+
+	Value* const value= args_names_scope.GetThisScopeValue( name );
 	U_ASSERT( value != nullptr );
 	if( value->GetYetNotDeducedTemplateArg() != nullptr )
 	{
@@ -616,10 +618,10 @@ bool CodeBuilder::MatchTemplateArgImpl(
 					ValueType::ReferenceImut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::Variable,
-					template_.template_params[ template_param.index ].name,
+					name,
 					CreateGlobalConstantVariable(
 						given_variable->type,
-						template_.template_params[ template_param.index ].name,
+						name,
 						given_variable->constexpr_value ));
 			variable_for_insertion->constexpr_value= given_variable->constexpr_value;
 
@@ -661,16 +663,24 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_array_type->element_type, src_loc, *template_param.element_type ) )
 				return false;
 
+			const std::string name= "array_size " + std::to_string(given_array_type->element_count);
+
 			VariableMutPtr size_variable=
 				std::make_shared<Variable>(
 					size_type_,
 					ValueType::ReferenceImut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::Variable );
+					ReferencesGraphNodeKind::Variable,
+					name );
+
 			size_variable->constexpr_value=
 				llvm::ConstantInt::get(
 					size_type_.GetLLVMType(),
-					llvm::APInt( static_cast<unsigned int>(size_type_.GetFundamentalType()->GetSize() * 8), given_array_type->element_count ) );
+					llvm::APInt(
+						static_cast<unsigned int>(size_type_.GetFundamentalType()->GetSize() * 8),
+						given_array_type->element_count ) );
+
+			size_variable->llvm_value= CreateGlobalConstantVariable( size_type_, name, size_variable->constexpr_value );
 
 			if( !MatchTemplateArg( template_, args_names_scope, size_variable, src_loc, *template_param.element_count ) )
 				return false;
