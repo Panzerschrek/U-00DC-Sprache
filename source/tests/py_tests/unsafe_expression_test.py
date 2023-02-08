@@ -59,7 +59,6 @@ def UnsafeExpression_Test2():
 
 def UnsafeExpression_Test3():
 	c_program_text= """
-
 		fn Foo()
 		{
 			var i32 x= 42;

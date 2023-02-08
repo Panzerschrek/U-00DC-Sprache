@@ -618,6 +618,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( !function_context.variables_state.TryAddLink( sequence_expression, sequence_lock ) )
 		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression->name );
 
+	RegisterTemporaryVariable( function_context, sequence_lock );
+
 	if( const TupleType* const tuple_type= sequence_expression->type.GetTupleType() )
 	{
 		llvm::BasicBlock* const finish_basic_block= tuple_type->element_types.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
@@ -769,11 +771,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		// TODO - support array types.
 		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, sequence_expression->type );
-		function_context.variables_state.RemoveNode( sequence_lock );
 		return BlockBuildInfo();
 	}
-
-	function_context.variables_state.RemoveNode( sequence_lock );
 
 	if( !block_build_info.have_terminal_instruction_inside )
 		CallDestructors( temp_variables_storage, names, function_context, for_operator.src_loc_ );

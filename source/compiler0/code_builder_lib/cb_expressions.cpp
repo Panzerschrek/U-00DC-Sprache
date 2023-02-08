@@ -419,7 +419,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
 
 		result->value_type= ( variable->value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-		result->node_kind= variable->node_kind;
+		result->node_kind= result->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut;
 		function_context.variables_state.AddNode( result );
 
 		if( !function_context.variables_state.TryAddLink( variable, result ) )
@@ -913,15 +913,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	VariableMutPtr result= std::make_shared<Variable>();
+	const VariableMutPtr result= std::make_shared<Variable>();
 	result->type= branches_types[0];
 	result->location= Variable::Location::Pointer;
 	result->name= Keyword( Keywords::select_ );
-	ReferencesGraphNodeKind node_kind;
 	if( branches_value_types[0] == ValueType::Value || branches_value_types[1] == ValueType::Value )
 	{
 		result->value_type= ValueType::Value;
-		node_kind= ReferencesGraphNodeKind::Variable;
+		result->node_kind= ReferencesGraphNodeKind::Variable;
 		if( !EnsureTypeComplete( result->type ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.src_loc_, result->type );
@@ -939,12 +938,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	else if( branches_value_types[0] == ValueType::ReferenceImut || branches_value_types[1] == ValueType::ReferenceImut )
 	{
 		result->value_type= ValueType::ReferenceImut;
-		node_kind= ReferencesGraphNodeKind::ReferenceImut;
+		result->node_kind= ReferencesGraphNodeKind::ReferenceImut;
 	}
 	else
 	{
 		result->value_type= ValueType::ReferenceMut;
-		node_kind= ReferencesGraphNodeKind::ReferenceMut;
+		result->node_kind= ReferencesGraphNodeKind::ReferenceMut;
 	}
 	// Do not forget to remove node in case of error-return!!!
 	function_context.variables_state.AddNode( result );
@@ -1679,10 +1678,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			function_context.variables_state.AddNode( variable_copy );
 
-			if( const auto variable_inner_node= function_context.variables_state.GetNodeInnerReference( variable_ptr ) )
+			if( variable_ptr->node_kind == ReferencesGraphNodeKind::Variable )
 			{
-				const auto inner_node= function_context.variables_state.CreateNodeInnerReference( variable_copy, variable_ptr->node_kind );
-				function_context.variables_state.AddLink( variable_inner_node, inner_node );
+				if( const auto variable_inner_node= function_context.variables_state.GetNodeInnerReference( variable_ptr ) )
+				{
+					const auto inner_node= function_context.variables_state.CreateNodeInnerReference( variable_copy, variable_ptr->node_kind );
+					function_context.variables_state.AddLink( variable_inner_node, inner_node );
+				}
+			}
+			else
+			{
+				if( !function_context.variables_state.TryAddLink( variable_ptr, variable_copy ) )
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), unsafe_expression.src_loc_, variable_ptr->name );
 			}
 			function_context.variables_state.MoveNode( variable_ptr );
 
@@ -2815,7 +2822,8 @@ Value CodeBuilder::DoReferenceCast(
 			type,
 			var->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut, // "ValueType" here converts into ConstReference
 			Variable::Location::Pointer,
-			var->node_kind );
+			var->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
+			"cast</" + type.ToString() + "/>(" + var->name + ")" );
 
 	function_context.variables_state.AddNode( result );
 	if( !function_context.variables_state.TryAddLink( var, result ) )
@@ -2856,6 +2864,8 @@ Value CodeBuilder::DoReferenceCast(
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, type, var->type );
 		}
 	}
+
+	RegisterTemporaryVariable( function_context, result );
 
 	return Value( std::move(result), src_loc );
 }

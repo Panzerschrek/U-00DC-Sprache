@@ -1026,28 +1026,23 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 		return nullptr;
 	}
 
-	// Check references.
-	const VariablePtr& src_node= initializer_variable;
-	const VariablePtr& dst_node= variable;
-	if( src_node != nullptr && dst_node != nullptr )
+	// Link references.
+	for( const VariablePtr& dst_variable_node : function_context.variables_state.GetAllAccessibleVariableNodes( variable ) )
 	{
-		for( const VariablePtr& dst_variable_node : function_context.variables_state.GetAllAccessibleVariableNodes( dst_node ) )
+		VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
+		if( inner_reference == nullptr )
+			inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
+		else
 		{
-			VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
-			if( inner_reference == nullptr )
-				inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
-			else
+			if( ( inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceImut &&  field.is_mutable ) ||
+				( inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut  && !field.is_mutable ) )
 			{
-				if( ( inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceImut &&  field.is_mutable ) ||
-					( inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut  && !field.is_mutable ))
-				{
-					REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference->name );
-					return nullptr;
-				}
+				REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference->name );
+				return nullptr;
 			}
-			if( !function_context.variables_state.TryAddLink( src_node, inner_reference ) )
-				REPORT_ERROR( ReferenceProtectionError,  block_names.GetErrors(), initializer_src_loc, src_node->name );
 		}
+		if( !function_context.variables_state.TryAddLink( initializer_variable, inner_reference ) )
+			REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), initializer_src_loc, initializer_variable->name );
 	}
 
 	llvm::Value* const address_of_reference= CreateClassFieldGEP( function_context, *variable, field.index );
