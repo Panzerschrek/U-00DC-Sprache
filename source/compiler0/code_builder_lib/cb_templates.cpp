@@ -891,7 +891,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 
 		if( const Type* const type_name= value.GetTypeName() )
 			result.signature_args[i]= *type_name;
-		else if( const auto variable= value.GetVariablePtr() )
+		else if( const auto variable= value.GetVariable() )
 			result.signature_args[i]= variable;
 		else
 		{
@@ -909,7 +909,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 
 		if( const auto type= value->GetTypeName() )
 			result.template_args.push_back( *type );
-		else if( const auto variable= value->GetVariablePtr() )
+		else if( const auto variable= value->GetVariable() )
 			result.template_args.push_back( variable );
 		else
 		{
@@ -1093,7 +1093,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 
 		if( const auto type= value->GetTypeName() )
 			result.template_args.push_back( *type );
-		else if( const auto variable= value->GetVariablePtr() )
+		else if( const auto variable= value->GetVariable() )
 			result.template_args.push_back( variable );
 		else
 		{
@@ -1226,7 +1226,7 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 			const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
 			if( const auto type_name= value.GetTypeName() )
 				template_args.push_back( *type_name );
-			else if( const auto variable= value.GetVariablePtr() )
+			else if( const auto variable= value.GetVariable() )
 			{
 				if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
 					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr), variable->type );

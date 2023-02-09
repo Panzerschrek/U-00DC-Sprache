@@ -215,8 +215,7 @@ public:
 	std::string GetKindName() const;
 	const SrcLoc& GetSrcLoc() const;
 
-	const Variable* GetVariable() const;
-	VariablePtr GetVariablePtr() const;
+	VariablePtr GetVariable() const;
 	// Function set
 	OverloadedFunctionsSet* GetFunctionsSet();
 	const OverloadedFunctionsSet* GetFunctionsSet() const;

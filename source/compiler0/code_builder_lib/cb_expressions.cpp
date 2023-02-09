@@ -24,7 +24,7 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 {
 	Value result= BuildExpressionCode( expression, names, function_context );
 
-	VariablePtr result_variable= result.GetVariablePtr();
+	VariablePtr result_variable= result.GetVariable();
 	if( result_variable == nullptr )
 	{
 		if( result.GetErrorValue() == nullptr )
@@ -596,7 +596,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			function_context );
 	if( overloaded_operator_call_try != std::nullopt )
 	{
-		if( const VariablePtr call_variable= overloaded_operator_call_try->GetVariablePtr())
+		if( const VariablePtr call_variable= overloaded_operator_call_try->GetVariable())
 		{
 			if( binary_operator.operator_type_ == BinaryOperatorType::NotEqual && call_variable->type == bool_type_ )
 			{
@@ -847,7 +847,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			}
 		}
 	}
-	else if( const VariablePtr variable= value_entry.GetVariablePtr() )
+	else if( const VariablePtr variable= value_entry.GetVariable() )
 	{
 		if( function_context.variables_state.NodeMoved( variable ) )
 			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), named_operand.src_loc_, variable->name );
@@ -1357,7 +1357,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	complex_name.start_value= move_operator.var_name_;
 
 	const Value resolved_value= ResolveValue( names, function_context, complex_name );
-	const VariablePtr variable_for_move= resolved_value.GetVariablePtr();
+	const VariablePtr variable_for_move= resolved_value.GetVariable();
 	if( variable_for_move == nullptr || variable_for_move->node_kind != ReferencesGraphNodeKind::Variable )
 	{
 		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
@@ -1661,7 +1661,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// Avoid passing constexpr values trough unsafe expression.
 	// TODO - do we really needs this?
-	if( const VariablePtr variable_ptr= result.GetVariablePtr() )
+	if( const VariablePtr variable_ptr= result.GetVariable() )
 	{
 		if( variable_ptr->constexpr_value != nullptr )
 		{
@@ -1776,7 +1776,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		}
 
 		// Move here, instead of calling copy-assignment operator. Before moving we must also call destructor for destination.
-		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names, function_context ).GetVariablePtr();
+		const VariablePtr r_var_real= BuildExpressionCode( right_expr, names, function_context ).GetVariable();
 
 		const VariablePtr r_var_lock=
 			std::make_shared<Variable>(
@@ -1792,7 +1792,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		if( !function_context.variables_state.TryAddLink( r_var_real, r_var_lock ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var_real->name );
 
-		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names, function_context ).GetVariablePtr();
+		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names, function_context ).GetVariable();
 
 		SetupReferencesInCopyOrMove( function_context, l_var_real, r_var_lock, names.GetErrors(), src_loc );
 
@@ -2892,7 +2892,7 @@ Value CodeBuilder::CallFunction(
 		functions_set= &this_overloaded_methods_set->GetOverloadedFunctionsSet();
 		this_= this_overloaded_methods_set->this_;
 	}
-	else if( const VariablePtr callable_variable= function_value.GetVariablePtr() )
+	else if( const VariablePtr callable_variable= function_value.GetVariable() )
 	{
 		if( const FunctionPointerType* const function_pointer= callable_variable->type.GetFunctionPointerType() )
 		{

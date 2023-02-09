@@ -1711,7 +1711,7 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const Value value= BuildExpressionCode( expression, block_names, function_context );
-	const VariablePtr variable= value.GetVariablePtr();
+	const VariablePtr variable= value.GetVariable();
 	if( variable == nullptr )
 	{
 		REPORT_ERROR( ExpectedVariable, block_names.GetErrors(), src_loc, value.GetKindName() );

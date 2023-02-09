@@ -130,7 +130,7 @@ std::string ConstantVariableToString( const Variable& variable )
 		enum_type->members.ForEachInThisScope(
 			[&]( const std::string& name, const Value& enum_member )
 			{
-				if( const Variable* const enum_variable= enum_member.GetVariable() )
+				if( const VariablePtr enum_variable= enum_member.GetVariable() )
 				{
 					U_ASSERT( enum_variable->constexpr_value != nullptr );
 					if( enum_variable->constexpr_value->getUniqueInteger().getLimitedValue() == num_value )
@@ -290,15 +290,7 @@ const SrcLoc& Value::GetSrcLoc() const
 	return src_loc_;
 }
 
-const Variable* Value::GetVariable() const
-{
-	if(const auto* ptr= std::get_if<VariablePtr>( &something_ ) )
-		return ptr->get();
-
-	return nullptr;
-}
-
-VariablePtr Value::GetVariablePtr() const
+VariablePtr Value::GetVariable() const
 {
 	if( const auto ptr= std::get_if<VariablePtr>( &something_ ) )
 		return *ptr;

@@ -1080,7 +1080,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 
 	const Value initializer_value= BuildExpressionCode( initializer_expression, block_names, function_context );
 
-	if( const Variable* const initializer_variable= initializer_value.GetVariable() )
+	if( const VariablePtr initializer_variable= initializer_value.GetVariable() )
 	{
 		const FunctionPointerType* const intitializer_type= initializer_variable->type.GetFunctionPointerType();
 		if( intitializer_type == nullptr ||
