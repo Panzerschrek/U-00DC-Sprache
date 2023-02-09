@@ -612,7 +612,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, src_loc, *param_type ) )
 				return false;
 
-			VariableMutPtr variable_for_insertion=
+			const VariableMutPtr variable_for_insertion=
 				std::make_shared<Variable>(
 					given_variable->type,
 					ValueType::ReferenceImut,
@@ -625,7 +625,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 						given_variable->constexpr_value ));
 			variable_for_insertion->constexpr_value= given_variable->constexpr_value;
 
-			*value= Value( std::move(variable_for_insertion), src_loc );
+			*value= Value( variable_for_insertion, src_loc );
 			return true;
 		}
 	}
@@ -665,7 +665,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 
 			const std::string name= "array_size " + std::to_string(given_array_type->element_count);
 
-			VariableMutPtr size_variable=
+			const VariableMutPtr size_variable=
 				std::make_shared<Variable>(
 					size_type_,
 					ValueType::ReferenceImut,

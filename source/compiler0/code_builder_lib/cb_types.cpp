@@ -81,7 +81,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
 		const VariablePtr variable= BuildExpressionCodeEnsureVariable( *typeof_type_name.expression, names_scope, function_context );
-		result= std::move(variable->type);
+		result= variable->type;
 	}
 
 	RestoreFunctionContextState( function_context, state );

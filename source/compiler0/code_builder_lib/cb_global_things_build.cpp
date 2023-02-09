@@ -1089,7 +1089,8 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::Variable );
+				ReferencesGraphNodeKind::Variable,
+				variable_declaration.name );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
@@ -1100,7 +1101,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				is_mutable
 					? CreateGlobalMutableVariable( type, name_mangled )
 					: CreateGlobalConstantVariable( type, name_mangled );
-
 
 			function_context.variables_state.AddNode( variable );
 
@@ -1160,7 +1160,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				FAIL_RETURN;
 			}
 
-			// TODO - maybe make copy of varaible address in new llvm register?
 			llvm::Value* result_ref= expression_result->llvm_value;
 			if( variable->type != expression_result->type )
 				result_ref= CreateReferenceCast( result_ref, expression_result->type, variable->type, function_context );

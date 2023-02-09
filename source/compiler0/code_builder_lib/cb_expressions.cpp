@@ -24,7 +24,7 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 {
 	Value result= BuildExpressionCode( expression, names, function_context );
 
-	VariablePtr result_variable= result.GetVariable();
+	const VariablePtr result_variable= result.GetVariable();
 	if( result_variable == nullptr )
 	{
 		if( result.GetErrorValue() == nullptr )
@@ -36,10 +36,11 @@ VariablePtr CodeBuilder::BuildExpressionCodeEnsureVariable(
 				ValueType::Value,
 				Variable::Location::Pointer,
 				ReferencesGraphNodeKind::Variable,
-				"",
+				"error value",
 				llvm::UndefValue::get( invalid_type_.GetLLVMType()->getPointerTo() ) );
 
 		function_context.variables_state.AddNode( dummy_result );
+		RegisterTemporaryVariable( function_context, dummy_result );
 
 		return dummy_result;
 	}
@@ -105,12 +106,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// Lock variable. We must prevent modification of this variable in index calcualtion.
 	// Do not forget to unregister it in case of error-return!
-	const VariablePtr variable_lock= std::make_shared<Variable>(
-		variable->type,
-		variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-		variable->location,
-		variable->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
-		variable->name + " lock" );
+	const VariablePtr variable_lock=
+		std::make_shared<Variable>(
+			variable->type,
+			variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			variable->location,
+			variable->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
+			variable->name + " lock" );
 
 	function_context.variables_state.AddNode( variable_lock );
 	if( !function_context.variables_state.TryAddLink( variable, variable_lock ) )
@@ -156,7 +158,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				array_type->element_type,
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				variable_lock->node_kind );
+				variable_lock->node_kind,
+				variable->name + "[]" );
 
 		if( variable->constexpr_value != nullptr && index->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( index->constexpr_value );
@@ -198,7 +201,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.variables_state.RemoveNode( variable_lock );
 
 		RegisterTemporaryVariable( function_context, result );
-		return Value( std::move(result), indexation_operator.src_loc_ );
+		return Value( result, indexation_operator.src_loc_ );
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
@@ -264,7 +267,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.variables_state.RemoveNode( variable_lock );
 
 		RegisterTemporaryVariable( function_context, result );
-		return Value( std::move(result), indexation_operator.src_loc_ );
+		return Value( result, indexation_operator.src_loc_ );
 	}
 	else
 	{
@@ -355,8 +358,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( field->is_reference )
 	{
-		result->value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-
 		if( variable->constexpr_value != nullptr )
 		{
 			if( EnsureTypeComplete( field->type ) )
@@ -403,6 +404,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			}
 		}
 
+		result->value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		result->node_kind= field->is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut;
 		function_context.variables_state.AddNode( result );
 
@@ -428,7 +430,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( std::move(result), member_access_operator.src_loc_ );
+	return Value( result, member_access_operator.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -456,7 +458,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	// TODO - maybe not support unary minus for 8 and 16 bit integer types?
 
-	VariableMutPtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			variable->type,
 			ValueType::Value,
@@ -476,7 +478,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );
-	return Value( std::move(result), unary_minus.src_loc_ );
+	return Value( result, unary_minus.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -504,7 +506,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	VariableMutPtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			variable->type,
 			ValueType::Value,
@@ -521,7 +523,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( std::move(result), logical_not.src_loc_ );
+	return Value( result, logical_not.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -546,7 +548,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	VariableMutPtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			variable->type,
 			ValueType::Value,
@@ -563,7 +565,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result);
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( std::move(result), bitwise_not.src_loc_ );
+	return Value( result, bitwise_not.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -755,7 +757,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			RegisterTemporaryVariable( function_context, base );
 
-			return Value( std::move(base), named_operand.src_loc_ );
+			return Value( base, named_operand.src_loc_ );
 		}
 	}
 
@@ -807,11 +809,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			{
 				// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
 				load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
-
-				field_variable->value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 				field_variable->llvm_value= load_res;
 			}
 
+			field_variable->value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 			field_variable->node_kind= field->is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut;
 			function_context.variables_state.AddNode( field_variable );
 
@@ -829,7 +830,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		}
 
 		RegisterTemporaryVariable( function_context, field_variable );
-		return Value( std::move(field_variable), named_operand.src_loc_ );
+		return Value( field_variable, named_operand.src_loc_ );
 	}
 	else if( const OverloadedFunctionsSet* const overloaded_functions_set= value_entry.GetFunctionsSet() )
 	{
@@ -862,7 +863,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		if( IsGlobalVariable(variable) )
 		{
-			// Add global constant nodes lazily.
+			// Add global variable nodes lazily.
 			function_context.variables_state.AddNodeIfNotExists( variable );
 		}
 	}
@@ -1091,7 +1092,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	raw_pointer_type.element_type= v->type;
 	raw_pointer_type.llvm_type= llvm::PointerType::get( v->type.GetLLVMType(), 0u );
 
-	VariableMutPtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			std::move(raw_pointer_type),
 			ValueType::Value,
@@ -1103,7 +1104,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( std::move(result), reference_to_raw_pointer_operator.src_loc_ );
+	return Value( result, reference_to_raw_pointer_operator.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1123,19 +1124,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	VariableMutPtr result=
+	// Create mutable reference node without any links. TODO - check if this is correct.
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			raw_pointer_type->element_type,
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
-			ReferencesGraphNodeKind::ReferenceMut, // TODO - which kind should be this variable?
-			"",
+			ReferencesGraphNodeKind::ReferenceMut,
+			"$>(" + v->name + ")",
 			CreateMoveToLLVMRegisterInstruction( *v, function_context ) );
 
 	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( std::move(result), raw_pointer_to_reference_operator.src_loc_ );
+	return Value( result, raw_pointer_to_reference_operator.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1173,7 +1175,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
 
-	VariableMutPtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			FundamentalType( type, llvm_type ),
 			ValueType::Value,
@@ -1195,7 +1197,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( std::move(result), numeric_constant.src_loc_ );
+	return Value( result, numeric_constant.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1205,7 +1207,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	U_UNUSED(names);
 	
-	VariableMutPtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			bool_type_,
 			ValueType::Value,
@@ -1213,15 +1215,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			ReferencesGraphNodeKind::Variable,
 			Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ) );
 
-	result->llvm_value= result->constexpr_value=
-		llvm::Constant::getIntegerValue(
-			fundamental_llvm_types_.bool_ ,
-			llvm::APInt( 1u, uint64_t(boolean_constant.value_) ) );
+	result->llvm_value= result->constexpr_value= llvm::ConstantInt::getBool( llvm_context_, boolean_constant.value_ );
 
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value ( std::move(result), boolean_constant.src_loc_ );
+	return Value( result, boolean_constant.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1345,7 +1344,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( std::move(result), string_literal.src_loc_ );
+	return Value( result, string_literal.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1402,23 +1401,28 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	const VariableMutPtr content= std::make_shared<Variable>(*variable_for_move);
-	content->value_type= ValueType::Value;
-	content->node_kind= ReferencesGraphNodeKind::Variable;
-	content->name= "_moved_" + variable_for_move->name;
-	function_context.variables_state.AddNode( content );
+	const VariableMutPtr result=
+		std::make_shared<Variable>(
+			variable_for_move->type,
+			ValueType::Value,
+			variable_for_move->location,
+			ReferencesGraphNodeKind::Variable,
+			"_moved_" + variable_for_move->name,
+			variable_for_move->llvm_value,
+			variable_for_move->constexpr_value );
+	function_context.variables_state.AddNode( result );
 
 	// We must save inner references of moved variable.
 	// TODO - maybe reset inner node of moved variable?
 	if( const auto move_variable_inner_node= function_context.variables_state.GetNodeInnerReference( variable_for_move ) )
 	{
-		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( content, move_variable_inner_node->node_kind );
+		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( result, move_variable_inner_node->node_kind );
 		function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
 	}
 	function_context.variables_state.MoveNode( variable_for_move );
 
-	RegisterTemporaryVariable( function_context, content );
-	return Value( std::move(content), move_operator.src_loc_ );
+	RegisterTemporaryVariable( function_context, result );
+	return Value( result, move_operator.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1426,9 +1430,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::TakeOperator& take_operator	)
 {
-	VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *take_operator.expression_, names, function_context );
+	const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *take_operator.expression_, names, function_context );
 	if( expression_result->value_type == ValueType::Value ) // If it is value - just pass it.
-		return Value( std::move(expression_result), take_operator.src_loc_ );
+		return Value( expression_result, take_operator.src_loc_ );
 
 	if( expression_result->value_type != ValueType::ReferenceMut )
 	{
@@ -1457,7 +1461,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	// Allocate variable for result.
-	VariableMutPtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			expression_result->type,
 			ValueType::Value,
@@ -1484,7 +1488,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	ApplyEmptyInitializer( expression_result->name, take_operator.src_loc_, expression_result, names, function_context );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( std::move(result), take_operator.src_loc_ );
+	return Value( result, take_operator.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1516,13 +1520,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		}
 	}
 
+	// TODO - check if it is correct to create mutable links to possible immutable links.
 	function_context.variables_state.AddNode( result );
 	if( !function_context.variables_state.TryAddLink( var, result ) )
 		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), cast_mut.src_loc_, var->name );
 
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( std::move(result), cast_mut.src_loc_ );
+	return Value( result, cast_mut.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1559,7 +1564,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( std::move(result), cast_imut.src_loc_ );
+	return Value( result, cast_imut.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1615,7 +1620,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Type type= PrepareType( *non_sync_expression.type_, names, function_context );
 	const bool is_non_sync= GetTypeNonSync( type, names, non_sync_expression.src_loc_ );
 
-	VariableMutPtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			bool_type_,
 			ValueType::Value,
@@ -1628,7 +1633,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result);
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( std::move(result), non_sync_expression.src_loc_ );
+	return Value( result, non_sync_expression.src_loc_ );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1809,9 +1814,9 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			CreateLifetimeEnd( function_context, r_var_real->llvm_value );
 		}
 
-		VariableMutPtr move_result=
+		const VariableMutPtr move_result=
 			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister, ReferencesGraphNodeKind::Variable );
-		return Value( std::move(move_result), src_loc );
+		return Value( move_result, src_loc );
 	}
 	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names, function_context );
@@ -1879,11 +1884,13 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		if( !l_var->type.IsCopyAssignable() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, l_var->type );
+			function_context.variables_state.RemoveNode( r_var_lock );
 			return ErrorValue();
 		}
 		if( l_var->value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+			function_context.variables_state.RemoveNode( r_var_lock );
 			return ErrorValue();
 		}
 
@@ -1896,9 +1903,9 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		function_context.variables_state.RemoveNode( r_var_lock );
 
-		VariableMutPtr result=
+		const VariableMutPtr result=
 			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister, ReferencesGraphNodeKind::Variable );
-		return Value( std::move(result), src_loc );
+		return Value( result, src_loc );
 	}
 	else if( op == OverloadedOperator::CompareEqual )
 	{
@@ -1934,7 +1941,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		U_ASSERT( l_var->location == Variable::Location::Pointer );
 		U_ASSERT( r_var->location == Variable::Location::Pointer );
 
-		VariableMutPtr result=
+		const VariableMutPtr result=
 			std::make_shared<Variable>(
 				bool_type_,
 				ValueType::Value,
@@ -1989,7 +1996,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.AddNode( result );
 
 		RegisterTemporaryVariable( function_context, result );
-		return Value( std::move(result), src_loc );
+		return Value( result, src_loc );
 	}
 	else
 	{
@@ -2000,7 +2007,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 }
 
 std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	const OverloadedOperator op,
 	const SrcLoc& src_loc,
 	NamesScope& names,
@@ -2038,7 +2045,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 }
 
 std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	const llvm::ArrayRef<Synt::Expression>& synt_args,
 	const OverloadedOperator op,
 	const SrcLoc& src_loc,
@@ -2112,7 +2119,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
-	VariableMutPtr result= std::make_shared<Variable>();
+	const VariableMutPtr result= std::make_shared<Variable>();
 	result->location= Variable::Location::LLVMRegister;
 	result->value_type= ValueType::Value;
 	result->node_kind= ReferencesGraphNodeKind::Variable;
@@ -2528,7 +2535,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( std::move(result), src_loc );
+	return Value( result, src_loc );
 }
 
 Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
@@ -2544,7 +2551,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 	llvm::Value* const l_value_for_op= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	llvm::Value* const r_value_for_op= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 
-	VariableMutPtr result= std::make_shared<Variable>();
+	const VariableMutPtr result= std::make_shared<Variable>();
 	result->location= Variable::Location::LLVMRegister;
 	result->value_type= ValueType::Value;
 	result->node_kind= ReferencesGraphNodeKind::Variable;
@@ -2697,7 +2704,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( std::move(result), src_loc );
+	return Value( result, src_loc );
 }
 
 Value CodeBuilder::BuildLazyBinaryOperator(
@@ -2798,9 +2805,8 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( std::move(result), src_loc );
+	return Value( result, src_loc );
 }
-
 
 Value CodeBuilder::DoReferenceCast(
 	const SrcLoc& src_loc,
@@ -2866,7 +2872,7 @@ Value CodeBuilder::DoReferenceCast(
 
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( std::move(result), src_loc );
+	return Value( result, src_loc );
 }
 
 Value CodeBuilder::CallFunction(
@@ -3011,7 +3017,7 @@ Value CodeBuilder::DoCallFunction(
 	llvm::Value* const function,
 	const FunctionType& function_type,
 	const SrcLoc& call_src_loc,
-	const VariablePtr this_, // optional
+	const VariablePtr& this_, // optional
 	const llvm::ArrayRef<const Synt::Expression*>& args,
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names,
@@ -3540,7 +3546,7 @@ Value CodeBuilder::DoCallFunction(
 	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( std::move(result), call_src_loc );
+	return Value( result, call_src_loc );
 }
 
 VariablePtr CodeBuilder::BuildTempVariableConstruction(
@@ -3558,7 +3564,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 	else if( type.IsAbstract() )
 		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, type );
 
-	VariableMutPtr variable=
+	const VariableMutPtr variable=
 		std::make_shared<Variable>(
 			type,
 			ValueType::ReferenceMut, // Make "Value" for construction.
@@ -3594,7 +3600,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 		return nullptr;
 	}
 
-	VariableMutPtr result=
+	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			dst_type,
 			ValueType::ReferenceMut, // Make "Value" for construction.

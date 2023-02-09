@@ -15,7 +15,7 @@ namespace U
 {
 
 llvm::Constant* CodeBuilder::ApplyInitializer(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	NamesScope& names,
 	FunctionContext& function_context,
 	const Synt::Initializer& initializer )
@@ -30,7 +30,7 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 }
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
-	const VariablePtr,
+	const VariablePtr&,
 	NamesScope&,
 	FunctionContext&,
 	const Synt::EmptyVariant& )
@@ -40,7 +40,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 }
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	NamesScope& names,
 	FunctionContext& function_context,
 	const Synt::SequenceInitializer& initializer )
@@ -149,7 +149,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 }
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	NamesScope& names,
 	FunctionContext& function_context,
 	const Synt::StructNamedInitializer& initializer )
@@ -289,7 +289,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 }
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	NamesScope& names,
 	FunctionContext& function_context,
 	const Synt::ConstructorInitializer& initializer )
@@ -298,7 +298,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 }
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	NamesScope& names,
 	FunctionContext& function_context,
 	const Synt::Expression& initializer )
@@ -328,7 +328,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		return InitializeFunctionPointer( variable, initializer, names, function_context );
 	else if( variable->type.GetArrayType() != nullptr || variable->type.GetTupleType() != nullptr )
 	{
-		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
+		const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( initializer, names, function_context );
 		if( expression_result->type != variable->type )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, variable->type, expression_result->type );
@@ -432,7 +432,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 }
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	NamesScope& names,
 	FunctionContext& function_context,
 	const Synt::ZeroInitializer& initializer )
@@ -555,7 +555,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 }
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
-	const VariablePtr,
+	const VariablePtr&,
 	NamesScope& block_names,
 	FunctionContext& function_context,
 	const Synt::UninitializedInitializer& initializer )
@@ -682,7 +682,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 }
 
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	const std::vector<Synt::Expression>& synt_args,
 	const SrcLoc& src_loc,
 	NamesScope& block_names,
@@ -903,9 +903,9 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			if( !function_context.is_functionless_context )
 			{
 				BuildCopyConstructorPart(
-							variable->llvm_value,
-							expression_result->llvm_value,
-							variable->type,
+					variable->llvm_value,
+					expression_result->llvm_value,
+					variable->type,
 					function_context );
 			}
 		}
@@ -977,7 +977,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 }
 
 llvm::Constant* CodeBuilder::InitializeReferenceField(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	const ClassField& field,
 	const Synt::Initializer& initializer,
 	NamesScope& block_names,
@@ -1068,7 +1068,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 }
 
 llvm::Constant* CodeBuilder::InitializeFunctionPointer(
-	const VariablePtr variable,
+	const VariablePtr& variable,
 	const Synt::Expression& initializer_expression,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -1265,7 +1265,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 				std::make_shared<Variable>(
 					class_field.type,
 					ValueType::ReferenceMut,
-					Variable::Location::LLVMRegister,
+					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::ReferenceMut,
 					field_name );
 			function_context.variables_state.AddNode( field_variable );

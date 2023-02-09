@@ -182,7 +182,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 
 			function_context.variables_state.AddNode( field_variable );
 
-
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
 			else
@@ -415,7 +414,7 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
 			ReferencesGraphNodeKind::ReferenceMut,
-			"",
+			Keyword( Keywords::this_ ),
 			this_llvm_value );
 
 	FunctionContext function_context(

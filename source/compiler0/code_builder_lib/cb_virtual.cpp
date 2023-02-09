@@ -486,7 +486,6 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	VariableMutPtr this_casted= std::make_shared<Variable>(*this_);
 	if( this_->type != function_type.params.front().type )
 	{
-		this_casted= std::make_shared<Variable>(*this_);
 		this_casted->type= function_type.params.front().type;
 		this_casted->llvm_value= CreateReferenceCast( this_->llvm_value, this_->type, this_casted->type, function_context );
 	}

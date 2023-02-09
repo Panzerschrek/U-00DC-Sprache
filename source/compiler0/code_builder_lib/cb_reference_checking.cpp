@@ -197,13 +197,11 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 
 void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
-	const VariablePtr& src_node= src_variable;
-	const VariablePtr& dst_node= dst_variable;
-	if( src_node == nullptr || dst_node == nullptr || dst_variable->type.ReferencesTagsCount() == 0u )
+	if( dst_variable->type.ReferencesTagsCount() == 0u )
 		return;
 
-	const ReferencesGraph::NodesSet src_node_inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( src_node );
-	const ReferencesGraph::NodesSet dst_variable_nodes= function_context.variables_state.GetAllAccessibleVariableNodes( dst_node );
+	const ReferencesGraph::NodesSet src_node_inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( src_variable );
+	const ReferencesGraph::NodesSet dst_variable_nodes= function_context.variables_state.GetAllAccessibleVariableNodes( dst_variable );
 
 	if( src_node_inner_references.empty() || dst_variable_nodes.empty() )
 		return;
@@ -218,7 +216,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 		if( dst_node_inner_reference == nullptr )
 		{
 			dst_node_inner_reference=
-				function_context.variables_state.CreateNodeInnerReference( dst_node, node_is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
+				function_context.variables_state.CreateNodeInnerReference( dst_variable, node_is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
 		}
 
 		if( ( dst_node_inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut  && !node_is_mutable ) ||
@@ -246,24 +244,22 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 	while(true)
 	{
 		bool any_node_moved= false;
-		for( const VariablePtr& variable_ptr : temporary_variables_storage.variables_ )
+		for( const VariablePtr& variable : temporary_variables_storage.variables_ )
 		{
-			const Variable& variable= *variable_ptr;
-
 			// Destroy variables without links.
 			// Destroy all references, because all actual references that holds values should not yet be registered.
-			if( !function_context.variables_state.NodeMoved( variable_ptr ) &&
-				( variable.node_kind != ReferencesGraphNodeKind::Variable ||
-					!function_context.variables_state.HaveOutgoingLinks( variable_ptr ) ) )
+			if( !function_context.variables_state.NodeMoved( variable ) &&
+				( variable->node_kind != ReferencesGraphNodeKind::Variable ||
+					!function_context.variables_state.HaveOutgoingLinks( variable ) ) )
 			{
-				if( variable.node_kind == ReferencesGraphNodeKind::Variable && !function_context.is_functionless_context )
+				if( variable->node_kind == ReferencesGraphNodeKind::Variable && !function_context.is_functionless_context )
 				{
-					if( variable.type.HaveDestructor() )
-						CallDestructor( variable.llvm_value, variable.type, function_context, errors_container, src_loc );
-					if( variable.location == Variable::Location::Pointer )
-						CreateLifetimeEnd( function_context, variable.llvm_value );
+					if( variable->type.HaveDestructor() )
+						CallDestructor( variable->llvm_value, variable->type, function_context, errors_container, src_loc );
+					if( variable->location == Variable::Location::Pointer )
+						CreateLifetimeEnd( function_context, variable->llvm_value );
 				}
-				function_context.variables_state.MoveNode( variable_ptr );
+				function_context.variables_state.MoveNode( variable );
 				any_node_moved= true;
 			}
 		}

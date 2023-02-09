@@ -577,28 +577,27 @@ void CodeBuilder::CallDestructorsImpl(
 	// Call destructors in reverse order.
 	for( auto it = stack_variables_storage.variables_.rbegin(); it != stack_variables_storage.variables_.rend(); ++it )
 	{
-		const VariablePtr& stored_variable_ptr= *it;
-		const Variable& stored_variable= *stored_variable_ptr;
+		const VariablePtr& stored_variable= *it;
 
-		if( stored_variable.node_kind == ReferencesGraphNodeKind::Variable )
+		if( stored_variable->node_kind == ReferencesGraphNodeKind::Variable )
 		{
-			if( !function_context.variables_state.NodeMoved( stored_variable_ptr ) )
+			if( !function_context.variables_state.NodeMoved( stored_variable ) )
 			{
-				if( function_context.variables_state.HaveOutgoingLinks( stored_variable_ptr ) )
-					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable_ptr->name );
+				if( function_context.variables_state.HaveOutgoingLinks( stored_variable ) )
+					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable->name );
 
 				if( !function_context.is_functionless_context )
 				{
-					if( stored_variable.type.HaveDestructor() )
-						CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
+					if( stored_variable->type.HaveDestructor() )
+						CallDestructor( stored_variable->llvm_value, stored_variable->type, function_context, errors_container, src_loc );
 
 					// Avoid calling "lifetime.end" for variables without address.
-					if( stored_variable.location == Variable::Location::Pointer )
-						CreateLifetimeEnd( function_context, stored_variable.llvm_value );
+					if( stored_variable->location == Variable::Location::Pointer )
+						CreateLifetimeEnd( function_context, stored_variable->llvm_value );
 				}
 			}
 		}
-		function_context.variables_state.RemoveNode( stored_variable_ptr );
+		function_context.variables_state.RemoveNode( stored_variable );
 	}
 }
 
@@ -1247,7 +1246,7 @@ Type CodeBuilder::BuildFuncCode(
 				param.type,
 				declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::Variable /* actual value set later */,
+				ReferencesGraphNodeKind::Variable,
 				arg_name );
 
 		if( param.value_type == ValueType::Value )
@@ -1621,7 +1620,7 @@ void CodeBuilder::BuildConstructorInitialization(
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
 				ReferencesGraphNodeKind::ReferenceMut,
-				"",
+				Keyword( Keywords::base_ ),
 				CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
 
 		function_context.variables_state.AddNode( base_variable );
@@ -1644,7 +1643,7 @@ void CodeBuilder::BuildConstructorInitialization(
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
 					ReferencesGraphNodeKind::ReferenceMut,
-					"",
+					Keyword( Keywords::base_ ),
 					CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
 
 			function_context.variables_state.AddNode( base_variable );
