@@ -105,8 +105,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			CreateLifetimeStart( function_context, variable->llvm_value );
 			CreateVariableDebugInfo( *variable, variable_declaration.name, variable_declaration.src_loc, function_context );
 
-			prev_variables_storage.RegisterVariable( variable );
-
 			if( variable_declaration.initializer != nullptr )
 				variable->constexpr_value=
 					ApplyInitializer( variable, names, function_context, *variable_declaration.initializer );
@@ -181,12 +179,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			CreateReferenceVariableDebugInfo( *variable, variable_declaration.name, variable_declaration.src_loc, function_context );
 
-			prev_variables_storage.RegisterVariable( variable );
-
 			if( !function_context.variables_state.TryAddLink( expression_result, variable ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result->name );
 		}
 		else U_ASSERT(false);
+
+		prev_variables_storage.RegisterVariable( variable );
 
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
 			variable->constexpr_value == nullptr )
@@ -295,8 +293,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		CreateReferenceVariableDebugInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
-		prev_variables_storage.RegisterVariable( variable );
-
 		if( !function_context.variables_state.TryAddLink( initializer_experrsion, variable ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion->name );
 	}
@@ -322,8 +318,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		CreateVariableDebugInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
-		prev_variables_storage.RegisterVariable( variable );
-
 		SetupReferencesInCopyOrMove( function_context, variable, initializer_experrsion, names.GetErrors(), auto_variable_declaration.src_loc_ );
 
 		if( initializer_experrsion->value_type == ValueType::Value )
@@ -346,6 +340,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( !variable->type.IsCopyConstructible() )
 			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), auto_variable_declaration.src_loc_, variable->type );
+				function_context.variables_state.RemoveNode(variable);
 				return BlockBuildInfo();
 			}
 			BuildCopyConstructorPart(
@@ -357,6 +352,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		variable->constexpr_value= initializer_experrsion->constexpr_value;
 	}
 	else U_ASSERT(false);
+
+	prev_variables_storage.RegisterVariable( variable );
 
 	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && variable->constexpr_value == nullptr )
 	{
@@ -1024,7 +1021,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	const VariablePtr expr= BuildExpressionCodeEnsureVariable( with_operator.expression_, names, function_context );
 
-
 	ReferencesGraphNodeKind node_kind;
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference )
 		node_kind= ReferencesGraphNodeKind::Variable;
@@ -1442,7 +1438,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				names,
 				function_context );
 
-		// TODO - avoid modifying existing shared_ptr.
 		if( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetRawPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
