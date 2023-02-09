@@ -33,6 +33,12 @@ struct CodeBuilderOptions
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
+struct TypeinfoPartVariable
+{
+	Type type;
+	llvm::Constant* constexpr_value= nullptr;
+};
+
 class CodeBuilder
 {
 public:
@@ -636,17 +642,17 @@ private:
 	void BuildFullTypeinfo( const Type& type, const VariableMutPtr& typeinfo_variable, NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
 	void FinishTypeinfoClass( const ClassPtr& class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
-	Variable BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
 		const Class& class_, const ClassPtr& node_class_type,
 		const std::string& member_name,
 		ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers );
-	Variable BuildTypeinfoClassFieldsList( const ClassPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoClassTypesList( const ClassPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoClassFunctionsList( const ClassPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoClassParentsList( const ClassPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassFieldsList( const ClassPtr& class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassTypesList( const ClassPtr& class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassFunctionsList( const ClassPtr& class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassParentsList( const ClassPtr& class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
 
 	// Block elements
 	BlockBuildInfo BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::BlockElement& blocK_element );

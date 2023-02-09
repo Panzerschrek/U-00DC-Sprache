@@ -35,7 +35,7 @@ struct TypeinfoListElement
 	ClassPtr type= nullptr;
 };
 
-Variable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<TypeinfoListElement>& list )
+TypeinfoPartVariable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<TypeinfoListElement>& list )
 {
 	std::sort(
 		list.begin(), list.end(),
@@ -61,15 +61,7 @@ Variable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<Type
 	list_type.llvm_type= llvm::StructType::get( llvm_context, list_elements_llvm_types );
 	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
 
-	return
-		Variable(
-			std::move(list_type),
-			ValueType::Value,
-			Variable::Location::LLVMRegister,
-			ReferencesGraphNodeKind::Variable,
-			"",
-			initializer,
-			initializer );
+	return TypeinfoPartVariable{ std::move(list_type), initializer };
 }
 
 } // namespace
@@ -191,7 +183,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	};
 
 	const auto add_list_field=
-	[&]( const std::string& name, const Variable& variable )
+	[&]( const std::string& name, const TypeinfoPartVariable& variable )
 	{
 		typeinfo_class->members->AddName(
 			name,
@@ -347,7 +339,7 @@ void CodeBuilder::FinishTypeinfoClass( const ClassPtr& class_type, const ClassFi
 	destructor.llvm_function->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
 }
 
-Variable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 	list_elements.reserve( enum_type->element_count );
@@ -439,7 +431,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Private   ) ) );
 }
 
-Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& class_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& class_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 
@@ -526,7 +518,7 @@ Variable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& class_type, 
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
-Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr& class_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr& class_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 
@@ -571,7 +563,7 @@ Variable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr& class_type, N
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
-Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr& class_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr& class_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 
@@ -644,7 +636,7 @@ Variable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr& class_typ
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
-Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr& class_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr& class_type, NamesScope& root_namespace )
 {
 	const Class& class_= *class_type;
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( class_.llvm_type );
@@ -690,19 +682,10 @@ Variable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr& class_type,
 	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
 	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
 
-	// TODO - avoid using class "variable" here?
-	return
-		Variable(
-			std::move(list_type),
-			ValueType::Value,
-			Variable::Location::LLVMRegister,
-			ReferencesGraphNodeKind::Variable,
-			"",
-			initializer,
-			initializer );
+	return TypeinfoPartVariable{ std::move(list_type), initializer };
 }
 
-Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace )
 {
 	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
@@ -753,19 +736,10 @@ Variable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& functi
 	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
 	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
 
-	// TODO - avoid using class "variable" here?
-	return
-		Variable(
-			std::move(list_type),
-			ValueType::Value,
-			Variable::Location::LLVMRegister,
-			ReferencesGraphNodeKind::Variable,
-			"",
-			initializer,
-			initializer );
+	return TypeinfoPartVariable{ std::move(list_type), initializer };
 }
 
-Variable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace )
 {
 	TupleType list_type;
 	std::vector< llvm::Type* > list_elements_llvm_types;
@@ -819,16 +793,7 @@ Variable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, N
 	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
 	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
 
-	// TODO - avoid using class "variable" here?
-	return
-		Variable(
-			std::move(list_type),
-			ValueType::Value,
-			Variable::Location::LLVMRegister,
-			ReferencesGraphNodeKind::Variable,
-			"",
-			initializer,
-			initializer );
+	return TypeinfoPartVariable{ std::move(list_type), initializer };
 }
 
 } // namespace U
