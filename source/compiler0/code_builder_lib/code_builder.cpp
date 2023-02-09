@@ -217,8 +217,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	// Fix incomplete typeinfo.
 	for( const auto& typeinfo_entry : typeinfo_cache_ )
 	{
-		if( !typeinfo_entry.second.type.GetLLVMType()->isSized() )
-			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
+		if( !typeinfo_entry.second->type.GetLLVMType()->isSized() )
+			typeinfo_entry.second->type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
 	// Finish with debug info.

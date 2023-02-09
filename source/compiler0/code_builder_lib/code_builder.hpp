@@ -630,10 +630,10 @@ private:
 
 	// Typeinfo
 
-	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
+	VariablePtr BuildTypeInfo( const Type& type, NamesScope& root_namespace );
 	ClassPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name );
-	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
-	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace );
+	VariableMutPtr BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
+	void BuildFullTypeinfo( const Type& type, const VariableMutPtr& typeinfo_variable, NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
 	void FinishTypeinfoClass( const ClassPtr& class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
 	Variable BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace );
@@ -1038,7 +1038,7 @@ private:
 	ProgramStringMap< ClassPtr > template_classes_cache_;
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
-	std::unordered_map< Type, Variable, TypeHasher > typeinfo_cache_;
+	std::unordered_map< Type, VariableMutPtr, TypeHasher > typeinfo_cache_;
 	std::vector<std::shared_ptr<Class>> typeinfo_class_table_;
 
 	std::vector<Type> non_sync_expression_stack_;

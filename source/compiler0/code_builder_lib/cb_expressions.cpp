@@ -1599,12 +1599,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& root_namespace= *names.GetRoot();
 	BuildTypeInfo( type, *names.GetRoot() );
 
-	Variable& var= typeinfo_cache_[type];
-	BuildFullTypeinfo( type, var, root_namespace );
+	const VariableMutPtr& var_ptr= typeinfo_cache_[type];
+	BuildFullTypeinfo( type, var_ptr, root_namespace );
 
-	// TODO - store VariablePtr inside typeinfo cache.
-	const VariablePtr var_ptr= std::make_shared<Variable>(var);
-	function_context.variables_state.AddNode( var_ptr );
+	function_context.variables_state.AddNodeIfNotExists( var_ptr );
 
 	return Value( var_ptr, typeinfo.src_loc_ );
 }
