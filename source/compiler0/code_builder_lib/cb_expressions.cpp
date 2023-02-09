@@ -598,8 +598,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( const VariablePtr call_variable= overloaded_operator_call_try->GetVariablePtr())
 		{
-			const auto call_value_in_register= CreateMoveToLLVMRegisterInstruction( *call_variable, function_context );
-
 			if( binary_operator.operator_type_ == BinaryOperatorType::NotEqual && call_variable->type == bool_type_ )
 			{
 				const VariableMutPtr variable=
@@ -611,7 +609,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						OverloadedOperatorToString( overloaded_operator ) );
 
 				// "!=" is implemented via "==", so, invert result.
-				if( call_value_in_register != nullptr )
+				if( const auto call_value_in_register= CreateMoveToLLVMRegisterInstruction( *call_variable, function_context ) )
 				{
 					variable->llvm_value= function_context.llvm_ir_builder.CreateNot( call_value_in_register );
 					variable->constexpr_value= llvm::dyn_cast<llvm::Constant>( variable->llvm_value );
@@ -634,7 +632,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						ReferencesGraphNodeKind::Variable,
 						OverloadedOperatorToString( overloaded_operator ) );
 
-				if( call_value_in_register != nullptr )
+				if( const auto call_value_in_register= CreateMoveToLLVMRegisterInstruction( *call_variable, function_context ) )
 				{
 					if( binary_operator.operator_type_ == BinaryOperatorType::CompareOrder )
 						variable->llvm_value= call_value_in_register;
