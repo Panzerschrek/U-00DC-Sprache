@@ -11,8 +11,8 @@ bool TemplateSignatureParam::TypeParam::operator==( const TypeParam& other ) con
 bool TemplateSignatureParam::VariableParam::operator==( const VariableParam& other ) const
 {
 	return
-		this->v.type == other.v.type &&
-		this->v.constexpr_value->getUniqueInteger().getLimitedValue() == other.v.constexpr_value->getUniqueInteger().getLimitedValue();
+		this->type == other.type &&
+		this->constexpr_value->getUniqueInteger().getLimitedValue() == other.constexpr_value->getUniqueInteger().getLimitedValue();
 }
 
 bool TemplateSignatureParam::TemplateParam::operator==( const TemplateParam& other ) const

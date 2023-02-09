@@ -114,6 +114,11 @@ struct Variable final
 	ReferencesGraphNodeKind node_kind= ReferencesGraphNodeKind::Variable;
 
 	Variable()= default;
+	Variable(const Variable&)= delete;
+	Variable(Variable&&)= default;
+
+	Variable& operator=(const Variable&)= delete;
+	Variable& operator=(Variable&&)= default;
 
 	Variable(
 		Type in_type,

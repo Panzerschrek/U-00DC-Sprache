@@ -1349,23 +1349,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context ) == std::nullopt )
 	{ // Here process default assignment operator for fundamental types.
 		// Evaluate right part
-		VariablePtr r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value_, names, function_context );
+		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( assignment_operator.r_value_, names, function_context );
 
-		if( r_var->type.GetFundamentalType() != nullptr ||
-			r_var->type.GetEnumType() != nullptr ||
-			r_var->type.GetRawPointerType() != nullptr ||
-			r_var->type.GetFunctionPointerType() != nullptr )
-		{
-			// We must read value, because referenced by reference value may be changed in l_var evaluation.
-			auto r_var_copy= std::make_shared<Variable>(*r_var);
-			if( r_var_copy->location != Variable::Location::LLVMRegister )
-			{
-				r_var_copy->llvm_value= CreateMoveToLLVMRegisterInstruction( *r_var_copy, function_context );
-				r_var_copy->location= Variable::Location::LLVMRegister;
-			}
-			r_var_copy->value_type= ValueType::Value;
-			r_var= std::move(r_var_copy);
-		}
+		const auto r_var_in_register= CreateMoveToLLVMRegisterInstruction( *r_var, function_context );
+
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), assignment_operator.src_loc_ ); // Destroy temporaries of right expression.
 
 		// Evaluate left part.
@@ -1399,8 +1386,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				U_ASSERT(false);
 				return BlockBuildInfo();
 			}
-			U_ASSERT( r_var->location == Variable::Location::LLVMRegister );
-			CreateTypedStore( function_context, r_var->type, r_var->llvm_value, l_var->llvm_value );
+			CreateTypedStore( function_context, r_var->type, r_var_in_register, l_var->llvm_value );
 		}
 		else
 		{
@@ -1441,14 +1427,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( r_var->type.GetFundamentalType() != nullptr || r_var->type.GetRawPointerType() != nullptr )
 		{
 			// We must read value, because referenced by reference value may be changed in l_var evaluation.
-			auto r_var_copy= std::make_shared<Variable>(*r_var);
-			if( r_var_copy->location != Variable::Location::LLVMRegister )
-			{
-				r_var_copy->llvm_value= CreateMoveToLLVMRegisterInstruction( *r_var_copy, function_context );
-				r_var_copy->location= Variable::Location::LLVMRegister;
-			}
-			r_var_copy->value_type= ValueType::Value;
-			r_var= r_var_copy;
+			r_var=
+				std::make_shared<Variable>(
+					r_var->type,
+					ValueType::Value,
+					Variable::Location::LLVMRegister,
+					ReferencesGraphNodeKind::Variable,
+					r_var->name + " in register",
+					r_var->location == Variable::Location::LLVMRegister
+						? r_var->llvm_value
+						: CreateMoveToLLVMRegisterInstruction( *r_var, function_context ),
+					r_var->constexpr_value );
 		}
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), additive_assignment_operator.src_loc_ ); // Destroy temporaries of right expression.
 

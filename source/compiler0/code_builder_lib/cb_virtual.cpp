@@ -483,12 +483,16 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	if( function.virtual_table_index == ~0u && this_->type == function_type.params.front().type )
 		return std::make_pair( this_, function.llvm_function );
 
-	VariableMutPtr this_casted= std::make_shared<Variable>(*this_);
-	if( this_->type != function_type.params.front().type )
-	{
-		this_casted->type= function_type.params.front().type;
+	const VariableMutPtr this_casted=
+		std::make_shared<Variable>(
+			function_type.params.front().type,
+			this_->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			this_->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
+	if( this_->type == this_casted->type )
+		this_casted->llvm_value= this_->llvm_value;
+	else
 		this_casted->llvm_value= CreateReferenceCast( this_->llvm_value, this_->type, this_casted->type, function_context );
-	}
 
 	function_context.variables_state.AddNode( this_casted );
 	if( !function_context.variables_state.TryAddLink( this_, this_casted ) )

@@ -499,7 +499,7 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 			REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), value.GetSrcLoc() );
 			return TemplateSignatureParam::TypeParam();
 		}
-		return TemplateSignatureParam::VariableParam{ *variable };
+		return TemplateSignatureParam::VariableParam{ variable->type, variable->constexpr_value };
 	}
 
 	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope.GetErrors(), value.GetSrcLoc(), invalid_type_ );
@@ -560,8 +560,8 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		const VariablePtr& given_variable= *given_variable_ptr_ptr;
 
 		return
-			given_variable->type == template_param.v.type &&
-			given_variable->constexpr_value->getUniqueInteger() == template_param.v.constexpr_value->getUniqueInteger();
+			given_variable->type == template_param.type &&
+			given_variable->constexpr_value->getUniqueInteger() == template_param.constexpr_value->getUniqueInteger();
 	}
 
 	return false;
