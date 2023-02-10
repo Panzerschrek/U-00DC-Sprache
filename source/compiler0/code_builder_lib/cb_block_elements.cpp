@@ -79,7 +79,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		VariableMutPtr names_scope_variable;
+		const VariableMutPtr variable_reference =
+			std::make_shared<Variable>(
+				type,
+				variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
+				variable_declaration.name );
+		function_context.variables_state.AddNode( variable_reference );
+
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			const VariableMutPtr variable=
@@ -120,37 +128,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.RemoveNode( variable_for_initialization );
 			}
 
+			variable_reference->llvm_value= variable->llvm_value;
+			variable_reference->constexpr_value= variable->constexpr_value;
+
 			prev_variables_storage.RegisterVariable( variable );
-
-			// Create separate reference node.
-			names_scope_variable=
-				std::make_shared<Variable>(
-					type,
-					variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-					Variable::Location::Pointer,
-					variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
-					variable_declaration.name,
-					variable->llvm_value,
-					variable->constexpr_value );
-
-			function_context.variables_state.AddNode( names_scope_variable );
-			function_context.variables_state.AddLink( variable, names_scope_variable );
+			function_context.variables_state.AddLink( variable, variable_reference );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
-			const VariableMutPtr variable=
-				std::make_shared<Variable>(
-					type,
-					variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-					Variable::Location::Pointer,
-					variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
-					variable_declaration.name );
-			function_context.variables_state.AddNode( variable );
-
 			if( variable_declaration.initializer == nullptr )
 			{
 				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), variables_declaration.src_loc_, variable_declaration.name );
-				function_context.variables_state.RemoveNode( variable );
+				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 
@@ -162,7 +151,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( constructor_initializer->arguments.size() != 1u )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names.GetErrors(), constructor_initializer->src_loc_ );
-					function_context.variables_state.RemoveNode( variable );
+					function_context.variables_state.RemoveNode( variable_reference );
 					continue;
 				}
 				initializer_expression= &constructor_initializer->arguments.front();
@@ -170,62 +159,60 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 			{
 				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), variable_declaration.src_loc );
-				function_context.variables_state.RemoveNode( variable );
+				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 
 			const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names, function_context );
-			if( !ReferenceIsConvertible( expression_result->type, variable->type, names.GetErrors(), variables_declaration.src_loc_ ) )
+			if( !ReferenceIsConvertible( expression_result->type, variable_reference->type, names.GetErrors(), variables_declaration.src_loc_ ) )
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), variables_declaration.src_loc_, variable->type, expression_result->type );
-				function_context.variables_state.RemoveNode( variable );
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), variables_declaration.src_loc_, variable_reference->type, expression_result->type );
+				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 
 			if( expression_result->value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), variables_declaration.src_loc_ );
-				function_context.variables_state.RemoveNode( variable );
+				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
-			if( expression_result->value_type == ValueType::ReferenceImut && variable->value_type == ValueType::ReferenceMut )
+			if( expression_result->value_type == ValueType::ReferenceImut && variable_reference->value_type == ValueType::ReferenceMut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), variable_declaration.src_loc );
-				function_context.variables_state.RemoveNode( variable );
+				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 
 			// TODO - maybe make copy of varaible address in new llvm register?
 			llvm::Value* result_ref= expression_result->llvm_value;
-			if( variable->type != expression_result->type )
-				result_ref= CreateReferenceCast( result_ref, expression_result->type, variable->type, function_context );
-			variable->llvm_value= result_ref;
-			variable->constexpr_value= expression_result->constexpr_value;
+			if( variable_reference->type != expression_result->type )
+				result_ref= CreateReferenceCast( result_ref, expression_result->type, variable_reference->type, function_context );
+			variable_reference->llvm_value= result_ref;
+			variable_reference->constexpr_value= expression_result->constexpr_value;
 
-			CreateReferenceVariableDebugInfo( *variable, variable_declaration.name, variable_declaration.src_loc, function_context );
+			CreateReferenceVariableDebugInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );
 
-			if( !function_context.variables_state.TryAddLink( expression_result, variable ) )
+			if( !function_context.variables_state.TryAddLink( expression_result, variable_reference ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result->name );
-
-			names_scope_variable= variable;
 		}
 		else U_ASSERT(false);
 
-		prev_variables_storage.RegisterVariable( names_scope_variable );
+		prev_variables_storage.RegisterVariable( variable_reference );
 
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
-			names_scope_variable->constexpr_value == nullptr )
+			variable_reference->constexpr_value == nullptr )
 		{
 			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names.GetErrors(), variable_declaration.src_loc );
 			continue;
 		}
 
 		// Reset constexpr initial value for mutable variables.
-		if( names_scope_variable->value_type == ValueType::ReferenceMut )
-			names_scope_variable->constexpr_value= nullptr;
+		if( variable_reference->value_type == ValueType::ReferenceMut )
+			variable_reference->constexpr_value= nullptr;
 
 		const Value* const inserted_value=
-			names.AddName( variable_declaration.name, Value( names_scope_variable, variable_declaration.src_loc ) );
+			names.AddName( variable_declaration.name, Value( variable_reference, variable_declaration.src_loc ) );
 		if( inserted_value == nullptr )
 		{
 			REPORT_ERROR( Redefinition, names.GetErrors(), variables_declaration.src_loc_, variable_declaration.name );
@@ -278,38 +265,38 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return BlockBuildInfo();
 	}
 
-	VariableMutPtr names_scope_variable;
-	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
-	{
-		if( initializer_experrsion->value_type == ValueType::ReferenceImut && auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
-		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), auto_variable_declaration.src_loc_ );
-			return BlockBuildInfo();
-		}
-		if( initializer_experrsion->value_type == ValueType::Value )
-		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.src_loc_ );
-			return BlockBuildInfo();
-		}
-
-		const VariableMutPtr variable=
+	const VariableMutPtr variable_reference=
 			std::make_shared<Variable>(
 				initializer_experrsion->type,
 				auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
 				auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 				auto_variable_declaration.name,
-				initializer_experrsion->llvm_value,
+				nullptr,
 				initializer_experrsion->constexpr_value );
+	function_context.variables_state.AddNode( variable_reference );
 
-		function_context.variables_state.AddNode( variable );
+	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
+	{
+		if( initializer_experrsion->value_type == ValueType::ReferenceImut && auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), auto_variable_declaration.src_loc_ );
+			function_context.variables_state.RemoveNode( variable_reference );
+			return BlockBuildInfo();
+		}
+		if( initializer_experrsion->value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.src_loc_ );
+			function_context.variables_state.RemoveNode( variable_reference );
+			return BlockBuildInfo();
+		}
 
-		CreateReferenceVariableDebugInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
+		variable_reference->llvm_value= initializer_experrsion->llvm_value;
 
-		if( !function_context.variables_state.TryAddLink( initializer_experrsion, variable ) )
+		CreateReferenceVariableDebugInfo( *variable_reference, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
+
+		if( !function_context.variables_state.TryAddLink( initializer_experrsion, variable_reference ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion->name );
-
-		names_scope_variable= variable;
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
@@ -379,36 +366,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		prev_variables_storage.RegisterVariable( variable );
 
-		// Create separate reference node.
-		names_scope_variable=
-			std::make_shared<Variable>(
-				initializer_experrsion->type,
-				auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-				Variable::Location::Pointer,
-				auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
-				auto_variable_declaration.name,
-				variable->llvm_value,
-				variable->constexpr_value );
+		variable_reference->llvm_value= variable->llvm_value;
 
-		function_context.variables_state.AddNode( names_scope_variable );
-		function_context.variables_state.AddLink( variable, names_scope_variable );
+		function_context.variables_state.AddLink( variable, variable_reference );
 	}
 	else U_ASSERT(false);
 
-	prev_variables_storage.RegisterVariable( names_scope_variable );
+	prev_variables_storage.RegisterVariable( variable_reference );
 
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && names_scope_variable->constexpr_value == nullptr )
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && variable_reference->constexpr_value == nullptr )
 	{
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names.GetErrors(), auto_variable_declaration.src_loc_ );
 		return BlockBuildInfo();
 	}
 
 	// Reset constexpr initial value for mutable variables.
-	if( names_scope_variable->value_type != ValueType::ReferenceImut )
-		names_scope_variable->constexpr_value= nullptr;
+	if( variable_reference->value_type != ValueType::ReferenceImut )
+		variable_reference->constexpr_value= nullptr;
 
 	const Value* const inserted_value=
-		names.AddName( auto_variable_declaration.name, Value( names_scope_variable, auto_variable_declaration.src_loc_ ) );
+		names.AddName( auto_variable_declaration.name, Value( variable_reference, auto_variable_declaration.src_loc_ ) );
 	if( inserted_value == nullptr )
 		REPORT_ERROR( Redefinition, names.GetErrors(), auto_variable_declaration.src_loc_, auto_variable_declaration.name );
 

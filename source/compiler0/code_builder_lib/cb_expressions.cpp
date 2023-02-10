@@ -3581,7 +3581,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 	const VariableMutPtr variable=
 		std::make_shared<Variable>(
 			type,
-			ValueType::ReferenceMut, // Make "Value" for construction.
+			ValueType::Value,
 			Variable::Location::Pointer,
 			ReferencesGraphNodeKind::Variable,
 			"temp " + type.ToString() );
@@ -3593,8 +3593,22 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 		CreateLifetimeStart( function_context, variable->llvm_value );
 	}
 
-	variable->constexpr_value= ApplyConstructorInitializer( variable, synt_args, src_loc, names, function_context );
-	variable->value_type= ValueType::Value; // Make "value" after construction.
+	{
+		const VariableMutPtr variable_for_initialization=
+			std::make_shared<Variable>(
+				type,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::ReferenceMut,
+				variable->name,
+				variable->llvm_value );
+		function_context.variables_state.AddNode( variable_for_initialization );
+		function_context.variables_state.AddLink( variable, variable_for_initialization );
+
+		variable->constexpr_value= ApplyConstructorInitializer( variable_for_initialization, synt_args, src_loc, names, function_context );
+
+		function_context.variables_state.RemoveNode( variable_for_initialization );
+	}
 
 	RegisterTemporaryVariable( function_context, variable );
 	return variable;
@@ -3617,7 +3631,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			dst_type,
-			ValueType::ReferenceMut, // Make "Value" for construction.
+			ValueType::Value,
 			Variable::Location::Pointer,
 			ReferencesGraphNodeKind::Variable,
 			"temp " + dst_type.ToString() );
@@ -3634,11 +3648,22 @@ VariablePtr CodeBuilder::ConvertVariable(
 		// Create temp variables frame to prevent destruction of "src".
 		const StackVariablesStorage temp_variables_storage( function_context );
 
+		const VariableMutPtr result_for_initialization=
+			std::make_shared<Variable>(
+				dst_type,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				ReferencesGraphNodeKind::ReferenceMut,
+				result->name,
+				result->llvm_value );
+		function_context.variables_state.AddNode( result_for_initialization );
+		function_context.variables_state.AddLink( variable, result_for_initialization );
+
 		DoCallFunction(
 			conversion_constructor.llvm_function,
 			*conversion_constructor.type.GetFunctionType(),
 			src_loc,
-			{ result, variable },
+			{ result_for_initialization, variable },
 			{},
 			false,
 			names,
@@ -3646,9 +3671,10 @@ VariablePtr CodeBuilder::ConvertVariable(
 			false );
 
 		CallDestructors( temp_variables_storage, names, function_context, src_loc );
+
+		function_context.variables_state.RemoveNode( result_for_initialization );
 	}
 
-	result->value_type= ValueType::Value; // Make "Value" after construction.
 	RegisterTemporaryVariable( function_context, result );
 	return result;
 }
