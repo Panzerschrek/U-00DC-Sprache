@@ -79,53 +79,64 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		StackVariablesStorage& prev_variables_storage= *function_context.stack_variables_stack.back();
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		ReferencesGraphNodeKind node_kind;
-		if( variable_declaration.reference_modifier != ReferenceModifier::Reference )
-			node_kind= ReferencesGraphNodeKind::Variable;
-		else if( variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
-			node_kind= ReferencesGraphNodeKind::ReferenceMut;
-		else
-			node_kind= ReferencesGraphNodeKind::ReferenceImut;
-
-		const VariableMutPtr variable=
+		const VariableMutPtr variable_reference =
 			std::make_shared<Variable>(
 				type,
-				ValueType::ReferenceMut,
+				variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				node_kind,
 				variable_declaration.name );
-
-		// Do not forget to remove node in case of error-return!!!
-		function_context.variables_state.AddNode( variable );
+		function_context.variables_state.AddNode( variable_reference );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
+			const VariableMutPtr variable=
+				std::make_shared<Variable>(
+					type,
+					ValueType::Value,
+					Variable::Location::Pointer,
+					variable_declaration.name + " variable itself" );
+
+			// Do not forget to remove node in case of error-return!!!
+			function_context.variables_state.AddNode( variable );
+
 			variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, variable_declaration.name );
 
 			CreateLifetimeStart( function_context, variable->llvm_value );
 			CreateVariableDebugInfo( *variable, variable_declaration.name, variable_declaration.src_loc, function_context );
 
-			if( variable_declaration.initializer != nullptr )
-				variable->constexpr_value=
-					ApplyInitializer( variable, names, function_context, *variable_declaration.initializer );
-			else
-				variable->constexpr_value=
-					ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names, function_context );
+			{
+				const VariableMutPtr variable_for_initialization=
+					std::make_shared<Variable>(
+						type,
+						ValueType::ReferenceMut,
+						Variable::Location::Pointer,
+						variable_declaration.name,
+						variable->llvm_value );
+				function_context.variables_state.AddNode( variable_for_initialization );
+				function_context.variables_state.AddLink( variable, variable_for_initialization );
 
-			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
-			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
-				variable->value_type= ValueType::ReferenceImut;
+				if( variable_declaration.initializer != nullptr )
+					variable->constexpr_value=
+						ApplyInitializer( variable_for_initialization, names, function_context, *variable_declaration.initializer );
+				else
+					variable->constexpr_value=
+						ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable_for_initialization, names, function_context );
+
+				function_context.variables_state.RemoveNode( variable_for_initialization );
+			}
+
+			variable_reference->llvm_value= variable->llvm_value;
+			variable_reference->constexpr_value= variable->constexpr_value;
+
+			prev_variables_storage.RegisterVariable( variable );
+			function_context.variables_state.AddLink( variable, variable_reference );
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
-			// Mark references immutable before initialization.
-			if( variable_declaration.mutability_modifier != MutabilityModifier::Mutable )
-				variable->value_type= ValueType::ReferenceImut;
-
 			if( variable_declaration.initializer == nullptr )
 			{
 				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), variables_declaration.src_loc_, variable_declaration.name );
-				function_context.variables_state.RemoveNode( variable );
+				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 
@@ -137,7 +148,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( constructor_initializer->arguments.size() != 1u )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names.GetErrors(), constructor_initializer->src_loc_ );
-					function_context.variables_state.RemoveNode( variable );
+					function_context.variables_state.RemoveNode( variable_reference );
 					continue;
 				}
 				initializer_expression= &constructor_initializer->arguments.front();
@@ -145,60 +156,60 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 			{
 				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), variable_declaration.src_loc );
-				function_context.variables_state.RemoveNode( variable );
+				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 
 			const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names, function_context );
-			if( !ReferenceIsConvertible( expression_result->type, variable->type, names.GetErrors(), variables_declaration.src_loc_ ) )
+			if( !ReferenceIsConvertible( expression_result->type, variable_reference->type, names.GetErrors(), variables_declaration.src_loc_ ) )
 			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), variables_declaration.src_loc_, variable->type, expression_result->type );
-				function_context.variables_state.RemoveNode( variable );
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), variables_declaration.src_loc_, variable_reference->type, expression_result->type );
+				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 
 			if( expression_result->value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), variables_declaration.src_loc_ );
-				function_context.variables_state.RemoveNode( variable );
+				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
-			if( expression_result->value_type == ValueType::ReferenceImut && variable->value_type == ValueType::ReferenceMut )
+			if( expression_result->value_type == ValueType::ReferenceImut && variable_reference->value_type == ValueType::ReferenceMut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), variable_declaration.src_loc );
-				function_context.variables_state.RemoveNode( variable );
+				function_context.variables_state.RemoveNode( variable_reference );
 				continue;
 			}
 
 			// TODO - maybe make copy of varaible address in new llvm register?
 			llvm::Value* result_ref= expression_result->llvm_value;
-			if( variable->type != expression_result->type )
-				result_ref= CreateReferenceCast( result_ref, expression_result->type, variable->type, function_context );
-			variable->llvm_value= result_ref;
-			variable->constexpr_value= expression_result->constexpr_value;
+			if( variable_reference->type != expression_result->type )
+				result_ref= CreateReferenceCast( result_ref, expression_result->type, variable_reference->type, function_context );
+			variable_reference->llvm_value= result_ref;
+			variable_reference->constexpr_value= expression_result->constexpr_value;
 
-			CreateReferenceVariableDebugInfo( *variable, variable_declaration.name, variable_declaration.src_loc, function_context );
+			CreateReferenceVariableDebugInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );
 
-			if( !function_context.variables_state.TryAddLink( expression_result, variable ) )
+			if( !function_context.variables_state.TryAddLink( expression_result, variable_reference ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result->name );
 		}
 		else U_ASSERT(false);
 
-		prev_variables_storage.RegisterVariable( variable );
+		prev_variables_storage.RegisterVariable( variable_reference );
 
 		if( variable_declaration.mutability_modifier == MutabilityModifier::Constexpr &&
-			variable->constexpr_value == nullptr )
+			variable_reference->constexpr_value == nullptr )
 		{
 			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names.GetErrors(), variable_declaration.src_loc );
 			continue;
 		}
 
 		// Reset constexpr initial value for mutable variables.
-		if( variable->value_type != ValueType::ReferenceImut )
-			variable->constexpr_value= nullptr;
+		if( variable_reference->value_type == ValueType::ReferenceMut )
+			variable_reference->constexpr_value= nullptr;
 
 		const Value* const inserted_value=
-			names.AddName( variable_declaration.name, Value( variable, variable_declaration.src_loc ) );
+			names.AddName( variable_declaration.name, Value( variable_reference, variable_declaration.src_loc ) );
 		if( inserted_value == nullptr )
 		{
 			REPORT_ERROR( Redefinition, names.GetErrors(), variables_declaration.src_loc_, variable_declaration.name );
@@ -232,74 +243,72 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return BlockBuildInfo();
 	}
 
-	ReferencesGraphNodeKind node_kind;
-	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference )
-		node_kind= ReferencesGraphNodeKind::Variable;
-	else if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
-		node_kind= ReferencesGraphNodeKind::ReferenceMut;
-	else
-		node_kind= ReferencesGraphNodeKind::ReferenceImut;
-
-	const VariableMutPtr variable=
-		std::make_shared<Variable>(
-			initializer_experrsion->type,
-			auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-			Variable::Location::Pointer,
-			node_kind,
-			auto_variable_declaration.name );
-
-	// Do not forget to remove node in case of error-return!!!
-	function_context.variables_state.AddNode( variable );
-
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference ||
 		auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )
 	{
 		// Full completeness required for value-variables and any constexpr variable.
-		if( !EnsureTypeComplete( variable->type ) )
+		if( !EnsureTypeComplete( initializer_experrsion->type ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), auto_variable_declaration.src_loc_, variable->type );
-			function_context.variables_state.RemoveNode(variable);
+			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion->type );
 			return BlockBuildInfo();
 		}
 	}
-	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference && variable->type.IsAbstract() )
-		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), auto_variable_declaration.src_loc_, variable->type );
+	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference && initializer_experrsion->type.IsAbstract() )
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion->type );
 
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !variable->type.CanBeConstexpr() )
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && !initializer_experrsion->type.CanBeConstexpr() )
 	{
 		REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names.GetErrors(), auto_variable_declaration.src_loc_ );
-		function_context.variables_state.RemoveNode(variable);
 		return BlockBuildInfo();
 	}
 
+	const VariableMutPtr variable_reference=
+		std::make_shared<Variable>(
+			initializer_experrsion->type,
+			auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			auto_variable_declaration.name,
+			nullptr,
+			initializer_experrsion->constexpr_value );
+	function_context.variables_state.AddNode( variable_reference );
+
 	if( auto_variable_declaration.reference_modifier == ReferenceModifier::Reference )
 	{
-		if( initializer_experrsion->value_type == ValueType::ReferenceImut && variable->value_type != ValueType::ReferenceImut )
+		if( initializer_experrsion->value_type == ValueType::ReferenceImut && auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), auto_variable_declaration.src_loc_ );
-			function_context.variables_state.RemoveNode(variable);
+			function_context.variables_state.RemoveNode( variable_reference );
 			return BlockBuildInfo();
 		}
-
-		variable->llvm_value= initializer_experrsion->llvm_value;
-		variable->constexpr_value= initializer_experrsion->constexpr_value;
-
 		if( initializer_experrsion->value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), auto_variable_declaration.src_loc_ );
-			function_context.variables_state.RemoveNode(variable);
+			function_context.variables_state.RemoveNode( variable_reference );
 			return BlockBuildInfo();
 		}
 
-		CreateReferenceVariableDebugInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
+		variable_reference->llvm_value= initializer_experrsion->llvm_value;
 
-		if( !function_context.variables_state.TryAddLink( initializer_experrsion, variable ) )
+		CreateReferenceVariableDebugInfo( *variable_reference, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
+
+		if( !function_context.variables_state.TryAddLink( initializer_experrsion, variable_reference ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion->name );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
-		if( !variable->type.CanBeConstexpr() )
+		if( !initializer_experrsion->type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+
+		const VariableMutPtr variable=
+			std::make_shared<Variable>(
+				initializer_experrsion->type,
+				ValueType::Value,
+				Variable::Location::Pointer,
+				auto_variable_declaration.name + " variable itself",
+				nullptr,
+				initializer_experrsion->constexpr_value /* constexpr preserved for move/copy. */ );
+
+		function_context.variables_state.AddNode( variable );
 
 		if( initializer_experrsion->value_type == ValueType::Value &&
 			initializer_experrsion->location == Variable::Location::Pointer &&
@@ -322,7 +331,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( initializer_experrsion->value_type == ValueType::Value )
 		{
-			U_ASSERT(initializer_experrsion->node_kind == ReferencesGraphNodeKind::Variable );
 			function_context.variables_state.MoveNode( initializer_experrsion );
 
 			if( initializer_experrsion->llvm_value != variable->llvm_value )
@@ -343,30 +351,35 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.RemoveNode(variable);
 				return BlockBuildInfo();
 			}
+
 			BuildCopyConstructorPart(
 				variable->llvm_value, initializer_experrsion->llvm_value,
 				variable->type,
 				function_context );
 		}
-		// constexpr preserved for move/copy.
-		variable->constexpr_value= initializer_experrsion->constexpr_value;
+
+		variable_reference->llvm_value= variable->llvm_value;
+
+		prev_variables_storage.RegisterVariable( variable );
+
+		function_context.variables_state.AddLink( variable, variable_reference );
 	}
 	else U_ASSERT(false);
 
-	prev_variables_storage.RegisterVariable( variable );
+	prev_variables_storage.RegisterVariable( variable_reference );
 
-	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && variable->constexpr_value == nullptr )
+	if( auto_variable_declaration.mutability_modifier == MutabilityModifier::Constexpr && variable_reference->constexpr_value == nullptr )
 	{
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names.GetErrors(), auto_variable_declaration.src_loc_ );
 		return BlockBuildInfo();
 	}
 
 	// Reset constexpr initial value for mutable variables.
-	if( variable->value_type != ValueType::ReferenceImut )
-		variable->constexpr_value= nullptr;
+	if( variable_reference->value_type != ValueType::ReferenceImut )
+		variable_reference->constexpr_value= nullptr;
 
 	const Value* const inserted_value=
-		names.AddName( auto_variable_declaration.name, Value( variable, auto_variable_declaration.src_loc_ ) );
+		names.AddName( auto_variable_declaration.name, Value( variable_reference, auto_variable_declaration.src_loc_ ) );
 	if( inserted_value == nullptr )
 		REPORT_ERROR( Redefinition, names.GetErrors(), auto_variable_declaration.src_loc_, auto_variable_declaration.name );
 
@@ -474,7 +487,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					*function_context.return_type,
 					function_context.function_type.return_value_type,
 					Variable::Location::Pointer,
-					function_context.function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 					"return value lock" );
 
 			function_context.variables_state.AddNode( return_value_lock );
@@ -608,7 +620,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			sequence_expression->type,
 			sequence_expression->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			sequence_expression->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 			sequence_expression->name + " sequence lock" );
 
 	function_context.variables_state.AddNode( sequence_lock );
@@ -631,54 +642,58 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			NamesScope loop_names( "", &names );
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
-			ReferencesGraphNodeKind node_kind;
-			if( for_operator.reference_modifier_ != ReferenceModifier::Reference )
-				node_kind= ReferencesGraphNodeKind::Variable;
-			else if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable )
-				node_kind= ReferencesGraphNodeKind::ReferenceMut;
-			else
-				node_kind= ReferencesGraphNodeKind::ReferenceImut;
-
-			const VariableMutPtr variable=
+			const VariableMutPtr variable_reference=
 				std::make_shared<Variable>(
 					element_type,
 					for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 					Variable::Location::Pointer,
-					node_kind,
-					for_operator.loop_variable_name_ );
+					for_operator.loop_variable_name_,
+					nullptr,
+					nullptr ); // TODO - set constexpr value?
 
 			// Do not forget to remove node in case of error-return!!!
-			function_context.variables_state.AddNode( variable );
+			function_context.variables_state.AddNode( variable_reference );
 
 			if( for_operator.reference_modifier_ == ReferenceModifier::Reference )
 			{
 				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), for_operator.src_loc_ );
-					function_context.variables_state.RemoveNode( variable );
+					function_context.variables_state.RemoveNode( variable_reference );
 					continue;
 				}
 
-				variable->llvm_value= CreateTupleElementGEP( function_context, *sequence_expression, element_index );
+				variable_reference->llvm_value= CreateTupleElementGEP( function_context, *sequence_expression, element_index );
 
-				CreateReferenceVariableDebugInfo( *variable, variable_name, for_operator.src_loc_, function_context );
+				CreateReferenceVariableDebugInfo( *variable_reference, variable_name, for_operator.src_loc_, function_context );
 
-				function_context.stack_variables_stack.back()->RegisterVariable( variable );
 
-				if( !function_context.variables_state.TryAddLink( sequence_lock, variable ) )
+				if( !function_context.variables_state.TryAddLink( sequence_lock, variable_reference ) )
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression->name );
 			}
 			else
 			{
+				const VariableMutPtr variable=
+					std::make_shared<Variable>(
+						element_type,
+						ValueType::Value,
+						Variable::Location::Pointer,
+						for_operator.loop_variable_name_ + " variable itself",
+						nullptr,
+						nullptr );
+				function_context.variables_state.AddNode( variable );
+
 				if( !EnsureTypeComplete( element_type ) )
 				{
 					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), for_operator.src_loc_, element_type );
+					function_context.variables_state.RemoveNode( variable_reference );
 					function_context.variables_state.RemoveNode( variable );
 					continue;
 				}
 				if( !element_type.IsCopyConstructible() )
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, element_type );
+					function_context.variables_state.RemoveNode( variable_reference );
 					function_context.variables_state.RemoveNode( variable );
 					continue;
 				}
@@ -687,8 +702,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				CreateLifetimeStart( function_context, variable->llvm_value );
 				CreateVariableDebugInfo( *variable, variable_name, for_operator.src_loc_, function_context );
 
-				function_context.stack_variables_stack.back()->RegisterVariable( variable );
-
 				SetupReferencesInCopyOrMove( function_context, variable, sequence_expression, names.GetErrors(), for_operator.src_loc_ );
 
 				BuildCopyConstructorPart(
@@ -696,9 +709,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					CreateTupleElementGEP( function_context, *sequence_expression, element_index ),
 					element_type,
 					function_context );
+
+				variable_reference->llvm_value= variable->llvm_value;
+
+				function_context.stack_variables_stack.back()->RegisterVariable( variable );
+
+				function_context.variables_state.AddLink( variable, variable_reference );
 			}
 
-			loop_names.AddName( for_operator.loop_variable_name_, Value( std::move(variable), for_operator.src_loc_ ) );
+			function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
+
+			loop_names.AddName( for_operator.loop_variable_name_, Value( std::move(variable_reference), for_operator.src_loc_ ) );
 
 			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
 			llvm::BasicBlock* const next_basic_block=
@@ -1021,45 +1042,37 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	const VariablePtr expr= BuildExpressionCodeEnsureVariable( with_operator.expression_, names, function_context );
 
-	ReferencesGraphNodeKind node_kind;
-	if( with_operator.reference_modifier_ != ReferenceModifier::Reference )
-		node_kind= ReferencesGraphNodeKind::Variable;
-	else if( with_operator.mutability_modifier_ == MutabilityModifier::Mutable )
-		node_kind= ReferencesGraphNodeKind::ReferenceMut;
-	else
-		node_kind= ReferencesGraphNodeKind::ReferenceImut;
-
-	const VariableMutPtr variable=
+	const VariableMutPtr variable_reference=
 		std::make_shared<Variable>(
 			expr->type,
 			with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			node_kind,
-			with_operator.variable_name_ );
-
+			with_operator.variable_name_,
+			nullptr,
+			expr->constexpr_value );
 	// Do not forget to remove node in case of error-return!!!
-	function_context.variables_state.AddNode( variable );
+	function_context.variables_state.AddNode( variable_reference );
 
 	if( with_operator.reference_modifier_ != ReferenceModifier::Reference &&
-		!EnsureTypeComplete( variable->type ) )
+		!EnsureTypeComplete( variable_reference->type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), with_operator.src_loc_, variable->type );
-		function_context.variables_state.RemoveNode( variable );
+		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), with_operator.src_loc_, variable_reference->type );
+		function_context.variables_state.RemoveNode( variable_reference );
 		return BlockBuildInfo();
 	}
-	if( with_operator.reference_modifier_ != ReferenceModifier::Reference && variable->type.IsAbstract() )
+	if( with_operator.reference_modifier_ != ReferenceModifier::Reference && variable_reference->type.IsAbstract() )
 	{
-		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), with_operator.src_loc_, variable->type );
-		function_context.variables_state.RemoveNode( variable );
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), with_operator.src_loc_, variable_reference->type );
+		function_context.variables_state.RemoveNode( variable_reference );
 		return BlockBuildInfo();
 	}
 
 	if( with_operator.reference_modifier_ == ReferenceModifier::Reference )
 	{
-		if( expr->value_type == ValueType::ReferenceImut && variable->value_type != ValueType::ReferenceImut )
+		if( expr->value_type == ValueType::ReferenceImut && variable_reference->value_type != ValueType::ReferenceImut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), with_operator.src_loc_ );
-			function_context.variables_state.RemoveNode( variable );
+			function_context.variables_state.RemoveNode( variable_reference );
 			return BlockBuildInfo();
 		}
 
@@ -1068,20 +1081,28 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Binding value to reference.
 			llvm::Value* const storage= function_context.alloca_ir_builder.CreateAlloca( expr->type.GetLLVMType() );
 			CreateTypedStore( function_context, expr->type, expr->llvm_value, storage );
-			variable->llvm_value= storage;
+			variable_reference->llvm_value= storage;
 		}
 		else
-			variable->llvm_value= expr->llvm_value;
+			variable_reference->llvm_value= expr->llvm_value;
 
-		variable->constexpr_value= expr->constexpr_value;
+		CreateReferenceVariableDebugInfo( *variable_reference, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
-		CreateReferenceVariableDebugInfo( *variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
-
-		if( !function_context.variables_state.TryAddLink( expr, variable ) )
+		if( !function_context.variables_state.TryAddLink( expr, variable_reference ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr->name );
 	}
 	else if( with_operator.reference_modifier_ == ReferenceModifier::None )
 	{
+		const VariableMutPtr variable=
+			std::make_shared<Variable>(
+				expr->type,
+				ValueType::Value,
+				Variable::Location::Pointer,
+				with_operator.variable_name_ + " variable itself",
+				nullptr,
+				expr->constexpr_value /* constexpr preserved for move/copy. */ );
+		function_context.variables_state.AddNode( variable );
+
 		if( !variable->type.CanBeConstexpr() )
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
@@ -1106,7 +1127,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( expr->value_type == ValueType::Value )
 		{
-			U_ASSERT(expr->node_kind == ReferencesGraphNodeKind::Variable );
 			function_context.variables_state.MoveNode( expr );
 
 			if( variable->llvm_value != expr->llvm_value )
@@ -1130,25 +1150,29 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					variable->type,
 					function_context );
 		}
-		// constexpr preserved for move/copy.
-		variable->constexpr_value= expr->constexpr_value;
+
+		variable_reference->llvm_value= variable->llvm_value;
+
+		variables_storage.RegisterVariable( variable );
+
+		function_context.variables_state.AddLink( variable, variable_reference );
 	}
 	else U_ASSERT(false);
 
 	// Reset constexpr initial value for mutable variables.
-	if( variable->value_type != ValueType::ReferenceImut )
-		variable->constexpr_value= nullptr;
+	if( variable_reference->value_type != ValueType::ReferenceImut )
+		variable_reference->constexpr_value= nullptr;
 
 	if( IsKeyword( with_operator.variable_name_ ) )
 		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), with_operator.src_loc_ );
 
 	// Destroy temporary variables of initializer expression. Do it before registretion of variable to prevent its destruction.
 	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), with_operator.src_loc_ );
-	variables_storage.RegisterVariable( variable );
+	variables_storage.RegisterVariable( variable_reference );
 
 	// Create separate namespace for variable. Redefinition here is not possible.
 	NamesScope variable_names_scope( "", &names );
-	variable_names_scope.AddName( with_operator.variable_name_, Value( variable, with_operator.src_loc_ ) );
+	variable_names_scope.AddName( with_operator.variable_name_, Value( variable_reference, with_operator.src_loc_ ) );
 
 	// Build block. This creates new variables frame and prevents destruction of initializer expression and/or created variable.
 	const BlockBuildInfo block_build_info= BuildBlock( variable_names_scope, function_context, with_operator.block_ );
@@ -1432,7 +1456,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					r_var->type,
 					ValueType::Value,
 					Variable::Location::LLVMRegister,
-					ReferencesGraphNodeKind::Variable,
 					r_var->name + " in register",
 					r_var->location == Variable::Location::LLVMRegister
 						? r_var->llvm_value

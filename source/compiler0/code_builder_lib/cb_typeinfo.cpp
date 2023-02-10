@@ -103,7 +103,6 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 			typeinfo_class,
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			ReferencesGraphNodeKind::Variable,
 			"typeinfo</" + type.ToString() + "/>");
 
 	result->constexpr_value= llvm::UndefValue::get( typeinfo_class->llvm_type ); // Currently uninitialized.
