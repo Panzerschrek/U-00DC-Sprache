@@ -216,7 +216,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 		if( dst_node_inner_reference == nullptr )
 		{
 			dst_node_inner_reference=
-				function_context.variables_state.CreateNodeInnerReference( dst_variable, node_is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
+				function_context.variables_state.CreateNodeInnerReference( dst_variable_node, node_is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
 		}
 
 		if( ( dst_node_inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut  && !node_is_mutable ) ||

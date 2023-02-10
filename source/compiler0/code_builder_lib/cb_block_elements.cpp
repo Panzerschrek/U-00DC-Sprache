@@ -104,7 +104,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						type,
 						ValueType::ReferenceMut,
 						Variable::Location::Pointer,
-						ReferencesGraphNodeKind::Variable,
+						ReferencesGraphNodeKind::ReferenceMut,
 						variable_declaration.name,
 						variable->llvm_value );
 				function_context.variables_state.AddNode( variable_for_initialization );
