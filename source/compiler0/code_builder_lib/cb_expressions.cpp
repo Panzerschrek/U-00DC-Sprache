@@ -1360,7 +1360,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// "resolved_variable" should be mutable reference node pointing to single variable node.
 
-	if( resolved_variable == nullptr )
+	if( resolved_variable == nullptr || IsGlobalVariable( resolved_variable ) )
 	{
 		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
 		return ErrorValue();
@@ -1368,23 +1368,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( resolved_variable->node_kind != ReferencesGraphNodeKind::ReferenceMut )
 	{
 		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), move_operator.src_loc_ );
-		return ErrorValue();
-	}
-
-	bool found_in_variables= false;
-	for( const auto& stack_frame : function_context.stack_variables_stack )
-	for( const VariablePtr& arg : stack_frame->variables_ )
-	{
-		if( arg == resolved_variable )
-		{
-			found_in_variables= true;
-			goto end_variable_search;
-		}
-	}
-	end_variable_search:
-	if( !found_in_variables )
-	{
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
 		return ErrorValue();
 	}
 
@@ -1411,6 +1394,23 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( variable_for_move->node_kind != ReferencesGraphNodeKind::Variable )
 	{
 		// This is not a variable, but some reference.
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
+		return ErrorValue();
+	}
+
+	bool found_in_variables= false;
+	for( const auto& stack_frame : function_context.stack_variables_stack )
+	for( const VariablePtr& arg : stack_frame->variables_ )
+	{
+		if( arg == variable_for_move )
+		{
+			found_in_variables= true;
+			goto end_variable_search;
+		}
+	}
+	end_variable_search:
+	if( !found_in_variables )
+	{
 		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
 		return ErrorValue();
 	}
