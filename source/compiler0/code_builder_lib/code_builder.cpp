@@ -579,7 +579,7 @@ void CodeBuilder::CallDestructorsImpl(
 	{
 		const VariablePtr& stored_variable= *it;
 
-		if( stored_variable->node_kind == ReferencesGraphNodeKind::Variable )
+		if( stored_variable->value_type == ValueType::Value )
 		{
 			if( !function_context.variables_state.NodeMoved( stored_variable ) )
 			{
@@ -1246,7 +1246,6 @@ Type CodeBuilder::BuildFuncCode(
 				param.type,
 				ValueType::Value,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::Variable,
 				arg_name + " variable itself" );
 
 		function_context.variables_state.AddNode( variable );
@@ -1291,14 +1290,13 @@ Type CodeBuilder::BuildFuncCode(
 					invalid_type_,
 					ValueType::Value,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::Variable,
 					arg_name + " referenced variable" );
 			function_context.variables_state.AddNode( accesible_variable );
 
 			const auto inner_reference=
 				function_context.variables_state.CreateNodeInnerReference(
 					variable,
-					param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
+					param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
 			function_context.args_nodes[ arg_number ].second= accesible_variable;
@@ -1309,7 +1307,6 @@ Type CodeBuilder::BuildFuncCode(
 				param.type,
 				declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 				arg_name,
 				variable->llvm_value );
 
@@ -1585,7 +1582,6 @@ void CodeBuilder::BuildConstructorInitialization(
 					field.type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					 this_->name + "." + field_name,
 					CreateClassFieldGEP( function_context, *this_, field.index ) );
 
@@ -1611,7 +1607,6 @@ void CodeBuilder::BuildConstructorInitialization(
 				base_class.base_class,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::ReferenceMut,
 				Keyword( Keywords::base_ ),
 				CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
 
@@ -1634,7 +1629,6 @@ void CodeBuilder::BuildConstructorInitialization(
 					base_class.base_class,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					Keyword( Keywords::base_ ),
 					CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
 
@@ -1663,7 +1657,6 @@ void CodeBuilder::BuildConstructorInitialization(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					this_->name + "." + field_initializer.name,
 					CreateClassFieldGEP( function_context, *this_, field->index ) );
 

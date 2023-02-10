@@ -617,7 +617,6 @@ bool CodeBuilder::MatchTemplateArgImpl(
 					given_variable->type,
 					ValueType::ReferenceImut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::Variable,
 					name,
 					CreateGlobalConstantVariable(
 						given_variable->type,
@@ -670,7 +669,6 @@ bool CodeBuilder::MatchTemplateArgImpl(
 					size_type_,
 					ValueType::ReferenceImut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::Variable,
 					name );
 
 			size_variable->constexpr_value=

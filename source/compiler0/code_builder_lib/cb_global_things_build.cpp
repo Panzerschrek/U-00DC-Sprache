@@ -980,8 +980,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 			std::make_shared<Variable>(
 				enum_,
 				ValueType::ReferenceImut,
-				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::Variable );
+				Variable::Location::Pointer );
 
 		var->constexpr_value=
 			llvm::Constant::getIntegerValue(
@@ -1089,7 +1088,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				type,
 				is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 				variable_declaration.name );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
@@ -1106,7 +1104,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 					type,
 					ValueType::Value,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::Variable,
 					variable_declaration.name,
 					global_variable );
 
@@ -1118,7 +1115,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 						type,
 						ValueType::ReferenceMut,
 						Variable::Location::Pointer,
-						ReferencesGraphNodeKind::ReferenceMut,
 						variable_declaration.name,
 						variable->llvm_value );
 				function_context.variables_state.AddNode( variable_for_initialization );
@@ -1238,7 +1234,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				initializer_experrsion->type,
 				is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 				auto_variable_declaration->name,
 				nullptr,
 				initializer_experrsion->constexpr_value );

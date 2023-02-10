@@ -84,7 +84,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				type,
 				variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 				variable_declaration.name );
 		function_context.variables_state.AddNode( variable_reference );
 
@@ -95,7 +94,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					type,
 					ValueType::Value,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::Variable,
 					variable_declaration.name + " variable itself" );
 
 			// Do not forget to remove node in case of error-return!!!
@@ -112,7 +110,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						type,
 						ValueType::ReferenceMut,
 						Variable::Location::Pointer,
-						ReferencesGraphNodeKind::ReferenceMut,
 						variable_declaration.name,
 						variable->llvm_value );
 				function_context.variables_state.AddNode( variable_for_initialization );
@@ -270,7 +267,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			initializer_experrsion->type,
 			auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			auto_variable_declaration.mutability_modifier == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 			auto_variable_declaration.name,
 			nullptr,
 			initializer_experrsion->constexpr_value );
@@ -308,7 +304,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				initializer_experrsion->type,
 				ValueType::Value,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::Variable,
 				auto_variable_declaration.name + " variable itself",
 				nullptr,
 				initializer_experrsion->constexpr_value /* constexpr preserved for move/copy. */ );
@@ -336,7 +331,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( initializer_experrsion->value_type == ValueType::Value )
 		{
-			U_ASSERT(initializer_experrsion->node_kind == ReferencesGraphNodeKind::Variable );
 			function_context.variables_state.MoveNode( initializer_experrsion );
 
 			if( initializer_experrsion->llvm_value != variable->llvm_value )
@@ -493,7 +487,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					*function_context.return_type,
 					function_context.function_type.return_value_type,
 					Variable::Location::Pointer,
-					function_context.function_type.return_value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 					"return value lock" );
 
 			function_context.variables_state.AddNode( return_value_lock );
@@ -627,7 +620,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			sequence_expression->type,
 			sequence_expression->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			sequence_expression->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 			sequence_expression->name + " sequence lock" );
 
 	function_context.variables_state.AddNode( sequence_lock );
@@ -655,7 +647,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					element_type,
 					for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 					Variable::Location::Pointer,
-					for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 					for_operator.loop_variable_name_,
 					nullptr,
 					nullptr ); // TODO - set constexpr value?
@@ -687,7 +678,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						element_type,
 						ValueType::Value,
 						Variable::Location::Pointer,
-						ReferencesGraphNodeKind::Variable,
 						for_operator.loop_variable_name_ + " variable itself",
 						nullptr,
 						nullptr );
@@ -1057,7 +1047,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			expr->type,
 			with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			with_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
 			with_operator.variable_name_,
 			nullptr,
 			expr->constexpr_value );
@@ -1109,7 +1098,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				expr->type,
 				ValueType::Value,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::Variable,
 				with_operator.variable_name_ + " variable itself",
 				nullptr,
 				expr->constexpr_value /* constexpr preserved for move/copy. */ );
@@ -1139,7 +1127,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( expr->value_type == ValueType::Value )
 		{
-			U_ASSERT(expr->node_kind == ReferencesGraphNodeKind::Variable );
 			function_context.variables_state.MoveNode( expr );
 
 			if( variable->llvm_value != expr->llvm_value )
@@ -1469,7 +1456,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					r_var->type,
 					ValueType::Value,
 					Variable::Location::LLVMRegister,
-					ReferencesGraphNodeKind::Variable,
 					r_var->name + " in register",
 					r_var->location == Variable::Location::LLVMRegister
 						? r_var->llvm_value

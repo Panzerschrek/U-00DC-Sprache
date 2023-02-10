@@ -23,7 +23,7 @@ public:
 	bool TryAddLink( const VariablePtr& from, const VariablePtr& to );
 
 	VariablePtr GetNodeInnerReference( const VariablePtr& node ) const;
-	VariablePtr CreateNodeInnerReference( const VariablePtr& node, ReferencesGraphNodeKind kind );
+	VariablePtr CreateNodeInnerReference( const VariablePtr& node, ValueType kind );
 
 	// Each access to variable must produce temporary reference to it.
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.

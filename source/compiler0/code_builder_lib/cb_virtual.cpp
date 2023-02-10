@@ -487,8 +487,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 		std::make_shared<Variable>(
 			function_type.params.front().type,
 			this_->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-			Variable::Location::Pointer,
-			this_->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
+			Variable::Location::Pointer );
 	if( this_->type == this_casted->type )
 		this_casted->llvm_value= this_->llvm_value;
 	else

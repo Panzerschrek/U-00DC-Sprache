@@ -38,7 +38,6 @@ Variable::Variable(
 	Type in_type,
 	ValueType in_value_type,
 	Location in_location,
-	ReferencesGraphNodeKind in_node_kind,
 	std::string in_name,
 	llvm::Value* in_llvm_value,
 	llvm::Constant* in_constexpr_value )
@@ -48,7 +47,6 @@ Variable::Variable(
 	, llvm_value(in_llvm_value)
 	, constexpr_value(in_constexpr_value)
 	, name(std::move(in_name))
-	, node_kind(in_node_kind)
 {
 }
 

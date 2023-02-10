@@ -87,12 +87,6 @@ struct TypeTemplatesSet
 	std::vector<const Synt::TypeTemplate*> syntax_elements;
 };
 
-enum class ReferencesGraphNodeKind : uint8_t
-{
-	Variable,
-	ReferenceMut,
-	ReferenceImut,
-};
 
 struct Variable final
 {
@@ -111,7 +105,6 @@ struct Variable final
 	llvm::Constant* constexpr_value= nullptr;
 
 	std::string name;
-	ReferencesGraphNodeKind node_kind= ReferencesGraphNodeKind::Variable;
 
 	Variable()= default;
 	Variable(const Variable&)= delete;
@@ -124,7 +117,6 @@ struct Variable final
 		Type in_type,
 		ValueType in_value_type,
 		Location in_location,
-		ReferencesGraphNodeKind in_node_kind,
 		std::string in_name= "",
 		llvm::Value* in_llvm_value= nullptr,
 		llvm::Constant* in_constexpr_value= nullptr );

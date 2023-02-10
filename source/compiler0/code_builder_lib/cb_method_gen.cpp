@@ -134,7 +134,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 				the_class.base_class,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::ReferenceMut,
 				Keyword( Keywords::base_ ),
 				CreateBaseClassGEP( function_context, *class_type, this_llvm_value ) );
 		function_context.variables_state.AddNode( base_variable );
@@ -160,7 +159,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					field_name,
 					this_llvm_value );
 			function_context.variables_state.AddNode( this_variable );
@@ -176,7 +174,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 					field.type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					field_name,
 					CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index ) );
 
@@ -413,7 +410,6 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 			class_type,
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
-			ReferencesGraphNodeKind::ReferenceMut,
 			Keyword( Keywords::this_ ),
 			this_llvm_value );
 

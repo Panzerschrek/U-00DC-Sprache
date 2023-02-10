@@ -63,7 +63,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::ReferenceMut,
 				variable->name + "[]" );
 
 		function_context.variables_state.AddNode( array_member );
@@ -115,7 +114,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					variable->name + "[" + std::to_string(i) + "]",
 					CreateTupleElementGEP( function_context, *variable, i ) );
 
@@ -213,7 +211,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					variable->name + "." + member_initializer.name,
 					CreateClassFieldGEP( function_context, *variable, field->index ) );
 
@@ -258,7 +255,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					field.type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					variable->name + "." +field_name,
 					CreateClassFieldGEP( function_context, *variable, field.index ) );
 
@@ -340,7 +336,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		// Move or try call copy constructor.
 		if( expression_result->value_type == ValueType::Value && expression_result->type == variable->type )
 		{
-			U_ASSERT( expression_result->node_kind == ReferencesGraphNodeKind::Variable );
 			function_context.variables_state.MoveNode( expression_result );
 
 			U_ASSERT( expression_result->location == Variable::Location::Pointer );
@@ -399,7 +394,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		// TODO - produce constant initializer for generated copy constructor, if source is constant.
 		if( expression_result->value_type == ValueType::Value && expression_result->type == variable->type )
 		{
-			U_ASSERT( expression_result->node_kind == ReferencesGraphNodeKind::Variable );
 			function_context.variables_state.MoveNode( expression_result );
 
 			U_ASSERT( expression_result->location == Variable::Location::Pointer );
@@ -454,7 +448,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::ReferenceMut,
 				variable->name + "[]" );
 
 		function_context.variables_state.AddNode( array_member );
@@ -487,7 +480,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					variable->name + "[" + std::to_string(i) + "]",
 					CreateTupleElementGEP( function_context, *variable, i ) );
 
@@ -531,7 +523,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					field.type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					variable->name + "." + field_name,
 					CreateClassFieldGEP( function_context, *variable, field.index ) );
 
@@ -597,7 +588,6 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 				array_type->element_type,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
-				ReferencesGraphNodeKind::ReferenceMut,
 				variable->name + "[]" );
 
 		function_context.variables_state.AddNode( array_member );
@@ -637,7 +627,6 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					variable->name + "[" + std::to_string(i) + "]",
 					CreateTupleElementGEP( function_context, *variable, i ) );
 
@@ -1031,11 +1020,11 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	{
 		VariablePtr inner_reference= function_context.variables_state.GetNodeInnerReference( dst_variable_node );
 		if( inner_reference == nullptr )
-			inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
+			inner_reference= function_context.variables_state.CreateNodeInnerReference( dst_variable_node, field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 		else
 		{
-			if( ( inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceImut &&  field.is_mutable ) ||
-				( inner_reference->node_kind == ReferencesGraphNodeKind::ReferenceMut  && !field.is_mutable ) )
+			if( ( inner_reference->value_type == ValueType::ReferenceImut &&  field.is_mutable ) ||
+				( inner_reference->value_type == ValueType::ReferenceMut  && !field.is_mutable ) )
 			{
 				REPORT_ERROR( InnerReferenceMutabilityChanging, block_names.GetErrors(), initializer_src_loc, inner_reference->name );
 				return nullptr;
@@ -1253,7 +1242,6 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					field_name );
 			function_context.variables_state.AddNode( this_variable );
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, class_field, function_context );
@@ -1266,7 +1254,6 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 					class_field.type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					ReferencesGraphNodeKind::ReferenceMut,
 					field_name );
 			function_context.variables_state.AddNode( field_variable );
 			InitializeClassFieldWithInClassIninitalizer( field_variable, class_field, function_context );
