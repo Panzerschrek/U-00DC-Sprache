@@ -42,11 +42,11 @@ Variable::Variable(
 	llvm::Value* in_llvm_value,
 	llvm::Constant* in_constexpr_value )
 	: type(std::move(in_type))
-	, location(in_location)
-	, value_type(in_value_type)
 	, llvm_value(in_llvm_value)
 	, constexpr_value(in_constexpr_value)
 	, name(std::move(in_name))
+	, value_type(in_value_type)
+	, location(in_location)
 {
 }
 

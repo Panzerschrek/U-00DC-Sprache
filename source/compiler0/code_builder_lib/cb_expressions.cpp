@@ -904,7 +904,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( branches_value_types[0] == ValueType::Value || branches_value_types[1] == ValueType::Value )
 	{
 		result->value_type= ValueType::Value;
-		result->value_type= ValueType::Value;
 		if( !EnsureTypeComplete( result->type ) )
 		{
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.src_loc_, result->type );
@@ -3403,8 +3402,7 @@ Value CodeBuilder::DoCallFunction(
 			{
 				const auto node_kind= args_nodes[arg_reference.first]->value_type;
 
-				if( node_kind == ValueType::Value ||
-					node_kind == ValueType::ReferenceMut )
+				if( node_kind == ValueType::Value || node_kind == ValueType::ReferenceMut )
 					inner_reference_is_mutable= true;
 				else if( node_kind == ValueType::ReferenceImut ) {}
 				else U_ASSERT( false ); // Unexpected node kind.
@@ -3413,8 +3411,7 @@ Value CodeBuilder::DoCallFunction(
 			{
 				for( const VariablePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first] ) )
 				{
-					if( accesible_node->value_type == ValueType::Value ||
-						accesible_node->value_type == ValueType::ReferenceMut )
+					if( accesible_node->value_type == ValueType::Value || accesible_node->value_type == ValueType::ReferenceMut )
 						inner_reference_is_mutable= true;
 					else if( accesible_node->value_type == ValueType::ReferenceImut ) {}
 					else U_ASSERT( false ); // Unexpected node kind.

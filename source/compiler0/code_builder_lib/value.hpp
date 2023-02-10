@@ -90,21 +90,22 @@ struct TypeTemplatesSet
 
 struct Variable final
 {
-	enum class Location
+	enum class Location : uint8_t
 	{
 		Pointer,
 		LLVMRegister,
 	};
 
 	Type type;
-	Location location= Location::Pointer;
-	ValueType value_type= ValueType::ReferenceImut;
 	llvm::Value* llvm_value= nullptr;
 
 	// Exists only for constant expressions.
 	llvm::Constant* constexpr_value= nullptr;
 
 	std::string name;
+
+	ValueType value_type= ValueType::ReferenceImut;
+	Location location= Location::Pointer;
 
 	Variable()= default;
 	Variable(const Variable&)= delete;
