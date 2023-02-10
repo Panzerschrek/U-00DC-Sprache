@@ -1356,8 +1356,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	complex_name.start_value= move_operator.var_name_;
 
 	const Value resolved_value= ResolveValue( names, function_context, complex_name );
-	const VariablePtr variable_for_move= resolved_value.GetVariable();
-	if( variable_for_move == nullptr || variable_for_move->node_kind != ReferencesGraphNodeKind::Variable )
+	const VariablePtr resolved_variable= resolved_value.GetVariable();
+
+	// "resolved_variable" should be mutable reference node pointing to single variable node.
+
+	if( resolved_variable == nullptr || resolved_variable->node_kind != ReferencesGraphNodeKind::ReferenceMut )
 	{
 		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
 		return ErrorValue();
@@ -1367,7 +1370,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	for( const auto& stack_frame : function_context.stack_variables_stack )
 	for( const VariablePtr& arg : stack_frame->variables_ )
 	{
-		if( arg == variable_for_move )
+		if( arg == resolved_variable )
 		{
 			found_in_variables= true;
 			goto end_variable_search;
@@ -1380,26 +1383,34 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	// TODO - maybe allow moving for immutable variables?
-	if( variable_for_move->value_type != ValueType::ReferenceMut )
+	if( function_context.variables_state.HaveOutgoingLinks( resolved_variable ) )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), move_operator.src_loc_ );
-		return ErrorValue();
-	}
-	if( function_context.variables_state.NodeMoved( variable_for_move ) )
-	{
-		REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), move_operator.src_loc_, variable_for_move->name );
+		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), move_operator.src_loc_, resolved_variable->name );
 		return ErrorValue();
 	}
 
-	// If this is mutable variable - it is stack variable or value argument.
-	// This can not be temp variable, global variable, or inner argument variable.
-
-	if( function_context.variables_state.HaveOutgoingLinks( variable_for_move ) )
+	if( function_context.variables_state.NodeMoved( resolved_variable ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), move_operator.src_loc_, variable_for_move->name );
+		REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), move_operator.src_loc_, resolved_variable->name );
 		return ErrorValue();
 	}
+
+	const auto input_nodes= function_context.variables_state.GetNodeInputLinks( resolved_variable );
+	if( input_nodes.size() != 1u )
+	{
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
+		return ErrorValue();
+	}
+
+	const VariablePtr variable_for_move= *input_nodes.begin();
+	if( variable_for_move->node_kind != ReferencesGraphNodeKind::Variable )
+	{
+		// This is not a variable, but some reference.
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
+		return ErrorValue();
+	}
+
+	U_ASSERT( !function_context.variables_state.NodeMoved( variable_for_move ) );
 
 	const VariableMutPtr result=
 		std::make_shared<Variable>(
@@ -1419,6 +1430,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const auto inner_node= function_context.variables_state.CreateNodeInnerReference( result, move_variable_inner_node->node_kind );
 		function_context.variables_state.AddLink( move_variable_inner_node, inner_node );
 	}
+
+	// Move both reference node and variable node.
+	function_context.variables_state.MoveNode( resolved_variable );
 	function_context.variables_state.MoveNode( variable_for_move );
 
 	RegisterTemporaryVariable( function_context, result );

@@ -37,6 +37,7 @@ public:
 	using NodesSet= std::unordered_set<VariablePtr>;
 	NodesSet GetAllAccessibleVariableNodes( const VariablePtr& node ) const;
 	NodesSet GetAccessibleVariableNodesInnerReferences( const VariablePtr& node ) const;
+	NodesSet GetNodeInputLinks( const VariablePtr& node ) const;
 
 	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
 	static MergeResult MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const SrcLoc& src_loc );

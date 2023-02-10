@@ -172,6 +172,16 @@ ReferencesGraph::NodesSet ReferencesGraph::GetAccessibleVariableNodesInnerRefere
 	return result_set;
 }
 
+ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr& node ) const
+{
+	NodesSet result;
+	for( const Link& link : links_ )
+		if( link.dst == node )
+			result.insert( link.src );
+
+	return result;
+}
+
 void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 	const VariablePtr& node,
 	NodesSet& visited_nodes_set,
