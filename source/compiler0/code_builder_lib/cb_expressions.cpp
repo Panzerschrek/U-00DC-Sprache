@@ -1360,9 +1360,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// "resolved_variable" should be mutable reference node pointing to single variable node.
 
-	if( resolved_variable == nullptr || resolved_variable->node_kind != ReferencesGraphNodeKind::ReferenceMut )
+	if( resolved_variable == nullptr )
 	{
 		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
+		return ErrorValue();
+	}
+	if( resolved_variable->node_kind != ReferencesGraphNodeKind::ReferenceMut )
+	{
+		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), move_operator.src_loc_ );
 		return ErrorValue();
 	}
 
