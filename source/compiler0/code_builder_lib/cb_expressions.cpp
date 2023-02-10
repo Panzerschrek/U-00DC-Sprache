@@ -3662,7 +3662,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 				result->name,
 				result->llvm_value );
 		function_context.variables_state.AddNode( result_for_initialization );
-		function_context.variables_state.AddLink( variable, result_for_initialization );
+		function_context.variables_state.AddLink( result, result_for_initialization );
 
 		DoCallFunction(
 			conversion_constructor.llvm_function,
