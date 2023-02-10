@@ -1241,68 +1241,47 @@ Type CodeBuilder::BuildFuncCode(
 		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
 		U_ASSERT( !( is_this && param.value_type == ValueType::Value ) );
 
-		const VariableMutPtr var=
+		const VariableMutPtr variable=
 			std::make_shared<Variable>(
 				param.type,
-				declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				ValueType::Value,
 				Variable::Location::Pointer,
 				ReferencesGraphNodeKind::Variable,
-				arg_name );
+				arg_name + " variable itself" );
+
+		function_context.variables_state.AddNode( variable );
 
 		if( param.value_type == ValueType::Value )
 		{
+			function_context.stack_variables_stack.back()->RegisterVariable( variable );
+
 			if( param.type.GetFundamentalType() != nullptr ||
 				param.type.GetEnumType() != nullptr ||
 				param.type.GetRawPointerType() != nullptr ||
 				param.type.GetFunctionPointerType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
-				var->llvm_value= function_context.alloca_ir_builder.CreateAlloca( var->type.GetLLVMType(), nullptr, arg_name );
-				CreateLifetimeStart( function_context, var->llvm_value );
+				variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
+				CreateLifetimeStart( function_context, variable->llvm_value );
 
-				CreateTypedStore( function_context, var->type, &llvm_arg, var->llvm_value );
+				CreateTypedStore( function_context, variable->type, &llvm_arg, variable->llvm_value );
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Composite types use llvm-pointers.
-				var->llvm_value = &llvm_arg;
+				variable->llvm_value = &llvm_arg;
 			}
 			else U_ASSERT(false);
 
-			CreateVariableDebugInfo( *var, arg_name, declaration_arg.src_loc_, function_context );
+			CreateVariableDebugInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
 		}
 		else
 		{
-			var->llvm_value= &llvm_arg;
-			CreateReferenceVariableDebugInfo( *var, arg_name, declaration_arg.src_loc_, function_context );
+			variable->llvm_value= &llvm_arg;
+			CreateReferenceVariableDebugInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
 		}
 
-		function_context.variables_state.AddNode( var );
-
-		// Create variable node, because only variable node can have inner reference node.
-		// Register arg on stack, only if it is value-argument.
-		VariablePtr names_scope_var;
-		if( param.value_type == ValueType::Value )
-		{
-			function_context.stack_variables_stack.back()->RegisterVariable( var );
-			names_scope_var= var;
-		}
-		else
-		{
-			const VariablePtr reference_node=
-				std::make_shared<Variable>(
-					param.type,
-					var->value_type,
-					Variable::Location::Pointer,
-					var->value_type == ValueType::ReferenceMut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
-					arg_name + " reference",
-					var->llvm_value );
-
-			function_context.variables_state.AddNode( reference_node );
-			function_context.variables_state.AddLink( var, reference_node );
-			names_scope_var= reference_node;
-		}
-		function_context.args_nodes[ arg_number ].first= var;
+		function_context.args_nodes[ arg_number ].first= variable;
 
 		if (param.type.ReferencesTagsCount() > 0u )
 		{
@@ -1318,22 +1297,35 @@ Type CodeBuilder::BuildFuncCode(
 
 			const auto inner_reference=
 				function_context.variables_state.CreateNodeInnerReference(
-					var,
+					variable,
 					param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
 			function_context.args_nodes[ arg_number ].second= accesible_variable;
 		}
 
+		const VariableMutPtr variable_reference=
+			std::make_shared<Variable>(
+				param.type,
+				declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ? ReferencesGraphNodeKind::ReferenceMut : ReferencesGraphNodeKind::ReferenceImut,
+				arg_name,
+				variable->llvm_value );
+
+		function_context.variables_state.AddNode( variable_reference );
+		function_context.variables_state.AddLink( variable, variable_reference );
+		function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
+
 		if( is_this )
 		{
 			// Save "this" in function context for accessing inside class methods.
-			function_context.this_= std::move(names_scope_var);
+			function_context.this_= variable_reference;
 		}
 		else
 		{
 			const Value* const inserted_arg=
-				function_names.AddName( arg_name, Value( names_scope_var, declaration_arg.src_loc_ ) );
+				function_names.AddName( arg_name, Value( variable_reference, declaration_arg.src_loc_ ) );
 			if( inserted_arg == nullptr )
 				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.src_loc_, arg_name );
 		}
