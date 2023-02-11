@@ -944,6 +944,9 @@ private:
 	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, const ArrayType& array_type, llvm::Value* array_ptr, llvm::Value* index );
 	llvm::Value* CreateCompositeElementGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, llvm::Value* index );
 
+	// Create GEP instruction even in functionless context.
+	llvm::Value* ForceCreateConstantIndexGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, uint32_t index );
+
 	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );
@@ -963,8 +966,6 @@ private:
 	struct FunctionContextState
 	{
 		ReferencesGraph variables_state;
-		size_t current_block_instruction_count= 0;
-		size_t alloca_block_instructin_count= 0;
 		size_t block_count= 0;
 	};
 

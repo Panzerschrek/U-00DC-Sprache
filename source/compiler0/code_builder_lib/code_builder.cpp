@@ -2152,32 +2152,36 @@ llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_c
 	if( value == nullptr || index == nullptr )
 		return nullptr;
 
-	const bool value_is_constant= llvm::isa<llvm::Constant>(value);
-	const bool index_is_constant= llvm::isa<llvm::Constant>(index);
-	if( value_is_constant && index_is_constant )
-	{
-		// Constant will be folded properly and no instruction will be actiually inserted.
-		return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
-	}
-
-	if( function_context.is_functionless_context )
+	// Allow only constant GEP in functionless context.
+	if( function_context.is_functionless_context && !(llvm::isa<llvm::Constant>(value) && llvm::isa<llvm::Constant>(index) ) )
 		return nullptr;
 
-	auto gep= llvm::GetElementPtrInst::Create( type, value, { GetZeroGEPIndex(), index } );
+	return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
+}
 
-	if( index_is_constant )
+llvm::Value* CodeBuilder::ForceCreateConstantIndexGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, const uint32_t index )
+{
+	if( value == nullptr )
+		return nullptr;
+
+	const auto index_value= GetFieldGEPIndex( index );
+
+	if( llvm::isa<llvm::Constant>(value) )
 	{
-		// Try to insert "GEP" instruction with constant index directly after of value calculation.
-		// This is needed in order to have possibility to reuse this instruction in diffirent basic blocks.
-		if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( value ) )
-			gep->insertAfter( instruction );
-		else if( llvm::isa<llvm::Argument>( value ) )
-			function_context.alloca_ir_builder.Insert( gep );
-		else
-			function_context.llvm_ir_builder.Insert( gep ); // TODO - maybe add assert here?
+		// Constant will be folded properly and no instruction will be actiually inserted.
+		return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index_value } );
 	}
+
+	const auto gep= llvm::GetElementPtrInst::Create( type, value, { GetZeroGEPIndex(), index_value } );
+
+	// Try to insert "GEP" instruction with constant index directly after of value calculation.
+	// This is needed in order to have possibility to reuse this instruction in diffirent basic blocks.
+	if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( value ) )
+		gep->insertAfter( instruction );
+	else if( llvm::isa<llvm::Argument>( value ) )
+		function_context.alloca_ir_builder.Insert( gep );
 	else
-		function_context.llvm_ir_builder.Insert( gep ); // Array indexing (with non-constant index).
+		function_context.llvm_ir_builder.Insert( gep ); // TODO - maybe add assert here?
 
 	return gep;
 }
@@ -2444,8 +2448,6 @@ CodeBuilder::FunctionContextState CodeBuilder::SaveFunctionContextState( Functio
 {
 	FunctionContextState result;
 	result.variables_state= function_context.variables_state;
-	result.current_block_instruction_count= function_context.llvm_ir_builder.GetInsertBlock()->size();
-	result.alloca_block_instructin_count= function_context.alloca_ir_builder.GetInsertBlock()->size();
 	result.block_count= function_context.function->getBasicBlockList().size();
 	return result;
 }
@@ -2454,10 +2456,9 @@ void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context
 {
 	function_context.variables_state= state.variables_state;
 
-	// Make sure no new instructions or basic blocks were added.
-	U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock()->size() == state.current_block_instruction_count );
-	U_ASSERT( function_context.alloca_ir_builder.GetInsertBlock()->size() == state.alloca_block_instructin_count );
+	// Make sure no new basic blocks were added.
 	U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
+	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
 }
 
 } // namespace U

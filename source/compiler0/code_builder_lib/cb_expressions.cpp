@@ -1636,7 +1636,7 @@ Value CodeBuilder::AccessClassField(
 					variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 					Variable::Location::Pointer,
 					Keyword( Keywords::base_ ),
-					CreateBaseClassGEP( function_context, *variabe_type_class, variable->llvm_value ) );
+					ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, 0 ) );
 
 			function_context.variables_state.AddNode( base );
 
@@ -1658,7 +1658,8 @@ Value CodeBuilder::AccessClassField(
 	result->type= field.type;
 	result->name= variable->name + "." + field_name;
 
-	llvm::Value* const gep_result= CreateClassFieldGEP( function_context, *variable, field.index );
+	llvm::Value* const gep_result=
+		ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, field.index );
 
 	if( field.is_reference )
 	{
