@@ -1653,12 +1653,12 @@ Value CodeBuilder::AccessClassField(
 		return ErrorValue();
 	}
 
-	llvm::Value* const gep_result= CreateClassFieldGEP( function_context, *variable, field.index );
-
 	const VariableMutPtr result= std::make_shared<Variable>();
 	result->location= Variable::Location::Pointer;
 	result->type= field.type;
 	result->name= variable->name + "." + field_name;
+
+	llvm::Value* const gep_result= CreateClassFieldGEP( function_context, *variable, field.index );
 
 	if( field.is_reference )
 	{
@@ -1721,7 +1721,7 @@ Value CodeBuilder::AccessClassField(
 	{
 		result->llvm_value= gep_result;
 		if( variable->constexpr_value != nullptr )
-			result->constexpr_value= variable->constexpr_value->getAggregateElement( static_cast<unsigned int>( field.index ) );
+			result->constexpr_value= variable->constexpr_value->getAggregateElement( field.index );
 
 		result->value_type= ( variable->value_type == ValueType::ReferenceMut && field.is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		function_context.variables_state.AddNode( result );
