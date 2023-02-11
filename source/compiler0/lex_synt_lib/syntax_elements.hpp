@@ -90,11 +90,11 @@ struct FunctionTemplate;
 
 struct Namespace;
 
-using FunctionTypePtr= std::unique_ptr<FunctionType>;
-using BlockPtr= std::unique_ptr<Block>;
-using ClassPtr= std::unique_ptr<Class>;
-using FunctionPtr= std::unique_ptr<Function>;
-using NamespacePtr= std::unique_ptr<Namespace>;
+using FunctionTypePtr= std::unique_ptr<const FunctionType>;
+using BlockPtr= std::unique_ptr<const Block>;
+using ClassPtr= std::unique_ptr<const Class>;
+using FunctionPtr= std::unique_ptr<const Function>;
+using NamespacePtr= std::unique_ptr<const Namespace>;
 
 using TypeName= std::variant<
 	EmptyVariant,
@@ -103,6 +103,8 @@ using TypeName= std::variant<
 	FunctionTypePtr,
 	TupleType,
 	RawPointerType >;
+
+using TypeNamePtr= std::unique_ptr<const TypeName>;
 
 using Expression= std::variant<
 	EmptyVariant,
@@ -140,6 +142,8 @@ using Expression= std::variant<
 	TupleType,
 	RawPointerType
 	>;
+
+using ExpressionPtr= std::unique_ptr<const Expression>;
 
 using Initializer= std::variant<
 	EmptyVariant,
@@ -229,7 +233,7 @@ enum class ReferenceModifier : uint8_t
 
 struct TypeofTypeName
 {
-	std::unique_ptr<Expression> expression;
+	ExpressionPtr expression;
 };
 
 struct ComplexName final : public SyntaxElementBase
@@ -248,18 +252,18 @@ struct ComplexName final : public SyntaxElementBase
 			std::string,
 			std::vector<Expression>
 			> name_or_template_paramenters;
-		std::unique_ptr<Component> next;
+		std::unique_ptr<const Component> next;
 	};
 
-	std::unique_ptr<Component> tail;
+	std::unique_ptr<const Component> tail;
 };
 
 struct ArrayTypeName final : public SyntaxElementBase
 {
 	explicit ArrayTypeName( const SrcLoc& src_loc );
 
-	std::unique_ptr<TypeName> element_type;
-	std::unique_ptr<Expression> size;
+	TypeNamePtr element_type;
+	ExpressionPtr size;
 };
 
 struct TupleType final : public SyntaxElementBase
@@ -273,7 +277,7 @@ struct RawPointerType final : public SyntaxElementBase
 {
 	RawPointerType( const SrcLoc& src_loc );
 
-	std::unique_ptr<TypeName> element_type;
+	TypeNamePtr element_type;
 };
 
 using FunctionReferencesPollution= std::pair< std::string, std::string >;
@@ -287,7 +291,7 @@ struct FunctionType final : public SyntaxElementBase
 	FunctionType( const SrcLoc& src_loc );
 
 	std::optional<std::string> calling_convention_;
-	std::unique_ptr<TypeName> return_type_;
+	TypeNamePtr return_type_;
 	std::string return_value_reference_tag_;
 	FunctionReferencesPollutionList referecnces_pollution_list_;
 	FunctionParams params_;
@@ -315,31 +319,31 @@ struct BinaryOperator final : public SyntaxElementBase
 	explicit BinaryOperator( const SrcLoc& src_loc );
 
 	BinaryOperatorType operator_type_;
-	std::unique_ptr<Expression> left_;
-	std::unique_ptr<Expression> right_;
+	ExpressionPtr left_;
+	ExpressionPtr right_;
 };
 
 struct TernaryOperator final : public SyntaxElementBase
 {
 	explicit TernaryOperator( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> condition;
-	std::unique_ptr<Expression> true_branch;
-	std::unique_ptr<Expression> false_branch;
+	ExpressionPtr condition;
+	ExpressionPtr true_branch;
+	ExpressionPtr false_branch;
 };
 
 struct ReferenceToRawPointerOperator final : public SyntaxElementBase
 {
 	explicit ReferenceToRawPointerOperator( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression;
+	ExpressionPtr expression;
 };
 
 struct RawPointerToReferenceOperator final : public SyntaxElementBase
 {
 	explicit RawPointerToReferenceOperator( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression;
+	ExpressionPtr expression;
 };
 
 struct MoveOperator final : public SyntaxElementBase
@@ -353,65 +357,65 @@ struct TakeOperator final : public SyntaxElementBase
 {
 	TakeOperator( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 };
 
 struct CastRef final : public SyntaxElementBase
 {
 	CastRef( const SrcLoc& src_loc );
 
-	std::unique_ptr<TypeName> type_;
-	std::unique_ptr<Expression> expression_;
+	TypeNamePtr type_;
+	ExpressionPtr expression_;
 };
 
 struct CastRefUnsafe : public SyntaxElementBase
 {
 	CastRefUnsafe( const SrcLoc& src_loc );
 
-	std::unique_ptr<TypeName> type_;
-	std::unique_ptr<Expression> expression_;
+	TypeNamePtr type_;
+	ExpressionPtr expression_;
 };
 
 struct CastImut final : public SyntaxElementBase
 {
 	CastImut( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 };
 
 struct CastMut final : public SyntaxElementBase
 {
 	CastMut( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 };
 
 struct TypeInfo final : public SyntaxElementBase
 {
 	TypeInfo( const SrcLoc& src_loc );
 
-	std::unique_ptr<TypeName> type_;
+	TypeNamePtr type_;
 };
 
 struct NonSyncExpression final : public SyntaxElementBase
 {
 	NonSyncExpression( const SrcLoc& src_loc );
 
-	std::unique_ptr<TypeName> type_;
+	TypeNamePtr type_;
 };
 
 struct SafeExpression final : public SyntaxElementBase
 {
 	SafeExpression( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 };
 
 struct UnsafeExpression final : public SyntaxElementBase
 {
 	UnsafeExpression( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 };
 
 struct BooleanConstant final : public SyntaxElementBase
@@ -440,35 +444,35 @@ struct UnaryPlus final : public SyntaxElementBase
 {
 	explicit UnaryPlus( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 };
 
 struct UnaryMinus final : public SyntaxElementBase
 {
 	explicit UnaryMinus( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 };
 
 struct LogicalNot final : public SyntaxElementBase
 {
 	explicit LogicalNot( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 };
 
 struct BitwiseNot final : public SyntaxElementBase
 {
 	explicit BitwiseNot( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 };
 
 struct CallOperator final : public SyntaxElementBase
 {
 	CallOperator( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 	std::vector<Expression> arguments_;
 };
 
@@ -476,15 +480,15 @@ struct IndexationOperator final : public SyntaxElementBase
 {
 	explicit IndexationOperator( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
-	std::unique_ptr<Expression> index_;
+	ExpressionPtr expression_;
+	ExpressionPtr index_;
 };
 
 struct MemberAccessOperator final : public SyntaxElementBase
 {
 	MemberAccessOperator( const SrcLoc& src_loc );
 
-	std::unique_ptr<Expression> expression_;
+	ExpressionPtr expression_;
 	std::string member_name_;
 	std::optional<std::vector<Expression>> template_parameters;
 };
@@ -552,7 +556,7 @@ struct VariablesDeclaration final : public SyntaxElementBase
 	{
 		SrcLoc src_loc;
 		std::string name;
-		std::unique_ptr<Initializer> initializer; // May be null for types with default constructor.
+		std::unique_ptr<const Initializer> initializer; // May be null for types with default constructor.
 		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 	};
@@ -602,7 +606,7 @@ struct CStyleForOperator final : public SyntaxElementBase
 	CStyleForOperator( const SrcLoc& src_loc );
 
 	std::unique_ptr<
-		std::variant<
+		const std::variant<
 			VariablesDeclaration,
 			AutoVariableDeclaration > >
 	variable_declaration_part_;
@@ -769,7 +773,7 @@ struct Function final : public SyntaxElementBase
 	std::vector<std::string> name_; // A, A::B, A::B::C::D, ::A, ::A::B
 	Expression condition_;
 	FunctionType type_;
-	std::unique_ptr<StructNamedInitializer> constructor_initialization_list_;
+	std::unique_ptr<const StructNamedInitializer> constructor_initialization_list_;
 	BlockPtr block_;
 	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
@@ -786,7 +790,7 @@ struct ClassField final : public SyntaxElementBase
 
 	TypeName type;
 	std::string name;
-	std::unique_ptr<Initializer> initializer; // May be null.
+	std::unique_ptr<const Initializer> initializer; // May be null.
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
@@ -818,7 +822,7 @@ struct ClassVisibilityLabel final : public SyntaxElementBase
 
 struct NonSyncTagNone{};
 struct NonSyncTagTrue{};
-using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, std::unique_ptr<Expression>>;
+using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, ExpressionPtr>;
 
 struct Class final : public SyntaxElementBase
 {
@@ -862,7 +866,7 @@ struct TypeTemplate : public TemplateBase
 	// Short form means that template argumenst are also signature arguments.
 	bool is_short_form_= false;
 
-	std::variant<ClassPtr, std::unique_ptr<TypeAlias>> something_;
+	std::variant<ClassPtr, std::unique_ptr<const TypeAlias>> something_;
 };
 
 struct FunctionTemplate final : public TemplateBase

@@ -274,6 +274,7 @@ private:
 	TypeName ParseTypeName();
 	std::vector<Expression> ParseTemplateParameters();
 	ComplexName ParseComplexName();
+	std::unique_ptr<ComplexName::Component> ParseComplexNameTail();
 	std::string ParseInnerReferenceTag();
 	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
 
@@ -1502,7 +1503,6 @@ std::vector<Expression> SyntaxAnalyzer::ParseTemplateParameters()
 ComplexName SyntaxAnalyzer::ParseComplexName()
 {
 	ComplexName complex_name(it_->src_loc);
-	std::unique_ptr<ComplexName::Component>* component= &complex_name.tail;
 
 	if( !( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::Scope ) )
 	{
@@ -1518,6 +1518,8 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 			PushErrorMessage();
 			return complex_name;
 		}
+
+		complex_name.tail= ParseComplexNameTail();
 	}
 	else if( it_->text == Keywords::typeof_ )
 	{
@@ -1527,6 +1529,8 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 		typeof_type_name.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
 
 		complex_name.start_value= std::move(typeof_type_name);
+
+		complex_name.tail= ParseComplexNameTail();
 	}
 	else
 	{
@@ -1535,36 +1539,48 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 
 		if( it_->type == Lexem::Type::TemplateBracketLeft )
 		{
-			*component= std::make_unique<ComplexName::Component>();
-			(*component)->name_or_template_paramenters= ParseTemplateParameters();
-			component= &((*component)->next);
+			auto template_params_component= std::make_unique<ComplexName::Component>();
+			template_params_component->name_or_template_paramenters= ParseTemplateParameters();
+			template_params_component->next= ParseComplexNameTail();
+
+			complex_name.tail= std::move(template_params_component);
 		}
-	}
-
-	while( NotEndOfFile() && it_->type == Lexem::Type::Scope )
-	{
-		NextLexem();
-		if( it_->type != Lexem::Type::Identifier )
-		{
-			PushErrorMessage();
-			return complex_name;
-		}
-
-		*component= std::make_unique<ComplexName::Component>();
-		(*component)->name_or_template_paramenters= it_->text;
-		NextLexem();
-
-		if( it_->type == Lexem::Type::TemplateBracketLeft )
-		{
-			component= &((*component)->next);
-			*component= std::make_unique<ComplexName::Component>();
-			(*component)->name_or_template_paramenters= ParseTemplateParameters();
-		}
-
-		component= &((*component)->next);
+		else
+			complex_name.tail= ParseComplexNameTail();
 	}
 
 	return complex_name;
+}
+
+std::unique_ptr<ComplexName::Component> SyntaxAnalyzer::ParseComplexNameTail()
+{
+	if( !( NotEndOfFile() && it_->type == Lexem::Type::Scope ) )
+		return nullptr;
+
+	NextLexem(); // Skip ::
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return nullptr;
+	}
+
+	auto component= std::make_unique<ComplexName::Component>();
+	component->name_or_template_paramenters= it_->text;
+	NextLexem(); // Skip identifier
+
+	if( it_->type == Lexem::Type::TemplateBracketLeft )
+	{
+		auto template_params_component= std::make_unique<ComplexName::Component>();
+		template_params_component->name_or_template_paramenters= ParseTemplateParameters();
+		template_params_component->next= ParseComplexNameTail();
+
+		component->next= std::move(template_params_component);
+	}
+	else
+		component->next= ParseComplexNameTail();
+
+	return component;
 }
 
 std::string SyntaxAnalyzer::ParseInnerReferenceTag()
@@ -2937,7 +2953,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	{
 		if( it_->type == Lexem::Type::BracketLeft )
 		{
-			result->constructor_initialization_list_= std::make_unique<StructNamedInitializer>( it_->src_loc );
+			auto constructor_initialization_list= std::make_unique<StructNamedInitializer>( it_->src_loc );
 			NextLexem();
 
 			while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
@@ -2947,9 +2963,9 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					PushErrorMessage();
 					return nullptr;
 				}
-				result->constructor_initialization_list_->members_initializers.emplace_back();
-				result->constructor_initialization_list_->members_initializers.back().name= it_->text;
-				Initializer& initializer= result->constructor_initialization_list_->members_initializers.back().initializer;
+				constructor_initialization_list->members_initializers.emplace_back();
+				constructor_initialization_list->members_initializers.back().name= it_->text;
+				Initializer& initializer= constructor_initialization_list->members_initializers.back().initializer;
 
 				NextLexem();
 				initializer= ParseVariableInitializer();
@@ -2966,6 +2982,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					break;
 			}
 			ExpectLexem( Lexem::Type::BracketRight );
+
+			result->constructor_initialization_list_= std::move(constructor_initialization_list);
 		}
 
 		if( it_->type == Lexem::Type::BraceLeft )
@@ -3278,10 +3296,11 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	{
 		FunctionTemplate function_template( template_src_loc );
 		function_template.params_= std::move(params);
-		function_template.function_= ParseFunction();
-		if( function_template.function_ != nullptr )
+
+		if( auto function= ParseFunction() )
 		{
-			function_template.function_->is_template_= true;
+			function->is_template_= true;
+			function_template.function_= std::move(function);
 			return std::move(function_template);
 		}
 		else
@@ -3357,7 +3376,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			NonSyncTag non_sync_tag= TryParseClassNonSyncTag();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
 
-			ClassPtr class_= ParseClassBody();
+			auto class_= ParseClassBody();
 			if( class_ != nullptr )
 			{
 				class_->src_loc_= template_thing_src_loc;

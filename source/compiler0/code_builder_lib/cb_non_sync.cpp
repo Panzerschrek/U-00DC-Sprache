@@ -104,7 +104,7 @@ bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const
 				prev_types_stack.pop_back();
 				return true;
 			}
-			else if( const auto expression_ptr= std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->non_sync_tag_ ) )
+			else if( const auto expression_ptr= std::get_if<Synt::ExpressionPtr>( &class_type->syntax_element->non_sync_tag_ ) )
 			{
 				const Synt::Expression& expression= **expression_ptr;
 
@@ -195,7 +195,7 @@ void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 {
 	if( class_type->syntax_element != nullptr )
 	{
-		if( const auto expression_ptr= std::get_if<std::unique_ptr<Synt::Expression>>( &class_type->syntax_element->non_sync_tag_ ) )
+		if( const auto expression_ptr= std::get_if<Synt::ExpressionPtr>( &class_type->syntax_element->non_sync_tag_ ) )
 		{
 			const Synt::Expression& expression= **expression_ptr;
 

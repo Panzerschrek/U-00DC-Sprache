@@ -962,7 +962,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 
 		return template_args_namespace->GetThisScopeValue( Class::c_template_class_name );
 	}
-	if( const auto type_alias= std::get_if< std::unique_ptr<Synt::TypeAlias> >( &type_template.syntax_element->something_ ) )
+	if( const auto type_alias= std::get_if< std::unique_ptr<const Synt::TypeAlias> >( &type_template.syntax_element->something_ ) )
 	{
 		const Type type= PrepareType( (*type_alias)->value, *template_args_namespace, *global_function_context_ );
 

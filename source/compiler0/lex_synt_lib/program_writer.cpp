@@ -669,7 +669,7 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 	{}
 	else if( std::get_if<NonSyncTagTrue>( &class_.non_sync_tag_ ) != nullptr )
 		stream << Keyword( Keywords::non_sync_ ) << " ";
-	else if( const auto expression_ptr = std::get_if<std::unique_ptr<Expression>>( &class_.non_sync_tag_ ) )
+	else if( const auto expression_ptr = std::get_if<std::unique_ptr<const Expression>>( &class_.non_sync_tag_ ) )
 	{
 		stream << Keyword( Keywords::non_sync_ ) << "( ";
 		ElementWrite( **expression_ptr, stream );
