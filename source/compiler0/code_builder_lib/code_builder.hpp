@@ -518,6 +518,14 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
 
+	Value AccessClassField(
+		NamesScope& names,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const ClassField& field,
+		const std::string& field_name,
+		const SrcLoc& src_loc );
+
 	// Returns Value, if overloaded operator selected or if arguments are template dependent or argumens are error values.
 	// Returns std::nullopt, if all ok, but there is no overloaded operator.
 	// In success call of overloaded operator arguments evaluated in left to right order.

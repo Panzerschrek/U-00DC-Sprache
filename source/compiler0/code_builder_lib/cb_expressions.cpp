@@ -338,93 +338,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( member_access_operator.template_parameters != std::nullopt )
 		REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc_ );
 
-	const ClassField* const field= class_member->GetClassField();
-	if( field == nullptr )
-	{
-		REPORT_ERROR( NotImplemented, names.GetErrors(), member_access_operator.src_loc_, "class members, except fields or methods" );
-		return ErrorValue();
-	}
+	if( const ClassField* const field= class_member->GetClassField() )
+		return AccessClassField( names, function_context, variable, *field, member_access_operator.member_name_, member_access_operator.src_loc_ );
 
-	llvm::Value* const gep_result= CreateClassFieldGEP( function_context, *variable, *field );
-
-	const VariableMutPtr result= std::make_shared<Variable>();
-	result->location= Variable::Location::Pointer;
-	result->type= field->type;
-	result->name= variable->name + "." + member_access_operator.member_name_;
-
-	if( field->is_reference )
-	{
-		if( variable->constexpr_value != nullptr )
-		{
-			if( EnsureTypeComplete( field->type ) )
-			{
-				// Constexpr references field should be "GlobalVariable" or Constexpr GEP.
-				const auto element= variable->constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
-
-				result->llvm_value= element;
-
-				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
-				{
-					if( class_type->typeinfo_type != std::nullopt && member_access_operator.member_name_ == "type_id" )
-					{
-						// HACK!
-						// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.
-						// This is used for type_id in typeinfo classes.
-						result->constexpr_value= global_variable->getInitializer()->getAggregateElement(0u)->getAggregateElement(0u);
-					}
-					else
-						result->constexpr_value= global_variable->getInitializer();
-				}
-				else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
-				{
-					// TODO - what first operand is constant GEP too?
-					llvm::Constant* value= llvm::dyn_cast<llvm::GlobalVariable>(constant_expression->getOperand(0u))->getInitializer();
-
-					// Skip first zero index.
-					for( llvm::User::const_op_iterator op= std::next(std::next(constant_expression->op_begin())), op_end= constant_expression->op_end(); op != op_end; ++op )
-						value= value->getAggregateElement( llvm::dyn_cast<llvm::Constant>(op->get()) );
-					result->constexpr_value= value;
-				}
-				else U_ASSERT(false);
-			}
-			else
-				return ErrorValue(); // Actual error will be reported in another place.
-		}
-		else
-		{
-			if( const auto load_res= CreateTypedReferenceLoad( function_context, field->type, gep_result ) )
-			{
-				// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
-				load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
-				result->llvm_value= load_res;
-			}
-		}
-
-		result->value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-		function_context.variables_state.AddNode( result );
-
-		for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable ) )
-		{
-			if( !function_context.variables_state.TryAddLink( inner_reference, result ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), member_access_operator.src_loc_, inner_reference->name );
-		}
-	}
-	else
-	{
-		result->llvm_value= gep_result;
-		if( variable->constexpr_value != nullptr )
-			result->constexpr_value= variable->constexpr_value->getAggregateElement( static_cast<unsigned int>( field->index ) );
-
-		result->value_type= ( variable->value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-		function_context.variables_state.AddNode( result );
-
-		if( !function_context.variables_state.TryAddLink( variable, result ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), member_access_operator.src_loc_, variable->name );
-	}
-
-	RegisterTemporaryVariable( function_context, result );
-
-	return Value( result, member_access_operator.src_loc_ );
+	REPORT_ERROR( NotImplemented, names.GetErrors(), member_access_operator.src_loc_, "class members, except fields or methods" );
+	return ErrorValue();
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -775,47 +693,19 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			return ErrorValue();
 		}
 
-		const VariableMutPtr field_variable=
-			std::make_shared<Variable>(
-				field->type,
-				( function_context.this_->value_type == ValueType::ReferenceMut && field->is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-				Variable::Location::Pointer,
-				"this." + field->syntax_element->name,
-				CreateClassFieldGEP( function_context, *function_context.this_, *field ) );
+		const std::string* field_name= nullptr;
+		if( const auto start_string= std::get_if<std::string>( &named_operand.start_value ) )
+			field_name= start_string;
 
-		if( field_variable->llvm_value == nullptr && !function_context.is_functionless_context )
+		const Synt::ComplexName::Component* last_component= named_operand.tail.get();
+		while( last_component != nullptr )
 		{
-			REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
-			return ErrorValue();
+			if( const auto component_name= std::get_if<std::string>( &last_component->name_or_template_paramenters ) )
+				field_name= component_name;
+			last_component= last_component->next.get();
 		}
 
-		if( field->is_reference )
-		{
-			if( const auto load_res= CreateTypedReferenceLoad( function_context, field->type, field_variable->llvm_value ) )
-			{
-				// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
-				load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
-				field_variable->llvm_value= load_res;
-			}
-
-			field_variable->value_type= field->is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-			function_context.variables_state.AddNode( field_variable );
-
-			for( const VariablePtr& node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( function_context.this_ ) )
-			{
-				if( !function_context.variables_state.TryAddLink( node, field_variable ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), named_operand.src_loc_, node->name );
-			}
-		}
-		else
-		{
-			function_context.variables_state.AddNode( field_variable );
-			if( !function_context.variables_state.TryAddLink( function_context.this_, field_variable ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), named_operand.src_loc_, function_context.this_->name );
-		}
-
-		RegisterTemporaryVariable( function_context, field_variable );
-		return Value( field_variable, named_operand.src_loc_ );
+		return AccessClassField( names, function_context, function_context.this_, *field, field_name == nullptr ? "" : *field_name, named_operand.src_loc_ );
 	}
 	else if( const OverloadedFunctionsSet* const overloaded_functions_set= value_entry.GetFunctionsSet() )
 	{
@@ -1722,6 +1612,127 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::RawPointerType& type_name )
 {
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
+}
+
+Value CodeBuilder::AccessClassField(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const VariablePtr& variable,
+	const ClassField& field,
+	const std::string& field_name,
+	const SrcLoc& src_loc )
+{
+	if( field.class_ != variable->type )
+	{
+		const Class* const variabe_type_class= variable->type.GetClassType();
+		U_ASSERT( variabe_type_class != nullptr );
+		if( variabe_type_class->base_class != nullptr )
+		{
+			// Recursive try to access field in parent class.
+
+			const VariableMutPtr base=
+				std::make_shared<Variable>(
+					variabe_type_class->base_class,
+					variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+					Variable::Location::Pointer,
+					Keyword( Keywords::base_ ),
+					CreateBaseClassGEP( function_context, *variabe_type_class, variable->llvm_value ) );
+
+			function_context.variables_state.AddNode( base );
+
+			if( !function_context.variables_state.TryAddLink( variable, base ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, variable->name );
+
+			RegisterTemporaryVariable( function_context, base );
+
+			return AccessClassField( names, function_context, base, field, field_name, src_loc );
+		}
+
+		// No base - this is wrong field for this class.
+		REPORT_ERROR( AccessOfNonThisClassField, names.GetErrors(), src_loc, field_name );
+		return ErrorValue();
+	}
+
+	llvm::Value* const gep_result= CreateClassFieldGEP( function_context, *variable, field.index );
+
+	const VariableMutPtr result= std::make_shared<Variable>();
+	result->location= Variable::Location::Pointer;
+	result->type= field.type;
+	result->name= variable->name + "." + field_name;
+
+	if( field.is_reference )
+	{
+		if( variable->constexpr_value != nullptr )
+		{
+			if( EnsureTypeComplete( field.type ) )
+			{
+				// Constexpr references field should be "GlobalVariable" or Constexpr GEP.
+				const auto element= variable->constexpr_value->getAggregateElement( field.index );
+
+				result->llvm_value= element;
+
+				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
+				{
+					if( field.class_->typeinfo_type != std::nullopt && field_name == "type_id" )
+					{
+						// HACK!
+						// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.
+						// This is used for type_id in typeinfo classes.
+						result->constexpr_value= global_variable->getInitializer()->getAggregateElement(0u)->getAggregateElement(0u);
+					}
+					else
+						result->constexpr_value= global_variable->getInitializer();
+				}
+				else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( element ) )
+				{
+					// TODO - what first operand is constant GEP too?
+					llvm::Constant* value= llvm::dyn_cast<llvm::GlobalVariable>(constant_expression->getOperand(0u))->getInitializer();
+
+					// Skip first zero index.
+					for( llvm::User::const_op_iterator op= std::next(std::next(constant_expression->op_begin())), op_end= constant_expression->op_end(); op != op_end; ++op )
+						value= value->getAggregateElement( llvm::dyn_cast<llvm::Constant>(op->get()) );
+					result->constexpr_value= value;
+				}
+				else U_ASSERT(false);
+			}
+			else
+				return ErrorValue(); // Actual error will be reported in another place.
+		}
+		else
+		{
+			if( const auto load_res= CreateTypedReferenceLoad( function_context, field.type, gep_result ) )
+			{
+				// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
+				load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
+				result->llvm_value= load_res;
+			}
+		}
+
+		result->value_type= field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		function_context.variables_state.AddNode( result );
+
+		for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable ) )
+		{
+			if( !function_context.variables_state.TryAddLink( inner_reference, result ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
+		}
+	}
+	else
+	{
+		result->llvm_value= gep_result;
+		if( variable->constexpr_value != nullptr )
+			result->constexpr_value= variable->constexpr_value->getAggregateElement( static_cast<unsigned int>( field.index ) );
+
+		result->value_type= ( variable->value_type == ValueType::ReferenceMut && field.is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		function_context.variables_state.AddNode( result );
+
+		if( !function_context.variables_state.TryAddLink( variable, result ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, variable->name );
+	}
+
+	RegisterTemporaryVariable( function_context, result );
+
+	return Value( result, src_loc );
 }
 
 std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
