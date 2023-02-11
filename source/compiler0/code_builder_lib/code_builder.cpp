@@ -2101,21 +2101,6 @@ llvm::Value*CodeBuilder::CreateBaseClassGEP( FunctionContext& function_context, 
 	return CreateClassFieldGEP( function_context, class_type, class_ptr, 0 /* base class is allways first field */ );
 }
 
-llvm::Value* CodeBuilder::CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field )
-{
-	ClassPtr actual_field_class= class_variable.type.GetClassType();
-	llvm::Value* actual_field_class_ptr= class_variable.llvm_value;
-	while( actual_field_class != class_field.class_ )
-	{
-		if( actual_field_class->base_class == nullptr )
-			return nullptr;
-		actual_field_class_ptr= CreateBaseClassGEP( function_context, *actual_field_class, actual_field_class_ptr );
-		actual_field_class= actual_field_class->base_class;
-	}
-
-	return CreateClassFieldGEP( function_context, *actual_field_class, actual_field_class_ptr, class_field.index );
-}
-
 llvm::Value* CodeBuilder::CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const uint64_t field_index )
 {
 	const auto class_type= class_variable.type.GetClassType();

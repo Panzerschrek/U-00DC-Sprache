@@ -934,7 +934,6 @@ private:
 	llvm::Constant* GetFieldGEPIndex( uint64_t field_index );
 
 	llvm::Value* CreateBaseClassGEP( FunctionContext& function_context, const Class& class_type, llvm::Value* class_ptr );
-	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field );
 	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, uint64_t field_index );
 	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Class& class_type, llvm::Value* class_ptr, uint64_t field_index );
 	llvm::Value* CreateTupleElementGEP( FunctionContext& function_context, const Variable& tuple_variable, uint64_t element_index );
