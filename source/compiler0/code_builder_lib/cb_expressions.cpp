@@ -1653,16 +1653,15 @@ Value CodeBuilder::AccessClassField(
 		return ErrorValue();
 	}
 
-	const VariableMutPtr result= std::make_shared<Variable>();
-	result->location= Variable::Location::Pointer;
-	result->type= field.type;
-	result->name= variable->name + "." + field_name;
-
-	llvm::Value* const gep_result=
-		ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, field.index );
-
 	if( field.is_reference )
 	{
+		const VariableMutPtr result=
+			std::make_shared<Variable>(
+				field.type,
+				field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				 Variable::Location::Pointer,
+				variable->name + "." + field_name );
+
 		if( variable->constexpr_value != nullptr )
 		{
 			if( EnsureTypeComplete( field.type ) )
@@ -1701,7 +1700,15 @@ Value CodeBuilder::AccessClassField(
 		}
 		else
 		{
-			if( const auto load_res= CreateTypedReferenceLoad( function_context, field.type, gep_result ) )
+			if( const auto load_res=
+					CreateTypedReferenceLoad(
+					function_context,
+					field.type,
+					ForceCreateConstantIndexGEP(
+						function_context,
+						variable->type.GetLLVMType(),
+						variable->llvm_value,
+						field.index ) ) )
 			{
 				// Reference is never null, so, mark result of reference field load with "nonnull" metadata.
 				load_res->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) );
@@ -1709,31 +1716,36 @@ Value CodeBuilder::AccessClassField(
 			}
 		}
 
-		result->value_type= field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		function_context.variables_state.AddNode( result );
-
 		for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable ) )
 		{
 			if( !function_context.variables_state.TryAddLink( inner_reference, result ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
 		}
+
+		RegisterTemporaryVariable( function_context, result );
+		return Value( result, src_loc );
 	}
 	else
 	{
-		result->llvm_value= gep_result;
+		const VariableMutPtr result=
+			std::make_shared<Variable>(
+				field.type,
+				( variable->value_type == ValueType::ReferenceMut && field.is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				variable->name + "." + field_name,
+				ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, field.index ) );
+
 		if( variable->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( field.index );
 
-		result->value_type= ( variable->value_type == ValueType::ReferenceMut && field.is_mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		function_context.variables_state.AddNode( result );
-
 		if( !function_context.variables_state.TryAddLink( variable, result ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, variable->name );
+
+		RegisterTemporaryVariable( function_context, result );
+		return Value( result, src_loc );
 	}
-
-	RegisterTemporaryVariable( function_context, result );
-
-	return Value( result, src_loc );
 }
 
 std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
