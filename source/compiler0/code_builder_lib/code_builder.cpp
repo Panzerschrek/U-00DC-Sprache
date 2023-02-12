@@ -1238,9 +1238,6 @@ Type CodeBuilder::BuildFuncCode(
 		const Synt::FunctionParam& declaration_arg= params[arg_number ];
 		const std::string& arg_name= declaration_arg.name_;
 
-		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
-		U_ASSERT( !( is_this && param.value_type == ValueType::Value ) );
-
 		const VariableMutPtr variable=
 			std::make_shared<Variable>(
 				param.type,
@@ -1305,7 +1302,7 @@ Type CodeBuilder::BuildFuncCode(
 		const VariableMutPtr variable_reference=
 			std::make_shared<Variable>(
 				param.type,
-				declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
 				arg_name,
 				variable->llvm_value );
@@ -1314,8 +1311,9 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.variables_state.AddLink( variable, variable_reference );
 		function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
 
-		if( is_this )
+		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{
+			U_ASSERT( param.value_type != ValueType::Value );
 			// Save "this" in function context for accessing inside class methods.
 			function_context.this_= variable_reference;
 		}
