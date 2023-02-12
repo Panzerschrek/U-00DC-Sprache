@@ -115,12 +115,40 @@ VariablePtr ReferencesGraph::CreateNodeInnerReference( const VariablePtr& node, 
 
 bool ReferencesGraph::HaveOutgoingLinks( const VariablePtr& from ) const
 {
-	return HaveOutgoingLinks_r( from );
+	// Check if any parent have links and any child (including children of children) have links.
+	// Doesn't count sibling nodes and other indirect relatives.
+
+	if( HaveOutgoingLinksIncludingChildrenLinks_r( from ) )
+		return true;
+
+	VariablePtr parent= from->parent.lock();
+	while( parent != nullptr )
+	{
+		if( HaveDirectOutgoingLinks( parent ) )
+			return true;
+		parent= parent->parent.lock();
+	}
+
+	return false;
 }
 
 bool ReferencesGraph::HaveOutgoingMutableNodes( const VariablePtr& from ) const
 {
-	return HaveOutgoingMutableNodes_r( from );
+	// Check if any parent have mutable links and any child (including children of children) have mutable links.
+	// Doesn't count sibling nodes and other indirect relatives.
+
+	if( HaveOutgoingMutableNodesIncludingChildrenNodes_r( from ) )
+		return true;
+
+	VariablePtr parent= from->parent.lock();
+	while( parent != nullptr )
+	{
+		if( HaveDirectOutgoingMutableNodes( parent ) )
+			return true;
+		parent= parent->parent.lock();
+	}
+
+	return false;
 }
 
 void ReferencesGraph::MoveNode( const VariablePtr& node )
@@ -354,39 +382,43 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 	return errors;
 }
 
-bool ReferencesGraph::HaveOutgoingLinks_r( const VariablePtr& from, const VariablePtr& prev_node ) const
+bool ReferencesGraph::HaveDirectOutgoingLinks( const VariablePtr& from ) const
 {
 	for( const auto& link : links_ )
-	{
 		if( link.src == from )
-			return true;
-	}
-
-	if( const VariablePtr parent= from->parent.lock() )
-		if( prev_node != parent && HaveOutgoingLinks_r( parent, from ) )
-			return true;
-
-	for( const VariablePtr& child : from->children )
-		if( child != nullptr && prev_node != child && HaveOutgoingLinks_r( child, from ) )
 			return true;
 
 	return false;
 }
 
-bool ReferencesGraph::HaveOutgoingMutableNodes_r( const VariablePtr& from, const VariablePtr& prev_node ) const
+bool ReferencesGraph::HaveOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const
 {
-	for( const auto& link : links_ )
-	{
-		if( link.src == from && link.dst->value_type == ValueType::ReferenceMut )
-			return true;
-	}
-
-	if( const VariablePtr parent= from->parent.lock() )
-		if( prev_node != parent && HaveOutgoingMutableNodes_r( parent, from ) )
+	if( HaveDirectOutgoingLinks( from ) )
 			return true;
 
 	for( const VariablePtr& child : from->children )
-		if( child != nullptr && prev_node != child && HaveOutgoingMutableNodes_r( child, from ) )
+		if( child != nullptr && HaveOutgoingLinksIncludingChildrenLinks_r( child ) )
+			return true;
+
+	return false;
+}
+
+bool ReferencesGraph::HaveDirectOutgoingMutableNodes( const VariablePtr& from ) const
+{
+	for( const auto& link : links_ )
+		if( link.src == from && link.dst->value_type == ValueType::ReferenceMut )
+			return true;
+
+	return false;
+}
+
+bool ReferencesGraph::HaveOutgoingMutableNodesIncludingChildrenNodes_r( const VariablePtr& from ) const
+{
+	if( HaveDirectOutgoingMutableNodes( from ) )
+		return true;
+
+	for( const VariablePtr& child : from->children )
+		if( child != nullptr && HaveOutgoingMutableNodesIncludingChildrenNodes_r( child ) )
 			return true;
 
 	return false;

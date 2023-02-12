@@ -866,3 +866,668 @@ def ReferenceFieldNode_Test2():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "ReferenceProtectionError" )
 	assert( errors_list[0].src_loc.line == 10 )
+
+
+def StructFieldChildNodes_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			// Ok - create mutable references to different fields of same struct.
+			var i32 &mut x= s.x;
+			var f32 &mut y= s.y;
+			++x;
+			y *= 2.0f;
+			halt if( x != 1 );
+			halt if( y != 2.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructFieldChildNodes_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 5, .y= 7.0f };
+			{
+				// Ok - create mutable references to different fields of same struct, accessed by reference.
+				auto &mut s_ref= s;
+				var i32 &mut x= s_ref.x;
+				var f32 &mut y= s_ref.y;
+				++x;
+				y *= 2.0f;
+			}
+			halt if( s.x != 6 );
+			halt if( s.y != 14.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructFieldChildNodes_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			var i32 &mut x= s.x;
+			var i32 &mut x_again= s.x; // Error - creating second mutable reference to same field.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def StructFieldChildNodes_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			var i32 &mut x= s.x;
+			auto & s_whole= s; // Error - creating reference to whole struct with existing mutable reference to its field.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def StructFieldChildNodes_Test4():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			var i32 & x= s.x;
+			var S &mut s_whole= s; // Error - creating mutable reference to whole struct with existing reference to its field.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def StructFieldChildNodes_Test5():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			auto &mut s_whole= s;
+			auto & x= s.x; // Error - creating reference to struct field with existing mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def StructFieldChildNodes_Test6():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			auto & s_whole= s;
+			auto &mut x= s.x; // Error - creating mutable reference to struct field with existing reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def StructFieldChildNodes_Test7():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			auto & s_whole= s;
+			auto & x= s.x; // Ok - creating reference to struct field for struct with existing reference.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test8():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			auto & x= s.x;
+			auto & s_whole= s; // Ok - creating reference to struct for struct with existing reference to field.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test9():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Bar( i32& mut x, f32 &mut y ) {}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			Bar( s.x, s.y ); // Ok - passing to function two mutable references to different fields of same struct.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test10():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Bar( f32& mut x, f32 &mut y ) {}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			Bar( s.y, s.y ); // Error - passing to function two mutable references to same field of same struct.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def StructFieldChildNodes_Test11():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Bar( i32& mut x, S& mut s ) {}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			Bar( s.x, s ); // Error - passing to function mutable reference to struct field and mutable reference to whole struct.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def StructFieldChildNodes_Test12():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Bar( S& mut s, f32& mut y ) {}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			Bar( s, s.y ); // Error - passing to function mutable reference to whole struct and mutable reference to struct field.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def StructFieldChildNodes_Test13():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Bar( S& s, f32& mut y ) {}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			Bar( s, s.y ); // Error - passing to function reference to whole struct and mutable reference to struct field.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def StructFieldChildNodes_Test14():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Bar( S &mut s, f32& y ) {}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			Bar( s, s.y ); // Error - passing to function mutable reference to whole struct and reference to struct field.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 11 ) )
+
+
+def StructFieldChildNodes_Test15():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Bar( S & s, f32& y ) {}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			Bar( s, s.y ); // Ok - passing to function reference to whole struct and reference to struct field.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test16():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Bar( i32& x, S& s ) {}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			Bar( s.x, s ); // Ok - passing to function reference to struct field and reference to whole struct.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test17():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Bar( i32& x, f32& y ) {}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			Bar( s.x, s.y ); // Ok - passing to function references to two struct fields.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test18():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Bar( i32& x, i32& y ) {}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			Bar( s.x, s.x ); // Ok - passing to function two references to same struct field.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test19():
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		struct T{ S s; bool z; }
+		fn Foo()
+		{
+			var T mut t{ .s{ .x= 0, .y= 1.0f }, .z= false };
+			{
+				// Ok - create mutable references to different fields of same struct.
+				var i32 &mut x= t.s.x;
+				var f32 &mut y= t.s.y;
+				var bool &mut z= t.z;
+				x= 16;
+				y= 45.3f;
+				z= false;
+			}
+			halt if( t.s.x != 16 );
+			halt if( t.s.y != 45.3f );
+			halt if( t.z != false );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructFieldChildNodes_Test20():
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		struct T{ S s; bool z; }
+		fn Foo()
+		{
+			var T mut t{ .s{ .x= 0, .y= 1.0f }, .z= false };
+			{
+				// Ok - create mutable references to different fields of same struct.
+				var S &mut s= t.s;
+				var i32 &mut x= s.x;
+				var f32 &mut y= s.y;
+				var bool &mut z= t.z;
+				x= 16;
+				y= 45.3f;
+				z= false;
+			}
+			halt if( t.s.x != 16 );
+			halt if( t.s.y != 45.3f );
+			halt if( t.z != false );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def StructFieldChildNodes_Test21():
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		struct T{ S s; bool z; }
+		fn Foo()
+		{
+			var T mut t{ .s{ .x= 0, .y= 1.0f }, .z= false };
+			var S &mut s= t.s;
+			var i32 &mut x= t.s.x; // Error - creating mutable reference to "t.s" which already has one mutable reference.
+
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def StructFieldChildNodes_Test22():
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		struct T{ S s; bool z; }
+		fn Foo()
+		{
+			var T mut t{ .s{ .x= 0, .y= 1.0f }, .z= false };
+			var S & s= t.s;
+			var i32 &mut x= t.s.x; // Error - creating mutable reference to "t.s" which already has one reference.
+
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def StructFieldChildNodes_Test23():
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		struct T{ S s; bool z; }
+		fn Foo()
+		{
+			var T mut t{ .s{ .x= 0, .y= 1.0f }, .z= false };
+			var S &mut s= t.s;
+			var i32 & x= t.s.x; // Error - creating reference to "t.s" which already has one mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def StructFieldChildNodes_Test24():
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		struct T{ S s; bool z; }
+		fn Foo()
+		{
+			var T mut t{ .s{ .x= 0, .y= 1.0f }, .z= false };
+			var S &mut s= t.s;
+			var i32 &mut x= s.x; // Ok - creating reference, linked to reference "s".
+			var f32 &mut y= s.y; // Ok - creating reference, linked to reference "s".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test25():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				// Ok - creating two mutable references to "this".
+				var i32 &mut x_ref= x;
+				var f32 &mut y_ref= y;
+				x_ref= 0;
+				y_ref= 0.0f;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test26():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				var i32 &mut x_ref= x;
+				var i32 &mut x_ref_again= x; // Error - creating second reference to same "this" field.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def StructFieldChildNodes_Test27():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				var i32 &mut x_ref= x;
+				Bar(); // Error - creating mutable reference to "this" in call to thiscall method "Bar", when mutable reference to one of "this" fields exists.
+			}
+			fn Bar( mut this ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def StructFieldChildNodes_Test28():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				var f32 &mut y_ref= y;
+				Bar(); // Error - creating mutable reference to "this" in call to thiscall method "Bar", when reference to one of "this" fields exists.
+			}
+			fn Bar( mut this ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def StructFieldChildNodes_Test29():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				var f32 &mut y_ref= y;
+				Bar(); // Error - creating reference to "this" in call to thiscall method "Bar", when reference to one of "this" fields exists.
+			}
+			fn Bar( this ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def StructFieldChildNodes_Test30():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				var i32 & x_ref= x;
+				Bar(); // Ok - calling method with immutable "this" when immutable reference to one of fields exists.
+			}
+			fn Bar( this ) {}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test31():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				var i32 &mut x_ref= x;
+				this.y /= 1.0f; // Ok, modifying field of "this" using explicit "this", when mutable reference to other field exists.
+			}
+			fn Bar( this ) {}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test32():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				var i32 &mut x_ref= x;
+				y /= 1.0f; // Ok, modifying field of "this" using implicit "this", when mutable reference to other field exists.
+			}
+			fn Bar( this ) {}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test33():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				var i32 &mut x_ref= x;
+				this.x /= 1; // Error - modifying field of "this" using explicit "this", when mutable reference to same field exists.
+			}
+			fn Bar( this ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def StructFieldChildNodes_Test34():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				var i32 &mut x_ref= x;
+				x /= 1; // Error - modifying field of "this" using implicit "this", when mutable reference to same field exists.
+			}
+			fn Bar( this ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def StructFieldChildNodes_Test35():
+	c_program_text= """
+		struct S
+		{
+			i32 x; f32 y;
+			fn Foo( mut this )
+			{
+				auto &this_ref= this;
+				x /= 1; // Error - modifying field of "this" using implicit "this", when mutable reference to whole "this".
+			}
+			fn Bar( this ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
