@@ -1590,21 +1590,10 @@ void CodeBuilder::BuildConstructorInitialization(
 	if( !base_initialized && base_class.base_class != nullptr )
 	{
 		// Apply default initializer for base class.
-		const VariableMutPtr base_variable=
-			std::make_shared<Variable>(
-				base_class.base_class,
-				ValueType::ReferenceMut,
-				Variable::Location::Pointer,
-				Keyword( Keywords::base_ ),
-				CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
-
-		function_context.variables_state.AddNode( base_variable );
-		if( !function_context.variables_state.TryAddLink( this_, base_variable ) )
-			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), constructor_initialization_list.src_loc_, this_->name );
+		const VariablePtr base_variable= AccessClassBase( this_, function_context );
 
 		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
-		function_context.variables_state.RemoveNode( base_variable );
 	}
 
 	// Initialize fields listed in the initializer.
@@ -1612,21 +1601,10 @@ void CodeBuilder::BuildConstructorInitialization(
 	{
 		if( field_initializer.name == Keywords::base_ )
 		{
-			const VariableMutPtr base_variable=
-				std::make_shared<Variable>(
-					base_class.base_class,
-					ValueType::ReferenceMut,
-					Variable::Location::Pointer,
-					Keyword( Keywords::base_ ),
-					CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
-
-			function_context.variables_state.AddNode( base_variable );
-			if( !function_context.variables_state.TryAddLink( this_, base_variable ) )
-				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), constructor_initialization_list.src_loc_, this_->name );
+			const VariablePtr base_variable= AccessClassBase( this_, function_context );
 
 			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );
 			function_context.base_initialized= true;
-			function_context.variables_state.RemoveNode( base_variable );
 			continue;
 		}
 

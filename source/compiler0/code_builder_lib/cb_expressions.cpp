@@ -647,22 +647,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				return ErrorValue();
 			}
 
-			const VariableMutPtr base=
-				std::make_shared<Variable>(
-					class_.base_class,
-					function_context.this_->value_type,
-					Variable::Location::Pointer,
-					Keyword( Keywords::base_ ),
-					CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, class_.base_class, function_context ) );
-
-			function_context.variables_state.AddNode( base );
-
-			if( !function_context.variables_state.TryAddLink( function_context.this_, base ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), named_operand.src_loc_, function_context.this_->name );
-
-			RegisterTemporaryVariable( function_context, base );
-
-			return Value( base, named_operand.src_loc_ );
+			return Value( AccessClassBase( function_context.this_, function_context ), named_operand.src_loc_ );
 		}
 	}
 
@@ -1614,6 +1599,36 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
 }
 
+VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionContext& function_context )
+{
+	const Class* const variabe_type_class= variable->type.GetClassType();
+	U_ASSERT( variabe_type_class != nullptr );
+
+	const uint32_t c_base_field_index= 0;
+
+	variable->children.resize( variabe_type_class->llvm_type->getNumElements(), nullptr );
+	if( const auto prev_node= variable->children[ c_base_field_index ] )
+	{
+		function_context.variables_state.AddNodeIfNotExists( prev_node );
+		return prev_node;
+	}
+
+	const VariableMutPtr base=
+		std::make_shared<Variable>(
+			variabe_type_class->base_class,
+			variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			Keyword( Keywords::base_ ),
+			ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, c_base_field_index ) );
+
+	variable->children[ c_base_field_index ]= base;
+	base->parent= variable;
+
+	function_context.variables_state.AddNode( base );
+
+	return base;
+}
+
 Value CodeBuilder::AccessClassField(
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -1630,23 +1645,14 @@ Value CodeBuilder::AccessClassField(
 		if( variabe_type_class->base_class != nullptr )
 		{
 			// Recursive try to access field in parent class.
-
-			const VariableMutPtr base=
-				std::make_shared<Variable>(
-					variabe_type_class->base_class,
-					variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-					Variable::Location::Pointer,
-					Keyword( Keywords::base_ ),
-					ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, 0 ) );
-
-			function_context.variables_state.AddNode( base );
-
-			if( !function_context.variables_state.TryAddLink( variable, base ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, variable->name );
-
-			RegisterTemporaryVariable( function_context, base );
-
-			return AccessClassField( names, function_context, base, field, field_name, src_loc );
+			return
+				AccessClassField(
+					names,
+					function_context,
+					AccessClassBase( variable, function_context ),
+					field,
+					field_name,
+					src_loc );
 		}
 
 		// No base - this is wrong field for this class.
