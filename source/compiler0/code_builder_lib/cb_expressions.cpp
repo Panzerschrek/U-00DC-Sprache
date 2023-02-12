@@ -1622,10 +1622,11 @@ Value CodeBuilder::AccessClassField(
 	const std::string& field_name,
 	const SrcLoc& src_loc )
 {
+	const Class* const variabe_type_class= variable->type.GetClassType();
+	U_ASSERT( variabe_type_class != nullptr );
+
 	if( field.class_ != variable->type )
 	{
-		const Class* const variabe_type_class= variable->type.GetClassType();
-		U_ASSERT( variabe_type_class != nullptr );
 		if( variabe_type_class->base_class != nullptr )
 		{
 			// Recursive try to access field in parent class.
@@ -1728,6 +1729,15 @@ Value CodeBuilder::AccessClassField(
 	}
 	else
 	{
+		variable->children.resize( variabe_type_class->llvm_type->getNumElements(), nullptr );
+		if( const auto prev_node= variable->children[ field.index ] )
+		{
+			function_context.variables_state.AddNodeIfNotExists( prev_node );
+			return Value( prev_node, src_loc ); // Child node already created.
+		}
+
+		// Create variable child node.
+
 		const VariableMutPtr result=
 			std::make_shared<Variable>(
 				field.type,
@@ -1739,11 +1749,11 @@ Value CodeBuilder::AccessClassField(
 		if( variable->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( field.index );
 
-		function_context.variables_state.AddNode( result );
-		if( !function_context.variables_state.TryAddLink( variable, result ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, variable->name );
+		variable->children[ field.index ]= result;
+		result->parent= variable;
 
-		RegisterTemporaryVariable( function_context, result );
+		function_context.variables_state.AddNode( result );
+
 		return Value( result, src_loc );
 	}
 }

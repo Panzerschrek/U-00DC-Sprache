@@ -114,8 +114,8 @@ public:
 
 	// May be non-null for struct or tuple member nodes.
 	VariableWeakPtr parent;
-	// May be non-empty for struc or tuple nodes. Field index is used to access field node. Nodes are created lazily.
-	std::vector<VariablePtr> children;
+	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
+	mutable std::vector<VariablePtr> children;
 
 public:
 	Variable()= default;
