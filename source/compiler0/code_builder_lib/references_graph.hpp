@@ -68,6 +68,9 @@ private:
 	using LinksSet= std::unordered_set< Link, LinkHasher >;
 
 private:
+	bool HaveOutgoingLinks_r( const VariablePtr& from, const VariablePtr& prev_node= nullptr ) const;
+	bool HaveOutgoingMutableNodes_r( const VariablePtr& from, const VariablePtr& prev_node= nullptr ) const;
+
 	void RemoveNodeLinks( const VariablePtr& node );
 	void GetAllAccessibleVariableNodes_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 	void GetAccessibleVariableNodesInnerReferences_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;

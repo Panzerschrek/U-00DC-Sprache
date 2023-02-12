@@ -115,40 +115,12 @@ VariablePtr ReferencesGraph::CreateNodeInnerReference( const VariablePtr& node, 
 
 bool ReferencesGraph::HaveOutgoingLinks( const VariablePtr& from ) const
 {
-	for( const auto& link : links_ )
-	{
-		if( link.src == from )
-			return true;
-	}
-
-	if( const VariablePtr parent= from->parent.lock() )
-		if( HaveOutgoingLinks( parent ) )
-			return true;
-
-	for( const VariablePtr& child : from->children )
-		if( child != nullptr && HaveOutgoingLinks( child ) )
-			return true;
-
-	return false;
+	return HaveOutgoingLinks_r( from );
 }
 
 bool ReferencesGraph::HaveOutgoingMutableNodes( const VariablePtr& from ) const
 {
-	for( const auto& link : links_ )
-	{
-		if( link.src == from && link.dst->value_type == ValueType::ReferenceMut )
-			return true;
-	}
-
-	if( const VariablePtr parent= from->parent.lock() )
-		if( HaveOutgoingMutableNodes( parent ) )
-			return true;
-
-	for( const VariablePtr& child : from->children )
-		if( child != nullptr && HaveOutgoingMutableNodes( child ) )
-			return true;
-
-	return false;
+	return HaveOutgoingMutableNodes_r( from );
 }
 
 void ReferencesGraph::MoveNode( const VariablePtr& node )
@@ -380,6 +352,44 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 		}
 	}
 	return errors;
+}
+
+bool ReferencesGraph::HaveOutgoingLinks_r( const VariablePtr& from, const VariablePtr& prev_node ) const
+{
+	for( const auto& link : links_ )
+	{
+		if( link.src == from )
+			return true;
+	}
+
+	if( const VariablePtr parent= from->parent.lock() )
+		if( prev_node != parent && HaveOutgoingLinks_r( parent, from ) )
+			return true;
+
+	for( const VariablePtr& child : from->children )
+		if( child != nullptr && prev_node != child && HaveOutgoingLinks_r( child, from ) )
+			return true;
+
+	return false;
+}
+
+bool ReferencesGraph::HaveOutgoingMutableNodes_r( const VariablePtr& from, const VariablePtr& prev_node ) const
+{
+	for( const auto& link : links_ )
+	{
+		if( link.src == from && link.dst->value_type == ValueType::ReferenceMut )
+			return true;
+	}
+
+	if( const VariablePtr parent= from->parent.lock() )
+		if( prev_node != parent && HaveOutgoingMutableNodes_r( parent, from ) )
+			return true;
+
+	for( const VariablePtr& child : from->children )
+		if( child != nullptr && prev_node != child && HaveOutgoingMutableNodes_r( child, from ) )
+			return true;
+
+	return false;
 }
 
 void ReferencesGraph::RemoveNodeLinks( const VariablePtr& node )
