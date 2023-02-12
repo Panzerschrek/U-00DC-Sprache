@@ -87,9 +87,14 @@ struct TypeTemplatesSet
 	std::vector<const Synt::TypeTemplate*> syntax_elements;
 };
 
+struct Variable;
+using VariablePtr= std::shared_ptr<const Variable>;
+using VariableMutPtr= std::shared_ptr<Variable>;
+using VariableWeakPtr= std::weak_ptr<const Variable>;
 
 struct Variable final
 {
+public:
 	enum class Location : uint8_t
 	{
 		Pointer,
@@ -107,6 +112,12 @@ struct Variable final
 	ValueType value_type= ValueType::ReferenceImut;
 	Location location= Location::Pointer;
 
+	// May be non-null for struct or tuple member nodes.
+	VariableWeakPtr parent;
+	// May be non-empty for struc or tuple nodes. Field index is used to access field node. Nodes are created lazily.
+	std::vector<VariablePtr> children;
+
+public:
 	Variable()= default;
 	Variable(const Variable&)= delete;
 	Variable(Variable&&)= default;
@@ -122,9 +133,6 @@ struct Variable final
 		llvm::Value* in_llvm_value= nullptr,
 		llvm::Constant* in_constexpr_value= nullptr );
 };
-
-using VariablePtr= std::shared_ptr<const Variable>;
-using VariableMutPtr= std::shared_ptr<Variable>;
 
 // Used for displaying of template args.
 std::string ConstantVariableToString( const Variable& variable );

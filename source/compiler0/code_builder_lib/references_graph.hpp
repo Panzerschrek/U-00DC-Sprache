@@ -14,6 +14,8 @@ class ReferencesGraph
 public:
 	void AddNode( const VariablePtr& node );
 	void AddNodeIfNotExists( const VariablePtr& node );
+
+	// Removes also inner reference node and children nodes.
 	void RemoveNode( const VariablePtr& node );
 
 	void AddLink( const VariablePtr& from, const VariablePtr& to );
