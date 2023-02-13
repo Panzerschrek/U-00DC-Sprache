@@ -3146,10 +3146,7 @@ Value CodeBuilder::DoCallFunction(
 					continue;
 				}
 
-				if( expr->type == param.type )
-					llvm_args[arg_number]= expr->llvm_value;
-				else
-					llvm_args[arg_number]= CreateReferenceCast( expr->llvm_value, expr->type, param.type, function_context );
+				llvm_args[arg_number]= CreateReferenceCast( expr->llvm_value, expr->type, param.type, function_context );
 			}
 			else
 			{
