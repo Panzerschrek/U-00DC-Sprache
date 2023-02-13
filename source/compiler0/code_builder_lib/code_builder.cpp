@@ -1590,6 +1590,8 @@ void CodeBuilder::BuildConstructorInitialization(
 	if( !base_initialized && base_class.base_class != nullptr )
 	{
 		// Apply default initializer for base class.
+
+		// It is safe to access "base" as child node here since it is possible to call only constructor but not any virtual method.
 		const VariablePtr base_variable= AccessClassBase( this_, function_context );
 
 		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
@@ -1601,6 +1603,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	{
 		if( field_initializer.name == Keywords::base_ )
 		{
+			// It is safe to access "base" as child node here since it is possible to call only constructor but not any virtual method.
 			const VariablePtr base_variable= AccessClassBase( this_, function_context );
 
 			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );

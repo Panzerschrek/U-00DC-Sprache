@@ -647,7 +647,26 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				return ErrorValue();
 			}
 
-			return Value( AccessClassBase( function_context.this_, function_context ), named_operand.src_loc_ );
+			// Do not call here "AccessClassBase" method.
+			// We can not create child node for "this", because it's still possible to access whole "this" using "base" by calling a virtual method.
+			// So, create regular node pointing to "this".
+			// TODO - maybe access "base" child node in constructor initializer list since it is not possible to call real virtual method of "this"?
+			const VariableMutPtr base=
+				std::make_shared<Variable>(
+					class_.base_class,
+					function_context.this_->value_type,
+					Variable::Location::Pointer,
+					Keyword( Keywords::base_ ),
+					CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, class_.base_class, function_context ) );
+
+			function_context.variables_state.AddNode( base );
+
+			if( !function_context.variables_state.TryAddLink( function_context.this_, base ) )
+				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), named_operand.src_loc_, function_context.this_->name );
+
+			RegisterTemporaryVariable( function_context, base );
+
+			return Value( base, named_operand.src_loc_ );
 		}
 	}
 

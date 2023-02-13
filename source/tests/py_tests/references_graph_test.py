@@ -1618,3 +1618,142 @@ def StructFieldChildNodes_Test41():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def StructFieldChildNodes_Test42():
+	c_program_text= """
+	class A abstract
+	{
+		i32 x;
+		fn virtual pure Bar( mut this );
+	}
+	class B : A
+	{
+		f32 y;
+		fn Foo( mut this )
+		{
+			auto &mut y_ref= y;
+			// Error - calling a virtual method, using "base" when a mutable reference to one of "this" fields exists.
+			// This is an error because whole "this" may be still accessible via virtual call.
+			base.Bar();
+		}
+		fn virtual override Bar( mut this ) { y= 0.0f; }
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 15 ) )
+
+
+def StructFieldChildNodes_Test43():
+	c_program_text= """
+	class A polymorph { i32 x; }
+	class B : A
+	{
+		f32 y;
+		fn Foo( mut this )
+		{
+			auto &mut y_ref= y;
+			// Create a reference to "base" when a mutable reference to one of "this" fields exists.
+			auto& b= base;
+		}
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def StructFieldChildNodes_Test44():
+	c_program_text= """
+	class A polymorph { i32 x; }
+	class B : A
+	{
+		f32 y;
+		fn Foo( mut this )
+		{
+			auto & y_ref= y;
+			// Create a mutable reference to "base" when a reference to one of "this" fields exists.
+			auto &mut b= base;
+		}
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def StructFieldChildNodes_Test45():
+	c_program_text= """
+	class A abstract
+	{
+		i32 x;
+		fn virtual pure Bar( this );
+	}
+	class B : A
+	{
+		f32 y;
+		fn Foo( this )
+		{
+			auto & y_ref= y;
+			base.Bar(); // Ok - calling immutable virtual method via "base" when a reference to one of "this" fields exists.
+		}
+		fn virtual override Bar( this ) {}
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test46():
+	c_program_text= """
+	class A interface {}
+	class B : A
+	{
+		f32 y;
+		fn Foo( mut this )
+		{
+			auto & y_ref= y;
+			cast_ref</A/>(this); // Error - reference cast produces a reference linked with whole "this" when a reference to one of "this" fields exists.
+		}
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def StructFieldChildNodes_Test47():
+	c_program_text= """
+	class A interface {}
+	class B : A
+	{
+		f32 y;
+		fn Foo( mut this )
+		{
+			auto & y_ref= y;
+			var A &mut a= this; // Error - implicit reference cast produces a reference linked with whole "this" when a reference to one of "this" fields exists.
+		}
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def StructFieldChildNodes_Test48():
+	c_program_text= """
+	class A interface {}
+	class B : A
+	{
+		f32 y;
+		fn Foo( mut this )
+		{
+			auto & y_ref= y;
+			Bar(this); // Error - implicit reference cast produces a reference linked with whole "this" when a reference to one of "this" fields exists.
+		}
+	}
+	fn Bar( A &mut a ) {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
