@@ -890,3 +890,450 @@ def StructFieldChildNodes_Test48():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
+def TupleElementChildNodes_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			// Ok - create mutable references to different elements of same tuple.
+			var i32 &mut x= s[0];
+			var f32 &mut y= s[1];
+			++x;
+			y *= 2.0f;
+			halt if( x != 1 );
+			halt if( y != 2.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleElementNodes_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 5, 7.0f ];
+			{
+				// Ok - create mutable references to different elements of same tuple, accessed by reference.
+				auto &mut s_ref= s;
+				var i32 &mut x= s_ref[0];
+				var f32 &mut y= s_ref[1];
+				++x;
+				y *= 2.0f;
+			}
+			halt if( s[0] != 6 );
+			halt if( s[1] != 14.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleElementNodes_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			var i32 &mut x= s[0];
+			var i32 &mut x_again= s[0]; // Error - creating second mutable reference to same tuple element.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			var i32 &mut x= s[0];
+			auto & s_whole= s; // Error - creating reference to whole tuple with existing mutable reference to its element.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			var i32 & x= s[0];
+			auto &mut s_whole= s; // Error - creating mutable reference to whole tuple with existing reference to its element.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			auto &mut s_whole= s;
+			auto & x= s[0]; // Error - creating reference to tuple element with existing mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			auto & s_whole= s;
+			auto &mut x= s[0]; // Error - creating mutable reference to tuple element with existing reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			auto & s_whole= s;
+			auto & x= s[0]; // Ok - creating reference to tuple element for tuple with existing reference.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleElementNodes_Test8():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			auto & x= s[0];
+			auto & s_whole= s; // Ok - creating reference to tuple for tuple with existing reference to element.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleElementNodes_Test9():
+	c_program_text= """
+		fn Bar( i32& mut x, f32 &mut y ) {}
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			Bar( s[0], s[1] ); // Ok - passing to function two mutable references to different elements of same tuple.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleElementNodes_Test10():
+	c_program_text= """
+		fn Bar( f32& mut x, f32 &mut y ) {}
+		fn Foo()
+		{
+			var tup[ f32, f32 ] mut s[ 0.0f, 1.0f ];
+			Bar( s[1], s[1] ); // Error - passing to function two mutable references to same element of same tuple.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test11():
+	c_program_text= """
+		fn Bar( i32& mut x, tup[ i32, f32 ]& mut s ) {}
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			Bar( s[0], s ); // Error - passing to function mutable reference to tuple element and mutable reference to whole tuple.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test12():
+	c_program_text= """
+		fn Bar( tup[ i32, f32 ]& mut s, f32& mut y ) {}
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			Bar( s, s[1] ); // Error - passing to function mutable reference to whole tuple and mutable reference to tuple element.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test13():
+	c_program_text= """
+		fn Bar( tup[ i32, f32 ]& s, f32& mut y ) {}
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			Bar( s, s[1] ); // Error - passing to function reference to whole tuple and mutable reference to tuple element.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test14():
+	c_program_text= """
+		fn Bar( tup[ i32, f32 ] &mut s, f32& y ) {}
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			Bar( s, s[1] ); // Error - passing to function mutable reference to whole tuple and reference to tuple element.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test15():
+	c_program_text= """
+		fn Bar( tup[ i32, f32 ] & s, f32& y ) {}
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			Bar( s, s[1] ); // Ok - passing to function reference to whole tuple and reference to tuple element.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleElementNodes_Test16():
+	c_program_text= """
+		fn Bar( i32& x, tup[ i32, f32 ]& s ) {}
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			Bar( s[0], s ); // Ok - passing to function reference to tuple element and reference to whole tuple.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleElementNodes_Test17():
+	c_program_text= """
+		fn Bar( i32& x, f32& y ) {}
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			Bar( s[0], s[1] ); // Ok - passing to function references to two tuple elements.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleElementNodes_Test18():
+	c_program_text= """
+		fn Bar( i32& x, i32& y ) {}
+		fn Foo()
+		{
+			var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+			Bar( s[0], s[0] ); // Ok - passing to function two references to same tuple element.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleElementNodes_Test19():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ tup[ i32, f32 ], bool ] mut t[ [ 0, 1.0f ], false ];
+			{
+				// Ok - create mutable references to different elements of same tuple.
+				var i32 &mut x= t[0][0];
+				var f32 &mut y= t[0][1];
+				var bool &mut z= t[1];
+				x= 16;
+				y= 45.3f;
+				z= false;
+			}
+			halt if( t[0][0] != 16 );
+			halt if( t[0][1] != 45.3f );
+			halt if( t[1] != false );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleElementNodes_Test20():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ tup[ i32, f32 ], bool ] mut t[ [ 0, 1.0f ], false ];
+			{
+				// Ok - create mutable references to different elements of same tuple.
+				var tup[ i32, f32 ] &mut s= t[0];
+				var i32 &mut x= s[0];
+				var f32 &mut y= s[1];
+				var bool &mut z= t[1];
+				x= 16;
+				y= 45.3f;
+				z= false;
+			}
+			halt if( t[0][0] != 16 );
+			halt if( t[0][1] != 45.3f );
+			halt if( t[1] != false );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TupleElementNodes_Test21():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ tup[ i32, f32 ], bool ] mut t[ [ 0, 1.0f ], false ];
+			var tup[ i32, f32 ] &mut s= t[0];
+			var i32 &mut x= t[0][0]; // Error - creating mutable reference to "t[0]" which already has one mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test22():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ tup[ i32, f32 ], bool ] mut t[ [ 0, 1.0f ], false ];
+			var tup[ i32, f32 ] & s= t[0];
+			var i32 &mut x= t[0][0]; // Error - creating mutable reference to "t[0]" which already has one reference.
+
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test23():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ tup[ i32, f32 ], bool ] mut t[ [ 0, 1.0f ], false ];
+			var tup[ i32, f32 ] &mut s= t[0];
+			var i32 & x= t[0][0]; // Error - creating reference to "t[0]" which already has one mutable reference.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test24():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ tup[ i32, f32 ], bool ] mut t[ [ 0, 1.0f ], false ];
+			var tup[ i32, f32 ] &mut s= t[0];
+			var i32 &mut x= s[0]; // Ok - creating reference, linked to reference "s".
+			var f32 &mut y= s[1]; // Ok - creating reference, linked to reference "s".
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleElementNodes_Test25():
+	c_program_text= """
+	fn Pass( i32 &mut x ) : i32 &mut { return x; }
+	fn Foo()
+	{
+		var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+		var i32& mut x= Pass( s[0] ); // Ok, pass mutable reference to element 0. Result reference will point only to element node.
+		var f32 &mut y= s[1]; // Ok create reference to anouther element.
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleElementNodes_Test26():
+	c_program_text= """
+	fn Pass( i32 &mut x ) : i32 &mut { return x; }
+	fn Foo()
+	{
+		var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+		var i32& mut x= Pass( s[0] ); // Ok, pass reference to element 0. Result reference will point only to element node.
+		var i32 &mut x_again= s[0]; // Error - create mutable reference to same element.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def TupleElementNodes_Test27():
+	c_program_text= """
+	fn Foo()
+	{
+		var tup[ i32, f32 ] mut s[ 0, 1.0f ];
+		var i32& mut x= s[0];
+		cast_imut(s); // Error, create intermediate immutable reference to whole "s" while mutable reference to element "s.x" exists.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test28():
+	c_program_text= """
+	fn Foo( tup[ i32, i32, i32 ]& mut s, bool condition )
+	{
+		var i32 &mut ref= select( condition ? s[0] : s[1] ); // Create reference to both elements 0 and 1 (acutally not, but logically create.
+		var i32& mut z_ref= s[2]; // Ok, create reference to element 2.
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TupleElementNodes_Test29():
+	c_program_text= """
+	fn Foo( tup[ i32, i32, i32 ]& mut s, bool condition )
+	{
+		var i32 &mut ref= select( condition ? s[0] : s[1] ); // Create reference to both elements 0 and 1 (acutally not, but logically create.
+		var i32& mut x_ref= s[0]; // Error, create reference to element 0 again.
+		var i32& mut y_ref= s[1]; // Error, create reference to element 1 again.
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) >= 2 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 5 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 6 ) )
+
+
+def TupleElementNodes_Test30():
+	c_program_text= """
+	fn Foo( tup[ i32, i32, i32 ]& mut s, bool condition )
+	{
+		var i32 &mut ref= select( condition ? s[0] : s[1] ); // Create reference to boths elements 0 and 1 (acutally not, but logically create.
+		var tup[ i32, i32, i32 ]& s_ref= s; // Error, create reference to whole "s".
+	}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 5 ) )

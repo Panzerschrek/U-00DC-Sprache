@@ -103,23 +103,23 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	// Lock variable. We must prevent modification of this variable in index calcualtion.
-	// Do not forget to unregister it in case of error-return!
-	const VariablePtr variable_lock=
-		std::make_shared<Variable>(
-			variable->type,
-			variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-			variable->location,
-			variable->name + " lock" );
-
-	function_context.variables_state.AddNode( variable_lock );
-	if( !function_context.variables_state.TryAddLink( variable, variable_lock ) )
-		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable->name );
-
-	const VariablePtr index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
-
 	if( const ArrayType* const array_type= variable->type.GetArrayType() )
 	{
+		// Lock variable. We must prevent modification of this variable in index calcualtion.
+		// Do not forget to unregister it in case of error-return!
+		const VariablePtr variable_lock=
+			std::make_shared<Variable>(
+				variable->type,
+				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				variable->location,
+				variable->name + " lock" );
+
+		function_context.variables_state.AddNode( variable_lock );
+		if( !function_context.variables_state.TryAddLink( variable, variable_lock ) )
+			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable->name );
+
+		const VariablePtr index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
+
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
 		if( !( index_fundamental_type != nullptr && (
 			( index->constexpr_value != nullptr && IsInteger( index_fundamental_type->fundamental_type ) ) ||
@@ -202,10 +202,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
-		// Do not create here call to "DestroyUnusedTemporaryVariables".
-		// It is not correct since no actual reference node is created and registered here - only child node.
-		// There is nothing to destroy here, since index type must be constexpr and whole index expression must have no side effects.
-		function_context.variables_state.RemoveNode( variable_lock );
+		VariablePtr index;
+		// Create separate variables storage for index calculation.
+		// This is needed to prevent destruction of "variable" during index calculation without creating lock node and reference to it.
+		// This is needed to properly access multiple mutable child nodes of same tuple variable.
+		{
+			const StackVariablesStorage temp_variables_storage( function_context );
+			index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
+			CallDestructors( temp_variables_storage, names, function_context, indexation_operator.src_loc_ );
+			// It is fine if "index" will be destroyed here. We needed only "constexpr" value of index here.
+		}
 
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
 		if( index_fundamental_type == nullptr || !IsInteger( index_fundamental_type->fundamental_type ) )
@@ -275,7 +281,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	else
 	{
 		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), indexation_operator.src_loc_, variable->type );
-		function_context.variables_state.RemoveNode( variable_lock );
 		return ErrorValue();
 	}
 }
