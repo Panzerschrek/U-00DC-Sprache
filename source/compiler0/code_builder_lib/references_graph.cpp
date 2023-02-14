@@ -165,10 +165,10 @@ void ReferencesGraph::MoveNode( const VariablePtr& node )
 		node_state.inner_reference= nullptr;
 	}
 
-	// TODO - is this correct to remove children nodes?
+	// Move child nodes first in order to replace links from children with links from parent.
 	for( const VariablePtr& child : node->children )
 		if( child != nullptr )
-			RemoveNode( child );
+			MoveNode( child );
 
 	RemoveNodeLinks( node );
 }
