@@ -202,13 +202,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc_ ); // Destroy temporaries of index expression.
+		// Do not create here call to "DestroyUnusedTemporaryVariables".
+		// It is not correct since no actual reference node is created and registered here - only child node.
+		// There is nothing to destroy here, since index type must be constexpr and whole index expression must have no side effects.
+		function_context.variables_state.RemoveNode( variable_lock );
 
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
 		if( index_fundamental_type == nullptr || !IsInteger( index_fundamental_type->fundamental_type ) )
 		{
 			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc_, "any integer", index->type );
-			function_context.variables_state.RemoveNode( variable_lock );
 			return ErrorValue();
 		}
 
@@ -228,41 +230,46 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const uint64_t index_value= index_value_raw.getLimitedValue();
 		if( IsSignedInteger(index_fundamental_type->fundamental_type) )
 		{
-			if( index_value >= static_cast<uint64_t>(tuple_type->element_types.size()) || index_value_raw.isNegative() )
+			if( index_value >= uint64_t(tuple_type->element_types.size()) || index_value_raw.isNegative() )
 			{
 				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value_raw.getSExtValue(), tuple_type->element_types.size() );
-				function_context.variables_state.RemoveNode( variable_lock );
 				return ErrorValue();
 			}
 		}
 		else
 		{
-			if( index_value >= static_cast<uint64_t>(tuple_type->element_types.size()) )
+			if( index_value >= uint64_t(tuple_type->element_types.size()) )
 			{
 				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value, tuple_type->element_types.size() );
-				function_context.variables_state.RemoveNode( variable_lock );
 				return ErrorValue();
 			}
 		}
 
-		VariableMutPtr result=
+		variable->children.resize( tuple_type->llvm_type->getNumElements(), nullptr );
+		if( const auto prev_node= variable->children[ index_value ] )
+		{
+			function_context.variables_state.AddNodeIfNotExists( prev_node );
+			return Value( prev_node, indexation_operator.src_loc_ ); // Child node already created.
+		}
+
+		// Create variable child node.
+
+		const VariableMutPtr result=
 			std::make_shared<Variable>(
 				tuple_type->element_types[size_t(index_value)],
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
 				variable->name + "[" + std::to_string(index_value) + "]",
-				CreateTupleElementGEP( function_context, *variable, index_value ) );
+				ForceCreateConstantIndexGEP( function_context, tuple_type->llvm_type, variable->llvm_value, uint32_t(index_value) ) );
 
 		if( variable->constexpr_value != nullptr )
 			result->constexpr_value= variable->constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
 
+		variable->children[ size_t(index_value) ]= result;
+		result->parent= variable;
+
 		function_context.variables_state.AddNode( result );
-		if( !function_context.variables_state.TryAddLink( variable_lock, result ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable_lock->name );
 
-		function_context.variables_state.RemoveNode( variable_lock );
-
-		RegisterTemporaryVariable( function_context, result );
 		return Value( result, indexation_operator.src_loc_ );
 	}
 	else
