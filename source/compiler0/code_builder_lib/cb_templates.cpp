@@ -612,7 +612,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, src_loc, *param_type ) )
 				return false;
 
-			const VariableMutPtr variable_for_insertion=
+			const VariablePtr variable_for_insertion=
 				std::make_shared<Variable>(
 					given_variable->type,
 					ValueType::ReferenceImut,
@@ -621,8 +621,8 @@ bool CodeBuilder::MatchTemplateArgImpl(
 					CreateGlobalConstantVariable(
 						given_variable->type,
 						name,
-						given_variable->constexpr_value ));
-			variable_for_insertion->constexpr_value= given_variable->constexpr_value;
+						given_variable->constexpr_value ),
+					given_variable->constexpr_value );
 
 			*value= Value( variable_for_insertion, src_loc );
 			return true;

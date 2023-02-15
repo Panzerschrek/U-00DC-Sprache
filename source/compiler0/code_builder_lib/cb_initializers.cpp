@@ -109,7 +109,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 		for( size_t i= 0u; i < initializer.initializers.size(); ++i )
 		{
-			const VariableMutPtr tuple_element=
+			const VariablePtr tuple_element=
 				std::make_shared<Variable>(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
@@ -206,7 +206,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				InitializeReferenceField( variable, *field, member_initializer.initializer, names, function_context );
 		else
 		{
-			const VariableMutPtr struct_member=
+			const VariablePtr struct_member=
 				std::make_shared<Variable>(
 					field->type,
 					ValueType::ReferenceMut,
@@ -250,7 +250,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		}
 		else
 		{
-			const VariableMutPtr struct_member=
+			const VariablePtr struct_member=
 				std::make_shared<Variable>(
 					field.type,
 					ValueType::ReferenceMut,
@@ -474,7 +474,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		for( const Type& element_type : tuple_type->element_types )
 		{
 			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
-			const VariableMutPtr tuple_element=
+			const VariablePtr tuple_element=
 				std::make_shared<Variable>(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
@@ -517,7 +517,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				continue;
 			}
 
-			const VariableMutPtr struct_member=
+			const VariablePtr struct_member=
 				std::make_shared<Variable>(
 					field.type,
 					ValueType::ReferenceMut,
@@ -621,7 +621,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		for( const Type& element_type : tuple_type->element_types )
 		{
 			const size_t i= size_t( &element_type - tuple_type->element_types.data() );
-			const VariableMutPtr tuple_element=
+			const VariablePtr tuple_element=
 				std::make_shared<Variable>(
 					tuple_type->element_types[i],
 					ValueType::ReferenceMut,
@@ -1234,7 +1234,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 
 		if( class_field.is_reference )
 		{
-			const VariableMutPtr this_variable=
+			const VariablePtr this_variable=
 				std::make_shared<Variable>(
 					class_type,
 					ValueType::ReferenceMut,
@@ -1246,7 +1246,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
 		}
 		else
 		{
-			const VariableMutPtr field_variable=
+			const VariablePtr field_variable=
 				std::make_shared<Variable>(
 					class_field.type,
 					ValueType::ReferenceMut,

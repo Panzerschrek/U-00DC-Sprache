@@ -663,7 +663,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			// We can not create child node for "this", because it's still possible to access whole "this" using "base" by calling a virtual method.
 			// So, create regular node pointing to "this".
 			// TODO - maybe access "base" child node in constructor initializer list since it is not possible to call real virtual method of "this"?
-			const VariableMutPtr base=
+			const VariablePtr base=
 				std::make_shared<Variable>(
 					class_.base_class,
 					function_context.this_->value_type,
@@ -977,7 +977,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	raw_pointer_type.element_type= v->type;
 	raw_pointer_type.llvm_type= llvm::PointerType::get( v->type.GetLLVMType(), 0u );
 
-	const VariableMutPtr result=
+	const VariablePtr result=
 		std::make_shared<Variable>(
 			std::move(raw_pointer_type),
 			ValueType::Value,
@@ -1009,7 +1009,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	// Create mutable reference node without any links. TODO - check if this is correct.
-	const VariableMutPtr result=
+	const VariablePtr result=
 		std::make_shared<Variable>(
 			raw_pointer_type->element_type,
 			ValueType::ReferenceMut,
@@ -1296,7 +1296,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	U_ASSERT( !function_context.variables_state.NodeMoved( variable_for_move ) );
 
-	const VariableMutPtr result=
+	const VariablePtr result=
 		std::make_shared<Variable>(
 			variable_for_move->type,
 			ValueType::Value,
@@ -1870,7 +1870,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			CreateLifetimeEnd( function_context, r_var_real->llvm_value );
 		}
 
-		const VariableMutPtr move_result=
+		const VariablePtr move_result=
 			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 		return Value( move_result, src_loc );
 	}
@@ -1958,7 +1958,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		function_context.variables_state.RemoveNode( r_var_lock );
 
-		const VariableMutPtr result=
+		const VariablePtr result=
 			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
 		return Value( result, src_loc );
 	}
@@ -3618,7 +3618,7 @@ VariablePtr CodeBuilder::BuildTempVariableConstruction(
 	}
 
 	{
-		const VariableMutPtr variable_for_initialization=
+		const VariablePtr variable_for_initialization=
 			std::make_shared<Variable>(
 				type,
 				ValueType::ReferenceMut,
@@ -3670,7 +3670,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 		// Create temp variables frame to prevent destruction of "src".
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const VariableMutPtr result_for_initialization=
+		const VariablePtr result_for_initialization=
 			std::make_shared<Variable>(
 				dst_type,
 				ValueType::ReferenceMut,

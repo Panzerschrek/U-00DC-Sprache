@@ -129,7 +129,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 
 	if( the_class.base_class != nullptr )
 	{
-		const VariableMutPtr base_variable=
+		const VariablePtr base_variable=
 			std::make_shared<Variable>(
 				the_class.base_class,
 				ValueType::ReferenceMut,
@@ -154,7 +154,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		{
 			U_ASSERT( field.syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
 
-			const VariableMutPtr this_variable=
+			const VariablePtr this_variable=
 				std::make_shared<Variable>(
 					class_type,
 					ValueType::ReferenceMut,
@@ -169,7 +169,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		}
 		else
 		{
-			const VariableMutPtr field_variable=
+			const VariablePtr field_variable=
 				std::make_shared<Variable>(
 					field.type,
 					ValueType::ReferenceMut,
@@ -405,7 +405,7 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 	llvm::Value* const this_llvm_value= &*destructor_function .llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
-	const VariableMutPtr this_=
+	const VariablePtr this_=
 		std::make_shared<Variable>(
 			class_type,
 			ValueType::ReferenceMut,

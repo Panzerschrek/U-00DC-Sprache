@@ -1299,7 +1299,7 @@ Type CodeBuilder::BuildFuncCode(
 			function_context.args_nodes[ arg_number ].second= accesible_variable;
 		}
 
-		const VariableMutPtr variable_reference=
+		const VariablePtr variable_reference=
 			std::make_shared<Variable>(
 				param.type,
 				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
