@@ -40,6 +40,10 @@ void ReferencesGraph::RemoveNode( const VariablePtr& node )
 	if( const auto inner_reference= GetNodeInnerReference( node ) )
 		RemoveNode( inner_reference );
 
+	for( const VariablePtr& child : node->children )
+		if( child != nullptr )
+			RemoveNode( child );
+
 	RemoveNodeLinks( node );
 
 	nodes_.erase( node );
@@ -111,10 +115,18 @@ VariablePtr ReferencesGraph::CreateNodeInnerReference( const VariablePtr& node, 
 
 bool ReferencesGraph::HaveOutgoingLinks( const VariablePtr& from ) const
 {
-	for( const auto& link : links_ )
+	// Check if any parent have links and any child (including children of children) have links.
+	// Doesn't count sibling nodes and other indirect relatives.
+
+	if( HaveOutgoingLinksIncludingChildrenLinks_r( from ) )
+		return true;
+
+	VariablePtr parent= from->parent.lock();
+	while( parent != nullptr )
 	{
-		if( link.src == from )
+		if( HaveDirectOutgoingLinks( parent ) )
 			return true;
+		parent= parent->parent.lock();
 	}
 
 	return false;
@@ -122,10 +134,18 @@ bool ReferencesGraph::HaveOutgoingLinks( const VariablePtr& from ) const
 
 bool ReferencesGraph::HaveOutgoingMutableNodes( const VariablePtr& from ) const
 {
-	for( const auto& link : links_ )
+	// Check if any parent have mutable links and any child (including children of children) have mutable links.
+	// Doesn't count sibling nodes and other indirect relatives.
+
+	if( HaveOutgoingMutableNodesIncludingChildrenNodes_r( from ) )
+		return true;
+
+	VariablePtr parent= from->parent.lock();
+	while( parent != nullptr )
 	{
-		if( link.src == from && link.dst->value_type == ValueType::ReferenceMut  )
+		if( HaveDirectOutgoingMutableNodes( parent ) )
 			return true;
+		parent= parent->parent.lock();
 	}
 
 	return false;
@@ -144,6 +164,11 @@ void ReferencesGraph::MoveNode( const VariablePtr& node )
 		RemoveNode( node_state.inner_reference );
 		node_state.inner_reference= nullptr;
 	}
+
+	// Move child nodes first in order to replace links from children with links from parent.
+	for( const VariablePtr& child : node->children )
+		if( child != nullptr && nodes_.count(child) != 0 ) // Children nodes are lazily-added.
+			MoveNode( child );
 
 	RemoveNodeLinks( node );
 }
@@ -174,9 +199,16 @@ ReferencesGraph::NodesSet ReferencesGraph::GetAccessibleVariableNodesInnerRefere
 ReferencesGraph::NodesSet ReferencesGraph::GetNodeInputLinks( const VariablePtr& node ) const
 {
 	NodesSet result;
-	for( const Link& link : links_ )
-		if( link.dst == node )
-			result.insert( link.src );
+
+	VariablePtr current_node= node;
+	while( current_node != nullptr )
+	{
+		for( const Link& link : links_ )
+			if( link.dst == current_node )
+				result.insert( link.src );
+
+		current_node= current_node->parent.lock();
+	}
 
 	return result;
 }
@@ -197,6 +229,11 @@ void ReferencesGraph::GetAllAccessibleVariableNodes_r(
 	for( const auto& link : links_ )
 		if( link.dst == node )
 			GetAllAccessibleVariableNodes_r( link.src, visited_nodes_set, result_set );
+
+	if( const VariablePtr parent= node->parent.lock() )
+		GetAllAccessibleVariableNodes_r( parent, visited_nodes_set, result_set );
+
+	// Children nodes can't have input links. So, ignore them.
 }
 
 void ReferencesGraph::GetAccessibleVariableNodesInnerReferences_r(
@@ -219,6 +256,9 @@ void ReferencesGraph::GetAccessibleVariableNodesInnerReferences_r(
 	for( const auto& link : links_ )
 		if( link.dst == node )
 			GetAccessibleVariableNodesInnerReferences_r( link.src, visited_nodes_set, result_set );
+
+	if( const VariablePtr parent= node->parent.lock() )
+		GetAccessibleVariableNodesInnerReferences_r( parent, visited_nodes_set, result_set );
 }
 
 ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const SrcLoc& src_loc )
@@ -342,20 +382,66 @@ std::vector<CodeBuilderError> ReferencesGraph::CheckWhileBlockVariablesState( co
 	return errors;
 }
 
+bool ReferencesGraph::HaveDirectOutgoingLinks( const VariablePtr& from ) const
+{
+	for( const auto& link : links_ )
+		if( link.src == from )
+			return true;
+
+	return false;
+}
+
+bool ReferencesGraph::HaveOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const
+{
+	if( HaveDirectOutgoingLinks( from ) )
+			return true;
+
+	for( const VariablePtr& child : from->children )
+		if( child != nullptr &&
+			nodes_.count(child) != 0 && // Children nodes are lazily-added.
+			HaveOutgoingLinksIncludingChildrenLinks_r( child ) )
+			return true;
+
+	return false;
+}
+
+bool ReferencesGraph::HaveDirectOutgoingMutableNodes( const VariablePtr& from ) const
+{
+	for( const auto& link : links_ )
+		if( link.src == from && link.dst->value_type == ValueType::ReferenceMut )
+			return true;
+
+	return false;
+}
+
+bool ReferencesGraph::HaveOutgoingMutableNodesIncludingChildrenNodes_r( const VariablePtr& from ) const
+{
+	if( HaveDirectOutgoingMutableNodes( from ) )
+		return true;
+
+	for( const VariablePtr& child : from->children )
+		if( child != nullptr &&
+			nodes_.count(child) != 0 && // Children nodes are lazily-added.
+			HaveOutgoingMutableNodesIncludingChildrenNodes_r( child ) )
+			return true;
+
+	return false;
+}
+
 void ReferencesGraph::RemoveNodeLinks( const VariablePtr& node )
 {
 	// Collect in/out nodes.
-	std::vector<VariablePtr> in_nodes;
-	std::vector<VariablePtr> out_nodes;
+	NodesSet in_nodes;
+	NodesSet out_nodes;
 	for( const auto& link : links_ )
 	{
 		if( link.src == link.dst ) // Self loop link.
 			continue;
 
 		if( link.src == node )
-			out_nodes.push_back( link.dst );
+			out_nodes.insert( link.dst );
 		if( link.dst == node )
-			in_nodes.push_back( link.src );
+			in_nodes.insert( link.src );
 	}
 
 	// Remove links.
@@ -373,6 +459,15 @@ void ReferencesGraph::RemoveNodeLinks( const VariablePtr& node )
 	for( const VariablePtr& from : in_nodes )
 		for( const VariablePtr& to : out_nodes )
 			AddLink( from, to );
+
+	// If this is a child node, replace links from it with links from parent.
+	if( const VariablePtr parent= node->parent.lock() )
+	{
+		U_ASSERT( in_nodes.empty() ); // Child node has no input links, it has only parent.
+
+		for( const VariablePtr& to : out_nodes )
+			AddLink( parent, to );
+	}
 }
 
 } // namespace U

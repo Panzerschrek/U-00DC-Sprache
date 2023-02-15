@@ -1238,9 +1238,6 @@ Type CodeBuilder::BuildFuncCode(
 		const Synt::FunctionParam& declaration_arg= params[arg_number ];
 		const std::string& arg_name= declaration_arg.name_;
 
-		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
-		U_ASSERT( !( is_this && param.value_type == ValueType::Value ) );
-
 		const VariableMutPtr variable=
 			std::make_shared<Variable>(
 				param.type,
@@ -1305,7 +1302,7 @@ Type CodeBuilder::BuildFuncCode(
 		const VariableMutPtr variable_reference=
 			std::make_shared<Variable>(
 				param.type,
-				declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
 				arg_name,
 				variable->llvm_value );
@@ -1314,8 +1311,9 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.variables_state.AddLink( variable, variable_reference );
 		function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
 
-		if( is_this )
+		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{
+			U_ASSERT( param.value_type != ValueType::Value );
 			// Save "this" in function context for accessing inside class methods.
 			function_context.this_= variable_reference;
 		}
@@ -1577,24 +1575,14 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 		else
 		{
-			const VariableMutPtr field_variable=
-				std::make_shared<Variable>(
-					field.type,
-					ValueType::ReferenceMut,
-					Variable::Location::Pointer,
-					 this_->name + "." + field_name,
-					CreateClassFieldGEP( function_context, *this_, field.index ) );
-
-			function_context.variables_state.AddNode( field_variable );
-			if( !function_context.variables_state.TryAddLink( this_, field_variable ) )
-				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), constructor_initialization_list.src_loc_, this_->name );
+			const VariablePtr field_variable=
+				AccessClassField( names_scope, function_context, this_, field, field_name, constructor_initialization_list.src_loc_ ).GetVariable();
+			U_ASSERT( field_variable != nullptr );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
 			else
 				ApplyEmptyInitializer( field_name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
-
-			function_context.variables_state.RemoveNode( field_variable );
 		}
 	}
 
@@ -1602,21 +1590,12 @@ void CodeBuilder::BuildConstructorInitialization(
 	if( !base_initialized && base_class.base_class != nullptr )
 	{
 		// Apply default initializer for base class.
-		const VariableMutPtr base_variable=
-			std::make_shared<Variable>(
-				base_class.base_class,
-				ValueType::ReferenceMut,
-				Variable::Location::Pointer,
-				Keyword( Keywords::base_ ),
-				CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
 
-		function_context.variables_state.AddNode( base_variable );
-		if( !function_context.variables_state.TryAddLink( this_, base_variable ) )
-			REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), constructor_initialization_list.src_loc_, this_->name );
+		// It is safe to access "base" as child node here since it is possible to call only constructor but not any virtual method.
+		const VariablePtr base_variable= AccessClassBase( this_, function_context );
 
 		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
-		function_context.variables_state.RemoveNode( base_variable );
 	}
 
 	// Initialize fields listed in the initializer.
@@ -1624,21 +1603,11 @@ void CodeBuilder::BuildConstructorInitialization(
 	{
 		if( field_initializer.name == Keywords::base_ )
 		{
-			const VariableMutPtr base_variable=
-				std::make_shared<Variable>(
-					base_class.base_class,
-					ValueType::ReferenceMut,
-					Variable::Location::Pointer,
-					Keyword( Keywords::base_ ),
-					CreateBaseClassGEP( function_context, *this_->type.GetClassType(), this_->llvm_value ) );
-
-			function_context.variables_state.AddNode( base_variable );
-			if( !function_context.variables_state.TryAddLink( this_, base_variable ) )
-				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), constructor_initialization_list.src_loc_, this_->name );
+			// It is safe to access "base" as child node here since it is possible to call only constructor but not any virtual method.
+			const VariablePtr base_variable= AccessClassBase( this_, function_context );
 
 			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );
 			function_context.base_initialized= true;
-			function_context.variables_state.RemoveNode( base_variable );
 			continue;
 		}
 
@@ -1652,21 +1621,11 @@ void CodeBuilder::BuildConstructorInitialization(
 			InitializeReferenceField( this_, *field, field_initializer.initializer, names_scope, function_context );
 		else
 		{
-			const VariableMutPtr field_variable=
-				std::make_shared<Variable>(
-					field->type,
-					ValueType::ReferenceMut,
-					Variable::Location::Pointer,
-					this_->name + "." + field_initializer.name,
-					CreateClassFieldGEP( function_context, *this_, field->index ) );
-
-			function_context.variables_state.AddNode( field_variable );
-			if( !function_context.variables_state.TryAddLink( this_, field_variable ) )
-				REPORT_ERROR( ReferenceProtectionError, names_scope.GetErrors(), constructor_initialization_list.src_loc_, this_->name );
+			const VariablePtr field_variable=
+				AccessClassField( names_scope, function_context, this_, *field, field_initializer.name, constructor_initialization_list.src_loc_ ).GetVariable();
+			U_ASSERT( field_variable != nullptr );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
-
-			function_context.variables_state.RemoveNode( field_variable );
 		}
 
 		function_context.uninitialized_this_fields.erase( field->syntax_element->name );
@@ -2101,21 +2060,6 @@ llvm::Value*CodeBuilder::CreateBaseClassGEP( FunctionContext& function_context, 
 	return CreateClassFieldGEP( function_context, class_type, class_ptr, 0 /* base class is allways first field */ );
 }
 
-llvm::Value* CodeBuilder::CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field )
-{
-	ClassPtr actual_field_class= class_variable.type.GetClassType();
-	llvm::Value* actual_field_class_ptr= class_variable.llvm_value;
-	while( actual_field_class != class_field.class_ )
-	{
-		if( actual_field_class->base_class == nullptr )
-			return nullptr;
-		actual_field_class_ptr= CreateBaseClassGEP( function_context, *actual_field_class, actual_field_class_ptr );
-		actual_field_class= actual_field_class->base_class;
-	}
-
-	return CreateClassFieldGEP( function_context, *actual_field_class, actual_field_class_ptr, class_field.index );
-}
-
 llvm::Value* CodeBuilder::CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const uint64_t field_index )
 {
 	const auto class_type= class_variable.type.GetClassType();
@@ -2167,32 +2111,36 @@ llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_c
 	if( value == nullptr || index == nullptr )
 		return nullptr;
 
-	const bool value_is_constant= llvm::isa<llvm::Constant>(value);
-	const bool index_is_constant= llvm::isa<llvm::Constant>(index);
-	if( value_is_constant && index_is_constant )
-	{
-		// Constant will be folded properly and no instruction will be actiually inserted.
-		return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
-	}
-
-	if( function_context.is_functionless_context )
+	// Allow only constant GEP in functionless context.
+	if( function_context.is_functionless_context && !(llvm::isa<llvm::Constant>(value) && llvm::isa<llvm::Constant>(index) ) )
 		return nullptr;
 
-	auto gep= llvm::GetElementPtrInst::Create( type, value, { GetZeroGEPIndex(), index } );
+	return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
+}
 
-	if( index_is_constant )
+llvm::Value* CodeBuilder::ForceCreateConstantIndexGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, const uint32_t index )
+{
+	if( value == nullptr )
+		return nullptr;
+
+	const auto index_value= GetFieldGEPIndex( index );
+
+	if( llvm::isa<llvm::Constant>(value) )
 	{
-		// Try to insert "GEP" instruction with constant index directly after of value calculation.
-		// This is needed in order to have possibility to reuse this instruction in diffirent basic blocks.
-		if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( value ) )
-			gep->insertAfter( instruction );
-		else if( llvm::isa<llvm::Argument>( value ) )
-			function_context.alloca_ir_builder.Insert( gep );
-		else
-			function_context.llvm_ir_builder.Insert( gep ); // TODO - maybe add assert here?
+		// Constant will be folded properly and no instruction will be actiually inserted.
+		return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index_value } );
 	}
+
+	const auto gep= llvm::GetElementPtrInst::Create( type, value, { GetZeroGEPIndex(), index_value } );
+
+	// Try to insert "GEP" instruction with constant index directly after of value calculation.
+	// This is needed in order to have possibility to reuse this instruction in diffirent basic blocks.
+	if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( value ) )
+		gep->insertAfter( instruction );
+	else if( llvm::isa<llvm::Argument>( value ) )
+		function_context.alloca_ir_builder.Insert( gep );
 	else
-		function_context.llvm_ir_builder.Insert( gep ); // Array indexing (with non-constant index).
+		function_context.llvm_ir_builder.Insert( gep ); // TODO - maybe add assert here?
 
 	return gep;
 }
@@ -2459,8 +2407,6 @@ CodeBuilder::FunctionContextState CodeBuilder::SaveFunctionContextState( Functio
 {
 	FunctionContextState result;
 	result.variables_state= function_context.variables_state;
-	result.current_block_instruction_count= function_context.llvm_ir_builder.GetInsertBlock()->size();
-	result.alloca_block_instructin_count= function_context.alloca_ir_builder.GetInsertBlock()->size();
 	result.block_count= function_context.function->getBasicBlockList().size();
 	return result;
 }
@@ -2469,10 +2415,9 @@ void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context
 {
 	function_context.variables_state= state.variables_state;
 
-	// Make sure no new instructions or basic blocks were added.
-	U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock()->size() == state.current_block_instruction_count );
-	U_ASSERT( function_context.alloca_ir_builder.GetInsertBlock()->size() == state.alloca_block_instructin_count );
+	// Make sure no new basic blocks were added.
 	U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
+	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
 }
 
 } // namespace U

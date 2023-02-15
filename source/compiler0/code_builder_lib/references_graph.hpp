@@ -14,6 +14,8 @@ class ReferencesGraph
 public:
 	void AddNode( const VariablePtr& node );
 	void AddNodeIfNotExists( const VariablePtr& node );
+
+	// Removes also inner reference node and children nodes.
 	void RemoveNode( const VariablePtr& node );
 
 	void AddLink( const VariablePtr& from, const VariablePtr& to );
@@ -66,6 +68,12 @@ private:
 	using LinksSet= std::unordered_set< Link, LinkHasher >;
 
 private:
+	bool HaveDirectOutgoingLinks( const VariablePtr& from ) const;
+	bool HaveOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const;
+
+	bool HaveDirectOutgoingMutableNodes( const VariablePtr& from ) const;
+	bool HaveOutgoingMutableNodesIncludingChildrenNodes_r( const VariablePtr& from ) const;
+
 	void RemoveNodeLinks( const VariablePtr& node );
 	void GetAllAccessibleVariableNodes_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 	void GetAccessibleVariableNodesInnerReferences_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;

@@ -409,9 +409,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		}
 		else
 		{
-			llvm::Value* value_for_copy= expression_result->llvm_value;
-			if( expression_result->type != variable->type )
-				value_for_copy= CreateReferenceCast( value_for_copy, expression_result->type, variable->type, function_context );
+			llvm::Value* const value_for_copy=
+				CreateReferenceCast( expression_result->llvm_value, expression_result->type, variable->type, function_context );
 			TryCallCopyConstructor(
 				names.GetErrors(), src_loc, variable->llvm_value, value_for_copy, variable->type.GetClassType(), function_context );
 		}
@@ -1036,9 +1035,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 
 	llvm::Value* const address_of_reference= CreateClassFieldGEP( function_context, *variable, field.index );
 
-	llvm::Value* ref_to_store= initializer_variable->llvm_value;
-	if( field.type != initializer_variable->type )
-		ref_to_store= CreateReferenceCast( ref_to_store, initializer_variable->type, field.type, function_context );
+	llvm::Value* const ref_to_store= CreateReferenceCast( initializer_variable->llvm_value, initializer_variable->type, field.type, function_context );
 	CreateTypedReferenceStore( function_context, field.type, ref_to_store, address_of_reference );
 
 	if( initializer_variable->constexpr_value != nullptr )

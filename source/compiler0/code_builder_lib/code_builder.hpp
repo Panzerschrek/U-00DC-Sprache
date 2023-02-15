@@ -518,6 +518,15 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
 
+	VariablePtr AccessClassBase( const VariablePtr& variable, FunctionContext& function_context );
+	Value AccessClassField(
+		NamesScope& names,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const ClassField& field,
+		const std::string& field_name,
+		const SrcLoc& src_loc );
+
 	// Returns Value, if overloaded operator selected or if arguments are template dependent or argumens are error values.
 	// Returns std::nullopt, if all ok, but there is no overloaded operator.
 	// In success call of overloaded operator arguments evaluated in left to right order.
@@ -926,7 +935,6 @@ private:
 	llvm::Constant* GetFieldGEPIndex( uint64_t field_index );
 
 	llvm::Value* CreateBaseClassGEP( FunctionContext& function_context, const Class& class_type, llvm::Value* class_ptr );
-	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field );
 	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, uint64_t field_index );
 	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Class& class_type, llvm::Value* class_ptr, uint64_t field_index );
 	llvm::Value* CreateTupleElementGEP( FunctionContext& function_context, const Variable& tuple_variable, uint64_t element_index );
@@ -936,6 +944,9 @@ private:
 	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, const ArrayType& array_type, llvm::Value* array_ptr, uint64_t element_index );
 	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, const ArrayType& array_type, llvm::Value* array_ptr, llvm::Value* index );
 	llvm::Value* CreateCompositeElementGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, llvm::Value* index );
+
+	// Create GEP instruction even in functionless context.
+	llvm::Value* ForceCreateConstantIndexGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, uint32_t index );
 
 	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
@@ -956,8 +967,6 @@ private:
 	struct FunctionContextState
 	{
 		ReferencesGraph variables_state;
-		size_t current_block_instruction_count= 0;
-		size_t alloca_block_instructin_count= 0;
 		size_t block_count= 0;
 	};
 

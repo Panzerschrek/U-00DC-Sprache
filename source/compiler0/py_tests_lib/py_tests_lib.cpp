@@ -444,17 +444,8 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test11",
 
 		// Tests, broken by reference checking refactoring. TODO - enable this when separate struct fields reference checking will be implemented.
-		"InClassFieldInitializer_InConstructorInitializer_Test1",
-		"InheritanceTest_InitializeBaseClass_Test3",
-		"InheritanceTest_InitializeBaseClass_Test4",
-		"InheritanceTest_InitializeBaseClass_Test5",
-		"InheritanceTest_InitializeBaseClass_Test6",
 		"ReferenceFieldNode_Test0",
 		"ReferenceFieldNode_Test1",
-		"TakenVariableHaveReferences_Test0",
-		"TakenVariableHaveReferences_Test1",
-		"TakenVariableHaveReferences_Test2",
-		"TakenVariableHaveReferences_Test3",
 	};
 
 	if( c_tests_to_ignore.count(func_name) > 0 )

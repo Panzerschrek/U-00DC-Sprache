@@ -182,10 +182,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 
 			// TODO - maybe make copy of varaible address in new llvm register?
-			llvm::Value* result_ref= expression_result->llvm_value;
-			if( variable_reference->type != expression_result->type )
-				result_ref= CreateReferenceCast( result_ref, expression_result->type, variable_reference->type, function_context );
-			variable_reference->llvm_value= result_ref;
+			variable_reference->llvm_value=
+				CreateReferenceCast( expression_result->llvm_value, expression_result->type, variable_reference->type, function_context );
 			variable_reference->constexpr_value= expression_result->constexpr_value;
 
 			CreateReferenceVariableDebugInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );

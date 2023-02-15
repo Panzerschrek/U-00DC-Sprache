@@ -488,10 +488,8 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 			function_type.params.front().type,
 			this_->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer );
-	if( this_->type == this_casted->type )
-		this_casted->llvm_value= this_->llvm_value;
-	else
-		this_casted->llvm_value= CreateReferenceCast( this_->llvm_value, this_->type, this_casted->type, function_context );
+
+	this_casted->llvm_value= CreateReferenceCast( this_->llvm_value, this_->type, this_casted->type, function_context );
 
 	function_context.variables_state.AddNode( this_casted );
 	if( !function_context.variables_state.TryAddLink( this_, this_casted ) )
