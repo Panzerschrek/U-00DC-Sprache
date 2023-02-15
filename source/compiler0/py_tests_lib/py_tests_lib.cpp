@@ -442,10 +442,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 	static const std::unordered_set<std::string> c_tests_to_ignore
 	{
 		"TemplateParametersDeductionFailed_Test11",
-
-		// Tests, broken by reference checking refactoring. TODO - enable this when separate struct fields reference checking will be implemented.
-		"ReferenceFieldNode_Test0",
-		"ReferenceFieldNode_Test1",
 	};
 
 	if( c_tests_to_ignore.count(func_name) > 0 )
