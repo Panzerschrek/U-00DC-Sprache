@@ -167,7 +167,7 @@ void ReferencesGraph::MoveNode( const VariablePtr& node )
 
 	// Move child nodes first in order to replace links from children with links from parent.
 	for( const VariablePtr& child : node->children )
-		if( child != nullptr )
+		if( child != nullptr && nodes_.count(child) != 0 ) // Children nodes are lazily-added.
 			MoveNode( child );
 
 	RemoveNodeLinks( node );
@@ -397,7 +397,9 @@ bool ReferencesGraph::HaveOutgoingLinksIncludingChildrenLinks_r( const VariableP
 			return true;
 
 	for( const VariablePtr& child : from->children )
-		if( child != nullptr && HaveOutgoingLinksIncludingChildrenLinks_r( child ) )
+		if( child != nullptr &&
+			nodes_.count(child) != 0 && // Children nodes are lazily-added.
+			HaveOutgoingLinksIncludingChildrenLinks_r( child ) )
 			return true;
 
 	return false;
@@ -418,7 +420,9 @@ bool ReferencesGraph::HaveOutgoingMutableNodesIncludingChildrenNodes_r( const Va
 		return true;
 
 	for( const VariablePtr& child : from->children )
-		if( child != nullptr && HaveOutgoingMutableNodesIncludingChildrenNodes_r( child ) )
+		if( child != nullptr &&
+			nodes_.count(child) != 0 && // Children nodes are lazily-added.
+			HaveOutgoingMutableNodesIncludingChildrenNodes_r( child ) )
 			return true;
 
 	return false;

@@ -205,7 +205,6 @@ U_TEST( ReferenceCheckTest_StructMemberRefersToStruct_1 )
 	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ReferenceProtectionError, 12u ) );
 }
 
-
 U_TEST( ReferenceCheckTest_ArrayMemberRefersToArray_0 )
 {
 	static const char c_program_text[]=

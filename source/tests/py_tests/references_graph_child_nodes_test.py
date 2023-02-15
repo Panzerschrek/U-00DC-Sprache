@@ -892,6 +892,80 @@ def StructFieldChildNodes_Test48():
 	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
 
 
+def StructFieldChildNodes_Test49():
+	c_program_text= """
+		struct S { i32 x; f32 y; }
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			for( auto mut i= 0; i < 1; ++i )
+			{
+				s.x= 0; // Lazily create children node in the loop.
+			}
+			move(s); // Should handle here also children nodes.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test50():
+	c_program_text= """
+		struct S { i32 x; f32 y; }
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			while( ExternalCondition() )
+			{
+				s.x= 0; // Lazily create children node in the loop.
+			}
+			move(s); // Should handle here also children nodes.
+		}
+		fn ExternalCondition() : bool;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test51():
+	c_program_text= """
+		struct S { i32 x; f32 y; }
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			if( ExternalCondition() )
+			{
+				s.x= 66; // Laziliy create child node in one branch.
+			}
+			else
+			{
+				auto& mut s_ref= s; // Access whole struct and check if there is no references to "s".
+				s_ref.y= 44.0f;
+			}
+		}
+		fn ExternalCondition() : bool;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StructFieldChildNodes_Test52():
+	c_program_text= """
+		struct S { i32 x; f32 y; }
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			if( ExternalCondition() )
+			{
+				s.x= 66; // Laziliy create child node in one branch.
+				return;
+			}
+
+			auto& mut s_ref= s;  // Access whole struct and check if there is no references to "s".
+			s_ref.y= 44.0f;
+		}
+		fn ExternalCondition() : bool;
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def TupleElementChildNodes_Test0():
 	c_program_text= """
 		fn Foo()
