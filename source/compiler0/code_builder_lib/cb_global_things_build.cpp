@@ -976,20 +976,21 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 		if( IsKeyword( in_member.name ) )
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_member.src_loc );
 
-		Variable var;
+		const VariableMutPtr var=
+			std::make_shared<Variable>(
+				enum_,
+				ValueType::ReferenceImut,
+				Variable::Location::Pointer );
 
-		var.type= enum_;
-		var.location= Variable::Location::Pointer;
-		var.value_type= ValueType::ReferenceImut;
-		var.constexpr_value=
+		var->constexpr_value=
 			llvm::Constant::getIntegerValue(
 				enum_->underlaying_type.llvm_type,
 				llvm::APInt( enum_->underlaying_type.llvm_type->getIntegerBitWidth(), enum_->element_count ) );
-		var.llvm_value=
+		var->llvm_value=
 			CreateGlobalConstantVariable(
-				var.type,
+				var->type,
 				mangler_->MangleGlobalVariable( enum_->members, in_member.name, enum_, true ),
-				var.constexpr_value );
+				var->constexpr_value );
 
 		if( enum_->members.AddName( in_member.name, Value( var, in_member.src_loc ) ) == nullptr )
 			REPORT_ERROR( Redefinition, names_scope.GetErrors(), in_member.src_loc, in_member.name );
@@ -1082,32 +1083,58 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		Variable variable;
-		variable.type= type;
-		variable.location= Variable::Location::Pointer;
-		variable.value_type= ValueType::ReferenceMut;
+		const VariableMutPtr variable_reference=
+			std::make_shared<Variable>(
+				type,
+				is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				variable_declaration.name );
 
 		if( variable_declaration.reference_modifier == ReferenceModifier::None )
 		{
 			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, variable_declaration.name, type, !is_mutable );
 
-			llvm::GlobalVariable* global_variable= nullptr;
-			variable.llvm_value= global_variable=
+			llvm::GlobalVariable* const global_variable=
 				is_mutable
 					? CreateGlobalMutableVariable( type, name_mangled )
 					: CreateGlobalConstantVariable( type, name_mangled );
 
-			if( variable_declaration.initializer != nullptr )
-				variable.constexpr_value= ApplyInitializer( variable, names_scope, function_context, *variable_declaration.initializer );
-			else
-				variable.constexpr_value= ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable, names_scope, function_context );
+			const VariableMutPtr variable=
+				std::make_shared<Variable>(
+					type,
+					ValueType::Value,
+					Variable::Location::Pointer,
+					variable_declaration.name,
+					global_variable );
 
-			// Make immutable, if needed, only after initialization, because in initialization we need call constructors, which is mutable methods.
-			if( !is_mutable )
-				variable.value_type= ValueType::ReferenceImut;
+			function_context.variables_state.AddNode( variable );
 
-			if( global_variable != nullptr && variable.constexpr_value != nullptr )
-				global_variable->setInitializer( variable.constexpr_value );
+			{
+				const VariablePtr variable_for_initialization=
+					std::make_shared<Variable>(
+						type,
+						ValueType::ReferenceMut,
+						Variable::Location::Pointer,
+						variable_declaration.name,
+						variable->llvm_value );
+				function_context.variables_state.AddNode( variable_for_initialization );
+				function_context.variables_state.AddLink( variable, variable_for_initialization );
+
+				if( variable_declaration.initializer != nullptr )
+					variable->constexpr_value= ApplyInitializer( variable_for_initialization, names_scope, function_context, *variable_declaration.initializer );
+				else
+					variable->constexpr_value= ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable_for_initialization, names_scope, function_context );
+
+				function_context.variables_state.RemoveNode( variable_for_initialization );
+
+			}
+			function_context.variables_state.RemoveNode( variable );
+
+			if( variable->constexpr_value != nullptr )
+				global_variable->setInitializer( variable->constexpr_value );
+
+			variable_reference->llvm_value= variable->llvm_value;
+			variable_reference->constexpr_value= variable->constexpr_value;
 		}
 		else if( variable_declaration.reference_modifier == ReferenceModifier::Reference )
 		{
@@ -1116,8 +1143,6 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
 				FAIL_RETURN;
 			}
-
-			variable.value_type= is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 			const Synt::Expression* initializer_expression= nullptr;
 			if( const auto expression_initializer= std::get_if<Synt::Expression>( variable_declaration.initializer.get() ) )
@@ -1137,29 +1162,28 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 				FAIL_RETURN;
 			}
 
-			const Variable expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names_scope, function_context );
+			const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *initializer_expression, names_scope, function_context );
 
-			if( !ReferenceIsConvertible( expression_result.type, variable.type, names_scope.GetErrors(), variable_declaration.src_loc ) )
+			if( !ReferenceIsConvertible( expression_result->type, variable_reference->type, names_scope.GetErrors(), variable_declaration.src_loc ) )
 			{
-				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), variable_declaration.src_loc, variable.type, expression_result.type );
+				REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), variable_declaration.src_loc, variable_reference->type, expression_result->type );
 				FAIL_RETURN;
 			}
-			if( expression_result.value_type == ValueType::Value )
+			if( expression_result->value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), variable_declaration.src_loc );
 				FAIL_RETURN;
 			}
 
-			// TODO - maybe make copy of varaible address in new llvm register?
-			llvm::Value* result_ref= expression_result.llvm_value;
-			if( variable.type != expression_result.type )
-				result_ref= CreateReferenceCast( result_ref, expression_result.type, variable.type, function_context );
-			variable.llvm_value= result_ref;
-			variable.constexpr_value= expression_result.constexpr_value;
+			llvm::Value* result_ref= expression_result->llvm_value;
+			if( variable_reference->type != expression_result->type )
+				result_ref= CreateReferenceCast( result_ref, expression_result->type, variable_reference->type, function_context );
+			variable_reference->llvm_value= result_ref;
+			variable_reference->constexpr_value= expression_result->constexpr_value;
 		}
 		else U_ASSERT(false);
 
-		if( variable.constexpr_value == nullptr )
+		if( variable_reference->constexpr_value == nullptr )
 		{
 			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), variable_declaration.src_loc );
 			FAIL_RETURN;
@@ -1167,11 +1191,11 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		// Reset constexpr initial value for mutable variables.
 		if( is_mutable )
-			variable.constexpr_value = nullptr;
+			variable_reference->constexpr_value = nullptr;
 
 		// Do not call destructors, because global variable initializer must be constexpr and any constexpr type have trivial destructor.
 
-		global_variable_value= Value( variable, variable_declaration.src_loc );
+		global_variable_value= Value( variable_reference, variable_declaration.src_loc );
 	}
 	else if( const auto auto_variable_declaration= incomplete_global_variable.auto_variable_declaration )
 	{
@@ -1187,35 +1211,39 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		// Destruction frame for temporary variables of initializer expression.
 		const StackVariablesStorage temp_variables_storage( function_context );
 
-		const Variable initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration->initializer_expression, names_scope, function_context );
+		const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration->initializer_expression, names_scope, function_context );
 
 		{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
 			const bool type_is_ok=
-				initializer_experrsion.type.GetFundamentalType() != nullptr ||
-				initializer_experrsion.type.GetArrayType() != nullptr ||
-				initializer_experrsion.type.GetTupleType() != nullptr ||
-				initializer_experrsion.type.GetClassType() != nullptr ||
-				initializer_experrsion.type.GetEnumType() != nullptr ||
-				initializer_experrsion.type.GetRawPointerType() != nullptr ||
-				initializer_experrsion.type.GetFunctionPointerType() != nullptr;
-			if( !type_is_ok || initializer_experrsion.type == invalid_type_ )
+				initializer_experrsion->type.GetFundamentalType() != nullptr ||
+				initializer_experrsion->type.GetArrayType() != nullptr ||
+				initializer_experrsion->type.GetTupleType() != nullptr ||
+				initializer_experrsion->type.GetClassType() != nullptr ||
+				initializer_experrsion->type.GetEnumType() != nullptr ||
+				initializer_experrsion->type.GetRawPointerType() != nullptr ||
+				initializer_experrsion->type.GetFunctionPointerType() != nullptr;
+			if( !type_is_ok || initializer_experrsion->type == invalid_type_ )
 			{
-				REPORT_ERROR( InvalidTypeForAutoVariable, names_scope.GetErrors(), auto_variable_declaration->src_loc_, initializer_experrsion.type );
+				REPORT_ERROR( InvalidTypeForAutoVariable, names_scope.GetErrors(), auto_variable_declaration->src_loc_, initializer_experrsion->type );
 				FAIL_RETURN;
 			}
 		}
 
-		Variable variable;
-		variable.type= initializer_experrsion.type;
-		variable.value_type= is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-		variable.location= Variable::Location::Pointer;
+		const VariableMutPtr variable_reference=
+			std::make_shared<Variable>(
+				initializer_experrsion->type,
+				is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				auto_variable_declaration->name,
+				nullptr,
+				initializer_experrsion->constexpr_value );
 
-		if( !EnsureTypeComplete( variable.type ) ) // Type completeness required for variable or reference declaration.
+		if( !EnsureTypeComplete( variable_reference->type ) ) // Type completeness required for variable or reference declaration.
 		{
-			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration->src_loc_, variable.type );
+			REPORT_ERROR( UsingIncompleteType, names_scope.GetErrors(), auto_variable_declaration->src_loc_, variable_reference->type );
 			FAIL_RETURN;
 		}
-		if( !variable.type.CanBeConstexpr() )
+		if( !variable_reference->type.CanBeConstexpr() )
 		{
 			REPORT_ERROR( InvalidTypeForConstantExpressionVariable, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 			FAIL_RETURN;
@@ -1223,33 +1251,30 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		if( auto_variable_declaration->reference_modifier == ReferenceModifier::Reference )
 		{
-			if( initializer_experrsion.value_type == ValueType::Value )
+			if( initializer_experrsion->value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 				FAIL_RETURN;
 			}
 
-			variable.llvm_value= initializer_experrsion.llvm_value;
-			variable.constexpr_value= initializer_experrsion.constexpr_value;
+			variable_reference->llvm_value= initializer_experrsion->llvm_value;
 		}
 		else if( auto_variable_declaration->reference_modifier == ReferenceModifier::None )
 		{
-			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, auto_variable_declaration->name, variable.type, !is_mutable );
+			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, auto_variable_declaration->name, variable_reference->type, !is_mutable );
 			llvm::GlobalVariable* const global_variable=
 				is_mutable
-					? CreateGlobalMutableVariable( variable.type, name_mangled )
-					: CreateGlobalConstantVariable( variable.type, name_mangled );
+					? CreateGlobalMutableVariable( variable_reference->type, name_mangled )
+					: CreateGlobalConstantVariable( variable_reference->type, name_mangled );
 
-			variable.llvm_value= global_variable;
-			// Copy constructor for constexpr type is trivial, so, we can just take constexpr value of source.
-			variable.constexpr_value= initializer_experrsion.constexpr_value;
+			variable_reference->llvm_value= global_variable;
 
-			if( variable.constexpr_value != nullptr )
-				global_variable->setInitializer( variable.constexpr_value );
+			if( variable_reference->constexpr_value != nullptr )
+				global_variable->setInitializer( variable_reference->constexpr_value );
 		}
 		else U_ASSERT(false);
 
-		if( variable.constexpr_value == nullptr )
+		if( variable_reference->constexpr_value == nullptr )
 		{
 			REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope.GetErrors(), auto_variable_declaration->src_loc_ );
 			FAIL_RETURN;
@@ -1257,11 +1282,11 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		// Reset constexpr initial value for mutable variables.
 		if( is_mutable )
-			variable.constexpr_value = nullptr;
+			variable_reference->constexpr_value = nullptr;
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
 
-		global_variable_value= Value( variable, auto_variable_declaration->src_loc_ );
+		global_variable_value= Value( variable_reference, auto_variable_declaration->src_loc_ );
 	}
 	else U_ASSERT(false);
 

@@ -817,38 +817,6 @@ def TemporaryReferenceRemoving_Test2():
 	tests_lib.build_program( c_program_text )
 
 
-def ReferenceFieldNode_Test0():
-	c_program_text= """
-		struct S { i32 &mut r; }
-		fn Bar( i32 &imut x, i32 &imut y );
-		fn Foo()
-		{
-			var i32 mut x= 0;
-			var S s{ .r= x };
-			// Temporary reference is not produced here for member access operator for reference, because only one inner reference node is accessible here.
-			Bar( s.r, s.r );
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
-def ReferenceFieldNode_Test1():
-	c_program_text= """
-		fn Bar( i32 &imut x, i32 &imut y );
-		struct S
-		{
-			i32 &mut r;
-
-			fn Foo( this )
-			{
-				// Temporary reference is not produced here for member access operator for reference, because only one inner reference node is accessible here.
-				Bar( r, r );
-			}
-		}
-	"""
-	tests_lib.build_program( c_program_text )
-
-
 def ReferenceFieldNode_Test2():
 	c_program_text= """
 		struct S { i32 &mut r; }

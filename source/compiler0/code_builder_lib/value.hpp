@@ -5,7 +5,6 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/syntax_elements.hpp"
-#include "references_graph.hpp"
 #include "type.hpp"
 
 
@@ -88,28 +87,51 @@ struct TypeTemplatesSet
 	std::vector<const Synt::TypeTemplate*> syntax_elements;
 };
 
+struct Variable;
+using VariablePtr= std::shared_ptr<const Variable>;
+using VariableMutPtr= std::shared_ptr<Variable>;
+using VariableWeakPtr= std::weak_ptr<const Variable>;
+
 struct Variable final
 {
-	enum class Location
+public:
+	enum class Location : uint8_t
 	{
 		Pointer,
 		LLVMRegister,
 	};
 
 	Type type;
-	Location location= Location::Pointer;
-	ValueType value_type= ValueType::ReferenceImut;
 	llvm::Value* llvm_value= nullptr;
 
 	// Exists only for constant expressions.
 	llvm::Constant* constexpr_value= nullptr;
 
-	ReferencesGraphNodePtr node; // May be null for global variables.
+	std::string name;
 
+	ValueType value_type= ValueType::ReferenceImut;
+	Location location= Location::Pointer;
+
+	// May be non-null for struct or tuple member nodes.
+	VariableWeakPtr parent;
+	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
+	mutable std::vector<VariablePtr> children;
+
+public:
 	Variable()= default;
-	Variable(Type in_type,
-		Location in_location= Location::Pointer, ValueType in_value_type= ValueType::ReferenceImut,
-		llvm::Value* in_llvm_value= nullptr, llvm::Constant* in_constexpr_value= nullptr );
+	Variable(const Variable&)= delete;
+	Variable(Variable&&)= default;
+
+	Variable& operator=(const Variable&)= delete;
+	Variable& operator=(Variable&&)= default;
+
+	Variable(
+		Type in_type,
+		ValueType in_value_type,
+		Location in_location,
+		std::string in_name= "",
+		llvm::Value* in_llvm_value= nullptr,
+		llvm::Constant* in_constexpr_value= nullptr );
 };
 
 // Used for displaying of template args.
@@ -144,10 +166,11 @@ public:
 	const OverloadedFunctionsSet& GetOverloadedFunctionsSet() const;
 
 public:
-	Variable this_;
+	VariablePtr this_;
 
 private:
 	// Store "OverloadedFunctionsSet" indirectly, because it is too hevy, to put it in value together with "variable".
+	// TODO - remove this. This is unnecessary, since "this" is stored via shared_ptr.
 	std::unique_ptr<OverloadedFunctionsSet> overloaded_methods_set_;
 };
 
@@ -181,7 +204,7 @@ class Value final
 {
 public:
 	Value() = default;
-	Value( Variable variable, const SrcLoc& src_loc );
+	Value( VariablePtr variable, const SrcLoc& src_loc );
 	Value( OverloadedFunctionsSet functions_set );
 	Value( Type type, const SrcLoc& src_loc );
 	Value( ClassField class_field, const SrcLoc& src_loc );
@@ -198,8 +221,7 @@ public:
 	std::string GetKindName() const;
 	const SrcLoc& GetSrcLoc() const;
 
-	Variable* GetVariable();
-	const Variable* GetVariable() const;
+	VariablePtr GetVariable() const;
 	// Function set
 	OverloadedFunctionsSet* GetFunctionsSet();
 	const OverloadedFunctionsSet* GetFunctionsSet() const;
@@ -235,7 +257,7 @@ public:
 
 private:
 	std::variant<
-		Variable,
+		VariablePtr,
 		OverloadedFunctionsSet,
 		Type,
 		ClassField,

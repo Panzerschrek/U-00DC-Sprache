@@ -465,8 +465,8 @@ void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_ty
 	the_class.virtual_table_llvm_variable->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 }
 
-std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
-	const Variable& this_,
+std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
+	const VariablePtr& this_,
 	const FunctionVariable& function,
 	FunctionContext& function_context,
 	CodeBuilderErrorsContainer& errors_container,
@@ -477,25 +477,36 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 
 	const FunctionType& function_type= *function.type.GetFunctionType();
 
-	if( !ReferenceIsConvertible( this_.type, function_type.params.front().type, errors_container, src_loc ) )
+	if( !ReferenceIsConvertible( this_->type, function_type.params.front().type, errors_container, src_loc ) )
 		return std::make_pair( this_, function.llvm_function );
 
-	Variable this_casted= this_;
-	if( this_.type != function_type.params.front().type )
-	{
-		this_casted.type= function_type.params.front().type;
-		this_casted.llvm_value= CreateReferenceCast( this_.llvm_value, this_.type, this_casted.type, function_context );
-	}
+	if( function.virtual_table_index == ~0u && this_->type == function_type.params.front().type )
+		return std::make_pair( this_, function.llvm_function );
+
+	const VariableMutPtr this_casted=
+		std::make_shared<Variable>(
+			function_type.params.front().type,
+			this_->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+			Variable::Location::Pointer );
+
+	this_casted->llvm_value= CreateReferenceCast( this_->llvm_value, this_->type, this_casted->type, function_context );
+
+	function_context.variables_state.AddNode( this_casted );
+	if( !function_context.variables_state.TryAddLink( this_, this_casted ) )
+		REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, this_->name );
+
+	RegisterTemporaryVariable( function_context, this_casted );
+
 	if( function.virtual_table_index == ~0u )
 		return std::make_pair( std::move(this_casted), function.llvm_function );
 
-	const Class& class_type= *this_casted.type.GetClassType();
+	const Class& class_type= *this_casted->type.GetClassType();
 	U_ASSERT( function.virtual_table_index < class_type.virtual_table.size() );
 
 	// Fetch vtable pointer.
 	// Virtual table pointer is always first field.
 	llvm::Type* const virtual_table_ptr_type= class_type.virtual_table_llvm_type->getPointerTo();
-	llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreatePointerCast( this_casted.llvm_value, virtual_table_ptr_type->getPointerTo() );
+	llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreatePointerCast( this_casted->llvm_value, virtual_table_ptr_type->getPointerTo() );
 	llvm::LoadInst* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( virtual_table_ptr_type, ptr_to_virtual_table_ptr );
 	virtual_table_ptr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) ); // Virtual table pointer is never null.
 	if( generate_tbaa_metadata_ )
@@ -570,9 +581,9 @@ std::pair<Variable, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 				GetFieldGEPIndex(c_offset_field_number) );
 		llvm::Value* const offset= CreateTypedLoad( function_context, size_type_, offset_ptr );
 
-		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted.llvm_value, fundamental_llvm_types_.int_ptr );
+		llvm::Value* const this_ptr_as_int= function_context.llvm_ir_builder.CreatePtrToInt( this_casted->llvm_value, fundamental_llvm_types_.int_ptr );
 		llvm::Value* this_sub_offset= function_context.llvm_ir_builder.CreateSub( this_ptr_as_int, offset );
-		this_casted.llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, this_casted.type.GetLLVMType()->getPointerTo() );
+		this_casted->llvm_value= function_context.llvm_ir_builder.CreateIntToPtr( this_sub_offset, this_casted->type.GetLLVMType()->getPointerTo() );
 	}
 	return std::make_pair( std::move(this_casted), function_ptr );
 }

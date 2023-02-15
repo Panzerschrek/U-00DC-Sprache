@@ -407,7 +407,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
 	type->members.ForEachInThisScope(
 		[&]( const std::string& name, const Value& value )
 		{
-			const Variable* const variable= value.GetVariable();
+			const VariablePtr variable= value.GetVariable();
 			if( variable == nullptr )
 				return;
 

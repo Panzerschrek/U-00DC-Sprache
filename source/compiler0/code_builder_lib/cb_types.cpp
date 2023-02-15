@@ -43,14 +43,14 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	const Synt::Expression& num= *array_type_name.size;
 	const SrcLoc num_src_loc= Synt::GetExpressionSrcLoc( num );
 
-	const Variable size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
-	if( size_variable.constexpr_value != nullptr )
+	const VariablePtr size_variable= BuildExpressionCodeEnsureVariable( num, names_scope, function_context );
+	if( size_variable->constexpr_value != nullptr )
 	{
-		if( const FundamentalType* const size_fundamental_type= size_variable.type.GetFundamentalType() )
+		if( const FundamentalType* const size_fundamental_type= size_variable->type.GetFundamentalType() )
 		{
 			if( IsInteger( size_fundamental_type->fundamental_type ) )
 			{
-				const llvm::APInt& size_value= size_variable.constexpr_value->getUniqueInteger();
+				const llvm::APInt& size_value= size_variable->constexpr_value->getUniqueInteger();
 				if( IsSignedInteger( size_fundamental_type->fundamental_type ) && size_value.isNegative() )
 					REPORT_ERROR( ArraySizeIsNegative, names_scope.GetErrors(), num_src_loc );
 				else
@@ -80,8 +80,8 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	const auto state= SaveFunctionContextState( function_context );
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-		const Variable variable= BuildExpressionCodeEnsureVariable( *typeof_type_name.expression, names_scope, function_context );
-		result= std::move(variable.type);
+		const VariablePtr variable= BuildExpressionCodeEnsureVariable( *typeof_type_name.expression, names_scope, function_context );
+		result= variable->type;
 	}
 
 	RestoreFunctionContextState( function_context, state );

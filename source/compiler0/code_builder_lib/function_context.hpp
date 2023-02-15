@@ -3,7 +3,7 @@
 #include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/IRBuilder.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
-#include "value.hpp"
+#include "references_graph.hpp"
 
 namespace U
 {
@@ -15,15 +15,14 @@ struct FunctionContext;
 struct StackVariablesStorage final
 {
 public:
-
 	StackVariablesStorage( FunctionContext& function_context );
 	~StackVariablesStorage();
 
-	void RegisterVariable( Variable variable );
+	void RegisterVariable( VariablePtr variable );
 
 public:
 	FunctionContext& function_context_;
-	std::vector<Variable> variables_;
+	std::vector<VariablePtr> variables_;
 };
 
 struct LoopFrame final
@@ -54,9 +53,9 @@ struct FunctionContext
 
 	// For reference checks.
 	// arg variable node + optional inner reference variable node.
-	ArgsVector< std::pair< ReferencesGraphNodePtr, ReferencesGraphNodePtr > > args_nodes;
+	ArgsVector< std::pair< VariablePtr, VariablePtr > > args_nodes;
 
-	const Variable* this_= nullptr; // null for nonclass functions or static member functions.
+	VariablePtr this_= nullptr; // null for nonclass functions or static member functions.
 	llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions.
 	// Non-null if "s_ret_" reused for allocation of moved return value.
 	llvm::Value* return_value_replaced_allocation= nullptr;

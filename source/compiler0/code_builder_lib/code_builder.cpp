@@ -34,44 +34,6 @@ std::unique_ptr<IMangler> CreateMangler(const ManglingScheme scheme, const llvm:
 
 } // namespace
 
-CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder(
-	FunctionContext& function_context,
-	const ReferencesGraphNode::Kind node_kind,
-	std::string node_name )
-	: node_( function_context.variables_state.AddNode( node_kind, std::move(node_name) ) )
-	, function_context_(function_context)
-{
-}
-
-CodeBuilder::ReferencesGraphNodeHolder::ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other) noexcept
-	: node_(other.node_), function_context_(other.function_context_)
-{
-	other.node_= nullptr;
-}
-
-CodeBuilder::ReferencesGraphNodeHolder& CodeBuilder::ReferencesGraphNodeHolder::operator=( ReferencesGraphNodeHolder&& other ) noexcept
-{
-	if( this->node_ != nullptr )
-		function_context_.variables_state.RemoveNode( node_ );
-
-	this->node_= other.node_;
-	other.node_= nullptr;
-	return *this;
-}
-
-CodeBuilder::ReferencesGraphNodeHolder::~ReferencesGraphNodeHolder()
-{
-	if( node_ != nullptr )
-		function_context_.variables_state.RemoveNode( node_ );
-}
-
-ReferencesGraphNodePtr CodeBuilder::ReferencesGraphNodeHolder::TakeNode()
-{
-	auto res= node_;
-	node_= nullptr;
-	return res;
-}
-
 CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
@@ -255,8 +217,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	// Fix incomplete typeinfo.
 	for( const auto& typeinfo_entry : typeinfo_cache_ )
 	{
-		if( !typeinfo_entry.second.type.GetLLVMType()->isSized() )
-			typeinfo_entry.second.type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
+		if( !typeinfo_entry.second->type.GetLLVMType()->isSized() )
+			typeinfo_entry.second->type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
 	// Finish with debug info.
@@ -615,27 +577,27 @@ void CodeBuilder::CallDestructorsImpl(
 	// Call destructors in reverse order.
 	for( auto it = stack_variables_storage.variables_.rbegin(); it != stack_variables_storage.variables_.rend(); ++it )
 	{
-		const Variable& stored_variable= *it;
+		const VariablePtr& stored_variable= *it;
 
-		if( stored_variable.node->kind == ReferencesGraphNode::Kind::Variable )
+		if( stored_variable->value_type == ValueType::Value )
 		{
-			if( !function_context.variables_state.NodeMoved( stored_variable.node ) )
+			if( !function_context.variables_state.NodeMoved( stored_variable ) )
 			{
-				if( function_context.variables_state.HaveOutgoingLinks( stored_variable.node ) )
-					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable.node->name );
+				if( function_context.variables_state.HaveOutgoingLinks( stored_variable ) )
+					REPORT_ERROR( DestroyedVariableStillHaveReferences, errors_container, src_loc, stored_variable->name );
 
 				if( !function_context.is_functionless_context )
 				{
-					if( stored_variable.type.HaveDestructor() )
-						CallDestructor( stored_variable.llvm_value, stored_variable.type, function_context, errors_container, src_loc );
+					if( stored_variable->type.HaveDestructor() )
+						CallDestructor( stored_variable->llvm_value, stored_variable->type, function_context, errors_container, src_loc );
 
 					// Avoid calling "lifetime.end" for variables without address.
-					if( stored_variable.location == Variable::Location::Pointer )
-						CreateLifetimeEnd( function_context, stored_variable.llvm_value );
+					if( stored_variable->location == Variable::Location::Pointer )
+						CreateLifetimeEnd( function_context, stored_variable->llvm_value );
 				}
 			}
 		}
-		function_context.variables_state.RemoveNode( stored_variable.node );
+		function_context.variables_state.RemoveNode( stored_variable );
 	}
 }
 
@@ -793,19 +755,19 @@ size_t CodeBuilder::PrepareFunction(
 
 	if( std::get_if<Synt::EmptyVariant>( &func.condition_ ) == nullptr )
 	{
-		const Variable expression= BuildExpressionCodeEnsureVariable( func.condition_, names_scope, *global_function_context_ );
-		if( expression.type == bool_type_ )
+		const VariablePtr expression= BuildExpressionCodeEnsureVariable( func.condition_, names_scope, *global_function_context_ );
+		if( expression->type == bool_type_ )
 		{
-			if( expression.constexpr_value != nullptr )
+			if( expression->constexpr_value != nullptr )
 			{
-				if( expression.constexpr_value->isZeroValue() )
+				if( expression->constexpr_value->isZeroValue() )
 					return ~0u; // Function disabled.
 			}
 			else
 				REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ) );
 		}
 		else
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ), bool_type_, expression.type );
+			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ), bool_type_, expression->type );
 	}
 
 	FunctionVariable func_variable;
@@ -1256,7 +1218,6 @@ Type CodeBuilder::BuildFuncCode(
 	SetCurrentDebugLocation( func_variable.body_src_loc, function_context );
 
 	// push args
-	Variable this_;
 	unsigned int arg_number= 0u;
 
 	const bool is_constructor= func_name == Keywords::constructor_;
@@ -1277,87 +1238,89 @@ Type CodeBuilder::BuildFuncCode(
 		const Synt::FunctionParam& declaration_arg= params[arg_number ];
 		const std::string& arg_name= declaration_arg.name_;
 
-		const bool is_this= arg_number == 0u && arg_name == Keywords::this_;
-		U_ASSERT( !( is_this && param.value_type == ValueType::Value ) );
+		const VariableMutPtr variable=
+			std::make_shared<Variable>(
+				param.type,
+				ValueType::Value,
+				Variable::Location::Pointer,
+				arg_name + " variable itself" );
 
-		Variable var;
-		var.location= Variable::Location::Pointer;
-		var.value_type= ValueType::ReferenceMut;
-		var.type= param.type;
+		function_context.variables_state.AddNode( variable );
 
-		if( declaration_arg.mutability_modifier_ != MutabilityModifier::Mutable )
-			var.value_type= ValueType::ReferenceImut;
-
-		if( param.value_type != ValueType::Value )
+		if( param.value_type == ValueType::Value )
 		{
-			var.llvm_value= &llvm_arg;
-			CreateReferenceVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
-		}
-		else
-		{
+			function_context.stack_variables_stack.back()->RegisterVariable( variable );
+
 			if( param.type.GetFundamentalType() != nullptr ||
 				param.type.GetEnumType() != nullptr ||
 				param.type.GetRawPointerType() != nullptr ||
 				param.type.GetFunctionPointerType() != nullptr )
 			{
 				// Move parameters to stack for assignment possibility.
-				var.llvm_value= function_context.alloca_ir_builder.CreateAlloca( var.type.GetLLVMType(), nullptr, arg_name );
-				CreateLifetimeStart( function_context, var.llvm_value );
+				variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
+				CreateLifetimeStart( function_context, variable->llvm_value );
 
-				if( param.type != void_type_ )
-					CreateTypedStore( function_context, var.type, &llvm_arg, var.llvm_value );
+				CreateTypedStore( function_context, variable->type, &llvm_arg, variable->llvm_value );
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Composite types use llvm-pointers.
-				var.llvm_value = &llvm_arg;
+				variable->llvm_value = &llvm_arg;
 			}
 			else U_ASSERT(false);
 
-			CreateVariableDebugInfo( var, arg_name, declaration_arg.src_loc_, function_context );
-		}
-
-		// Create variable node, because only variable node can have inner reference node.
-		// Register arg on stack, only if it is value-argument.
-		const auto var_node= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable, arg_name );
-		function_context.args_nodes[ arg_number ].first= var_node;
-		if( param.value_type != ValueType::Value )
-		{
-			const auto reference_node= function_context.variables_state.AddNode(
-				param.value_type == ValueType::ReferenceMut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut,
-				arg_name + " reference" );
-			function_context.variables_state.AddLink( var_node, reference_node );
-			var.node= reference_node;
+			CreateVariableDebugInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
 		}
 		else
 		{
-			var.node= var_node;
-			function_context.stack_variables_stack.back()->RegisterVariable( var );
+			variable->llvm_value= &llvm_arg;
+			CreateReferenceVariableDebugInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
 		}
+
+		function_context.args_nodes[ arg_number ].first= variable;
 
 		if (param.type.ReferencesTagsCount() > 0u )
 		{
 			// Create inner node + root variable.
-			const auto accesible_variable= function_context.variables_state.AddNode( ReferencesGraphNode::Kind::Variable , arg_name + " referenced variable" );
+			const VariablePtr accesible_variable=
+				std::make_shared<Variable>(
+					invalid_type_,
+					ValueType::Value,
+					Variable::Location::Pointer,
+					arg_name + " referenced variable" );
+			function_context.variables_state.AddNode( accesible_variable );
 
-			const auto inner_reference= function_context.variables_state.CreateNodeInnerReference(
-				var_node,
-				param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ReferencesGraphNode::Kind::ReferenceMut : ReferencesGraphNode::Kind::ReferenceImut );
+			const auto inner_reference=
+				function_context.variables_state.CreateNodeInnerReference(
+					variable,
+					param.type.GetInnerReferenceType() == InnerReferenceType::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 			function_context.variables_state.AddLink( accesible_variable, inner_reference );
 
 			function_context.args_nodes[ arg_number ].second= accesible_variable;
 		}
 
-		if( is_this )
+		const VariablePtr variable_reference=
+			std::make_shared<Variable>(
+				param.type,
+				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				arg_name,
+				variable->llvm_value );
+
+		function_context.variables_state.AddNode( variable_reference );
+		function_context.variables_state.AddLink( variable, variable_reference );
+		function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
+
+		if( arg_number == 0u && arg_name == Keywords::this_ )
 		{
+			U_ASSERT( param.value_type != ValueType::Value );
 			// Save "this" in function context for accessing inside class methods.
-			this_= std::move(var);
-			function_context.this_= &this_;
+			function_context.this_= variable_reference;
 		}
 		else
 		{
 			const Value* const inserted_arg=
-				function_names.AddName( arg_name, Value( var, declaration_arg.src_loc_ ) );
+				function_names.AddName( arg_name, Value( variable_reference, declaration_arg.src_loc_ ) );
 			if( inserted_arg == nullptr )
 				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.src_loc_, arg_name );
 		}
@@ -1379,7 +1342,7 @@ Type CodeBuilder::BuildFuncCode(
 			const Synt::StructNamedInitializer dumy_initialization_list( block.src_loc_ );
 
 			BuildConstructorInitialization(
-				*function_context.this_,
+				function_context.this_,
 				*base_class,
 				function_names,
 				function_context,
@@ -1387,7 +1350,7 @@ Type CodeBuilder::BuildFuncCode(
 		}
 		else
 			BuildConstructorInitialization(
-				*function_context.this_,
+				function_context.this_,
 				*base_class,
 				function_names,
 				function_context,
@@ -1401,7 +1364,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	if( is_destructor )
 	{
-		SetupVirtualTablePointers( this_.llvm_value, *base_class, function_context );
+		SetupVirtualTablePointers( function_context.this_->llvm_value, *base_class, function_context );
 		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
 	}
 
@@ -1498,9 +1461,6 @@ Type CodeBuilder::BuildFuncCode(
 		}
 	}
 
-
-	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
-
 	if( is_destructor )
 	{
 		// Fill destructors block.
@@ -1511,6 +1471,8 @@ Type CodeBuilder::BuildFuncCode(
 		CallMembersDestructors( function_context, function_names.GetErrors(), block.end_src_loc_ );
 		function_context.llvm_ir_builder.CreateRetVoid();
 	}
+
+	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
 	// Replace return value allocation at end of function build process.
 	// We can do this only now, because now there is no "llvm_value" for this allocation stored in some intermediate structs.
@@ -1524,7 +1486,7 @@ Type CodeBuilder::BuildFuncCode(
 }
 
 void CodeBuilder::BuildConstructorInitialization(
-	const Variable& this_,
+	const VariablePtr& this_,
 	const Class& base_class,
 	NamesScope& names_scope,
 	FunctionContext& function_context,
@@ -1613,12 +1575,9 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 		else
 		{
-			Variable field_variable;
-			field_variable.type= field.type;
-			field_variable.location= Variable::Location::Pointer;
-			field_variable.value_type= ValueType::ReferenceMut;
-
-			field_variable.llvm_value= CreateClassFieldGEP( function_context, this_, field.index );
+			const VariablePtr field_variable=
+				AccessClassField( names_scope, function_context, this_, field, field_name, constructor_initialization_list.src_loc_ ).GetVariable();
+			U_ASSERT( field_variable != nullptr );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
@@ -1631,12 +1590,9 @@ void CodeBuilder::BuildConstructorInitialization(
 	if( !base_initialized && base_class.base_class != nullptr )
 	{
 		// Apply default initializer for base class.
-		Variable base_variable;
-		base_variable.type= base_class.base_class;
-		base_variable.location= Variable::Location::Pointer;
-		base_variable.value_type= ValueType::ReferenceMut;
 
-		base_variable.llvm_value= CreateBaseClassGEP( function_context, *this_.type.GetClassType(), this_.llvm_value );
+		// It is safe to access "base" as child node here since it is possible to call only constructor but not any virtual method.
+		const VariablePtr base_variable= AccessClassBase( this_, function_context );
 
 		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
@@ -1647,13 +1603,8 @@ void CodeBuilder::BuildConstructorInitialization(
 	{
 		if( field_initializer.name == Keywords::base_ )
 		{
-			Variable base_variable;
-			base_variable.type= base_class.base_class;
-			base_variable.location= Variable::Location::Pointer;
-			base_variable.value_type= ValueType::ReferenceMut;
-			base_variable.node= this_.node;
-
-			base_variable.llvm_value= CreateBaseClassGEP( function_context, *this_.type.GetClassType(), this_.llvm_value );
+			// It is safe to access "base" as child node here since it is possible to call only constructor but not any virtual method.
+			const VariablePtr base_variable= AccessClassBase( this_, function_context );
 
 			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );
 			function_context.base_initialized= true;
@@ -1670,13 +1621,9 @@ void CodeBuilder::BuildConstructorInitialization(
 			InitializeReferenceField( this_, *field, field_initializer.initializer, names_scope, function_context );
 		else
 		{
-			Variable field_variable;
-			field_variable.type= field->type;
-			field_variable.location= Variable::Location::Pointer;
-			field_variable.value_type= ValueType::ReferenceMut;
-			field_variable.node= this_.node;
-
-			field_variable.llvm_value= CreateClassFieldGEP( function_context, this_, field->index );
+			const VariablePtr field_variable=
+				AccessClassField( names_scope, function_context, this_, *field, field_initializer.name, constructor_initialization_list.src_loc_ ).GetVariable();
+			U_ASSERT( field_variable != nullptr );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
 		}
@@ -1685,7 +1632,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	} // for fields initializers
 
 	CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
-	SetupVirtualTablePointers( this_.llvm_value, base_class, function_context );
+	SetupVirtualTablePointers( this_->llvm_value, base_class, function_context );
 }
 
 void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context )
@@ -2113,21 +2060,6 @@ llvm::Value*CodeBuilder::CreateBaseClassGEP( FunctionContext& function_context, 
 	return CreateClassFieldGEP( function_context, class_type, class_ptr, 0 /* base class is allways first field */ );
 }
 
-llvm::Value* CodeBuilder::CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field )
-{
-	ClassPtr actual_field_class= class_variable.type.GetClassType();
-	llvm::Value* actual_field_class_ptr= class_variable.llvm_value;
-	while( actual_field_class != class_field.class_ )
-	{
-		if( actual_field_class->base_class == nullptr )
-			return nullptr;
-		actual_field_class_ptr= CreateBaseClassGEP( function_context, *actual_field_class, actual_field_class_ptr );
-		actual_field_class= actual_field_class->base_class;
-	}
-
-	return CreateClassFieldGEP( function_context, *actual_field_class, actual_field_class_ptr, class_field.index );
-}
-
 llvm::Value* CodeBuilder::CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const uint64_t field_index )
 {
 	const auto class_type= class_variable.type.GetClassType();
@@ -2184,6 +2116,33 @@ llvm::Value* CodeBuilder::CreateCompositeElementGEP( FunctionContext& function_c
 		return nullptr;
 
 	return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index } );
+}
+
+llvm::Value* CodeBuilder::ForceCreateConstantIndexGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, const uint32_t index )
+{
+	if( value == nullptr )
+		return nullptr;
+
+	const auto index_value= GetFieldGEPIndex( index );
+
+	if( llvm::isa<llvm::Constant>(value) )
+	{
+		// Constant will be folded properly and no instruction will be actiually inserted.
+		return function_context.llvm_ir_builder.CreateGEP( type, value, { GetZeroGEPIndex(), index_value } );
+	}
+
+	const auto gep= llvm::GetElementPtrInst::Create( type, value, { GetZeroGEPIndex(), index_value } );
+
+	// Try to insert "GEP" instruction with constant index directly after of value calculation.
+	// This is needed in order to have possibility to reuse this instruction in diffirent basic blocks.
+	if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( value ) )
+		gep->insertAfter( instruction );
+	else if( llvm::isa<llvm::Argument>( value ) )
+		function_context.alloca_ir_builder.Insert( gep );
+	else
+		function_context.llvm_ir_builder.Insert( gep ); // TODO - maybe add assert here?
+
+	return gep;
 }
 
 llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context )
@@ -2256,6 +2215,14 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 	var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
 	return var;
+}
+
+bool CodeBuilder::IsGlobalVariable( const VariablePtr& variable )
+{
+	return
+		variable->llvm_value != nullptr &&
+		llvm::isa<llvm::Constant>( variable->llvm_value ) &&
+		variable->location == Variable::Location::Pointer;
 }
 
 void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
@@ -2440,8 +2407,6 @@ CodeBuilder::FunctionContextState CodeBuilder::SaveFunctionContextState( Functio
 {
 	FunctionContextState result;
 	result.variables_state= function_context.variables_state;
-	result.current_block_instruction_count= function_context.llvm_ir_builder.GetInsertBlock()->size();
-	result.alloca_block_instructin_count= function_context.alloca_ir_builder.GetInsertBlock()->size();
 	result.block_count= function_context.function->getBasicBlockList().size();
 	return result;
 }
@@ -2450,10 +2415,9 @@ void CodeBuilder::RestoreFunctionContextState( FunctionContext& function_context
 {
 	function_context.variables_state= state.variables_state;
 
-	// Make sure no new instructions or basic blocks were added.
-	U_ASSERT( function_context.llvm_ir_builder.GetInsertBlock()->size() == state.current_block_instruction_count );
-	U_ASSERT( function_context.alloca_ir_builder.GetInsertBlock()->size() == state.alloca_block_instructin_count );
+	// Make sure no new basic blocks were added.
 	U_ASSERT( function_context.function->getBasicBlockList().size() == state.block_count );
+	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
 }
 
 } // namespace U

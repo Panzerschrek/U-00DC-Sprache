@@ -21,7 +21,8 @@ public:
 
 	struct VariableParam
 	{
-		Variable v;
+		Type type;
+		llvm::Constant* constexpr_value= nullptr;
 
 		bool operator==( const VariableParam& other ) const;
 	};

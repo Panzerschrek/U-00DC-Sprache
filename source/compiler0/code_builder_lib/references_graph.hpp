@@ -4,54 +4,42 @@
 #include <unordered_set>
 #include <vector>
 #include "../../code_builder_lib_common/code_builder_errors.hpp"
+#include "value.hpp"
 
 namespace U
 {
 
-struct ReferencesGraphNode
-{
-	enum class Kind
-	{
-		Variable,
-		ReferenceMut,
-		ReferenceImut,
-	};
-
-	const std::string name;
-	const Kind kind= Kind::Variable;
-
-	ReferencesGraphNode( std::string in_name, Kind in_kind ) : name(std::move(in_name)), kind(in_kind) {}
-};
-
-using ReferencesGraphNodePtr= std::shared_ptr<const ReferencesGraphNode>;
-
 class ReferencesGraph
 {
 public:
-	ReferencesGraphNodePtr AddNode( ReferencesGraphNode::Kind kind, std::string name );
-	void RemoveNode( const ReferencesGraphNodePtr& node );
+	void AddNode( const VariablePtr& node );
+	void AddNodeIfNotExists( const VariablePtr& node );
 
-	void AddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
-	void RemoveLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
+	// Removes also inner reference node and children nodes.
+	void RemoveNode( const VariablePtr& node );
+
+	void AddLink( const VariablePtr& from, const VariablePtr& to );
+	void RemoveLink( const VariablePtr& from, const VariablePtr& to );
 
 	// Returns "false" in case of ReferenceProtectionError
-	bool TryAddLink( const ReferencesGraphNodePtr& from, const ReferencesGraphNodePtr& to );
+	bool TryAddLink( const VariablePtr& from, const VariablePtr& to );
 
-	ReferencesGraphNodePtr GetNodeInnerReference( const ReferencesGraphNodePtr& node ) const;
-	ReferencesGraphNodePtr CreateNodeInnerReference( const ReferencesGraphNodePtr& node, ReferencesGraphNode::Kind kind );
+	VariablePtr GetNodeInnerReference( const VariablePtr& node ) const;
+	VariablePtr CreateNodeInnerReference( const VariablePtr& node, ValueType kind );
 
 	// Each access to variable must produce temporary reference to it.
 	// Creating temporary mutable reference to reference node with outgoing links is compilation error.
-	bool HaveOutgoingLinks( const ReferencesGraphNodePtr& from ) const;
+	bool HaveOutgoingLinks( const VariablePtr& from ) const;
 
-	bool HaveOutgoingMutableNodes( const ReferencesGraphNodePtr& from ) const;
+	bool HaveOutgoingMutableNodes( const VariablePtr& from ) const;
 
-	void MoveNode( const ReferencesGraphNodePtr& node );
-	bool NodeMoved( const ReferencesGraphNodePtr& node ) const;
+	void MoveNode( const VariablePtr& node );
+	bool NodeMoved( const VariablePtr& node ) const;
 
-	using NodesSet= std::unordered_set<ReferencesGraphNodePtr>;
-	NodesSet GetAllAccessibleVariableNodes( const ReferencesGraphNodePtr& node ) const;
-	NodesSet GetAccessibleVariableNodesInnerReferences( const ReferencesGraphNodePtr& node ) const;
+	using NodesSet= std::unordered_set<VariablePtr>;
+	NodesSet GetAllAccessibleVariableNodes( const VariablePtr& node ) const;
+	NodesSet GetAccessibleVariableNodesInnerReferences( const VariablePtr& node ) const;
+	NodesSet GetNodeInputLinks( const VariablePtr& node ) const;
 
 	using MergeResult= std::pair<ReferencesGraph, std::vector<CodeBuilderError> >;
 	static MergeResult MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const SrcLoc& src_loc );
@@ -61,13 +49,13 @@ private:
 	struct NodeState
 	{
 		bool moved= false;
-		ReferencesGraphNodePtr inner_reference; // SPRACHE_TODO - make vector, when type can hold more, then one internal references storage.
+		VariablePtr inner_reference; // SPRACHE_TODO - make vector, when type can hold more, then one internal references storage.
 	};
 
 	struct Link
 	{
-		ReferencesGraphNodePtr src;
-		ReferencesGraphNodePtr dst;
+		VariablePtr src;
+		VariablePtr dst;
 
 		bool operator==( const Link& r ) const;
 	};
@@ -80,12 +68,18 @@ private:
 	using LinksSet= std::unordered_set< Link, LinkHasher >;
 
 private:
-	void RemoveNodeLinks( const ReferencesGraphNodePtr& node );
-	void GetAllAccessibleVariableNodes_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
-	void GetAccessibleVariableNodesInnerReferences_r( const ReferencesGraphNodePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
+	bool HaveDirectOutgoingLinks( const VariablePtr& from ) const;
+	bool HaveOutgoingLinksIncludingChildrenLinks_r( const VariablePtr& from ) const;
+
+	bool HaveDirectOutgoingMutableNodes( const VariablePtr& from ) const;
+	bool HaveOutgoingMutableNodesIncludingChildrenNodes_r( const VariablePtr& from ) const;
+
+	void RemoveNodeLinks( const VariablePtr& node );
+	void GetAllAccessibleVariableNodes_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
+	void GetAccessibleVariableNodesInnerReferences_r( const VariablePtr& node, NodesSet& visited_nodes_set, NodesSet& result_set ) const;
 
 private:
-	std::unordered_map<ReferencesGraphNodePtr, NodeState> nodes_;
+	std::unordered_map<VariablePtr, NodeState> nodes_;
 	LinksSet links_;
 };
 

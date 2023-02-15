@@ -124,16 +124,16 @@ bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const
 				else
 				{
 					// Process general non_sync expression. This approach can't resolve circular dependency.
-					const Variable v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
-					if( v.type != bool_type_ )
+					const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
+					if( v->type != bool_type_ )
 					{
-						REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v.type );
+						REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v->type );
 					}
-					else if( v.constexpr_value == nullptr )
+					else if( v->constexpr_value == nullptr )
 					{
 						REPORT_ERROR( ExpectedConstantExpression, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
 					}
-					else if( !v.constexpr_value->isZeroValue() )
+					else if( !v->constexpr_value->isZeroValue() )
 					{
 						prev_types_stack.pop_back();
 						return true;
@@ -202,12 +202,12 @@ void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 			// Evaluate non_sync condition using initial class members parent scope.
 			NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
 
-			const Variable v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
-			if( v.type != bool_type_ )
+			const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
+			if( v->type != bool_type_ )
 			{
-				REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v.type );
+				REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v->type );
 			}
-			if( v.constexpr_value == nullptr )
+			if( v->constexpr_value == nullptr )
 			{
 				REPORT_ERROR( ExpectedConstantExpression, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
 			}

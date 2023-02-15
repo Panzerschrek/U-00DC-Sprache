@@ -36,11 +36,19 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 
 Variable::Variable(
 	Type in_type,
-	const Location in_location, const ValueType in_value_type,
-	llvm::Value* const in_llvm_value, llvm::Constant* const in_constexpr_value )
-	: type(std::move(in_type)), location(in_location), value_type(in_value_type)
-	, llvm_value(in_llvm_value), constexpr_value(in_constexpr_value)
-{}
+	ValueType in_value_type,
+	Location in_location,
+	std::string in_name,
+	llvm::Value* in_llvm_value,
+	llvm::Constant* in_constexpr_value )
+	: type(std::move(in_type))
+	, llvm_value(in_llvm_value)
+	, constexpr_value(in_constexpr_value)
+	, name(std::move(in_name))
+	, value_type(in_value_type)
+	, location(in_location)
+{
+}
 
 std::string ConstantVariableToString( const Variable& variable )
 {
@@ -120,7 +128,7 @@ std::string ConstantVariableToString( const Variable& variable )
 		enum_type->members.ForEachInThisScope(
 			[&]( const std::string& name, const Value& enum_member )
 			{
-				if( const Variable* const enum_variable= enum_member.GetVariable() )
+				if( const VariablePtr enum_variable= enum_member.GetVariable() )
 				{
 					U_ASSERT( enum_variable->constexpr_value != nullptr );
 					if( enum_variable->constexpr_value->getUniqueInteger().getLimitedValue() == num_value )
@@ -178,7 +186,7 @@ const OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSe
 
 static_assert( sizeof(Value) <= 152u, "Value is too heavy!" );
 
-Value::Value( Variable variable, const SrcLoc& src_loc )
+Value::Value( VariablePtr variable, const SrcLoc& src_loc )
 	: src_loc_(src_loc)
 {
 	something_= std::move(variable);
@@ -257,7 +265,7 @@ std::string Value::GetKindName() const
 {
 	struct Visitor final
 	{
-		std::string operator()( const Variable& ) const { return "variable"; }
+		std::string operator()( const VariablePtr& ) const { return "variable"; }
 		std::string operator()( const FunctionVariable& ) const { return "function variable"; }
 		std::string operator()( const OverloadedFunctionsSet& ) const { return "functions set"; }
 		std::string operator()( const Type& ) const { return "typename"; }
@@ -280,14 +288,12 @@ const SrcLoc& Value::GetSrcLoc() const
 	return src_loc_;
 }
 
-Variable* Value::GetVariable()
+VariablePtr Value::GetVariable() const
 {
-	return std::get_if<Variable>( &something_ );
-}
+	if( const auto ptr= std::get_if<VariablePtr>( &something_ ) )
+		return *ptr;
 
-const Variable* Value::GetVariable() const
-{
-	return std::get_if<Variable>( &something_ );
+	return nullptr;
 }
 
 OverloadedFunctionsSet* Value::GetFunctionsSet()

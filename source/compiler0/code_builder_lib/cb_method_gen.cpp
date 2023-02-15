@@ -129,13 +129,18 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 
 	if( the_class.base_class != nullptr )
 	{
-		Variable base_variable;
-		base_variable.type= the_class.base_class;
-		base_variable.value_type= ValueType::ReferenceMut;
-
-		base_variable.llvm_value= CreateBaseClassGEP( function_context, *class_type, this_llvm_value );
+		const VariablePtr base_variable=
+			std::make_shared<Variable>(
+				the_class.base_class,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				Keyword( Keywords::base_ ),
+				CreateBaseClassGEP( function_context, *class_type, this_llvm_value ) );
+		function_context.variables_state.AddNode( base_variable );
 
 		ApplyEmptyInitializer( Keyword( Keywords::base_ ), SrcLoc()/*TODO*/, base_variable, *the_class.members, function_context );
+
+		function_context.variables_state.RemoveNode( base_variable );
 	}
 
 	for( const std::string& field_name : the_class.fields_order )
@@ -148,24 +153,38 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		if( field.is_reference )
 		{
 			U_ASSERT( field.syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
-			Variable variable;
-			variable.type= class_type;
-			variable.value_type= ValueType::ReferenceMut;
-			variable.llvm_value= this_llvm_value;
-			InitializeReferenceClassFieldWithInClassIninitalizer( variable, field, function_context );
+
+			const VariablePtr this_variable=
+				std::make_shared<Variable>(
+					class_type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					field_name,
+					this_llvm_value );
+			function_context.variables_state.AddNode( this_variable );
+
+			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, field, function_context );
+
+			function_context.variables_state.RemoveNode( this_variable );
 		}
 		else
 		{
-			Variable field_variable;
-			field_variable.type= field.type;
-			field_variable.value_type= ValueType::ReferenceMut;
+			const VariablePtr field_variable=
+				std::make_shared<Variable>(
+					field.type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					field_name,
+					CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index ) );
 
-			field_variable.llvm_value= CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index );
+			function_context.variables_state.AddNode( field_variable );
 
 			if( field.syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
 			else
 				ApplyEmptyInitializer( field_name, SrcLoc()/*TODO*/, field_variable, *the_class.members, function_context );
+
+			function_context.variables_state.RemoveNode( field_variable );
 		}
 	}
 
@@ -386,18 +405,22 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 	llvm::Value* const this_llvm_value= &*destructor_function .llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
-	Variable this_;
-	this_.type= class_type;
-	this_.location= Variable::Location::Pointer;
-	this_.value_type= ValueType::ReferenceMut;
-	this_.llvm_value= this_llvm_value;
+	const VariablePtr this_=
+		std::make_shared<Variable>(
+			class_type,
+			ValueType::ReferenceMut,
+			Variable::Location::Pointer,
+			Keyword( Keywords::this_ ),
+			this_llvm_value );
 
 	FunctionContext function_context(
 		destructor_type,
 		destructor_type.return_type,
 		llvm_context_,
 		destructor_function.llvm_function );
-	function_context.this_= &this_;
+	function_context.this_= this_;
+
+	function_context.variables_state.AddNode( this_ );
 
 	CallMembersDestructors( function_context, the_class.members->GetErrors(), the_class.body_src_loc );
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );

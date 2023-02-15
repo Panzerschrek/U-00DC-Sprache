@@ -33,6 +33,12 @@ struct CodeBuilderOptions
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
+struct TypeinfoPartVariable
+{
+	Type type;
+	llvm::Constant* constexpr_value= nullptr;
+};
+
 class CodeBuilder
 {
 public:
@@ -88,25 +94,6 @@ private:
 		{}
 	};
 
-	class ReferencesGraphNodeHolder final
-	{
-	public:
-		ReferencesGraphNodeHolder( FunctionContext& function_context, ReferencesGraphNode::Kind node_kind, std::string node_name );
-		ReferencesGraphNodeHolder( const ReferencesGraphNodeHolder& )= delete;
-		ReferencesGraphNodeHolder( ReferencesGraphNodeHolder&& other ) noexcept;
-
-		ReferencesGraphNodeHolder& operator=( const ReferencesGraphNodeHolder& )= delete;
-		ReferencesGraphNodeHolder& operator=( ReferencesGraphNodeHolder&& other ) noexcept;
-		~ReferencesGraphNodeHolder();
-
-		const ReferencesGraphNodePtr& Node() const { return node_; }
-		ReferencesGraphNodePtr TakeNode();
-
-	private:
-		ReferencesGraphNodePtr node_;
-		FunctionContext& function_context_;
-	};
-
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );
 
@@ -147,8 +134,8 @@ private:
 	llvm::Constant* BuildClassVirtualTable_r( const Class& ancestor_class, const Class& dst_class, uint64_t offset );
 	void BuildClassVirtualTable( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
 
-	std::pair<Variable, llvm::Value*> TryFetchVirtualFunction(
-		const Variable& this_,
+	std::pair<VariablePtr, llvm::Value*> TryFetchVirtualFunction(
+		const VariablePtr& this_,
 		const FunctionVariable& function,
 		FunctionContext& function_context,
 		CodeBuilderErrorsContainer& errors_container,
@@ -487,14 +474,14 @@ private:
 		const Synt::StructNamedInitializer* constructor_initialization_list );
 
 	void BuildConstructorInitialization(
-		const Variable& this_,
+		const VariablePtr& this_,
 		const Class& base_class,
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		const Synt::StructNamedInitializer& constructor_initialization_list );
 
 	// Expressions.
-	Variable BuildExpressionCodeEnsureVariable(
+	VariablePtr BuildExpressionCodeEnsureVariable(
 		const Synt::Expression& expression,
 		NamesScope& names,
 		FunctionContext& function_context );
@@ -531,6 +518,15 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
 
+	VariablePtr AccessClassBase( const VariablePtr& variable, FunctionContext& function_context );
+	Value AccessClassField(
+		NamesScope& names,
+		FunctionContext& function_context,
+		const VariablePtr& variable,
+		const ClassField& field,
+		const std::string& field_name,
+		const SrcLoc& src_loc );
+
 	// Returns Value, if overloaded operator selected or if arguments are template dependent or argumens are error values.
 	// Returns std::nullopt, if all ok, but there is no overloaded operator.
 	// In success call of overloaded operator arguments evaluated in left to right order.
@@ -552,14 +548,14 @@ private:
 		FunctionContext& function_context );
 
 	std::optional<Value> TryCallOverloadedUnaryOperator(
-		const Variable& variable,
+		const VariablePtr& variable,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
 	std::optional<Value> TryCallOverloadedPostfixOperator(
-		const Variable& variable,
+		const VariablePtr& variable,
 		const llvm::ArrayRef<Synt::Expression>& synt_args,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,
@@ -609,7 +605,7 @@ private:
 		llvm::Value* function,
 		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
-		const Variable* this_, // optional
+		const VariablePtr& this_, // optional
 		const llvm::ArrayRef<const Synt::Expression*>& args,
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names,
@@ -620,22 +616,22 @@ private:
 		llvm::Value* function,
 		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
-		const llvm::ArrayRef<Variable>& preevaluated_args,
+		const llvm::ArrayRef<VariablePtr>& preevaluated_args,
 		const llvm::ArrayRef<const Synt::Expression*>& args,
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names,
 		FunctionContext& function_context,
 		bool func_is_constexpr= false );
 
-	Variable BuildTempVariableConstruction(
+	VariablePtr BuildTempVariableConstruction(
 		const Type& type,
 		const std::vector<Synt::Expression>& synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	Variable ConvertVariable(
-		const Variable& variable,
+	VariablePtr ConvertVariable(
+		VariablePtr variable,
 		const Type& dst_type,
 		const FunctionVariable& conversion_constructor,
 		NamesScope& names,
@@ -649,23 +645,23 @@ private:
 
 	// Typeinfo
 
-	Variable BuildTypeInfo( const Type& type, NamesScope& root_namespace );
+	VariablePtr BuildTypeInfo( const Type& type, NamesScope& root_namespace );
 	ClassPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name );
-	Variable BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
-	void BuildFullTypeinfo( const Type& type, Variable& typeinfo_variable, NamesScope& root_namespace );
+	VariableMutPtr BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
+	void BuildFullTypeinfo( const Type& type, const VariableMutPtr& typeinfo_variable, NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
 	void FinishTypeinfoClass( const ClassPtr& class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
-	Variable BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
 		const Class& class_, const ClassPtr& node_class_type,
 		const std::string& member_name,
 		ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers );
-	Variable BuildTypeinfoClassFieldsList( const ClassPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoClassTypesList( const ClassPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoClassFunctionsList( const ClassPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoClassParentsList( const ClassPtr& class_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace );
-	Variable BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassFieldsList( const ClassPtr& class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassTypesList( const ClassPtr& class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassFunctionsList( const ClassPtr& class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassParentsList( const ClassPtr& class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
 
 	// Block elements
 	BlockBuildInfo BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::BlockElement& blocK_element );
@@ -759,49 +755,49 @@ private:
 
 	// Initializers.
 	// Some initializers returns nonnul constant, if initializer is constant.
-	llvm::Constant* ApplyInitializer( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::Initializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::SequenceInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::StructNamedInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ConstructorInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::Expression& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::ZeroInitializer& initializer );
-	llvm::Constant* ApplyInitializerImpl( const Variable& variable, NamesScope& names, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
+	llvm::Constant* ApplyInitializer( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::Initializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::SequenceInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::StructNamedInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::ConstructorInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::Expression& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::ZeroInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
 
 	llvm::Constant* ApplyEmptyInitializer(
 		const std::string& variable_name,
 		const SrcLoc& src_loc,
-		const Variable& variable,
+		VariablePtr variable,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* ApplyConstructorInitializer(
-		const Variable& variable,
+		const VariablePtr& variable,
 		const std::vector<Synt::Expression>& synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeReferenceField(
-		const Variable& variable,
+		const VariablePtr& variable,
 		const ClassField& field,
 		const Synt::Initializer& initializer,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeFunctionPointer(
-		const Variable& variable,
+		const VariablePtr& variable,
 		const Synt::Expression& initializer_expression,
 		NamesScope& block_names,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeClassFieldWithInClassIninitalizer(
-		const Variable& field_variable,
+		const VariablePtr& field_variable,
 		const ClassField& class_field,
 		FunctionContext& function_context );
 
 	llvm::Constant* InitializeReferenceClassFieldWithInClassIninitalizer(
-		const Variable& variable,
+		VariablePtr variable,
 		const ClassField& class_field,
 		FunctionContext& function_context );
 
@@ -836,9 +832,9 @@ private:
 		const Synt::FunctionType& func,
 		FunctionType& function_type );
 
-	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const Variable& dst_variable, const Variable& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+	void SetupReferencesInCopyOrMove( FunctionContext& function_context, const VariablePtr& dst_variable, const VariablePtr& src_variable, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
-	void RegisterTemporaryVariable( FunctionContext& function_context, Variable variable );
+	void RegisterTemporaryVariable( FunctionContext& function_context, VariablePtr variable );
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	ReferencesGraph MergeVariablesStateAfterIf(
@@ -846,7 +842,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
-	bool IsReferenceAllowedForReturn( FunctionContext& function_context, const ReferencesGraphNodePtr& variable_node );
+	bool IsReferenceAllowedForReturn( FunctionContext& function_context, const VariablePtr& variable_node );
 
 	void CheckReferencesPollutionBeforeReturn(
 		FunctionContext& function_context,
@@ -939,7 +935,6 @@ private:
 	llvm::Constant* GetFieldGEPIndex( uint64_t field_index );
 
 	llvm::Value* CreateBaseClassGEP( FunctionContext& function_context, const Class& class_type, llvm::Value* class_ptr );
-	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, const ClassField& class_field );
 	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Variable& class_variable, uint64_t field_index );
 	llvm::Value* CreateClassFieldGEP( FunctionContext& function_context, const Class& class_type, llvm::Value* class_ptr, uint64_t field_index );
 	llvm::Value* CreateTupleElementGEP( FunctionContext& function_context, const Variable& tuple_variable, uint64_t element_index );
@@ -950,10 +945,15 @@ private:
 	llvm::Value* CreateArrayElementGEP( FunctionContext& function_context, const ArrayType& array_type, llvm::Value* array_ptr, llvm::Value* index );
 	llvm::Value* CreateCompositeElementGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, llvm::Value* index );
 
+	// Create GEP instruction even in functionless context.
+	llvm::Value* ForceCreateConstantIndexGEP( FunctionContext& function_context, llvm::Type* type, llvm::Value* value, uint32_t index );
+
 	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );
 	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name );
+
+	bool IsGlobalVariable( const VariablePtr& variable );
 
 	void SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
 	// Requires complete types
@@ -967,8 +967,6 @@ private:
 	struct FunctionContextState
 	{
 		ReferencesGraph variables_state;
-		size_t current_block_instruction_count= 0;
-		size_t alloca_block_instructin_count= 0;
 		size_t block_count= 0;
 	};
 
@@ -1055,7 +1053,7 @@ private:
 	ProgramStringMap< ClassPtr > template_classes_cache_;
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
-	std::unordered_map< Type, Variable, TypeHasher > typeinfo_cache_;
+	std::unordered_map< Type, VariableMutPtr, TypeHasher > typeinfo_cache_;
 	std::vector<std::shared_ptr<Class>> typeinfo_class_table_;
 
 	std::vector<Type> non_sync_expression_stack_;

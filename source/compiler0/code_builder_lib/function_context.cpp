@@ -12,12 +12,12 @@ StackVariablesStorage::StackVariablesStorage( FunctionContext& in_function_conte
 
 StackVariablesStorage::~StackVariablesStorage()
 {
-	for( const Variable& variable : variables_ )
-		function_context_.variables_state.RemoveNode( variable.node );
+	for( const VariablePtr& variable : variables_ )
+		function_context_.variables_state.RemoveNode( variable );
 	function_context_.stack_variables_stack.pop_back();
 }
 
-void StackVariablesStorage::RegisterVariable( Variable variable )
+void StackVariablesStorage::RegisterVariable( VariablePtr variable )
 {
 	variables_.push_back( std::move(variable) );
 }
