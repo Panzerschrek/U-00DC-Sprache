@@ -1110,7 +1110,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			function_context.variables_state.AddNode( variable );
 
 			{
-				const VariableMutPtr variable_for_initialization=
+				const VariablePtr variable_for_initialization=
 					std::make_shared<Variable>(
 						type,
 						ValueType::ReferenceMut,

@@ -115,12 +115,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.AddNode( variable_for_initialization );
 				function_context.variables_state.AddLink( variable, variable_for_initialization );
 
-				if( variable_declaration.initializer != nullptr )
-					variable->constexpr_value=
-						ApplyInitializer( variable_for_initialization, names, function_context, *variable_declaration.initializer );
-				else
-					variable->constexpr_value=
-						ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable_for_initialization, names, function_context );
+				variable->constexpr_value=
+					variable_declaration.initializer == nullptr
+						? ApplyEmptyInitializer( variable_declaration.name, variable_declaration.src_loc, variable_for_initialization, names, function_context )
+						: ApplyInitializer( variable_for_initialization, names, function_context, *variable_declaration.initializer );
 
 				function_context.variables_state.RemoveNode( variable_for_initialization );
 			}
@@ -497,10 +495,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
 
-		llvm::Value* ret_value= expression_result->llvm_value;
-		if( expression_result->type != function_context.return_type )
-			ret_value= CreateReferenceCast( ret_value, expression_result->type, *function_context.return_type, function_context );
-		function_context.llvm_ir_builder.CreateRet( ret_value );
+		function_context.llvm_ir_builder.CreateRet(
+			CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ) );
 	}
 	else
 	{
@@ -665,7 +661,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				CreateReferenceVariableDebugInfo( *variable_reference, variable_name, for_operator.src_loc_, function_context );
 
-
 				if( !function_context.variables_state.TryAddLink( sequence_lock, variable_reference ) )
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression->name );
 			}
@@ -717,7 +712,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
 
-			loop_names.AddName( for_operator.loop_variable_name_, Value( std::move(variable_reference), for_operator.src_loc_ ) );
+			loop_names.AddName( for_operator.loop_variable_name_, Value( variable_reference, for_operator.src_loc_ ) );
 
 			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
 			llvm::BasicBlock* const next_basic_block=
