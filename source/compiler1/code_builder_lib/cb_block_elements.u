@@ -1400,7 +1400,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{
 		.t= expr.t,
 		.is_mutable= with_operator.mutability_modifier == Synt::MutabilityModifier::Mutable,
-		.constexpr_value= expr.constexpr_value
+		.constexpr_value= expr.constexpr_value // Constexpr is preserved for move/copy.
 	};
 
 	var ReferencesGraph::NodeKind mut node_kind= zero_init;

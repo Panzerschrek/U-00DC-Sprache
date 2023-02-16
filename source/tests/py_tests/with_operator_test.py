@@ -320,6 +320,60 @@ def WithOperatorForMutReference_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def WithOperatorForConstexprValue_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			with( x : 66 ) // Bind value to value.
+			{
+				static_assert( x == 66 );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def WithOperatorForConstexprValue_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			with( &x : 73.5f ) // Bind value to reference.
+			{
+				static_assert( x == 73.5f );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def WithOperatorForConstexprValue_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var u32 x= 78643u;
+			with( x_ref : x ) // Bind reference to value.
+			{
+				static_assert( x_ref == 78643u );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def WithOperatorForConstexprValue_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto x= -786i64;
+			with( &x_ref : x ) // Bind reference to reference.
+			{
+				static_assert( x_ref == -786i64 );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def BindingConstReferenceToNonconstReference_For_WithOperator_Test0():
 	c_program_text= """
 		fn Foo()
