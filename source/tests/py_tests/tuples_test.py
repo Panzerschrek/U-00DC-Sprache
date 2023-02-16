@@ -530,6 +530,26 @@ def TupleFor_Test7():
 	assert( errors_list[0].src_loc.line == 9 )
 
 
+def TupleFor_Test8():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ f32, i32, i64 ] t= zero_init;
+			for( &e : t )
+			{
+				// Tuple-for with reference preserves constexpr.
+				static_assert( f64(e) == 0.0 );
+			}
+			for( e : t )
+			{
+				// Tuple-for with value preserves constexpr.
+				static_assert( f64(e) == 0.0 );
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def AutoVariableDeclaration_ForTuples_Test0():
 	c_program_text= """
 		fn Foo()

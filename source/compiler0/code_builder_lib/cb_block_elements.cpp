@@ -643,7 +643,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					Variable::Location::Pointer,
 					for_operator.loop_variable_name_,
 					nullptr,
-					nullptr ); // TODO - set constexpr value?
+					sequence_expression->constexpr_value == nullptr
+						? nullptr
+						: sequence_expression->constexpr_value->getAggregateElement( uint32_t(element_index)) );
 
 			// Do not forget to remove node in case of error-return!!!
 			function_context.variables_state.AddNode( variable_reference );

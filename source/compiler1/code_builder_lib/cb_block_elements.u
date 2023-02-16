@@ -1069,7 +1069,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				.t= tuple_type.element_types[i],
 				.is_mutable= range_for_operator.mutability_modifier == Synt::MutabilityModifier::Mutable,
-				//.constexpr_value= expr.constexpr_value
+				.constexpr_value=
+					select(
+						sequence_expression.constexpr_value == LLVMValueRef::Null
+							? LLVMValueRef::Null
+							: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
 			};
 
 			auto src_element_llvm_value= CreateTupleElementGEP( function_context, sequence_expression, u32(i) );
