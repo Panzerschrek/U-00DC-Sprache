@@ -925,6 +925,40 @@ def TypeinfoForTypeinfo_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def TypeinfoForTypeinfo_Test2():
+	c_program_text= """
+		auto& tt= typeinfo</ typeof( typeinfo</i32/> ) />;
+		// There are no special methods for typeinfo class except destructor.
+		static_assert( !tt.is_default_constructible );
+		static_assert( !tt.is_copy_constructible );
+		static_assert( !tt.is_copy_assignable );
+		static_assert( !tt.is_equality_comparable );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoForTypeinfo_Test3():
+	c_program_text= """
+		auto& t= typeinfo</i32/>;
+		type I32Typeinfo= typeof(t);
+		fn Foo()
+		{
+			var I32Typeinfo default_constructed_typeinfo;
+			var I32Typeinfo copy_constructed_typeinfo= t;
+			unsafe{ cast_mut(t) = typeinfo</i32/>; } // Copy assignment operator doesn't exists.
+			t == t; // Equality compare operator doesn't exists.
+			t > t; // Order compare operator doesn't exists.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) >= 5 )
+	assert( HaveError( errors_list, "ExpectedInitializer", 6 ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 10 ) )
+
+
 def Typeinfo_SrcType_Test0():
 	c_program_text= """
 		template</ type T /> struct MustBeSame</ T, T /> {}
