@@ -97,6 +97,113 @@ def StringLiteralIsConstantReference_Test0():
 	assert( errors_list[0].src_loc.line == 4 )
 
 
+def StringLiteralIsReferenceToGlobalVariable_Test0():
+	c_program_text= """
+		fn Foo() : [char8, 4] &
+		{
+			return "tmHe"; // Ok - return reference to string literal.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralIsReferenceToGlobalVariable_Test1():
+	c_program_text= """
+		fn Foo() : char8 &
+		{
+			return "SomeString"[3]; // Ok - return reference to element of string literal.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+
+def StringLiteralIsReferenceToGlobalVariable_Test2():
+	c_program_text= """
+		struct SRef{ [char8, 9] & s; }
+		fn Foo() : SRef
+		{
+			var SRef s_ref{ .s= "eghrhrhrh" };
+			return s_ref; // Return reference to string literal inside variable.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralIsReferenceToGlobalVariable_Test3():
+	c_program_text= """
+		struct CharRef{ char8 & c; }
+		fn Foo() : CharRef
+		{
+			var CharRef char_ref{ .c= "7777766"[5] };
+			return char_ref; // Return reference to element of string literal inside variable.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralIsReferenceToGlobalVariable_Test4():
+	c_program_text= """
+		fn Pass( [char8, 5]& s) : [char8, 5]& { return s; }
+		fn Foo() : [char8, 5]&
+		{
+			auto& s= Pass( "FbbnR" ); // return locally-created string literal and create local reference to it.
+			return s; // Return reference to string literal.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralIsReferenceToGlobalVariable_Test5():
+	c_program_text= """
+		fn GetS() : [char8, 6]& { return "abcdef"; }
+		fn Foo() : [char8, 6]&
+		{
+			auto& s= GetS(); // Obtain string literal and create local reference to it.
+			return s; // Return reference to string literal.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralIsReferenceToGlobalVariable_Test6():
+	c_program_text= """
+		fn GetChar() : char8& { return "ABC"[1]; }
+		fn Foo() : char8&
+		{
+			auto& c= GetChar(); // Obtain static char reference.
+			return c; // Return reference to char.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralIsReferenceToGlobalVariable_Test7():
+	c_program_text= """
+		struct CharRef{ char8& c; }
+		fn LinkReferences( CharRef &mut cr'a', [ char8, 4 ] &'b s ) ' a <- b ';
+		fn Foo() : CharRef
+		{
+			var CharRef mut char_ref{ .c= "Lol"[1] };
+			LinkReferences( char_ref, "SPQR" );
+			return char_ref; // Return reference to string literal after references pollution.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def StringLiteralIsReferenceToGlobalVariable_Test8():
+	c_program_text= """
+		struct CharRef{ char8& c; }
+		fn LinkReferences( CharRef &mut cr'a', [ char8, 3 ] &'b s ) ' a <- b ';
+		fn Foo( CharRef &mut cr )
+		{
+			LinkReferences( cr, "WTF" ); // Add a reference to string literal into function argument inner reference.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def StringLiteralIsNotNullTerminated_Test0():
 	c_program_text= """
 		template</ type T, size_type S /> fn constexpr ArraySize( [ T, S ]& arr ) : size_type {  return S;  }
