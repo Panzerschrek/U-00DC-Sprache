@@ -291,12 +291,6 @@ bool CodeBuilder::IsReferenceAllowedForReturn( FunctionContext& function_context
 			return true;
 	}
 
-	if( IsGlobalVariable(variable_node) )
-	{
-		//  Allow to return global variables.
-		return true;
-	}
-
 	return false;
 }
 
@@ -319,9 +313,6 @@ void CodeBuilder::CheckReferencesPollutionBeforeReturn(
 		for( const VariablePtr& accesible_variable : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
 		{
 			if( accesible_variable == node_pair.second )
-				continue;
-
-			if( IsGlobalVariable( accesible_variable ) )
 				continue;
 
 			std::optional<FunctionType::ParamReference> reference;
