@@ -569,7 +569,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPt
 	const auto process_class_member=
 		[&]( const std::string& name, const Value& class_member )
 		{
-			const OverloadedFunctionsSet* const functions_set= class_member.GetFunctionsSet();
+			const OverloadedFunctionsSetConstPtr functions_set= class_member.GetFunctionsSet();
 			if( functions_set == nullptr )
 				return;
 

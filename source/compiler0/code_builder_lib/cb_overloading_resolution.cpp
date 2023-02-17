@@ -615,7 +615,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 			if( value_in_class.first == nullptr )
 				continue;
 
-			OverloadedFunctionsSet* const operators_set= value_in_class.first->GetFunctionsSet();
+			const OverloadedFunctionsSetPtr operators_set= value_in_class.first->GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
 			GlobalThingBuildFunctionsSet( *class_->members, *operators_set, false ); // Make sure functions set is complete.
 

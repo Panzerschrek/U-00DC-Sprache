@@ -200,7 +200,7 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 		{
 			if( const NamesScopePtr inner_namespace= value.GetNamespace() )
 				GlobalThingBuildNamespace( *inner_namespace );
-			else if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
+			else if( const OverloadedFunctionsSetPtr functions_set= value.GetFunctionsSet() )
 				GlobalThingBuildFunctionsSet( names_scope, *functions_set, true );
 			else if( const Type* const type= value.GetTypeName() )
 			{
@@ -636,8 +636,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	if( the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) == nullptr )
 	{
 		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( class_type );
-		OverloadedFunctionsSet destructors_set;
-		destructors_set.functions.push_back( std::move(destructor_function_variable) );
+		OverloadedFunctionsSetPtr destructors_set= std::make_shared<OverloadedFunctionsSet>();
+		destructors_set->functions.push_back( std::move(destructor_function_variable) );
 		the_class.members->AddName( Keyword( Keywords::destructor_ ), std::move(destructors_set) );
 	}
 
@@ -651,7 +651,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	if( const Value* const constructors_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
-		const OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors= constructors_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
@@ -672,7 +672,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	if( const Value* const destructor_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 	{
-		const OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr destructors= destructor_value->GetFunctionsSet();
 		// Destructors may be invalid in case of error.
 		if( !destructors->functions.empty() && !destructors->functions[0].is_generated )
 			the_class.can_be_constexpr= false;
@@ -680,7 +680,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	if( const Value* const constructor_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
-		const OverloadedFunctionsSet* const constructors= constructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors= constructor_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
@@ -691,7 +691,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	if( const Value* const assignment_operator_value=
 		the_class.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
 	{
-		const OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr operators= assignment_operator_value->GetFunctionsSet();
 		U_ASSERT( operators != nullptr );
 		for( const FunctionVariable& op : operators->functions )
 		{
@@ -702,7 +702,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	if( const Value* const compare_equal_value=
 		the_class.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ) )
 	{
-		const OverloadedFunctionsSet* const operators= compare_equal_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr operators= compare_equal_value->GetFunctionsSet();
 		U_ASSERT( operators != nullptr );
 		for( const FunctionVariable& op : operators->functions )
 		{
@@ -851,8 +851,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					else
 					{
 						// Take whole function set, but mark functions as inherited.
-						OverloadedFunctionsSet functions_set= *functions;
-						for( FunctionVariable& function : functions_set.functions )
+						OverloadedFunctionsSetPtr functions_set= std::make_shared<OverloadedFunctionsSet>(*functions);
+						for( FunctionVariable& function : functions_set->functions )
 							function.is_inherited= true;
 
 						the_class.members->AddName( name, std::move(functions_set) );
@@ -919,7 +919,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	the_class.members->ForEachInThisScope(
 		[&]( const std::string& name, Value& value )
 		{
-			OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet();
+			const OverloadedFunctionsSetPtr functions_set= value.GetFunctionsSet();
 			if( functions_set == nullptr )
 				return;
 

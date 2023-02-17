@@ -64,6 +64,10 @@ struct FunctionVariable final
 	bool VirtuallyEquals( const FunctionVariable& other ) const;
 };
 
+struct OverloadedFunctionsSet;
+using OverloadedFunctionsSetPtr= std::shared_ptr<OverloadedFunctionsSet>;
+using OverloadedFunctionsSetConstPtr= std::shared_ptr<const OverloadedFunctionsSet>;
+
 struct OverloadedFunctionsSet
 {
 	std::vector<FunctionVariable> functions;
@@ -154,24 +158,8 @@ struct ClassField final
 // "this" + functions set of class of "this"
 struct ThisOverloadedMethodsSet final
 {
-public:
-	ThisOverloadedMethodsSet();
-	ThisOverloadedMethodsSet( const ThisOverloadedMethodsSet& other );
-	ThisOverloadedMethodsSet( ThisOverloadedMethodsSet&& other ) noexcept= default;
-
-	ThisOverloadedMethodsSet& operator=( const ThisOverloadedMethodsSet& other );
-	ThisOverloadedMethodsSet& operator=( ThisOverloadedMethodsSet&& other ) noexcept= default;
-
-	OverloadedFunctionsSet& GetOverloadedFunctionsSet();
-	const OverloadedFunctionsSet& GetOverloadedFunctionsSet() const;
-
-public:
 	VariablePtr this_;
-
-private:
-	// Store "OverloadedFunctionsSet" indirectly, because it is too hevy, to put it in value together with "variable".
-	// TODO - remove this. This is unnecessary, since "this" is stored via shared_ptr.
-	std::unique_ptr<OverloadedFunctionsSet> overloaded_methods_set_;
+	OverloadedFunctionsSetConstPtr overloaded_methods_set;
 };
 
 struct StaticAssert
@@ -205,7 +193,7 @@ class Value final
 public:
 	Value() = default;
 	Value( VariablePtr variable, const SrcLoc& src_loc );
-	Value( OverloadedFunctionsSet functions_set );
+	Value( OverloadedFunctionsSetPtr functions_set );
 	Value( Type type, const SrcLoc& src_loc );
 	Value( ClassField class_field, const SrcLoc& src_loc );
 	Value( ThisOverloadedMethodsSet class_field );
@@ -223,8 +211,7 @@ public:
 
 	VariablePtr GetVariable() const;
 	// Function set
-	OverloadedFunctionsSet* GetFunctionsSet();
-	const OverloadedFunctionsSet* GetFunctionsSet() const;
+	OverloadedFunctionsSetPtr GetFunctionsSet() const;
 	// Typename
 	Type* GetTypeName();
 	const Type* GetTypeName() const;
@@ -258,7 +245,7 @@ public:
 private:
 	std::variant<
 		VariablePtr,
-		OverloadedFunctionsSet,
+		OverloadedFunctionsSetPtr,
 		Type,
 		ClassField,
 		ThisOverloadedMethodsSet,

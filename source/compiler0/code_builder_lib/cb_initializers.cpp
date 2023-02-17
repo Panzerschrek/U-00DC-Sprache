@@ -653,12 +653,12 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		const Value* constructor_value=
 			class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_value != nullptr );
-		const OverloadedFunctionsSet* const constructors_set= constructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors_set= constructor_value->GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
 		this_overloaded_methods_set.this_= variable;
-		this_overloaded_methods_set.GetOverloadedFunctionsSet()= *constructors_set;
+		this_overloaded_methods_set.overloaded_methods_set= constructors_set;
 
 		CallFunction( std::move(this_overloaded_methods_set), {}, src_loc, block_names, function_context );
 
@@ -946,12 +946,12 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const OverloadedFunctionsSet* const constructors_set= constructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors_set= constructor_value->GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
 		this_overloaded_methods_set.this_= variable;
-		this_overloaded_methods_set.GetOverloadedFunctionsSet()= *constructors_set;
+		this_overloaded_methods_set.overloaded_methods_set= constructors_set;
 
 		CallFunction( std::move(this_overloaded_methods_set), synt_args, src_loc, block_names, function_context );
 	}
@@ -1085,11 +1085,11 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 		return initializer_variable->constexpr_value;
 	}
 
-	const OverloadedFunctionsSet* candidate_functions= nullptr;
-	if( const OverloadedFunctionsSet* const overloaded_functions_set= initializer_value.GetFunctionsSet() )
+	OverloadedFunctionsSetConstPtr candidate_functions;
+	if( const OverloadedFunctionsSetConstPtr overloaded_functions_set= initializer_value.GetFunctionsSet() )
 		candidate_functions= overloaded_functions_set;
 	else if( const ThisOverloadedMethodsSet* const overloaded_methods_set= initializer_value.GetThisOverloadedMethodsSet() )
-		candidate_functions= &overloaded_methods_set->GetOverloadedFunctionsSet();
+		candidate_functions= overloaded_methods_set->overloaded_methods_set;
 	else
 	{
 		// TODO - generate separate error

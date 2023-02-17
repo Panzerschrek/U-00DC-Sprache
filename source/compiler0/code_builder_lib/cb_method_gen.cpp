@@ -21,7 +21,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 	if( Value* const constructors_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
-		OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
+		const OverloadedFunctionsSetPtr constructors= constructors_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
 		for( FunctionVariable& constructor : constructors->functions )
 		{
@@ -96,18 +96,17 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 		// Add generated constructor
 		if( Value* const constructors_value= the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
-			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
+			const OverloadedFunctionsSetPtr constructors= constructors_value->GetFunctionsSet();
 			U_ASSERT( constructors != nullptr );
 			constructors->functions.push_back( std::move( new_constructor_variable ) );
 			constructor_variable= &constructors->functions.back();
 		}
 		else
 		{
-			OverloadedFunctionsSet constructors;
-			constructors.functions.push_back( std::move( new_constructor_variable ) );
+			OverloadedFunctionsSetPtr constructors= std::make_shared<OverloadedFunctionsSet>();
+			constructors->functions.push_back( std::move( new_constructor_variable ) );
 			Value* const inserted_value= the_class.members->AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
 			constructor_variable= &inserted_value->GetFunctionsSet()->functions.back();
-
 		}
 	}
 
@@ -207,7 +206,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 	FunctionVariable* constructor_variable= nullptr;
 	if( Value* const constructors_value= the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
-		OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
+		const OverloadedFunctionsSetPtr constructors= constructors_value->GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
 		for( FunctionVariable& constructor : constructors->functions )
 		{
@@ -292,15 +291,15 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 
 		if( Value* const constructors_value= the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
-			OverloadedFunctionsSet* const constructors= constructors_value->GetFunctionsSet();
+			const OverloadedFunctionsSetPtr constructors= constructors_value->GetFunctionsSet();
 			U_ASSERT( constructors != nullptr );
 			constructors->functions.push_back( std::move( new_constructor_variable ) );
 			constructor_variable= &constructors->functions.back();
 		}
 		else
 		{
-			OverloadedFunctionsSet constructors;
-			constructors.functions.push_back( std::move( new_constructor_variable ) );
+			OverloadedFunctionsSetPtr constructors= std::make_shared<OverloadedFunctionsSet>();
+			constructors->functions.push_back( std::move( new_constructor_variable ) );
 			Value* const inserted_value= the_class.members->AddName( Keyword( Keywords::constructor_ ), std::move( constructors ) );
 			constructor_variable= &inserted_value->GetFunctionsSet()->functions.back();
 		}
@@ -436,7 +435,7 @@ void CodeBuilder::TryGenerateDestructor( const ClassPtr& class_type )
 	if( Value* const destructor_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 	{
-		OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetPtr destructors= destructor_value->GetFunctionsSet();
 		if( destructors->functions.empty() )
 			return; // destructors may be invalid in case of error.
 
@@ -457,8 +456,8 @@ void CodeBuilder::TryGenerateDestructor( const ClassPtr& class_type )
 	GenerateDestructorBody( class_type, destructor_variable );
 
 	// TODO - destructor have no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
-	OverloadedFunctionsSet destructors;
-	destructors.functions.push_back( std::move( destructor_variable ) );
+	OverloadedFunctionsSetPtr destructors= std::make_shared<OverloadedFunctionsSet>();
+	destructors->functions.push_back( std::move( destructor_variable ) );
 
 	the_class.members->AddName( Keyword( Keywords::destructor_ ), Value( std::move( destructors ) ) );
 
@@ -475,7 +474,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 	FunctionVariable* operator_variable= nullptr;
 	if( Value* const assignment_operator_value= the_class.members->GetThisScopeValue( op_name ) )
 	{
-		OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
+		const OverloadedFunctionsSetPtr operators= assignment_operator_value->GetFunctionsSet();
 		for( FunctionVariable& op : operators->functions )
 		{
 			// SPRACHE_TODO - support assignment operator with value src argument.
@@ -561,15 +560,15 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 
 		if( Value* const operators_value= the_class.members->GetThisScopeValue( op_name ) )
 		{
-			OverloadedFunctionsSet* const operators= operators_value->GetFunctionsSet();
+			const OverloadedFunctionsSetPtr operators= operators_value->GetFunctionsSet();
 			U_ASSERT( operators != nullptr );
 			operators->functions.push_back( std::move( new_op_variable ) );
 			operator_variable= &operators->functions.back();
 		}
 		else
 		{
-			OverloadedFunctionsSet operators;
-			operators.functions.push_back( std::move( new_op_variable ) );
+			OverloadedFunctionsSetPtr operators= std::make_shared<OverloadedFunctionsSet>();
+			operators->functions.push_back( std::move( new_op_variable ) );
 			Value* const inserted_value= the_class.members->AddName( op_name, std::move( operators ) );
 			operator_variable= &inserted_value->GetFunctionsSet()->functions.back();
 		}
@@ -635,7 +634,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 	bool contains_other_equality_compare_operators= false;
 	if( Value* const assignment_operator_value= the_class.members->GetThisScopeValue( op_name ) )
 	{
-		OverloadedFunctionsSet* const operators= assignment_operator_value->GetFunctionsSet();
+		const OverloadedFunctionsSetPtr operators= assignment_operator_value->GetFunctionsSet();
 		for( FunctionVariable& op : operators->functions )
 		{
 			if( IsEqualityCompareOperator( *op.type.GetFunctionType(), class_type ) )
@@ -721,15 +720,15 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 
 		if( Value* const operators_value= the_class.members->GetThisScopeValue( op_name ) )
 		{
-			OverloadedFunctionsSet* const operators= operators_value->GetFunctionsSet();
+			const OverloadedFunctionsSetPtr operators= operators_value->GetFunctionsSet();
 			U_ASSERT( operators != nullptr );
 			operators->functions.push_back( std::move( new_op_variable ) );
 			operator_variable= &operators->functions.back();
 		}
 		else
 		{
-			OverloadedFunctionsSet operators;
-			operators.functions.push_back( std::move( new_op_variable ) );
+			OverloadedFunctionsSetPtr operators= std::make_shared<OverloadedFunctionsSet>();
+			operators->functions.push_back( std::move( new_op_variable ) );
 			Value* const inserted_value= the_class.members->AddName( op_name, std::move( operators ) );
 			operator_variable= &inserted_value->GetFunctionsSet()->functions.back();
 		}
@@ -869,7 +868,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const Value* constructor_value=
 			class_type.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_value != nullptr );
-		const OverloadedFunctionsSet* const constructors_set= constructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors_set= constructor_value->GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
 
 		const FunctionVariable* constructor= nullptr;;
@@ -943,7 +942,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		const Value* op_value=
 			class_type.members->GetThisScopeValue( "=" );
 		U_ASSERT( op_value != nullptr );
-		const OverloadedFunctionsSet* const operators_set= op_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr operators_set= op_value->GetFunctionsSet();
 		U_ASSERT( operators_set != nullptr );
 
 		const FunctionVariable* op= nullptr;;
@@ -1031,7 +1030,7 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 		const Value* op_value=
 			class_type->members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) );
 		U_ASSERT( op_value != nullptr );
-		const OverloadedFunctionsSet* const operators_set= op_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr operators_set= op_value->GetFunctionsSet();
 		U_ASSERT( operators_set != nullptr );
 
 		const FunctionVariable* op= nullptr;
@@ -1146,7 +1145,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 		const Value* op_value=
 			class_type->members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) );
 		U_ASSERT( op_value != nullptr );
-		const OverloadedFunctionsSet* const operators_set= op_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr operators_set= op_value->GetFunctionsSet();
 		U_ASSERT( operators_set != nullptr );
 
 		const FunctionVariable* op= nullptr;

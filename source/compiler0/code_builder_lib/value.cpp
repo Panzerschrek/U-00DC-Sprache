@@ -150,41 +150,11 @@ ClassField::ClassField( const ClassPtr& in_class, Type in_type, const unsigned i
 	: type(std::move(in_type)), class_(in_class), index(in_index), is_mutable(in_is_mutable), is_reference(in_is_reference)
 {}
 
-
-//
-// ThisOverloadedMethodsSet
-//
-
-ThisOverloadedMethodsSet::ThisOverloadedMethodsSet()
-	: overloaded_methods_set_( std::make_unique<OverloadedFunctionsSet>() )
-{}
-
-ThisOverloadedMethodsSet::ThisOverloadedMethodsSet( const ThisOverloadedMethodsSet& other )
-	: this_(other.this_), overloaded_methods_set_( std::make_unique<OverloadedFunctionsSet>( *other.overloaded_methods_set_ ) )
-{}
-
-ThisOverloadedMethodsSet& ThisOverloadedMethodsSet::operator=( const ThisOverloadedMethodsSet& other )
-{
-	this->this_= other.this_;
-	*this->overloaded_methods_set_= *other.overloaded_methods_set_;
-	return *this;
-}
-
-OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSet()
-{
-	return *overloaded_methods_set_;
-}
-
-const OverloadedFunctionsSet& ThisOverloadedMethodsSet::GetOverloadedFunctionsSet() const
-{
-	return *overloaded_methods_set_;
-}
-
 //
 // Value
 //
 
-static_assert( sizeof(Value) <= 152u, "Value is too heavy!" );
+static_assert( sizeof(Value) <= 72u, "Value is too heavy!" );
 
 Value::Value( VariablePtr variable, const SrcLoc& src_loc )
 	: src_loc_(src_loc)
@@ -192,7 +162,7 @@ Value::Value( VariablePtr variable, const SrcLoc& src_loc )
 	something_= std::move(variable);
 }
 
-Value::Value( OverloadedFunctionsSet functions_set )
+Value::Value( OverloadedFunctionsSetPtr functions_set )
 {
 	something_= std::move(functions_set);
 }
@@ -267,7 +237,7 @@ std::string Value::GetKindName() const
 	{
 		std::string operator()( const VariablePtr& ) const { return "variable"; }
 		std::string operator()( const FunctionVariable& ) const { return "function variable"; }
-		std::string operator()( const OverloadedFunctionsSet& ) const { return "functions set"; }
+		std::string operator()( const OverloadedFunctionsSetPtr& ) const { return "functions set"; }
 		std::string operator()( const Type& ) const { return "typename"; }
 		std::string operator()( const ClassField& ) const { return "class field"; }
 		std::string operator()( const ThisOverloadedMethodsSet& ) const { return "this + functions set"; }
@@ -296,14 +266,12 @@ VariablePtr Value::GetVariable() const
 	return nullptr;
 }
 
-OverloadedFunctionsSet* Value::GetFunctionsSet()
+OverloadedFunctionsSetPtr Value::GetFunctionsSet() const
 {
-	return std::get_if<OverloadedFunctionsSet>( &something_ );
-}
+	if( const auto ptr= std::get_if<OverloadedFunctionsSetPtr>( &something_ ) )
+		return *ptr;
 
-const OverloadedFunctionsSet* Value::GetFunctionsSet() const
-{
-	return std::get_if<OverloadedFunctionsSet>( &something_ );
+	return nullptr;
 }
 
 Type* Value::GetTypeName()

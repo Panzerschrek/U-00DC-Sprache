@@ -316,6 +316,11 @@ void CodeBuilder::MergeNameScopes(
 
 					names_scope_copy->CopyAccessRightsFrom( *names_scope );
 				}
+				else if( const OverloadedFunctionsSetConstPtr functions_set= src_member.GetFunctionsSet() )
+				{
+					// Take copy of value, stored as shared_ptr to avoid modification of source value.
+					dst.AddName( src_name, Value( std::make_shared<OverloadedFunctionsSet>(*functions_set) ) );
+				}
 				else
 				{
 					if( const Type* const type= src_member.GetTypeName() )
@@ -363,11 +368,9 @@ void CodeBuilder::MergeNameScopes(
 				MergeNameScopes( *dst_sub_namespace, *sub_namespace, src_classes_members_namespaces_table );
 				return;
 			}
-			else if(
-				OverloadedFunctionsSet* const dst_funcs_set=
-				dst_member->GetFunctionsSet() )
+			else if( const OverloadedFunctionsSetPtr dst_funcs_set= dst_member->GetFunctionsSet() )
 			{
-				const OverloadedFunctionsSet* const src_funcs_set= src_member.GetFunctionsSet();
+				const OverloadedFunctionsSetConstPtr src_funcs_set= src_member.GetFunctionsSet();
 				U_ASSERT( src_funcs_set != nullptr );
 
 				for( const FunctionVariable& src_func : src_funcs_set->functions )
@@ -502,7 +505,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	// Search for copy-constructor.
 	const Value* const constructos_value= class_.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 	U_ASSERT( constructos_value != nullptr );
-	const OverloadedFunctionsSet* const constructors= constructos_value->GetFunctionsSet();
+	const OverloadedFunctionsSetConstPtr constructors= constructos_value->GetFunctionsSet();
 	U_ASSERT(constructors != nullptr );
 	const FunctionVariable* constructor= nullptr;
 	for( const FunctionVariable& candidate : constructors->functions )
@@ -623,7 +626,7 @@ void CodeBuilder::CallDestructor(
 	{
 		const Value* const destructor_value= class_->members->GetThisScopeValue( Keyword( Keywords::destructor_ ) );
 		U_ASSERT( destructor_value != nullptr );
-		const OverloadedFunctionsSet* const destructors= destructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr destructors= destructor_value->GetFunctionsSet();
 		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
 
 		const FunctionVariable& destructor= destructors->functions.front();
@@ -1772,7 +1775,7 @@ Value CodeBuilder::ResolveValue(
 				if( Class* const class_= type->GetClassType() )
 					last_space= class_->members.get();
 			}
-			else if( OverloadedFunctionsSet* const functions_set= value->GetFunctionsSet() )
+			else if( const OverloadedFunctionsSetPtr functions_set= value->GetFunctionsSet() )
 			{
 				GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
 				if( functions_set->template_functions.empty() )
@@ -1807,7 +1810,7 @@ Value CodeBuilder::ResolveValue(
 	// Complete some things in resolve.
 	if( value != nullptr )
 	{
-		if( OverloadedFunctionsSet* const functions_set= value->GetFunctionsSet() )
+		if( const OverloadedFunctionsSetPtr functions_set= value->GetFunctionsSet() )
 			GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
 		else if( TypeTemplatesSet* const type_templates_set= value->GetTypeTemplatesSet() )
 			GlobalThingBuildTypeTemplatesSet( *last_space, *type_templates_set );
@@ -2330,12 +2333,11 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesSco
 		{
 			if( const NamesScopePtr inner_namespace= value.GetNamespace() )
 				SetupDereferenceableFunctionParamsAndRetAttributes_r( *inner_namespace );
-			else if( OverloadedFunctionsSet* const functions_set= value.GetFunctionsSet() )
+			else if( const OverloadedFunctionsSetPtr functions_set= value.GetFunctionsSet() )
 			{
 				for( FunctionVariable& function_variable : functions_set->functions )
 					SetupDereferenceableFunctionParamsAndRetAttributes( function_variable );
 			}
-
 			else if( const Type* const type= value.GetTypeName() )
 			{
 				if( const ClassPtr class_type= type->GetClassType() )

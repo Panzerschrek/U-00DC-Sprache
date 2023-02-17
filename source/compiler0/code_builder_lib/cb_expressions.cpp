@@ -320,7 +320,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( names.GetAccessFor( variable->type.GetClassType() ) < class_value.second )
 		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_, class_type->members->GetThisNamespaceName() );
 
-	if( const OverloadedFunctionsSet* functions_set= class_member->GetFunctionsSet() )
+	if( OverloadedFunctionsSetConstPtr functions_set= class_member->GetFunctionsSet() )
 	{
 		if( member_access_operator.template_parameters != std::nullopt )
 		{
@@ -343,7 +343,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		}
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
 		this_overloaded_methods_set.this_= variable;
-		this_overloaded_methods_set.GetOverloadedFunctionsSet()= *functions_set;
+		this_overloaded_methods_set.overloaded_methods_set= functions_set;
 		return std::move(this_overloaded_methods_set);
 	}
 
@@ -723,7 +723,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		return AccessClassField( names, function_context, function_context.this_, *field, field_name == nullptr ? "" : *field_name, named_operand.src_loc_ );
 	}
-	else if( const OverloadedFunctionsSet* const overloaded_functions_set= value_entry.GetFunctionsSet() )
+	else if( const OverloadedFunctionsSetConstPtr overloaded_functions_set= value_entry.GetFunctionsSet() )
 	{
 		if( function_context.this_ != nullptr )
 		{
@@ -734,7 +734,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			{
 				ThisOverloadedMethodsSet this_overloaded_methods_set;
 				this_overloaded_methods_set.this_= function_context.this_;
-				this_overloaded_methods_set.GetOverloadedFunctionsSet()= *overloaded_functions_set;
+				this_overloaded_methods_set.overloaded_methods_set= overloaded_functions_set;
 				return std::move(this_overloaded_methods_set);
 			}
 		}
@@ -2937,14 +2937,14 @@ Value CodeBuilder::CallFunction(
 		return Value( BuildTempVariableConstruction( *type, synt_args, src_loc, names, function_context ), src_loc );
 
 	VariablePtr this_;
-	const OverloadedFunctionsSet* functions_set= function_value.GetFunctionsSet();
+	OverloadedFunctionsSetConstPtr functions_set= function_value.GetFunctionsSet();
 
 	if( functions_set != nullptr )
 	{}
 	else if( const ThisOverloadedMethodsSet* const this_overloaded_methods_set=
 		function_value.GetThisOverloadedMethodsSet() )
 	{
-		functions_set= &this_overloaded_methods_set->GetOverloadedFunctionsSet();
+		functions_set= this_overloaded_methods_set->overloaded_methods_set;
 		this_= this_overloaded_methods_set->this_;
 	}
 	else if( const VariablePtr callable_variable= function_value.GetVariable() )

@@ -99,7 +99,7 @@ void CodeBuilder::NamesScopeFill(
 
 	if( Value* const prev_value= names_scope.GetThisScopeValue( func_name ) )
 	{
-		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
+		if( const OverloadedFunctionsSetPtr functions_set= prev_value->GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->GetMemberVisibility( func_name ) != visibility )
 				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_declaration.src_loc_, func_name );
@@ -119,7 +119,7 @@ void CodeBuilder::NamesScopeFill(
 		functions_set.base_class= base_class;
 		functions_set.syntax_elements.push_back( &function_declaration );
 
-		names_scope.AddName( func_name, Value( std::move(functions_set) ) );
+		names_scope.AddName( func_name, Value( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ) ) );
 	}
 }
 
@@ -139,7 +139,7 @@ void CodeBuilder::NamesScopeFill(
 
 	if( Value* const prev_value= names_scope.GetThisScopeValue( function_template_name ) )
 	{
-		if( OverloadedFunctionsSet* const functions_set= prev_value->GetFunctionsSet() )
+		if( const OverloadedFunctionsSetPtr functions_set= prev_value->GetFunctionsSet() )
 		{
 			if( base_class != nullptr && base_class->GetMemberVisibility( function_template_name ) != visibility )
 				REPORT_ERROR( FunctionsVisibilityMismatch, names_scope.GetErrors(), function_template_declaration.src_loc_, function_template_name );
@@ -159,7 +159,7 @@ void CodeBuilder::NamesScopeFill(
 		functions_set.base_class= base_class;
 		functions_set.template_syntax_elements.push_back( &function_template_declaration );
 
-		names_scope.AddName( function_template_name, Value( std::move(functions_set) ) );
+		names_scope.AddName( function_template_name, Value( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ) ) );
 	}
 }
 

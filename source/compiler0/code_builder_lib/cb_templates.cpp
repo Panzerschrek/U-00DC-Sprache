@@ -1298,7 +1298,7 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 		return nullptr;
 	}
 
-	return AddNewTemplateThing( std::move(name_encoded), std::move(result) );
+	return AddNewTemplateThing( std::move(name_encoded), std::make_shared<OverloadedFunctionsSet>(std::move(result)) );
 }
 
 bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
