@@ -20,7 +20,7 @@ configure_file( lex_synt_lib/keywords.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/keyword
 configure_file( lex_synt_lib/keywords.cpp.in ${CMAKE_CURRENT_BINARY_DIR}/keywords.cpp )
 
 string( REGEX REPLACE "([a-fA-F0-9])([a-fA-F0-9])" "0x\\1\\2,\n" HEX_LIST ${BUILT_IN_MACROS_FILE_CONTENT} )
-set( BUILT_IN_MACROS_HPP_FILE_CONTENT "static const char c_built_in_macros[]={\n${HEX_LIST}}\;" )
+set( BUILT_IN_MACROS_HPP_FILE_CONTENT "static const char c_built_in_macros[]={\n${HEX_LIST}0x00,\n}\;" )
 file( GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/built_in_macros.hpp CONTENT ${BUILT_IN_MACROS_HPP_FILE_CONTENT} )
 
 file( GLOB LEX_SYNT_LIB_SOURCES "lex_synt_lib/*.cpp" )

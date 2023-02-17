@@ -120,6 +120,15 @@ else()
 	add_compile_options( -Werror -Wall -Wextra -Wconversion )
 	add_compile_options( -fvisibility=hidden -fvisibility-inlines-hidden )
 
+	# Disable warnings, related to "std::move" in new versions of GCC.
+	# We can't just fix these warnings since such fixes may break build with old versions of GCC.
+	if( CMAKE_CXX_COMPILER_ID STREQUAL "GNU" )
+		if( CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL "9" )
+			message( "GCC >= 9 detected, disable std::move related warnings" )
+			add_compile_options( -Wno-pessimizing-move -Wno-redundant-move )
+		endif()
+	endif()
+
 	if( NOT LLVM_ENABLE_RTTI )
 		add_compile_options( -fno-rtti )
 	endif()
