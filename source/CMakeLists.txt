@@ -13,6 +13,11 @@ option( U_BUILD_COMPILER1 "Build compiler1 (written on Ǖ)" YES)
 option( U_BUILD_COMPILER2 "Build compiler2 (using compiler1)" NO)
 option( U_BUILD_COMPILER3 "Build compiler3 (using compiler3)" NO)
 
+# Support versions of CMake prior to 3.20 and use old-style of Ninja dep-files handling.
+if( CMAKE_VERSION VERSION_GREATER_EQUAL "3.20" )
+	cmake_policy( SET CMP0116 OLD )
+endif()
+
 # Setup C++ version
 set( CMAKE_CXX_STANDARD 17 )
 set( CMAKE_CXX_STANDARD_REQUIRED On )
