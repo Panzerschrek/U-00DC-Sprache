@@ -199,7 +199,7 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 		ClassPtr class_type;
 		const std::string& class_name;
 		ClassMemberVisibility current_visibility= ClassMemberVisibility::Public;
-		unsigned int field_number= 0u;
+		uint32_t field_number= 0u;
 
 		Visitor( CodeBuilder& in_this, const Synt::Class& in_class_declaration, ClassPtr in_class_type, const std::string& in_class_name )
 			: this_(in_this), class_declaration(in_class_declaration), class_type(in_class_type), class_name(in_class_name)

@@ -50,7 +50,7 @@ public:
 	struct Parent
 	{
 		ClassPtr class_= nullptr;
-		unsigned int field_number= ~0u; // Allways 0 for base class.
+		uint32_t field_number= ~0u; // Allways 0 for base class.
 	};
 
 public:

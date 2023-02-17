@@ -1111,8 +1111,8 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 				llvm::ConstantExpr::getAnd(
 					res,
 					ConstexprCompareEqual(
-						l->getAggregateElement( static_cast<unsigned int>(i) ),
-						r->getAggregateElement( static_cast<unsigned int>(i) ),
+						l->getAggregateElement( uint32_t(i) ),
+						r->getAggregateElement( uint32_t(i) ),
 						array_type->element_type,
 						names,
 						src_loc ) );
@@ -1130,8 +1130,8 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 				llvm::ConstantExpr::getAnd(
 					res,
 					ConstexprCompareEqual(
-						l->getAggregateElement( static_cast<unsigned int>(i) ),
-						r->getAggregateElement( static_cast<unsigned int>(i) ),
+						l->getAggregateElement( uint32_t(i) ),
+						r->getAggregateElement( uint32_t(i) ),
 						element_type,
 						names,
 						src_loc ) );

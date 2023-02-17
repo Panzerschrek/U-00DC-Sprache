@@ -170,7 +170,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 			{
 				const auto phi_node= llvm::dyn_cast<llvm::PHINode>(instruction);
 
-				for (unsigned int i= 0u; i < phi_node->getNumIncomingValues(); ++i )
+				for (uint32_t i= 0u; i < phi_node->getNumIncomingValues(); ++i )
 				{
 					if( phi_node->getIncomingBlock(i) == prev_basic_block)
 					{
@@ -256,7 +256,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	{
 		const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( struct_type );
 
-		unsigned int i= 0u;
+		uint32_t i= 0u;
 		for( llvm::Type* const element_type : struct_type->elements() )
 		{
 			llvm::Constant* const element= constant.getAggregateElement(i);
@@ -290,7 +290,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>(constant_type) )
 	{
 		const size_t element_size= size_t( data_layout_.getTypeAllocSize( array_type->getElementType() ) );
-		for( unsigned int i= 0u; i < array_type->getNumElements(); ++i )
+		for( uint32_t i= 0u; i < array_type->getNumElements(); ++i )
 			CopyConstantToStack( *constant.getAggregateElement(i), stack_offset + i * element_size );
 	}
 	else if( constant_type->isIntegerTy() )
@@ -336,8 +336,8 @@ llvm::Constant* ConstexprFunctionEvaluator::ReadConstantFromStack( llvm::Type* c
 				llvm::Constant::getIntegerValue(
 					type,
 					llvm::APInt(
-						static_cast<unsigned int>(integer_type->getBitWidth()),
-						static_cast<unsigned int>(integer_type->getBitWidth() / sizeof(uint64_t)),
+						uint32_t(integer_type->getBitWidth()),
+						uint32_t(integer_type->getBitWidth() / sizeof(uint64_t)),
 						reinterpret_cast<uint64_t*>(stack_.data() + value_ptr) ) );
 		else U_ASSERT(false);
 	}
@@ -358,7 +358,7 @@ llvm::Constant* ConstexprFunctionEvaluator::ReadConstantFromStack( llvm::Type* c
 		const size_t element_size= size_t(data_layout_.getTypeAllocSize(array_type->getElementType()));
 
 		std::vector<llvm::Constant*> initializers( size_t(array_type->getNumElements()), nullptr );
-		for( unsigned int i= 0u; i < array_type->getNumElements(); ++i )
+		for( uint32_t i= 0u; i < array_type->getNumElements(); ++i )
 			initializers[i]= ReadConstantFromStack( array_type->getElementType(), value_ptr + i * element_size );
 
 		return llvm::ConstantArray::get( array_type, initializers );
@@ -368,7 +368,7 @@ llvm::Constant* ConstexprFunctionEvaluator::ReadConstantFromStack( llvm::Type* c
 		const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( struct_type );
 
 		ClassFieldsVector<llvm::Constant*> initializers( struct_type->getNumElements(), nullptr );
-		for( unsigned int i= 0u; i < struct_type->getNumElements(); ++i )
+		for( uint32_t i= 0u; i < struct_type->getNumElements(); ++i )
 			initializers[i]= ReadConstantFromStack( struct_type->getElementType(i), value_ptr + size_t(struct_layout.getElementOffset(i)) );
 
 		return llvm::ConstantStruct::get( struct_type, initializers );
@@ -415,7 +415,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::BuildGEP( const llvm::User* const
 		else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(aggregate_type) )
 		{
 			const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( struct_type );
-			const unsigned int element_index= static_cast<unsigned int>(index.IntVal.getLimitedValue());
+			const uint32_t element_index= uint32_t(index.IntVal.getLimitedValue());
 			offset_accumulated+= struct_layout.getElementOffset( element_index );
 			aggregate_type= aggregate_type->getStructElementType( element_index );
 		}
@@ -445,25 +445,25 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 	else if( const auto constant_struct= llvm::dyn_cast<llvm::ConstantStruct>( val ) )
 	{
 		res.AggregateVal.resize( constant_struct->getType()->getNumElements() );
-		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+		for( uint32_t i= 0u; i < res.AggregateVal.size(); ++i )
 			res.AggregateVal[i]= GetVal( constant_struct->getAggregateElement(i) );
 	}
 	else if( const auto constant_array= llvm::dyn_cast<llvm::ConstantArray>( val ) )
 	{
 		res.AggregateVal.resize( size_t(constant_array->getType()->getNumElements()) );
-		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+		for( uint32_t i= 0u; i < res.AggregateVal.size(); ++i )
 			res.AggregateVal[i]= GetVal( constant_array->getAggregateElement(i) );
 	}
 	else if( const auto constant_data_array= llvm::dyn_cast<llvm::ConstantDataArray>( val ) )
 	{
 		res.AggregateVal.resize( size_t(constant_data_array->getNumElements()) );
-		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+		for( uint32_t i= 0u; i < res.AggregateVal.size(); ++i )
 			res.AggregateVal[i]= GetVal( constant_data_array->getAggregateElement(i) );
 	}
 	else if( const auto constant_zero= llvm::dyn_cast<llvm::ConstantAggregateZero>( val ) )
 	{
 		res.AggregateVal.resize( size_t(constant_zero->getElementCount().getKnownMinValue()) );
-		for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+		for( uint32_t i= 0u; i < res.AggregateVal.size(); ++i )
 			res.AggregateVal[i]= GetVal( constant_zero->getElementValue(i) );
 	}
 	else if (const auto undef_value= llvm::dyn_cast<llvm::UndefValue>( val ) )
@@ -479,13 +479,13 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 		else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>( val->getType() ) )
 		{
 			res.AggregateVal.resize( struct_type->getNumElements() );
-			for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+			for( uint32_t i= 0u; i < res.AggregateVal.size(); ++i )
 				res.AggregateVal[i]= GetVal( undef_value->getElementValue(i) );
 		}
 		else if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>( val->getType() ) )
 		{
 			res.AggregateVal.resize( size_t(array_type->getNumElements()) );
-			for( unsigned int i= 0u; i < res.AggregateVal.size(); ++i )
+			for( uint32_t i= 0u; i < res.AggregateVal.size(); ++i )
 				res.AggregateVal[i]= GetVal( undef_value->getElementValue(i) );
 		}
 		else U_ASSERT(false);
@@ -562,11 +562,11 @@ llvm::GenericValue ConstexprFunctionEvaluator::DoLoad( const void* ptr, llvm::Ty
 	else if( t->isStructTy() )
 	{
 		const auto struct_type= llvm::dyn_cast<llvm::StructType>(t);
-		const unsigned int num_elements= struct_type->getNumElements();
+		const uint32_t num_elements= struct_type->getNumElements();
 		const llvm::StructLayout *const struct_layout= data_layout_.getStructLayout(struct_type);
 
 		val.AggregateVal.resize(num_elements);
-		for (unsigned int i= 0; i < num_elements; ++i)
+		for (uint32_t i= 0; i < num_elements; ++i)
 			val.AggregateVal[i]=
 				DoLoad(
 					reinterpret_cast<const char*>(ptr) + struct_layout->getElementOffset(i),
@@ -637,11 +637,11 @@ void ConstexprFunctionEvaluator::DoStore( void* const ptr, const llvm::GenericVa
 	else if( t->isStructTy() )
 	{
 		const auto struct_type= llvm::dyn_cast<llvm::StructType>(t);
-		const unsigned int num_elements= struct_type->getNumElements();
+		const uint32_t num_elements= struct_type->getNumElements();
 		const llvm::StructLayout *const struct_layout= data_layout_.getStructLayout(struct_type);
 
 		U_ASSERT( val.AggregateVal.size() == num_elements );
-		for (unsigned int i= 0; i < num_elements; ++i)
+		for (uint32_t i= 0; i < num_elements; ++i)
 			DoStore(
 				reinterpret_cast<char*>(ptr) + struct_layout->getElementOffset(i),
 				val.AggregateVal[i],
@@ -693,7 +693,7 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 
 	const size_t prev_stack_size= stack_.size();
 
-	unsigned int i= 0u;
+	uint32_t i= 0u;
 	for( const llvm::Argument& arg : function->args() )
 	{
 		new_instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
@@ -868,7 +868,7 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 		else
 		{
 			// Cast function pointer or pointer for memcpy
-			val.IntVal= llvm::APInt( static_cast<unsigned int>(data_layout_.getTypeAllocSizeInBits( dst_type )), op.IntVal.getLimitedValue() );
+			val.IntVal= llvm::APInt( uint32_t(data_layout_.getTypeAllocSizeInBits( dst_type )), op.IntVal.getLimitedValue() );
 		}
 		break;
 

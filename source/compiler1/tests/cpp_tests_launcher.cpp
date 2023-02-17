@@ -236,7 +236,7 @@ EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_d
 	return EnginePtr(engine);
 }
 
-bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const unsigned int line )
+bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const uint32_t line )
 {
 	for( const CodeBuilderError& error : errors )
 	{
@@ -259,10 +259,10 @@ int main(int argc, char* argv[])
 
 	std::cout << "Run " << funcs_container.size() << " Ü tests" << std::endl << std::endl;
 
-	unsigned int passed= 0u;
-	unsigned int disabled= 0u;
-	unsigned int failed= 0u;
-	unsigned int filtered= 0u;
+	uint32_t passed= 0u;
+	uint32_t disabled= 0u;
+	uint32_t failed= 0u;
+	uint32_t filtered= 0u;
 	for(const TestFuncData& func_data : funcs_container )
 	{
 		if( !FilterTest( func_data.name ) )

@@ -149,9 +149,9 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 				break;
 			}
 		}
-		unsigned int virtual_table_index= ~0u;
+		uint32_t virtual_table_index= ~0u;
 		if( virtual_table_entry != nullptr )
-			virtual_table_index= static_cast<unsigned int>(virtual_table_entry - the_class.virtual_table.data());
+			virtual_table_index= uint32_t(virtual_table_entry - the_class.virtual_table.data());
 
 		switch( function.virtual_function_kind )
 		{
@@ -168,7 +168,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 				else if( the_class.kind == Class::Kind::PolymorphFinal || the_class.kind == Class::Kind::PolymorphNonFinal ||
 						 the_class.kind == Class::Kind::Interface || the_class.kind == Class::Kind::Abstract )
 				{
-					function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+					function.virtual_table_index= uint32_t(the_class.virtual_table.size());
 
 					Class::VirtualTableEntry new_virtual_table_entry;
 					new_virtual_table_entry.name= function_name;
@@ -189,7 +189,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 				REPORT_ERROR( OverrideRequired, errors_container, src_loc, function_name );
 			else
 			{
-				function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+				function.virtual_table_index= uint32_t(the_class.virtual_table.size());
 
 				Class::VirtualTableEntry new_virtual_table_entry;
 				new_virtual_table_entry.name= function_name;
@@ -243,7 +243,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 					REPORT_ERROR( PureDestructor, errors_container, src_loc, the_class.members->GetThisNamespaceName() );
 				function.have_body= true; // Mark pure function as "with body", because we needs to disable real body creation for pure function.
 
-				function.virtual_table_index= static_cast<unsigned int>(the_class.virtual_table.size());
+				function.virtual_table_index= uint32_t(the_class.virtual_table.size());
 
 				Class::VirtualTableEntry new_virtual_table_entry;
 				new_virtual_table_entry.name= function_name;
@@ -512,9 +512,9 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	if( generate_tbaa_metadata_ )
 		virtual_table_ptr->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag() );
 
-	const unsigned int c_offset_field_number= 0u;
-	[[maybe_unused]] const unsigned int c_type_id_field_number= 1u;
-	const unsigned int c_funcs_table_field_number= 2u; // Only for class with no parents.
+	const uint32_t c_offset_field_number= 0u;
+	[[maybe_unused]] const uint32_t c_type_id_field_number= 1u;
+	const uint32_t c_funcs_table_field_number= 2u; // Only for class with no parents.
 
 	// Select virtual subtable of class, where function declared first time.
 	llvm::Value* function_virtual_table= virtual_table_ptr;
@@ -595,7 +595,7 @@ void CodeBuilder::SetupVirtualTablePointers_r(
 	FunctionContext& function_context )
 {
 	// Setup virtual table pointers for parents.
-	unsigned int vtable_field_number= 1;
+	uint32_t vtable_field_number= 1;
 	for( const Class::Parent& parent : the_class.parents )
 	{
 		llvm::Value* const parent_ptr= CreateClassFieldGEP( function_context, the_class, this_, parent.field_number );

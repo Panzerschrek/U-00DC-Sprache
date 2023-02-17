@@ -469,13 +469,13 @@ U_TEST(RecursiveCallTest)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z9Factorialj" );
 	U_TEST_ASSERT( function != nullptr );
 
-	unsigned int arg_val= 9u;
+	uint32_t arg_val= 9u;
 
 	const auto factorial=
-	[]( const unsigned int x ) -> unsigned int
+	[]( const uint32_t x ) -> uint32_t
 	{
-		unsigned int result= 1u;
-		for( unsigned int i= 2u; i <= x; i++ )
+		uint32_t result= 1u;
+		for( uint32_t i= 2u; i <= x; i++ )
 			result*= i;
 		return result;
 	};
@@ -1735,7 +1735,7 @@ U_TEST(ReferencesTest9)
 	U_TEST_ASSERT( function != nullptr );
 
 	static const int32_t cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
-	for( unsigned int i= 0u; i < 3u; i++ )
+	for( uint32_t i= 0u; i < 3u; i++ )
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][0]) );
@@ -1776,7 +1776,7 @@ U_TEST(ReferencesTest10)
 	U_TEST_ASSERT( function != nullptr );
 
 	static const int32_t cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
-	for( unsigned int i= 0u; i < 3u; i++ )
+	for( uint32_t i= 0u; i < 3u; i++ )
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][0]) );
@@ -1816,7 +1816,7 @@ U_TEST(ReferencesTest11)
 	U_TEST_ASSERT( function != nullptr );
 
 	static const int32_t cases_args[3][2]= { { 7, 567 }, { 48454, 758 }, { 4468, 4468 } };
-	for( unsigned int i= 0u; i < 3u; i++ )
+	for( uint32_t i= 0u; i < 3u; i++ )
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(cases_args[i][0]) );

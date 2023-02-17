@@ -228,8 +228,8 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 	const llvm::FunctionType* const function_type= function->getFunctionType();
 
 	llvm::GenericValue llvm_args[c_max_args];
-	unsigned int arg_count= 0u;
-	for( unsigned int i= 0u; i < c_max_args; ++i )
+	uint32_t arg_count= 0u;
+	for( uint32_t i= 0u; i < c_max_args; ++i )
 	{
 		if( function_args[i] == nullptr )
 			break;
@@ -238,7 +238,7 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 		const llvm::Type* const arg_type= function_type->params()[i];
 		if( arg_type->isIntegerTy() )
 		{
-			const unsigned int bit_width= arg_type->getIntegerBitWidth();
+			const uint32_t bit_width= arg_type->getIntegerBitWidth();
 			if( bit_width == 1 )
 			{
 				int bool_param= 0;

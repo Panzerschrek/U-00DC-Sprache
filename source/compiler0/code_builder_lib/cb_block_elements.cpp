@@ -1203,7 +1203,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	ReferencesGraph variables_state_before_if= function_context.variables_state;
 	std::vector<ReferencesGraph> bracnhes_variables_state;
 
-	for( unsigned int i= 0u; i < if_operator.branches_.size(); i++ )
+	for( uint32_t i= 0u; i < if_operator.branches_.size(); i++ )
 	{
 		const Synt::IfOperator::Branch& branch= if_operator.branches_[i];
 
@@ -1300,7 +1300,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const Synt::StaticIfOperator& static_if_operator )
 {
 	const auto& branches= static_if_operator.if_operator_.branches_;
-	for( unsigned int i= 0u; i < branches.size(); i++ )
+	for( uint32_t i= 0u; i < branches.size(); i++ )
 	{
 		const auto& branch= branches[i];
 		if( std::get_if<Synt::EmptyVariant>(&branch.condition) == nullptr )

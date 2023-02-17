@@ -43,7 +43,7 @@ struct FunctionVariable final
 	// For functions generated from templates.
 	FunctionTemplatePtr base_template;
 
-	unsigned int virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
+	uint32_t virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 	bool have_body= false;
 	bool is_this_call= false;
 	bool is_generated= false;
@@ -146,13 +146,13 @@ struct ClassField final
 	Type type;
 	ClassPtr class_= nullptr;
 	const Synt::ClassField* syntax_element= nullptr;
-	unsigned int index= ~0u;
-	unsigned int original_index= ~0u;
+	uint32_t index= ~0u;
+	uint32_t original_index= ~0u;
 	bool is_mutable= true;
 	bool is_reference= false;
 
 	ClassField()= default;
-	ClassField( const ClassPtr& in_class, Type in_type, unsigned int in_index, bool in_is_mutable, bool in_is_reference );
+	ClassField( const ClassPtr& in_class, Type in_type, uint32_t in_index, bool in_is_mutable, bool in_is_reference );
 };
 
 // "this" + functions set of class of "this"

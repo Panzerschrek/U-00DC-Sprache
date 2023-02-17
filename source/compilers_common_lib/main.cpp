@@ -312,8 +312,8 @@ int Main( int argc, const char* argv[] )
 		return 0;
 
 	// Select optimization level.
-	unsigned int optimization_level= 0u;
-	unsigned int size_optimization_level= 0u;
+	uint32_t optimization_level= 0u;
+	uint32_t size_optimization_level= 0u;
 		 if( Options::optimization_level == '0' )
 		optimization_level= 0u;
 	else if( Options::optimization_level == '1' )

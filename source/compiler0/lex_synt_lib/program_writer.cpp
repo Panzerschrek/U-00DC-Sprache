@@ -324,7 +324,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 					{
 						escaped.push_back('\\');
 						escaped.push_back('u');
-						for( unsigned int i= 0u; i < 4u; ++i )
+						for( uint32_t i= 0u; i < 4u; ++i )
 						{
 							const sprache_char val= ( sprache_char(c) >> ((3u-i) * 4u ) ) & 15u;
 							if( val < 10u )

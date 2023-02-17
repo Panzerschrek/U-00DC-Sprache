@@ -50,6 +50,6 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, bool needs_dump= false );
 
-bool HaveError( const std::vector<CodeBuilderError>& errors, CodeBuilderErrorCode code, unsigned int line );
+bool HaveError( const std::vector<CodeBuilderError>& errors, CodeBuilderErrorCode code, uint32_t line );
 
 } // namespace U

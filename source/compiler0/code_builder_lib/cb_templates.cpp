@@ -675,7 +675,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 				llvm::ConstantInt::get(
 					size_type_.GetLLVMType(),
 					llvm::APInt(
-						static_cast<unsigned int>(size_type_.GetFundamentalType()->GetSize() * 8),
+						uint32_t(size_type_.GetFundamentalType()->GetSize() * 8),
 						given_array_type->element_count ) );
 
 			size_variable->llvm_value= CreateGlobalConstantVariable( size_type_, name, size_variable->constexpr_value );

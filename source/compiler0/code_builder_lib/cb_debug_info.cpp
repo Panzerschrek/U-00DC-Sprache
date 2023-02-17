@@ -163,7 +163,7 @@ llvm::DIType* CodeBuilder::CreateDIType( const FundamentalType& type )
 			debug_info_.builder->getOrCreateArray({}).get() );
 	}
 
-	unsigned int type_encoding= llvm::dwarf::DW_ATE_unsigned;
+	uint32_t type_encoding= llvm::dwarf::DW_ATE_unsigned;
 	if( type.fundamental_type == U_FundamentalType::bool_ )
 		type_encoding= llvm::dwarf::DW_ATE_boolean;
 	else if( IsSignedInteger( type.fundamental_type ) )

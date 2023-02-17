@@ -45,7 +45,7 @@ private:
 void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm_types, const llvm::DataLayout& data_layout )
 {
 	// Fields in original order
-	using FieldsMap= std::map< unsigned int, ClassField* >;
+	using FieldsMap= std::map< uint32_t, ClassField* >;
 	FieldsMap fields;
 
 	bool fields_is_ok= true;
@@ -63,7 +63,7 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 	if( fields.empty() || !fields_is_ok )
 		return;
 
-	unsigned int field_index= fields.begin()->first;
+	uint32_t field_index= fields.begin()->first;
 
 	fields_llvm_types.resize( field_index ); // Remove all fields ( parent classes and virtual table pointers are not in fields list ).
 
@@ -557,7 +557,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			continue;
 		}
 
-		parent.field_number= static_cast<unsigned int>(fields_llvm_types.size());
+		parent.field_number= uint32_t(fields_llvm_types.size());
 		fields_llvm_types.emplace_back( parent.class_->llvm_type );
 	}
 
@@ -575,7 +575,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	}
 
 	{ // Create fields.
-		std::map< unsigned int, ClassField* > class_fields_in_original_order;
+		std::map< uint32_t, ClassField* > class_fields_in_original_order;
 
 		the_class.members->ForEachValueInThisScope(
 			[&]( Value& value )
@@ -587,7 +587,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		for( const auto& field_entry : class_fields_in_original_order )
 		{
 			ClassField* const class_field= field_entry.second;
-			class_field->index= static_cast<unsigned int>(fields_llvm_types.size());
+			class_field->index= uint32_t(fields_llvm_types.size());
 			if( class_field->is_reference )
 				fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
 			else

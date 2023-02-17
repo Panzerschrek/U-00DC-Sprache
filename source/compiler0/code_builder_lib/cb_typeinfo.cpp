@@ -151,7 +151,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	{
 		typeinfo_class->members->AddName(
 			name,
-			Value(ClassField( typeinfo_class, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value(ClassField( typeinfo_class, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, uint64_t(value) ) ) );
 	};
@@ -161,7 +161,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	{
 		typeinfo_class->members->AddName(
 			name,
-			Value( ClassField( typeinfo_class, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value( ClassField( typeinfo_class, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( size_type_.GetLLVMType() );
 		fields_initializers.push_back(
 			llvm::Constant::getIntegerValue(
@@ -176,7 +176,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 
 		typeinfo_class->members->AddName(
 			name,
-			Value( ClassField( typeinfo_class, dependent_type_typeinfo->type, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+			Value( ClassField( typeinfo_class, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
 		fields_initializers.push_back( llvm::dyn_cast<llvm::GlobalVariable>( dependent_type_typeinfo->llvm_value ) );
 	};
@@ -186,7 +186,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	{
 		typeinfo_class->members->AddName(
 			name,
-			Value( ClassField( typeinfo_class, variable.type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value( ClassField( typeinfo_class, variable.type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( variable.type.GetLLVMType() );
 		fields_initializers.push_back( variable.constexpr_value );
 	};
@@ -269,7 +269,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 			U_ASSERT( class_type->polymorph_type_id_table != nullptr );
 			typeinfo_class->members->AddName(
 				"type_id",
-				Value( ClassField( typeinfo_class, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
+				Value( ClassField( typeinfo_class, size_type_, uint32_t(fields_llvm_types.size()), false, true ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.int_ptr->getPointerTo() );
 
 			// Take address of fist member of first element of typeinfo table, which is offset of type "int_ptr".
@@ -360,7 +360,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& 
 
 			node_type_class.members->AddName(
 				"value",
-				Value( ClassField( node_type, enum_type->underlaying_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				Value( ClassField( node_type, enum_type->underlaying_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( enum_type->underlaying_type.llvm_type );
 			fields_initializers.push_back( enum_member_value );
 
@@ -370,7 +370,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& 
 				name_type.element_count= name.size();
 				name_type.llvm_type= llvm::ArrayType::get( name_type.element_type.GetLLVMType(), name_type.element_count );
 
-				ClassField field( node_type, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false );
+				ClassField field( node_type, name_type, uint32_t(fields_llvm_types.size()), true, false );
 
 				node_type_class.members->AddName( g_name_field_name, Value( std::move(field), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( name_type.llvm_type );
@@ -404,7 +404,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 		node_class.members->AddName(
 			g_name_field_name,
-			Value( ClassField( node_class_type, name_type, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value( ClassField( node_class_type, name_type, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( name_type.llvm_type );
 		fields_initializers.push_back( llvm::ConstantDataArray::getString( llvm_context_, member_name, false /* not null terminated */ ) );
 	}
@@ -413,19 +413,19 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 	node_class.members->AddName(
 		"is_public",
-		Value( ClassField( node_class_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+		Value( ClassField( node_class_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Public    ) ) );
 
 	node_class.members->AddName(
 		"is_protected",
-		Value( ClassField( node_class_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+		Value( ClassField( node_class_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Protected ) ) );
 
 	node_class.members->AddName(
 		"is_private",
-		Value( ClassField( node_class_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+		Value( ClassField( node_class_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 	fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Private   ) ) );
 }
@@ -449,7 +449,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& 
 
 			{
 				const VariablePtr field_type_typeinfo= BuildTypeInfo( class_field->type, root_namespace );
-				ClassField field( node_type, field_type_typeinfo->type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
+				ClassField field( node_type, field_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true );
 
 				node_type_class.members->AddName( g_type_field_name, Value( std::move(field), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( field_type_typeinfo->type.GetLLVMType()->getPointerTo() );
@@ -457,7 +457,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& 
 			}
 			{
 				const VariablePtr fields_class_type_typeinfo= BuildTypeInfo( class_field->class_, root_namespace );
-				ClassField field( node_type, fields_class_type_typeinfo->type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
+				ClassField field( node_type, fields_class_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true );
 
 				node_type_class.members->AddName( "class_type", Value( std::move(field), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fields_class_type_typeinfo->type.GetLLVMType()->getPointerTo() );
@@ -484,20 +484,20 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& 
 
 				node_type_class.members->AddName(
 					"offset",
-					Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+					Value( ClassField( node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( size_type_.GetLLVMType() );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
 			}
 
 			node_type_class.members->AddName(
 				"is_reference",
-				Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				Value( ClassField( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_reference ) ) );
 
 			node_type_class.members->AddName(
 				"is_mutable",
-				Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				Value( ClassField( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, class_field->is_mutable ) ) );
 
@@ -539,7 +539,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr& c
 
 			{
 				const VariablePtr dependent_type_typeinfo= BuildTypeInfo( *class_inner_type, root_namespace );
-				ClassField field( node_type, dependent_type_typeinfo->type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
+				ClassField field( node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true );
 
 				node_type_class.members->AddName( g_type_field_name, Value( std::move(field), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
@@ -587,7 +587,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPt
 
 				{
 					const VariablePtr dependent_type_typeinfo= BuildTypeInfo( function.type, root_namespace );
-					ClassField field( node_type, dependent_type_typeinfo->type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
+					ClassField field( node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true );
 
 					node_type_class.members->AddName( g_type_field_name, Value( std::move(field), g_dummy_src_loc ) );
 					fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
@@ -596,25 +596,25 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPt
 
 				node_type_class.members->AddName(
 					"is_this_call",
-					Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+					Value( ClassField( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_this_call ) ) );
 
 				node_type_class.members->AddName(
 					"is_generated",
-					Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+					Value( ClassField( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_generated ) ) );
 
 				node_type_class.members->AddName(
 					"is_deleted",
-					Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+					Value( ClassField( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.is_deleted ) ) );
 
 				node_type_class.members->AddName(
 					"is_virtual",
-					Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+					Value( ClassField( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 				fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 				fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, function.virtual_table_index != ~0u ) ) );
 
@@ -657,7 +657,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr&
 
 		{
 			const VariablePtr parent_type_typeinfo= BuildTypeInfo( class_.parents[i].class_, root_namespace );
-			ClassField field( node_type, parent_type_typeinfo->type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
+			ClassField field( node_type, parent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true );
 
 			node_type_class.members->AddName( g_type_field_name, Value( std::move(field), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( parent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
@@ -667,7 +667,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr&
 		const uint64_t parent_field_offset= struct_layout->getElementOffset( class_.parents[i].field_number );
 		node_type_class.members->AddName(
 			"offset",
-			Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value( ClassField( node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( size_type_.GetLLVMType() );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), parent_field_offset ) ) );
 
@@ -704,7 +704,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoFunctionArguments( const Function
 
 		{
 			const VariablePtr dependent_type_typeinfo= BuildTypeInfo( param.type, root_namespace );
-			ClassField field( node_type, dependent_type_typeinfo->type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
+			ClassField field( node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true );
 
 			node_type_class.members->AddName( g_type_field_name, Value( std::move(field), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
@@ -713,13 +713,13 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoFunctionArguments( const Function
 
 		node_type_class.members->AddName(
 			"is_reference",
-			Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value( ClassField( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, param.value_type != ValueType::Value ) ) );
 
 		node_type_class.members->AddName(
 			"is_mutable",
-			Value( ClassField( node_type, bool_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+			Value( ClassField( node_type, bool_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 		fields_llvm_types.push_back( fundamental_llvm_types_.bool_ );
 		fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, param.value_type == ValueType::ReferenceMut ) ) );
 
@@ -761,7 +761,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& t
 
 		{
 			const VariablePtr dependent_type_typeinfo= BuildTypeInfo( element_type, root_namespace );
-			ClassField field( node_type, dependent_type_typeinfo->type, static_cast<unsigned int>(fields_llvm_types.size()), false, true );
+			ClassField field( node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true );
 
 			node_type_class.members->AddName( g_type_field_name, Value( std::move(field), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( dependent_type_typeinfo->type.GetLLVMType()->getPointerTo() );
@@ -770,15 +770,15 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& t
 		{
 			node_type_class.members->AddName(
 				"index",
-				Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				Value( ClassField( node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( size_type_.GetLLVMType() );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), element_index ) ) );
 		}
 		{
-			const auto offset= struct_layout->getElementOffset( static_cast<unsigned int>(element_index) );
+			const auto offset= struct_layout->getElementOffset( uint32_t(element_index) );
 			node_type_class.members->AddName(
 				"offset",
-				Value( ClassField( node_type, size_type_, static_cast<unsigned int>(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
+				Value( ClassField( node_type, size_type_, uint32_t(fields_llvm_types.size()), true, false ), g_dummy_src_loc ) );
 			fields_llvm_types.push_back( size_type_.GetLLVMType() );
 			fields_initializers.push_back( llvm::Constant::getIntegerValue( size_type_.GetLLVMType(), llvm::APInt( size_type_.GetLLVMType()->getIntegerBitWidth(), offset ) ) );
 		}

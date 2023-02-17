@@ -125,7 +125,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			( index->constexpr_value != nullptr && IsInteger( index_fundamental_type->fundamental_type ) ) ||
 			( index->constexpr_value == nullptr && IsUnsignedInteger( index_fundamental_type->fundamental_type ) ) ) ) )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc_, "any unsigned integer", index->type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc_, "any uint32_teger", index->type );
 			function_context.variables_state.RemoveNode( variable_lock );
 			return ErrorValue();
 		}
@@ -269,7 +269,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				ForceCreateConstantIndexGEP( function_context, tuple_type->llvm_type, variable->llvm_value, uint32_t(index_value) ) );
 
 		if( variable->constexpr_value != nullptr )
-			result->constexpr_value= variable->constexpr_value->getAggregateElement( static_cast<unsigned int>(index_value) );
+			result->constexpr_value= variable->constexpr_value->getAggregateElement( uint32_t(index_value) );
 
 		variable->children[ size_t(index_value) ]= result;
 		result->parent= variable;

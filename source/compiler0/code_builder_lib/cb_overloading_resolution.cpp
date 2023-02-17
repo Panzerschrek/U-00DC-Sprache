@@ -349,7 +349,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 		if( function_type->params.size() != set_function_type.params.size() )
 			continue;
 
-		unsigned int param_is_same_count= 0u;
+		uint32_t param_is_same_count= 0u;
 		for( size_t i= 0u; i < function_type->params.size(); i++ )
 		{
 			const FunctionType::Param& param= function_type->params[i];
@@ -411,7 +411,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 			continue;
 
 		bool all_args_is_compatible= true;
-		for( unsigned int i= 0u; i < actial_arg_count; i++ )
+		for( uint32_t i= 0u; i < actial_arg_count; i++ )
 		{
 			const ArgOverloadingClass arg_overloading_class= GetArgOverloadingClass( actual_args_begin[i] );
 			const ArgOverloadingClass parameter_overloading_class= GetArgOverloadingClass( function_type.params[i] );

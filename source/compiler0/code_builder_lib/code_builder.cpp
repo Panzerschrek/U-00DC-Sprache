@@ -1221,7 +1221,7 @@ Type CodeBuilder::BuildFuncCode(
 	SetCurrentDebugLocation( func_variable.body_src_loc, function_context );
 
 	// push args
-	unsigned int arg_number= 0u;
+	uint32_t arg_number= 0u;
 
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
@@ -2237,7 +2237,7 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
-		const auto param_attr_index= static_cast<unsigned int>(i + (first_arg_is_sret ? 1u : 0u ));
+		const auto param_attr_index= uint32_t(i + (first_arg_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
 		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
@@ -2297,7 +2297,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
-		const auto param_attr_index= static_cast<unsigned int>(i + (first_arg_is_sret ? 1u : 0u ));
+		const auto param_attr_index= uint32_t(i + (first_arg_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
 		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
