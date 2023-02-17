@@ -5,7 +5,7 @@ namespace U
 {
 
 // Fundamental language types.
-enum class U_FundamentalType
+enum class U_FundamentalType : uint8_t
 {
 	InvalidType,
 

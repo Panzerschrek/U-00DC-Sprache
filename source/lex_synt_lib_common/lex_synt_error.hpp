@@ -20,10 +20,8 @@ struct LexSyntError
 
 using LexSyntErrors= std::vector<LexSyntError>;
 
-enum class ErrorsFormat{ GCC, MSVC };
-
+enum class ErrorsFormat : uint8_t{ GCC, MSVC };
 
 void PrintLexSyntErrors( const std::vector<std::string>& source_files, const LexSyntErrors& errors, ErrorsFormat format= ErrorsFormat::GCC, std::ostream& errors_stream= std::cerr );
-
 
 } // namespace U

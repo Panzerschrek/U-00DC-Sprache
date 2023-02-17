@@ -30,7 +30,7 @@ struct FunctionVariable final
 	const Synt::Function* syntax_element= nullptr;
 	Synt::VirtualFunctionKind virtual_function_kind= Synt::VirtualFunctionKind::None;
 
-	enum class ConstexprKind
+	enum class ConstexprKind : uint8_t
 	{
 		NonConstexpr,
 		ConstexprIncomplete,  // Can be used in body of constexpr functions, but result of call can not be constexpr.

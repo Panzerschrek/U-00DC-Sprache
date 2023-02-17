@@ -700,7 +700,7 @@ private:
 	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
 
 	// Name resolving.
-	enum class ResolveMode
+	enum class ResolveMode : uint8_t
 	{
 		Regular,
 		ForTemplateSignatureParameter,

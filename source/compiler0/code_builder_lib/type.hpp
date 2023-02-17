@@ -30,7 +30,7 @@ class Class;
 struct Enum;
 class Type;
 
-enum class InnerReferenceType
+enum class InnerReferenceType : uint8_t
 {
 	None, // Type have no innere references
 	Imut, // Type have immutable inner ereference
