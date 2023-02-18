@@ -151,7 +151,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 	const Synt::FunctionTemplate& function_template_declaration,
 	OverloadedFunctionsSet& functions_set,
 	NamesScope& names_scope,
-	const ClassPtr& base_class )
+	const ClassPtr base_class )
 {
 	const auto& full_name= function_template_declaration.function_->name_;
 	const std::string& function_template_name= full_name.front();

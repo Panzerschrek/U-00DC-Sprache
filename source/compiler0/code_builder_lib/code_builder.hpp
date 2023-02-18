@@ -127,7 +127,7 @@ private:
 		const FunctionVariable& src_function,
 		const FunctionVariable& new_function );
 	void PrepareClassVirtualTable( Class& the_class );
-	void PrepareClassVirtualTableType( const ClassPtr& class_type );
+	void PrepareClassVirtualTableType( ClassPtr class_type );
 
 	void BuildPolymorphClassTypeId( Class& the_class, const Type& class_type );
 
@@ -169,7 +169,7 @@ private:
 		const Synt::FunctionTemplate& function_template_declaration,
 		OverloadedFunctionsSet& functions_set,
 		NamesScope& names_scope,
-		const ClassPtr& base_class );
+		ClassPtr base_class );
 
 	void ProcessTemplateParams(
 		const std::vector<Synt::TemplateBase::Param>& params,
@@ -361,16 +361,16 @@ private:
 	Value* AddNewTemplateThing( std::string key, Value thing );
 
 	// Constructors/destructors
-	void TryGenerateDefaultConstructor( const ClassPtr& class_type );
-	void TryGenerateCopyConstructor( const ClassPtr& class_type );
-	FunctionVariable GenerateDestructorPrototype( const ClassPtr& class_type );
-	void GenerateDestructorBody( const ClassPtr& class_type, FunctionVariable& destructor_function );
-	void TryGenerateDestructor( const ClassPtr& class_type );
-	void TryGenerateCopyAssignmentOperator( const ClassPtr& class_type );
-	void TryGenerateEqualityCompareOperator( const ClassPtr& class_type );
+	void TryGenerateDefaultConstructor( ClassPtr class_type );
+	void TryGenerateCopyConstructor( ClassPtr class_type );
+	FunctionVariable GenerateDestructorPrototype( ClassPtr class_type );
+	void GenerateDestructorBody( ClassPtr class_type, FunctionVariable& destructor_function );
+	void TryGenerateDestructor( ClassPtr class_type );
+	void TryGenerateCopyAssignmentOperator( ClassPtr class_type );
+	void TryGenerateEqualityCompareOperator( ClassPtr class_type );
 
 	// Sets "constexpr" flag for method and checks for errors.
-	void ProcessGeneratedMethodConstexprFlag( const ClassPtr& class_type, FunctionContext& function_context_after_body_generation, FunctionVariable& method );
+	void ProcessGeneratedMethodConstexprFlag( ClassPtr class_type, FunctionContext& function_context_after_body_generation, FunctionVariable& method );
 
 	void BuildCopyConstructorPart(
 		llvm::Value* dst, llvm::Value* src,
@@ -409,7 +409,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		llvm::Value* this_, llvm::Value* src,
-		const ClassPtr& class_type,
+		ClassPtr class_type,
 		FunctionContext& function_context );
 
 	bool IsDefaultConstructor( const FunctionType& function_type, const Type& base_class );
@@ -451,13 +451,13 @@ private:
 	// Returns index of function in set, if function successfuly prepared and inserted. Returns ~0 on fail.
 	size_t PrepareFunction(
 		NamesScope& names_scope,
-		const ClassPtr& base_class,
+		ClassPtr base_class,
 		OverloadedFunctionsSet& functions_set,
 		const Synt::Function& function_declaration,
 		bool is_out_of_line_function );
 
 	void CheckOverloadedOperator(
-		const ClassPtr& base_class,
+		ClassPtr base_class,
 		const FunctionType& func_type,
 		OverloadedOperator overloaded_operator,
 		CodeBuilderErrorsContainer& errors_container,
@@ -466,7 +466,7 @@ private:
 	// Returns type of return value.
 	Type BuildFuncCode(
 		FunctionVariable& func,
-		const ClassPtr& base_class,
+		ClassPtr base_class,
 		NamesScope& parent_names_scope,
 		const std::string& func_name,
 		const Synt::FunctionParams& params,
@@ -650,16 +650,16 @@ private:
 	VariableMutPtr BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, const VariableMutPtr& typeinfo_variable, NamesScope& root_namespace );
 	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
-	void FinishTypeinfoClass( const ClassPtr& class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
-	TypeinfoPartVariable BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace );
+	void FinishTypeinfoClass( ClassPtr class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
+	TypeinfoPartVariable BuildTypeinfoEnumElementsList( EnumPtr enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
-		const Class& class_, const ClassPtr& node_class_type,
+		const Class& class_, ClassPtr node_class_type,
 		const std::string& member_name,
 		ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers );
-	TypeinfoPartVariable BuildTypeinfoClassFieldsList( const ClassPtr& class_type, NamesScope& root_namespace );
-	TypeinfoPartVariable BuildTypeinfoClassTypesList( const ClassPtr& class_type, NamesScope& root_namespace );
-	TypeinfoPartVariable BuildTypeinfoClassFunctionsList( const ClassPtr& class_type, NamesScope& root_namespace );
-	TypeinfoPartVariable BuildTypeinfoClassParentsList( const ClassPtr& class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassFieldsList( ClassPtr class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassTypesList( ClassPtr class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassFunctionsList( ClassPtr class_type, NamesScope& root_namespace );
+	TypeinfoPartVariable BuildTypeinfoClassParentsList( ClassPtr class_type, NamesScope& root_namespace );
 	TypeinfoPartVariable BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace );
 	TypeinfoPartVariable BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
 
@@ -801,7 +801,7 @@ private:
 		const ClassField& class_field,
 		FunctionContext& function_context );
 
-	void CheckClassFieldsInitializers( const ClassPtr& class_type );
+	void CheckClassFieldsInitializers( ClassPtr class_type );
 
 	// Reference-checking.
 	void ProcessFunctionParamReferencesTags(
@@ -825,7 +825,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const Synt::Function& func,
 		FunctionType& function_type,
-		const ClassPtr& base_class );
+		ClassPtr base_class );
 
 	void ProcessFunctionTypeReferencesPollution(
 		CodeBuilderErrorsContainer& errors_container,
@@ -855,10 +855,10 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionPtr& function_declaration, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionPtr& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::ClassPtr& class_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplate& type_template_declaration, const ClassPtr& base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplate& type_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
@@ -874,7 +874,7 @@ private:
 	void GlobalThingBuildFunctionsSet( NamesScope& names_scope, OverloadedFunctionsSet& functions_set, bool build_body );
 	void GlobalThingPrepareClassParentsList( ClassPtr class_type );
 	void GlobalThingBuildClass( ClassPtr class_type );
-	void GlobalThingBuildEnum( const EnumPtr enum_ );
+	void GlobalThingBuildEnum( EnumPtr enum_ );
 	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
 	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
 	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );
@@ -915,8 +915,8 @@ private:
 	llvm::DISubroutineType* CreateDIType( const FunctionType& type );
 	llvm::DIDerivedType* CreateDIType( const RawPointerType& type );
 	llvm::DIDerivedType* CreateDIType( const FunctionPointerType& type );
-	llvm::DICompositeType* CreateDIType( const ClassPtr& type );
-	llvm::DICompositeType* CreateDIType( const EnumPtr& type );
+	llvm::DICompositeType* CreateDIType( ClassPtr type );
+	llvm::DICompositeType* CreateDIType( EnumPtr type );
 
 	// Other stuff
 

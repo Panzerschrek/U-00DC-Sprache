@@ -489,7 +489,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	llvm::Value* const this_, llvm::Value* const src,
-	const ClassPtr& class_type,
+	const ClassPtr class_type,
 	FunctionContext& function_context )
 {
 	U_ASSERT( class_type != nullptr );
@@ -724,7 +724,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 
 size_t CodeBuilder::PrepareFunction(
 	NamesScope& names_scope,
-	const ClassPtr& base_class,
+	const ClassPtr base_class,
 	OverloadedFunctionsSet& functions_set,
 	const Synt::Function& func,
 	const bool is_out_of_line_function )
@@ -1043,7 +1043,7 @@ size_t CodeBuilder::PrepareFunction(
 }
 
 void CodeBuilder::CheckOverloadedOperator(
-	const ClassPtr& base_class,
+	const ClassPtr base_class,
 	const FunctionType& func_type,
 	const OverloadedOperator overloaded_operator,
 	CodeBuilderErrorsContainer& errors_container,
@@ -1170,7 +1170,7 @@ void CodeBuilder::CheckOverloadedOperator(
 
 Type CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
-	const ClassPtr& base_class,
+	const ClassPtr base_class,
 	NamesScope& parent_names_scope,
 	const std::string& func_name,
 	const Synt::FunctionParams& params,

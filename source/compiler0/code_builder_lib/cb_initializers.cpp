@@ -1211,7 +1211,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 	return result;
 }
 
-void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr& class_type )
+void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 {
 	// Run code generation for initializers.
 	// We must check it, becauseinitializers may not be executed later.

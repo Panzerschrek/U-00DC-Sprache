@@ -13,7 +13,6 @@
 namespace U
 {
 
-
 namespace
 {
 
@@ -64,13 +63,13 @@ llvm::Type* GetLLVMTypeImpl( const std::shared_ptr<const T>& boxed )
 	return GetLLVMTypeImpl( *boxed );
 }
 
-llvm::Type* GetLLVMTypeImpl( const ClassPtr& class_ )
+llvm::Type* GetLLVMTypeImpl( const ClassPtr class_ )
 {
 	U_ASSERT( class_ != nullptr );
 	return class_->llvm_type;
 }
 
-llvm::Type* GetLLVMTypeImpl( const EnumPtr& enum_ )
+llvm::Type* GetLLVMTypeImpl( const EnumPtr enum_ )
 {
 	U_ASSERT( enum_ != nullptr );
 	return enum_->underlaying_type.llvm_type;
@@ -445,7 +444,7 @@ std::string Type::ToString() const
 			return res;
 		}
 
-		std::string operator()( const ClassPtr& class_ ) const
+		std::string operator()( const ClassPtr class_ ) const
 		{
 			std::string result;
 			if( class_->typeinfo_type != std::nullopt )
@@ -486,7 +485,7 @@ std::string Type::ToString() const
 			return result;
 		}
 
-		std::string operator()( const EnumPtr& enum_ ) const
+		std::string operator()( const EnumPtr enum_ ) const
 		{
 			return "enum " + enum_->members.GetThisNamespaceName();
 		}
@@ -563,12 +562,12 @@ size_t Type::Hash() const
 			return hash;
 		}
 
-		size_t operator()( const ClassPtr& class_ ) const
+		size_t operator()( const ClassPtr class_ ) const
 		{
 			return size_t(reinterpret_cast<uintptr_t>(class_));
 		}
 
-		size_t operator()( const EnumPtr& enum_ ) const
+		size_t operator()( const EnumPtr enum_ ) const
 		{
 			return size_t(reinterpret_cast<uintptr_t>(enum_));
 		}

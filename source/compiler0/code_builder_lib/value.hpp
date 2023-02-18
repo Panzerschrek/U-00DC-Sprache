@@ -152,7 +152,7 @@ struct ClassField final
 	bool is_reference= false;
 
 	ClassField()= default;
-	ClassField( const ClassPtr& in_class, Type in_type, uint32_t in_index, bool in_is_mutable, bool in_is_reference );
+	ClassField( ClassPtr in_class, Type in_type, uint32_t in_index, bool in_is_mutable, bool in_is_reference );
 };
 
 // "this" + functions set of class of "this"

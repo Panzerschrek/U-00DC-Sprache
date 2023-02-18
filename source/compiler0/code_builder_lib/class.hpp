@@ -16,7 +16,7 @@ public:
 	ClassMemberVisibility GetMemberVisibility( const std::string& member_name ) const;
 	void SetMemberVisibility( const std::string& member_name, ClassMemberVisibility visibility );
 
-	bool HaveAncestor( const ClassPtr& class_ ) const;
+	bool HaveAncestor( ClassPtr class_ ) const;
 
 public:
 	struct BaseTemplate

@@ -102,7 +102,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	CodeBuilderErrorsContainer& errors_container,
 	const Synt::Function& func,
 	FunctionType& function_type,
-	const ClassPtr& base_class )
+	const ClassPtr base_class )
 {
 	if( func.name_.back() == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{

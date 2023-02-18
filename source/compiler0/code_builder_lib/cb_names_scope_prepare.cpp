@@ -75,7 +75,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope,
 	const Synt::FunctionPtr& function_declaration_ptr,
-	const ClassPtr& base_class,
+	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
 	const auto& function_declaration= *function_declaration_ptr;
@@ -126,7 +126,7 @@ void CodeBuilder::NamesScopeFill(
 void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope,
 	const Synt::FunctionTemplate& function_template_declaration,
-	const ClassPtr& base_class,
+	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
 	const auto& full_name = function_template_declaration.function_->name_;
@@ -279,7 +279,7 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope,
 	const Synt::TypeTemplate& type_template_declaration,
-	const ClassPtr& base_class,
+	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
 {
 	const std::string type_template_name= type_template_declaration.name_;

@@ -9,7 +9,7 @@ namespace U
 namespace
 {
 
-void AddAncestorsAccessRights_r( Class& the_class, const ClassPtr& ancestor_class )
+void AddAncestorsAccessRights_r( Class& the_class, const ClassPtr ancestor_class )
 {
 	the_class.members->AddAccessRightsFor( ancestor_class, ClassMemberVisibility::Protected );
 	for( const Class::Parent& parent : ancestor_class->parents )

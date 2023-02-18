@@ -23,7 +23,7 @@ const std::string g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
 const std::string g_typeinfo_function_arguments_list_node_class_name= "_TIAL_";
 const std::string g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 
-std::string GetTypeinfoVariableName( const ClassPtr& typeinfo_class )
+std::string GetTypeinfoVariableName( const ClassPtr typeinfo_class )
 {
 	return "_val_of_" + std::string(typeinfo_class->llvm_type->getName());
 }
@@ -322,7 +322,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	llvm::dyn_cast<llvm::GlobalVariable>(typeinfo_variable->llvm_value)->setInitializer( typeinfo_variable->constexpr_value );
 }
 
-void CodeBuilder::FinishTypeinfoClass( const ClassPtr& class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types )
+void CodeBuilder::FinishTypeinfoClass( const ClassPtr class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types )
 {
 	Class& class_= *class_type;
 	class_.llvm_type->setBody( fields_llvm_types );
@@ -338,7 +338,7 @@ void CodeBuilder::FinishTypeinfoClass( const ClassPtr& class_type, const ClassFi
 	destructor.llvm_function->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& enum_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 	list_elements.reserve( enum_type->element_count );
@@ -390,7 +390,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr& 
 }
 
 void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
-	const Class& class_, const ClassPtr& node_class_type,
+	const Class& class_, const ClassPtr node_class_type,
 	const std::string& member_name,
 	ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers )
 {
@@ -430,7 +430,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Private   ) ) );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& class_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr class_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 
@@ -517,7 +517,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr& 
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr& class_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr class_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 
@@ -562,7 +562,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr& c
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr& class_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_type, NamesScope& root_namespace )
 {
 	std::vector<TypeinfoListElement> list_elements;
 
@@ -635,7 +635,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPt
 	return FinalizeTypeinfoList( llvm_context_, list_elements );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr& class_type, NamesScope& root_namespace )
+TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr class_type, NamesScope& root_namespace )
 {
 	const Class& class_= *class_type;
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( class_.llvm_type );

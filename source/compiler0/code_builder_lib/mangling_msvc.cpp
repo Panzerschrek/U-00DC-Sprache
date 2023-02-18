@@ -223,7 +223,7 @@ private:
 	void EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& template_args ) const;
 	void EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const;
 	void EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& scope ) const;
-	void EncodeTemplateClassName( ManglerState& mangler_state, const ClassPtr& the_class ) const;
+	void EncodeTemplateClassName( ManglerState& mangler_state, const ClassPtr the_class ) const;
 	void EncodeNumber( ManglerState& mangler_state, const llvm::APInt& num, bool is_signed ) const;
 
 private:
@@ -662,7 +662,7 @@ void ManglerMSVC::EncodeNamespacePostfix_r( ManglerState& mangler_state, const N
 	EncodeNamespacePostfix_r( mangler_state, *scope.GetParent() );
 }
 
-void ManglerMSVC::EncodeTemplateClassName( ManglerState& mangler_state, const ClassPtr& the_class ) const
+void ManglerMSVC::EncodeTemplateClassName( ManglerState& mangler_state, const ClassPtr the_class ) const
 {
 	U_ASSERT( the_class->base_template != std::nullopt );
 

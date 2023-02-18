@@ -38,11 +38,11 @@ public:
 	const NamesScope* GetRoot() const;
 
 	// Store class for namespaces of classes.
-	void SetClass(const ClassPtr& in_class );
+	void SetClass( ClassPtr in_class );
 	ClassPtr GetClass() const;
 
-	void AddAccessRightsFor( const ClassPtr& class_, ClassMemberVisibility visibility );
-	ClassMemberVisibility GetAccessFor( const ClassPtr& class_ ) const;
+	void AddAccessRightsFor( ClassPtr class_, ClassMemberVisibility visibility );
+	ClassMemberVisibility GetAccessFor( ClassPtr class_ ) const;
 	void CopyAccessRightsFrom( const NamesScope& src );
 
 	static const std::string c_template_args_namespace_name;

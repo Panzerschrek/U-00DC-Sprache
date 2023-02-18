@@ -259,7 +259,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 	}
 }
 
-void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr& class_type )
+void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr class_type )
 {
 	/*
 	Virtual table layout for polymorph class without parens:

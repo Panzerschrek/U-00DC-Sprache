@@ -295,7 +295,7 @@ llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointerType& type 
 			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 
-llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr& type )
+llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr type )
 {
 	U_ASSERT(build_debug_info_);
 
@@ -393,7 +393,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr& type )
 	return result;
 }
 
-llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr& type )
+llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr type )
 {
 	U_ASSERT(build_debug_info_);
 

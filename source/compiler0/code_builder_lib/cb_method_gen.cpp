@@ -12,7 +12,7 @@
 namespace U
 {
 
-void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
+void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 {
 	Class& the_class= *class_type;
 
@@ -198,7 +198,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr& class_type )
 	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *constructor_variable );
 }
 
-void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
+void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 {
 	Class& the_class= *class_type;
 
@@ -366,7 +366,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr& class_type )
 	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *constructor_variable );
 }
 
-FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr& class_type )
+FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr class_type )
 {
 	Class& the_class= *class_type;
 
@@ -396,7 +396,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr& class
 	return destructor_function;
 }
 
-void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVariable& destructor_function )
+void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVariable& destructor_function )
 {
 	Class& the_class= *class_type;
 	const FunctionType& destructor_type= *destructor_function .type.GetFunctionType();
@@ -428,7 +428,7 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr& class_type, FunctionVa
 	destructor_function.have_body= true;
 }
 
-void CodeBuilder::TryGenerateDestructor( const ClassPtr& class_type )
+void CodeBuilder::TryGenerateDestructor( const ClassPtr class_type )
 {
 	Class& the_class= *class_type;
 	// Search for explicit destructor.
@@ -465,7 +465,7 @@ void CodeBuilder::TryGenerateDestructor( const ClassPtr& class_type )
 	the_class.have_destructor= true;
 }
 
-void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type )
+void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 {
 	Class& the_class= *class_type;
 	const std::string op_name= OverloadedOperatorToString( OverloadedOperator::Assign );
@@ -624,7 +624,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr& class_type 
 	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *operator_variable );
 }
 
-void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type )
+void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type )
 {
 	Class& the_class= *class_type;
 	const std::string op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
@@ -806,7 +806,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr& class_type
 	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *operator_variable );
 }
 
-void CodeBuilder::ProcessGeneratedMethodConstexprFlag( const ClassPtr& class_type, FunctionContext& function_context_after_body_generation, FunctionVariable& method )
+void CodeBuilder::ProcessGeneratedMethodConstexprFlag( const ClassPtr class_type, FunctionContext& function_context_after_body_generation, FunctionVariable& method )
 {
 	const bool is_constexpr= class_type->can_be_constexpr && !function_context_after_body_generation.have_non_constexpr_operations_inside;
 	method.constexpr_kind= is_constexpr ? FunctionVariable::ConstexprKind::ConstexprComplete : FunctionVariable::ConstexprKind::NonConstexpr;

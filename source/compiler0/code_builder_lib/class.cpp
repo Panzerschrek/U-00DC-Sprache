@@ -26,7 +26,7 @@ void Class::SetMemberVisibility( const std::string& member_name, const ClassMemb
 	members_visibility[member_name]= visibility;
 }
 
-bool Class::HaveAncestor( const ClassPtr& class_ ) const
+bool Class::HaveAncestor( const ClassPtr class_ ) const
 {
 	for( const auto& parent : parents )
 	{
