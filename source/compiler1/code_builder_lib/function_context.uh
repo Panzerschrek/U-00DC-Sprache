@@ -53,6 +53,8 @@ public:
 	ust::vector</LoopFrame/> loops_stack;
 	bool is_in_unsafe_block= false;
 
+	bool is_functionless_context= false; // True for global function context or for function context, used for args preevaluation or typeof operator.
+
 	// Cache result of arguments pre-evaluation for selection of overloaded functions and operators.
 	// This needed for reducing exponential expression evaluation complexity.
 	ust::unordered_map</ ust::shared_ptr_final</Synt::Expression/>, VariableTypeExtended /> args_preevaluation_cache;

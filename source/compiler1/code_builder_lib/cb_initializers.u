@@ -922,12 +922,17 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		{
 			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
+			var bool prev_is_functionless_context= function_context.is_functionless_context;
+			function_context.is_functionless_context= true;
+
 			auto instructions_state= SaveInstructionsState( function_context );
 
 			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
 			needs_move_construct= arg.t == variable.t && arg.value_type == ValueType::Value;
 
 			RestoreInstructionsState( function_context, instructions_state );
+			function_context.is_functionless_context= prev_is_functionless_context;
 		}
 
 		if( needs_move_construct )

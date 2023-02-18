@@ -3105,6 +3105,8 @@ fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
 		global_llvm_function_,
 		move(function_type) );
 
+	function_context.is_functionless_context= true;
+
 	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 	return move(function_context);
 }
