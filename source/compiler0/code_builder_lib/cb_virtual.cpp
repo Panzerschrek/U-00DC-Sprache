@@ -321,8 +321,10 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr class_type )
 	the_class.virtual_table_llvm_type= llvm::StructType::create( virtual_table_struct_fields, "_vtable_type_" + mangler_->MangleType(class_type) );
 }
 
-void CodeBuilder::BuildPolymorphClassTypeId( Class& the_class, const Type& class_type )
+void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 {
+	Class& the_class= *class_type;
+
 	U_ASSERT( the_class.polymorph_type_id_table == nullptr );
 
 	// Build polymorph type id only for polymorph classes.
@@ -439,8 +441,10 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_cla
 	return llvm::ConstantStruct::get( ancestor_class.virtual_table_llvm_type, initializer_values );
 }
 
-void CodeBuilder::BuildClassVirtualTable( Class& the_class, const Type& class_type )
+void CodeBuilder::BuildClassVirtualTable( const ClassPtr class_type )
 {
+	Class& the_class= *class_type;
+
 	U_ASSERT( !the_class.is_complete );
 	U_ASSERT( the_class.virtual_table_llvm_variable == nullptr );
 

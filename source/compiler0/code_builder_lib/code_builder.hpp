@@ -129,10 +129,10 @@ private:
 	void PrepareClassVirtualTable( Class& the_class );
 	void PrepareClassVirtualTableType( ClassPtr class_type );
 
-	void BuildPolymorphClassTypeId( Class& the_class, const Type& class_type );
+	void BuildPolymorphClassTypeId( ClassPtr class_type );
 
 	llvm::Constant* BuildClassVirtualTable_r( const Class& ancestor_class, const Class& dst_class, uint64_t offset );
-	void BuildClassVirtualTable( Class& the_class, const Type& class_type ); // Returns type of vtable pointer or nullptr.
+	void BuildClassVirtualTable( ClassPtr class_type );
 
 	std::pair<VariablePtr, llvm::Value*> TryFetchVirtualFunction(
 		const VariablePtr& this_,

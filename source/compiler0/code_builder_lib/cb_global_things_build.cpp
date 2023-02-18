@@ -902,8 +902,8 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	if( the_class.llvm_type->isOpaque() )
 		the_class.llvm_type->setBody( fields_llvm_types );
 
-	BuildPolymorphClassTypeId( the_class, class_type );
-	BuildClassVirtualTable( the_class, class_type );
+	BuildPolymorphClassTypeId( class_type );
+	BuildClassVirtualTable( class_type );
 
 	the_class.is_complete= true;
 
