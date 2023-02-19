@@ -72,7 +72,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				return LLVMValueRef::Null;
 			}
 
-			BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, variable.t, src_loc );
+			if( !function_context.is_functionless_context )
+			{
+				BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, variable.t, src_loc );
+			}
 		}
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
@@ -177,15 +180,19 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto mut i= 0s;
 		foreach( &element_initializer : sequence_initializer.elements_initializers )
 		{
-			unsafe
+			if( variable.llvm_value != LLVMValueRef::Null )
 			{
-				var [ LLVMValueRef, 2 ] mut indexes
-				[
-					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
-				];
+				unsafe
+				{
+					var [ LLVMValueRef, 2 ] mut indexes
+					[
+						GetZeroGEPIndex(),
+						LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+					];
 
-				element_variable.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] );
+					// TODO - move GEP instructions building code into separate function.
+					element_variable.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] );
+				}
 			}
 
 			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, element_initializer.deref() );
@@ -474,8 +481,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 					.is_mutable= true,
 				};
 
-				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
-				element_variable.llvm_value= unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ) );
+				if( variable.llvm_value != LLVMValueRef::Null )
+				{
+					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
+					element_variable.llvm_value= unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ) );
+				}
 
 				BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
 			}
@@ -594,8 +604,11 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			function_context,
 			array_type.element_count,
 			{
-				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
-				element_variable.llvm_value= unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ) );
+				if( variable.llvm_value != LLVMValueRef::Null )
+				{
+					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
+					element_variable.llvm_value= unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ) );
+				}
 
 				constant_initializer = BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, src_loc );
 			} )
@@ -878,7 +891,10 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 				return LLVMValueRef::Null;
 			}
 
-			BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, variable.t, src_loc );
+			if( !function_context.is_functionless_context )
+			{
+				BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr_result.llvm_value, variable.t, src_loc );
+			}
 		}
 
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );

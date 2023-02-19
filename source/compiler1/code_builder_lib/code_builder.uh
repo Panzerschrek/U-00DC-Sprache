@@ -12,7 +12,12 @@ import "tbaa_metadata_builder.uh"
 ?macro <? CB_GENERATE_LOOP:block( ?function_context:expr, ?iteration_count:expr, ?b:block )?>
 ->
 <?
-	if( ?iteration_count != 0u64 )
+	if( ?function_context.is_functionless_context )
+	{
+		auto counter_value= unsafe( LLVMConstNull( fundamental_llvm_types_.int_ptr ) );
+		?b
+	}
+	else if( ?iteration_count != 0u64 )
 	{
 		unsafe
 		{

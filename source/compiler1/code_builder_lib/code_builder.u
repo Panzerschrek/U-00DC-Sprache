@@ -2025,7 +2025,11 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 				if( function_context.references_graph.GetNodeKind( node_id ) == ReferencesGraph::NodeKind::Variable )
 				{
 					var Variable variable= function_context.variables_frames.back()[i];
-					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
+
+					if( variable.llvm_value != LLVMValueRef::Null )
+					{
+						BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
+					}
 
 					// Do not create lifetime for variables existing only in llvm register (without any address).
 					if( variable.location == Variable::Location::Pointer )
@@ -2594,6 +2598,10 @@ fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_co
 
 fn CodeBuilder::CreateTypedStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address )
 {
+	if( function_context.is_functionless_context )
+	{
+		return;
+	}
 	if( t == void_type_ )
 	{
 		return;
@@ -2610,6 +2618,11 @@ fn CodeBuilder::CreateTypedStore( mut this, FunctionContext& function_context, T
 
 fn CodeBuilder::CreateTypedReferenceStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address )
 {
+	if( function_context.is_functionless_context )
+	{
+		return;
+	}
+
 	auto result= unsafe( LLVMBuildStore( function_context.llvm_ir_builder, value_to_store, address ) );
 
 	if( generate_tbaa_metadata_ )
@@ -2678,6 +2691,11 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 		return ref;
 	}
 
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(ref)) == LLVMBool::False )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	auto src_class_type= src_type.GetClassType().try_deref();
 	foreach( &parent : src_class_type.lock_imut().deref().parents )
 	{
@@ -2718,6 +2736,15 @@ fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Na
 
 fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field ) : LLVMValueRef
 {
+	if( value == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	auto op_name_nt= "." + field.syntax_element.deref().name + "\0";
 	unsafe
 	{
@@ -2733,6 +2760,15 @@ fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Cl
 
 fn CodeBuilder::CreateClassParentFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassType::Parent& parent ) : LLVMValueRef
 {
+	if( value == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	unsafe
 	{
 		var [ LLVMValueRef, 2 ] mut indexes
@@ -2747,6 +2783,15 @@ fn CodeBuilder::CreateClassParentFieldGEP( this, FunctionContext& function_conte
 
 fn CodeBuilder::CreateBaseClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value ) : LLVMValueRef
 {
+	if( value == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	var [ LLVMValueRef, 2 ] mut indexes
 	[
 		GetZeroGEPIndex(),
@@ -2768,6 +2813,15 @@ fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, 
 
 fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, TupleType& t, LLVMValueRef value, u32 element_index ) : LLVMValueRef
 {
+	if( value == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	auto op_name_nt= "[" + ust::to_string8(element_index) + "]\0";
 	unsafe
 	{
@@ -2783,6 +2837,11 @@ fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, 
 
 fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context )
 {
+	if( function_context.is_functionless_context )
+	{
+		return;
+	}
+
 	unsafe
 	{
 		auto constant_type= LLVMTypeOf( constant );
@@ -2830,6 +2889,11 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 
 fn CodeBuilder::CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context )
 {
+	if( function_context.is_functionless_context )
+	{
+		return;
+	}
+
 	unsafe
 	{
 		var LLVMTypeRef llvm_type= t.GetLLVMType();
@@ -2986,6 +3050,11 @@ fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_contex
 		return;
 	}
 
+	if( llvm_value == LLVMValueRef::Null )
+	{
+		return;
+	}
+
 	unsafe
 	{
 		auto alloca_inst= LLVMIsAAllocaInst( llvm_value );
@@ -3017,6 +3086,10 @@ fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_contex
 fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, LLVMValueRef llvm_value )
 {
 	if( !create_lifetimes_ )
+	{
+		return;
+	}
+	if( llvm_value == LLVMValueRef::Null )
 	{
 		return;
 	}

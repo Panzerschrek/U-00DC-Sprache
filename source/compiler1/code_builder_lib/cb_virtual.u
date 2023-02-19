@@ -665,6 +665,11 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	FunctionVariable& function,
 	FunctionContext &mut function_context ) : tup[ Variable, LLVMValueRef ]
 {
+	if( function_context.is_functionless_context )
+	{
+		return ust::make_tuple( this_, function.llvm_function );
+	}
+
 	auto constexpr c_offset_field_number= 0u;
 	auto constexpr c_funcs_table_field_number= 2u;
 
