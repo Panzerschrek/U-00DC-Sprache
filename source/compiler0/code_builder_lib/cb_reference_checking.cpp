@@ -136,7 +136,16 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, errors_container, func.src_loc_ );
 	}
 	else
+	{
+		if( func.name_.back() == Keywords::constructor_ )
+		{
+			for( const Synt::FunctionReferencesPollution& pollution : func.type_.referecnces_pollution_list_ )
+				if( pollution.second == Keywords::this_ )
+					REPORT_ERROR( ConstructorThisReferencePollution, errors_container, func.src_loc_ );
+		}
+
 		ProcessFunctionTypeReferencesPollution( errors_container, func.type_, function_type );
+	}
 }
 
 void CodeBuilder::ProcessFunctionTypeReferencesPollution(

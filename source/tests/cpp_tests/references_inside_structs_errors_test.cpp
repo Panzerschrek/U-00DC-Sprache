@@ -184,6 +184,120 @@ U_TEST( AssignToImmutableReferenceInsideStruct_Test1 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 7u );
 }
 
+U_TEST( CaputuringThisReferenceInConstructor_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { T& t; }
+		fn DoPollution( S &mut s'a', T &'b t ) ' a <- b ';
+		struct T
+		{
+			fn constructor( this, S &mut s'a' ) ' a <- this '
+			{
+				DoPollution( s, this ); // Capture immutable "this" reference inside constructor argument.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 6u ) );
+}
+
+U_TEST( CaputuringThisReferenceInConstructor_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { T &mut t; }
+		fn DoPollution( S &mut s'a', T &'b mut t ) ' a <- b ';
+		struct T
+		{
+			fn constructor( this, S &mut s'a' ) ' a <- this '
+			{
+				DoPollution( s, this ); // Capture mutable "this" reference inside constructor argument.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 6u ) );
+}
+
+U_TEST( CaputuringThisReferenceInConstructor_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { T& t; }
+		fn DoPollution( S &mut s'a', T &'b t ) ' a <- b ';
+		struct T
+		{
+			fn constructor( this, S &mut s'a' ) ' a <- this '; // Capture immutable "this" reference inside constructor argument.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 6u ) );
+}
+
+U_TEST( CaputuringThisReferenceInConstructor_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { T &mut t; }
+		fn DoPollution( S &mut s'a', T &'b mut t ) ' a <- b ';
+		struct T
+		{
+			fn constructor( this, S &mut s'a' ) ' a <- this '; // Capture mutable "this" reference inside constructor argument.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ConstructorThisReferencePollution, 6u ) );
+}
+
+U_TEST( CaputuringThisReferenceInConstructor_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { T& t; }
+		fn DoPollution( S &mut s'a', T &'b t ) ' a <- b ';
+		struct T
+		{
+			fn constructor( this, S &mut s'a' ) // Reference pollution is not specified.
+			{
+				DoPollution( s, this ); // Capture immutable "this" reference inside constructor argument.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnallowedReferencePollution, 9u ) );
+}
+
+U_TEST( CaputuringThisReferenceInConstructor_Test5 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S { T &mut t; }
+		fn DoPollution( S &mut s'a', T &'b mut t ) ' a <- b ';
+		struct T
+		{
+			fn constructor( this, S &mut s'a' ) // Reference pollution is not specified.
+			{
+				DoPollution( s, this ); // Capture mutable "this" reference inside constructor argument.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnallowedReferencePollution, 9u ) );
+}
+
 } // namespace
 
 } // namespace U
