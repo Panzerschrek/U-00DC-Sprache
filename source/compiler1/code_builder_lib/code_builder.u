@@ -2713,6 +2713,10 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 	{
 		return ref;
 	}
+	if( ref == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
 
 	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(ref)) == LLVMBool::False )
 	{

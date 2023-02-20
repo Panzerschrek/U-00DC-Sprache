@@ -1165,7 +1165,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.node_id= result_node_id,
 			};
 
-			if( !function_context.is_functionless_context )
+			if( !function_context.is_functionless_context ||
+				( variable.llvm_value != LLVMValueRef::Null && index_value != LLVMValueRef::Null &&
+				  unsafe(LLVMIsConstant(variable.llvm_value)) == LLVMBool::True && unsafe(LLVMIsConstant(index_value)) == LLVMBool::True ) )
 			{
 				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), index_value ];
 				result.llvm_value= unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, variable_array_type.llvm_type, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ) ); // TODO - maybe add "inbounds" attribute?
@@ -2538,7 +2540,8 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 
 	unsafe
 	{
-		if( LLVMIsConstant( l_var_in_register ) == LLVMBool::True && LLVMIsConstant( r_var_in_register ) == LLVMBool::True )
+		if( l_var_in_register != LLVMValueRef::Null && LLVMIsConstant( l_var_in_register ) == LLVMBool::True &&
+			r_var_in_register != LLVMValueRef::Null && LLVMIsConstant( r_var_in_register ) == LLVMBool::True )
 		{
 			if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
 			{
