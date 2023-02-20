@@ -1224,6 +1224,17 @@ fn CodeBuilder::PrepareFunction(
 			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, names_scope_ptr, function_declaration.src_loc )
 			function_variable.t.references_pollution.clear();
 		}
+
+		if( is_constructor )
+		{
+			foreach( &in_pollution : function_declaration.function_type.references_pollution )
+			{
+				if( in_pollution.src == KeywordToString( Keyword::this_ ) )
+				{
+					REPORT_ERROR( ConstructorThisReferencePollution, names_scope_ptr, function_declaration.src_loc )
+				}
+			}
+		}
 	}
 
 	if( function_declaration.constexpr_ )
