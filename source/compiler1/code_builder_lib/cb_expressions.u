@@ -1590,8 +1590,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "-" ),
 	};
 
-
-
 	if( IsInteger( fundamental_type.try_deref().fundamental_type ) )
 	{
 		if( value_in_register != LLVMValueRef::Null )
