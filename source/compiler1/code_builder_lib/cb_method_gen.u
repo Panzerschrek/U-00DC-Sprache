@@ -1190,8 +1190,12 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 			function_context,
 			array_type.element_count,
 			{
-				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
-				auto element_value= unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, value, $<(indexes[0]), 2u, "[]\0"[0] ) );
+				auto mut element_value= LLVMValueRef::Null;
+				if( value != LLVMValueRef::Null )
+				{
+					var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), counter_value ];
+					element_value= unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, array_type.llvm_type, value, $<(indexes[0]), 2u, "[]\0"[0] ) );
+				}
 
 				BuildDestructorPart( names_scope, function_context, element_value, array_type.element_type, src_loc );
 			}

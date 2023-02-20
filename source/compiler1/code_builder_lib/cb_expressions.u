@@ -468,9 +468,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// TODO - maybe forbid reference casting for ValueType::Value?
 	if( v.location == Variable::Location::LLVMRegister )
 	{
-		r.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
-		CreateTypedStore( function_context, v.t, v.llvm_value, r.llvm_value );
-
+		if( !function_context.is_functionless_context )
+		{
+			r.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
+			CreateTypedStore( function_context, v.t, v.llvm_value, r.llvm_value );
+		}
 	}
 	else
 	{
@@ -500,8 +502,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// TODO - maybe forbid reference casting for ValueType::Value?
 	if( v.location == Variable::Location::LLVMRegister )
 	{
-		r.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
-		CreateTypedStore( function_context, v.t, v.llvm_value, r.llvm_value );
+		if( !function_context.is_functionless_context )
+		{
+			r.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
+			CreateTypedStore( function_context, v.t, v.llvm_value, r.llvm_value );
+		}
 	}
 	else
 	{
@@ -650,11 +655,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.value_type= ValueType::Value,
 		.location= Variable::Location::Pointer,
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, variable_name ),
-		.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, variable.t.GetLLVMType(), variable_name.front() ) )
 	};
 
 	variable_name.push_back( "\0"c8 );
-	CreateLifetimeStart( function_context, result.llvm_value );
+	if( !function_context.is_functionless_context )
+	{
+		result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, variable.t.GetLLVMType(), variable_name.front() ) );
+		CreateLifetimeStart( function_context, result.llvm_value );
+	}
 
 	// Copy content to new variable.
 	CopyBytes( result.llvm_value, variable.llvm_value, result.t, function_context );
@@ -694,7 +702,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var [ VariableTypeExtended, 2 ] mut branches_types[ { .value_type= zero_init }, { .value_type= zero_init } ];
 	for( auto mut i= 0s; i < 2s; ++i )
 	{
-		auto instructions_state= SaveInstructionsState( function_context );
+		var bool prev_is_functionless_context= function_context.is_functionless_context;
+		function_context.is_functionless_context= true;
+
+		auto state= SaveFunctionContextState( function_context );
 		{
 			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
@@ -704,7 +715,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			branches_types[i].value_type= branch_value.value_type;
 			DestroyUnusedTemporaryVariables( names_scope, function_context, ternary_operator.src_loc );
 		}
-		RestoreInstructionsState( function_context, instructions_state );
+		RestoreFunctionContextState( function_context, state );
+		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
 	auto& branches_types_imut = branches_types;
@@ -728,8 +740,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( UsingIncompleteType, names_scope, ternary_operator.src_loc, result.t )
 			return ErrorValue();
 		}
-		result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, result.t.GetLLVMType(), "select_result\0"[0] ) );
-		CreateLifetimeStart( function_context, result.llvm_value );
+		if( !function_context.is_functionless_context )
+		{
+			result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, result.t.GetLLVMType(), "select_result\0"[0] ) );
+			CreateLifetimeStart( function_context, result.llvm_value );
+		}
 	}
 	else if( branches_types_imut[0].value_type == ValueType::ReferenceImut || branches_types_imut[1].value_type == ValueType::ReferenceImut )
 	{
@@ -747,13 +762,16 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	var LLVMBasicBlockRef mut result_block= zero_init;
 	var [ LLVMBasicBlockRef, 2 ] mut branches_blocks= zero_init, mut branches_end_blocks= zero_init;
-	unsafe
+	if( !function_context.is_functionless_context )
 	{
-		result_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
-		branches_blocks[0]= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
-		branches_blocks[1]= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		unsafe
+		{
+			result_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+			branches_blocks[0]= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+			branches_blocks[1]= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
-		LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, branches_blocks[0], branches_blocks[1] );
+			LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, branches_blocks[0], branches_blocks[1] );
+		}
 	}
 
 	var ReferencesGraph references_graph_before= take(function_context.references_graph);
@@ -766,10 +784,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-			unsafe
+			if( !function_context.is_functionless_context )
 			{
-				LLVMAppendExistingBasicBlock( function_context.llvm_function, branches_blocks[i] );
-				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, branches_blocks[i] );
+				unsafe
+				{
+					LLVMAppendExistingBasicBlock( function_context.llvm_function, branches_blocks[i] );
+					LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, branches_blocks[i] );
+				}
 			}
 
 			var Variable branch_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].deref() );
@@ -789,19 +810,25 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 							function_context.references_graph.MoveNode( branch_result.node_id );
 						}
 
-						if( branch_result.location == Variable::Location::Pointer )
+						if( !function_context.is_functionless_context )
 						{
-							CopyBytes( result.llvm_value, branch_result.llvm_value, result.t, function_context );
-							CreateLifetimeEnd( function_context, branch_result.llvm_value );
-						}
-						else
-						{
-							CreateTypedStore( function_context, result.t, branch_result.llvm_value, result.llvm_value );
+							if( branch_result.location == Variable::Location::Pointer )
+							{
+								CopyBytes( result.llvm_value, branch_result.llvm_value, result.t, function_context );
+								CreateLifetimeEnd( function_context, branch_result.llvm_value );
+							}
+							else
+							{
+								CreateTypedStore( function_context, result.t, branch_result.llvm_value, result.llvm_value );
+							}
 						}
 					}
 					else
 					{
-						BuildCopyConstructorPart( names_scope, function_context, result.llvm_value, branch_result.llvm_value, result.t, ternary_operator.src_loc );
+						if( !function_context.is_functionless_context )
+						{
+							BuildCopyConstructorPart( names_scope, function_context, result.llvm_value, branch_result.llvm_value, result.t, ternary_operator.src_loc );
+						}
 					}
 				}
 			}
@@ -820,29 +847,32 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			CallDestructorsForTopVariablesFrame( names_scope, function_context, ternary_operator.src_loc );
 		}
 
-		unsafe
+		if( !function_context.is_functionless_context )
 		{
-			branches_end_blocks[i]= LLVMGetInsertBlock( function_context.llvm_ir_builder );
-			LLVMBuildBr( function_context.llvm_ir_builder, result_block );
+			unsafe
+			{
+				branches_end_blocks[i]= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+				LLVMBuildBr( function_context.llvm_ir_builder, result_block );
+			}
 		}
 		branches_references_graphs[i]= take(function_context.references_graph);
 	}
 
-	unsafe
-	{
-		LLVMAppendExistingBasicBlock( function_context.llvm_function, result_block );
-		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, result_block );
-	}
-
 	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( branches_references_graphs, names_scope, ternary_operator.src_loc );
 
-	if( result.value_type != ValueType::Value )
+	if( !function_context.is_functionless_context )
 	{
 		unsafe
 		{
-			auto phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, LLVMPointerType( result.t.GetLLVMType(), 0u ), "select_result\0"[0] );
-			LLVMAddIncoming( phi_node, $<(branches_reference_values[0]), $<(branches_end_blocks[0]), 2u );
-			result.llvm_value= phi_node;
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, result_block );
+			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, result_block );
+
+			if( result.value_type != ValueType::Value )
+			{
+				auto phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, LLVMPointerType( result.t.GetLLVMType(), 0u ), "select_result\0"[0] );
+				LLVMAddIncoming( phi_node, $<(branches_reference_values[0]), $<(branches_end_blocks[0]), 2u );
+				result.llvm_value= phi_node;
+			}
 		}
 	}
 
@@ -888,7 +918,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var RawPointerType mut t
 	{
 		.element_type= v.t,
-		.llvm_type= unsafe( LLVMTypeOf( v.llvm_value ) )  // llvm type of reference is actually type of pointer
+		.llvm_type= unsafe( LLVMPointerType( v.t.GetLLVMType(), 0u32 ) )
 	};
 	var Variable mut res
 	{
@@ -958,10 +988,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				// "!=" is implemented via "==", so, invert result.
 				auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
-				unsafe
+				if( value_in_register != LLVMValueRef::Null )
 				{
-					variable.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );
-					if( LLVMIsConstant( variable.llvm_value ) == LLVMBool::True ){ variable.constexpr_value= variable.llvm_value; }
+					unsafe
+					{
+						variable.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );
+						if( LLVMIsConstant( variable.llvm_value ) == LLVMBool::True ){ variable.constexpr_value= variable.llvm_value; }
+					}
 				}
 				variable.location= Variable::Location::LLVMRegister;
 			}
@@ -977,31 +1010,37 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 				else
 				{
-					unsafe
+					if( value_in_register != LLVMValueRef::Null )
 					{
-						auto zero= LLVMConstInt( variable.t.GetLLVMType(), 0u64, LLVMBool::False );
-						if( binary_operator.operator == BinaryOperatorType::Less )
+						unsafe
 						{
-							variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, value_in_register, zero, "<\0"[0] );
+							auto zero= LLVMConstInt( variable.t.GetLLVMType(), 0u64, LLVMBool::False );
+							if( binary_operator.operator == BinaryOperatorType::Less )
+							{
+								variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, value_in_register, zero, "<\0"[0] );
+							}
+							else if( binary_operator.operator == BinaryOperatorType::LessEqual )
+							{
+								variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, value_in_register, zero, "<=\0"[0] );
+							}
+							else if( binary_operator.operator == BinaryOperatorType::Greater )
+							{
+								variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, value_in_register, zero, ">\0"[0] );
+							}
+							else if( binary_operator.operator == BinaryOperatorType::GreaterEqual )
+							{
+								variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, value_in_register, zero, ">=\0"[0] );
+							}
+							else { halt; }
 						}
-						else if( binary_operator.operator == BinaryOperatorType::LessEqual )
-						{
-							variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, value_in_register, zero, "<=\0"[0] );
-						}
-						else if( binary_operator.operator == BinaryOperatorType::Greater )
-						{
-							variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, value_in_register, zero, ">\0"[0] );
-						}
-						else if( binary_operator.operator == BinaryOperatorType::GreaterEqual )
-						{
-							variable.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, value_in_register, zero, ">=\0"[0] );
-						}
-						else { halt; }
 					}
 					variable.t= bool_type_;
 				}
 
-				if( unsafe(LLVMIsConstant( variable.llvm_value ) ) == LLVMBool::True ){ variable.constexpr_value= variable.llvm_value; }
+				if( variable.llvm_value != LLVMValueRef::Null && unsafe(LLVMIsConstant( variable.llvm_value ) ) == LLVMBool::True )
+				{
+					variable.constexpr_value= variable.llvm_value;
+				}
 				variable.location= Variable::Location::LLVMRegister;
 			}
 		}
@@ -1083,7 +1122,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					return ErrorValue();
 				}
 			}
-			else
+			else if( !function_context.is_functionless_context )
 			{
 				// Dynamically check index.
 				unsafe
@@ -1126,10 +1165,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.node_id= result_node_id,
 			};
 
-			unsafe
+			if( !function_context.is_functionless_context ||
+				( variable.llvm_value != LLVMValueRef::Null && index_value != LLVMValueRef::Null &&
+				  unsafe(LLVMIsConstant(variable.llvm_value)) == LLVMBool::True && unsafe(LLVMIsConstant(index_value)) == LLVMBool::True ) )
 			{
 				var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), index_value ];
-				result.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, variable_array_type.llvm_type, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ); // TODO - maybe add "inbounds" attribute?
+				result.llvm_value= unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, variable_array_type.llvm_type, variable.llvm_value, $<(indexes[0]), 2u, "[]\0"[0] ) ); // TODO - maybe add "inbounds" attribute?
 			}
 
 			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
@@ -1551,11 +1592,17 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( IsInteger( fundamental_type.try_deref().fundamental_type ) )
 	{
-		result.llvm_value= unsafe( LLVMBuildNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
+		if( value_in_register != LLVMValueRef::Null )
+		{
+			result.llvm_value= unsafe( LLVMBuildNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
+		}
 	}
 	else if( IsFloatingPoint( fundamental_type.try_deref().fundamental_type ) )
 	{
-		result.llvm_value= unsafe( LLVMBuildFNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
+		if( value_in_register != LLVMValueRef::Null )
+		{
+			result.llvm_value= unsafe( LLVMBuildFNeg( function_context.llvm_ir_builder, value_in_register, "-\0"[0] ) );
+		}
 	}
 	else
 	{
@@ -1564,7 +1611,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
+	if( result.llvm_value != LLVMValueRef::Null && unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+	{
+		result.constexpr_value= result.llvm_value;
+	}
 
 	// Register variable for references checking.
 	RegisterTemporaryVariable( function_context, result );
@@ -1598,10 +1648,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "!" ),
 	};
 
-	unsafe
+	if( value_in_register != LLVMValueRef::Null )
 	{
-		result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] );
-		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
+		result.llvm_value= unsafe( LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "!\0"[0] ) );
+		if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+		{
+			result.constexpr_value= result.llvm_value;
+		}
 	}
 
 	// Register variable for references checking.
@@ -1637,10 +1690,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "~" ),
 	};
 
-	unsafe
+	if( value_in_register != LLVMValueRef::Null )
 	{
-		result.llvm_value= LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] );
-		if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True ){ result.constexpr_value= result.llvm_value; }
+		result.llvm_value= unsafe( LLVMBuildNot( function_context.llvm_ir_builder, value_in_register, "~\0"[0] ) );
+		if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+		{
+			result.constexpr_value= result.llvm_value;
+		}
 	}
 
 	// Register variable for references checking.
@@ -1684,7 +1740,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
 	auto mut src_llvm_value= v.llvm_value;
-	if( v.location == Variable::Location::LLVMRegister )
+	if( v.location == Variable::Location::LLVMRegister && !function_context.is_functionless_context )
 	{
 		src_llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, v.t.GetLLVMType(), g_null_string ) );
 		CreateTypedStore( function_context, v.t, v.llvm_value, src_llvm_value );
@@ -1716,10 +1772,13 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 		{
 			if( allow_unsafe )
 			{
-				unsafe
+				if( src_llvm_value != LLVMValueRef::Null )
 				{
-					auto dst_pointer_type= LLVMPointerType( t.GetLLVMType(), 0u );
-					r.llvm_value= LLVMBuildPointerCast( function_context.llvm_ir_builder, src_llvm_value, dst_pointer_type, g_null_string );
+					unsafe
+					{
+						auto dst_pointer_type= LLVMPointerType( t.GetLLVMType(), 0u );
+						r.llvm_value= LLVMBuildPointerCast( function_context.llvm_ir_builder, src_llvm_value, dst_pointer_type, g_null_string );
+					}
 				}
 			}
 			else
@@ -1838,7 +1897,10 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
-			res.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), ptr_value, $<(index_value), 1u, "+\0"[0] );
+			if( !function_context.is_functionless_context )
+			{
+				res.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), ptr_value, $<(index_value), 1u, "+\0"[0] );
+			}
 		}
 	}
 	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() && !r_raw_pointer_type.empty() )
@@ -1873,13 +1935,16 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				return ErrorValue();
 			}
 
-			var LLVMValueRef
-				l_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, l_in_register, diff_llvm_type, g_null_string ),
-				r_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, r_in_register, diff_llvm_type, g_null_string ),
-				diff= LLVMBuildSub( function_context.llvm_ir_builder, l_as_int, r_as_int, "-\0"[0] ),
-				element_size_contant= LLVMConstInt( diff_llvm_type, element_size, LLVMBool::False ),
-				diff_divided= LLVMBuildExactSDiv( function_context.llvm_ir_builder, diff, element_size_contant, "/\0"[0] );
-			res.llvm_value= diff_divided;
+			if( !function_context.is_functionless_context )
+			{
+				var LLVMValueRef
+					l_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, l_in_register, diff_llvm_type, g_null_string ),
+					r_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, r_in_register, diff_llvm_type, g_null_string ),
+					diff= LLVMBuildSub( function_context.llvm_ir_builder, l_as_int, r_as_int, "-\0"[0] ),
+					element_size_contant= LLVMConstInt( diff_llvm_type, element_size, LLVMBool::False ),
+					diff_divided= LLVMBuildExactSDiv( function_context.llvm_ir_builder, diff, element_size_contant, "/\0"[0] );
+				res.llvm_value= diff_divided;
+			}
 		}
 	}
 	else if( operator == BinaryOperatorType::Sub && !l_raw_pointer_type.empty() )
@@ -1931,7 +1996,10 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 			}
 			auto mut index_negative= LLVMBuildNeg( function_context.llvm_ir_builder, sub_value, g_null_string );
 
-			res.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] );
+			if( !function_context.is_functionless_context )
+			{
+				res.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] );
+			}
 		}
 	}
 	else if(
@@ -1967,80 +2035,83 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 
 		res.t= l_type;
 
-		unsafe
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
-				 if( operator == BinaryOperatorType::Add )
+			unsafe
 			{
-				if( is_float )
+					 if( operator == BinaryOperatorType::Add )
 				{
-					res.llvm_value= LLVMBuildFAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+					if( is_float )
+					{
+						res.llvm_value= LLVMBuildFAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+					}
 				}
-				else
+				else if( operator == BinaryOperatorType::Sub )
 				{
-					res.llvm_value= LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+					if( is_float )
+					{
+						res.llvm_value= LLVMBuildFSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+					}
 				}
-			}
-			else if( operator == BinaryOperatorType::Sub )
-			{
-				if( is_float )
+				else if( operator == BinaryOperatorType::Mul )
 				{
-					res.llvm_value= LLVMBuildFSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+					if( is_float )
+					{
+						res.llvm_value= LLVMBuildFMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+					}
 				}
-				else
+				else if( operator == BinaryOperatorType::Div )
 				{
-					res.llvm_value= LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+					if( is_float )
+					{
+						res.llvm_value= LLVMBuildFDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+					}
+					else if( is_signed )
+					{
+						res.llvm_value= LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+					}
 				}
-			}
-			else if( operator == BinaryOperatorType::Mul )
-			{
-				if( is_float )
+				else if( operator == BinaryOperatorType::Rem )
 				{
-					res.llvm_value= LLVMBuildFMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+					if( is_float )
+					{
+						res.llvm_value= LLVMBuildFRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+					}
+					else if( is_signed )
+					{
+						res.llvm_value= LLVMBuildSRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildURem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+					}
 				}
-				else
-				{
-					res.llvm_value= LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
-				}
-			}
-			else if( operator == BinaryOperatorType::Div )
-			{
-				if( is_float )
-				{
-					res.llvm_value= LLVMBuildFDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
-				}
-				else if( is_signed )
-				{
-					res.llvm_value= LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
-				}
-				else
-				{
-					res.llvm_value= LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
-				}
-			}
-			else if( operator == BinaryOperatorType::Rem )
-			{
-				if( is_float )
-				{
-					res.llvm_value= LLVMBuildFRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
-				}
-				else if( is_signed )
-				{
-					res.llvm_value= LLVMBuildSRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
-				}
-				else
-				{
-					res.llvm_value= LLVMBuildURem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
-				}
-			}
 
-			if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True )
-			{
-				res.constexpr_value= res.llvm_value;
-
-				if( LLVMIsUndef( res.constexpr_value ) == LLVMBool::True )
+				if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True )
 				{
-					res.constexpr_value= LLVMValueRef::Null;
-					REPORT_ERROR( ConstantExpressionResultIsUndefined, names_scope, src_loc )
+					res.constexpr_value= res.llvm_value;
+
+					if( LLVMIsUndef( res.constexpr_value ) == LLVMBool::True )
+					{
+						res.constexpr_value= LLVMValueRef::Null;
+						REPORT_ERROR( ConstantExpressionResultIsUndefined, names_scope, src_loc )
+					}
 				}
 			}
 		}
@@ -2068,25 +2139,26 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 
 		res.t= l_type;
 
-		unsafe
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
-				 if( operator == BinaryOperatorType::And )
+			unsafe
 			{
-				res.llvm_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_in_register, r_in_register, "&\0"[0] );
-			}
-			else if( operator == BinaryOperatorType::Or  )
-			{
-				res.llvm_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_in_register, r_in_register, "|\0"[0] );
-			}
-			else if( operator == BinaryOperatorType::Xor )
-			{
-				res.llvm_value= LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] );
+					 if( operator == BinaryOperatorType::And )
+				{
+					res.llvm_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_in_register, r_in_register, "&\0"[0] );
+				}
+				else if( operator == BinaryOperatorType::Or  )
+				{
+					res.llvm_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_in_register, r_in_register, "|\0"[0] );
+				}
+				else if( operator == BinaryOperatorType::Xor )
+				{
+					res.llvm_value= LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] );
+				}
 			}
 		}
 	}
-	else if(
-		operator == BinaryOperatorType::ShiftLeft ||
-		operator == BinaryOperatorType::ShiftRight )
+	else if( operator == BinaryOperatorType::ShiftLeft || operator == BinaryOperatorType::ShiftRight )
 	{
 		if( l_fundamental_type.empty() || !is_integer )
 		{
@@ -2104,50 +2176,51 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 
 		res.t= l_type;
 
-		unsafe
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
-			// Convert value of shift to type of shifted value. LLVM Reuqired this.
-			if( r_fundamental_type.try_deref().GetSize() > l_fundamental_type.try_deref().GetSize() )
+			unsafe
 			{
-				r_value_for_op= LLVMBuildTrunc( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), g_null_string );
-			}
-			else if( r_fundamental_type.try_deref().GetSize() < l_fundamental_type.try_deref().GetSize() )
-			{
-				r_value_for_op= LLVMBuildZExt( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), g_null_string );
-			}
-
-			// Cut upper bits of shift value to avoid undefined behaviour.
-			r_value_for_op =
-				LLVMBuildAnd(
-					function_context.llvm_ir_builder,
-					r_value_for_op,
-					LLVMConstInt(
-						l_type.GetLLVMType(),
-						u64(l_fundamental_type.try_deref().GetSize()) * 8u64 - 1u64,
-						LLVMBool::False ),
-					g_null_string );
-
-			if( operator == BinaryOperatorType::ShiftLeft )
-			{
-				res.llvm_value= LLVMBuildShl( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
-			}
-			else if( operator == BinaryOperatorType::ShiftRight )
-			{
-				if( IsSignedInteger( l_fundamental_type.try_deref().fundamental_type ) )
+				// Convert value of shift to type of shifted value. LLVM Reuqired this.
+				if( r_fundamental_type.try_deref().GetSize() > l_fundamental_type.try_deref().GetSize() )
 				{
-					res.llvm_value= LLVMBuildAShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+					r_value_for_op= LLVMBuildTrunc( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), g_null_string );
 				}
-				else
+				else if( r_fundamental_type.try_deref().GetSize() < l_fundamental_type.try_deref().GetSize() )
 				{
-					res.llvm_value= LLVMBuildLShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+					r_value_for_op= LLVMBuildZExt( function_context.llvm_ir_builder, r_value_for_op, l_type.GetLLVMType(), g_null_string );
 				}
+
+				// Cut upper bits of shift value to avoid undefined behaviour.
+				r_value_for_op =
+					LLVMBuildAnd(
+						function_context.llvm_ir_builder,
+						r_value_for_op,
+						LLVMConstInt(
+							l_type.GetLLVMType(),
+							u64(l_fundamental_type.try_deref().GetSize()) * 8u64 - 1u64,
+							LLVMBool::False ),
+						g_null_string );
+
+				if( operator == BinaryOperatorType::ShiftLeft )
+				{
+					res.llvm_value= LLVMBuildShl( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+				}
+				else if( operator == BinaryOperatorType::ShiftRight )
+				{
+					if( IsSignedInteger( l_fundamental_type.try_deref().fundamental_type ) )
+					{
+						res.llvm_value= LLVMBuildAShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildLShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+					}
+				}
+				else{ halt; }
 			}
-			else{ halt; }
 		}
 	}
-	else if(
-		operator == BinaryOperatorType::Equal ||
-		operator == BinaryOperatorType::NotEqual )
+	else if( operator == BinaryOperatorType::Equal || operator == BinaryOperatorType::NotEqual )
 	{
 		if( l_type != r_type )
 		{
@@ -2162,50 +2235,53 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 
 		res.t= bool_type_;
 
-		// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
-		unsafe
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
-			// LLVM constants folder produces wrong compare result for function pointers to "unnamed_addr" functions.
-			// Perform manual constant functions compare instead.
-			auto l_function= LLVMIsAFunction( l_in_register );
-			auto r_function= LLVMIsAFunction( r_in_register );
+			// Use ordered floating point compare operations, which result is false for NaN, except !=. nan != nan must be true.
+			unsafe
+			{
+				// LLVM constants folder produces wrong compare result for function pointers to "unnamed_addr" functions.
+				// Perform manual constant functions compare instead.
+				auto l_function= LLVMIsAFunction( l_in_register );
+				auto r_function= LLVMIsAFunction( r_in_register );
 
-				 if( operator == BinaryOperatorType::Equal )
-			{
-				if( is_void )
+					 if( operator == BinaryOperatorType::Equal )
 				{
-					res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False ); // Two "void" values are always equal.
+					if( is_void )
+					{
+						res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False ); // Two "void" values are always equal.
+					}
+					else if( is_float )
+					{
+						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l_in_register, r_in_register, "==\0"[0] );
+					}
+					else if( l_function != LLVMValueRef::Null && r_function != LLVMValueRef::Null )
+					{
+						res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, select( l_function == r_function ? 1u64 : 0u64 ), LLVMBool::False );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l_in_register, r_in_register, "==\0"[0] );
+					}
 				}
-				else if( is_float )
+				else if( operator == BinaryOperatorType::NotEqual )
 				{
-					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l_in_register, r_in_register, "==\0"[0] );
-				}
-				else if( l_function != LLVMValueRef::Null && r_function != LLVMValueRef::Null )
-				{
-					res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, select( l_function == r_function ? 1u64 : 0u64 ), LLVMBool::False );
-				}
-				else
-				{
-					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l_in_register, r_in_register, "==\0"[0] );
-				}
-			}
-			else if( operator == BinaryOperatorType::NotEqual )
-			{
-				if( is_void )
-				{
-					res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
-				}
-				else if( is_float )
-				{
-					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::UNE, l_in_register, r_in_register, "!=\0"[0] );
-				}
-				else if( l_function != LLVMValueRef::Null && r_function != LLVMValueRef::Null )
-				{
-					res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, select( l_function != r_function ? 1u64 : 0u64 ), LLVMBool::False );
-				}
-				else
-				{
-					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, l_in_register, r_in_register, "!=\0"[0] );
+					if( is_void )
+					{
+						res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
+					}
+					else if( is_float )
+					{
+						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::UNE, l_in_register, r_in_register, "!=\0"[0] );
+					}
+					else if( l_function != LLVMValueRef::Null && r_function != LLVMValueRef::Null )
+					{
+						res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, select( l_function != r_function ? 1u64 : 0u64 ), LLVMBool::False );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, l_in_register, r_in_register, "!=\0"[0] );
+					}
 				}
 			}
 		}
@@ -2235,66 +2311,69 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 
 		res.t= bool_type_;
 
-		unsafe
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
-				 if( operator == BinaryOperatorType::Less )
+			unsafe
 			{
-				if( is_float )
+					 if( operator == BinaryOperatorType::Less )
 				{
-					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
+					if( is_float )
+					{
+						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
+					}
+					else if( is_signed )
+					{
+						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] );
+					}
 				}
-				else if( is_signed )
+				else if( operator == BinaryOperatorType::LessEqual )
 				{
-					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] );
+					if( is_float )
+					{
+						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLE, l_in_register, r_in_register, "<=\0"[0] );
+					}
+					else if( is_signed )
+					{
+						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, l_in_register, r_in_register, "<=\0"[0] );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULE, l_in_register, r_in_register, "<=\0"[0] );
+					}
 				}
-				else
+				else if( operator == BinaryOperatorType::Greater )
 				{
-					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] );
+					if( is_float )
+					{
+						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
+					}
+					else if( is_signed )
+					{
+						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
+					}
 				}
-			}
-			else if( operator == BinaryOperatorType::LessEqual )
-			{
-				if( is_float )
+				else if( operator == BinaryOperatorType::GreaterEqual )
 				{
-					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLE, l_in_register, r_in_register, "<=\0"[0] );
-				}
-				else if( is_signed )
-				{
-					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, l_in_register, r_in_register, "<=\0"[0] );
-				}
-				else
-				{
-					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULE, l_in_register, r_in_register, "<=\0"[0] );
-				}
-			}
-			else if( operator == BinaryOperatorType::Greater )
-			{
-				if( is_float )
-				{
-					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
-				}
-				else if( is_signed )
-				{
-					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] );
-				}
-				else
-				{
-					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
-				}
-			}
-			else if( operator == BinaryOperatorType::GreaterEqual )
-			{
-				if( is_float )
-				{
-					res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGE, l_in_register, r_in_register, ">=\0"[0] );
-				}
-				else if( is_signed )
-				{
-					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, l_in_register, r_in_register, ">=\0"[0] );
-				}
-				else
-				{
-					res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, l_in_register, r_in_register, ">=\0"[0] );
+					if( is_float )
+					{
+						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGE, l_in_register, r_in_register, ">=\0"[0] );
+					}
+					else if( is_signed )
+					{
+						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, l_in_register, r_in_register, ">=\0"[0] );
+					}
+					else
+					{
+						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, l_in_register, r_in_register, ">=\0"[0] );
+					}
 				}
 			}
 		}
@@ -2318,52 +2397,43 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 				return ErrorValue();
 		}
 
-		unsafe
+		auto result_fundamental_type= U_FundamentalType::i32_;
+		var LLVMTypeRef result_llvm_type= GetFundamentalLLVMType( result_fundamental_type );
+		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
-			var LLVMValueRef mut less= zero_init, mut greater= zero_init;
+			unsafe
+			{
+				var LLVMValueRef mut less= zero_init, mut greater= zero_init;
+				if( is_float )
+				{
+					less= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
+					greater= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
+				}
+				else if( is_signed )
+				{
+					less= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] );
+					greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] );
+				}
+				else
+				{
+					less= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] );
+					greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
+				}
 
-			if( is_float )
-			{
-				less= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
-			}
-			else if( is_signed )
-			{
-				less= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] );
-			}
-			else
-			{
-				less= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] );
-			}
+				var LLVMValueRef zero= LLVMConstInt( result_llvm_type, 0u64, LLVMBool::True );
+				var LLVMValueRef plus_one= LLVMConstInt( result_llvm_type, 1u64, LLVMBool::True );
+				var LLVMValueRef minus_one= LLVMConstInt( result_llvm_type, ~0u64, LLVMBool::True );
 
-			if( is_float )
-			{
-				greater= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
+				res.llvm_value=
+					LLVMBuildSelect(
+						function_context.llvm_ir_builder,
+						less,
+						minus_one,
+						LLVMBuildSelect( function_context.llvm_ir_builder, greater, plus_one, zero, g_null_string ),
+						g_null_string );
 			}
-			else if( is_signed )
-			{
-				greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] );
-			}
-			else
-			{
-				greater= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
-			}
-
-			auto result_fundamental_type= U_FundamentalType::i32_;
-			var LLVMTypeRef result_llvm_type= GetFundamentalLLVMType( result_fundamental_type );
-			var LLVMValueRef zero= LLVMConstInt( result_llvm_type, 0u64, LLVMBool::True );
-			var LLVMValueRef plus_one= LLVMConstInt( result_llvm_type, 1u64, LLVMBool::True );
-			var LLVMValueRef minus_one= LLVMConstInt( result_llvm_type, ~0u64, LLVMBool::True );
-
-			res.llvm_value=
-				LLVMBuildSelect(
-					function_context.llvm_ir_builder,
-					less,
-					minus_one,
-					LLVMBuildSelect( function_context.llvm_ir_builder, greater, plus_one, zero, g_null_string ),
-					g_null_string );
-
-			res.t= FundamentalType( result_fundamental_type, result_llvm_type );
 		}
+		res.t= FundamentalType( result_fundamental_type, result_llvm_type );
 	}
 	else{ halt; }
 
@@ -2391,34 +2461,34 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 		return ErrorValue();
 	}
 
-	var LLVMBasicBlockRef mut l_part_block= zero_init, mut r_part_block= zero_init, mut block_after_operator= zero_init;
-	unsafe
-	{
-		l_part_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
-		r_part_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
-		block_after_operator= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
-	}
-
 	auto l_var_in_register= CreateMoveToLLVMRegisterInstruction( l_var, function_context );
 	DestroyUnusedTemporaryVariables( names_scope, function_context, binary_operator.src_loc ); // Destroy right part temporaries.
 
 	var [ ReferencesGraph, 2 ] mut branches_references_graphs;
 	branches_references_graphs[0]= function_context.references_graph;
 
-	unsafe
+	var LLVMBasicBlockRef mut l_part_block= zero_init, mut r_part_block= zero_init, mut block_after_operator= zero_init;
+	if( !function_context.is_functionless_context )
 	{
-		if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
+		unsafe
 		{
-			LLVMBuildCondBr( function_context.llvm_ir_builder, l_var_in_register, r_part_block, block_after_operator );
-		}
-		else if( binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
-		{
-			LLVMBuildCondBr( function_context.llvm_ir_builder, l_var_in_register, block_after_operator, r_part_block );
-		}
-		else { halt; }
+			l_part_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+			r_part_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+			block_after_operator= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
-		LLVMAppendExistingBasicBlock( function_context.llvm_function, r_part_block );
-		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, r_part_block );
+			if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
+			{
+				LLVMBuildCondBr( function_context.llvm_ir_builder, l_var_in_register, r_part_block, block_after_operator );
+			}
+			else if( binary_operator.operator == BinaryOperatorType::LazyLogicalOr )
+			{
+				LLVMBuildCondBr( function_context.llvm_ir_builder, l_var_in_register, block_after_operator, r_part_block );
+			}
+			else { halt; }
+
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, r_part_block );
+			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, r_part_block );
+		}
 	}
 
 	auto mut r_var_in_register= LLVMValueRef::Null;
@@ -2441,18 +2511,21 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( branches_references_graphs, names_scope, binary_operator.src_loc );
 
 	auto mut phi_node= LLVMValueRef::Null;
-	unsafe
+	if( !function_context.is_functionless_context )
 	{
-		auto r_part_end_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
-		LLVMBuildBr( function_context.llvm_ir_builder, block_after_operator );
-		LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_operator );
-		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_operator );
+		unsafe
+		{
+			auto r_part_end_block= LLVMGetInsertBlock( function_context.llvm_ir_builder );
+			LLVMBuildBr( function_context.llvm_ir_builder, block_after_operator );
+			LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_operator );
+			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_operator );
 
-		phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, g_null_string );
+			phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, fundamental_llvm_types_.bool_, g_null_string );
 
-		var [ LLVMValueRef, 2 ] mut incoming_values[ l_var_in_register, r_var_in_register ];
-		var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ l_part_block, r_part_end_block ];
-		LLVMAddIncoming( phi_node, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
+			var [ LLVMValueRef, 2 ] mut incoming_values[ l_var_in_register, r_var_in_register ];
+			var [ LLVMBasicBlockRef, 2 ] mut incoming_blocks[ l_part_block, r_part_end_block ];
+			LLVMAddIncoming( phi_node, $<(incoming_values[0]), $<(incoming_blocks[0]), 2u );
+		}
 	}
 
 	var Variable mut result
@@ -2465,7 +2538,8 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 
 	unsafe
 	{
-		if( LLVMIsConstant( l_var_in_register ) == LLVMBool::True && LLVMIsConstant( r_var_in_register ) == LLVMBool::True )
+		if( l_var_in_register != LLVMValueRef::Null && LLVMIsConstant( l_var_in_register ) == LLVMBool::True &&
+			r_var_in_register != LLVMValueRef::Null && LLVMIsConstant( r_var_in_register ) == LLVMBool::True )
 		{
 			if( binary_operator.operator == BinaryOperatorType::LazyLogicalAnd )
 			{
@@ -2504,7 +2578,11 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 	{
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-		auto instructions_state= SaveInstructionsState( function_context );
+
+		var bool prev_is_functionless_context= function_context.is_functionless_context;
+		function_context.is_functionless_context= true;
+
+		auto state= SaveFunctionContextState( function_context );
 
 		foreach( &in_arg : in_args )
 		{
@@ -2518,7 +2596,8 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			args.push_back( function_context.args_preevaluation_cache[in_arg] );
 		}
 
-		RestoreInstructionsState( function_context, instructions_state );
+		RestoreFunctionContextState( function_context, state );
+		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
 	auto& args_ref= args;
@@ -2825,7 +2904,11 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 	{
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-		auto instructions_state= SaveInstructionsState( function_context );
+
+		var bool prev_is_functionless_context= function_context.is_functionless_context;
+		function_context.is_functionless_context= true;
+
+		auto state= SaveFunctionContextState( function_context );
 
 		foreach( &in_arg : synt_args )
 		{
@@ -2835,7 +2918,8 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 			DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 		}
 
-		RestoreInstructionsState( function_context, instructions_state );
+		RestoreFunctionContextState( function_context, state );
+		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
 	if_var( mut overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
@@ -2870,7 +2954,10 @@ fn CodeBuilder::CallFunctionsSet(
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-		auto instructions_state= SaveInstructionsState( function_context );
+		var bool prev_is_functionless_context= function_context.is_functionless_context;
+		function_context.is_functionless_context= true;
+
+		auto state= SaveFunctionContextState( function_context );
 
 		if_var( &thi : this_ )
 		{
@@ -2890,7 +2977,8 @@ fn CodeBuilder::CallFunctionsSet(
 			args_evaluated.push_back( function_context.args_preevaluation_cache[arg] );
 		}
 
-		RestoreInstructionsState( function_context, instructions_state );
+		RestoreFunctionContextState( function_context, state );
+		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
 	auto mut function_selected=
@@ -3005,7 +3093,10 @@ fn CodeBuilder::DoCallFunction(
 	var bool is_s_ret= function_type.IsStructRet();
 	if( is_s_ret )
 	{
-		s_ret_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.GetLLVMType(), g_null_string ) );
+		if( !function_context.is_functionless_context )
+		{
+			s_ret_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.GetLLVMType(), g_null_string ) );
+		}
 		llvm_args.push_back( s_ret_value );
 	}
 
@@ -3052,9 +3143,13 @@ fn CodeBuilder::DoCallFunction(
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 					.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "converted arg " + arg_number_str ),
-					.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), g_null_string ) )
 				};
-				CreateLifetimeStart( function_context, arg_converted.llvm_value );
+
+				if( !function_context.is_functionless_context )
+				{
+					arg_converted.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), g_null_string ) );
+					CreateLifetimeStart( function_context, arg_converted.llvm_value );
+				}
 
 				{
 					// Create temp variables storage for preventing of destruction of "arg".
@@ -3148,7 +3243,7 @@ fn CodeBuilder::DoCallFunction(
 				}
 			}
 
-			if( arg.location == Variable::Location::LLVMRegister )
+			if( arg.location == Variable::Location::LLVMRegister && !function_context.is_functionless_context )
 			{
 				// Bind value to const reference.
 				auto temp_storage= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, arg.t.GetLLVMType(), g_null_string ) );
@@ -3220,14 +3315,17 @@ fn CodeBuilder::DoCallFunction(
 						return ErrorValue();
 					}
 
-					auto var_copy= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), g_null_string ) );
-					CreateLifetimeStart( function_context, var_copy );
-					value_args_for_lifetime_end_call.push_back( var_copy );
+					if( !function_context.is_functionless_context )
+					{
+						auto var_copy= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), g_null_string ) );
+						CreateLifetimeStart( function_context, var_copy );
+						value_args_for_lifetime_end_call.push_back( var_copy );
 
-					auto mut value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
-					BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, src_loc );
+						auto mut value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
+						BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, src_loc );
 
-					llvm_arg= var_copy;
+						llvm_arg= var_copy;
+					}
 				}
 			}
 			else
@@ -3314,7 +3412,7 @@ fn CodeBuilder::DoCallFunction(
 		}
 	}
 
-	if( result.constexpr_value == LLVMValueRef::Null )
+	if( result.constexpr_value == LLVMValueRef::Null && !function_context.is_functionless_context )
 	{
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
 		unsafe
@@ -3331,9 +3429,12 @@ fn CodeBuilder::DoCallFunction(
 
 	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.
 	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
-	foreach( value_arg : value_args_for_lifetime_end_call )
+	if( !function_context.is_functionless_context  )
 	{
-		CreateLifetimeEnd( function_context, value_arg );
+		foreach( value_arg : value_args_for_lifetime_end_call )
+		{
+			CreateLifetimeEnd( function_context, value_arg );
+		}
 	}
 
 	// Remove temp inner nodes.
@@ -3546,8 +3647,12 @@ fn CodeBuilder::BuildTempVariableConstruction(
 	};
 
 	auto name= "temp " + t.ToString() + "\0";
-	result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), name.front() ) );
-	CreateLifetimeStart( function_context, result.llvm_value );
+
+	if( !function_context.is_functionless_context )
+	{
+		result.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), name.front() ) );
+		CreateLifetimeStart( function_context, result.llvm_value );
+	}
 
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, name );
 

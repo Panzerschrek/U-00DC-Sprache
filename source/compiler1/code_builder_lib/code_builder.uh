@@ -12,7 +12,12 @@ import "tbaa_metadata_builder.uh"
 ?macro <? CB_GENERATE_LOOP:block( ?function_context:expr, ?iteration_count:expr, ?b:block )?>
 ->
 <?
-	if( ?iteration_count != 0u64 )
+	if( ?function_context.is_functionless_context )
+	{
+		auto counter_value= unsafe( LLVMConstNull( fundamental_llvm_types_.int_ptr ) );
+		?b
+	}
+	else if( ?iteration_count != 0u64 )
 	{
 		unsafe
 		{
@@ -873,7 +878,7 @@ private:
 	fn CreateLifetimeStart( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 	fn CreateLifetimeEnd( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 
-	struct InstructionsState
+	struct FunctionContextState
 	{
 		LLVMValueRef current_block_last_instruction;
 		LLVMValueRef alloca_block_last_instruction;
@@ -881,8 +886,8 @@ private:
 		ReferencesGraph references_graph;
 	}
 
-	fn SaveInstructionsState( FunctionContext& function_context ) : InstructionsState;
-	fn RestoreInstructionsState( FunctionContext &mut function_context, InstructionsState& state );
+	fn SaveFunctionContextState( FunctionContext& function_context ) : FunctionContextState;
+	fn RestoreFunctionContextState( FunctionContext &mut function_context, FunctionContextState& state );
 
 	// Dummy function context for places outside actual function.
 	fn CreateGlobalFunctionContext( this ) : FunctionContext;

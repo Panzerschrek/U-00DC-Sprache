@@ -666,9 +666,14 @@ fn CodeBuilder::ResolveValue(
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-		auto instructions_state= SaveInstructionsState( function_context );
+		var bool prev_is_functionless_context= function_context.is_functionless_context;
+		function_context.is_functionless_context= true;
+
+		auto state= SaveFunctionContextState( function_context );
 		var Variable variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, complex_name.start.get</Synt::Typeof/>().try_deref().expr.deref() );
-		RestoreInstructionsState( function_context, instructions_state );
+		RestoreFunctionContextState( function_context, state );
+
+		function_context.is_functionless_context= prev_is_functionless_context;
 
 		start_value= NamesScopeValue( variable.t );
 	}
@@ -2024,13 +2029,20 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 
 				if( function_context.references_graph.GetNodeKind( node_id ) == ReferencesGraph::NodeKind::Variable )
 				{
-					var Variable variable= function_context.variables_frames.back()[i];
-					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
-
-					// Do not create lifetime for variables existing only in llvm register (without any address).
-					if( variable.location == Variable::Location::Pointer )
+					if( !function_context.is_functionless_context )
 					{
-						CreateLifetimeEnd( function_context, variable.llvm_value );
+						var Variable variable= function_context.variables_frames.back()[i];
+
+						if( variable.llvm_value != LLVMValueRef::Null )
+						{
+							BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
+						}
+
+						// Do not create lifetime for variables existing only in llvm register (without any address).
+						if( variable.location == Variable::Location::Pointer )
+						{
+							CreateLifetimeEnd( function_context, variable.llvm_value );
+						}
 					}
 				}
 			}
@@ -2554,6 +2566,11 @@ fn CodeBuilder::MarkInstructionWithTBAAMetadata( this, LLVMValueRef instruction,
 
 fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction )
 {
+	if( load_instruction == LLVMValueRef::Null )
+	{
+		return;
+	}
+
 	auto& name= "nonnull";
 	unsafe( LLVMSetMetadata(
 		load_instruction,
@@ -2563,6 +2580,11 @@ fn CodeBuilder::MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_
 
 fn CodeBuilder::CreateTypedLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef
 {
+	if( address == LLVMValueRef::Null || function_context.is_functionless_context )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	if( t == void_type_ )
 	{
 		return unsafe( LLVMGetUndef( fundamental_llvm_types_.void_ ) );
@@ -2581,6 +2603,11 @@ fn CodeBuilder::CreateTypedLoad( mut this, FunctionContext& function_context, Ty
 
 fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_context, Type& t, LLVMValueRef address ) : LLVMValueRef
 {
+	if( address == LLVMValueRef::Null || function_context.is_functionless_context )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	auto result= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, LLVMPointerType( t.GetLLVMType(), 0u ), address, g_null_string ) );
 
 	if( generate_tbaa_metadata_ )
@@ -2594,6 +2621,10 @@ fn CodeBuilder::CreateTypedReferenceLoad( mut this, FunctionContext& function_co
 
 fn CodeBuilder::CreateTypedStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address )
 {
+	if( function_context.is_functionless_context )
+	{
+		return;
+	}
 	if( t == void_type_ )
 	{
 		return;
@@ -2610,6 +2641,11 @@ fn CodeBuilder::CreateTypedStore( mut this, FunctionContext& function_context, T
 
 fn CodeBuilder::CreateTypedReferenceStore( mut this, FunctionContext& function_context, Type& t, LLVMValueRef value_to_store, LLVMValueRef address )
 {
+	if( function_context.is_functionless_context )
+	{
+		return;
+	}
+
 	auto result= unsafe( LLVMBuildStore( function_context.llvm_ir_builder, value_to_store, address ) );
 
 	if( generate_tbaa_metadata_ )
@@ -2677,6 +2713,15 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 	{
 		return ref;
 	}
+	if( ref == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
+
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(ref)) == LLVMBool::False )
+	{
+		return LLVMValueRef::Null;
+	}
 
 	auto src_class_type= src_type.GetClassType().try_deref();
 	foreach( &parent : src_class_type.lock_imut().deref().parents )
@@ -2718,6 +2763,15 @@ fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Na
 
 fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field ) : LLVMValueRef
 {
+	if( value == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	auto op_name_nt= "." + field.syntax_element.deref().name + "\0";
 	unsafe
 	{
@@ -2733,6 +2787,15 @@ fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Cl
 
 fn CodeBuilder::CreateClassParentFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassType::Parent& parent ) : LLVMValueRef
 {
+	if( value == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	unsafe
 	{
 		var [ LLVMValueRef, 2 ] mut indexes
@@ -2747,6 +2810,15 @@ fn CodeBuilder::CreateClassParentFieldGEP( this, FunctionContext& function_conte
 
 fn CodeBuilder::CreateBaseClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value ) : LLVMValueRef
 {
+	if( value == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	var [ LLVMValueRef, 2 ] mut indexes
 	[
 		GetZeroGEPIndex(),
@@ -2768,6 +2840,15 @@ fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, 
 
 fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, TupleType& t, LLVMValueRef value, u32 element_index ) : LLVMValueRef
 {
+	if( value == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
+	if( function_context.is_functionless_context && unsafe(LLVMIsConstant(value)) == LLVMBool::False )
+	{
+		return LLVMValueRef::Null;
+	}
+
 	auto op_name_nt= "[" + ust::to_string8(element_index) + "]\0";
 	unsafe
 	{
@@ -2783,6 +2864,11 @@ fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, 
 
 fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context )
 {
+	if( function_context.is_functionless_context )
+	{
+		return;
+	}
+
 	unsafe
 	{
 		auto constant_type= LLVMTypeOf( constant );
@@ -2830,6 +2916,11 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 
 fn CodeBuilder::CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context )
 {
+	if( function_context.is_functionless_context )
+	{
+		return;
+	}
+
 	unsafe
 	{
 		var LLVMTypeRef llvm_type= t.GetLLVMType();
@@ -2986,6 +3077,11 @@ fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_contex
 		return;
 	}
 
+	if( llvm_value == LLVMValueRef::Null )
+	{
+		return;
+	}
+
 	unsafe
 	{
 		auto alloca_inst= LLVMIsAAllocaInst( llvm_value );
@@ -3020,6 +3116,10 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 	{
 		return;
 	}
+	if( llvm_value == LLVMValueRef::Null )
+	{
+		return;
+	}
 
 	unsafe
 	{
@@ -3049,11 +3149,11 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 	}
 }
 
-fn CodeBuilder::SaveInstructionsState( FunctionContext& function_context ) : InstructionsState
+fn CodeBuilder::SaveFunctionContextState( FunctionContext& function_context ) : FunctionContextState
 {
 	unsafe
 	{
-		var InstructionsState mut instructions_state
+		var FunctionContextState mut instructions_state
 		{
 			.current_block_last_instruction= LLVMGetLastInstruction( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ),
 			.alloca_block_last_instruction= LLVMGetLastInstruction( LLVMGetInsertBlock( function_context.alloca_ir_builder ) ),
@@ -3064,29 +3164,14 @@ fn CodeBuilder::SaveInstructionsState( FunctionContext& function_context ) : Ins
 	}
 }
 
-fn CodeBuilder::RestoreInstructionsState( FunctionContext &mut function_context, InstructionsState& state )
+fn CodeBuilder::RestoreFunctionContextState( FunctionContext &mut function_context, FunctionContextState& state )
 {
 	unsafe
 	{
-		while( LLVMGetLastBasicBlock( function_context.llvm_function ) != state.current_block )
-		{
-			auto bb= LLVMGetLastBasicBlock( function_context.llvm_function );
-			U1_DropAllBasicBlockUsersReferences( bb );
-			LLVMDeleteBasicBlock( bb );
-		}
-
-		while( LLVMGetLastInstruction( state.current_block ) != state.current_block_last_instruction )
-		{
-			LLVMInstructionEraseFromParent( LLVMGetLastInstruction( state.current_block ) );
-		}
-
-		while( LLVMGetLastInstruction( function_context.alloca_basic_block ) != state.alloca_block_last_instruction )
-		{
-			LLVMInstructionEraseFromParent( LLVMGetLastInstruction( function_context.alloca_basic_block ) );
-		}
-
-		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, state.current_block );
-		LLVMPositionBuilderAtEnd( function_context.alloca_ir_builder, function_context.alloca_basic_block );
+		// TODO - use debug assert instead.
+		halt if( state.current_block_last_instruction != LLVMGetLastInstruction( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ) );
+		halt if( state.alloca_block_last_instruction != LLVMGetLastInstruction( LLVMGetInsertBlock( function_context.alloca_ir_builder ) ) );
+		halt if( state.current_block != LLVMGetInsertBlock( function_context.llvm_ir_builder ) );
 	}
 
 	function_context.references_graph= state.references_graph;
@@ -3104,6 +3189,8 @@ fn CodeBuilder::CreateGlobalFunctionContext( this ) : FunctionContext
 		llvm_context_,
 		global_llvm_function_,
 		move(function_type) );
+
+	function_context.is_functionless_context= true;
 
 	function_context.variables_frames.push_back( FunctionContext::VariablesFrame() );
 	return move(function_context);
