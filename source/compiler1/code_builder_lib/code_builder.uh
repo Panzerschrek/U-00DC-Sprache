@@ -878,7 +878,7 @@ private:
 	fn CreateLifetimeStart( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 	fn CreateLifetimeEnd( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 
-	struct InstructionsState
+	struct FunctionContextState
 	{
 		LLVMValueRef current_block_last_instruction;
 		LLVMValueRef alloca_block_last_instruction;
@@ -886,8 +886,8 @@ private:
 		ReferencesGraph references_graph;
 	}
 
-	fn SaveInstructionsState( FunctionContext& function_context ) : InstructionsState;
-	fn RestoreInstructionsState( FunctionContext &mut function_context, InstructionsState& state );
+	fn SaveFunctionContextState( FunctionContext& function_context ) : FunctionContextState;
+	fn RestoreFunctionContextState( FunctionContext &mut function_context, FunctionContextState& state );
 
 	// Dummy function context for places outside actual function.
 	fn CreateGlobalFunctionContext( this ) : FunctionContext;

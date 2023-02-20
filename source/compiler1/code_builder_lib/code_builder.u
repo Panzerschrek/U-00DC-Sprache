@@ -669,9 +669,9 @@ fn CodeBuilder::ResolveValue(
 		var bool prev_is_functionless_context= function_context.is_functionless_context;
 		function_context.is_functionless_context= true;
 
-		auto instructions_state= SaveInstructionsState( function_context );
+		auto state= SaveFunctionContextState( function_context );
 		var Variable variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, complex_name.start.get</Synt::Typeof/>().try_deref().expr.deref() );
-		RestoreInstructionsState( function_context, instructions_state );
+		RestoreFunctionContextState( function_context, state );
 
 		function_context.is_functionless_context= prev_is_functionless_context;
 
@@ -3149,11 +3149,11 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 	}
 }
 
-fn CodeBuilder::SaveInstructionsState( FunctionContext& function_context ) : InstructionsState
+fn CodeBuilder::SaveFunctionContextState( FunctionContext& function_context ) : FunctionContextState
 {
 	unsafe
 	{
-		var InstructionsState mut instructions_state
+		var FunctionContextState mut instructions_state
 		{
 			.current_block_last_instruction= LLVMGetLastInstruction( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ),
 			.alloca_block_last_instruction= LLVMGetLastInstruction( LLVMGetInsertBlock( function_context.alloca_ir_builder ) ),
@@ -3164,33 +3164,14 @@ fn CodeBuilder::SaveInstructionsState( FunctionContext& function_context ) : Ins
 	}
 }
 
-fn CodeBuilder::RestoreInstructionsState( FunctionContext &mut function_context, InstructionsState& state )
+fn CodeBuilder::RestoreFunctionContextState( FunctionContext &mut function_context, FunctionContextState& state )
 {
 	unsafe
 	{
+		// TODO - use debug assert instead.
 		halt if( state.current_block_last_instruction != LLVMGetLastInstruction( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ) );
 		halt if( state.alloca_block_last_instruction != LLVMGetLastInstruction( LLVMGetInsertBlock( function_context.alloca_ir_builder ) ) );
 		halt if( state.current_block != LLVMGetInsertBlock( function_context.llvm_ir_builder ) );
-
-		while( LLVMGetLastBasicBlock( function_context.llvm_function ) != state.current_block )
-		{
-			auto bb= LLVMGetLastBasicBlock( function_context.llvm_function );
-			U1_DropAllBasicBlockUsersReferences( bb );
-			LLVMDeleteBasicBlock( bb );
-		}
-
-		while( LLVMGetLastInstruction( state.current_block ) != state.current_block_last_instruction )
-		{
-			LLVMInstructionEraseFromParent( LLVMGetLastInstruction( state.current_block ) );
-		}
-
-		while( LLVMGetLastInstruction( function_context.alloca_basic_block ) != state.alloca_block_last_instruction )
-		{
-			LLVMInstructionEraseFromParent( LLVMGetLastInstruction( function_context.alloca_basic_block ) );
-		}
-
-		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, state.current_block );
-		LLVMPositionBuilderAtEnd( function_context.alloca_ir_builder, function_context.alloca_basic_block );
 	}
 
 	function_context.references_graph= state.references_graph;

@@ -16,12 +16,6 @@ extern "C" void U1_SetStructName(const LLVMTypeRef t, const char* const name)
 	llvm::dyn_cast<llvm::StructType>(llvm::unwrap(t))->setName(name);
 }
 
-extern "C" void U1_DropAllBasicBlockUsersReferences(const LLVMBasicBlockRef basic_block)
-{
-	for( const auto use : llvm::unwrap(basic_block)->users() )
-		use->dropAllReferences();
-}
-
 extern "C" bool U1_BasicBlockHasPredecessors(const LLVMBasicBlockRef basic_block)
 {
 	return llvm::unwrap(basic_block)->hasNPredecessorsOrMore(1);

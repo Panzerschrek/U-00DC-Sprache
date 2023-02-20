@@ -45,9 +45,9 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		var bool prev_is_functionless_context= function_context.is_functionless_context;
 		function_context.is_functionless_context= true;
 
-		auto instructions_state= SaveInstructionsState( function_context );
+		auto state= SaveFunctionContextState( function_context );
 		index_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, array_type.element_count );
-		RestoreInstructionsState( function_context, instructions_state );
+		RestoreFunctionContextState( function_context, state );
 
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
