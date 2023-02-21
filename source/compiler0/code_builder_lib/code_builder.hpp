@@ -1054,7 +1054,7 @@ private:
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
 	std::unordered_map< Type, VariableMutPtr, TypeHasher > typeinfo_cache_;
-	std::vector<std::shared_ptr<Class>> typeinfo_class_table_;
+	std::vector<std::unique_ptr<Class>> typeinfo_class_table_;
 
 	std::vector<Type> non_sync_expression_stack_;
 

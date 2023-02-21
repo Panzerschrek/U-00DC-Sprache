@@ -38,7 +38,7 @@ enum class InnerReferenceType : uint8_t
 };
 
 // Observer pointer to class.
-// Class itself stored in enum table.
+// Class itself stored in class table.
 using ClassPtr= Class*;
 
 // Observer pointer to enum.

@@ -81,18 +81,18 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	// Currently, give "random" names for typeinfo classes.
 	llvm::StructType* const llvm_type= llvm::StructType::create( llvm_context_ );
 
-	const auto typeinfo_class_ptr= std::make_shared<Class>( std::move(name), &root_namespace );
-	typeinfo_class_table_.push_back(typeinfo_class_ptr);
-	ClassPtr typeinfo_class= typeinfo_class_ptr.get();
+	auto typeinfo_class_ptr= std::make_unique<Class>( std::move(name), &root_namespace );
+	const ClassPtr typeinfo_class= typeinfo_class_ptr.get();
+	typeinfo_class_table_.push_back( std::move(typeinfo_class_ptr) );
 
 	typeinfo_class->llvm_type= llvm_type;
 	typeinfo_class->typeinfo_type= src_type;
 
 	llvm_type->setName( mangler_->MangleType( typeinfo_class ) );
 
-	typeinfo_class_ptr->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
+	typeinfo_class->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
 
-	return typeinfo_class_ptr.get();
+	return typeinfo_class;
 }
 
 VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace )
