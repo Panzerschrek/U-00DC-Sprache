@@ -597,14 +597,14 @@ fn CodeBuilder::SetupVirtualTablePointers_r(
 			var [ LLVMValueRef, 2 ] mut parent_indexes
 			[
 				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64( parent.field_number ), LLVMBool::False )
+				CreateIndexValue( parent.field_number )
 			];
 			auto parent_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.llvm_type, this_, $<(parent_indexes[0]), 2u, g_null_string );
 
 			var [ LLVMValueRef, 2 ] mut vtable_indexes
 			[
 				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64( select( parent.field_number == 0u ? 0u : vtable_field_number ) ), LLVMBool::False )
+				CreateIndexValue( select( parent.field_number == 0u ? 0u : vtable_field_number ) ),
 			];
 			auto vtable_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.virtual_table_llvm_type, ptr_to_vtable_ptr, $<(vtable_indexes[0]), 2u, g_null_string );
 
@@ -745,7 +745,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 				var [ LLVMValueRef, 2 ] mut index_list
 				[
 					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(field_index), LLVMBool::False )
+					CreateIndexValue(field_index),
 				];
 				function_virtual_table= LLVMBuildGEP2( function_context.llvm_ir_builder,current_class.virtual_table_llvm_type, function_virtual_table, $<(index_list[0]), 2u, g_null_string );
 			}
@@ -774,8 +774,8 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		var [ LLVMValueRef, 3 ] mut function_ptr_indexes
 		[
 			GetZeroGEPIndex(),
-			LLVMConstInt( fundamental_llvm_types_.u32_, u64(functions_table_field_number), LLVMBool::False ),
-			LLVMConstInt( fundamental_llvm_types_.u32_, u64(index_in_table), LLVMBool::False ),
+			CreateIndexValue( functions_table_field_number ),
+			CreateIndexValue( index_in_table ),
 		];
 		auto ptr_to_function_ptr=
 			LLVMBuildGEP2( function_context.llvm_ir_builder, function_class_virtual_table_type, function_virtual_table, $<(function_ptr_indexes[0]), 3u, g_null_string );
@@ -814,7 +814,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			var [ LLVMValueRef, 2 ] mut offset_indeces
 			[
 				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(c_offset_field_number), LLVMBool::False )
+				CreateIndexValue(c_offset_field_number),
 			];
 			auto offset_ptr=
 				LLVMBuildGEP2(

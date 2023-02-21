@@ -861,6 +861,9 @@ private:
 	fn CreateTupleElementGEP( this, FunctionContext& function_context, Variable& tuple_variable, u32 element_index ) : LLVMValueRef;
 	fn CreateTupleElementGEP( this, FunctionContext& function_context, NamesScopeVariable& tuple_variable, u32 element_index ) : LLVMValueRef;
 	fn CreateTupleElementGEP( this, FunctionContext& function_context, TupleType& t, LLVMValueRef value, u32 element_index ) : LLVMValueRef;
+	fn CreateArrayElementGEP( this, FunctionContext& function_context, ArrayType& t, LLVMValueRef value, u32 index ) : LLVMValueRef;
+	fn CreateArrayElementGEP( this, FunctionContext& function_context, ArrayType& t, LLVMValueRef value, LLVMValueRef index ) : LLVMValueRef;
+	fn CreateIndexValue( this, u32 index ) : LLVMValueRef;
 
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 

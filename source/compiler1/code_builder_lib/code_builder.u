@@ -2737,18 +2737,7 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 	auto src_class_type= src_type.GetClassType().try_deref();
 	foreach( &parent : src_class_type.lock_imut().deref().parents )
 	{
-		auto mut sub_ref= LLVMValueRef::Null;
-		unsafe
-		{
-			var [ LLVMValueRef, 2 ] mut indexes
-			[
-				GetZeroGEPIndex(),
-				LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
-			];
-
-			sub_ref= LLVMBuildGEP2( function_context.llvm_ir_builder, src_class_type.lock_imut().deref().llvm_type, ref, $<(indexes[0]), 2u, g_null_string );
-		}
-
+		auto sub_ref= CreateClassParentFieldGEP( function_context, src_class_type, ref, parent );
 		if( parent.class_ == dst_type )
 		{
 			return sub_ref;
@@ -2789,7 +2778,7 @@ fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Cl
 		var [ LLVMValueRef, 2 ] mut indexes
 		[
 			GetZeroGEPIndex(),
-			LLVMConstInt( fundamental_llvm_types_.u32_, u64(field.index), LLVMBool::False )
+			CreateIndexValue(field.index),
 		];
 
 		return LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, op_name_nt.front() );
@@ -2812,7 +2801,7 @@ fn CodeBuilder::CreateClassParentFieldGEP( this, FunctionContext& function_conte
 		var [ LLVMValueRef, 2 ] mut indexes
 		[
 			GetZeroGEPIndex(),
-			LLVMConstInt( fundamental_llvm_types_.u32_, u64(parent.field_number), LLVMBool::False )
+			CreateIndexValue( parent.field_number ),
 		];
 
 		return LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, g_null_string );
@@ -2866,11 +2855,40 @@ fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, 
 		var [ LLVMValueRef, 2 ] mut indexes
 		[
 			GetZeroGEPIndex(),
-			LLVMConstInt( fundamental_llvm_types_.u32_, u64(element_index), LLVMBool::False )
+			CreateIndexValue(element_index)
 		];
 
 		return LLVMBuildGEP2( function_context.llvm_ir_builder, t.llvm_type, value, $<(indexes[0]), 2u, op_name_nt.front() );
 	}
+}
+
+fn CodeBuilder::CreateArrayElementGEP( this, FunctionContext& function_context, ArrayType& t, LLVMValueRef value, u32 index ) : LLVMValueRef
+{
+	return CreateArrayElementGEP( function_context, t, value, CreateIndexValue(index) );
+}
+
+fn CodeBuilder::CreateArrayElementGEP( this, FunctionContext& function_context, ArrayType& t, LLVMValueRef value, LLVMValueRef index ) : LLVMValueRef
+{
+	if( value == LLVMValueRef::Null || index == LLVMValueRef::Null )
+	{
+		return LLVMValueRef::Null;
+	}
+	if( function_context.is_functionless_context &&
+		( unsafe(LLVMIsConstant(value)) == LLVMBool::False || unsafe(LLVMIsConstant(index)) == LLVMBool::False ) )
+	{
+		return LLVMValueRef::Null;
+	}
+
+	unsafe
+	{
+		var [ LLVMValueRef, 2 ] mut indexes[ GetZeroGEPIndex(), index ];
+		return LLVMBuildGEP2( function_context.llvm_ir_builder, t.llvm_type, value, $<(indexes[0]), 2u, g_null_string );
+	}
+}
+
+fn CodeBuilder::CreateIndexValue( this, u32 index ) : LLVMValueRef
+{
+	return unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(index), LLVMBool::False ) );
 }
 
 fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context )
@@ -2892,7 +2910,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 				var [ LLVMValueRef, 2 ] mut indexes
 				[
 					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+					CreateIndexValue(i)
 				];
 				auto element_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, constant_type, ptr, $<(indexes[0]), 2u, ".\0"[0] );
 
@@ -2909,7 +2927,7 @@ fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef const
 				var [ LLVMValueRef, 2 ] mut indexes
 				[
 					GetZeroGEPIndex(),
-					LLVMConstInt( fundamental_llvm_types_.u32_, u64(i), LLVMBool::False )
+					CreateIndexValue(i)
 				];
 				auto element_ptr= LLVMBuildGEP2( function_context.llvm_ir_builder, constant_type, ptr, $<(indexes[0]), 2u, ".\0"[0] );
 
