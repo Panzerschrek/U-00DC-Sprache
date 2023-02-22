@@ -35,19 +35,16 @@ public:
 		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
-	void CreateFunctionInfo(
-		const FunctionVariable& func_variable,
-		const std::string& function_name );
+	void CreateFunctionInfo( const FunctionVariable& func_variable, const std::string& function_name );
 
-	void SetCurrentLocation(
-		const SrcLoc& src_loc,
-		FunctionContext& function_context );
+	void SetCurrentLocation( const SrcLoc& src_loc, FunctionContext& function_context );
 
 	void StartBlock( const SrcLoc& src_loc, FunctionContext& function_context );
 	void EndBlock( FunctionContext& function_context );
 
 private:
-	llvm::DIFile* GetDIFile(size_t file_index);
+	llvm::DIFile* GetDIFile( const SrcLoc& src_loc );
+	llvm::DIFile* GetRootDIFile();
 
 	llvm::DIType* CreateDIType( const Type& type );
 	llvm::DIType* CreateDIType( const FundamentalType& type );

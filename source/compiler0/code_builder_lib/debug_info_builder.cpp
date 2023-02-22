@@ -55,7 +55,7 @@ void DebugInfoBuilder::CreateVariableInfo(
 		builder_->createAutoVariable(
 			function_context.current_debug_info_scope,
 			variable_name,
-			GetDIFile( src_loc.GetFileIndex() ),
+			GetDIFile( src_loc ),
 			src_loc.GetLine(),
 			CreateDIType(variable.type) );
 
@@ -80,7 +80,7 @@ void DebugInfoBuilder::CreateReferenceVariableInfo(
 		builder_->createAutoVariable(
 			function_context.current_debug_info_scope,
 			variable_name,
-			GetDIFile( src_loc.GetFileIndex() ),
+			GetDIFile( src_loc ),
 			src_loc.GetLine(),
 			builder_->createPointerType( CreateDIType(variable.type), data_layout_.getPointerSizeInBits() ) );
 
@@ -96,18 +96,16 @@ void DebugInfoBuilder::CreateReferenceVariableInfo(
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
-void DebugInfoBuilder::CreateFunctionInfo(
-	const FunctionVariable& func_variable,
-	const std::string& function_name )
+void DebugInfoBuilder::CreateFunctionInfo( const FunctionVariable& func_variable, const std::string& function_name )
 {
 	if( builder_ == nullptr )
 		return;
 
 	const auto di_function= builder_->createFunction(
-		GetDIFile( func_variable.body_src_loc.GetFileIndex() ),
+		GetDIFile( func_variable.body_src_loc ),
 		function_name,
 		func_variable.llvm_function->getName(),
-		GetDIFile( func_variable.body_src_loc.GetFileIndex() ),
+		GetDIFile( func_variable.body_src_loc ),
 		func_variable.body_src_loc.GetLine(),
 		CreateDIType( *func_variable.type.GetFunctionType() ),
 		func_variable.body_src_loc.GetLine(),
@@ -116,9 +114,7 @@ void DebugInfoBuilder::CreateFunctionInfo(
 	func_variable.llvm_function->setSubprogram( di_function );
 }
 
-void DebugInfoBuilder::SetCurrentLocation(
-	const SrcLoc& src_loc,
-	FunctionContext& function_context )
+void DebugInfoBuilder::SetCurrentLocation( const SrcLoc& src_loc, FunctionContext& function_context )
 {
 	if( builder_ == nullptr )
 		return;
@@ -137,7 +133,7 @@ void DebugInfoBuilder::StartBlock( const SrcLoc& src_loc, FunctionContext& funct
 		function_context.current_debug_info_scope=
 			builder_->createLexicalBlock(
 				function_context.current_debug_info_scope,
-				GetDIFile( src_loc.GetFileIndex() ),
+				GetDIFile( src_loc ),
 				src_loc.GetLine(),
 				src_loc.GetColumn() );
 }
@@ -148,10 +144,17 @@ void DebugInfoBuilder::EndBlock( FunctionContext& function_context )
 		function_context.current_debug_info_scope= function_context.current_debug_info_scope->getScope();
 }
 
-llvm::DIFile* DebugInfoBuilder::GetDIFile(const size_t file_index)
+llvm::DIFile* DebugInfoBuilder::GetDIFile( const SrcLoc& src_loc )
 {
+	const uint32_t file_index= src_loc.GetFileIndex();
 	U_ASSERT( file_index < source_file_entries_.size() );
 	return source_file_entries_[file_index];
+}
+
+llvm::DIFile* DebugInfoBuilder::GetRootDIFile()
+{
+	U_ASSERT( !source_file_entries_.empty() );
+	return source_file_entries_[0];
 }
 
 llvm::DIType* DebugInfoBuilder::CreateDIType( const Type& type )
@@ -192,7 +195,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const FundamentalType& type )
 		return builder_->createStructType(
 			compile_unit_,
 			GetFundamentalTypeName( type.fundamental_type ),
-			GetDIFile(0),
+			GetRootDIFile(),
 			0u,
 			data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
 			8u * uint32_t(data_layout_.getABITypeAlignment( type.llvm_type )),
@@ -253,7 +256,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const TupleType& type )
 	std::vector<llvm::Metadata*> elements;
 	elements.reserve( type.element_types.size() );
 
-	const auto di_file= GetDIFile(0);
+	const auto di_file= GetRootDIFile();
 
 	for( const Type& element_type : type.element_types )
 	{
@@ -352,7 +355,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
 	// TODO - get SrcLoc for enum
-	const auto di_file= GetDIFile( the_class.body_src_loc.GetFileIndex() );
+	const auto di_file= GetDIFile( the_class.body_src_loc );
 
 	std::vector<llvm::Metadata*> fields;
 	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
@@ -459,7 +462,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 		} );
 
 	// TODO - get SrcLoc for enum
-	const auto di_file= GetDIFile(0);
+	const auto di_file= GetRootDIFile();
 
 	const auto result=
 		builder_->createEnumerationType(
