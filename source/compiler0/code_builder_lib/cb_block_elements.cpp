@@ -24,7 +24,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 		std::visit(
 			[&]( const auto& t )
 			{
-				debug_info_builder_->SetCurrentDebugLocation( t.src_loc_, function_context );
+				debug_info_builder_->SetCurrentLocation( t.src_loc_, function_context );
 				return BuildBlockElementImpl( names, function_context, t );
 			},
 			block_element );
@@ -102,7 +102,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, variable_declaration.name );
 
 			CreateLifetimeStart( function_context, variable->llvm_value );
-			debug_info_builder_->CreateVariableDebugInfo( *variable, variable_declaration.name, variable_declaration.src_loc, function_context );
+			debug_info_builder_->CreateVariableInfo( *variable, variable_declaration.name, variable_declaration.src_loc, function_context );
 
 			{
 				const VariableMutPtr variable_for_initialization=
@@ -184,7 +184,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				CreateReferenceCast( expression_result->llvm_value, expression_result->type, variable_reference->type, function_context );
 			variable_reference->constexpr_value= expression_result->constexpr_value;
 
-			debug_info_builder_->CreateReferenceVariableDebugInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );
+			debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );
 
 			if( !function_context.variables_state.TryAddLink( expression_result, variable_reference ) )
 				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result->name );
@@ -285,7 +285,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		variable_reference->llvm_value= initializer_experrsion->llvm_value;
 
-		debug_info_builder_->CreateReferenceVariableDebugInfo( *variable_reference, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
+		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
 		if( !function_context.variables_state.TryAddLink( initializer_experrsion, variable_reference ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion->name );
@@ -321,7 +321,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			CreateLifetimeStart( function_context, variable->llvm_value );
 		}
 
-		debug_info_builder_->CreateVariableDebugInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
+		debug_info_builder_->CreateVariableInfo( *variable, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
 		SetupReferencesInCopyOrMove( function_context, variable, initializer_experrsion, names.GetErrors(), auto_variable_declaration.src_loc_ );
 
@@ -661,7 +661,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				variable_reference->llvm_value= CreateTupleElementGEP( function_context, *sequence_expression, element_index );
 
-				debug_info_builder_->CreateReferenceVariableDebugInfo( *variable_reference, variable_name, for_operator.src_loc_, function_context );
+				debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_name, for_operator.src_loc_, function_context );
 
 				if( !function_context.variables_state.TryAddLink( sequence_lock, variable_reference ) )
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression->name );
@@ -695,7 +695,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, variable_name );
 				CreateLifetimeStart( function_context, variable->llvm_value );
-				debug_info_builder_->CreateVariableDebugInfo( *variable, variable_name, for_operator.src_loc_, function_context );
+				debug_info_builder_->CreateVariableInfo( *variable, variable_name, for_operator.src_loc_, function_context );
 
 				SetupReferencesInCopyOrMove( function_context, variable, sequence_expression, names.GetErrors(), for_operator.src_loc_ );
 
@@ -806,7 +806,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		std::visit(
 			[&]( const auto& t )
 			{
-				debug_info_builder_->SetCurrentDebugLocation( t.src_loc_, function_context );
+				debug_info_builder_->SetCurrentLocation( t.src_loc_, function_context );
 				BuildBlockElementImpl( loop_names_scope, function_context, t );
 			},
 			*c_style_for_operator.variable_declaration_part_ );
@@ -884,7 +884,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		std::visit(
 			[&]( const auto& t )
 			{
-				debug_info_builder_->SetCurrentDebugLocation( t.src_loc_, function_context );
+				debug_info_builder_->SetCurrentLocation( t.src_loc_, function_context );
 				BuildBlockElementImpl( loop_names_scope, function_context, t );
 			},
 			element );
@@ -1081,7 +1081,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 			variable_reference->llvm_value= expr->llvm_value;
 
-		debug_info_builder_->CreateReferenceVariableDebugInfo( *variable_reference, with_operator.variable_name_, with_operator.src_loc_, function_context );
+		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
 		if( !function_context.variables_state.TryAddLink( expr, variable_reference ) )
 			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr->name );
@@ -1116,7 +1116,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			CreateLifetimeStart( function_context, variable->llvm_value );
 		}
 
-		debug_info_builder_->CreateVariableDebugInfo( *variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
+		debug_info_builder_->CreateVariableInfo( *variable, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
 		SetupReferencesInCopyOrMove( function_context, variable, expr, names.GetErrors(), with_operator.src_loc_ );
 
@@ -1658,7 +1658,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	FunctionContext& function_context,
 	const Synt::Block& block )
 {
-	debug_info_builder_->DebugInfoStartBlock( block.src_loc_, function_context );
+	debug_info_builder_->StartBlock( block.src_loc_, function_context );
 
 	NamesScope block_names( "", &names );
 	const StackVariablesStorage block_variables_storage( function_context );
@@ -1692,7 +1692,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	if( block_element_index < block.elements_.size() )
 		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( block.elements_[ block_element_index ] ) );
 
-	debug_info_builder_->SetCurrentDebugLocation( block.end_src_loc_, function_context );
+	debug_info_builder_->SetCurrentLocation( block.end_src_loc_, function_context );
 
 	// If there are undconditional "break", "continue", "return" operators,
 	// we didn`t need call destructors, it must be called in this operators.
@@ -1702,7 +1702,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	// Restire unsafe flag.
 	function_context.is_in_unsafe_block= prev_unsafe;
 
-	debug_info_builder_->DebugInfoEndBlock( function_context );
+	debug_info_builder_->EndBlock( function_context );
 
 	return block_build_info;
 }

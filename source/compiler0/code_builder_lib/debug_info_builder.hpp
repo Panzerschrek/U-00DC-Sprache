@@ -21,30 +21,31 @@ public:
 
 	void Finalize();
 
-	llvm::DIFile* GetDIFile(size_t file_index);
-
-	void CreateVariableDebugInfo(
+	void CreateVariableInfo(
 		const Variable& variable,
 		const std::string& variable_name,
 		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
-	void CreateReferenceVariableDebugInfo(
+	void CreateReferenceVariableInfo(
 		const Variable& variable,
 		const std::string& variable_name,
 		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
-	void CreateFunctionDebugInfo(
+	void CreateFunctionInfo(
 		const FunctionVariable& func_variable,
 		const std::string& function_name );
 
-	void SetCurrentDebugLocation(
+	void SetCurrentLocation(
 		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
-	void DebugInfoStartBlock( const SrcLoc& src_loc, FunctionContext& function_context );
-	void DebugInfoEndBlock( FunctionContext& function_context );
+	void StartBlock( const SrcLoc& src_loc, FunctionContext& function_context );
+	void EndBlock( FunctionContext& function_context );
+
+private:
+	llvm::DIFile* GetDIFile(size_t file_index);
 
 	llvm::DIType* CreateDIType( const Type& type );
 	llvm::DIType* CreateDIType( const FundamentalType& type );

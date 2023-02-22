@@ -48,13 +48,7 @@ void DebugInfoBuilder::Finalize()
 	}
 }
 
-llvm::DIFile* DebugInfoBuilder::GetDIFile(const size_t file_index)
-{
-	U_ASSERT( file_index < debug_info_.source_file_entries.size() );
-	return debug_info_.source_file_entries[file_index];
-}
-
-void DebugInfoBuilder::CreateVariableDebugInfo(
+void DebugInfoBuilder::CreateVariableInfo(
 	const Variable& variable,
 	const std::string& variable_name,
 	const SrcLoc& src_loc,
@@ -79,7 +73,7 @@ void DebugInfoBuilder::CreateVariableDebugInfo(
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
-void DebugInfoBuilder::CreateReferenceVariableDebugInfo(
+void DebugInfoBuilder::CreateReferenceVariableInfo(
 	const Variable& variable,
 	const std::string& variable_name,
 	const SrcLoc& src_loc,
@@ -108,7 +102,7 @@ void DebugInfoBuilder::CreateReferenceVariableDebugInfo(
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
-void DebugInfoBuilder::CreateFunctionDebugInfo(
+void DebugInfoBuilder::CreateFunctionInfo(
 	const FunctionVariable& func_variable,
 	const std::string& function_name )
 {
@@ -128,7 +122,7 @@ void DebugInfoBuilder::CreateFunctionDebugInfo(
 	func_variable.llvm_function->setSubprogram( di_function );
 }
 
-void DebugInfoBuilder::SetCurrentDebugLocation(
+void DebugInfoBuilder::SetCurrentLocation(
 	const SrcLoc& src_loc,
 	FunctionContext& function_context )
 {
@@ -143,7 +137,7 @@ void DebugInfoBuilder::SetCurrentDebugLocation(
 			function_context.current_debug_info_scope ) );
 }
 
-void DebugInfoBuilder::DebugInfoStartBlock( const SrcLoc& src_loc, FunctionContext& function_context )
+void DebugInfoBuilder::StartBlock( const SrcLoc& src_loc, FunctionContext& function_context )
 {
 	if( build_debug_info_ )
 		function_context.current_debug_info_scope=
@@ -154,10 +148,16 @@ void DebugInfoBuilder::DebugInfoStartBlock( const SrcLoc& src_loc, FunctionConte
 				src_loc.GetColumn() );
 }
 
-void DebugInfoBuilder::DebugInfoEndBlock( FunctionContext& function_context )
+void DebugInfoBuilder::EndBlock( FunctionContext& function_context )
 {
 	if( build_debug_info_ )
 		function_context.current_debug_info_scope= function_context.current_debug_info_scope->getScope();
+}
+
+llvm::DIFile* DebugInfoBuilder::GetDIFile(const size_t file_index)
+{
+	U_ASSERT( file_index < debug_info_.source_file_entries.size() );
+	return debug_info_.source_file_entries[file_index];
 }
 
 llvm::DIType* DebugInfoBuilder::CreateDIType( const Type& type )

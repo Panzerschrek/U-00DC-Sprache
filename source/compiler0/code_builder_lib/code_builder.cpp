@@ -1158,7 +1158,7 @@ Type CodeBuilder::BuildFuncCode(
 	llvm::Function* const llvm_function= func_variable.llvm_function;
 
 	// Build debug info only for functions with body.
-	debug_info_builder_->CreateFunctionDebugInfo( func_variable, func_name );
+	debug_info_builder_->CreateFunctionInfo( func_variable, func_name );
 
 	// For functions with body we can use comdat.
 	if( parent_names_scope.IsInsideTemplate() )
@@ -1191,7 +1191,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	function_context.args_nodes.resize( function_type.params.size() );
 
-	debug_info_builder_->SetCurrentDebugLocation( func_variable.body_src_loc, function_context );
+	debug_info_builder_->SetCurrentLocation( func_variable.body_src_loc, function_context );
 
 	// push args
 	uint32_t arg_number= 0u;
@@ -1245,12 +1245,12 @@ Type CodeBuilder::BuildFuncCode(
 			}
 			else U_ASSERT(false);
 
-			debug_info_builder_->CreateVariableDebugInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
+			debug_info_builder_->CreateVariableInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
 		}
 		else
 		{
 			variable->llvm_value= &llvm_arg;
-			debug_info_builder_->CreateReferenceVariableDebugInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
+			debug_info_builder_->CreateReferenceVariableInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
 		}
 
 		function_context.args_nodes[ arg_number ].first= variable;
