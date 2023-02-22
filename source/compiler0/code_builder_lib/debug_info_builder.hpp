@@ -3,6 +3,7 @@
 #include <llvm/IR/DIBuilder.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "../lex_synt_lib/source_graph_loader.hpp"
 #include "function_context.hpp"
 
 namespace U
@@ -11,7 +12,14 @@ namespace U
 class DebugInfoBuilder
 {
 public:
-	DebugInfoBuilder( llvm::LLVMContext& llvm_context, const llvm::DataLayout& data_layout );
+	DebugInfoBuilder(
+		llvm::LLVMContext& llvm_context,
+		const llvm::DataLayout& data_layout,
+		const SourceGraph& source_graph,
+		llvm::Module& llvm_module,
+		bool build_debug_info );
+
+	void Finalize();
 
 	llvm::DIFile* GetDIFile(size_t file_index);
 

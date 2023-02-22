@@ -1,10 +1,52 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "debug_info_builder.hpp"
+#include "../../sprache_version/sprache_version.hpp"
 #include "class.hpp"
 #include "enum.hpp"
 
 namespace U
 {
+
+DebugInfoBuilder::DebugInfoBuilder(
+	llvm::LLVMContext& llvm_context,
+	const llvm::DataLayout& data_layout,
+	const SourceGraph& source_graph,
+	llvm::Module& llvm_module,
+	const bool build_debug_info )
+	: llvm_context_(llvm_context)
+	, data_layout_(data_layout)
+	, build_debug_info_(build_debug_info)
+{
+	if( build_debug_info_ )
+	{
+		for( const auto& node : source_graph.nodes_storage )
+			debug_info_.source_file_entries.push_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
+
+		// HACK! Add a workaround for wrong assert in llvm code in Dwarf.h:235. TODO - remove this after porting to LLVM 15 or newer.
+		// const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_lo_user + 0xDC /* code of "Ü" letter */;
+		const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_C;
+
+		debug_info_.builder= std::make_unique<llvm::DIBuilder>( llvm_module );
+
+		debug_info_.compile_unit=
+			debug_info_.builder->createCompileUnit(
+				c_dwarf_language_id,
+				debug_info_.source_file_entries[0],
+				"U+00DC-Sprache compiler " + getFullVersion(),
+				false, // optimized
+				"",
+				0 /* runtime version */ );
+	}
+}
+
+void DebugInfoBuilder::Finalize()
+{
+	// Finish with debug info.
+	if( build_debug_info_ )
+	{
+		debug_info_.builder->finalize(); // We must finalize it.
+	}
+}
 
 llvm::DIFile* DebugInfoBuilder::GetDIFile(const size_t file_index)
 {
@@ -56,7 +98,7 @@ void DebugInfoBuilder::CreateReferenceVariableDebugInfo(
 
 	// We needs address for reference, so, move it into stack variable.
 	auto address_for_ref= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType()->getPointerTo(), nullptr, variable_name );
-	CreateTypedReferenceStore( function_context, variable.type, variable.llvm_value, address_for_ref );
+	function_context.llvm_ir_builder.CreateStore( variable.llvm_value, address_for_ref );
 
 	debug_info_.builder->insertDeclare(
 		address_for_ref,
