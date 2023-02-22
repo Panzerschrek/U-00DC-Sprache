@@ -60,21 +60,16 @@ private:
 private:
 	llvm::LLVMContext& llvm_context_;
 	const llvm::DataLayout data_layout_;
-	const bool build_debug_info_;
 
-	// Debug info.
-	struct
-	{
-		std::vector<llvm::DIFile*> source_file_entries; // Entry for each file in sources graph.
+	std::vector<llvm::DIFile*> source_file_entries_; // Entry for each file in sources graph.
 
-		// Debug info builder, compile unit, types cache - unique only for current file.
-		std::unique_ptr<llvm::DIBuilder> builder;
-		llvm::DICompileUnit* compile_unit= nullptr;
+	// Debug info builder, compile unit, types cache - unique only for current file.
+	std::unique_ptr<llvm::DIBuilder> builder_;
+	llvm::DICompileUnit* compile_unit_= nullptr;
 
-		// Build debug info for classes and enums once and put it to cache.
-		std::unordered_map<ClassPtr, llvm::DICompositeType*> classes_di_cache;
-		std::unordered_map<EnumPtr, llvm::DICompositeType*> enums_di_cache;
-	} debug_info_;
+	// Build debug info for classes and enums once and put it to cache.
+	std::unordered_map<ClassPtr, llvm::DICompositeType*> classes_di_cache_;
+	std::unordered_map<EnumPtr, llvm::DICompositeType*> enums_di_cache_;
 };
 
 } // namespace U
