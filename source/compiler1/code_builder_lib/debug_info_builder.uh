@@ -16,14 +16,14 @@ public:
 
 	fn destructor();
 
-	fn CreateFunctionDebugInfo( mut this, FunctionVariable& func_variable );
+	fn CreateFunctionInfo( mut this, FunctionVariable& func_variable );
 
-	fn SetCurrentDebugLocation( mut this, FunctionContext& function_context, SrcLoc& src_loc );
-	fn DebugInfoStartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef;
-	fn DebugInfoEndBlock( mut this, FunctionContext &mut function_context, LLVMMetadataRef prev_block );
+	fn SetCurrentLocation( mut this, FunctionContext& function_context, SrcLoc& src_loc );
+	fn StartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef;
+	fn EndBlock( mut this, FunctionContext &mut function_context, LLVMMetadataRef prev_block );
 
-	fn CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc );
-	fn CreateReferenceVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc );
+	fn CreateVariableInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc );
+	fn CreateReferenceVariableInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc );
 
 private:
 	fn CreateDIType( mut this, Type& t ) : LLVMMetadataRef;
