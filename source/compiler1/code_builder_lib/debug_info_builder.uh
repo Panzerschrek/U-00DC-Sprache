@@ -39,19 +39,14 @@ private:
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
-	bool imut build_debug_info_;
 
-	struct DebugInfo
-	{
-		LLVMDIBuilderRef builder= LLVMDIBuilderRef::Null;
-		ust::vector</LLVMMetadataRef/> source_file_entries; // Entry for each file in sources graph.
-		LLVMMetadataRef compile_unit= LLVMMetadataRef::Null;
+	LLVMDIBuilderRef builder_= LLVMDIBuilderRef::Null;
+	ust::vector</LLVMMetadataRef/> source_file_entries_; // Entry for each file in sources graph.
+	LLVMMetadataRef compile_unit_= LLVMMetadataRef::Null;
 
-		// Cache of debug info types for classes and enums.
-		ust::unordered_map</ ClassTypePtr, LLVMMetadataRef /> classes_di_types;
-		ust::unordered_map</ EnumTypePtr, LLVMMetadataRef /> enums_di_types;
-	}
-	DebugInfo debug_info_;
+	// Cache of debug info types for classes and enums.
+	ust::unordered_map</ ClassTypePtr, LLVMMetadataRef /> classes_di_types_;
+	ust::unordered_map</ EnumTypePtr, LLVMMetadataRef /> enums_di_types_;
 }
 
 } // namespace U1
