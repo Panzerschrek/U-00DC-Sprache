@@ -169,41 +169,13 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		}
 	}
 
-	// prepare debug info
-	if( build_debug_info_ )
-	{
-		debug_info_.builder= unsafe( LLVMCreateDIBuilder( module_ ) );
-
-		foreach( & node : source_graph.nodes )
-		{
-			debug_info_.source_file_entries.push_back(
-				unsafe( LLVMDIBuilderCreateFile(
-					debug_info_.builder,
-					cast_mut(node.file_path_normalized).data(), node.file_path_normalized.size(),
-					ust::nullptr</char8/>(), 0s ) ) );
-		}
-
-		// TODO - fix this. LLVM C interface doesn't provide any way to specify custom language, so, use language id for "C".
-		var LLVMDWARFSourceLanguage c_dwarf_language_id= 1u;
-
-		debug_info_.compile_unit=
-			unsafe( LLVMDIBuilderCreateCompileUnit(
-				debug_info_.builder,
-				c_dwarf_language_id,
-				debug_info_.source_file_entries.front(),
-				ust::nullptr</char8/>(), 0s, // TODO - set producer
-				LLVMBool::False, // TODO - pass "optimized' flag
-				ust::nullptr</char8/>(), 0s, // Flags
-				0u, // Runtime version
-				ust::nullptr</char8/>(), 0s, // SplitName
-				LLVMDWARFEmissionKind::Full,
-				0u, // DWOId
-				LLVMBool::True, // SplitDebugInlining
-				LLVMBool::False, // DebugInfoForProfiling
-				ust::nullptr</char8/>(), 0s, // SysRoot
-				ust::nullptr</char8/>(), 0s  // SDK
-			) );
-	}
+	debug_info_builder_.reset(
+		DebugInfoBuilder(
+			llvm_context_,
+			data_layout_,
+			source_graph,
+			module_,
+			build_debug_info_ ) );
 
 	root_errors_container_= ErrorsContainerPtr( ErrorsContainer() );
 
@@ -267,19 +239,8 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	typeinfo_cache_.clear();
 	non_sync_expression_stack_.clear();
 
-	if( debug_info_.builder != LLVMDIBuilderRef::Null )
-	{
-		unsafe
-		{
-			LLVMDIBuilderFinalize( debug_info_.builder );
-			LLVMDisposeDIBuilder( debug_info_.builder );
-		}
-		debug_info_.builder= LLVMDIBuilderRef::Null;
-		debug_info_.compile_unit= LLVMMetadataRef::Null;
-
-		debug_info_.classes_di_types.clear();
-		debug_info_.enums_di_types.clear();
-	}
+	// Reset debug info builder in order to finalize debug info.
+	debug_info_builder_.reset();
 
 	var BuildResult mut res
 	{
@@ -1638,7 +1599,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
-	CreateFunctionDebugInfo( func_variable );
+	debug_info_builder_.try_deref().CreateFunctionInfo( func_variable );
 
 	var FunctionContext mut function_context_value(
 		llvm_context_,
@@ -1665,7 +1626,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
 
-	SetCurrentDebugLocation( function_context, body_syntax_element.src_loc );
+	debug_info_builder_.try_deref().SetCurrentLocation( function_context, body_syntax_element.src_loc );
 
 	{
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
@@ -1713,7 +1674,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					out_arg.llvm_value= arg_value;
 				}
 
-				CreateReferenceVariableDebugInfo( function_context, out_arg, in_param.name, in_param.src_loc );
+				debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, out_arg, in_param.name, in_param.src_loc );
 
 				// Create variable node and reference node for it.
 				var ReferencesGraph::NodeId variable_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name + " variable" );
@@ -1759,7 +1720,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					}
 				}
 
-				CreateVariableDebugInfo( function_context, out_arg, in_param.name, in_param.src_loc );
+				debug_info_builder_.try_deref().CreateVariableInfo( function_context, out_arg, in_param.name, in_param.src_loc );
 
 				out_arg.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, in_param.name );
 				if( type_param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
@@ -1874,7 +1835,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 
 		// Finsih function - add remaining instructions
-		SetCurrentDebugLocation( function_context, block.end_src_loc );
+		debug_info_builder_.try_deref().SetCurrentLocation( function_context, block.end_src_loc );
 		unsafe
 		{
 			LLVMBuildBr( function_context.alloca_ir_builder, function_context.function_basic_block );

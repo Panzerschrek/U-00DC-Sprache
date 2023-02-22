@@ -1,81 +1,111 @@
 #include "../../lex_synt_lib_common/assert.hpp"
-#include "code_builder.hpp"
+#include "debug_info_builder.hpp"
+#include "../../sprache_version/sprache_version.hpp"
+#include "class.hpp"
+#include "enum.hpp"
 
 namespace U
 {
 
-llvm::DIFile* CodeBuilder::GetDIFile(const size_t file_index)
+DebugInfoBuilder::DebugInfoBuilder(
+	llvm::LLVMContext& llvm_context,
+	const llvm::DataLayout& data_layout,
+	const SourceGraph& source_graph,
+	llvm::Module& llvm_module,
+	const bool build_debug_info )
+	: llvm_context_(llvm_context)
+	, data_layout_(data_layout)
 {
-	U_ASSERT( file_index < debug_info_.source_file_entries.size() );
-	return debug_info_.source_file_entries[file_index];
+	if( !build_debug_info )
+		return;
+
+	for( const auto& node : source_graph.nodes_storage )
+		source_file_entries_.push_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
+
+	const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_lo_user + 0xDC /* code of "Ü" letter */;
+
+	builder_= std::make_unique<llvm::DIBuilder>( llvm_module );
+
+	compile_unit_=
+		builder_->createCompileUnit(
+			c_dwarf_language_id,
+			source_file_entries_[0],
+			"U+00DC-Sprache compiler " + getFullVersion(),
+			false, // optimized
+			"",
+			0 /* runtime version */ );
 }
 
-void CodeBuilder::CreateVariableDebugInfo(
+DebugInfoBuilder::~DebugInfoBuilder()
+{
+	if( builder_ != nullptr )
+		builder_->finalize(); // We must finalize it.
+}
+
+void DebugInfoBuilder::CreateVariableInfo(
 	const Variable& variable,
 	const std::string& variable_name,
 	const SrcLoc& src_loc,
 	FunctionContext& function_context )
 {
-	if( !build_debug_info_ )
+	if( builder_ == nullptr )
 		return;
 
 	const auto di_local_variable=
-		debug_info_.builder->createAutoVariable(
+		builder_->createAutoVariable(
 			function_context.current_debug_info_scope,
 			variable_name,
-			GetDIFile( src_loc.GetFileIndex() ),
+			GetDIFile( src_loc ),
 			src_loc.GetLine(),
 			CreateDIType(variable.type) );
 
-	debug_info_.builder->insertDeclare(
+	builder_->insertDeclare(
 		variable.llvm_value,
 		di_local_variable,
-		debug_info_.builder->createExpression(),
+		builder_->createExpression(),
 		llvm::DILocation::get(llvm_context_, src_loc.GetLine(), src_loc.GetColumn(), function_context.current_debug_info_scope),
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
-void CodeBuilder::CreateReferenceVariableDebugInfo(
+void DebugInfoBuilder::CreateReferenceVariableInfo(
 	const Variable& variable,
 	const std::string& variable_name,
 	const SrcLoc& src_loc,
 	FunctionContext& function_context )
 {
-	if( !build_debug_info_ )
+	if( builder_ == nullptr )
 		return;
 
 	const auto di_local_variable=
-		debug_info_.builder->createAutoVariable(
+		builder_->createAutoVariable(
 			function_context.current_debug_info_scope,
 			variable_name,
-			GetDIFile( src_loc.GetFileIndex() ),
+			GetDIFile( src_loc ),
 			src_loc.GetLine(),
-			debug_info_.builder->createPointerType( CreateDIType(variable.type), data_layout_.getPointerSizeInBits() ) );
+			builder_->createPointerType( CreateDIType(variable.type), data_layout_.getPointerSizeInBits() ) );
 
 	// We needs address for reference, so, move it into stack variable.
 	auto address_for_ref= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType()->getPointerTo(), nullptr, variable_name );
-	CreateTypedReferenceStore( function_context, variable.type, variable.llvm_value, address_for_ref );
+	function_context.llvm_ir_builder.CreateStore( variable.llvm_value, address_for_ref );
 
-	debug_info_.builder->insertDeclare(
+	builder_->insertDeclare(
 		address_for_ref,
 		di_local_variable,
-		debug_info_.builder->createExpression(),
+		builder_->createExpression(),
 		llvm::DILocation::get(llvm_context_, src_loc.GetLine(), src_loc.GetColumn(), function_context.current_debug_info_scope),
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
-void CodeBuilder::CreateFunctionDebugInfo(
-	const FunctionVariable& func_variable,
-	const std::string& function_name )
+void DebugInfoBuilder::CreateFunctionInfo( const FunctionVariable& func_variable, const std::string& function_name )
 {
-	if( !build_debug_info_ )
+	if( builder_ == nullptr )
 		return;
 
-	const auto di_function= debug_info_.builder->createFunction(
-		GetDIFile( func_variable.body_src_loc.GetFileIndex() ),
+	const auto di_function= builder_->createFunction(
+		GetDIFile( func_variable.body_src_loc ),
 		function_name,
 		func_variable.llvm_function->getName(),
-		GetDIFile( func_variable.body_src_loc.GetFileIndex() ),
+		GetDIFile( func_variable.body_src_loc ),
 		func_variable.body_src_loc.GetLine(),
 		CreateDIType( *func_variable.type.GetFunctionType() ),
 		func_variable.body_src_loc.GetLine(),
@@ -84,11 +114,9 @@ void CodeBuilder::CreateFunctionDebugInfo(
 	func_variable.llvm_function->setSubprogram( di_function );
 }
 
-void CodeBuilder::SetCurrentDebugLocation(
-	const SrcLoc& src_loc,
-	FunctionContext& function_context )
+void DebugInfoBuilder::SetCurrentLocation( const SrcLoc& src_loc, FunctionContext& function_context )
 {
-	if( !build_debug_info_ )
+	if( builder_ == nullptr )
 		return;
 
 	function_context.llvm_ir_builder.SetCurrentDebugLocation(
@@ -99,26 +127,39 @@ void CodeBuilder::SetCurrentDebugLocation(
 			function_context.current_debug_info_scope ) );
 }
 
-void CodeBuilder::DebugInfoStartBlock( const SrcLoc& src_loc, FunctionContext& function_context )
+void DebugInfoBuilder::StartBlock( const SrcLoc& src_loc, FunctionContext& function_context )
 {
-	if( build_debug_info_ )
+	if( builder_ != nullptr )
 		function_context.current_debug_info_scope=
-			debug_info_.builder->createLexicalBlock(
+			builder_->createLexicalBlock(
 				function_context.current_debug_info_scope,
-				GetDIFile( src_loc.GetFileIndex() ),
+				GetDIFile( src_loc ),
 				src_loc.GetLine(),
 				src_loc.GetColumn() );
 }
 
-void CodeBuilder::DebugInfoEndBlock( FunctionContext& function_context )
+void DebugInfoBuilder::EndBlock( FunctionContext& function_context )
 {
-	if( build_debug_info_ )
+	if( builder_ != nullptr )
 		function_context.current_debug_info_scope= function_context.current_debug_info_scope->getScope();
 }
 
-llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
+llvm::DIFile* DebugInfoBuilder::GetDIFile( const SrcLoc& src_loc )
 {
-	U_ASSERT(build_debug_info_);
+	const uint32_t file_index= src_loc.GetFileIndex();
+	U_ASSERT( file_index < source_file_entries_.size() );
+	return source_file_entries_[file_index];
+}
+
+llvm::DIFile* DebugInfoBuilder::GetRootDIFile()
+{
+	U_ASSERT( !source_file_entries_.empty() );
+	return source_file_entries_[0];
+}
+
+llvm::DIType* DebugInfoBuilder::CreateDIType( const Type& type )
+{
+	U_ASSERT(builder_ != nullptr);
 
 	llvm::DIType* result_type= nullptr;
 	if( const auto fundamental_type= type.GetFundamentalType() )
@@ -141,26 +182,26 @@ llvm::DIType* CodeBuilder::CreateDIType( const Type& type )
 	if( result_type != nullptr )
 		return result_type;
 
-	return debug_info_.builder->createBasicType( "_stub_debug_type", 8, llvm::dwarf::DW_ATE_signed );
+	return builder_->createBasicType( "_stub_debug_type", 8, llvm::dwarf::DW_ATE_signed );
 }
 
-llvm::DIType* CodeBuilder::CreateDIType( const FundamentalType& type )
+llvm::DIType* DebugInfoBuilder::CreateDIType( const FundamentalType& type )
 {
-	U_ASSERT(build_debug_info_);
+	U_ASSERT(builder_ != nullptr);
 
 	if( type.fundamental_type == U_FundamentalType::void_ )
 	{
 		// Internal representation of void type is llvm struct with zero elements.
-		return debug_info_.builder->createStructType(
-			debug_info_.compile_unit,
+		return builder_->createStructType(
+			compile_unit_,
 			GetFundamentalTypeName( type.fundamental_type ),
-			GetDIFile(0),
+			GetRootDIFile(),
 			0u,
 			data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
 			8u * uint32_t(data_layout_.getABITypeAlignment( type.llvm_type )),
 			llvm::DINode::DIFlags(),
 			nullptr,
-			debug_info_.builder->getOrCreateArray({}).get() );
+			builder_->getOrCreateArray({}).get() );
 	}
 
 	uint32_t type_encoding= llvm::dwarf::DW_ATE_unsigned;
@@ -177,37 +218,37 @@ llvm::DIType* CodeBuilder::CreateDIType( const FundamentalType& type )
 	else if( IsFloatingPoint( type.fundamental_type ) )
 		type_encoding= llvm::dwarf::DW_ATE_float;
 
-	return debug_info_.builder->createBasicType(
+	return builder_->createBasicType(
 		GetFundamentalTypeName(type.fundamental_type),
 		type.GetSize() * 8u,
 		type_encoding );
 }
 
-llvm::DICompositeType* CodeBuilder::CreateDIType( const ArrayType& type )
+llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ArrayType& type )
 {
-	U_ASSERT(build_debug_info_);
+	U_ASSERT(builder_ != nullptr);
 
 	const uint32_t alignment=
-		IsTypeComplete( type.element_type ) ? uint32_t(data_layout_.getABITypeAlignment( type.llvm_type )) : 0u;
+		type.llvm_type->isSized() ? uint32_t(data_layout_.getABITypeAlignment( type.llvm_type )) : 0u;
 	const uint64_t size=
-		IsTypeComplete( type.element_type ) ? data_layout_.getTypeAllocSizeInBits( type.llvm_type ) : uint64_t(0);
+		type.llvm_type->isSized() ? data_layout_.getTypeAllocSizeInBits( type.llvm_type ) : uint64_t(0);
 
 	llvm::SmallVector<llvm::Metadata*, 1> subscripts;
-	subscripts.push_back( debug_info_.builder->getOrCreateSubrange( 0, int64_t(type.element_count) ) );
+	subscripts.push_back( builder_->getOrCreateSubrange( 0, int64_t(type.element_count) ) );
 
 	return
-		debug_info_.builder->createArrayType(
+		builder_->createArrayType(
 			size,
 			8u * alignment,
 			CreateDIType( type.element_type ),
-			debug_info_.builder->getOrCreateArray(subscripts) );
+			builder_->getOrCreateArray(subscripts) );
 }
 
-llvm::DICompositeType* CodeBuilder::CreateDIType( const TupleType& type )
+llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const TupleType& type )
 {
-	U_ASSERT(build_debug_info_);
+	U_ASSERT(builder_ != nullptr);
 
-	if( !IsTypeComplete( type ) )
+	if( !type.llvm_type->isSized() )
 		return nullptr;
 
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( type.llvm_type );
@@ -215,17 +256,17 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const TupleType& type )
 	std::vector<llvm::Metadata*> elements;
 	elements.reserve( type.element_types.size() );
 
-	const auto di_file= GetDIFile(0);
+	const auto di_file= GetRootDIFile();
 
 	for( const Type& element_type : type.element_types )
 	{
-		if( !IsTypeComplete( element_type ) )
+		if( !element_type.GetLLVMType()->isSized() )
 			continue;
 
 		const size_t element_index= size_t(&element_type - type.element_types.data());
 		const auto element =
-			debug_info_.builder->createMemberType(
-				debug_info_.compile_unit,
+			builder_->createMemberType(
+				compile_unit_,
 				std::to_string( element_index ),
 				di_file,
 				0u, // TODO - src_loc
@@ -238,8 +279,8 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const TupleType& type )
 		elements.push_back( element );
 	}
 
-	return debug_info_.builder->createStructType(
-		debug_info_.compile_unit,
+	return builder_->createStructType(
+		compile_unit_,
 		Type(type).ToString(),
 		di_file,
 		0u, // TODO - src_loc
@@ -247,12 +288,12 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const TupleType& type )
 		uint32_t(8u * data_layout_.getABITypeAlignment( type.llvm_type )),
 		llvm::DINode::DIFlags(),
 		nullptr,
-		debug_info_.builder->getOrCreateArray(elements).get() );
+		builder_->getOrCreateArray(elements).get() );
 }
 
-llvm::DISubroutineType* CodeBuilder::CreateDIType( const FunctionType& type )
+llvm::DISubroutineType* DebugInfoBuilder::CreateDIType( const FunctionType& type )
 {
-	U_ASSERT(build_debug_info_);
+	U_ASSERT(builder_ != nullptr);
 
 	ArgsVector<llvm::Metadata*> args;
 	args.reserve( type.params.size() + 1u );
@@ -260,7 +301,7 @@ llvm::DISubroutineType* CodeBuilder::CreateDIType( const FunctionType& type )
 	{
 		llvm::DIType* di_type= CreateDIType( type.return_type );
 		if( type.return_value_type != ValueType::Value )
-			di_type= debug_info_.builder->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( type.return_type.GetLLVMType()->getPointerTo() ) );
+			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( type.return_type.GetLLVMType()->getPointerTo() ) );
 		args.push_back( di_type );
 	}
 
@@ -268,36 +309,36 @@ llvm::DISubroutineType* CodeBuilder::CreateDIType( const FunctionType& type )
 	{
 		llvm::DIType* di_type= CreateDIType( param.type );
 		if( param.value_type != ValueType::Value )
-			di_type= debug_info_.builder->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( param.type.GetLLVMType()->getPointerTo() ) );
+			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( param.type.GetLLVMType()->getPointerTo() ) );
 		args.push_back( di_type );
 	}
 
-	return debug_info_.builder->createSubroutineType( debug_info_.builder->getOrCreateTypeArray(args) );
+	return builder_->createSubroutineType( builder_->getOrCreateTypeArray(args) );
 }
 
-llvm::DIDerivedType* CodeBuilder::CreateDIType( const RawPointerType& type )
+llvm::DIDerivedType* DebugInfoBuilder::CreateDIType( const RawPointerType& type )
 {
-	U_ASSERT(build_debug_info_);
+	U_ASSERT(builder_ != nullptr);
 
 	return
-		debug_info_.builder->createPointerType(
+		builder_->createPointerType(
 			CreateDIType(type.element_type),
 			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 
-llvm::DIDerivedType* CodeBuilder::CreateDIType( const FunctionPointerType& type )
+llvm::DIDerivedType* DebugInfoBuilder::CreateDIType( const FunctionPointerType& type )
 {
-	U_ASSERT(build_debug_info_);
+	U_ASSERT(builder_ != nullptr);
 
 	return
-		debug_info_.builder->createPointerType(
+		builder_->createPointerType(
 			CreateDIType(type.function_type),
 			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 
-llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr type )
+llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 {
-	U_ASSERT(build_debug_info_);
+	U_ASSERT(builder_ != nullptr);
 
 	const Class& the_class= *type;
 
@@ -305,16 +346,16 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr type )
 	if( !the_class.is_complete )
 		return nullptr;
 
-	if( const auto it= debug_info_.classes_di_cache.find(type); it != debug_info_.classes_di_cache.end() )
+	if( const auto it= classes_di_cache_.find(type); it != classes_di_cache_.end() )
 		return it->second;
 
 	// Insert nullptr first, to prevent loops.
-	debug_info_.classes_di_cache.insert( std::make_pair( type, nullptr ) );
+	classes_di_cache_.insert( std::make_pair( type, nullptr ) );
 
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
 	// TODO - get SrcLoc for enum
-	const auto di_file= GetDIFile( the_class.body_src_loc.GetFileIndex() );
+	const auto di_file= GetDIFile( the_class.body_src_loc );
 
 	std::vector<llvm::Metadata*> fields;
 	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
@@ -332,7 +373,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr type )
 			{
 				field_type_llvm= field_type_llvm->getPointerTo();
 				field_type_di=
-					debug_info_.builder->createPointerType(
+					builder_->createPointerType(
 						field_type_di,
 						data_layout_.getTypeAllocSizeInBits(field_type_llvm),
 						uint32_t(8u * data_layout_.getABITypeAlignment(field_type_llvm)) );
@@ -340,7 +381,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr type )
 
 			// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
 			const auto member =
-				debug_info_.builder->createMemberType(
+				builder_->createMemberType(
 					di_file,
 					name,
 					di_file,
@@ -360,7 +401,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr type )
 
 			// If this type is complete, parent types are complete too.
 			const auto member =
-				debug_info_.builder->createMemberType(
+				builder_->createMemberType(
 					di_file,
 					parent.class_->members->GetThisNamespaceName(),
 					di_file,
@@ -375,7 +416,7 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr type )
 	}
 
 	const auto result=
-		debug_info_.builder->createClassType(
+		builder_->createClassType(
 			di_file,
 			Type(type).ToString(),
 			di_file,
@@ -385,22 +426,22 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const ClassPtr type )
 			0u,
 			llvm::DINode::DIFlags(),
 			nullptr,
-			debug_info_.builder->getOrCreateArray(fields).get(),
+			builder_->getOrCreateArray(fields).get(),
 			nullptr,
 			nullptr);
 
-	debug_info_.classes_di_cache[ type ]= result;
+	classes_di_cache_[ type ]= result;
 	return result;
 }
 
-llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr type )
+llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 {
-	U_ASSERT(build_debug_info_);
+	U_ASSERT(builder_ != nullptr);
 
 	if( type->syntax_element != nullptr ) // Incomplete
 		return nullptr;
 
-	if( const auto it= debug_info_.enums_di_cache.find(type); it != debug_info_.enums_di_cache.end() )
+	if( const auto it= enums_di_cache_.find(type); it != enums_di_cache_.end() )
 		return it->second;
 
 	std::vector<llvm::Metadata*> elements;
@@ -414,27 +455,27 @@ llvm::DICompositeType* CodeBuilder::CreateDIType( const EnumPtr type )
 			U_ASSERT( variable->constexpr_value != nullptr );
 
 			elements.push_back(
-				debug_info_.builder->createEnumerator(
+				builder_->createEnumerator(
 					name,
 					variable->constexpr_value->getUniqueInteger().getLimitedValue(),
 					true ) );
 		} );
 
 	// TODO - get SrcLoc for enum
-	const auto di_file= GetDIFile(0);
+	const auto di_file= GetRootDIFile();
 
 	const auto result=
-		debug_info_.builder->createEnumerationType(
+		builder_->createEnumerationType(
 			di_file,
 			type->members.GetThisNamespaceName(),
 			di_file,
 			0u, // TODO - src_loc
 			8u * type->underlaying_type.GetSize(),
 			uint32_t(data_layout_.getABITypeAlignment( type->underlaying_type.llvm_type )),
-			debug_info_.builder->getOrCreateArray(elements),
+			builder_->getOrCreateArray(elements),
 			CreateDIType( type->underlaying_type ) );
 
-	debug_info_.enums_di_cache.insert( std::make_pair( type, result ) );
+	enums_di_cache_.insert( std::make_pair( type, result ) );
 	return result;
 }
 

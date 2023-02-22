@@ -172,26 +172,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	const StackVariablesStorage global_function_variables_storage( global_function_context );
 	global_function_context_= &global_function_context;
 
-	if( build_debug_info_ )
-	{
-		for( const auto& node : source_graph.nodes_storage )
-			debug_info_.source_file_entries.push_back( llvm::DIFile::get( llvm_context_, node.file_path, "" ) );
-
-		// HACK! Add a workaround for wrong assert in llvm code in Dwarf.h:235. TODO - remove this after porting to LLVM 15 or newer.
-		// const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_lo_user + 0xDC /* code of "Ü" letter */;
-		const uint32_t c_dwarf_language_id= llvm::dwarf::DW_LANG_C;
-
-		debug_info_.builder= std::make_unique<llvm::DIBuilder>( *module_ );
-
-		debug_info_.compile_unit=
-			debug_info_.builder->createCompileUnit(
-				c_dwarf_language_id,
-				debug_info_.source_file_entries[0],
-				"U+00DC-Sprache compiler " + getFullVersion(),
-				false, // optimized
-				"",
-				0 /* runtime version */ );
-	}
+	debug_info_builder_.emplace( llvm_context_, data_layout_, source_graph, *module_, build_debug_info_ );
 
 	// Build graph.
 	compiled_sources_.resize( source_graph.nodes_storage.size() );
@@ -221,11 +202,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 			typeinfo_entry.second->type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
-	// Finish with debug info.
-	if( build_debug_info_ )
-	{
-		debug_info_.builder->finalize(); // We must finalize it.
-	}
+	// Reset debug info builder in order to finish deffered debug info construction.
+	debug_info_builder_= std::nullopt;
 
 	// Clear internal structures.
 	compiled_sources_.clear();
@@ -237,11 +215,6 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	non_sync_expression_stack_.clear();
 	generated_template_things_storage_.clear();
 	generated_template_things_sequence_.clear();
-	debug_info_.builder= nullptr;
-	debug_info_.source_file_entries.clear();
-	debug_info_.classes_di_cache.clear();
-	debug_info_.enums_di_cache.clear();
-
 	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
 
 	BuildResult build_result;
@@ -1185,7 +1158,7 @@ Type CodeBuilder::BuildFuncCode(
 	llvm::Function* const llvm_function= func_variable.llvm_function;
 
 	// Build debug info only for functions with body.
-	CreateFunctionDebugInfo( func_variable, func_name );
+	debug_info_builder_->CreateFunctionInfo( func_variable, func_name );
 
 	// For functions with body we can use comdat.
 	if( parent_names_scope.IsInsideTemplate() )
@@ -1218,7 +1191,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	function_context.args_nodes.resize( function_type.params.size() );
 
-	SetCurrentDebugLocation( func_variable.body_src_loc, function_context );
+	debug_info_builder_->SetCurrentLocation( func_variable.body_src_loc, function_context );
 
 	// push args
 	uint32_t arg_number= 0u;
@@ -1272,12 +1245,12 @@ Type CodeBuilder::BuildFuncCode(
 			}
 			else U_ASSERT(false);
 
-			CreateVariableDebugInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
+			debug_info_builder_->CreateVariableInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
 		}
 		else
 		{
 			variable->llvm_value= &llvm_arg;
-			CreateReferenceVariableDebugInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
+			debug_info_builder_->CreateReferenceVariableInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
 		}
 
 		function_context.args_nodes[ arg_number ].first= variable;

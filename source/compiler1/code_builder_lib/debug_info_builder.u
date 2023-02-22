@@ -1,12 +1,70 @@
 import "/string_conversions.u"
-import "code_builder.uh"
+import "debug_info_builder.uh"
 
 namespace U1
 {
 
-fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variable )
+fn DebugInfoBuilder::constructor(
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout,
+	SourceGraph& source_graph,
+	LLVMModuleRef mod,
+	bool build_debug_info )
+	( llvm_context_(llvm_context), data_layout_(data_layout) )
 {
-	if( !build_debug_info_ )
+	if( !build_debug_info )
+	{
+		return;
+	}
+
+	builder_= unsafe( LLVMCreateDIBuilder( mod ) );
+
+	foreach( & node : source_graph.nodes )
+	{
+		source_file_entries_.push_back(
+			unsafe( LLVMDIBuilderCreateFile(
+				builder_,
+				cast_mut(node.file_path_normalized).data(), node.file_path_normalized.size(),
+				ust::nullptr</char8/>(), 0s ) ) );
+	}
+
+	// TODO - fix this. LLVM C interface doesn't provide any way to specify custom language, so, use language id for "C".
+	var LLVMDWARFSourceLanguage c_dwarf_language_id= 1u;
+
+	compile_unit_=
+		unsafe( LLVMDIBuilderCreateCompileUnit(
+			builder_,
+			c_dwarf_language_id,
+			source_file_entries_.front(),
+			ust::nullptr</char8/>(), 0s, // TODO - set producer
+			LLVMBool::False, // TODO - pass "optimized' flag
+			ust::nullptr</char8/>(), 0s, // Flags
+			0u, // Runtime version
+			ust::nullptr</char8/>(), 0s, // SplitName
+			LLVMDWARFEmissionKind::Full,
+			0u, // DWOId
+			LLVMBool::True, // SplitDebugInlining
+			LLVMBool::False, // DebugInfoForProfiling
+			ust::nullptr</char8/>(), 0s, // SysRoot
+			ust::nullptr</char8/>(), 0s  // SDK
+		) );
+}
+
+fn DebugInfoBuilder::destructor()
+{
+	if( builder_ != LLVMDIBuilderRef::Null )
+	{
+		unsafe
+		{
+			LLVMDIBuilderFinalize( builder_ );
+			LLVMDisposeDIBuilder( builder_ );
+		}
+	}
+}
+
+fn DebugInfoBuilder::CreateFunctionInfo( mut this, FunctionVariable& func_variable )
+{
+	if( builder_ == LLVMDIBuilderRef::Null )
 	{
 		return;
 	}
@@ -20,10 +78,10 @@ fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variab
 		var size_type mut linkage_name_size= 0s;
 		var $(char8) linkage_name_start= LLVMGetValueName2( func_variable.llvm_function, linkage_name_size );
 
-		var LLVMMetadataRef file= debug_info_.source_file_entries[ src_loc.GetFileIndex() ];
+		var LLVMMetadataRef file= source_file_entries_[ src_loc.GetFileIndex() ];
 
 		auto di_function= LLVMDIBuilderCreateFunction(
-			debug_info_.builder,
+			builder_,
 			file,
 			cast_mut(name).data(), name.size(),
 			linkage_name_start, linkage_name_size,
@@ -40,9 +98,9 @@ fn CodeBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variab
 	}
 }
 
-fn CodeBuilder::SetCurrentDebugLocation( mut this, FunctionContext& function_context, SrcLoc& src_loc )
+fn DebugInfoBuilder::SetCurrentLocation( mut this, FunctionContext& function_context, SrcLoc& src_loc )
 {
-	if( !build_debug_info_ )
+	if( builder_ == LLVMDIBuilderRef::Null )
 	{
 		return;
 	}
@@ -59,27 +117,27 @@ fn CodeBuilder::SetCurrentDebugLocation( mut this, FunctionContext& function_con
 	}
 }
 
-fn CodeBuilder::DebugInfoStartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef
+fn DebugInfoBuilder::StartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef
 {
-	if( !build_debug_info_ )
+	if( builder_ == LLVMDIBuilderRef::Null )
 	{
 		return LLVMMetadataRef::Null;
 	}
 
 	auto prev= function_context.current_debug_info_scope;
 	function_context.current_debug_info_scope= unsafe( LLVMDIBuilderCreateLexicalBlock(
-		debug_info_.builder,
+		builder_,
 		function_context.current_debug_info_scope,
-		debug_info_.source_file_entries[ src_loc.GetFileIndex() ],
+		source_file_entries_[ src_loc.GetFileIndex() ],
 		src_loc.GetLine(),
 		src_loc.GetColumn() ) );
 
 	return prev;
 }
 
-fn CodeBuilder::DebugInfoEndBlock( mut this, FunctionContext &mut function_context, LLVMMetadataRef prev_block )
+fn DebugInfoBuilder::EndBlock( mut this, FunctionContext &mut function_context, LLVMMetadataRef prev_block )
 {
-	if( !build_debug_info_ )
+	if( builder_ == LLVMDIBuilderRef::Null )
 	{
 		return;
 	}
@@ -87,9 +145,9 @@ fn CodeBuilder::DebugInfoEndBlock( mut this, FunctionContext &mut function_conte
 	function_context.current_debug_info_scope= prev_block;
 }
 
-fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc )
+fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc )
 {
-	if( !build_debug_info_ )
+	if( builder_ == LLVMDIBuilderRef::Null )
 	{
 		return;
 	}
@@ -97,10 +155,10 @@ fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_con
 	unsafe
 	{
 		auto di_variable= LLVMDIBuilderCreateAutoVariable(
-			debug_info_.builder,
+			builder_,
 			function_context.current_debug_info_scope,
 			cast_mut(name).data(), name.size(),
-			debug_info_.source_file_entries[ src_loc.GetFileIndex() ],
+			source_file_entries_[ src_loc.GetFileIndex() ],
 			src_loc.GetLine(),
 			CreateDIType( variable.t ),
 			LLVMBool::False, // AlwaysPreserve
@@ -115,18 +173,18 @@ fn CodeBuilder::CreateVariableDebugInfo( mut this, FunctionContext& function_con
 			LLVMMetadataRef::Null );
 
 		LLVMDIBuilderInsertDeclareAtEnd(
-			debug_info_.builder,
+			builder_,
 			variable.llvm_value,
 			di_variable,
-			LLVMDIBuilderCreateExpression( debug_info_.builder, 0i64, 0s ),
+			LLVMDIBuilderCreateExpression( builder_, 0i64, 0s ),
 			debug_location,
 			LLVMGetInsertBlock(function_context.llvm_ir_builder) );
 	}
 }
 
-fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc )
+fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc )
 {
-	if( !build_debug_info_ )
+	if( builder_ == LLVMDIBuilderRef::Null )
 	{
 		return;
 	}
@@ -134,7 +192,7 @@ fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& fun
 	{
 		auto pointer_llvm_type= LLVMPointerType( variable.t.GetLLVMType(), 0u );
 		auto di_type= LLVMDIBuilderCreatePointerType(
-			debug_info_.builder,
+			builder_,
 			CreateDIType( variable.t ),
 			LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
@@ -142,10 +200,10 @@ fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& fun
 			ust::nullptr</char8/>(), 0s );
 
 		auto di_variable= LLVMDIBuilderCreateAutoVariable(
-			debug_info_.builder,
+			builder_,
 			function_context.current_debug_info_scope,
 			cast_mut(name).data(), name.size(),
-			debug_info_.source_file_entries[ src_loc.GetFileIndex() ],
+			source_file_entries_[ src_loc.GetFileIndex() ],
 			src_loc.GetLine(),
 			di_type,
 			LLVMBool::False, // AlwaysPreserve
@@ -154,7 +212,7 @@ fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& fun
 
 		// We needs address for reference, so, move it into stack variable.
 		auto address_for_ref= LLVMBuildAlloca( function_context.alloca_ir_builder, pointer_llvm_type, g_null_string );
-		CreateTypedReferenceStore( function_context, variable.t, variable.llvm_value, address_for_ref );
+		LLVMBuildStore( function_context.llvm_ir_builder, variable.llvm_value, address_for_ref );
 
 		auto debug_location= LLVMDIBuilderCreateDebugLocation(
 			llvm_context_,
@@ -164,16 +222,16 @@ fn CodeBuilder::CreateReferenceVariableDebugInfo( mut this, FunctionContext& fun
 			LLVMMetadataRef::Null );
 
 		LLVMDIBuilderInsertDeclareAtEnd(
-			debug_info_.builder,
+			builder_,
 			address_for_ref,
 			di_variable,
-			LLVMDIBuilderCreateExpression( debug_info_.builder, 0i64, 0s ),
+			LLVMDIBuilderCreateExpression( builder_, 0i64, 0s ),
 			debug_location,
 			LLVMGetInsertBlock(function_context.llvm_ir_builder) );
 	}
 }
 
-fn CodeBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
+fn DebugInfoBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 {
 	// Function type is incomplete but we can create typeinfo for it.
 	if_var( &tt : t.GetFunctionType() )
@@ -181,7 +239,7 @@ fn CodeBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 		return CreateDITypeImpl( tt );
 	}
 
-	if( IsTypeComplete( t ) )
+	if( unsafe( LLVMTypeIsSized( t.GetLLVMType() ) ) == LLVMBool::True )
 	{
 		if_var( &tt : t.GetFundamentalType() )
 		{
@@ -216,24 +274,24 @@ fn CodeBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 	var ust::array_view_imut</char8/> stub_type_name= "_stub_debug_type";
 
 	return unsafe( LLVMDIBuilderCreateBasicType(
-		debug_info_.builder,
+		builder_,
 		stub_type_name.data(), stub_type_name.size(),
 		8u64,
 		LLVMDWARFTypeEncoding::unsigned,
 		0u ) );
 }
 
-fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataRef
+fn DebugInfoBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataRef
 {
 	auto type_name= GetFundamentalTypeName( t.fundamental_type );
 
 	if( t.fundamental_type == U_FundamentalType::void_ )
 	{
 		// Internal representation of void type is llvm struct with zero elements.
-		auto di_file= debug_info_.source_file_entries.front();
+		auto di_file= source_file_entries_.front();
 
 		return unsafe( LLVMDIBuilderCreateStructType(
-			debug_info_.builder,
+			builder_,
 			di_file,
 			type_name.data(), type_name.size(),
 			di_file,
@@ -257,20 +315,20 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataR
 	else if( IsUnsignedInteger( t.fundamental_type )   ){  encoding= LLVMDWARFTypeEncoding::unsigned;       }
 
 	return unsafe( LLVMDIBuilderCreateBasicType(
-		debug_info_.builder,
+		builder_,
 		type_name.data(), type_name.size(),
 		u64( t.GetSize() * 8u ),
 		encoding,
 		0u ) );
 }
 
-fn CodeBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef
+fn DebugInfoBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef
 {
 	unsafe
 	{
-		auto mut subrange= LLVMDIBuilderGetOrCreateSubrange( debug_info_.builder, 0i64, i64(t.element_count) );
+		auto mut subrange= LLVMDIBuilderGetOrCreateSubrange( builder_, 0i64, i64(t.element_count) );
 		return LLVMDIBuilderCreateArrayType(
-			debug_info_.builder,
+			builder_,
 			LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 			LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u,
 			CreateDIType( t.element_type ),
@@ -278,11 +336,11 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef
 	}
 }
 
-fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
+fn DebugInfoBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 {
 	var ust::vector</LLVMMetadataRef/> mut elements;
 
-	auto di_file= debug_info_.source_file_entries.front();
+	auto di_file= source_file_entries_.front();
 
 	for( auto mut i= 0s; i < t.element_types.size(); ++i )
 	{
@@ -293,7 +351,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 
 		elements.push_back(
 			unsafe( LLVMDIBuilderCreateMemberType(
-				debug_info_.builder,
+				builder_,
 				di_file,
 				cast_mut(name).data(), name.size(),
 				di_file,
@@ -308,7 +366,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 	var ust::string8 name= Type(t).ToString();
 
 	return unsafe( LLVMDIBuilderCreateStructType(
-		debug_info_.builder,
+		builder_,
 		di_file,
 		cast_mut(name).data(), name.size(),
 		di_file,
@@ -323,10 +381,10 @@ fn CodeBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 		ust::nullptr</char8/>(), 0s ) );
 }
 
-fn CodeBuilder::CreateDITypeImpl( mut this, RawPointerType& t ) : LLVMMetadataRef
+fn DebugInfoBuilder::CreateDITypeImpl( mut this, RawPointerType& t ) : LLVMMetadataRef
 {
 	return unsafe( LLVMDIBuilderCreatePointerType(
-		debug_info_.builder,
+		builder_,
 		CreateDIType( t.element_type ),
 		LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 		LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
@@ -334,7 +392,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, RawPointerType& t ) : LLVMMetadataRe
 		ust::nullptr</char8/>(), 0s ) );
 }
 
-fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
+fn DebugInfoBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 {
 	var ust::vector</LLVMMetadataRef/> mut di_types;
 	{
@@ -345,7 +403,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 			{
 				auto pointer_llvm_type= LLVMPointerType( t.return_type.GetLLVMType(), 0u );
 				di_type= LLVMDIBuilderCreatePointerType(
-					debug_info_.builder,
+					builder_,
 					di_type,
 					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
 					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
@@ -366,7 +424,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 			{
 				auto pointer_llvm_type= LLVMPointerType( param.t.GetLLVMType(), 0u );
 				di_type= LLVMDIBuilderCreatePointerType(
-					debug_info_.builder,
+					builder_,
 					di_type,
 					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
 					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
@@ -378,16 +436,16 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
 	}
 
 	return unsafe( LLVMDIBuilderCreateSubroutineType(
-		debug_info_.builder,
-		debug_info_.source_file_entries.front(),
+		builder_,
+		source_file_entries_.front(),
 		di_types.data(), u32( di_types.size() ),
 		LLVMDIFlags(0) ) );
 }
 
-fn CodeBuilder::CreateDITypeImpl( mut this, FunctionPointerType& t ) : LLVMMetadataRef
+fn DebugInfoBuilder::CreateDITypeImpl( mut this, FunctionPointerType& t ) : LLVMMetadataRef
 {
 	return unsafe( LLVMDIBuilderCreatePointerType(
-		debug_info_.builder,
+		builder_,
 		CreateDITypeImpl( t.function_type ),
 		LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 		LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
@@ -395,15 +453,15 @@ fn CodeBuilder::CreateDITypeImpl( mut this, FunctionPointerType& t ) : LLVMMetad
 		ust::nullptr</char8/>(), 0s ) );
 }
 
-fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
+fn DebugInfoBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 {
-	if_var( cache_value : debug_info_.classes_di_types.find( t ) )
+	if_var( cache_value : classes_di_types_.find( t ) )
 	{
 		return cache_value;
 	}
 
 	// Insert null first to prevent loops.
-	debug_info_.classes_di_types.insert( t, LLVMMetadataRef::Null );
+	classes_di_types_.insert( t, LLVMMetadataRef::Null );
 
 	auto class_lock= t.lock_imut();
 	var ClassType& class_type= class_lock.deref();
@@ -413,7 +471,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 		src_loc= syntax_element.src_loc;
 	}
 
-	auto di_file= debug_info_.source_file_entries[ src_loc.GetFileIndex() ];
+	auto di_file= source_file_entries_[ src_loc.GetFileIndex() ];
 
 	var ust::vector</LLVMMetadataRef/> mut elements;
 
@@ -436,7 +494,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 			{
 				auto pointer_llvm_type= unsafe( LLVMPointerType( llvm_element_type, 0u ) );
 				element_di_type= unsafe( LLVMDIBuilderCreatePointerType(
-					debug_info_.builder,
+					builder_,
 					element_di_type,
 					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
 					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
@@ -446,7 +504,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 
 			elements.push_back(
 				unsafe( LLVMDIBuilderCreateMemberType(
-					debug_info_.builder,
+					builder_,
 					di_file,
 					cast_mut(field_name).data(), field_name.size(),
 					di_file,
@@ -466,7 +524,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 
 			elements.push_back(
 				unsafe( LLVMDIBuilderCreateMemberType(
-					debug_info_.builder,
+					builder_,
 					di_file,
 					cast_mut(name).data(), name.size(),
 					di_file,
@@ -482,7 +540,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 	var ust::string8 name= Type(t).ToString();
 
 	auto di_type= unsafe( LLVMDIBuilderCreateStructType(
-		debug_info_.builder,
+		builder_,
 		di_file,
 		cast_mut(name).data(), name.size(),
 		di_file,
@@ -496,13 +554,13 @@ fn CodeBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef
 		LLVMMetadataRef::Null,// VTableHolder
 		ust::nullptr</char8/>(), 0s ) );
 
-	debug_info_.classes_di_types[t]= di_type;
+	classes_di_types_[t]= di_type;
 	return di_type;
 }
 
-fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
+fn DebugInfoBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 {
-	if_var( cache_value : debug_info_.enums_di_types.find( t ) )
+	if_var( cache_value : enums_di_types_.find( t ) )
 	{
 		return cache_value;
 	}
@@ -520,19 +578,19 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 
 		elements.push_back(
 			unsafe( LLVMDIBuilderCreateEnumerator(
-				debug_info_.builder,
+				builder_,
 				cast_mut(name).data(), name.size(),
 				select( is_unsigned ? i64(LLVMConstIntGetZExtValue(constexpr_value)) : LLVMConstIntGetSExtValue(constexpr_value) ),
 				select( is_unsigned ? LLVMBool::True : LLVMBool::False ) ) ) );
 	}
 
 	var SrcLoc& src_loc= enum_.syntax_element.deref().src_loc;
-	auto di_file= debug_info_.source_file_entries[ src_loc.GetFileIndex() ];
+	auto di_file= source_file_entries_[ src_loc.GetFileIndex() ];
 
 	var ust::string8 name= Type(t).ToString();
 
 	auto di_type= unsafe( LLVMDIBuilderCreateEnumerationType(
-		debug_info_.builder,
+		builder_,
 		di_file,
 		cast_mut(name).data(), name.size(),
 		di_file,
@@ -542,7 +600,7 @@ fn CodeBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef
 		elements.data(), u32(elements.size()),
 		CreateDITypeImpl(enum_.underlaying_type) ) );
 
-	debug_info_.enums_di_types.insert( t, di_type );
+	enums_di_types_.insert( t, di_type );
 	return di_type;
 }
 
