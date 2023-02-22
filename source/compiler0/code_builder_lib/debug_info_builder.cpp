@@ -36,13 +36,10 @@ DebugInfoBuilder::DebugInfoBuilder(
 			0 /* runtime version */ );
 }
 
-void DebugInfoBuilder::Finalize()
+DebugInfoBuilder::~DebugInfoBuilder()
 {
-	// Finish with debug info.
 	if( builder_ != nullptr )
-	{
 		builder_->finalize(); // We must finalize it.
-	}
 }
 
 void DebugInfoBuilder::CreateVariableInfo(

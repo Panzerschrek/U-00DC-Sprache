@@ -12,6 +12,7 @@ namespace U
 class DebugInfoBuilder
 {
 public:
+	// LLVM Module must live longer, as this class.
 	DebugInfoBuilder(
 		llvm::LLVMContext& llvm_context,
 		const llvm::DataLayout& data_layout,
@@ -19,7 +20,8 @@ public:
 		llvm::Module& llvm_module,
 		bool build_debug_info );
 
-	void Finalize();
+	// Destructor triggers debug info finalization.
+	~DebugInfoBuilder();
 
 	void CreateVariableInfo(
 		const Variable& variable,

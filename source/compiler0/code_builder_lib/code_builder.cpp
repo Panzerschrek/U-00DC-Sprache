@@ -202,7 +202,8 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 			typeinfo_entry.second->type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
-	debug_info_builder_->Finalize();
+	// Reset debug info builder in order to finish deffered debug info construction.
+	debug_info_builder_= std::nullopt;
 
 	// Clear internal structures.
 	compiled_sources_.clear();
@@ -214,7 +215,6 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	non_sync_expression_stack_.clear();
 	generated_template_things_storage_.clear();
 	generated_template_things_sequence_.clear();
-	debug_info_builder_= std::nullopt;
 	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
 
 	BuildResult build_result;
