@@ -1,3 +1,4 @@
+import "../lex_synt_lib/source_graph.uh"
 import "function_context.uh"
 
 namespace U1
@@ -6,6 +7,13 @@ namespace U1
 class DebugInfoBuilder
 {
 public:
+	fn constructor(
+		LLVMContextRef llvm_context,
+		LLVMTargetDataRef data_layout,
+		SourceGraph& source_graph,
+		LLVMModuleRef mod,
+		bool build_debug_info );
+
 	fn destructor();
 
 	fn CreateFunctionDebugInfo( mut this, FunctionVariable& func_variable );

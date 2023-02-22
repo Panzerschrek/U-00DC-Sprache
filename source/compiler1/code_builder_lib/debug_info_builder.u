@@ -4,6 +4,63 @@ import "debug_info_builder.uh"
 namespace U1
 {
 
+fn DebugInfoBuilder::constructor(
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout,
+	SourceGraph& source_graph,
+	LLVMModuleRef mod,
+	bool build_debug_info )
+	( llvm_context_(llvm_context), data_layout_(data_layout), build_debug_info_(build_debug_info) )
+{
+	// prepare debug info
+	if( build_debug_info_ )
+	{
+		debug_info_.builder= unsafe( LLVMCreateDIBuilder( mod ) );
+
+		foreach( & node : source_graph.nodes )
+		{
+			debug_info_.source_file_entries.push_back(
+				unsafe( LLVMDIBuilderCreateFile(
+					debug_info_.builder,
+					cast_mut(node.file_path_normalized).data(), node.file_path_normalized.size(),
+					ust::nullptr</char8/>(), 0s ) ) );
+		}
+
+		// TODO - fix this. LLVM C interface doesn't provide any way to specify custom language, so, use language id for "C".
+		var LLVMDWARFSourceLanguage c_dwarf_language_id= 1u;
+
+		debug_info_.compile_unit=
+			unsafe( LLVMDIBuilderCreateCompileUnit(
+				debug_info_.builder,
+				c_dwarf_language_id,
+				debug_info_.source_file_entries.front(),
+				ust::nullptr</char8/>(), 0s, // TODO - set producer
+				LLVMBool::False, // TODO - pass "optimized' flag
+				ust::nullptr</char8/>(), 0s, // Flags
+				0u, // Runtime version
+				ust::nullptr</char8/>(), 0s, // SplitName
+				LLVMDWARFEmissionKind::Full,
+				0u, // DWOId
+				LLVMBool::True, // SplitDebugInlining
+				LLVMBool::False, // DebugInfoForProfiling
+				ust::nullptr</char8/>(), 0s, // SysRoot
+				ust::nullptr</char8/>(), 0s  // SDK
+			) );
+	}
+}
+
+fn DebugInfoBuilder::destructor()
+{
+	if( debug_info_.builder != LLVMDIBuilderRef::Null )
+	{
+		unsafe
+		{
+			LLVMDIBuilderFinalize( debug_info_.builder );
+			LLVMDisposeDIBuilder( debug_info_.builder );
+		}
+	}
+}
+
 fn DebugInfoBuilder::CreateFunctionDebugInfo( mut this, FunctionVariable& func_variable )
 {
 	if( !build_debug_info_ )
