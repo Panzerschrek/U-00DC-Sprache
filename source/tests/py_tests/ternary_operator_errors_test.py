@@ -187,13 +187,10 @@ def VariablesStateMerge_ForTernaryOperator_Test4():
 		{
 			var i32 mut x= 0, mut t= 0, mut u= 0;
 			var S mut s0{ .x= t }, mut s1{ .x= u };
-			auto z= select( b ? FakePollution( s0, x ) : FakePollution( s1, x ) ); // Create mutable references to "x" in different variables.
+			auto z= select( b ? FakePollution( s0, x ) : FakePollution( s1, x ) ); // Create mutable references to "x" in different variables. It is not actually error now.
 		}
 	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ReferenceProtectionError" )
-	assert( errors_list[0].src_loc.line == 8 )
+	tests_lib.build_program( c_program_text )
 
 
 def TernaryOperator_SavesInnerReferences_Test0():

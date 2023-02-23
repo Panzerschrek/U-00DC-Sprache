@@ -328,24 +328,10 @@ ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const 
 	for( const auto& replaced_node_pair : replaced_nodes )
 		result.nodes_.erase( replaced_node_pair.first );
 
-	// Check mutable reference count correctness.
-	for( const auto& node : result.nodes_ )
-	{
-		size_t mutable_links_count= 0u;
-		size_t immutable_links_count= 0u;
-		for( const auto& link : result.links_ )
-		{
-			if( link.src == node.first )
-			{
-				if( link.dst->value_type == ValueType::ReferenceMut )
-					++mutable_links_count;
-				else
-					++immutable_links_count;
-			}
-		}
-		if( mutable_links_count > 1u || ( immutable_links_count > 0u && mutable_links_count > 0u ) )
-			REPORT_ERROR( ReferenceProtectionError, errors, src_loc, node.first->name );
-	}
+	// Technically it's possible to create mutliple mutable references to same node or mutable reference + immutable reference.
+	// But this is not an error, actually, because only one reference is created in runtime (depending on executed branch).
+	// Seeming reference rules violation happens, because we perform variables state merging instead of maintaining two or more separate states.
+	// Maintaining multiple variables states after each branching is computationally too costly.
 
 	return std::make_pair( std::move(result), std::move(errors) );
 }

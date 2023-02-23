@@ -282,25 +282,7 @@ fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_vi
 		}
 	}
 
-	// Check mutable reference count correctness.
-	foreach( &node_pair : result.nodes_ )
-	{
-		var size_type mut mutable_links_count= 0s, mut immutable_links_count= 0s;
-		foreach( &link : result.links_ )
-		{
-			if( link.src == node_pair.key() )
-			{
-				++select(
-					cast_imut(result).nodes_[link.dst].kind == NodeKind::ReferenceMut
-						? mutable_links_count
-						: immutable_links_count );
-			}
-		}
-		if( mutable_links_count > 1s || ( immutable_links_count > 0s && mutable_links_count > 0s ) )
-		{
-			errors.push_back( ReportError( CodeBuilderErrorCode::ReferenceProtectionError, src_loc, node_pair.value().name ) );
-		}
-	}
+	// See the comment in same code in Compiler0.
 
 	return move(result);
 }

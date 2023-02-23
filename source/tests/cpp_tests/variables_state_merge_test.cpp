@@ -132,17 +132,11 @@ U_TEST( IfMergeTest4_BreakingReferenceProtectionInMergeResult0 )
 			else
 			{
 				Link( s1, z );
-			} // Error here. In result variable 'z' linked  mutable both with 's0' and 's1'.
+			} // Ok - variable 'z' linked mutable both with 's0' and 's1'.
 		}
 	)";
 
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 17u );
+	BuildProgram( c_program_text );
 }
 
 U_TEST( IfMergeTest5_BreakingReferenceProtectionInMergeResult1 )
@@ -166,17 +160,11 @@ U_TEST( IfMergeTest5_BreakingReferenceProtectionInMergeResult1 )
 			else
 			{
 				LinkImut( t, z );
-			} // Error here. In result variable 'z' have both mutable and immutable references inside 's0' and 's1'.
+			} // Ok - variable 'z' have both mutable and immutable references inside 's0' and 's1'.
 		}
 	)";
 
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-
-	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ReferenceProtectionError );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 19u );
+	BuildProgram( c_program_text );
 }
 
 U_TEST( IfMergeTest6_ConditionAffectsLowerBranches0 )
