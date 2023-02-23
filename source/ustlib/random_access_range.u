@@ -205,15 +205,7 @@ public:
 
 		unsafe
 		{
-			var $(T) ptr0= begin_ + i0;
-			var $(T) ptr1= begin_ + i1;
-
-			auto c_element_size= typeinfo</T/>.size_of;
-			auto c_element_alignment= typeinfo</T/>.align_of;
-			var aligned_storage</ c_element_size, typeinfo</T/>.align_of /> mut temp= uninitialized;
-			memory_copy_aligned( c_element_alignment, cast_ref_unsafe</byte8/>( temp )    , cast_ref_unsafe</byte8/>( $>(ptr0) ), c_element_size );
-			memory_copy_aligned( c_element_alignment, cast_ref_unsafe</byte8/>( $>(ptr0) ), cast_ref_unsafe</byte8/>( $>(ptr1) ), c_element_size );
-			memory_copy_aligned( c_element_alignment, cast_ref_unsafe</byte8/>( $>(ptr1) ), cast_ref_unsafe</byte8/>( temp )    , c_element_size );
+			ust::swap( $>(begin_ + i0), $>(begin_ + i1) );
 		}
 	}
 
