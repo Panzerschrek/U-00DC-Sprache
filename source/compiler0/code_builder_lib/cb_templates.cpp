@@ -608,16 +608,15 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, src_loc, *param_type ) )
 				return false;
 
+			// Create global variable for given variable.
+			// We can't just use given variable itself, because its address may be local for instantiation point.
 			const VariablePtr variable_for_insertion=
 				std::make_shared<Variable>(
 					given_variable->type,
 					ValueType::ReferenceImut,
 					Variable::Location::Pointer,
 					name,
-					CreateGlobalConstantVariable(
-						given_variable->type,
-						name,
-						given_variable->constexpr_value ),
+					CreateGlobalConstantVariable( given_variable->type, name, given_variable->constexpr_value ),
 					given_variable->constexpr_value );
 
 			*value= Value( variable_for_insertion, src_loc );
@@ -875,7 +874,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 		if( const Type* const type_name= value.GetTypeName() )
 			result.signature_args[i]= *type_name;
 		else if( const auto variable= value.GetVariable() )
-			result.signature_args[i]= *variable;
+			result.signature_args[i]= TemplateVariableArg( *variable );
 		else
 		{
 			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), src_loc, value.GetKindName() );
@@ -893,7 +892,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 		if( const auto type= value->GetTypeName() )
 			result.template_args.push_back( *type );
 		else if( const auto variable= value->GetVariable() )
-			result.template_args.push_back( *variable );
+			result.template_args.push_back( TemplateVariableArg( *variable ) );
 		else
 		{
 			// SPRACHE_TODO - maybe not generate this error?
@@ -1067,7 +1066,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 		if( const auto type= value->GetTypeName() )
 			result.template_args.push_back( *type );
 		else if( const auto variable= value->GetVariable() )
-			result.template_args.push_back( *variable );
+			result.template_args.push_back( TemplateVariableArg( *variable ) );
 		else
 		{
 			// SPRACHE_TODO - maybe not generate this error?
@@ -1200,7 +1199,7 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 				else if( variable->constexpr_value == nullptr )
 					REPORT_ERROR( ExpectedConstantExpression, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
 				else
-					template_args.push_back( *variable );
+					template_args.push_back( TemplateVariableArg( *variable ) );
 			}
 			else
 				REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), src_loc, value.GetKindName() );
@@ -1313,10 +1312,7 @@ void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 						ValueType::ReferenceImut,
 						Variable::Location::Pointer,
 						name,
-						CreateGlobalConstantVariable(
-							variable->type,
-							name,
-							variable->constexpr_value ),
+						CreateGlobalConstantVariable( variable->type, name, variable->constexpr_value ),
 						variable->constexpr_value );
 				v= Value( variable_for_insertion, src_loc );
 			}

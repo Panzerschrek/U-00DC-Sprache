@@ -13,7 +13,7 @@ struct TemplateVariableArg
 	llvm::Constant* constexpr_value= nullptr;
 
 	TemplateVariableArg()= default;
-	TemplateVariableArg( const Variable& v )
+	explicit TemplateVariableArg( const Variable& v )
 		: type( v.type ), constexpr_value( v.constexpr_value )
 	{
 		// U_ASSERT( constexpr_value != nullptr );
