@@ -7,9 +7,25 @@
 namespace U
 {
 
+struct TemplateVariableArg
+{
+	Type type;
+	llvm::Constant* constexpr_value= nullptr;
 
-// TODO - use here more lightweight structure, rather than "Variable"?
-using TemplateArg= std::variant< VariablePtr, Type >;
+	TemplateVariableArg()= default;
+	TemplateVariableArg( const Variable& v )
+		: type( v.type ), constexpr_value( v.constexpr_value )
+	{
+		// U_ASSERT( constexpr_value != nullptr );
+	}
+
+	TemplateVariableArg( const TemplateVariableArg& )= default;
+	TemplateVariableArg( TemplateVariableArg&& )= default;
+	TemplateVariableArg& operator=( const TemplateVariableArg& )= default;
+	TemplateVariableArg& operator=( TemplateVariableArg&& )= default;
+};
+
+using TemplateArg= std::variant< TemplateVariableArg, Type >;
 using TemplateArgs= std::vector<TemplateArg>;
 
 struct TemplateBase

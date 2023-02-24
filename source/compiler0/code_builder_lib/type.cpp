@@ -471,8 +471,8 @@ std::string Type::ToString() const
 				{
 					if( const Type* const param_as_type = std::get_if<Type>( &arg ) )
 						result+= param_as_type->ToString();
-					else if( const auto param_as_variable= std::get_if<VariablePtr>( &arg ) )
-						result+= ConstantVariableToString( **param_as_variable );
+					else if( const auto param_as_variable= std::get_if<TemplateVariableArg>( &arg ) )
+						result+= ConstantVariableToString( *param_as_variable );
 					else U_ASSERT(false);
 
 					if( &arg != &class_->base_template->signature_args.back() )

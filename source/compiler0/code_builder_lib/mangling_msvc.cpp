@@ -602,10 +602,8 @@ void ManglerMSVC::EncodeTemplateArgs( ManglerState& mangler_state, const Templat
 
 			EncodeType( mangler_state, *type );
 		}
-		else if( const auto variable_ptr_ptr= std::get_if<VariablePtr>(&template_arg) )
+		else if( const auto variable= std::get_if<TemplateVariableArg>(&template_arg) )
 		{
-			const VariablePtr& variable= *variable_ptr_ptr;
-
 			// HACK!
 			// This is not how C++ compiler encodes value template args.
 			// In C++ this is just numbers.
