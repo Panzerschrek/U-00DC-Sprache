@@ -656,25 +656,16 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !MatchTemplateArg( template_, args_names_scope, given_array_type->element_type, src_loc, *template_param.element_type ) )
 				return false;
 
-			const std::string name= "array_size " + std::to_string(given_array_type->element_count);
-
-			const VariableMutPtr size_variable=
-				std::make_shared<Variable>(
-					size_type_,
-					ValueType::ReferenceImut,
-					Variable::Location::Pointer,
-					name );
-
-			size_variable->constexpr_value=
+			TemplateVariableArg size_variable;
+			size_variable.type= size_type_;
+			size_variable.constexpr_value=
 				llvm::ConstantInt::get(
 					size_type_.GetLLVMType(),
 					llvm::APInt(
 						uint32_t(size_type_.GetFundamentalType()->GetSize() * 8),
 						given_array_type->element_count ) );
 
-			size_variable->llvm_value= CreateGlobalConstantVariable( size_type_, name, size_variable->constexpr_value );
-
-			if( !MatchTemplateArg( template_, args_names_scope, *size_variable, src_loc, *template_param.element_count ) )
+			if( !MatchTemplateArg( template_, args_names_scope, size_variable, src_loc, *template_param.element_count ) )
 				return false;
 
 			return true;
