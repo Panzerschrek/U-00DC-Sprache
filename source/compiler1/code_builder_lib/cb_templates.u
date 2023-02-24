@@ -571,7 +571,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 			return TemplateSignatureParam::TypeParam();
 		}
 
-		var TemplateSignatureParam::VariableParam mut variable_param{ .v= v };
+		var TemplateSignatureParam::VariableParam mut variable_param{ .v= VariablePtr(v) };
 		return move(variable_param);
 	}
 
@@ -691,7 +691,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 			}
 			if_var( &v : arg.get</Variable/>() )
 			{
-				result_signature_template_args.push_back( v );
+				result_signature_template_args.push_back( VariablePtr(v) );
 			}
 
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), Synt::GetSrcLoc(template_args[i]) );
@@ -727,7 +727,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 			}
 			if_var( &v : arg.get</Variable/>() )
 			{
-				result_signature_template_args.push_back( v );
+				result_signature_template_args.push_back( VariablePtr(v) );
 			}
 
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), src_loc );
@@ -894,9 +894,9 @@ fn CodeBuilder::GenTemplateFunction(
 				{
 					template_arg.something= t;
 				}
-				if_var( &v : known_template_args[i].get</Variable/>() )
+				if_var( &v : known_template_args[i].get</VariablePtr/>() )
 				{
-					template_arg.something= VariablePtr( v );
+					template_arg.something= VariablePtr( VariablePtr(v.lock_imut().deref()) );
 				}
 			}
 			result_names_scope_lock.deref().AddName( function_template.params[i].name, move(template_arg) );
@@ -982,9 +982,9 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 			{
 				template_arg.something= t;
 			}
-			if_var( &v : known_template_args[i].get</Variable/>() )
+			if_var( &v : known_template_args[i].get</VariablePtr/>() )
 			{
-				template_arg.something= VariablePtr( v );
+				template_arg.something= v;
 			}
 
 			result_names_scope_lock.deref().AddName( function_template.params[i].name, move(template_arg) );
@@ -1026,7 +1026,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 			}
 			if_var( &v_ptr : something.get</VariablePtr/>() )
 			{
-				result_template_args.push_back( v_ptr.lock_imut().deref() );
+				result_template_args.push_back( v_ptr );
 				continue;
 			}
 
@@ -1130,7 +1130,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 				have_some_errors= true;
 			}
 
-			template_args_finished.push_back( v );
+			template_args_finished.push_back( VariablePtr(v) );
 			continue;
 		}
 
@@ -1292,8 +1292,11 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	if( !param_type.empty() )
 	{
 		// Value param
-		if_var( &given_variable : given_arg.get</Variable/>() )
+		if_var( &given_variable_ptr : given_arg.get</VariablePtr/>() )
 		{
+			auto given_variable_lock= given_variable_ptr.lock_imut();
+			auto& given_variable= given_variable_lock.deref();
+
 			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
 			{
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, given_variable.t )
@@ -1389,14 +1392,20 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateArgFinished& given_arg,
 	SrcLoc& src_loc ) : bool
 {
-	if_var( &given_variable : given_arg.get</Variable/>() )
+	if_var( &given_variable_ptr : given_arg.get</VariablePtr/>() )
 	{
-		if( given_variable.t != variable_param.v.t )
+		auto given_variable_lock= given_variable_ptr.lock_imut();
+		auto& given_variable= given_variable_lock.deref();
+
+		auto variable_param_lock= variable_param.v.lock_imut();
+		auto& variable_param_ref= variable_param_lock.deref();
+
+		if( given_variable.t != variable_param_ref.t )
 		{
 			return false;
 		}
 
-		if( given_variable.constexpr_value == LLVMValueRef::Null || variable_param.v.constexpr_value == LLVMValueRef::Null )
+		if( given_variable.constexpr_value == LLVMValueRef::Null || variable_param_ref.constexpr_value == LLVMValueRef::Null )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 			return false;
@@ -1404,7 +1413,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 		return unsafe(
 			LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
-			LLVMConstIntGetZExtValue( variable_param.v.constexpr_value ) );
+			LLVMConstIntGetZExtValue( variable_param_ref.constexpr_value ) );
 	}
 
 	return false;
@@ -1436,7 +1445,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			size_var.constexpr_value= unsafe( LLVMConstInt( size_type_.GetLLVMType(), given_array_type.element_count, LLVMBool::False ) );
 			size_var.llvm_value= size_var.constexpr_value;
 
-			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_count, move(size_var), src_loc ) )
+			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_count, VariablePtr( move(size_var) ), src_loc ) )
 			{
 				return false;
 			}

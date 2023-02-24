@@ -532,7 +532,7 @@ struct TemplateArg
 	ust::variant</ tup[ NotKnownYet, Type, VariablePtr ] /> something;
 }
 
-type TemplateArgFinished= ust::variant</ tup[ Type, Variable ] />;
+type TemplateArgFinished= ust::variant</ tup[ Type, VariablePtr ] />;
 type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
 
 class TemplateSignatureParam
@@ -550,7 +550,7 @@ public:
 
 	struct VariableParam
 	{
-		Variable v;
+		VariablePtr v;
 
 		op==(VariableParam& l, VariableParam& r) : bool;
 	}
