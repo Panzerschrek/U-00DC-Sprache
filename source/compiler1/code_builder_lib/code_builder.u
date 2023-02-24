@@ -566,8 +566,11 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		{
 			return t;
 		}
-		if_var( &v : template_arg.something.get</NamesScopeVariable/>() )
+		if_var( &v_ptr : template_arg.something.get</NamesScopeVariablePtr/>() )
 		{
+			auto lock= v_ptr.lock_imut();
+			auto& v= lock.deref();
+
 			var Variable mut res
 			{
 				.t= v.t,

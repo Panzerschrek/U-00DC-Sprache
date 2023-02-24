@@ -38,8 +38,10 @@ fn CreateTemplateErrorsContext(
 			{
 				result.args_description+= t.ToString();
 			}
-			if_var( &v : arg.something.get</NamesScopeVariable/>() )
+			if_var( &v_ptr : arg.something.get</NamesScopeVariablePtr/>() )
 			{
+				auto lock= v_ptr.lock_imut();
+				auto& v= lock.deref();
 				result.args_description+= ConstantVariableToString( v.t, v.constexpr_value );
 			}
 
@@ -901,7 +903,7 @@ fn CodeBuilder::GenTemplateFunction(
 						.is_mutable= v.value_type != ValueType::ReferenceImut,
 						.constexpr_value= v.constexpr_value,
 					};
-					template_arg.something= move(out_var);
+					template_arg.something= NamesScopeVariablePtr( move(out_var) );
 				}
 			}
 			result_names_scope_lock.deref().AddName( function_template.params[i].name, move(template_arg) );
@@ -996,7 +998,7 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 					.is_mutable= v.value_type != ValueType::ReferenceImut,
 					.constexpr_value= v.constexpr_value,
 				};
-				template_arg.something= move(out_var);
+				template_arg.something= NamesScopeVariablePtr( move(out_var) );
 			}
 
 			result_names_scope_lock.deref().AddName( function_template.params[i].name, move(template_arg) );
@@ -1036,8 +1038,10 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 				result_template_args.push_back(t);
 				continue;
 			}
-			if_var( &v : something.get</NamesScopeVariable/>() )
+			if_var( &v_ptr : something.get</NamesScopeVariablePtr/>() )
 			{
+				auto lock= v_ptr.lock_imut();
+				auto& v= lock.deref();
 				var Variable mut out_v{ .t= v.t, .llvm_value= v.llvm_value, .constexpr_value= v.constexpr_value, .value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ), .location= Variable::Location::Pointer };
 				result_template_args.push_back( move(out_v) );
 				continue;
@@ -1333,11 +1337,14 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 					.llvm_value= AddGlobalConstantVariable( param_name + "\0", given_variable.t.GetLLVMType(), given_variable.constexpr_value ),
 				};
 
-				template_arg.something= move(out_var);
+				template_arg.something= NamesScopeVariablePtr( move(out_var) );
 				return true;
 			}
-			if_var( &v : template_arg.something.get</NamesScopeVariable/>() )
+			if_var( &v_ptr : template_arg.something.get</NamesScopeVariablePtr/>() )
 			{
+				auto lock= v_ptr.lock_imut();
+				auto& v= lock.deref();
+
 				if( given_variable.t != v.t )
 				{
 					return false;

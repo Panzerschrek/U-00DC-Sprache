@@ -392,6 +392,8 @@ struct NamesScopeVariable
 	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
 }
 
+type NamesScopeVariablePtr = ust::shared_ptr_mut</NamesScopeVariable/>;
+
 struct NamesScopeFunctionsSet
 {
 	FunctionsSet functions_set;
@@ -537,7 +539,7 @@ struct TemplateArg
 	u32 index;
 
 	struct NotKnownYet{}
-	ust::variant</ tup[ NotKnownYet, Type, NamesScopeVariable ] /> something;
+	ust::variant</ tup[ NotKnownYet, Type, NamesScopeVariablePtr ] /> something;
 }
 
 type TemplateArgFinished= ust::variant</ tup[ Type, Variable ] />;
