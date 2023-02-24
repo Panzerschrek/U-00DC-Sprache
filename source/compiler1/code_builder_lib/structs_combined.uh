@@ -311,6 +311,8 @@ struct Variable
 	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
 }
 
+type VariablePtr= ust::shared_ptr_mut</Variable/>;
+
 fn ConstantVariableToString( Type&  t, LLVMValueRef constant_value ) : ust::string8;
 
 struct VariableTypeExtended
@@ -381,18 +383,6 @@ fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />;
 //
 // NamesScopeValue
 //
-
-struct NamesScopeVariable
-{
-	Type t;
-	bool is_mutable;
-	LLVMValueRef llvm_value= LLVMValueRef::Null;
-	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
-
-	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
-}
-
-type NamesScopeVariablePtr = ust::shared_ptr_mut</NamesScopeVariable/>;
 
 struct NamesScopeFunctionsSet
 {
@@ -539,7 +529,7 @@ struct TemplateArg
 	u32 index;
 
 	struct NotKnownYet{}
-	ust::variant</ tup[ NotKnownYet, Type, NamesScopeVariablePtr ] /> something;
+	ust::variant</ tup[ NotKnownYet, Type, VariablePtr ] /> something;
 }
 
 type TemplateArgFinished= ust::variant</ tup[ Type, Variable ] />;
@@ -644,7 +634,7 @@ private:
 
 struct GlobalVariable
 {
-	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
+	ust::optional</Variable/> variable; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::VariablesDeclaration /> syntax_element;
 	u32 variable_index;
@@ -652,7 +642,7 @@ struct GlobalVariable
 
 struct GlobalAutoVariable
 {
-	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
+	ust::optional</Variable/> variable; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::AutoVariableDeclaration /> syntax_element;
 }
@@ -702,7 +692,7 @@ public:
 	ust::variant</ tup[
 		NamesScopeMutPtr,
 		ust::shared_ptr_mut</Type/>,
-		ust::shared_ptr_mut</NamesScopeVariable/>,
+		ust::shared_ptr_mut</Variable/>,
 		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
 		ClassTypePtr,
 		ClassFieldPtr,

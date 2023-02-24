@@ -346,7 +346,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		return f_ptr.try_lock_imut().deref().functions_set;
 	}
 
-	auto var_ptr= names_scope_value.Get</NamesScopeVariable/>();
+	auto var_ptr= names_scope_value.Get</Variable/>();
 	if( !var_ptr.empty() )
 	{
 		auto lock= var_ptr.try_lock_imut();
@@ -357,16 +357,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, function_context.references_graph.GetNodeName( v.node_id ) )
 		}
 
-		var Variable mut res
-		{
-			.t= v.t,
-			.llvm_value= v.llvm_value,
-			.constexpr_value= v.constexpr_value,
-			.location= Variable::Location::Pointer,
-			.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-			.node_id= v.node_id,
-		};
-		return move(res);
+		return v;
 	}
 
 	auto class_field_ptr= names_scope_value.Get</ClassField/>();
@@ -516,20 +507,12 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if_var( &v : global_variable_ptr.try_lock_imut().deref().variable )
 		{
-			if( v.is_mutable && !function_context.is_in_unsafe_block )
+			if( v.value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
 			}
 
-			var Variable mut res
-			{
-				.t= v.t,
-				.llvm_value= v.llvm_value,
-				.constexpr_value= v.constexpr_value,
-				.location= Variable::Location::Pointer,
-				.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-			};
-			return move(res);
+			return v;
 		}
 	}
 
@@ -540,20 +523,12 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if_var( &v : global_auto_variable_ptr.try_lock_imut().deref().variable )
 		{
-			if( v.is_mutable && !function_context.is_in_unsafe_block )
+			if( v.value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
 			}
 
-			var Variable mut res
-			{
-				.t= v.t,
-				.llvm_value= v.llvm_value,
-				.constexpr_value= v.constexpr_value,
-				.location= Variable::Location::Pointer,
-				.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-			};
-			return move(res);
+			return v;
 		}
 	}
 
@@ -566,20 +541,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		{
 			return t;
 		}
-		if_var( &v_ptr : template_arg.something.get</NamesScopeVariablePtr/>() )
+		if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
 		{
-			auto lock= v_ptr.lock_imut();
-			auto& v= lock.deref();
-
-			var Variable mut res
-			{
-				.t= v.t,
-				.llvm_value= v.llvm_value,
-				.constexpr_value= v.constexpr_value,
-				.location= Variable::Location::Pointer,
-				.value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-			};
-			return move(res);
+			return v_ptr.lock_imut().deref();
 		}
 		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, SrcLoc(), ust::string8("TODO - name" ) )
 	}
@@ -801,10 +765,11 @@ fn CodeBuilder::ResolveValue(
 					return ErrorValue();
 				}
 
-				var NamesScopeVariable mut v
+				var Variable mut v
 				{
 					.t= enum_non_null,
-					.is_mutable= false,
+					.value_type= ValueType::ReferenceImut,
+					.location= Variable::Location::Pointer,
 					.llvm_value= element.try_deref().llvm_value,
 					.constexpr_value= element.try_deref().constexpr_value,
 				};
@@ -1655,10 +1620,13 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			var FunctionType::Param& type_param= cast_imut(func_variable).t.params[arg_n];
 			var u32 llvm_arg_n= first_llvm_arg + u32(arg_n);
 
-			var NamesScopeVariable mut out_arg
+			var bool is_mutable= in_param.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+			var Variable mut out_arg
 			{
 				.t= type_param.t,
-				.is_mutable= in_param.mutability_modifier == Synt::MutabilityModifier::Mutable,
+				.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+				.location= Variable::Location::Pointer,
 			};
 
 			var ReferencesGraph::NodeId mut inner_reference_variable_node_id= ReferencesGraph::c_empty_node_id;
@@ -1691,7 +1659,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				}
 
 				out_arg.node_id= function_context.references_graph.AddNode(
-					select( out_arg.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+					select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 					in_param.name );
 				function_context.references_graph.AddLink( variable_node_id, out_arg.node_id );
 
@@ -1744,7 +1712,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				var Variable mut this_variable
 				{
 					.t= take(out_arg.t),
-					.value_type= select( out_arg.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 					.llvm_value= out_arg.llvm_value,
 					.node_id= out_arg.node_id,
 				};
@@ -2035,25 +2003,15 @@ fn CodeBuilder::RegisterTemporaryVariable( FunctionContext& mut function_context
 	function_context.variables_frames.back().push_back( move(variable) );
 }
 
-fn CodeBuilder::RegisterTopFrameVariable( FunctionContext& mut function_context, NamesScopeVariable& variable )
+fn CodeBuilder::RegisterTopFrameVariable( FunctionContext& mut function_context, Variable& variable )
 {
 	RegisterFrameVariable( function_context, variable, 0s );
 }
 
-fn CodeBuilder::RegisterFrameVariable( FunctionContext& mut function_context, NamesScopeVariable& variable, size_type frame_index_from_top )
+fn CodeBuilder::RegisterFrameVariable( FunctionContext& mut function_context, Variable& variable, size_type frame_index_from_top )
 {
-	var Variable mut v
-	{
-		.t= variable.t,
-		.llvm_value= variable.llvm_value,
-		.constexpr_value= variable.constexpr_value,
-		.value_type= select( variable.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-		.location= Variable::Location::Pointer,
-		.node_id= variable.node_id,
-	};
-
 	auto frame_index= function_context.variables_frames.size() - frame_index_from_top - 1s;
-	function_context.variables_frames[frame_index].push_back( move(v) );
+	function_context.variables_frames[frame_index].push_back( variable );
 }
 
 fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool
@@ -2720,11 +2678,6 @@ fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Va
 	return CreateClassFieldGEP( function_context, class_variable.t.GetClassType().try_deref(), class_variable.llvm_value, field );
 }
 
-fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, NamesScopeVariable& class_variable, ClassField& field ) : LLVMValueRef
-{
-	return CreateClassFieldGEP( function_context, class_variable.t.GetClassType().try_deref(), class_variable.llvm_value, field );
-}
-
 fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field ) : LLVMValueRef
 {
 	if( value == LLVMValueRef::Null )
@@ -2793,11 +2746,6 @@ fn CodeBuilder::CreateBaseClassFieldGEP( this, FunctionContext& function_context
 }
 
 fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, Variable& tuple_variable, u32 element_index ) : LLVMValueRef
-{
-	return CreateTupleElementGEP( function_context, tuple_variable.t.GetTupleType().try_deref(), tuple_variable.llvm_value, element_index );
-}
-
-fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, NamesScopeVariable& tuple_variable, u32 element_index ) : LLVMValueRef
 {
 	return CreateTupleElementGEP( function_context, tuple_variable.t.GetTupleType().try_deref(), tuple_variable.llvm_value, element_index );
 }

@@ -144,10 +144,11 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	if( !base_class.empty() )
 	{
-		var NamesScopeVariable base_variable
+		var Variable base_variable
 		{
 			.t= base_class.try_to_non_nullable(),
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_llvm_value ),
 		};
 
@@ -164,10 +165,11 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
-		var NamesScopeVariable field_variable
+		var Variable field_variable
 		{
 			.t= class_field.t,
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.llvm_value= CreateClassFieldGEP( function_context, class_type, this_llvm_value, class_field )
 		};
 
@@ -180,7 +182,13 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		{
 			if( class_field.is_reference )
 			{
-				var NamesScopeVariable this_variable{ .t= class_type, .llvm_value= this_llvm_value, .is_mutable= true };
+				var Variable this_variable
+				{
+					.t= class_type,
+					.llvm_value= this_llvm_value,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+				};
 				InitializeReferenceField( class_members_initial, function_context, this_variable, class_field, initializer );
 			}
 			else

@@ -38,7 +38,7 @@ fn CreateTemplateErrorsContext(
 			{
 				result.args_description+= t.ToString();
 			}
-			if_var( &v_ptr : arg.something.get</NamesScopeVariablePtr/>() )
+			if_var( &v_ptr : arg.something.get</VariablePtr/>() )
 			{
 				auto lock= v_ptr.lock_imut();
 				auto& v= lock.deref();
@@ -896,14 +896,7 @@ fn CodeBuilder::GenTemplateFunction(
 				}
 				if_var( &v : known_template_args[i].get</Variable/>() )
 				{
-					var NamesScopeVariable mut out_var
-					{
-						.t= v.t,
-						.llvm_value= v.llvm_value,
-						.is_mutable= v.value_type != ValueType::ReferenceImut,
-						.constexpr_value= v.constexpr_value,
-					};
-					template_arg.something= NamesScopeVariablePtr( move(out_var) );
+					template_arg.something= VariablePtr( v );
 				}
 			}
 			result_names_scope_lock.deref().AddName( function_template.params[i].name, move(template_arg) );
@@ -991,14 +984,7 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 			}
 			if_var( &v : known_template_args[i].get</Variable/>() )
 			{
-				var NamesScopeVariable mut out_var
-				{
-					.t= v.t,
-					.llvm_value= v.llvm_value,
-					.is_mutable= v.value_type != ValueType::ReferenceImut,
-					.constexpr_value= v.constexpr_value,
-				};
-				template_arg.something= NamesScopeVariablePtr( move(out_var) );
+				template_arg.something= VariablePtr( v );
 			}
 
 			result_names_scope_lock.deref().AddName( function_template.params[i].name, move(template_arg) );
@@ -1038,12 +1024,9 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 				result_template_args.push_back(t);
 				continue;
 			}
-			if_var( &v_ptr : something.get</NamesScopeVariablePtr/>() )
+			if_var( &v_ptr : something.get</VariablePtr/>() )
 			{
-				auto lock= v_ptr.lock_imut();
-				auto& v= lock.deref();
-				var Variable mut out_v{ .t= v.t, .llvm_value= v.llvm_value, .constexpr_value= v.constexpr_value, .value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ), .location= Variable::Location::Pointer };
-				result_template_args.push_back( move(out_v) );
+				result_template_args.push_back( v_ptr.lock_imut().deref() );
 				continue;
 			}
 
@@ -1329,18 +1312,19 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
 			{
-				var NamesScopeVariable mut out_var
+				var Variable mut out_var
 				{
 					.t= given_variable.t,
-					.is_mutable= false,
+					.value_type= ValueType::ReferenceImut,
+					.location= Variable::Location::Pointer,
 					.constexpr_value= given_variable.constexpr_value,
 					.llvm_value= AddGlobalConstantVariable( param_name + "\0", given_variable.t.GetLLVMType(), given_variable.constexpr_value ),
 				};
 
-				template_arg.something= NamesScopeVariablePtr( move(out_var) );
+				template_arg.something= VariablePtr( move(out_var) );
 				return true;
 			}
-			if_var( &v_ptr : template_arg.something.get</NamesScopeVariablePtr/>() )
+			if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
 			{
 				auto lock= v_ptr.lock_imut();
 				auto& v= lock.deref();

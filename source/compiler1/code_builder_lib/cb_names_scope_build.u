@@ -25,9 +25,9 @@ fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr
 	// Nothing to do here - all types in global namespaces placed as "Type" are complete.
 }
 
-fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeVariable/>& variable )
+fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Variable/>& variable )
 {
-	// Nothing to do here - global namespaces does not contains "NamesScopeVariable", separate types used for global variables.
+	// Nothing to do here - global namespaces does not contains "Variable", separate types used for global variables.
 }
 
 fn CodeBuilder::NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set )

@@ -105,9 +105,9 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : Name
 	return t;
 }
 
-fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeVariable/>& variable ) : NamesScopeValue
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</Variable/>& variable ) : NamesScopeValue
 {
-	// Global namespaces should not contain "NamesScopeVariable", only "GlobalVariable" or "GlobalAutoVariable"
+	// Global namespaces should not contain "Variable", only "GlobalVariable" or "GlobalAutoVariable"
 	halt;
 }
 

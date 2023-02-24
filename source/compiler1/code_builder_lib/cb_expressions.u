@@ -669,17 +669,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	SetupReferencesInCopyOrMove( names_scope, function_context, result.t, result.node_id, variable.node_id, take_operator.src_loc );
 
-	{ // Apply empty initializer for source variable.
-		var NamesScopeVariable mut names_scope_variable
-		{
-			.t= variable.t,
-			.is_mutable= true,
-			.llvm_value= variable.llvm_value,
-			.constexpr_value= variable.constexpr_value,
-			.node_id= variable.node_id,
-		};
-		BuildEmptyInitializer( names_scope, function_context, names_scope_variable, src_variable_name, take_operator.src_loc );
-	}
+	// Apply empty initializer for source variable.
+	BuildEmptyInitializer( names_scope, function_context, variable, src_variable_name, take_operator.src_loc );
 
 	// Register variable for references checking and destruction.
 	RegisterTemporaryVariable( function_context, result );
@@ -3653,14 +3644,15 @@ fn CodeBuilder::BuildTempVariableConstruction(
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, name );
 
 	{
-		var NamesScopeVariable mut names_scope_variable
+		var Variable mut variable_for_initialization
 		{
 			.t= t,
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.llvm_value= result.llvm_value,
 			.node_id= result.node_id,
 		};
-		result.constexpr_value= BuildConstructorInitializer( names_scope, function_context, names_scope_variable, args, src_loc );
+		result.constexpr_value= BuildConstructorInitializer( names_scope, function_context, variable_for_initialization, args, src_loc );
 	}
 
 	RegisterTemporaryVariable( function_context, result );

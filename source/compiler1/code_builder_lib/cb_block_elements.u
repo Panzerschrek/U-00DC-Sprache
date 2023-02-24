@@ -95,10 +95,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 		}
 
-		var NamesScopeVariable mut out_variable
+		var bool is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+		var Variable mut out_variable
 		{
 			.t= t,
-			.is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable,
+			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+			.location= Variable::Location::Pointer,
 		};
 
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
@@ -182,7 +185,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				function_context.references_graph.RemoveNode( out_variable.node_id );
 				continue;
 			}
-			if( out_variable.is_mutable && expression_result.value_type == ValueType::ReferenceImut )
+			if( is_mutable && expression_result.value_type == ValueType::ReferenceImut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, variable_declaration.src_loc )
 				function_context.references_graph.RemoveNode( out_variable.node_id );
@@ -207,7 +210,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		}
 
 		// Reset constant value for mutable variable
-		if( out_variable.is_mutable )
+		if( is_mutable )
 		{
 			out_variable.constexpr_value= LLVMValueRef::Null;
 		}
@@ -248,10 +251,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		return BlockElementBuildInfo();
 	}
 
-	var NamesScopeVariable mut out_variable
+	var bool is_mutable= auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+	var Variable mut out_variable
 	{
 		.t= expr.t,
-		.is_mutable= auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable,
+		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
 		.constexpr_value= expr.constexpr_value
 	};
 
@@ -271,7 +277,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			function_context.references_graph.RemoveNode( out_variable.node_id );
 			return BlockElementBuildInfo();
 		}
-		if( out_variable.is_mutable && expr.value_type != ValueType::ReferenceMut )
+		if( is_mutable && expr.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, auto_variable_declaration.src_loc )
 			function_context.references_graph.RemoveNode( out_variable.node_id );
@@ -375,7 +381,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	}
 
 	// Reset constant value for mutable variable
-	if( out_variable.is_mutable )
+	if( is_mutable )
 	{
 		out_variable.constexpr_value= LLVMValueRef::Null;
 	}
@@ -1065,10 +1071,12 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			var VariablesFrameHolder element_pass_temp_variables_frame_hodler(function_context);
 			auto& mut function_context= element_pass_temp_variables_frame_hodler.GetFunctionContext();
 
-			var NamesScopeVariable mut variable
+			var bool is_mutable= range_for_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+			var Variable mut variable
 			{
 				.t= tuple_type.element_types[i],
-				.is_mutable= range_for_operator.mutability_modifier == Synt::MutabilityModifier::Mutable,
+				.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.constexpr_value=
 					select(
 						sequence_expression.constexpr_value == LLVMValueRef::Null
@@ -1085,7 +1093,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					REPORT_ERROR( ExpectedReferenceValue, names_scope, range_for_operator.src_loc )
 					return BlockElementBuildInfo();
 				}
-				if( variable.is_mutable && sequence_expression.value_type != ValueType::ReferenceMut )
+				if( is_mutable && sequence_expression.value_type != ValueType::ReferenceMut )
 				{
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, range_for_operator.src_loc )
 					return BlockElementBuildInfo();
@@ -1094,7 +1102,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				{
 					// Do not forget to remove node in case of error-return!!!
 					variable.node_id= function_context.references_graph.AddNode(
-						select( variable.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
+						select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
 						range_for_operator.loop_variable_name );
 					function_context.references_graph.AddLink( sequence_lock_node, variable.node_id );
 				}
@@ -1396,10 +1404,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		return BlockElementBuildInfo();
 	}
 
-	var NamesScopeVariable mut out_variable
+	var bool is_mutable= with_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+	var Variable mut out_variable
 	{
 		.t= expr.t,
-		.is_mutable= with_operator.mutability_modifier == Synt::MutabilityModifier::Mutable,
+		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
 		.constexpr_value= expr.constexpr_value // Constexpr is preserved for move/copy.
 	};
 
@@ -1413,7 +1424,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	if( with_operator.reference_modifier == Synt::ReferenceModifier::Reference )
 	{
-		if( out_variable.is_mutable && expr.value_type == ValueType::ReferenceImut )
+		if( is_mutable && expr.value_type == ValueType::ReferenceImut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, with_operator.src_loc )
 			function_context.references_graph.RemoveNode( out_variable.node_id );
@@ -1523,7 +1534,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	else { halt; }
 
 	// Reset constant value for mutable variable
-	if( out_variable.is_mutable )
+	if( is_mutable )
 	{
 		out_variable.constexpr_value= LLVMValueRef::Null;
 	}

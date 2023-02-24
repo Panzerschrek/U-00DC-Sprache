@@ -1177,10 +1177,12 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
-	var NamesScopeVariable mut variable
+	var bool is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
+	var Variable mut variable
 	{
 		.t= PrepareType( names_scope_ptr, function_context, variables_declaration.t ),
-		.is_mutable = variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable
+		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
 	};
 
 	if( !EnsureTypeComplete( variable.t ) )
@@ -1196,8 +1198,8 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 
 	if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
-		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), variable_declaration.name, variable.t, !variable.is_mutable );
-		variable.llvm_value= select( variable.is_mutable
+		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), variable_declaration.name, variable.t, !is_mutable );
+		variable.llvm_value= select( is_mutable
 			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType() )
 			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), LLVMValueRef::Null ) );
 
@@ -1217,7 +1219,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	}
 	else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 	{
-		if( variable.is_mutable ) // Disable global mutable references because of problems with initializers and references protection.
+		if( is_mutable ) // Disable global mutable references because of problems with initializers and references protection.
 		{
 			REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope_ptr, variable_declaration.src_loc )
 			return;
@@ -1273,7 +1275,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		REPORT_ERROR( VariableInitializerIsNotConstantExpression, names_scope_ptr, variable_declaration.src_loc )
 		return;
 	}
-	if( variable.is_mutable )
+	if( is_mutable )
 	{
 		// Reset constexpr flag for mutable variable.
 		variable.constexpr_value = LLVMValueRef::Null;
@@ -1300,7 +1302,13 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
-	var NamesScopeVariable mut variable{ .is_mutable = auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable };
+	var bool is_mutable= auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
+
+	var Variable mut variable
+	{
+		.location= Variable::Location::Pointer,
+		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+	};
 
 	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, auto_variable_declaration.initializer_expression );
 	variable.t= expr.t;
@@ -1316,7 +1324,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	}
 
 	// Disable global mutable references because of problems with initializers and references protection.
-	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference && variable.is_mutable )
+	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference && is_mutable )
 	{
 		REPORT_ERROR( MutableGlobalReferencesAreNotAllowed, names_scope_ptr, auto_variable_declaration.src_loc )
 		return;
@@ -1341,8 +1349,8 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
-		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), auto_variable_declaration.name, variable.t, !variable.is_mutable );
-		variable.llvm_value= select( variable.is_mutable
+		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), auto_variable_declaration.name, variable.t, !is_mutable );
+		variable.llvm_value= select( is_mutable
 			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType() )
 			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value ) );
 
@@ -1350,7 +1358,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	}
 	else { halt; }
 
-	if( variable.is_mutable )
+	if( is_mutable )
 	{
 		// Reset constexpr flag for mutable variables.
 		variable.constexpr_value = LLVMValueRef::Null;

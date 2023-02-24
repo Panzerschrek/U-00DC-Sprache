@@ -145,7 +145,7 @@ fn DebugInfoBuilder::EndBlock( mut this, FunctionContext &mut function_context, 
 	function_context.current_debug_info_scope= prev_block;
 }
 
-fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc )
+fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string8& name, SrcLoc& src_loc )
 {
 	if( builder_ == LLVMDIBuilderRef::Null )
 	{
@@ -182,7 +182,7 @@ fn DebugInfoBuilder::CreateVariableInfo( mut this, FunctionContext& function_con
 	}
 }
 
-fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc )
+fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string8& name, SrcLoc& src_loc )
 {
 	if( builder_ == LLVMDIBuilderRef::Null )
 	{

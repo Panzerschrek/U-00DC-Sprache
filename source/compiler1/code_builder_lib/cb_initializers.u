@@ -5,7 +5,7 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, Synt::Initializer& initializer ) : LLVMValueRef
 {
 	variant_visit( &i : initializer )
 	{
@@ -14,12 +14,12 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
 {
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef
 {
 	auto src_loc= Synt::GetSrcLoc(expression_initializer);
 	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() || !variable.t.GetRawPointerType().empty() )
@@ -153,7 +153,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef
 {
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
@@ -170,10 +170,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto mut is_constant= variable.t.CanBeConstexpr();
 		var ust::vector</ LLVMValueRef /> mut elements_constants;
 
-		var NamesScopeVariable mut element_variable
+		var Variable mut element_variable
 		{
 			.t= array_type.element_type,
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.node_id= variable.node_id,
 		};
 
@@ -223,10 +224,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var NamesScopeVariable element_variable
+			var Variable element_variable
 			{
 				.t= tuple_type.element_types[i],
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 				.node_id= variable.node_id,
 			};
@@ -258,7 +260,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef
 {
 	auto class_type_ref= variable.t.GetClassType();
 	if( class_type_ref.empty() )
@@ -339,10 +341,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 		else
 		{
-			var NamesScopeVariable member_variable
+			var Variable member_variable
 			{
 				.t= class_field.t,
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateClassFieldGEP( function_context, variable, class_field ),
 				.node_id= variable.node_id,
 			};
@@ -386,10 +389,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( field.index == ~0u ){ continue; } // May be in case of error
 
-		var NamesScopeVariable member_variable
+		var Variable member_variable
 		{
 			.t= field.t,
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
 			.node_id= variable.node_id,
 		};
@@ -436,12 +440,12 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
 {
 	return BuildConstructorInitializer( names_scope, function_context, variable, constructor_initializer.args, constructor_initializer.src_loc );
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
 {
 	if( !variable.t.GetFundamentalType().empty() ||
 		!variable.t.GetEnumType().empty() ||
@@ -462,10 +466,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context,
 			array_type.element_count,
 			{
-				var NamesScopeVariable mut element_variable
+				var Variable mut element_variable
 				{
 					.t= array_type.element_type,
-					.is_mutable= true,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
 					.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
 				};
 
@@ -483,10 +488,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var NamesScopeVariable element_variable
+			var Variable element_variable
 			{
 				.t= tuple_type.element_types[i],
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 			};
 
@@ -529,10 +535,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				continue;
 			}
 
-			var NamesScopeVariable member_variable
+			var Variable member_variable
 			{
 				.t= field.t,
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
 			};
 
@@ -549,7 +556,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
 {
 	if( !function_context.is_in_unsafe_block )
 	{
@@ -558,7 +565,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef
+fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef
 {
 	if( !variable.t.IsDefaultConstructible() )
 	{
@@ -574,10 +581,11 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
-		var NamesScopeVariable mut element_variable
+		var Variable mut element_variable
 		{
 			.t= array_type.element_type,
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 		};
 
 		var LLVMValueRef mut constant_initializer = LLVMValueRef::Null;
@@ -603,10 +611,11 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var NamesScopeVariable element_variable
+			var Variable element_variable
 			{
 				.t= tuple_type.element_types[i],
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
 			};
 
@@ -661,7 +670,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 	halt;
 }
 
-fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef
+fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef
 {
 	if_var( &dst_type : variable.t.GetFundamentalType() )
 	{
@@ -985,7 +994,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& initializer_expression ) : LLVMValueRef
+fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, Synt::Expression& initializer_expression ) : LLVMValueRef
 {
 	auto initializer_src_loc= Synt::GetSrcLoc( initializer_expression );
 	auto initializer_value= BuildExpressionCode( names_scope, function_context, initializer_expression );
@@ -1135,7 +1144,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer ) : LLVMValueRef
+fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& variable, ClassField& field, Synt::Initializer& initializer ) : LLVMValueRef
 {
 	auto initializer_src_loc= Synt::GetSrcLoc( initializer );
 
@@ -1301,10 +1310,11 @@ fn CodeBuilder::BuildConstructorInitialization(
 	// Initialize fields, missing in initializer list.
 	if( !base_class.empty() && !base_initialized )
 	{
-		var NamesScopeVariable base_variable
+		var Variable base_variable
 		{
 			.t= base_class.try_to_non_nullable(),
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_.llvm_value ),
 		};
 
@@ -1326,10 +1336,11 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
-		var NamesScopeVariable field_variable
+		var Variable field_variable
 		{
 			.t= class_field.t,
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.llvm_value= CreateClassFieldGEP( function_context, this_, class_field ),
 			.node_id= this_.node_id,
 		};
@@ -1349,10 +1360,11 @@ fn CodeBuilder::BuildConstructorInitialization(
 		{
 			if( class_field.is_reference )
 			{
-				var NamesScopeVariable this_variable
+				var Variable this_variable
 				{
 					.t= class_type,
-					.is_mutable= true,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
 					.llvm_value= this_.llvm_value,
 					.node_id= this_.node_id,
 				};
@@ -1375,10 +1387,11 @@ fn CodeBuilder::BuildConstructorInitialization(
 	{
 		if( member_initializer.name == KeywordToString( Keyword::base_ ) )
 		{
-			var NamesScopeVariable base_variable
+			var Variable base_variable
 			{
 				.t= base_class.try_to_non_nullable(),
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_.llvm_value ),
 				.node_id= this_.node_id,
 			};
@@ -1397,10 +1410,11 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		if( class_field.is_reference )
 		{
-			var NamesScopeVariable this_copy
+			var Variable this_copy
 			{
 				.t= this_.t,
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= this_.llvm_value,
 				.node_id= this_.node_id,
 			};
@@ -1408,10 +1422,11 @@ fn CodeBuilder::BuildConstructorInitialization(
 		}
 		else
 		{
-			var NamesScopeVariable field_variable
+			var Variable field_variable
 			{
 				.t= class_field.t,
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateClassFieldGEP( function_context, this_, class_field ),
 				.node_id= this_.node_id,
 			};
@@ -1433,10 +1448,11 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 	var VariablesFrameHolder temp_variables_frame_hodler(global_function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	var NamesScopeVariable this_variable
+	var Variable this_variable
 	{
 		.t= class_type,
-		.is_mutable= true,
+		.value_type= ValueType::ReferenceMut,
+		.location= Variable::Location::Pointer,
 		.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, g_null_string ) )
 	};
 
@@ -1459,10 +1475,11 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 		}
 		else
 		{
-			var NamesScopeVariable field_variable
+			var Variable field_variable
 			{
 				.t= class_field.t,
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateClassFieldGEP( function_context, this_variable, class_field ),
 			};
 			BuildInitializer( class_members_ptr, function_context, field_variable, initializer );
