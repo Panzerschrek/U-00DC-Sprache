@@ -505,14 +505,16 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	{
 		BuildGlobalVariable( names_scope, global_variable_ptr.try_to_non_nullable() );
 
-		if_var( &v : global_variable_ptr.try_lock_imut().deref().variable )
+		auto v_ptr= global_variable_ptr.try_lock_imut().deref().variable;
+		if( !v_ptr.empty() )
 		{
+			auto mut v= v_ptr.try_lock_imut().deref();
 			if( v.value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
 			}
 
-			return v;
+			return move(v);
 		}
 	}
 
@@ -521,14 +523,16 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	{
 		BuildGlobalAutoVariable( names_scope, global_auto_variable_ptr.try_to_non_nullable() );
 
-		if_var( &v : global_auto_variable_ptr.try_lock_imut().deref().variable )
+		auto v_ptr= global_auto_variable_ptr.try_lock_imut().deref().variable;
+		if( !v_ptr.empty() )
 		{
+			auto mut v= v_ptr.try_lock_imut().deref();
 			if( v.value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
 			}
 
-			return v;
+			return move(v);
 		}
 	}
 

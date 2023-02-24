@@ -312,6 +312,7 @@ struct Variable
 }
 
 type VariablePtr= ust::shared_ptr_mut</Variable/>;
+type VariableNullablePtr= ust::shared_ptr_nullable_mut</Variable/>;
 
 fn ConstantVariableToString( Type&  t, LLVMValueRef constant_value ) : ust::string8;
 
@@ -634,7 +635,7 @@ private:
 
 struct GlobalVariable
 {
-	ust::optional</Variable/> variable; // empty if incomplete
+	VariableNullablePtr variable; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::VariablesDeclaration /> syntax_element;
 	u32 variable_index;
@@ -642,7 +643,7 @@ struct GlobalVariable
 
 struct GlobalAutoVariable
 {
-	ust::optional</Variable/> variable; // empty if incomplete
+	VariableNullablePtr variable; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::AutoVariableDeclaration /> syntax_element;
 }
