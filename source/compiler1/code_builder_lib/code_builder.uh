@@ -786,9 +786,9 @@ private:
 
 	fn DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc );
 
-	fn RegisterTemporaryVariable( FunctionContext& mut function_context, Variable variable );
-	fn RegisterTopFrameVariable( FunctionContext& mut function_context, Variable& variable );
-	fn RegisterFrameVariable( FunctionContext& mut function_context, Variable& variable, size_type frame_index_from_top );
+	fn RegisterTemporaryVariable( FunctionContext& mut function_context, VariablePtr variable );
+	fn RegisterTopFrameVariable( FunctionContext& mut function_context, VariablePtr variable );
+	fn RegisterFrameVariable( FunctionContext& mut function_context, VariablePtr variable, size_type frame_index_from_top );
 
 	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool;
 	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc );

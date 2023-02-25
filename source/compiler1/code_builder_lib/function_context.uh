@@ -59,7 +59,7 @@ public:
 	// This needed for reducing exponential expression evaluation complexity.
 	ust::unordered_map</ ust::shared_ptr_final</Synt::Expression/>, VariableTypeExtended /> args_preevaluation_cache;
 
-	type VariablesFrame= ust::vector</ Variable />;
+	type VariablesFrame= ust::vector</ VariablePtr />;
 	ust::vector</VariablesFrame/> variables_frames;
 
 	ReferencesGraph references_graph;
@@ -82,7 +82,7 @@ public:
 		// But in case of errors destructors may not be called.
 		for( auto mut i= 0s; i < function_context_.variables_frames.back().size(); ++i )
 		{
-			auto node_id= function_context_.variables_frames.back()[i].node_id;
+			auto node_id= function_context_.variables_frames.back()[i].lock_imut().deref().node_id;
 			function_context_.references_graph.RemoveNode( node_id );
 		}
 		function_context_.variables_frames.drop_back();

@@ -216,7 +216,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		}
 
 		// Register variable for destruction and reference checking.
-		RegisterFrameVariable( function_context, out_variable, 1s );
+		RegisterFrameVariable( function_context, VariablePtr( out_variable ), 1s );
 
 		var bool mut insert_not_ok= false;
 		{
@@ -387,7 +387,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	}
 
 	// Register variable for destruction and reference checking.
-	RegisterFrameVariable( function_context, out_variable, 1s );
+	RegisterFrameVariable( function_context, VariablePtr( out_variable ), 1s );
 
 	var bool mut insert_not_ok= false;
 	{
@@ -1046,7 +1046,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			var Variable mut lock_variable= sequence_expression;
 			lock_variable.node_id= sequence_lock_node;
 			lock_variable.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-			function_context.variables_frames.back().push_back( move(lock_variable) );
+			function_context.variables_frames.back().push_back( VariablePtr( move(lock_variable) ) );
 		}
 	}
 
@@ -1137,7 +1137,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			else{ halt; }
 
 			// Register variable for destruction and reference checking.
-			RegisterTopFrameVariable( function_context, variable );
+			RegisterTopFrameVariable( function_context, VariablePtr( variable ) );
 
 			{
 				auto mut lock= names_scope.lock_mut();
@@ -1543,7 +1543,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	DestroyUnusedTemporaryVariables( names_scope, function_context, with_operator.src_loc );
 
 	// Register variable for destruction and reference checking.
-	RegisterTopFrameVariable( function_context, out_variable );
+	RegisterTopFrameVariable( function_context, VariablePtr( out_variable ) );
 
 	if( IsKeyword( with_operator.variable_name ) )
 	{

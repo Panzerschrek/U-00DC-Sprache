@@ -455,7 +455,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					}
 
 					// Register variable for references checking.
-					RegisterTemporaryVariable( function_context, result );
+					RegisterTemporaryVariable( function_context, VariablePtr(result) );
 				}
 			}
 
@@ -1715,7 +1715,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				function_context.args_nodes[arg_n]= out_arg.node_id;
 			}
 
-			RegisterTopFrameVariable( function_context, out_arg ); // Register arg for destruction and reference checking.
+			RegisterTopFrameVariable( function_context, VariablePtr(out_arg) ); // Register arg for destruction and reference checking.
 
 			if( in_param.name == KeywordToString( Keyword::this_ ) && func_variable.is_this_call && !out_arg.t.GetClassType().empty() )
 			{
@@ -1909,7 +1909,9 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_sco
 	// Call destructors in reverse order.
 	for( auto mut i= function_context.variables_frames[variables_frame_index].size(); i > 0s; --i )
 	{
-		auto variable= function_context.variables_frames[variables_frame_index][i - 1s];
+		auto variable_ptr= function_context.variables_frames[variables_frame_index][i - 1s];
+		auto variable_lock= variable_ptr.lock_imut();
+		var Variable& variable= variable_lock.deref();
 		// Call destructors for variables, but not for references.
 		if( variable.node_id != ReferencesGraph::c_empty_node_id )
 		{
@@ -1968,23 +1970,24 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 		// TODO - maybe iterate in reverse order?
 		for( auto mut i= 0s; i < function_context.variables_frames.back().size(); ++i )
 		{
-			auto node_id= function_context.variables_frames.back()[i].node_id;
+			auto variable_ptr= function_context.variables_frames.back()[i];
+			auto variable_lock= variable_ptr.lock_imut();
+			var Variable& variable= variable_lock.deref();
+
 			// Move variable nodes without links or all reference nodes.
 			// We can freely drop reference nodes here because there should be unregistered reference nodes for current used references.
-			if( node_id != ReferencesGraph::c_empty_node_id &&
-				!function_context.references_graph.NodeIsMoved( node_id ) &&
-				( function_context.references_graph.GetNodeKind( node_id ) != ReferencesGraph::NodeKind::Variable ||
-					!function_context.references_graph.HaveOutgoingLinks( node_id ) ) )
+			if( variable.node_id != ReferencesGraph::c_empty_node_id &&
+				!function_context.references_graph.NodeIsMoved( variable.node_id ) &&
+				( function_context.references_graph.GetNodeKind( variable.node_id ) != ReferencesGraph::NodeKind::Variable ||
+					!function_context.references_graph.HaveOutgoingLinks( variable.node_id ) ) )
 			{
 				any_node_moved= true;
-				function_context.references_graph.MoveNode( node_id );
+				function_context.references_graph.MoveNode( variable.node_id );
 
-				if( function_context.references_graph.GetNodeKind( node_id ) == ReferencesGraph::NodeKind::Variable )
+				if( function_context.references_graph.GetNodeKind( variable.node_id ) == ReferencesGraph::NodeKind::Variable )
 				{
 					if( !function_context.is_functionless_context )
 					{
-						var Variable variable= function_context.variables_frames.back()[i];
-
 						if( variable.llvm_value != LLVMValueRef::Null )
 						{
 							BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
@@ -2007,20 +2010,20 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scop
 	}
 }
 
-fn CodeBuilder::RegisterTemporaryVariable( FunctionContext& mut function_context, Variable mut variable )
+fn CodeBuilder::RegisterTemporaryVariable( FunctionContext& mut function_context, VariablePtr mut variable )
 {
 	function_context.variables_frames.back().push_back( move(variable) );
 }
 
-fn CodeBuilder::RegisterTopFrameVariable( FunctionContext& mut function_context, Variable& variable )
+fn CodeBuilder::RegisterTopFrameVariable( FunctionContext& mut function_context, VariablePtr mut variable )
 {
-	RegisterFrameVariable( function_context, variable, 0s );
+	RegisterFrameVariable( function_context, move(variable), 0s );
 }
 
-fn CodeBuilder::RegisterFrameVariable( FunctionContext& mut function_context, Variable& variable, size_type frame_index_from_top )
+fn CodeBuilder::RegisterFrameVariable( FunctionContext& mut function_context, VariablePtr mut variable, size_type frame_index_from_top )
 {
 	auto frame_index= function_context.variables_frames.size() - frame_index_from_top - 1s;
-	function_context.variables_frames[frame_index].push_back( variable );
+	function_context.variables_frames[frame_index].push_back( move(variable) );
 }
 
 fn CodeBuilder::IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool

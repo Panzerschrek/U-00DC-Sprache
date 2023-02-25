@@ -124,7 +124,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	res.llvm_value= res.constexpr_value;
 
 	// Register variable for references checking.
-	RegisterTemporaryVariable( function_context, res );
+	RegisterTemporaryVariable( function_context, VariablePtr(res) );
 
 	return move(res);
 }
@@ -143,7 +143,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	res.llvm_value= res.constexpr_value;
 
 	// Register variable for references checking.
-	RegisterTemporaryVariable( function_context, res );
+	RegisterTemporaryVariable( function_context, VariablePtr(res) );
 
 	return move(res);
 }
@@ -435,7 +435,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	res.llvm_value= res.constexpr_value;
 
 	// Register variable for references checking.
-	RegisterTemporaryVariable( function_context, res );
+	RegisterTemporaryVariable( function_context, VariablePtr(res) );
 
 	return move(res);
 }
@@ -600,7 +600,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	function_context.references_graph.MoveNode( variable.node_id );
 
 	// Register variable for references checking and destruction.
-	RegisterTemporaryVariable( function_context, result );
+	RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 	return move(result);
 }
@@ -674,7 +674,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	BuildEmptyInitializer( names_scope, function_context, variable, src_variable_name, take_operator.src_loc );
 
 	// Register variable for references checking and destruction.
-	RegisterTemporaryVariable( function_context, result );
+	RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 	return move(result);
 }
@@ -875,7 +875,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking and destruction.
-	RegisterTemporaryVariable( function_context, result );
+	RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 	return move(result);
 }
@@ -922,7 +922,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	};
 
 	// Register variable for references checking.
-	RegisterTemporaryVariable( function_context, res );
+	RegisterTemporaryVariable( function_context, VariablePtr(res) );
 
 	return move(res);
 }
@@ -1164,7 +1164,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			// Register variable for references checking.
-			RegisterTemporaryVariable( function_context, result );
+			RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 			return move(result);
 		}
@@ -1229,7 +1229,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 
 			// Register variable for references checking.
-			RegisterTemporaryVariable( function_context, result );
+			RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 			return move(result);
 		}
@@ -1458,7 +1458,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						}
 
 						// Register variable for references checking.
-						RegisterTemporaryVariable( function_context, result );
+						RegisterTemporaryVariable( function_context, VariablePtr(result) );
 					}
 				}
 			}
@@ -1602,7 +1602,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	RegisterTemporaryVariable( function_context, result );
+	RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 	return move(result);
 }
@@ -1643,7 +1643,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	RegisterTemporaryVariable( function_context, result );
+	RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 	return move(result);
 }
@@ -1685,7 +1685,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	RegisterTemporaryVariable( function_context, result );
+	RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 	return move(result);
 }
@@ -2432,7 +2432,7 @@ fn CodeBuilder::BuildBinaryOperator( mut this, NamesScopePtr& names_scope, Funct
 	res.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( operator ) );
 
 	// Register variable for references checking.
-	RegisterTemporaryVariable( function_context, res );
+	RegisterTemporaryVariable( function_context, VariablePtr(res) );
 
 	return move(res);
 }
@@ -2541,7 +2541,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, BinaryOperatorToString( binary_operator.operator ) );
 
 	// Register variable for references checking.
-	RegisterTemporaryVariable( function_context, result );
+	RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 	return move(result);
 }
@@ -2829,7 +2829,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			}
 		}
 
-		RegisterTemporaryVariable( function_context, result );
+		RegisterTemporaryVariable( function_context, VariablePtr(result) );
 		return move(result);
 	}
 	else
@@ -3158,7 +3158,7 @@ fn CodeBuilder::DoCallFunction(
 				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy source arg, if needed.
 
 				// Register variable for references checking and destruction.
-				RegisterTemporaryVariable( function_context, arg_converted );
+				RegisterTemporaryVariable( function_context, VariablePtr(arg_converted) );
 
 				arg= move(arg_converted);
 			}
@@ -3603,7 +3603,7 @@ fn CodeBuilder::DoCallFunction(
 	DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy temporary args.
 
 	// Register result variable for destruction and references graph checks.
-	RegisterTemporaryVariable( function_context, result );
+	RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 	return move(result);
 }
@@ -3656,7 +3656,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 		result.constexpr_value= BuildConstructorInitializer( names_scope, function_context, variable_for_initialization, args, src_loc );
 	}
 
-	RegisterTemporaryVariable( function_context, result );
+	RegisterTemporaryVariable( function_context, VariablePtr(result) );
 
 	return move(result);
 }
