@@ -1243,7 +1243,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	// Function context should contain "this" with class type
-	var Variable this_= function_context.this_.try_deref();
+	var Variable this_= function_context.this_.try_lock_imut().deref();
 	auto class_type= this_.t.GetClassType().try_deref();
 	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();

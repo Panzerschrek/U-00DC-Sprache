@@ -330,17 +330,20 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		// Append "this" to functions set of this class.
 		auto class_type= names_scope.lock_imut().deref().GetClass();
-		if( !class_type.empty() &&
-			!function_context.this_.empty() &&
-			class_type.try_to_non_nullable() == function_context.this_.try_deref().t &&
-			!function_context.whole_this_is_unavailable )
+		if( !class_type.empty() && !function_context.this_.empty() )
 		{
-			var ThisMethodsSet mut this_methods_set
+			with( &this_ : function_context.this_.try_lock_imut().deref() )
 			{
-				.this_= function_context.this_.try_deref(),
-				.functions_set= f_ptr.try_lock_imut().deref().functions_set,
-			};
-			return move(this_methods_set);
+				if( class_type.try_to_non_nullable() == this_.t && !function_context.whole_this_is_unavailable )
+				{
+					var ThisMethodsSet mut this_methods_set
+					{
+						.this_= this_,
+						.functions_set= f_ptr.try_lock_imut().deref().functions_set,
+					};
+					return move(this_methods_set);
+				}
+			}
 		}
 
 		return f_ptr.try_lock_imut().deref().functions_set;
@@ -375,9 +378,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			return ErrorValue();
 		}
 
-		auto mut this_value_corrected= function_context.this_.try_deref().llvm_value;
+		auto this_ptr= function_context.this_;
+		auto this_lock= this_ptr.try_lock_imut();
+		var Variable& this_= this_lock.deref();
 
-		var ClassTypePtr this_class= function_context.this_.try_deref().t.GetClassType().try_deref();
+		auto mut this_value_corrected= this_.llvm_value;
+
+		var ClassTypePtr this_class= this_.t.GetClassType().try_deref();
 		auto field_source_class= field.source_class;
 		var ust::shared_ptr_nullable_mut</ClassType/> mut current_class= this_class;
 		while( !current_class.empty() && current_class != field_source_class )
@@ -421,10 +428,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, ptr_value );
 			MarkLoadInstructionWithNonNullMetadata( result.llvm_value );
 
-			auto node_id= function_context.this_.try_deref().node_id;
-			if( node_id != ReferencesGraph::c_empty_node_id )
+			if( this_.node_id != ReferencesGraph::c_empty_node_id )
 			{
-				auto inner_nodes = function_context.references_graph.GetAccessibleVariableNodesInnerReferences( node_id );
+				auto inner_nodes = function_context.references_graph.GetAccessibleVariableNodesInnerReferences( this_.node_id );
 				if( inner_nodes.size() == 1s )
 				{
 					// For cases with single inner node just return it. This hels preventing some cases of false "ReferenceProtectionError".
@@ -432,7 +438,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				}
 				else
 				{
-					var ust::string8 mut node_name= function_context.references_graph.GetNodeName( node_id );
+					var ust::string8 mut node_name= function_context.references_graph.GetNodeName( this_.node_id );
 					node_name+= ".";
 					node_name+= field.syntax_element.deref().name;
 					auto reference_field_node= function_context.references_graph.AddNode(
@@ -461,9 +467,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			{
 				.t= field.t,
 				.location= Variable::Location::Pointer,
-				.value_type= function_context.this_.try_deref().value_type,
+				.value_type= this_.value_type,
 				.llvm_value= CreateClassFieldGEP( function_context, field_source_class, this_value_corrected, field ),
-				.node_id= function_context.this_.try_deref().node_id,
+				.node_id= this_.node_id,
 			};
 
 			if( !field.is_mutable )
@@ -1720,7 +1726,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					.llvm_value= out_arg.llvm_value,
 					.node_id= out_arg.node_id,
 				};
-				function_context.this_= move(this_variable);
+				function_context.this_= VariablePtr( move(this_variable) );
 				move(out_arg);
 			}
 			else
@@ -1770,18 +1776,17 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		if( is_constructor || is_destructor )
 		{
 			// Setup virtual table pointers before main body of constructor/destructor and after constructor initialization list.
-			auto this_llvm_value= function_context.this_.try_deref().llvm_value;
-			auto class_type_ptr= function_context.this_.try_deref().t.GetClassType().try_deref();
-			SetupVirtualTablePointers( this_llvm_value, class_type_ptr, function_context );
-		}
-
-		if( ( is_constructor || is_destructor ) && !function_context.this_.try_deref().t.GetClassType().empty() )
-		{
-			auto class_type= function_context.this_.try_deref().t.GetClassType().try_deref();
-			auto class_kind= class_type.lock_imut().deref().kind;
-			if( class_kind == ClassType::Kind::Interface || class_kind == ClassType::Kind::Abstract )
+			auto this_ptr= function_context.this_;
+			with( &this_ : this_ptr.try_lock_imut().deref() )
 			{
-				function_context.whole_this_is_unavailable= true;
+				auto class_type= this_.t.GetClassType().try_deref();
+				SetupVirtualTablePointers( this_.llvm_value, class_type, function_context );
+
+				auto class_kind= class_type.lock_imut().deref().kind;
+				if( class_kind == ClassType::Kind::Interface || class_kind == ClassType::Kind::Abstract )
+				{
+					function_context.whole_this_is_unavailable= true;
+				}
 			}
 		}
 
@@ -1820,7 +1825,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.destructor_end_block );
 				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.destructor_end_block );
 
-				var Variable this_copy= function_context.this_.try_deref();
+				var Variable this_copy= function_context.this_.try_lock_imut().deref();
 				if_var( &class_type : this_copy.t.GetClassType() )
 				{
 					BuildMembersDestructors( function_context, this_copy.llvm_value, class_type );

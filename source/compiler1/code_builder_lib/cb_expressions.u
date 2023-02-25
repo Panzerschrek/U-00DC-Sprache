@@ -353,7 +353,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( ThisUnavailable, names_scope, named_operand.src_loc )
 			return ErrorValue();
 		}
-		return function_context.this_.try_deref();
+		return function_context.this_.try_lock_imut().deref();
 	}
 	if( name == KeywordToString( Keyword::base_ ) )
 	{
@@ -363,7 +363,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
-		var Variable& this_= function_context.this_.try_deref();
+		auto this_lock= function_context.this_.try_lock_imut();
+		var Variable& this_= this_lock.deref();
 
 		auto class_type= this_.t.GetClassType().try_deref();
 		auto base_class= class_type.lock_imut().deref().base_class;
