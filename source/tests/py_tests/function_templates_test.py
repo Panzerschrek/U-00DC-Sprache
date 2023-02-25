@@ -1060,3 +1060,20 @@ def TemplateFunction_versus_TypesConversion_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def TemplateFunction_UseLocalVariableForTemplateArgumentUsedAsReference():
+	c_program_text= """
+	fn Baz(i32& x){}
+	template</i32 x/> fn Bar()
+	{
+		Baz(x); // Pass reference to argument "x". "x" must be global variable.
+	}
+	fn Foo()
+	{
+		auto some_local= 666;
+		Bar</some_local/>();
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
