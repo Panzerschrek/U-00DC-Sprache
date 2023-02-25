@@ -194,10 +194,8 @@ void EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& templa
 	{
 		if( const auto type= std::get_if<Type>( &template_arg ) )
 			EncodeTypeName( mangler_state, *type );
-		else if( const auto variable_ptr_ptr= std::get_if<VariablePtr>( &template_arg ) )
+		else if( const auto variable= std::get_if<TemplateVariableArg>( &template_arg ) )
 		{
-			const VariablePtr& variable= *variable_ptr_ptr;
-
 			mangler_state.Push( "L" );
 
 			EncodeTypeName( mangler_state, variable->type );

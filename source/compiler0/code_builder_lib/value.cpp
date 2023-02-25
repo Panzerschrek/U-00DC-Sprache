@@ -50,7 +50,7 @@ Variable::Variable(
 {
 }
 
-std::string ConstantVariableToString( const Variable& variable )
+std::string ConstantVariableToString( const TemplateVariableArg& variable )
 {
 	if( variable.constexpr_value == nullptr )
 		return "";

@@ -8,7 +8,6 @@
 namespace U
 {
 
-
 class TemplateSignatureParam
 {
 public:

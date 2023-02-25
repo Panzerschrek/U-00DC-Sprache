@@ -882,26 +882,7 @@ fn CodeBuilder::GenTemplateFunction(
 	var NamesScopePtr names_scope= function_template.parent_names_scope.lock().try_to_non_nullable(); // Parent namespace of type template
 	var NamesScopeMutPtr result_names_scope( NamesScope( NamesScope::c_template_args_namespace_name, names_scope ) ); // Where we place template arguments
 
-	{
-		auto mut result_names_scope_lock= result_names_scope.lock_mut();
-		for( auto mut i= 0s; i < function_template.params.size(); ++i )
-		{
-			var TemplateArg mut template_arg{ .index= u32(i) };
-
-			if( i < known_template_args.size() )
-			{
-				if_var( &t : known_template_args[i].get</Type/>() )
-				{
-					template_arg.something= t;
-				}
-				if_var( &v : known_template_args[i].get</VariablePtr/>() )
-				{
-					template_arg.something= VariablePtr( VariablePtr(v.lock_imut().deref()) );
-				}
-			}
-			result_names_scope_lock.deref().AddName( function_template.params[i].name, move(template_arg) );
-		}
-	}
+	FillKnownFunctionTemplateArgsIntoNamespace( function_template, known_template_args, result_names_scope );
 
 	auto mut all_ok= true;
 	for( auto mut i= 0s; i < args.size(); ++i )
@@ -972,24 +953,7 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 			"",
 			function_template.parent_names_scope.lock().try_to_non_nullable() ) ); // Where we place template arguments
 
-	{
-		auto mut result_names_scope_lock= result_names_scope.lock_mut();
-		for( auto mut i= 0s; i < function_template.params.size(); ++i )
-		{
-			var TemplateArg mut template_arg{ .index= u32(i) };
-
-			if_var( &t : known_template_args[i].get</Type/>() )
-			{
-				template_arg.something= t;
-			}
-			if_var( &v : known_template_args[i].get</VariablePtr/>() )
-			{
-				template_arg.something= v;
-			}
-
-			result_names_scope_lock.deref().AddName( function_template.params[i].name, move(template_arg) );
-		}
-	}
+	FillKnownFunctionTemplateArgsIntoNamespace( function_template, known_template_args, result_names_scope );
 
 	return FinishTemplateFunctionGeneration(
 		parametrized_function_template.base_template,
@@ -1606,6 +1570,47 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	}
 
 	return false;
+}
+
+fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
+	mut this,
+	FunctionTemplate& function_template,
+	TemplateArgsFinished& known_template_args,
+	NamesScopeMutPtr& target_namespace )
+{
+	auto mut lock= target_namespace.lock_mut();
+	var NamesScope &mut target_namespace_ref= lock.deref();
+
+	for( auto mut i= 0s; i < function_template.params.size(); ++i )
+	{
+		var ust::string8& param_name= function_template.params[i].name;
+
+		var TemplateArg mut template_arg{ .index= u32(i) };
+
+		if( i < known_template_args.size() )
+		{
+			if_var( &t : known_template_args[i].get</Type/>() )
+			{
+				template_arg.something= t;
+			}
+			if_var( &v_ptr : known_template_args[i].get</VariablePtr/>() )
+			{
+				auto lock= v_ptr.lock_imut();
+				auto& v= lock.deref();
+
+				var Variable mut out_var
+				{
+					.t= v.t,
+					.value_type= ValueType::ReferenceImut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= AddGlobalConstantVariable( param_name + "\0", v.t.GetLLVMType(), v.constexpr_value ),
+					.constexpr_value= v.constexpr_value,
+				};
+				template_arg.something= VariablePtr( move(out_var) );
+			}
+		}
+		target_namespace_ref.AddName( param_name, move(template_arg) );
+	}
 }
 
 fn CodeBuilder::AddNewTemplateThing( mut this, ust::string8 mut key, NamesScopePtr& thing )

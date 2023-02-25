@@ -1830,6 +1830,90 @@ U_TEST( LazyClassFunctionsBuild_Test0 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( TemplateClass_UseLocalVariableForTemplateArgumentUsedAsReference_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Baz(i32& x){}
+
+		template</i32 x/>
+		struct S
+		{
+			fn Bar()
+			{
+				Baz(x);  // Pass reference to argument "x". "x" must be global variable.
+			}
+		}
+		fn Foo()
+		{
+			auto some_local= 666;
+			S</some_local/>::Bar(); // Use simple form of template signature.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, {} );
+}
+
+U_TEST( TemplateClass_UseLocalVariableForTemplateArgumentUsedAsReference_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Baz(i32& x){}
+
+		template</i32 x/>
+		struct S</x/>
+		{
+			fn Bar()
+			{
+				Baz(x);  // Pass reference to argument "x". "x" must be global variable.
+			}
+		}
+		fn Foo()
+		{
+			auto some_local= 999;
+			S</some_local/>::Bar(); // Use extended form of template signature.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, {} );
+}
+
+U_TEST( TemplateClass_UseLocalVariableForTemplateArgumentUsedAsReference_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Baz(size_type& x){}
+
+		template</size_type x/>
+		struct S</ [ f32, x ] />
+		{
+			fn Bar()
+			{
+				Baz(x);  // Pass reference to argument "x". "x" must be global variable.
+			}
+		}
+		fn Foo()
+		{
+			auto some_local= 1234s;
+			S</ [ f32, some_local ] />::Bar(); // Use extended form of template signature with array type.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+	engine->runFunction( function, {} );
+}
+
 } // namespace
 
 } // namespace U
