@@ -563,15 +563,15 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 		var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
 		return move(type_param);
 	}
-	if_var( &v : value.get</Variable/>() )
+	if_var( &v_ptr : value.get</VariablePtr/>() )
 	{
-		if( v.constexpr_value == LLVMValueRef::Null )
+		if( v_ptr.lock_imut().deref().constexpr_value == LLVMValueRef::Null )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 			return TemplateSignatureParam::TypeParam();
 		}
 
-		var TemplateSignatureParam::VariableParam mut variable_param{ .v= VariablePtr(v) };
+		var TemplateSignatureParam::VariableParam mut variable_param{ .v= v_ptr };
 		return move(variable_param);
 	}
 
@@ -678,7 +678,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		for( auto mut i= 0s; i < template_args.size(); ++i )
 		{
 			auto arg= BuildExpressionCode( args_names_scope, function_context, template_args[i] );
-			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
+			if( arg.get</Type/>().empty() && arg.get</VariablePtr/>().empty() )
 			{
 				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetSrcLoc(template_args[i]), GetValueKindName(arg) )
 				all_ok= false;
@@ -689,9 +689,9 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 			{
 				result_signature_template_args.push_back( t );
 			}
-			if_var( &v : arg.get</Variable/>() )
+			if_var( &v_ptr : arg.get</VariablePtr/>() )
 			{
-				result_signature_template_args.push_back( VariablePtr(v) );
+				result_signature_template_args.push_back( v_ptr );
 			}
 
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), Synt::GetSrcLoc(template_args[i]) );
@@ -714,7 +714,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 				arg= BuildExpressionCode( result_names_scope, function_context, syntax_element.signature_params[i].default_value );
 			}
 
-			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
+			if( arg.get</Type/>().empty() && arg.get</VariablePtr/>().empty() )
 			{
 				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, src_loc, GetValueKindName(arg) )
 				all_ok= false;
@@ -725,9 +725,9 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 			{
 				result_signature_template_args.push_back( t );
 			}
-			if_var( &v : arg.get</Variable/>() )
+			if_var( &v_ptr : arg.get</VariablePtr/>() )
 			{
-				result_signature_template_args.push_back( VariablePtr(v) );
+				result_signature_template_args.push_back( v_ptr );
 			}
 
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), src_loc );
@@ -1086,15 +1086,18 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			template_args_finished.push_back( t );
 			continue;
 		}
-		if_var( &v : value.get</Variable/>() )
+		if_var( &v_ptr : value.get</VariablePtr/>() )
 		{
-			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
+			with( &t : v_ptr.lock_imut().deref().t )
 			{
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope, src_loc, v.t )
-				have_some_errors= true;
+				if( !TypeIsValidForTemplateVariableArgument( t ) )
+				{
+					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope, src_loc, t )
+					have_some_errors= true;
+				}
 			}
 
-			template_args_finished.push_back( VariablePtr(v) );
+			template_args_finished.push_back( v_ptr );
 			continue;
 		}
 
