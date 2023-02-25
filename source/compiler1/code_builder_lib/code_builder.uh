@@ -650,6 +650,12 @@ private:
 		TemplateArgFinished& given_arg,
 		SrcLoc& src_loc ) : bool;
 
+	fn FillKnownFunctionTemplateArgsIntoNamespace(
+		mut this,
+		FunctionTemplate& function_template,
+		TemplateArgsFinished& known_template_args,
+		NamesScopeMutPtr& target_namespace );
+
 	fn AddNewTemplateThing( mut this, ust::string8 mut key, NamesScopePtr& thing );
 
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;

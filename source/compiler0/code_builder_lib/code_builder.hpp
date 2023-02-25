@@ -359,6 +359,11 @@ private:
 
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
+	void FillKnownFunctionTemplateArgsIntoNamespace(
+		const FunctionTemplate& function_template,
+		NamesScope& target_namespace,
+		const SrcLoc& src_loc );
+
 	Value* AddNewTemplateThing( std::string key, Value thing );
 
 	// Constructors/destructors
