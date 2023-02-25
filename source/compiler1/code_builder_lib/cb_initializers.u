@@ -1001,8 +1001,10 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 
 	var FunctionType& function_type= variable.t.GetFunctionPointerType().try_deref().function_type;
 
-	if_var( &initializer_variable : initializer_value.get</Variable/>() )
+	if_var( &initializer_variable_ptr : initializer_value.get</VariablePtr/>() )
 	{
+		var Variable initializer_variable= initializer_variable_ptr.lock_imut().deref();
+
 		if( !( !initializer_variable.t.GetFunctionPointerType().empty() &&
 			initializer_variable.t.GetFunctionPointerType().try_deref().function_type.PointerCanBeConvertedTo( function_type ) ) )
 		{

@@ -721,21 +721,22 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 
 		auto op_result= BuildBinaryOperator( names_scope, function_context, l_var, r_var, additive_assignment_operator.operator, additive_assignment_operator.src_loc );
-		auto op_result_variable_ref= op_result.get</Variable/>();
-		if( op_result_variable_ref.empty() )
+		auto op_result_variable_ptr_ref= op_result.get</VariablePtr/>();
+		if( op_result_variable_ptr_ref.empty() )
 		{
 			return BlockElementBuildInfo();
 		}
-		var Variable& op_result_variable= op_result_variable_ref.try_deref();
-
-		if( op_result_variable.t != l_var.t )
+		with( &op_result_variable: op_result_variable_ptr_ref.try_deref().lock_imut().deref() )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope, additive_assignment_operator.src_loc, l_var.t, op_result_variable.t )
-			return BlockElementBuildInfo();
-		}
+			if( op_result_variable.t != l_var.t )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, additive_assignment_operator.src_loc, l_var.t, op_result_variable.t )
+				return BlockElementBuildInfo();
+			}
 
-		auto val= CreateMoveToLLVMRegisterInstruction( op_result_variable, function_context );
-		CreateTypedStore( function_context, l_var.t, val, l_var.llvm_value );
+			auto val= CreateMoveToLLVMRegisterInstruction( op_result_variable, function_context );
+			CreateTypedStore( function_context, l_var.t, val, l_var.llvm_value );
+		}
 	}
 
 	CallDestructorsForTopVariablesFrame( names_scope, function_context, additive_assignment_operator.src_loc );

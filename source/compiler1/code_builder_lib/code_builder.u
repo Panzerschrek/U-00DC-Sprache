@@ -352,15 +352,16 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto var_ptr= names_scope_value.Get</Variable/>();
 	if( !var_ptr.empty() )
 	{
-		auto lock= var_ptr.try_lock_imut();
-		auto& v= lock.deref();
-
-		if( v.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.NodeIsMoved( v.node_id ) )
+		auto mut var_ptr_non_null= var_ptr.try_to_non_nullable();
+		with( &v : var_ptr_non_null.lock_imut().deref() )
 		{
-			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, function_context.references_graph.GetNodeName( v.node_id ) )
+			if( v.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.NodeIsMoved( v.node_id ) )
+			{
+				REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, function_context.references_graph.GetNodeName( v.node_id ) )
+			}
 		}
 
-		return v;
+		return move(var_ptr_non_null);
 	}
 
 	auto class_field_ptr= names_scope_value.Get</ClassField/>();
@@ -459,7 +460,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				}
 			}
 
-			return move(result);
+			return VariablePtr( move(result) );
 		}
 		else
 		{
@@ -477,7 +478,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				result.value_type= ValueType::ReferenceImut;
 			}
 
-			return move(result);
+			return VariablePtr( move(result) );
 		}
 	}
 
@@ -514,13 +515,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		auto v_ptr= global_variable_ptr.try_lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
-			auto mut v= v_ptr.try_lock_imut().deref();
-			if( v.value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
+			auto mut v_ptr_non_null= v_ptr.try_to_non_nullable();
+			if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
 			}
 
-			return move(v);
+			return move(v_ptr_non_null);
 		}
 	}
 
@@ -532,13 +533,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		auto v_ptr= global_auto_variable_ptr.try_lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
-			auto mut v= v_ptr.try_lock_imut().deref();
-			if( v.value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
+			auto mut v_ptr_non_null= v_ptr.try_to_non_nullable();
+			if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
 			}
 
-			return move(v);
+			return move(v_ptr_non_null);
 		}
 	}
 
@@ -553,7 +554,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		}
 		if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
 		{
-			return v_ptr.lock_imut().deref();
+			return v_ptr;
 		}
 		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, SrcLoc(), ust::string8("TODO - name" ) )
 	}
