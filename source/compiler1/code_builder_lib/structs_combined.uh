@@ -371,12 +371,12 @@ struct ThisMethodsSet
 struct ErrorValue{}
 
 type Value= ust::variant</ tup[
+	ErrorValue,
 	Variable,
 	Type,
 	FunctionsSet,
 	ThisMethodsSet,
-	ust::shared_ptr_imut</TypeTemplatesSet/>,
-	ErrorValue
+	ust::shared_ptr_imut</TypeTemplatesSet/>
 	] />;
 
 fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />;
