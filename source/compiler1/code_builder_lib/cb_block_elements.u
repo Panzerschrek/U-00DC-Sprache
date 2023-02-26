@@ -172,7 +172,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				continue;
 			}
 
-			var Variable expression_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.try_deref() );
+			var VariablePtr expression_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.try_deref() );
+			auto expression_result_lock= expression_result_ptr.lock_imut();
+			var Variable& expression_result= expression_result_lock.deref();
+
 			if( expression_result.t != t && !expression_result.t.ReferenceIsConvertibleTo( t ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, variable_declaration.src_loc, t, expression_result.t )
@@ -246,7 +249,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression );
+	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, auto_variable_declaration.initializer_expression ).lock_imut().deref();
 	if( expr.t == invalid_type_ )
 	{
 		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope, auto_variable_declaration.src_loc, auto_variable_declaration.name )
@@ -436,7 +439,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
+	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr ).lock_imut().deref();
 
 	if( function_context.function_type.return_value_type != ValueType::Value )
 	{
@@ -655,7 +658,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{}
 	else
 	{
-		auto r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r.deref() );
+		auto r= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.r.deref() ).lock_imut().deref();
 		if( r.t.GetFundamentalType().empty() && r.t.GetEnumType().empty() && r.t.GetRawPointerType().empty() && r.t.GetFunctionPointerType().empty() )
 		{
 			REPORT_ERROR( OperationNotSupportedForThisType, names_scope, assignment_operator.src_loc, r.t )
@@ -667,7 +670,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		// Destroy temporaries of right part.
 		DestroyUnusedTemporaryVariables( names_scope, function_context, assignment_operator.src_loc );
 
-		auto l= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.l.deref() );
+		var VariablePtr l_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, assignment_operator.l.deref() );
+		auto l_lock= l_ptr.lock_imut();
+		var Variable& l= l_lock.deref();
 
 		if( r.t != l.t )
 		{
@@ -707,7 +712,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	{}
 	else
 	{
-		auto mut r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, additive_assignment_operator.r.deref() );
+		auto mut r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, additive_assignment_operator.r.deref() ).lock_imut().deref();
 		// Save r_var in register, prevent its modification during l_var calculation.
 		r_var.llvm_value= CreateMoveToLLVMRegisterInstruction( r_var, function_context );
 		r_var.location= Variable::Location::LLVMRegister;
@@ -716,7 +721,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		// Destroy temporaries of right part.
 		DestroyUnusedTemporaryVariables( names_scope, function_context, additive_assignment_operator.src_loc );
 
-		auto l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, additive_assignment_operator.l.deref() );
+		auto l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, additive_assignment_operator.l.deref() ).lock_imut().deref();
 		if( l_var.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, additive_assignment_operator.src_loc )
@@ -823,7 +828,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-			var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch.condition );
+			var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch.condition ).lock_imut().deref();
 			if( condition_expression.t != bool_type_ )
 			{
 				REPORT_ERROR( TypesMismatch,
@@ -910,7 +915,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-			var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch.condition );
+			var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch.condition ).lock_imut().deref();
 			if( condition_expression.t != bool_type_ )
 			{
 				REPORT_ERROR( TypesMismatch,
@@ -959,7 +964,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-		var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition );
+		var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, while_operator.condition ).lock_imut().deref();
 		var SrcLoc condition_src_loc= Synt::GetSrcLoc( while_operator.condition );
 		if( condition_expression.t != bool_type_ )
 		{
@@ -1035,7 +1040,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	var Variable sequence_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, range_for_operator.sequence );
+	var VariablePtr sequence_expression_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, range_for_operator.sequence );
+	var Variable sequence_expression= sequence_expression_ptr.lock_imut().deref();
 
 	var ReferencesGraph::NodeId mut sequence_lock_node= ReferencesGraph::c_empty_node_id;
 	if( sequence_expression.node_id != ReferencesGraph::c_empty_node_id )
@@ -1305,7 +1311,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-		var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, c_style_for_operator.loop_condition );
+		var Variable condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, c_style_for_operator.loop_condition ).lock_imut().deref();
 		var SrcLoc condition_src_loc= Synt::GetSrcLoc( c_style_for_operator.loop_condition );
 		if( condition_expression.t != bool_type_ )
 		{
@@ -1407,7 +1413,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var VariablesFrameHolder variables_frame_hodler(function_context);
 	auto& mut function_context= variables_frame_hodler.GetFunctionContext();
 
-	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, with_operator.expression );
+	var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, with_operator.expression ).lock_imut().deref();
 	if( expr.t == invalid_type_ )
 	{
 		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope, with_operator.src_loc, with_operator.variable_name )
@@ -1610,7 +1616,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		function_context.is_functionless_context= true;
 
 		auto state= SaveFunctionContextState( function_context );
-		condition_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression );
+		condition_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression ).lock_imut().deref();
 		RestoreFunctionContextState( function_context, state );
 
 		function_context.is_functionless_context= prev_is_functionless_context;
@@ -1675,7 +1681,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	auto condition= BuildExpressionCodeEnsureVariable( names_scope, function_context, halt_if.condition );
+	auto condition= BuildExpressionCodeEnsureVariable( names_scope, function_context, halt_if.condition ).lock_imut().deref();
 	if( condition.t != bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( halt_if.condition ), bool_type_, condition.t )
@@ -1712,7 +1718,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
 
 	if( variable.value_type != ValueType::ReferenceMut )
 	{

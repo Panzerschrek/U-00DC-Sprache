@@ -612,12 +612,12 @@ fn CodeBuilder::ResolveValue(
 		function_context.is_functionless_context= true;
 
 		auto state= SaveFunctionContextState( function_context );
-		var Variable variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, complex_name.start.get</Synt::Typeof/>().try_deref().expr.deref() );
+		var Type mut t= BuildExpressionCodeEnsureVariable( names_scope, function_context, complex_name.start.get</Synt::Typeof/>().try_deref().expr.deref() ).lock_imut().deref().t;
 		RestoreFunctionContextState( function_context, state );
 
 		function_context.is_functionless_context= prev_is_functionless_context;
 
-		start_value= NamesScopeValue( variable.t );
+		start_value= NamesScopeValue( move(t) );
 	}
 	else
 	{
@@ -1048,7 +1048,7 @@ fn CodeBuilder::PrepareFunction(
 	// enable_if
 	if_var( &expr : function_declaration.condition )
 	{
-		var Variable condition_variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, global_function_context, expr );
+		var Variable condition_variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, global_function_context, expr ).lock_imut().deref();
 		if( condition_variable.t == bool_type_ )
 		{
 			if( condition_variable.constexpr_value != LLVMValueRef::Null )

@@ -135,21 +135,23 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 				}
 				if( !is_non_sync_expression )
 				{
-					var Variable v= BuildExpressionCodeEnsureVariable( class_parent_scope, function_context, expression );
-					if( v.t != bool_type_ )
+					with( &v : BuildExpressionCodeEnsureVariable( class_parent_scope, function_context, expression ).lock_imut().deref() )
 					{
-						REPORT_ERROR( TypesMismatch, class_parent_scope, Synt::GetSrcLoc( expression ), bool_type_, v.t )
-					}
-					else if( v.constexpr_value == LLVMValueRef::Null )
-					{
-						REPORT_ERROR( ExpectedConstantExpression, class_parent_scope, Synt::GetSrcLoc( expression ) )
-					}
-					else
-					{
-						if( unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) != 0u64 )
+						if( v.t != bool_type_ )
 						{
-							prev_types_stack.pop_back();
-							return true;
+							REPORT_ERROR( TypesMismatch, class_parent_scope, Synt::GetSrcLoc( expression ), bool_type_, v.t )
+						}
+						else if( v.constexpr_value == LLVMValueRef::Null )
+						{
+							REPORT_ERROR( ExpectedConstantExpression, class_parent_scope, Synt::GetSrcLoc( expression ) )
+						}
+						else
+						{
+							if( unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) != 0u64 )
+							{
+								prev_types_stack.pop_back();
+								return true;
+							}
 						}
 					}
 				}
@@ -213,14 +215,16 @@ fn CodeBuilder::CheckClassNonSyncTagExpression( mut this, ClassTypePtr& class_ty
 
 			var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
-			var Variable v= BuildExpressionCodeEnsureVariable( class_parent_scope, function_context, expression );
-			if( v.t != bool_type_ )
+			with( &v : BuildExpressionCodeEnsureVariable( class_parent_scope, function_context, expression ).lock_imut().deref() )
 			{
-				REPORT_ERROR( TypesMismatch, class_parent_scope, Synt::GetSrcLoc( expression ), bool_type_, v.t )
-			}
-			if( v.constexpr_value == LLVMValueRef::Null )
-			{
-				REPORT_ERROR( ExpectedConstantExpression, class_parent_scope, Synt::GetSrcLoc( expression ) )
+				if( v.t != bool_type_ )
+				{
+					REPORT_ERROR( TypesMismatch, class_parent_scope, Synt::GetSrcLoc( expression ), bool_type_, v.t )
+				}
+				if( v.constexpr_value == LLVMValueRef::Null )
+				{
+					REPORT_ERROR( ExpectedConstantExpression, class_parent_scope, Synt::GetSrcLoc( expression ) )
+				}
 			}
 		}
 	}
