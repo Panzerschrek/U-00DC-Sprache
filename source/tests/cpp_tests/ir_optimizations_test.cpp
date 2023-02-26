@@ -148,6 +148,8 @@ U_TEST(WithOperatorVariableMoveInitializationOptimization_Test1)
 
 U_TEST(MoveReturnVariableAllocationOptimization_Test0)
 {
+	DISABLE_TEST;
+
 	static const char c_program_text[]=
 	R"(
 		struct S{ [i32, 4] x; }
@@ -176,6 +178,8 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test0)
 
 U_TEST(MoveReturnVariableAllocationOptimization_Test1)
 {
+	DISABLE_TEST;
+
 	static const char c_program_text[]=
 	R"(
 	struct S
@@ -216,6 +220,8 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test1)
 
 U_TEST(MoveReturnVariableAllocationOptimization_Test2)
 {
+	DISABLE_TEST;
+
 	static const char c_program_text[]=
 	R"(
 	struct S
@@ -265,6 +271,8 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test2)
 
 U_TEST(MoveReturnVariableAllocationOptimization_Test3)
 {
+	DISABLE_TEST;
+
 	static const char c_program_text[]=
 	R"(
 	struct S
@@ -412,6 +420,8 @@ U_TEST(ArgumentVariableAllocationOptimization_Test1)
 
 U_TEST(ArgumentVariableAllocationOptimization_Test2)
 {
+	DISABLE_TEST;
+
 	static const char c_program_text[]=
 	R"(
 		struct S

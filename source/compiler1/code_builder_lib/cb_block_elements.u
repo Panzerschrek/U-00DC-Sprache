@@ -521,7 +521,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						// Perform optimization for move-returning.
 						// Allocate returend variable in place of "s_ret".
 						// We can't apply this optimization for more than one allocation since we can't analyze lifetime of different
-						if( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null &&
+						// TODO - this doesn't work properly for cases of multiple return path. Fix it.
+						var bool use_return_value_optimization= false;
+						if( use_return_value_optimization &&
+							LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null &&
 							( function_context.return_value_replaced_allocation == LLVMValueRef::Null || function_context.return_value_replaced_allocation == expr.llvm_value ) )
 						{
 							function_context.return_value_replaced_allocation= expr.llvm_value;

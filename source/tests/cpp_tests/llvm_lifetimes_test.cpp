@@ -518,6 +518,8 @@ U_TEST( ReturnValueLifetime_Test0 )
 
 U_TEST( ReturnValueLifetime_Test1 )
 {
+	DISABLE_TEST;
+
 	LifetimesTestPrepare();
 
 	static const char c_program_text[]=

@@ -44,6 +44,7 @@ Standart library:
 *) More math functions
 
 Compiler:
+*) Fix return-value optimization - do not use it for different returned allocations
 *) Fix non-dethermenistic result of inline functions caused by different addresses of functions with "private" linkage
 	in different compilation units.
 *) Fix non-dethermenistic compilation result caused by non-dethermenistic address of global constant variables,
