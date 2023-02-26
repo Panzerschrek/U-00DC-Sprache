@@ -418,8 +418,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	// TODO - return VariablePtr from typeinfo build method.
-	return VariablePtr( BuildTypeinfo( t, root_names_scope ) );
+	return BuildTypeinfo( t, root_names_scope );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncExpression& non_sync_expression ) : Value

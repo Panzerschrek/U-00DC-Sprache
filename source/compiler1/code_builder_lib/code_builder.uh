@@ -661,9 +661,9 @@ private:
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
 	// Typeinfo
-	fn BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable;
-	fn GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable;
-	fn BuildFullTypeinfo( mut this, Type& t ) : Variable;
+	fn BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : VariablePtr;
+	fn GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : VariablePtr;
+	fn BuildFullTypeinfo( mut this, Type& t ) : VariablePtr;
 
 	fn CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
 	fn FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types );
@@ -954,7 +954,7 @@ private:
 	// Template things for current source graph node added sequentialy into this vector too.
 	ust::vector</ ust::string8 /> generated_template_things_sequence_;
 
-	ust::unordered_map</Type, Variable/> typeinfo_cache_;
+	ust::unordered_map</Type, VariablePtr /> typeinfo_cache_;
 	ust::vector</ ClassTypePtr /> typeinfo_class_table_;
 
 	// Maps string -> llvm::GlobalVariable

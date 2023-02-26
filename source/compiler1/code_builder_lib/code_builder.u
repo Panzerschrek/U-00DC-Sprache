@@ -204,15 +204,18 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	// Finalize incomplete typeinfo.
 	foreach( &entry : typeinfo_cache_ )
 	{
-		unsafe
+		with( &v : entry.value().lock_imut().deref() )
 		{
-			auto llvm_type= entry.value().t.GetLLVMType();
-			if( LLVMIsOpaqueStruct( llvm_type ) == LLVMBool::True )
+			auto llvm_type= v.t.GetLLVMType();
+			unsafe
 			{
-				LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
+				if( LLVMIsOpaqueStruct( llvm_type ) == LLVMBool::True )
+				{
+					LLVMStructSetBody( llvm_type, ust::nullptr</LLVMTypeRef/>(), 0u, LLVMBool::False );
 
-				auto initializer= LLVMConstNamedStruct( llvm_type, ust::nullptr</LLVMValueRef/>(), 0u );
-				LLVMSetInitializer( entry.value().llvm_value, initializer );
+					auto initializer= LLVMConstNamedStruct( llvm_type, ust::nullptr</LLVMValueRef/>(), 0u );
+					LLVMSetInitializer( v.llvm_value, initializer );
+				}
 			}
 		}
 	}
