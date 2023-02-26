@@ -1716,23 +1716,17 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				function_context.args_nodes[arg_n]= out_arg.node_id;
 			}
 
-			RegisterTopFrameVariable( function_context, VariablePtr(out_arg) ); // Register arg for destruction and reference checking.
+			auto mut out_arg_ptr= VariablePtr( move(out_arg) );
 
-			if( in_param.name == KeywordToString( Keyword::this_ ) && func_variable.is_this_call && !out_arg.t.GetClassType().empty() )
+			RegisterTopFrameVariable( function_context, out_arg_ptr ); // Register arg for destruction and reference checking.
+
+			if( in_param.name == KeywordToString( Keyword::this_ ) && func_variable.is_this_call )
 			{
-				var Variable mut this_variable
-				{
-					.t= take(out_arg.t),
-					.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-					.llvm_value= out_arg.llvm_value,
-					.node_id= out_arg.node_id,
-				};
-				function_context.this_= VariablePtr( move(this_variable) );
-				move(out_arg);
+				function_context.this_= move(out_arg_ptr);
 			}
 			else
 			{
-				var bool insert_ok= !args_names_scope.AddName( in_param.name, NamesScopeValue( move(out_arg) ) ).empty();
+				var bool insert_ok= !args_names_scope.AddName( in_param.name, move(out_arg_ptr) ).empty();
 				if( !insert_ok )
 				{
 					REPORT_ERROR( Redefinition, names_scope, in_param.src_loc, in_param.name )
