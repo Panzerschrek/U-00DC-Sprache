@@ -215,13 +215,15 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			out_variable.constexpr_value= LLVMValueRef::Null;
 		}
 
+		auto mut out_variable_ptr= VariablePtr( move(out_variable) );
+
 		// Register variable for destruction and reference checking.
-		RegisterFrameVariable( function_context, VariablePtr( out_variable ), 1s );
+		RegisterFrameVariable( function_context, out_variable_ptr, 1s );
 
 		var bool mut insert_not_ok= false;
 		{
 			auto mut lock= names_scope.lock_mut();
-			insert_not_ok= lock.deref().AddName( variable_declaration.name, NamesScopeValue( move(out_variable) ) ).empty();
+			insert_not_ok= lock.deref().AddName( variable_declaration.name, move(out_variable_ptr) ).empty();
 		}
 		if( insert_not_ok )
 		{
@@ -386,13 +388,15 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		out_variable.constexpr_value= LLVMValueRef::Null;
 	}
 
+	auto mut out_variable_ptr= VariablePtr( move(out_variable) );
+
 	// Register variable for destruction and reference checking.
-	RegisterFrameVariable( function_context, VariablePtr( out_variable ), 1s );
+	RegisterFrameVariable( function_context, out_variable_ptr, 1s );
 
 	var bool mut insert_not_ok= false;
 	{
 		auto mut lock= names_scope.lock_mut();
-		insert_not_ok= lock.deref().AddName( auto_variable_declaration.name, NamesScopeValue( move(out_variable) ) ).empty();
+		insert_not_ok= lock.deref().AddName( auto_variable_declaration.name, move(out_variable_ptr) ).empty();
 	}
 	if( insert_not_ok )
 	{
@@ -1140,12 +1144,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 			else{ halt; }
 
+			auto mut variable_ptr= VariablePtr( move(variable) );
+
 			// Register variable for destruction and reference checking.
-			RegisterTopFrameVariable( function_context, VariablePtr( variable ) );
+			RegisterTopFrameVariable( function_context, variable_ptr );
 
 			{
 				auto mut lock= names_scope.lock_mut();
-				lock.deref().AddName( range_for_operator.loop_variable_name, NamesScopeValue( move(variable) ) ).empty();
+				lock.deref().AddName( range_for_operator.loop_variable_name, move(variable_ptr) ).empty();
 			}
 
 			var bool is_last_iteration= i + 1s == tuple_type.element_types.size();
@@ -1546,8 +1552,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	// Destroy temporary variables of initializer expression. Do it before registretion of variable to prevent its destruction.
 	DestroyUnusedTemporaryVariables( names_scope, function_context, with_operator.src_loc );
 
+	auto mut out_variable_ptr= VariablePtr( move(out_variable) );
+
 	// Register variable for destruction and reference checking.
-	RegisterTopFrameVariable( function_context, VariablePtr( out_variable ) );
+	RegisterTopFrameVariable( function_context, out_variable_ptr );
 
 	if( IsKeyword( with_operator.variable_name ) )
 	{
@@ -1558,7 +1566,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var NamesScopeMutPtr varaible_names_scope( NamesScope( "", names_scope ) );
 	{
 		auto mut lock= varaible_names_scope.lock_mut();
-		lock.deref().AddName( with_operator.variable_name, NamesScopeValue( move(out_variable) ) ).empty();
+		lock.deref().AddName( with_operator.variable_name, move(out_variable_ptr) ).empty();
 	}
 
 	// Build block. This creates new variables frame and prevents destruction of initializer expression and/or created variable.
