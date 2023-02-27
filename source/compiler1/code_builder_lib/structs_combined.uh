@@ -308,6 +308,8 @@ struct Variable
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 
+	ust::string8 name;
+
 	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
 }
 
