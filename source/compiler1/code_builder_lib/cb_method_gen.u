@@ -152,7 +152,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_llvm_value ),
 		};
 
-		BuildEmptyInitializer( class_members_ptr, function_context, base_variable, KeywordToString( Keyword::base_ ), src_loc );
+		BuildEmptyInitializer( class_members_ptr, function_context, VariablePtr( base_variable ), KeywordToString( Keyword::base_ ), src_loc );
 	}
 
 	// Use initial class members namespace for own fields initializers evaluation.
@@ -176,24 +176,24 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
-			BuildEmptyInitializer( class_members_ptr, function_context, field_variable, field_pair[0], src_loc );
+			BuildEmptyInitializer( class_members_ptr, function_context, VariablePtr( field_variable ), field_pair[0], src_loc );
 		}
 		else
 		{
 			if( class_field.is_reference )
 			{
-				var Variable this_variable
+				var Variable mut this_variable
 				{
 					.t= class_type,
 					.llvm_value= this_llvm_value,
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 				};
-				InitializeReferenceField( class_members_initial, function_context, this_variable, class_field, initializer );
+				InitializeReferenceField( class_members_initial, function_context, VariablePtr( move(this_variable) ), class_field, initializer );
 			}
 			else
 			{
-				BuildInitializer( class_members_initial, function_context, field_variable, initializer );
+				BuildInitializer( class_members_initial, function_context, VariablePtr( field_variable ), initializer );
 			}
 		}
 	}
