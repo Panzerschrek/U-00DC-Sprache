@@ -4,7 +4,7 @@ import "constexpr_function_evaluator.uh"
 import "debug_info_builder.uh"
 import "function_context.uh"
 import "mangling.uh"
-import "structs_combined.uh"
+import "references_graph.uh"
 import "tbaa_metadata_builder.uh"
 
 // Macro for loops generation.
@@ -790,7 +790,7 @@ private:
 	fn RegisterTopFrameVariable( FunctionContext& mut function_context, VariablePtr variable );
 	fn RegisterFrameVariable( FunctionContext& mut function_context, VariablePtr variable, size_type frame_index_from_top );
 
-	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool;
+	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool;
 	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc );
 
 	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph; // TODO - rename
@@ -800,8 +800,8 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		Type& dst_type,
-		ReferencesGraph::NodeId dst_node,
-		ReferencesGraph::NodeId src_node,
+		VariablePtr& dst_node,
+		VariablePtr& src_node,
 		SrcLoc& src_loc );
 
 	// Returns "false" if not complete.

@@ -1,8 +1,6 @@
-import "/string.u"
-import "/unordered_map.u"
 import "/unordered_set.u"
-import "/vector.u"
 import "/code_builder_errors.uh"
+import "structs_combined.uh"
 
 namespace U1
 {
@@ -10,70 +8,54 @@ namespace U1
 class ReferencesGraph
 {
 public:
-	type NodeId= u32;
-
-	enum NodeKind
-	{
-		Variable,
-		ReferenceMut,
-		ReferenceImut,
-	}
-
-	var NodeId c_empty_node_id= 0u;
-
-public:
 	fn constructor( mut this, ReferencesGraph& other )= default;
 	op=( mut this, ReferencesGraph& other )= default;
 
 public:
-	fn AddNode( mut this, NodeKind kind, ust::string8 mut name ) : NodeId;
-	fn RemoveNode( mut this, NodeId node_id );
-	fn AddLink( mut this, NodeId from, NodeId to );
+	fn AddNode( mut this, VariablePtr& node );
+	fn RemoveNode( mut this, VariablePtr& node );
+	fn AddLink( mut this, VariablePtr& from, VariablePtr& to );
 
 	// Returns "false" in case of ReferenceProtectionError.
-	fn TryAddLink( mut this, NodeId from, NodeId to ) : bool;
+	fn TryAddLink( mut this, VariablePtr& from, VariablePtr& to ) : bool;
 
-	fn CreateNodeInnerReference( mut this, NodeId node_id, NodeKind kind ) : NodeId;
+	fn CreateNodeInnerReference( mut this, VariablePtr& node, ValueType value_type ) : VariablePtr;
 
-	fn MoveNode( mut this, NodeId node_id );
-	fn NodeIsMoved( this, NodeId node_id ) : bool;
+	fn MoveNode( mut this, VariablePtr node );
+	fn NodeIsMoved( this, VariablePtr node ) : bool;
 
-	fn HaveOutgoingLinks( this, NodeId from ) : bool;
-	fn HaveOutgoingMutableNodes( this, NodeId from ) : bool;
+	fn HaveOutgoingLinks( this, VariablePtr from ) : bool;
+	fn HaveOutgoingMutableNodes( this, VariablePtr from ) : bool;
 
-	fn GetNodeKind( this, NodeId node_id ) : NodeKind;
-	fn GetNodeName( this, NodeId node_id ) : ust::string8&;
-	fn GetNodeInnerReference( this, NodeId node_id ) : NodeId;
+	fn GetNodeInnerReference( this, VariablePtr& node ) : VariableNullablePtr;
 
-	type NodesSet= ust::unordered_set</NodeId/>;
-	fn GetAllAccessibleVariableNodes( this, NodeId node_id ) : NodesSet;
-	fn GetAccessibleVariableNodesInnerReferences( this, NodeId node_id ) : NodesSet;
+	type NodesSet= ust::unordered_set</VariablePtr/>;
+	fn GetAllAccessibleVariableNodes( this, VariablePtr node ) : NodesSet;
+	fn GetAccessibleVariableNodesInnerReferences( this, VariablePtr node ) : NodesSet;
 
 	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, ErrorsContainer &mut errors, SrcLoc& src_loc ) : ReferencesGraph;
 	fn CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, ErrorsContainer &mut errors, SrcLoc& src_loc );
 
 private:
-	fn GetAllAccessibleVariableNodes_r( this, NodeId node_id, NodesSet &mut out_nodes );
-	fn GetAccessibleVariableNodesInnerReferences_r( this, NodeId node_id, NodesSet &mut out_nodes );
-	fn RemoveNodeLinks( mut this, NodeId node_id );
+	fn GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut out_nodes );
+	fn GetAccessibleVariableNodesInnerReferences_r( this, VariablePtr& node, NodesSet &mut out_nodes );
+	fn RemoveNodeLinks( mut this, VariablePtr& node );
 
 private:
-	struct Node
+	struct NodeState
 	{
-		NodeKind kind;
-		ust::string8 name;
-		NodeId inner_reference_node; // May exists only in variable nodes.
+		VariableNullablePtr inner_reference_node; // May exists only in variable nodes.
 		bool moved;
 	}
 
 	struct Link
 	{
-		NodeId src;
-		NodeId dst;
+		VariablePtr src;
+		VariablePtr dst;
 	}
 
 private:
-	ust::unordered_map</NodeId, Node/> nodes_;
+	ust::unordered_map</VariablePtr, NodeState/> nodes_;
 
 	// Should NOT contain duplicates. // TODO - use sometthing like unordered_set.
 	ust::vector</Link/> links_;

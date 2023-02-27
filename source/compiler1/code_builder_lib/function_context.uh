@@ -1,5 +1,5 @@
 import "/unordered_set.u"
-import "structs_combined.uh"
+import "references_graph.uh"
 
 namespace U1
 {
@@ -29,8 +29,8 @@ public:
 	FunctionType function_type;
 
 	// For reference checking. TODO - use single vector.
-	ust::vector</ ReferencesGraph::NodeId /> mut args_nodes; // Contains only variable nodes (not reference nodes).
-	ust::vector</ ReferencesGraph::NodeId /> mut args_inner_variable_nodes; // Contains inner variable nodes (if arg can have one).
+	ust::vector</ VariablePtr /> mut args_nodes; // Contains only variable nodes (not reference nodes).
+	ust::vector</ VariablePtr /> mut args_inner_variable_nodes; // Contains inner variable nodes (if arg can have one).
 
 	LLVMValueRef s_ret= LLVMValueRef::Null;
 	// Non-null if "s_ret" reused for allocation of moved return value.
@@ -82,8 +82,8 @@ public:
 		// But in case of errors destructors may not be called.
 		for( auto mut i= 0s; i < function_context_.variables_frames.back().size(); ++i )
 		{
-			auto node_id= function_context_.variables_frames.back()[i].lock_imut().deref().node_id;
-			function_context_.references_graph.RemoveNode( node_id );
+			auto variable= function_context_.variables_frames.back()[i];
+			function_context_.references_graph.RemoveNode( variable );
 		}
 		function_context_.variables_frames.drop_back();
 	}

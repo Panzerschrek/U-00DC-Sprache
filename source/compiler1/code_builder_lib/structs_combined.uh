@@ -7,7 +7,6 @@ import "/vector.u"
 import "../lex_synt_lib/syntax_elements.uh"
 import "lang_types.uh"
 import "llvm_ext.uh"
-import "references_graph.uh"
 import "/code_builder_errors.uh"
 
 /*
@@ -309,8 +308,6 @@ struct Variable
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 
 	ust::string8 name;
-
-	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
 }
 
 type VariablePtr= ust::shared_ptr_mut</Variable/>;
