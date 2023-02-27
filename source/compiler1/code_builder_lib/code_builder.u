@@ -335,13 +335,14 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		auto class_type= names_scope.lock_imut().deref().GetClass();
 		if( !class_type.empty() && !function_context.this_.empty() )
 		{
-			with( &this_ : function_context.this_.try_lock_imut().deref() )
+			auto this_non_null= function_context.this_.try_to_non_nullable();
+			with( &this_ : this_non_null.lock_imut().deref() )
 			{
 				if( class_type.try_to_non_nullable() == this_.t && !function_context.whole_this_is_unavailable )
 				{
 					var ThisMethodsSet mut this_methods_set
 					{
-						.this_= this_,
+						.this_= this_non_null,
 						.functions_set= f_ptr.try_lock_imut().deref().functions_set,
 					};
 					return move(this_methods_set);

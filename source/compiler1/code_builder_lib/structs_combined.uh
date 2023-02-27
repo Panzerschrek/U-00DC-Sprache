@@ -364,7 +364,7 @@ struct FunctionsSet
 
 struct ThisMethodsSet
 {
-	Variable this_;
+	VariablePtr this_;
 	FunctionsSet functions_set;
 }
 

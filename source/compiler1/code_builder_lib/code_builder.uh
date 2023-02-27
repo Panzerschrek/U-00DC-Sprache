@@ -370,7 +370,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		OverloadedOperator operator,
-		Variable& variable,
+		VariablePtr& variable_ptr,
 		SrcLoc& src_loc ) : ust::optional</Value/>;
 
 	fn TryCallOverloadedPostfixOperator(
@@ -378,7 +378,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		OverloadedOperator operator,
-		Variable& variable,
+		VariablePtr& variable,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& synt_args,
 		SrcLoc& src_loc ) : ust::optional</Value/>;
 
@@ -386,7 +386,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::optional_ref_imut</ Variable /> mut this_,
+		VariableNullablePtr this_,
 		FunctionsSet& functions_set,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
@@ -395,7 +395,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::optional_ref_imut</ Variable /> this_,
+		VariableNullablePtr& this_,
 		FunctionVariable& function,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
@@ -706,9 +706,9 @@ private:
 
 	fn TryFetchVirtualFunction(
 		mut this,
-		Variable& this_,
+		VariablePtr& this_ptr,
 		FunctionVariable& function,
-		FunctionContext &mut function_context ) : tup[ Variable, LLVMValueRef ];
+		FunctionContext &mut function_context ) : tup[ VariablePtr, LLVMValueRef ];
 
 	// Overloading
 

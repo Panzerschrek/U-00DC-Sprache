@@ -1728,7 +1728,8 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	auto variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
+	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
+	var Variable variable= variable_ptr.lock_imut().deref();
 
 	if( variable.value_type != ValueType::ReferenceMut )
 	{
@@ -1752,13 +1753,13 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		auto operator= select( delta == 1 ? OverloadedOperator::Increment : OverloadedOperator::Decrement );
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 		{
-			auto fetch_result= TryFetchVirtualFunction( variable, overloaded_operator, function_context );
+			auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, function_context );
 			overloaded_operator.llvm_function= fetch_result[1];
 
 			DoCallFunction(
 				names_scope,
 				function_context,
-				ust::optional_ref_imut</ Variable />(fetch_result[0]),
+				fetch_result[0],
 				overloaded_operator,
 				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 				src_loc );

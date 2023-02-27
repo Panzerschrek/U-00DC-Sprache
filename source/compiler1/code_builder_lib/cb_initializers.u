@@ -656,7 +656,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		// Should be functions set 100%
 		// Should be complete here.
 
-		var Variable this_
+		var Variable mut this_
 		{
 			.t= variable.t,
 			.value_type= ValueType::ReferenceMut,
@@ -667,7 +667,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		CallFunctionsSet(
 			names_scope,
 			function_context,
-			ust::optional_ref_imut</ Variable />( this_ ),
+			VariablePtr( move(this_) ),
 			constructors_ptr.try_lock_imut().deref().functions_set,
 			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			src_loc );
@@ -985,7 +985,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		// Should be functions set 100%
 		// Should be complete here.
 
-		var Variable this_
+		var Variable mut this_
 		{
 			.t= variable.t,
 			.value_type= ValueType::ReferenceMut,
@@ -996,7 +996,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		CallFunctionsSet(
 			names_scope,
 			function_context,
-			ust::optional_ref_imut</ Variable />( this_ ),
+			VariablePtr( move(this_) ),
 			constructors_ptr.try_lock_imut().deref().functions_set,
 			args.range(),
 			src_loc );
