@@ -53,7 +53,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			return LLVMValueRef::Null;
 		}
 
-		SetupReferencesInCopyOrMove( names_scope, function_context, variable.t, variable_ptr, expr_result_ptr, src_loc );
+		SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
 
 		if( expr_result.value_type == ValueType::Value )
 		{
@@ -90,7 +90,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( expr_result.t.ReferenceIsConvertibleTo( variable.t ) )
 		{
-			SetupReferencesInCopyOrMove( names_scope, function_context, variable.t, variable_ptr, expr_result_ptr, src_loc );
+			SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
 
 			if( expr_result.value_type == ValueType::Value && expr_result.t == variable.t )
 			{
@@ -117,21 +117,12 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				// Create temp variables storage for preventing of destruction of "expr".
 				var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 				auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-				var [ Variable, 2 ] constructor_args
-				[
-					{
-						.t= variable.t,
-						.llvm_value= variable.llvm_value,
-						.value_type= ValueType::ReferenceMut,
-						.location= Variable::Location::Pointer,
-					},
-					expr_result
-				];
+
 				DoCallFunction(
 					names_scope,
 					function_context,
 					conversion_constructor_,
-					constructor_args,
+					ust::make_array( variable_ptr, expr_result_ptr ),
 					ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 					ArgsEvaluationOrder::Direct,
 					src_loc );
@@ -859,7 +850,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		SetupReferencesInCopyOrMove( names_scope, function_context, variable.t, variable_ptr, expr_result_ptr, src_loc );
+		SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
 
 		if( expr_result.value_type == ValueType::Value )
 		{
@@ -949,7 +940,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		if( needs_move_construct )
 		{
 			var VariablePtr expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
-			SetupReferencesInCopyOrMove( names_scope, function_context, variable.t, variable_ptr, expr_result_ptr, src_loc );
+			SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
 
 			function_context.references_graph.MoveNode( expr_result_ptr );
 
