@@ -799,7 +799,6 @@ private:
 	fn SetupReferencesInCopyOrMove(
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		Type& dst_type,
 		VariablePtr& dst_node,
 		VariablePtr& src_node,
 		SrcLoc& src_loc );

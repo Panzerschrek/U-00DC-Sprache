@@ -357,12 +357,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	if( !var_ptr.empty() )
 	{
 		auto mut var_ptr_non_null= var_ptr.try_to_non_nullable();
-		with( &v : var_ptr_non_null.lock_imut().deref() )
+		if( function_context.references_graph.NodeIsMoved( var_ptr_non_null ) )
 		{
-			if( unction_context.references_graph.NodeIsMoved( v.node_id ) )
-			{
-				REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, function_context.references_graph.GetNodeName( v.node_id ) )
-			}
+			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, var_ptr_non_null.lock_imut().deref().name )
 		}
 
 		return move(var_ptr_non_null);
@@ -433,7 +430,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, ptr_value );
 			MarkLoadInstructionWithNonNullMetadata( result.llvm_value );
 
-			auto inner_nodes = function_context.references_graph.GetAccessibleVariableNodesInnerReferences( this_.node_id );
+			auto inner_nodes = function_context.references_graph.GetAccessibleVariableNodesInnerReferences( this_ptr );
 			if( inner_nodes.size() == 1s )
 			{
 				// For cases with single inner node just return it. This hels preventing some cases of false "ReferenceProtectionError".
@@ -471,7 +468,6 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				.location= Variable::Location::Pointer,
 				.value_type= this_.value_type,
 				.llvm_value= CreateClassFieldGEP( function_context, field_source_class, this_value_corrected, field ),
-				.node_id= this_.node_id,
 			};
 
 			if( !field.is_mutable )
@@ -2124,12 +2120,12 @@ fn CodeBuilder::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, Re
 fn CodeBuilder::SetupReferencesInCopyOrMove(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	Type& dst_type,
 	VariablePtr& dst_node,
 	VariablePtr& src_node,
 	SrcLoc& src_loc )
 {
-	if(  dst_type.GetInnerReferenceKind() == InnerReferenceKind::None )
+	var Type dst_type= dst_node.lock_imut().deref.t;
+	if( dst_type.GetInnerReferenceKind() == InnerReferenceKind::None )
 	{
 		return;
 	}
