@@ -29,8 +29,8 @@ public:
 	FunctionType function_type;
 
 	// For reference checking. TODO - use single vector.
-	ust::vector</ VariablePtr /> mut args_nodes; // Contains only variable nodes (not reference nodes).
-	ust::vector</ VariablePtr /> mut args_inner_variable_nodes; // Contains inner variable nodes (if arg can have one).
+	ust::vector</ VariableNullablePtr /> mut args_nodes; // Contains only variable nodes (not reference nodes).
+	ust::vector</ VariableNullablePtr /> mut args_inner_variable_nodes; // Contains inner variable nodes (if arg can have one).
 
 	LLVMValueRef s_ret= LLVMValueRef::Null;
 	// Non-null if "s_ret" reused for allocation of moved return value.
