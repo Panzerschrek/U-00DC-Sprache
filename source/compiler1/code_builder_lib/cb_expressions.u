@@ -570,6 +570,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
 {
+	/*
 	var Synt::ComplexName complex_name{ .src_loc= move_operator.src_loc, .start= move_operator.variable_name };
 	var Value value= ResolveValue( names_scope, function_context, complex_name );
 	if( value.get</VariablePtr/>().empty() )
@@ -619,6 +620,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	auto mut result_ptr= VariablePtr( move(result) );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
+	*/
+	halt; // TODO - fix this.
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TakeOperator& take_operator ) : Value
@@ -1110,13 +1113,16 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	// Prevent modification of variable during index calculation.
 	// Do not forget to remove this node in case of error-return!!!
-	var ReferencesGraph::NodeId mut result_node_id =
-		function_context.references_graph.AddNode(
-			select( variable.value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-			"[]" );
-	if( variable.node_id != ReferencesGraph::c_empty_node_id && !function_context.references_graph.TryAddLink( variable.node_id, result_node_id )  )
+	var Variable mut variable_lock_node_variable
 	{
-		REPORT_ERROR( ReferenceProtectionError, names_scope, indexation_operator.src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
+		.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.name= "[]",
+	};
+	var VariablePtr variable_lock_node( move(variable_lock_node_variable) );
+	function_context.references_graph.AddNode( variable_lock_node );
+	if( !function_context.references_graph.TryAddLink( variable_ptr, variable_lock_node ) )
+	{
+		REPORT_ERROR( ReferenceProtectionError, names_scope, indexation_operator.src_loc, variable.name )
 	}
 
 	var Variable index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() ).lock_imut().deref();
@@ -1130,13 +1136,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				( IsSignedInteger( index_fundamental_type.fundamental_type ) && index.constexpr_value != LLVMValueRef::Null ) ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, ust::string8("any unsigned integer"), index.t )
-				function_context.references_graph.RemoveNode( result_node_id );
+				function_context.references_graph.RemoveNode( variable_lock_node );
 				return ErrorValue();
 			}
 			if( variable.location != Variable::Location::Pointer )
 			{
 				// TODO - Strange variable location.
-				function_context.references_graph.RemoveNode( result_node_id );
+				function_context.references_graph.RemoveNode( variable_lock_node );
 				return ErrorValue();
 			}
 
@@ -1149,7 +1155,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( index_value_num >= variable_array_type.element_count )
 				{
 					REPORT_ERROR( ArrayIndexOutOfBounds, names_scope, indexation_operator.src_loc, index_value_num, variable_array_type.element_count )
-					function_context.references_graph.RemoveNode( result_node_id );
+					function_context.references_graph.RemoveNode( variable_lock_node );
 					return ErrorValue();
 				}
 			}
@@ -1193,8 +1199,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.t= variable_array_type.element_type,
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-				.node_id= result_node_id,
 				.llvm_value= CreateArrayElementGEP( function_context, variable_array_type, variable.llvm_value, index_value ),
+				.name= "[]",
 			};
 
 			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
@@ -1202,8 +1208,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32( LLVMConstIntGetZExtValue( index_value ) ) ) );
 			}
 
-			// Register variable for references checking.
 			auto mut result_ptr= VariablePtr( move(result) );
+			function_context.references_graph.AddNode( result_ptr );
+			function_context.references_graph.AddLink( variable_lock_node, result_ptr );
+			function_context.references_graph.RemoveNode( variable_lock_node );
+			// Register variable for references checking.
 			RegisterTemporaryVariable( function_context, result_ptr );
 			return move(result_ptr);
 		}
@@ -1239,7 +1248,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( type_index_signed >= i64(variable_tuple_type.element_types.size()) || type_index_signed < 0i64 )
 				{
 					REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.src_loc, type_index_signed, variable_tuple_type.element_types.size() )
-					function_context.references_graph.RemoveNode( result_node_id );
+					function_context.references_graph.RemoveNode( variable_lock_node );
 					return ErrorValue();
 				}
 			}
@@ -1248,7 +1257,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				if( type_index >= u64(variable_tuple_type.element_types.size()) )
 				{
 					REPORT_ERROR( TupleIndexOutOfBounds, names_scope, indexation_operator.src_loc, type_index, variable_tuple_type.element_types.size() )
-					function_context.references_graph.RemoveNode( result_node_id );
+					function_context.references_graph.RemoveNode( variable_lock_node );
 					return ErrorValue();
 				}
 			}
@@ -1259,7 +1268,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(type_index) ),
-				.node_id= result_node_id,
+				.name= "[]",
 			};
 
 			if( variable.constexpr_value != LLVMValueRef::Null )
@@ -1267,8 +1276,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(type_index) ) );
 			}
 
-			// Register variable for references checking.
 			auto mut result_ptr= VariablePtr( move(result) );
+			function_context.references_graph.AddNode( result_ptr );
+			function_context.references_graph.AddLink( variable_lock_node, result_ptr );
+			function_context.references_graph.RemoveNode( variable_lock_node );
+			// Register variable for references checking.
 			RegisterTemporaryVariable( function_context, result_ptr );
 			return move(result_ptr);
 		}
@@ -1277,7 +1289,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	REPORT_ERROR( OperationNotSupportedForThisType, names_scope, indexation_operator.src_loc, variable.t )
 
-	function_context.references_graph.RemoveNode( result_node_id );
+	function_context.references_graph.RemoveNode( variable_lock_node );
 	return ErrorValue();
 }
 
@@ -1415,13 +1427,21 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 			var LLVMValueRef gep_result= CreateClassFieldGEP( function_context, field_source_class, this_value_corrected, field );
 
-			auto op_name_nt= "." + member_access_operator.member_name + "\0";
+			var ust::string8 mut node_name= variable.name;
+			node_name+= ".";
+			node_name+= field.syntax_element.deref().name;
 
-			var Variable mut result{ .t= field.t, .location= Variable::Location::Pointer };
+			auto op_name_nt= "." + member_access_operator.member_name + "\0";
 
 			if( field.is_reference )
 			{
-				result.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+				var Variable mut result
+				{
+					.t= field.t,
+					.location= Variable::Location::Pointer,
+					.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.name= move(node_name),
+				};
 
 				if( variable.constexpr_value != LLVMValueRef::Null )
 				{
@@ -1474,49 +1494,39 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					MarkLoadInstructionWithNonNullMetadata( result.llvm_value ); // Reference field is never null.
 				}
 
-				auto inner_nodes = function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable_ptr );
+				var VariablePtr mut result_ptr( move(result) );
+				function_context.references_graph.AddNode( result_ptr );
 
-				if( inner_nodes.size() == 1s )
+				auto inner_nodes= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable_ptr );
+				foreach( &inner_node : inner_nodes )
 				{
-					// For cases with single inner node just return it. This hels preventing some cases of false "ReferenceProtectionError".
-					result.node_id= inner_nodes.range().front();
-				}
-				else
-				{
-					var ust::string8 mut node_name= function_context.references_graph.GetNodeName( variable.node_id );
-					node_name+= ".";
-					node_name+= field.syntax_element.deref().name;
-					auto reference_field_node= function_context.references_graph.AddNode(
-						select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-						move(node_name) );
-					result.node_id= reference_field_node;
-
-					foreach( &inner_node : inner_nodes )
+					if( !function_context.references_graph.TryAddLink( inner_node, result_ptr ) )
 					{
-						if( !function_context.references_graph.TryAddLink( inner_node, reference_field_node ) )
-						{
-							REPORT_ERROR( ReferenceProtectionError, names_scope, member_access_operator.src_loc, function_context.references_graph.GetNodeName( inner_node ) )
-						}
+						REPORT_ERROR( ReferenceProtectionError, names_scope, member_access_operator.src_loc, inner_node.lock_imut().deref().name )
 					}
-
-					// Register variable for references checking.
-					RegisterTemporaryVariable( function_context, VariablePtr(result) );
 				}
+
+				// Register variable for references checking.
+				RegisterTemporaryVariable( function_context, result_ptr );
+				return move(result_ptr);
 			}
 			else
 			{
-				result.value_type= select( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
-
-				result.llvm_value= gep_result;
+				var Variable mut result
+				{
+					.t= field.t,
+					.location= Variable::Location::Pointer,
+					.value_type= select( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.llvm_value= gep_result,
+				};
 				if( variable.constexpr_value != LLVMValueRef::Null )
 				{
 					result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 				}
 
-				result.node_id= variable.node_id;
+				// TODO - register it.
+				return VariablePtr( move(result) );
 			}
-
-			return VariablePtr( move(result) );
 		}
 		{
 			auto functions_set_ptr= class_member[0].Get</NamesScopeFunctionsSet/>();
@@ -1539,15 +1549,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 					// Prevent destruction of variable during evaluation of member function template args.
 					// Do not forget to remove node in case of error-return!!!
-					var ReferencesGraph::NodeId mut variable_lock_node= ReferencesGraph::c_empty_node_id;
-					if( variable.node_id != ReferencesGraph::c_empty_node_id )
+					var Variable mut variable_lock_node_variable
 					{
-						var ust::string8 mut node_name= function_context.references_graph.GetNodeName( variable.node_id ) + " lock";
-						variable_lock_node= function_context.references_graph.AddNode(
-							select( variable.value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-							move(node_name) );
-						function_context.references_graph.AddLink( variable.node_id, variable_lock_node );
-					}
+						.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+						.name= variable.name + " lock",
+					};
+					var VariablePtr variable_lock_node( move(variable_lock_node_variable) );
+					function_context.references_graph.AddNode( variable_lock_node );
+					function_context.references_graph.AddLink( variable_ptr, variable_lock_node );
 
 					auto val= ParametrizeTemplateFunctions(
 						names_scope,
@@ -1556,10 +1565,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 						member_access_operator.template_args.try_deref(),
 						member_access_operator.src_loc );
 
-					if( variable_lock_node != ReferencesGraph::c_empty_node_id )
-					{
-						function_context.references_graph.RemoveNode( variable_lock_node );
-					}
+					function_context.references_graph.RemoveNode( variable_lock_node );
 
 					if( val.empty() )
 					{
@@ -2664,32 +2670,33 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			}
 		}
 
-		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() ).lock_imut().deref();
+		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
+		var Variable r_var= r_var_ptr.lock_imut().deref();
 
 		// Prevent modification of r_var during l_val calculation.
-		var ReferencesGraph::NodeId mut r_var_lock_node= ReferencesGraph::c_empty_node_id;
-		if( r_var.node_id != ReferencesGraph::c_empty_node_id )
+		var Variable mut r_var_lock_node_variable
 		{
-			var ust::string8 mut node_name= function_context.references_graph.GetNodeName( r_var.node_id ) + " lock";
-			r_var_lock_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::ReferenceMut, move(node_name) );
-			function_context.references_graph.AddLink( r_var.node_id, r_var_lock_node );
+			.value_type= ValueType::ReferenceImut,
+			.name= r_var.name + " lock",
+		};
+		var VariablePtr r_var_lock_node( move(r_var_lock_node_variable ) );
+		function_context.references_graph.AddNode( r_var_lock_node );
+		if( !function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, r_var.name )
 		}
 
-		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() ).lock_imut().deref();
+		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+		var Variable l_var= l_var_ptr.lock_imut().deref();
 
-		if( r_var_lock_node != ReferencesGraph::c_empty_node_id )
-		{
-			function_context.references_graph.RemoveNode( r_var_lock_node );
-		}
+		function_context.references_graph.RemoveNode( r_var_lock_node );
 
 		BuildDestructorPart( names_scope, function_context, l_var.llvm_value, l_var.t, src_loc );
 
-		SetupReferencesInCopyOrMove( names_scope, function_context, l_var.t, l_var.node_id, r_var.node_id, src_loc );
+		SetupReferencesInCopyOrMove( names_scope, function_context, l_var_ptr, r_var_ptr, src_loc );
 
-		if( r_var.node_id != ReferencesGraph::c_empty_node_id )
-		{
-			function_context.references_graph.MoveNode( r_var.node_id );
-		}
+		function_context.references_graph.MoveNode( r_var_ptr );
+
 		CopyBytes( l_var.llvm_value, r_var.llvm_value, r_var.t, function_context );
 		CreateLifetimeEnd( function_context, r_var.llvm_value );
 
@@ -2713,7 +2720,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			names_scope,
 			function_context,
 			overloaded_operator,
-			ust::array_view_imut</ Variable />(),
+			ust::array_view_imut</ VariablePtr />(),
 			in_args,
 			args_evaluation_order,
 			src_loc );
@@ -2733,27 +2740,27 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 {
 	if( operator == OverloadedOperator::Assign )
 	{
-		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() ).lock_imut().deref();
+		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
+		var Variable r_var= r_var_ptr.lock_imut().deref();
 
 		// Prevent modification of r_var during l_val calculation.
-		var ReferencesGraph::NodeId mut r_var_lock_node= ReferencesGraph::c_empty_node_id;
-		if( r_var.node_id != ReferencesGraph::c_empty_node_id )
+		var Variable mut r_var_lock_node_variable
 		{
-			var ust::string8 mut node_name= function_context.references_graph.GetNodeName( r_var.node_id ) + " lock";
-			r_var_lock_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::ReferenceImut, move(node_name) );
-			if( !function_context.references_graph.TryAddLink( r_var.node_id, r_var_lock_node ) )
-			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( r_var.node_id ) )
-			}
+			.value_type= ValueType::ReferenceImut,
+			.name= r_var.name + " lock",
+		};
+		var VariablePtr r_var_lock_node( move(r_var_lock_node_variable ) );
+		function_context.references_graph.AddNode( r_var_lock_node );
+		if( !function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, r_var.name )
 		}
 
-		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() ).lock_imut().deref();
+		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+		var Variable l_var= l_var_ptr.lock_imut().deref();
 		halt if( r_var.t != l_var.t ); // Checked before
 
-		if( r_var_lock_node != ReferencesGraph::c_empty_node_id )
-		{
-			function_context.references_graph.RemoveNode( r_var_lock_node );
-		}
+		function_context.references_graph.RemoveNode( r_var_lock_node );
 
 		if( !l_var.t.IsCopyAssignable() )
 		{
@@ -2765,12 +2772,12 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
 			return ErrorValue();
 		}
-		if( l_var.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingLinks( l_var.node_id ) )
+		if( function_context.references_graph.HaveOutgoingLinks( l_var_ptr ) )
 		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( l_var.node_id ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, l_var.name )
 		}
 
-		SetupReferencesInCopyOrMove( names_scope, function_context, l_var.t, l_var.node_id, r_var.node_id, src_loc );
+		SetupReferencesInCopyOrMove( names_scope, function_context, l_var_ptr, r_var_ptr, src_loc );
 
 		BuildCopyAssignmentOperatorPart( names_scope, function_context, l_var.llvm_value, r_var.llvm_value, l_var.t, src_loc );
 
@@ -2781,31 +2788,30 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 	}
 	else if( operator == OverloadedOperator::CompareEqual )
 	{
-		var Variable l_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() ).lock_imut().deref();
+		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
+		var Variable l_var= l_var_ptr.lock_imut().deref();
 
-		// Prevent modification of l_var during r_val calculation.
-		var ReferencesGraph::NodeId mut l_var_lock_node= ReferencesGraph::c_empty_node_id;
-		if( l_var.node_id != ReferencesGraph::c_empty_node_id )
+		var Variable mut l_var_lock_node_variable
 		{
-			var ust::string8 mut node_name= function_context.references_graph.GetNodeName( l_var.node_id ) + " lock";
-			l_var_lock_node= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::ReferenceImut, move(node_name) );
-			if( !function_context.references_graph.TryAddLink( l_var.node_id, l_var_lock_node ) )
-			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( l_var.node_id ) )
-			}
+			.value_type= ValueType::ReferenceImut,
+			.name= l_var.name + " lock",
+		};
+		var VariablePtr l_var_lock_node( move(l_var_lock_node_variable ) );
+		function_context.references_graph.AddNode( l_var_lock_node );
+		if( !function_context.references_graph.TryAddLink( l_var_ptr, l_var_lock_node ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc,l_var.name )
 		}
 
-		var Variable r_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() ).lock_imut().deref();
+		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
+		var Variable r_var= r_var_ptr.lock_imut().deref();
 		halt if( l_var.t != r_var.t ); // Checked before
 
-		if( l_var_lock_node != ReferencesGraph::c_empty_node_id )
-		{
-			function_context.references_graph.RemoveNode( l_var_lock_node );
-		}
+		function_context.references_graph.RemoveNode( l_var_lock_node );
 
-		if( r_var.node_id != ReferencesGraph::c_empty_node_id && function_context.references_graph.HaveOutgoingMutableNodes( r_var.node_id ) )
+		if( function_context.references_graph.HaveOutgoingMutableNodes( r_var_ptr ) )
 		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( r_var.node_id ) )
+			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, r_var.name )
 		}
 
 		if( !l_var.t.IsEqualityComparable() )
@@ -2819,7 +2825,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			.t= bool_type_,
 			.value_type= ValueType::Value,
 			.location= Variable::Location::LLVMRegister,
-			.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "==" ),
+			.name= "==",
 		};
 
 		unsafe
@@ -2885,6 +2891,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		}
 
 		auto mut result_ptr= VariablePtr( move(result) );
+		function_context.references_graph.AddNode( result_ptr );
 		RegisterTemporaryVariable( function_context, result_ptr );
 		return move(result_ptr);
 	}
@@ -3271,38 +3278,6 @@ fn CodeBuilder::DoCallFunction(
 				return ErrorValue();
 			}
 
-			auto arg_node_id= function_context.references_graph.AddNode(
-				select( param.value_type == ValueType::ReferenceMut ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-				"reference arg " + arg_number_str );
-			args_nodes[arg_n]= arg_node_id;
-			if( !function_context.references_graph.TryAddLink( arg.node_id, arg_node_id ) )
-			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, function_context.references_graph.GetNodeName( arg.node_id ) )
-			}
-
-			if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
-			{
-				var ReferencesGraph::NodesSet inner_references= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg.node_id );
-				var bool mut is_mutable= false;
-				foreach( inner_reference : inner_references )
-				{
-					is_mutable |= function_context.references_graph.GetNodeKind( inner_reference ) == ReferencesGraph::NodeKind::ReferenceMut;
-				}
-
-				auto own_reference_node= function_context.references_graph.AddNode(
-					select( is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ),
-					"inner reference lock " + arg_number_str );
-				reference_args_inner_nodes[arg_n]= own_reference_node;
-
-				foreach( &inner_reference : inner_references )
-				{
-					if( !function_context.references_graph.TryAddLink( inner_reference, own_reference_node ) )
-					{
-						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, inner_reference.lock_imut().deref().name )
-					}
-				}
-			}
-
 			if( arg.location == Variable::Location::LLVMRegister )
 			{
 				// Bind value to const reference.
@@ -3320,6 +3295,50 @@ fn CodeBuilder::DoCallFunction(
 			}
 
 			llvm_arg= CreateReferenceCast( llvm_arg, arg.t, expected_arg_type, function_context );
+
+			var Variable mut arg_node_variable
+			{
+				.value_type= param.value_type,
+				.location= Variable::Location::Pointer,
+				.llvm_value= llvm_arg,
+				.name= "reference arg " + arg_number_str ,
+			};
+			var VariablePtr arg_node( move(arg_node_variable) );
+			args_nodes[arg_n]= arg_node;
+			function_context.references_graph.AddNode( arg_node );
+
+			if( !function_context.references_graph.TryAddLink( arg_ptr, arg_node ) )
+			{
+				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, arg.name )
+			}
+
+			if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
+			{
+				var ReferencesGraph::NodesSet inner_references= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg_ptr );
+				var bool mut is_mutable= false;
+				foreach( &inner_reference : inner_references )
+				{
+					is_mutable |= inner_reference.lock_imut().deref().value_type == ValueType::ReferenceMut;
+				}
+
+
+				var Variable mut own_reference_node_variable
+				{
+					.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.name= "inner reference lock " + arg_number_str,
+				};
+				var VariablePtr own_reference_node( move(own_reference_node_variable) );
+				reference_args_inner_nodes[arg_n]= own_reference_node;
+				function_context.references_graph.AddNode( own_reference_node );
+
+				foreach( &inner_reference : inner_references )
+				{
+					if( !function_context.references_graph.TryAddLink( inner_reference, own_reference_node ) )
+					{
+						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, inner_reference.lock_imut().deref().name )
+					}
+				}
+			}
 		}
 		else
 		{
@@ -3329,8 +3348,14 @@ fn CodeBuilder::DoCallFunction(
 				return ErrorValue();
 			}
 
-			auto arg_node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, "value arg " + arg_number_str );
-			args_nodes[arg_n]= arg_node_id;
+			var Variable mut arg_node_variable
+			{
+				.value_type= ValueType::Value,
+				.name= "value arg " + arg_number_str,
+			};
+			var VariablePtr arg_node( move(arg_node_variable) );
+			args_nodes[arg_n]= arg_node;
+			function_context.references_graph.AddNode( arg_node );
 
 			if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
