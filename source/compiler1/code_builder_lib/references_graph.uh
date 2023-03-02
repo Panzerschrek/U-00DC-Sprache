@@ -13,6 +13,8 @@ public:
 
 public:
 	fn AddNode( mut this, VariablePtr& node );
+	fn AddNodeIfNotExists( mut this, VariablePtr& node );
+
 	fn RemoveNode( mut this, VariablePtr& node );
 	fn AddLink( mut this, VariablePtr& from, VariablePtr& to );
 

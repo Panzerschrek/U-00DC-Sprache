@@ -1756,7 +1756,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		auto operator= select( delta == 1 ? OverloadedOperator::Increment : OverloadedOperator::Decrement );
 		if_var( mut overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 		{
-			auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, function_context );
+			auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
 			overloaded_operator.llvm_function= fetch_result[1];
 
 			DoCallFunction(

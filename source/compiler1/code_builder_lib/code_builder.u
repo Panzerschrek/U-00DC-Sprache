@@ -361,6 +361,10 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		{
 			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, var_ptr_non_null.lock_imut().deref().name )
 		}
+		if( IsGlobalVariable( var_ptr_non_null ) ) // TODO - do we need to check this?
+		{
+			function_context.references_graph.AddNodeIfNotExists( var_ptr_non_null );
+		}
 
 		return move(var_ptr_non_null);
 	}
@@ -452,16 +456,19 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			{
 				.t= field.t,
 				.location= Variable::Location::Pointer,
-				.value_type= this_.value_type,
+				.value_type= select( this_.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.llvm_value= CreateClassFieldGEP( function_context, field_source_class, this_value_corrected, field ),
 			};
 
-			if( !field.is_mutable )
+			var VariablePtr mut result_ptr( move(result) );
+			function_context.references_graph.AddNode( result_ptr );
+			if( !function_context.references_graph.TryAddLink( this_ptr, result_ptr ) )
 			{
-				result.value_type= ValueType::ReferenceImut;
+				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, this_ptr.lock_imut().deref().name )
 			}
 
-			return VariablePtr( move(result) );
+			RegisterTemporaryVariable( function_context, result_ptr );
+			return move(result_ptr);
 		}
 	}
 
@@ -504,6 +511,8 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
 			}
 
+			function_context.references_graph.AddNodeIfNotExists( v_ptr_non_null );
+
 			return move(v_ptr_non_null);
 		}
 	}
@@ -522,6 +531,8 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
 			}
 
+			function_context.references_graph.AddNodeIfNotExists( v_ptr_non_null );
+
 			return move(v_ptr_non_null);
 		}
 	}
@@ -537,6 +548,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		}
 		if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
 		{
+			function_context.references_graph.AddNodeIfNotExists( v_ptr );
 			return v_ptr;
 		}
 		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, SrcLoc(), ust::string8("TODO - name" ) )
@@ -2475,6 +2487,17 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( this, Name
 				SetupDereferenceableFunctionParamsAndRetAttributes( function );
 			}
 		}
+	}
+}
+
+fn CodeBuilder::IsGlobalVariable( VariablePtr& variable ) : bool
+{
+	with( &v : variable.lock_imut().deref() )
+	{
+		return
+			v.location == Variable::Location::Pointer &&
+			v.llvm_value != LLVMValueRef::Null &&
+			unsafe( LLVMIsConstant( v.llvm_value ) ) == LLVMBool::True;
 	}
 }
 

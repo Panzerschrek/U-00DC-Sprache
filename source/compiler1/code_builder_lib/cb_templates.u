@@ -1289,6 +1289,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 					.location= Variable::Location::Pointer,
 					.constexpr_value= given_variable.constexpr_value,
 					.llvm_value= AddGlobalConstantVariable( param_name + "\0", given_variable.t.GetLLVMType(), given_variable.constexpr_value ),
+					.name= param_name,
 				};
 
 				template_arg.something= VariablePtr( move(out_var) );

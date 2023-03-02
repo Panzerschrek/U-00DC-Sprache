@@ -708,7 +708,9 @@ private:
 		mut this,
 		VariablePtr& this_ptr,
 		FunctionVariable& function,
-		FunctionContext &mut function_context ) : tup[ VariablePtr, LLVMValueRef ];
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		SrcLoc& src_loc ) : tup[ VariablePtr, LLVMValueRef ];
 
 	// Overloading
 
@@ -824,6 +826,8 @@ private:
 	fn SetupDereferenceableFunctionParamsAndRetAttributes( this, FunctionVariable& mut function_variable );
 
 	fn SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope );
+
+	fn IsGlobalVariable( VariablePtr& variable ) : bool;
 
 	fn MarkInstructionWithTBAAMetadata( this, LLVMValueRef instruction, LLVMMetadataRef metadata );
 	fn MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction );

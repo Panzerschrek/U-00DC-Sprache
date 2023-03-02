@@ -13,6 +13,14 @@ struct NodeReplacement
 
 fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 {
+	halt if( !nodes_.find( node ).empty() ); // TODO - use debug assert.
+
+	var NodeState mut node_state{ .moved= false };
+	nodes_.insert( node, move(node_state) );
+}
+
+fn ReferencesGraph::AddNodeIfNotExists( mut this, VariablePtr& node )
+{
 	var NodeState mut node_state{ .moved= false };
 	nodes_.insert( node, move(node_state) );
 }
@@ -38,6 +46,10 @@ fn ReferencesGraph::RemoveNode( mut this, VariablePtr& node )
 
 fn ReferencesGraph::AddLink( mut this, VariablePtr& from, VariablePtr& to )
 {
+	// TODO - use debug assert.
+	halt if( nodes_.find( from ).empty() );
+	halt if( nodes_.find( to ).empty() );
+
 	if( from == to )
 	{
 		return;

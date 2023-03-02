@@ -1524,8 +1524,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(field.index) ) );
 				}
 
-				// TODO - register it.
-				return VariablePtr( move(result) );
+				var VariablePtr mut result_ptr( move(result) );
+				function_context.references_graph.AddNode( result_ptr );
+				if( !function_context.references_graph.TryAddLink( variable_ptr, result_ptr ) )
+				{
+					REPORT_ERROR( ReferenceProtectionError, names_scope, member_access_operator.src_loc, variable_ptr.lock_imut().deref().name )
+				}
+
+				RegisterTemporaryVariable( function_context, result_ptr );
+				return move(result_ptr);
 			}
 		}
 		{
@@ -2921,7 +2928,7 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 
 	if_var( mut overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 	{
-		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, function_context );
+		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
 		overloaded_operator.llvm_function= fetch_result[1];
 
 		return DoCallFunction(
@@ -2977,7 +2984,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 
 	if_var( mut overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
 	{
-		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, function_context );
+		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
 		overloaded_operator.llvm_function= fetch_result[1];
 
 		return DoCallFunction(
@@ -3066,7 +3073,7 @@ fn CodeBuilder::CallFunctionsSet(
 	{
 		auto this_non_null= this_.try_to_non_nullable();
 
-		auto fetch_res= TryFetchVirtualFunction( this_non_null, function_selected.try_deref(), function_context );
+		auto fetch_res= TryFetchVirtualFunction( this_non_null, function_selected.try_deref(), names_scope, function_context, src_loc );
 		function_selected.try_deref().llvm_function= fetch_res[1];
 		return DoCallFunction(
 			names_scope,

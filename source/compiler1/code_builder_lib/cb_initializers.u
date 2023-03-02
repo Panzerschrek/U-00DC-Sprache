@@ -639,18 +639,10 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		// Should be functions set 100%
 		// Should be complete here.
 
-		var Variable mut this_
-		{
-			.t= variable.t,
-			.value_type= ValueType::ReferenceMut,
-			.location= Variable::Location::Pointer,
-			.llvm_value= variable.llvm_value,
-		};
-
 		CallFunctionsSet(
 			names_scope,
 			function_context,
-			VariablePtr( move(this_) ),
+			variable_ptr,
 			constructors_ptr.try_lock_imut().deref().functions_set,
 			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			src_loc );
@@ -966,17 +958,10 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		// Should be functions set 100%
 		// Should be complete here.
 
-		var Variable mut this_
-		{
-			.t= variable.t,
-			.value_type= ValueType::ReferenceMut,
-			.location= Variable::Location::Pointer,
-			.llvm_value= variable.llvm_value,
-		};
 		CallFunctionsSet(
 			names_scope,
 			function_context,
-			VariablePtr( move(this_) ),
+			variable_ptr,
 			constructors_ptr.try_lock_imut().deref().functions_set,
 			args.range(),
 			src_loc );

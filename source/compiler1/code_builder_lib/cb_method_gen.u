@@ -165,18 +165,20 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
-		var Variable field_variable
+		var Variable mut field_variable
 		{
 			.t= class_field.t,
 			.value_type= ValueType::ReferenceMut,
 			.location= Variable::Location::Pointer,
 			.llvm_value= CreateClassFieldGEP( function_context, class_type, this_llvm_value, class_field )
 		};
+		var VariablePtr field_variable_ptr( move(field_variable) );
+		function_context.references_graph.AddNode( field_variable_ptr );
 
 		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
-			BuildEmptyInitializer( class_members_ptr, function_context, VariablePtr( field_variable ), field_pair[0], src_loc );
+			BuildEmptyInitializer( class_members_ptr, function_context, field_variable_ptr, field_pair[0], src_loc );
 		}
 		else
 		{
@@ -189,13 +191,18 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
 				};
-				InitializeReferenceField( class_members_initial, function_context, VariablePtr( move(this_variable) ), class_field, initializer );
+				var VariablePtr this_variable_ptr( move(this_variable) );
+				function_context.references_graph.AddNode( this_variable_ptr );
+				InitializeReferenceField( class_members_initial, function_context, this_variable_ptr, class_field, initializer );
+				function_context.references_graph.RemoveNode( this_variable_ptr );
 			}
 			else
 			{
-				BuildInitializer( class_members_initial, function_context, VariablePtr( field_variable ), initializer );
+				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 			}
 		}
+
+		function_context.references_graph.RemoveNode( field_variable_ptr );
 	}
 
 	SetupVirtualTablePointers( this_llvm_value, class_type, function_context );
