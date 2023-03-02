@@ -144,15 +144,19 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	if( !base_class.empty() )
 	{
-		var Variable base_variable
+		var Variable mut base_variable
 		{
 			.t= base_class.try_to_non_nullable(),
 			.value_type= ValueType::ReferenceMut,
 			.location= Variable::Location::Pointer,
 			.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_llvm_value ),
 		};
+		var VariablePtr base_variable_ptr( move(base_variable) );
+		function_context.references_graph.AddNode( base_variable_ptr );
 
-		BuildEmptyInitializer( class_members_ptr, function_context, VariablePtr( base_variable ), KeywordToString( Keyword::base_ ), src_loc );
+		BuildEmptyInitializer( class_members_ptr, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), src_loc );
+
+		function_context.references_graph.RemoveNode( base_variable_ptr );
 	}
 
 	// Use initial class members namespace for own fields initializers evaluation.

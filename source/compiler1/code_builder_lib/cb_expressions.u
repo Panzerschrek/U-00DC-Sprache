@@ -3733,20 +3733,22 @@ fn CodeBuilder::BuildTempVariableConstruction(
 		return ErrorValue();
 	}
 
+	auto mut name= "temp " + t.ToString();
+
 	var Variable mut result
 	{
 		.t= t,
 		.location= Variable::Location::Pointer,
 		.value_type= ValueType::Value,
+		.name= name,
 	};
-
-	auto name= "temp " + t.ToString() + "\0";
 
 	auto mut llvm_value= LLVMValueRef::Null;
 	if( !function_context.is_functionless_context )
 	{
+		name += "\0";
 		llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), name.front() ) );
-		CreateLifetimeStart( function_context, result.llvm_value );
+		CreateLifetimeStart( function_context, llvm_value );
 	}
 	result.llvm_value= llvm_value;
 
@@ -3762,7 +3764,14 @@ fn CodeBuilder::BuildTempVariableConstruction(
 			.location= Variable::Location::Pointer,
 			.llvm_value= llvm_value,
 		};
-		var LLVMValueRef constexpr_value= BuildConstructorInitializer( names_scope, function_context, VariablePtr( move(variable_for_initialization) ), args, src_loc );
+		var VariablePtr variable_for_initialization_ptr( move(variable_for_initialization) );
+		function_context.references_graph.AddNode( variable_for_initialization_ptr );
+		function_context.references_graph.AddLink( result_ptr, variable_for_initialization_ptr );
+
+		var LLVMValueRef constexpr_value= BuildConstructorInitializer( names_scope, function_context, variable_for_initialization_ptr, args, src_loc );
+
+		function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
+
 		with( &mut lock: result_ptr.lock_mut() )
 		{
 			lock.deref().constexpr_value= constexpr_value;

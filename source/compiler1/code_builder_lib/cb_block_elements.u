@@ -472,6 +472,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			.name= "return value",
 		};
 		var VariablePtr return_node( move(return_node_variable) );
+		function_context.references_graph.AddNode( return_node );
 		function_context.references_graph.AddLink( expr_ptr, return_node );
 
 		// Call destructors. In this process we check if destroyed variables still have references.

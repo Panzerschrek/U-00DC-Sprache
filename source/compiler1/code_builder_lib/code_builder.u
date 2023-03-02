@@ -357,13 +357,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	if( !var_ptr.empty() )
 	{
 		auto mut var_ptr_non_null= var_ptr.try_to_non_nullable();
+		if( IsGlobalVariable( var_ptr_non_null ) )
+		{
+			function_context.references_graph.AddNodeIfNotExists( var_ptr_non_null );
+		}
 		if( function_context.references_graph.NodeIsMoved( var_ptr_non_null ) )
 		{
 			REPORT_ERROR( AccessingMovedVariable, names_scope, src_loc, var_ptr_non_null.lock_imut().deref().name )
-		}
-		if( IsGlobalVariable( var_ptr_non_null ) ) // TODO - do we need to check this?
-		{
-			function_context.references_graph.AddNodeIfNotExists( var_ptr_non_null );
 		}
 
 		return move(var_ptr_non_null);
