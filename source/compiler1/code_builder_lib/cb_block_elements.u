@@ -99,17 +99,16 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-		// Do not forget to remove node in case of error-return!!!
-		var Variable mut out_variable
+		var Variable mut variable_reference_variable
 		{
 			.t= t,
 			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.name= variable_declaration.name,
 		};
-		auto mut out_variable_ptr= VariablePtr( move(out_variable) );
-
-		function_context.references_graph.AddNode( out_variable_ptr );
+		auto mut variable_reference= VariablePtr( move(variable_reference_variable) );
+		// Do not forget to remove node in case of error-return!!!
+		function_context.references_graph.AddNode( variable_reference );
 
 		auto mut constexpr_value= LLVMValueRef::Null;
 		if( variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
@@ -117,27 +116,58 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( t.IsAbstract() )
 			{
 				REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, variable_declaration.src_loc, t )
-				function_context.references_graph.RemoveNode( out_variable_ptr );
+				function_context.references_graph.RemoveNode( variable_reference );
 				continue;
 			}
 
-			with( &mut lock : out_variable_ptr.lock_mut() )
+			var LLVMValueRef llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), (variable_declaration.name + "\0").front() ) );
+			CreateLifetimeStart( function_context, llvm_value );
+
+			var Variable mut variable
 			{
-				auto llvm_value=
-					unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, t.GetLLVMType(), (variable_declaration.name + "\0").front() ) );
-				CreateLifetimeStart( function_context, llvm_value );
+				.t= t,
+				.value_type= ValueType::Value,
+				.location= Variable::Location::Pointer,
+				.name= variable_declaration.name,
+				.llvm_value= llvm_value
+			};
+
+			debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, variable_declaration.name, variable_declaration.src_loc );
+
+			var VariablePtr variable_ptr( move(variable) );
+			function_context.references_graph.AddNode( variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, variable_reference );
+			RegisterFrameVariable( function_context, variable_ptr, 1s );
+
+			{
+				var Variable mut variable_for_initialization
+				{
+					.t= t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.name= variable_declaration.name,
+					.llvm_value= llvm_value,
+				};
+
+				var VariablePtr variable_for_initialization_ptr( move(variable_for_initialization) );
+				function_context.references_graph.AddNode( variable_for_initialization_ptr );
+				function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
+
+				if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
+				{
+					constexpr_value= BuildEmptyInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.name, variable_declaration.src_loc );
+				}
+				else
+				{
+					constexpr_value= BuildInitializer( names_scope, function_context, variable_for_initialization_ptr, variable_declaration.initializer );
+				}
+
+				function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
+			}
+
+			with( &mut lock : variable_reference.lock_mut() )
+			{
 				lock.deref().llvm_value= llvm_value;
-			}
-
-			debug_info_builder_.try_deref().CreateVariableInfo( function_context, out_variable_ptr.lock_imut().deref(), variable_declaration.name, variable_declaration.src_loc );
-
-			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
-			{
-				constexpr_value= BuildEmptyInitializer( names_scope, function_context, out_variable_ptr, variable_declaration.name, variable_declaration.src_loc );
-			}
-			else
-			{
-				constexpr_value= BuildInitializer( names_scope, function_context, out_variable_ptr, variable_declaration.initializer );
 			}
 		}
 		else if( variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
@@ -145,7 +175,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
 			{
 				REPORT_ERROR( ExpectedInitializer, names_scope, variable_declaration.src_loc, variable_declaration.name )
-				function_context.references_graph.RemoveNode( out_variable_ptr );
+				function_context.references_graph.RemoveNode( variable_reference );
 				continue;
 			}
 
@@ -159,7 +189,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				if( constructor_initializer.args.size() != 1s )
 				{
 					REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, names_scope, constructor_initializer.src_loc )
-					function_context.references_graph.RemoveNode( out_variable_ptr );
+					function_context.references_graph.RemoveNode( variable_reference );
 					continue;
 				}
 
@@ -169,7 +199,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( initializer_expression.empty() )
 			{
 				REPORT_ERROR( UnsupportedInitializerForReference, names_scope, variable_declaration.src_loc )
-				function_context.references_graph.RemoveNode( out_variable_ptr );
+				function_context.references_graph.RemoveNode( variable_reference );
 				continue;
 			}
 
@@ -180,34 +210,34 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( expression_result.t != t && !expression_result.t.ReferenceIsConvertibleTo( t ) )
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, variable_declaration.src_loc, t, expression_result.t )
-				function_context.references_graph.RemoveNode( out_variable_ptr );
+				function_context.references_graph.RemoveNode( variable_reference );
 				continue;
 			}
 			if( expression_result.value_type == ValueType::Value )
 			{
 				REPORT_ERROR( ExpectedReferenceValue, names_scope, variable_declaration.src_loc )
-				function_context.references_graph.RemoveNode( out_variable_ptr );
+				function_context.references_graph.RemoveNode( variable_reference );
 				continue;
 			}
 			if( is_mutable && expression_result.value_type == ValueType::ReferenceImut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, variable_declaration.src_loc )
-				function_context.references_graph.RemoveNode( out_variable_ptr );
+				function_context.references_graph.RemoveNode( variable_reference );
 				continue;
 			}
 
-			if( !function_context.references_graph.TryAddLink( expression_result_ptr, out_variable_ptr ) )
+			if( !function_context.references_graph.TryAddLink( expression_result_ptr, variable_reference ) )
 			{
 				REPORT_ERROR( ReferenceProtectionError, names_scope, variable_declaration.src_loc, expression_result.name )
 			}
 
-			with( &mut lock : out_variable_ptr.lock_mut() )
+			with( &mut lock : variable_reference.lock_mut() )
 			{
 				lock.deref().llvm_value= CreateReferenceCast( expression_result.llvm_value, expression_result.t, t, function_context );
 			}
 			constexpr_value= expression_result.constexpr_value;
 
-			debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, out_variable_ptr.lock_imut().deref(), variable_declaration.name, variable_declaration.src_loc );
+			debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), variable_declaration.name, variable_declaration.src_loc );
 		}
 		else{ halt; }
 
@@ -219,19 +249,19 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		if( !is_mutable )
 		{
 			// Set constexpr value only for immutable variables.
-			with( &mut lock : out_variable_ptr.lock_mut() )
+			with( &mut lock : variable_reference.lock_mut() )
 			{
 				lock.deref().constexpr_value= constexpr_value;
 			}
 		}
 
 		// Register variable for destruction and reference checking.
-		RegisterFrameVariable( function_context, out_variable_ptr, 1s );
+		RegisterFrameVariable( function_context, variable_reference, 1s );
 
 		var bool mut insert_not_ok= false;
+		with( &mut lock : names_scope.lock_mut() )
 		{
-			auto mut lock= names_scope.lock_mut();
-			insert_not_ok= lock.deref().AddName( variable_declaration.name, move(out_variable_ptr) ).empty();
+			insert_not_ok= lock.deref().AddName( variable_declaration.name, move(variable_reference) ).empty();
 		}
 		if( insert_not_ok )
 		{
@@ -269,7 +299,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 	var bool is_mutable= auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
 
-	var Variable mut out_variable
+	var Variable mut variable_reference_variable
 	{
 		.t= expr.t,
 		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
@@ -277,45 +307,43 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ),
 		.name= auto_variable_declaration.name,
 	};
-
-	var VariablePtr mut out_variable_ptr( move(out_variable) );
-
+	var VariablePtr mut variable_reference( move(variable_reference_variable) );
 	// Do not forget to remove node in case of errror-return!!!
-	function_context.references_graph.AddNode( out_variable_ptr );
+	function_context.references_graph.AddNode( variable_reference );
 
 	if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::Reference )
 	{
 		if( expr.value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, auto_variable_declaration.src_loc )
-			function_context.references_graph.RemoveNode( out_variable_ptr );
+			function_context.references_graph.RemoveNode( variable_reference );
 			return BlockElementBuildInfo();
 		}
 		if( is_mutable && expr.value_type != ValueType::ReferenceMut )
 		{
 			REPORT_ERROR( BindingConstReferenceToNonconstReference,  names_scope, auto_variable_declaration.src_loc )
-			function_context.references_graph.RemoveNode( out_variable_ptr );
+			function_context.references_graph.RemoveNode( variable_reference );
 			return BlockElementBuildInfo();
 		}
 
-		if( !function_context.references_graph.TryAddLink( expr_ptr, out_variable_ptr ) )
+		if( !function_context.references_graph.TryAddLink( expr_ptr, variable_reference ) )
 		{
 			REPORT_ERROR( ReferenceProtectionError, names_scope, auto_variable_declaration.src_loc, expr.name )
 		}
 
-		with( &mut lock : out_variable_ptr.lock_mut() )
+		with( &mut lock : variable_reference.lock_mut() )
 		{
 			lock.deref().llvm_value= expr.llvm_value;
 		}
 
-		debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, out_variable_ptr.lock_imut().deref(), auto_variable_declaration.name, auto_variable_declaration.src_loc );
+		debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), auto_variable_declaration.name, auto_variable_declaration.src_loc );
 	}
 	else if( auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None )
 	{
 		if( expr.t.IsAbstract() )
 		{
 			REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, auto_variable_declaration.src_loc, expr.t )
-			function_context.references_graph.RemoveNode( out_variable_ptr );
+			function_context.references_graph.RemoveNode( variable_reference );
 			return BlockElementBuildInfo();
 		}
 
@@ -343,14 +371,22 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			}
 		}
 
-		with( &mut lock : out_variable_ptr.lock_mut() )
+		var Variable mut variable
 		{
-			lock.deref().llvm_value= llvm_value;
-		}
+			.t= expr.t,
+			.value_type= ValueType::Value,
+			.location= Variable::Location::Pointer,
+			.name= auto_variable_declaration.name,
+			.llvm_value= llvm_value
+		};
 
-		debug_info_builder_.try_deref().CreateVariableInfo( function_context, out_variable_ptr.lock_imut().deref(), auto_variable_declaration.name, auto_variable_declaration.src_loc );
+		debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, auto_variable_declaration.name, auto_variable_declaration.src_loc );
 
-		SetupReferencesInCopyOrMove( names_scope, function_context, out_variable_ptr, expr_ptr, auto_variable_declaration.src_loc );
+		var VariablePtr variable_ptr( move(variable) );
+		function_context.references_graph.AddNode( variable_ptr );
+		RegisterFrameVariable( function_context, variable_ptr, 1s );
+
+		SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_ptr, auto_variable_declaration.src_loc );
 
 		if( expr.value_type == ValueType::Value )
 		{
@@ -376,7 +412,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			if( !expr.t.IsCopyConstructible() )
 			{
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, auto_variable_declaration.src_loc, expr.t )
-				function_context.references_graph.RemoveNode( out_variable_ptr );
+				function_context.references_graph.RemoveNode( variable_reference );
 				return BlockElementBuildInfo();
 			}
 
@@ -389,16 +425,21 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				CreateTypedStore( function_context, expr.t, expr.llvm_value, llvm_value );
 			}
 		}
+
+		with( &mut lock : variable_reference.lock_mut() )
+		{
+			lock.deref().llvm_value= llvm_value;
+		}
 	}
 	else { halt; }
 
 	// Register variable for destruction and reference checking.
-	RegisterFrameVariable( function_context, out_variable_ptr, 1s );
+	RegisterFrameVariable( function_context, variable_reference, 1s );
 
 	var bool mut insert_not_ok= false;
 	{
 		auto mut lock= names_scope.lock_mut();
-		insert_not_ok= lock.deref().AddName( auto_variable_declaration.name, move(out_variable_ptr) ).empty();
+		insert_not_ok= lock.deref().AddName( auto_variable_declaration.name, move(variable_reference) ).empty();
 	}
 	if( insert_not_ok )
 	{
@@ -1493,73 +1534,35 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 		}
 
+		auto mut llvm_value= LLVMValueRef::Null;
+		unsafe
+		{
+			if( expr.value_type == ValueType::Value &&
+				expr.location == Variable::Location::Pointer &&
+				LLVMTypeOf( expr.llvm_value ) == LLVMPointerType( expr.t.GetLLVMType(), 0u ) &&
+				( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null || LLVMIsAArgument( expr.llvm_value ) != LLVMValueRef::Null ) )
+			{
+				// Just reuse "alloca" instruction or argument for move-initialization, avoid copying value into new memory location.
+				llvm_value= expr.llvm_value;
+			}
+			else
+			{
+				llvm_value=
+					LLVMBuildAlloca( function_context.alloca_ir_builder, expr.t.GetLLVMType(), (with_operator.variable_name + "\0").front() );
+				CreateLifetimeStart( function_context, llvm_value );
+			}
+		}
+
 		var Variable mut variable
 		{
 			.t= expr.t,
 			.value_type= ValueType::Value,
 			.location= Variable::Location::Pointer,
 			.name= with_operator.variable_name,
+			.llvm_value= llvm_value
 		};
 
-		unsafe
-		{
-			if( expr.value_type == ValueType::Value &&
-				expr.location == Variable::Location::Pointer &&
-				LLVMTypeOf( expr.llvm_value ) == LLVMPointerType( variable.t.GetLLVMType(), 0u ) &&
-				( LLVMIsAAllocaInst( expr.llvm_value ) != LLVMValueRef::Null || LLVMIsAArgument( expr.llvm_value ) != LLVMValueRef::Null ) )
-			{
-				// Just reuse "alloca" instruction or argument for move-initialization, avoid copying value into new memory location.
-				variable.llvm_value= expr.llvm_value;
-			}
-			else
-			{
-				variable.llvm_value=
-					LLVMBuildAlloca( function_context.alloca_ir_builder, variable.t.GetLLVMType(), (with_operator.variable_name + "\0").front() );
-				CreateLifetimeStart( function_context, variable.llvm_value );
-			}
-		}
-
 		debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, with_operator.variable_name, with_operator.src_loc );
-
-		if( expr.value_type == ValueType::Value )
-		{
-			// Move.
-			function_context.references_graph.MoveNode( expr_ptr );
-
-			if( variable.llvm_value != expr.llvm_value )
-			{
-				if( expr.location == Variable::Location::Pointer )
-				{
-					CopyBytes( variable.llvm_value, expr.llvm_value, expr.t, function_context );
-					CreateLifetimeEnd( function_context, expr.llvm_value );
-				}
-				else
-				{
-					CreateTypedStore( function_context, expr.t, expr.llvm_value, variable.llvm_value );
-				}
-			}
-		}
-		else
-		{
-			// Copy.
-			if( !expr.t.IsCopyConstructible() )
-			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, with_operator.src_loc, variable.t )
-			}
-			else if( expr.location == Variable::Location::Pointer )
-			{
-				BuildCopyConstructorPart( names_scope, function_context, variable.llvm_value, expr.llvm_value, variable.t, with_operator.src_loc );
-			}
-			else
-			{
-				CreateTypedStore( function_context, expr.t, expr.llvm_value, variable.llvm_value );
-			}
-		}
-
-		with( &mut lock: variable_reference.lock_mut() )
-		{
-			lock.deref().llvm_value= variable.llvm_value;
-		}
 
 		var VariablePtr variable_ptr( move(variable) );
 		function_context.references_graph.AddNode( variable_ptr );
@@ -1568,6 +1571,45 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_ptr, with_operator.src_loc );
 
+		if( expr.value_type == ValueType::Value )
+		{
+			// Move.
+			function_context.references_graph.MoveNode( expr_ptr );
+
+			if( llvm_value != expr.llvm_value )
+			{
+				if( expr.location == Variable::Location::Pointer )
+				{
+					CopyBytes( llvm_value, expr.llvm_value, expr.t, function_context );
+					CreateLifetimeEnd( function_context, expr.llvm_value );
+				}
+				else
+				{
+					CreateTypedStore( function_context, expr.t, expr.llvm_value, llvm_value );
+				}
+			}
+		}
+		else
+		{
+			// Copy.
+			if( !expr.t.IsCopyConstructible() )
+			{
+				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, with_operator.src_loc, expr.t )
+			}
+			else if( expr.location == Variable::Location::Pointer )
+			{
+				BuildCopyConstructorPart( names_scope, function_context, llvm_value, expr.llvm_value, expr.t, with_operator.src_loc );
+			}
+			else
+			{
+				CreateTypedStore( function_context, expr.t, expr.llvm_value, llvm_value );
+			}
+		}
+
+		with( &mut lock: variable_reference.lock_mut() )
+		{
+			lock.deref().llvm_value= llvm_value;
+		}
 	}
 	else { halt; }
 
