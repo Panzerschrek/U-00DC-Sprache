@@ -1212,14 +1212,33 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 			lock.deref().llvm_value= llvm_value;
 		}
 
-		if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
+		function_context.references_graph.AddNode( variable_ptr );
 		{
-			constexpr_value= BuildEmptyInitializer( names_scope_ptr, function_context, variable_ptr, variable_declaration.name, variable_declaration.src_loc );
+			var Variable mut variable_for_initialization
+			{
+				.t= t,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.name= variable_declaration.name,
+				.llvm_value= llvm_value,
+			};
+
+			var VariablePtr variable_for_initialization_ptr( move(variable_for_initialization) );
+			function_context.references_graph.AddNode( variable_for_initialization_ptr );
+			function_context.references_graph.AddLink( variable_ptr, variable_for_initialization_ptr );
+
+			if( !variable_declaration.initializer.get</Synt::EmptyVariant/>().empty() )
+			{
+				constexpr_value= BuildEmptyInitializer( names_scope_ptr, function_context, variable_ptr, variable_declaration.name, variable_declaration.src_loc );
+			}
+			else
+			{
+				constexpr_value= BuildInitializer( names_scope_ptr, function_context, variable_ptr, variable_declaration.initializer );
+			}
+
+			function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
 		}
-		else
-		{
-			constexpr_value= BuildInitializer( names_scope_ptr, function_context, variable_ptr, variable_declaration.initializer );
-		}
+		function_context.references_graph.RemoveNode( variable_ptr );
 
 		if( constexpr_value != LLVMValueRef::Null ) // May be in case of error.
 		{

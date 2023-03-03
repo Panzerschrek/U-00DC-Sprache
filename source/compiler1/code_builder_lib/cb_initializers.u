@@ -392,13 +392,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( field.index == ~0u ){ continue; } // May be in case of error
 
-		var Variable member_variable
+		var Variable mut member_variable
 		{
 			.t= field.t,
 			.value_type= ValueType::ReferenceMut,
 			.location= Variable::Location::Pointer,
 			.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
 		};
+		var VariablePtr member_variable_ptr( move(member_variable) );
+			function_context.references_graph.AddNode( member_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 
 		auto mut constexpr_initializer= LLVMValueRef::Null;
 		auto& initializer= field.syntax_element.deref().initializer;
@@ -410,7 +413,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				continue;
 			}
 
-			constexpr_initializer= BuildEmptyInitializer( names_scope, function_context, VariablePtr( member_variable ), field_name, struct_named_initializer.src_loc );
+			constexpr_initializer= BuildEmptyInitializer( names_scope, function_context, member_variable_ptr, field_name, struct_named_initializer.src_loc );
 		}
 		else
 		{
@@ -420,9 +423,11 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			}
 			else
 			{
-				constexpr_initializer= BuildInitializer( class_members_initial, function_context, VariablePtr( member_variable ), initializer );
+				constexpr_initializer= BuildInitializer( class_members_initial, function_context, member_variable_ptr, initializer );
 			}
 		}
+
+		function_context.references_graph.RemoveNode( member_variable_ptr );
 
 		if( constexpr_initializer == LLVMValueRef::Null )
 		{

@@ -29,9 +29,9 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 		.location= Variable::Location::LLVMRegister,
 		.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.invalid_type_ ) )
 	};
-
-	// TODO - register it.
-	return VariablePtr( move(dummy) );
+	var VariablePtr mut dummy_ptr( move(dummy) );
+	function_context.references_graph.AddNode( dummy_ptr );
+	return move(dummy_ptr);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value
@@ -281,9 +281,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.llvm_value= global_value,
 			.constexpr_value= constexpr_value,
 		};
-
-		// TODO - register variable.
-		return VariablePtr( move(res) );
+		var VariablePtr mut res_ptr( move(res) );
+		function_context.references_graph.AddNode( res_ptr );
+		RegisterTemporaryVariable( function_context, res_ptr );
+		return move(res_ptr);
 	}
 	else
 	{
@@ -335,9 +336,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.llvm_value= constexpr_value,
 			.constexpr_value= constexpr_value,
 		};
-
-		// TODO - register variable.
-		return VariablePtr( move(res) );
+		var VariablePtr mut res_ptr( move(res) );
+		function_context.references_graph.AddNode( res_ptr );
+		RegisterTemporaryVariable( function_context, res_ptr );
+		return move(res_ptr);
 	}
 }
 
@@ -420,7 +422,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	return BuildTypeinfo( t, root_names_scope );
+	var VariablePtr mut result= BuildTypeinfo( t, root_names_scope );
+	function_context.references_graph.AddNodeIfNotExists( result );
+	return move(result);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncExpression& non_sync_expression ) : Value
@@ -1000,11 +1004,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.location= Variable::Location::Pointer,
 		.value_type= ValueType::ReferenceMut, // Unlike C++ all raw pointers in Ü are mutable.
 		.llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context ), // llvm value of reference is actually value of pointer
-		// There is no reference graph node associated with raw pointer.
 	};
 
-	// TODO - register it.
-	return VariablePtr( move(res) );
+	// Register variable for references checking.
+	auto mut res_ptr= VariablePtr( move(res) );
+	function_context.references_graph.AddNode( res_ptr );
+	RegisterTemporaryVariable( function_context, res_ptr );
+	return move(res_ptr);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
@@ -1028,10 +1034,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		if_var( &variable_ptr : res.get</VariablePtr/>() )
 		{
-			var Variable mut variable= variable_ptr.lock_imut().deref();
-
-			if( binary_operator.operator == BinaryOperatorType::NotEqual && variable.t == bool_type_ )
+			var Type t= variable_ptr.lock_imut().deref().t;
+			if( binary_operator.operator == BinaryOperatorType::NotEqual && t == bool_type_ )
 			{
+				var Variable mut variable= variable_ptr.lock_imut().deref();
+
 				// "!=" is implemented via "==", so, invert result.
 				auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 				if( value_in_register != LLVMValueRef::Null )
@@ -1043,12 +1050,18 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					}
 				}
 				variable.location= Variable::Location::LLVMRegister;
-			}
 
-			if( overloaded_operator == OverloadedOperator::CompareOrder &&
-				!variable.t.GetFundamentalType().empty() &&
-				IsSignedInteger( variable.t.GetFundamentalType().try_deref().fundamental_type ) )
+				var VariablePtr mut result_ptr( move(variable) );
+				function_context.references_graph.AddNode( result_ptr );
+				RegisterTemporaryVariable( function_context, result_ptr );
+				return move(result_ptr);
+			}
+			else if( overloaded_operator == OverloadedOperator::CompareOrder &&
+				!t.GetFundamentalType().empty() &&
+				IsSignedInteger( t.GetFundamentalType().try_deref().fundamental_type ) )
 			{
+				var Variable mut variable= variable_ptr.lock_imut().deref();
+
 				auto value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 				if( binary_operator.operator == BinaryOperatorType::CompareOrder )
 				{
@@ -1088,10 +1101,12 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					variable.constexpr_value= variable.llvm_value;
 				}
 				variable.location= Variable::Location::LLVMRegister;
-			}
 
-			// TODO - register it.
-			return VariablePtr( variable );
+				var VariablePtr mut result_ptr( move(variable) );
+				function_context.references_graph.AddNode( result_ptr );
+				RegisterTemporaryVariable( function_context, result_ptr );
+				return move(result_ptr);
+			}
 		}
 
 		return res;
@@ -3727,7 +3742,7 @@ fn CodeBuilder::DoCallFunction(
 
 	// Register result variable for destruction and references graph checks.
 	RegisterTemporaryVariable( function_context, result_ptr );
-	return result_ptr;
+	return move(result_ptr);
 }
 
 fn CodeBuilder::BuildTempVariableConstruction(
