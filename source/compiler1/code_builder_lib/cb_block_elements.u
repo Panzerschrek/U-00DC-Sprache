@@ -384,6 +384,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 		var VariablePtr variable_ptr( move(variable) );
 		function_context.references_graph.AddNode( variable_ptr );
+		function_context.references_graph.AddLink( variable_ptr, variable_reference );
 		RegisterFrameVariable( function_context, variable_ptr, 1s );
 
 		SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_ptr, auto_variable_declaration.src_loc );

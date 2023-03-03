@@ -3405,7 +3405,7 @@ fn CodeBuilder::DoCallFunction(
 				}
 
 				auto own_inner_reference= function_context.references_graph.CreateNodeInnerReference(
-					arg_ptr,
+					arg_node,
 					select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
 
 				foreach( &inner_reference : inner_references )
@@ -3689,7 +3689,7 @@ fn CodeBuilder::DoCallFunction(
 
 			foreach( &node : src_nodes )
 			{
-				src_variables_is_mut|= node.lock_imut().deref().value_type == ValueType::Value;
+				src_variables_is_mut|= node.lock_imut().deref().value_type == ValueType::ReferenceMut;
 			}
 		}
 
