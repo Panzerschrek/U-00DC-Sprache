@@ -1689,6 +1689,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 			function_context.references_graph.AddNode( variable_ptr );
 			function_context.references_graph.AddNode( variable_reference_ptr );
+			function_context.references_graph.AddLink( variable_ptr, variable_reference_ptr );
 
 			function_context.args_nodes[arg_n]= variable_ptr;
 
@@ -1707,7 +1708,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					select( type_param.t.GetInnerReferenceKind() == InnerReferenceKind::Mut ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
 				function_context.references_graph.AddLink( accesible_variable_ptr, inner_reference_node );
 
-				function_context.args_inner_variable_nodes[arg_n]= inner_reference_node;
+				function_context.args_inner_variable_nodes[arg_n]= accesible_variable_ptr;
 			}
 
 			// Register arg for destruction and reference checking.
