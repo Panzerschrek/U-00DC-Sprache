@@ -152,18 +152,33 @@ fn ReferencesGraph::GetNodeInnerReference( this, VariablePtr& node ) : VariableN
 	return nodes_[node].inner_reference_node;
 }
 
-fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr node ) : NodesSet
+fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet
 {
 	var NodesSet mut nodes_set;
 	GetAllAccessibleVariableNodes_r( node, nodes_set );
 	return move(nodes_set);
 }
 
-fn ReferencesGraph::GetAccessibleVariableNodesInnerReferences( this, VariablePtr node ) : NodesSet
+fn ReferencesGraph::GetAccessibleVariableNodesInnerReferences( this, VariablePtr& node ) : NodesSet
 {
 	var NodesSet mut nodes_set;
 	GetAccessibleVariableNodesInnerReferences_r( node, nodes_set );
 	return move(nodes_set);
+}
+
+fn ReferencesGraph::GetNodeInputLinks( this, VariablePtr& node ) : NodesSet
+{
+	var NodesSet mut result;
+
+	foreach( &link : links_ )
+	{
+		if( link.dst == node )
+		{
+			result.insert( link.src );
+		}
+	}
+
+	return result;
 }
 
 fn ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches,  ErrorsContainer &mut errors, SrcLoc& src_loc ) : ReferencesGraph

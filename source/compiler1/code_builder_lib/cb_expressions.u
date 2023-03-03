@@ -570,7 +570,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
 {
-	/*
 	var Synt::ComplexName complex_name{ .src_loc= move_operator.src_loc, .start= move_operator.variable_name };
 	var Value value= ResolveValue( names_scope, function_context, complex_name );
 	if( value.get</VariablePtr/>().empty() )
@@ -579,49 +578,66 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	auto variable_ptr= value.get</VariablePtr/>().try_deref();
-	auto variable_lock= variable_ptr.lock_imut();
-	var Variable& variable= variable_lock.deref();
+	var VariablePtr variable_reference_ptr= value.get</VariablePtr/>().try_deref();
 
-	if( function_context.references_graph.GetNodeKind( variable.node_id ) != ReferencesGraph::NodeKind::Variable )
+	if( IsGlobalVariable( variable_reference_ptr ) )
 	{
-		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, ust::string8( "reference" ) )
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "global variable" )
 		return ErrorValue();
 	}
 
-	if( variable.value_type != ValueType::ReferenceMut )
+	auto variable_reference_lock= variable_reference_ptr.lock_imut();
+	var Variable& reference= variable_reference_lock.deref();
+
+	if( reference.value_type != ValueType::ReferenceMut )
 	{
 		REPORT_ERROR( ExpectedReferenceValue, names_scope, move_operator.src_loc )
 		return ErrorValue();
 	}
-	if( function_context.references_graph.NodeIsMoved( variable_ptr ) )
+	if( function_context.references_graph.NodeIsMoved( variable_reference_ptr ) )
 	{
-		REPORT_ERROR( AccessingMovedVariable, names_scope, move_operator.src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
+		REPORT_ERROR( AccessingMovedVariable, names_scope, move_operator.src_loc, reference.name )
 		return ErrorValue();
 	}
-	if( function_context.references_graph.HaveOutgoingLinks( variable_ptr ) )
+	if( function_context.references_graph.HaveOutgoingLinks( variable_reference_ptr ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names_scope, move_operator.src_loc, function_context.references_graph.GetNodeName( variable.node_id ) )
+		REPORT_ERROR( MovedVariableHaveReferences, names_scope, move_operator.src_loc, reference.name )
 		return ErrorValue();
 	}
 
-	var Variable mut result= variable;
-	result.value_type= ValueType::Value;
+	var ReferencesGraph::NodesSet input_nodes= function_context.references_graph.GetNodeInputLinks( variable_reference_ptr );
+	if( input_nodes.size() != 1s )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "wrong reference" )
+		return ErrorValue();
+	}
 
-	var ust::string8 mut node_name= "moved ";
-	node_name+= function_context.references_graph.GetNodeName( variable.node_id );
-	result.node_id= function_context.references_graph.AddNode( ReferencesGraph::NodeKind::Variable, move(node_name) );
+	var VariablePtr& variable_for_move= input_nodes.range().front();
+	if( variable_for_move.lock_imut().deref().value_type != ValueType::Value )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "wrong reference" )
+		return ErrorValue();
+	}
 
-	SetupReferencesInCopyOrMove( names_scope, function_context, result.t, result.node_id, variable.node_id, move_operator.src_loc );
+	var Variable mut result
+	{
+		.t= reference.t,
+		.value_type= ValueType::Value,
+		.location= reference.location,
+		.name= "moved " + reference.name,
+		.llvm_value= reference.llvm_value
+	};
+	var VariablePtr mut result_ptr( move(result) );
 
-	function_context.references_graph.MoveNode( variable.node_id );
+	function_context.references_graph.AddNode( result_ptr );
 
-	// Register variable for references checking and destruction.
-	auto mut result_ptr= VariablePtr( move(result) );
+	SetupReferencesInCopyOrMove( names_scope, function_context, result_ptr, variable_for_move, move_operator.src_loc );
+
+	function_context.references_graph.MoveNode( variable_reference_ptr );
+	function_context.references_graph.MoveNode( variable_for_move );
+
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
-	*/
-	halt; // TODO - fix this.
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TakeOperator& take_operator ) : Value
