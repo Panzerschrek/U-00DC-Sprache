@@ -964,6 +964,156 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	return nullptr;
 }
 
+void CodeBuilder::BuildConstructorInitialization(
+	const VariablePtr& this_,
+	const Class& base_class,
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::StructNamedInitializer& constructor_initialization_list )
+{
+	ProgramStringSet initialized_fields;
+
+	// Check for errors, build list of initialized fields.
+	bool have_fields_errors= false;
+	bool base_initialized= false;
+	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
+	{
+		if( field_initializer.name == Keywords::base_ )
+		{
+			if( base_class.base_class == nullptr )
+			{
+				have_fields_errors= true;
+				REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), constructor_initialization_list.src_loc_ );
+				continue;
+			}
+			if( base_initialized )
+			{
+				have_fields_errors= true;
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+				continue;
+			}
+			base_initialized= true;
+			function_context.base_initialized= false;
+			continue;
+		}
+
+		const Value* const class_member= base_class.members->GetThisScopeValue( field_initializer.name );
+		if( class_member == nullptr )
+		{
+			have_fields_errors= true;
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+			continue;
+		}
+
+		const ClassField* const field= class_member->GetClassField();
+		if( field == nullptr )
+		{
+			have_fields_errors= true;
+			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+			continue;
+		}
+		if( field->class_ != &base_class )
+		{
+			have_fields_errors= true;
+			REPORT_ERROR( InitializerForBaseClassField, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+			continue;
+		}
+
+		if( initialized_fields.find( field_initializer.name ) != initialized_fields.end() )
+		{
+			have_fields_errors= true;
+			REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+			continue;
+		}
+
+		initialized_fields.insert( field_initializer.name );
+		function_context.uninitialized_this_fields.insert( field->syntax_element->name );
+	} // for fields initializers
+
+	if( have_fields_errors )
+		return;
+
+	const StackVariablesStorage temp_variables_storage( function_context );
+
+	// Initialize fields, missing in initializer list.
+	for( const std::string& field_name : base_class.fields_order )
+	{
+		if( field_name.empty() || initialized_fields.count(field_name) != 0 )
+			continue;
+
+		const ClassField& field= *base_class.members->GetThisScopeValue( field_name )->GetClassField();
+
+		if( field.is_reference )
+		{
+			if( field.syntax_element->initializer == nullptr )
+			{
+				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_name );
+				continue;
+			}
+			InitializeReferenceClassFieldWithInClassIninitalizer( this_, field, function_context );
+		}
+		else
+		{
+			const VariablePtr field_variable=
+				AccessClassField( names_scope, function_context, this_, field, field_name, constructor_initialization_list.src_loc_ ).GetVariable();
+			U_ASSERT( field_variable != nullptr );
+
+			if( field.syntax_element->initializer != nullptr )
+				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
+			else
+				ApplyEmptyInitializer( field_name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
+		}
+	}
+
+	// Initialize base (if it is not listed).
+	if( !base_initialized && base_class.base_class != nullptr )
+	{
+		// Apply default initializer for base class.
+
+		// It is safe to access "base" as child node here since it is possible to call only constructor but not any virtual method.
+		const VariablePtr base_variable= AccessClassBase( this_, function_context );
+
+		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
+		function_context.base_initialized= true;
+	}
+
+	// Initialize fields listed in the initializer.
+	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
+	{
+		if( field_initializer.name == Keywords::base_ )
+		{
+			// It is safe to access "base" as child node here since it is possible to call only constructor but not any virtual method.
+			const VariablePtr base_variable= AccessClassBase( this_, function_context );
+
+			ApplyInitializer( base_variable, names_scope, function_context, field_initializer.initializer );
+			function_context.base_initialized= true;
+			continue;
+		}
+
+		const Value* const class_member=
+			base_class.members->GetThisScopeValue( field_initializer.name );
+		U_ASSERT( class_member != nullptr );
+		const ClassField* const field= class_member->GetClassField();
+		U_ASSERT( field != nullptr );
+
+		if( field->is_reference )
+			InitializeReferenceField( this_, *field, field_initializer.initializer, names_scope, function_context );
+		else
+		{
+			const VariablePtr field_variable=
+				AccessClassField( names_scope, function_context, this_, *field, field_initializer.name, constructor_initialization_list.src_loc_ ).GetVariable();
+			U_ASSERT( field_variable != nullptr );
+
+			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
+		}
+
+		function_context.uninitialized_this_fields.erase( field->syntax_element->name );
+	} // for fields initializers
+
+	CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
+	SetupVirtualTablePointers( this_->llvm_value, base_class, function_context );
+}
+
 llvm::Constant* CodeBuilder::InitializeReferenceField(
 	const VariablePtr& variable,
 	const ClassField& field,

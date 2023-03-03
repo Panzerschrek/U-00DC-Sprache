@@ -479,13 +479,6 @@ private:
 		const Synt::Block& block,
 		const Synt::StructNamedInitializer* constructor_initialization_list );
 
-	void BuildConstructorInitialization(
-		const VariablePtr& this_,
-		const Class& base_class,
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		const Synt::StructNamedInitializer& constructor_initialization_list );
-
 	// Expressions.
 	VariablePtr BuildExpressionCodeEnsureVariable(
 		const Synt::Expression& expression,
@@ -783,6 +776,13 @@ private:
 		const SrcLoc& src_loc,
 		NamesScope& block_names,
 		FunctionContext& function_context );
+
+	void BuildConstructorInitialization(
+		const VariablePtr& this_,
+		const Class& base_class,
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const Synt::StructNamedInitializer& constructor_initialization_list );
 
 	llvm::Constant* InitializeReferenceField(
 		const VariablePtr& variable,
