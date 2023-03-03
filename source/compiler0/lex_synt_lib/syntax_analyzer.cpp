@@ -292,7 +292,7 @@ private:
 	ReturnOperator ParseReturnOperator();
 	WhileOperator ParseWhileOperator();
 	BlockElement ParseForOperator();
-	ForOperator ParseRangeForOperator();
+	RangeForOperator ParseRangeForOperator();
 	CStyleForOperator ParseCStyleForOperator();
 	BreakOperator ParseBreakOperator();
 	ContinueOperator ParseContinueOperator();
@@ -2024,10 +2024,10 @@ BlockElement SyntaxAnalyzer::ParseForOperator()
 	return ParseRangeForOperator();
 }
 
-ForOperator SyntaxAnalyzer::ParseRangeForOperator()
+RangeForOperator SyntaxAnalyzer::ParseRangeForOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ );
-	ForOperator result( it_->src_loc );
+	RangeForOperator result( it_->src_loc );
 	NextLexem();
 
 	ExpectLexem( Lexem::Type::BracketLeft );

@@ -605,12 +605,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::ForOperator& for_operator )
+	const Synt::RangeForOperator& range_for_operator )
 {
 	BlockBuildInfo block_build_info;
 
 	const StackVariablesStorage temp_variables_storage( function_context );
-	const VariablePtr sequence_expression= BuildExpressionCodeEnsureVariable( for_operator.sequence_, names, function_context );
+	const VariablePtr sequence_expression= BuildExpressionCodeEnsureVariable( range_for_operator.sequence_, names, function_context );
 
 	const VariablePtr sequence_lock=
 		std::make_shared<Variable>(
@@ -621,7 +621,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	function_context.variables_state.AddNode( sequence_lock );
 	if( !function_context.variables_state.TryAddLink( sequence_expression, sequence_lock ) )
-		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression->name );
+		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), range_for_operator.src_loc_, sequence_expression->name );
 
 	RegisterTemporaryVariable( function_context, sequence_lock );
 
@@ -635,16 +635,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		for( const Type& element_type : tuple_type->element_types )
 		{
 			const size_t element_index= size_t( &element_type - tuple_type->element_types.data() );
-			const std::string variable_name= for_operator.loop_variable_name_ + std::to_string(element_index);
+			const std::string variable_name= range_for_operator.loop_variable_name_ + std::to_string(element_index);
 			NamesScope loop_names( "", &names );
 			const StackVariablesStorage element_pass_variables_storage( function_context );
 
 			const VariableMutPtr variable_reference=
 				std::make_shared<Variable>(
 					element_type,
-					for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+					range_for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 					Variable::Location::Pointer,
-					for_operator.loop_variable_name_,
+					range_for_operator.loop_variable_name_,
 					nullptr,
 					sequence_expression->constexpr_value == nullptr
 						? nullptr
@@ -653,21 +653,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Do not forget to remove node in case of error-return!!!
 			function_context.variables_state.AddNode( variable_reference );
 
-			if( for_operator.reference_modifier_ == ReferenceModifier::Reference )
+			if( range_for_operator.reference_modifier_ == ReferenceModifier::Reference )
 			{
-				if( for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
+				if( range_for_operator.mutability_modifier_ == MutabilityModifier::Mutable && sequence_expression->value_type != ValueType::ReferenceMut )
 				{
-					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), for_operator.src_loc_ );
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), range_for_operator.src_loc_ );
 					function_context.variables_state.RemoveNode( variable_reference );
 					continue;
 				}
 
 				variable_reference->llvm_value= CreateTupleElementGEP( function_context, *sequence_expression, element_index );
 
-				debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_name, for_operator.src_loc_, function_context );
+				debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_name, range_for_operator.src_loc_, function_context );
 
 				if( !function_context.variables_state.TryAddLink( sequence_lock, variable_reference ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), for_operator.src_loc_, sequence_expression->name );
+					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), range_for_operator.src_loc_, sequence_expression->name );
 			}
 			else
 			{
@@ -676,21 +676,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						element_type,
 						ValueType::Value,
 						Variable::Location::Pointer,
-						for_operator.loop_variable_name_ + " variable itself",
+						range_for_operator.loop_variable_name_ + " variable itself",
 						nullptr,
 						nullptr );
 				function_context.variables_state.AddNode( variable );
 
 				if( !EnsureTypeComplete( element_type ) )
 				{
-					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), for_operator.src_loc_, element_type );
+					REPORT_ERROR( UsingIncompleteType, names.GetErrors(), range_for_operator.src_loc_, element_type );
 					function_context.variables_state.RemoveNode( variable_reference );
 					function_context.variables_state.RemoveNode( variable );
 					continue;
 				}
 				if( !element_type.IsCopyConstructible() )
 				{
-					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, element_type );
+					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), range_for_operator.src_loc_, element_type );
 					function_context.variables_state.RemoveNode( variable_reference );
 					function_context.variables_state.RemoveNode( variable );
 					continue;
@@ -698,9 +698,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( element_type.GetLLVMType(), nullptr, variable_name );
 				CreateLifetimeStart( function_context, variable->llvm_value );
-				debug_info_builder_->CreateVariableInfo( *variable, variable_name, for_operator.src_loc_, function_context );
+				debug_info_builder_->CreateVariableInfo( *variable, variable_name, range_for_operator.src_loc_, function_context );
 
-				SetupReferencesInCopyOrMove( function_context, variable, sequence_expression, names.GetErrors(), for_operator.src_loc_ );
+				SetupReferencesInCopyOrMove( function_context, variable, sequence_expression, names.GetErrors(), range_for_operator.src_loc_ );
 
 				BuildCopyConstructorPart(
 					variable->llvm_value,
@@ -717,7 +717,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
 
-			loop_names.AddName( for_operator.loop_variable_name_, Value( variable_reference, for_operator.src_loc_ ) );
+			loop_names.AddName( range_for_operator.loop_variable_name_, Value( variable_reference, range_for_operator.src_loc_ ) );
 
 			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
 			llvm::BasicBlock* const next_basic_block=
@@ -728,10 +728,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size() - 1u; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 			// TODO - create template errors context.
-			const BlockBuildInfo inner_block_build_info= BuildBlock( loop_names, function_context, for_operator.block_ );
+			const BlockBuildInfo inner_block_build_info= BuildBlock( loop_names, function_context, range_for_operator.block_ );
 			if( !inner_block_build_info.have_terminal_instruction_inside )
 			{
-				CallDestructors( element_pass_variables_storage, names, function_context, for_operator.src_loc_ );
+				CallDestructors( element_pass_variables_storage, names, function_context, range_for_operator.src_loc_ );
 				function_context.llvm_ir_builder.CreateBr( next_basic_block );
 				function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
 			}
@@ -739,7 +739,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Variables state for next iteration is combination of variables states in "continue" branches in previous iteration.
 			const bool continue_branches_is_empty= function_context.loops_stack.back().continue_variables_states.empty();
 			if( !continue_branches_is_empty )
-				function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), for_operator.block_.end_src_loc_ );
+				function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), range_for_operator.block_.end_src_loc_ );
 
 			for( ReferencesGraph& variables_state : function_context.loops_stack.back().break_variables_states )
 				break_variables_states.push_back( std::move(variables_state) );
@@ -779,19 +779,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{} // Just keep variables state.
 		// Variables state after tuple-for is combination of variables state of all branches with "break" of all iterations.
 		else if( !break_variables_states.empty() )
-			function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), for_operator.block_.end_src_loc_ );
+			function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), range_for_operator.block_.end_src_loc_ );
 		else
 			block_build_info.have_terminal_instruction_inside= true;
 	}
 	else
 	{
 		// TODO - support array types.
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), for_operator.src_loc_, sequence_expression->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), range_for_operator.src_loc_, sequence_expression->type );
 		return BlockBuildInfo();
 	}
 
 	if( !block_build_info.have_terminal_instruction_inside )
-		CallDestructors( temp_variables_storage, names, function_context, for_operator.src_loc_ );
+		CallDestructors( temp_variables_storage, names, function_context, range_for_operator.src_loc_ );
 
 	return block_build_info;
 }

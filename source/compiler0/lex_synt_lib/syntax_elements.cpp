@@ -184,7 +184,7 @@ WhileOperator::WhileOperator( const SrcLoc& src_loc)
 	, block_(src_loc)
 {}
 
-ForOperator::ForOperator( const SrcLoc& src_loc)
+RangeForOperator::RangeForOperator( const SrcLoc& src_loc)
 	: SyntaxElementBase(src_loc)
 	, block_(src_loc)
 {}

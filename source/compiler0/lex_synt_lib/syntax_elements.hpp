@@ -63,7 +63,7 @@ struct VariablesDeclaration;
 struct AutoVariableDeclaration;
 struct ReturnOperator;
 struct WhileOperator;
-struct ForOperator;
+struct RangeForOperator;
 struct CStyleForOperator;
 struct BreakOperator;
 struct ContinueOperator;
@@ -160,7 +160,7 @@ using BlockElement= std::variant<
 	AutoVariableDeclaration,
 	ReturnOperator,
 	WhileOperator,
-	ForOperator,
+	RangeForOperator,
 	CStyleForOperator,
 	BreakOperator,
 	ContinueOperator,
@@ -590,9 +590,9 @@ struct WhileOperator final : public SyntaxElementBase
 	Block block_;
 };
 
-struct ForOperator final : public SyntaxElementBase
+struct RangeForOperator final : public SyntaxElementBase
 {
-	ForOperator( const SrcLoc& src_loc );
+	RangeForOperator( const SrcLoc& src_loc );
 
 	ReferenceModifier reference_modifier_= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
