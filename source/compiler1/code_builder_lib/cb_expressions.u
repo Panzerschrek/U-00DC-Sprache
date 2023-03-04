@@ -1483,8 +1483,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	var VariablePtr variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, member_access_operator.value.deref() );
-	auto variable_lock= variable_ptr.lock_imut();
-	var Variable& variable= variable_lock.deref();
+	var VariableLite variable= variable_ptr.lock_imut().deref();
 
 	if( !EnsureTypeComplete( variable.t ) )
 	{
@@ -1548,7 +1547,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.location= Variable::Location::Pointer,
-				.name= variable.name + " lock",
+				.name= variable_ptr.lock_imut().deref().name + " lock",
 			};
 			var VariablePtr variable_lock_node( move(variable_lock_node_variable) );
 			function_context.references_graph.AddNode( variable_lock_node );
@@ -1834,30 +1833,38 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::AccessClassBase( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, VariablePtr& variable_ptr, SrcLoc& src_loc ) : VariablePtr
 {
-	auto variable_lock= variable_ptr.lock_imut();
-	var Variable& variable= variable_lock.deref();
+	var size_type base_field_index(0);
+
+	auto mut variable_lock= variable_ptr.lock_mut();
+	var Variable &mut variable= variable_lock.deref();
 
 	auto class_type= variable.t.GetClassType().try_deref();
-	auto base_class= class_type.lock_imut().deref().base_class;
+	var LLVMTypeRef class_llvm_type= class_type.lock_imut().deref().llvm_type;
 
-	var Type base_type= base_class.try_to_non_nullable();
-	var Variable mut base_
+	variable.children.resize( size_type( unsafe( LLVMCountStructElementTypes( class_llvm_type ) ) ) );
 	{
-		.t= base_type,
-		.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-		.location= Variable::Location::Pointer,
-		.llvm_value= CreateReferenceCast( variable.llvm_value, variable.t, base_type, function_context ),
-		.name= variable.name + ".base",
-	};
-
-	var VariablePtr mut base_ptr( move(base_) );
-	function_context.references_graph.AddNode( base_ptr );
-	if( !function_context.references_graph.TryAddLink( variable_ptr, base_ptr ) )
-	{
-		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, variable.name )
+		var VariableNullablePtr prev_node= variable.children[ base_field_index ];
+		if( !prev_node.empty() )
+		{
+			var VariablePtr mut prev_node_non_null= prev_node.try_to_non_nullable();
+			function_context.references_graph.AddNodeIfNotExists( prev_node_non_null );
+			return move(prev_node_non_null);
+		}
 	}
 
-	RegisterTemporaryVariable( function_context, base_ptr );
+	var Variable mut base_
+	{
+		.t= class_type.lock_imut().deref().base_class.try_to_non_nullable(),
+		.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
+		.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, u32(base_field_index) ),
+		.name= variable.name + ".base",
+		.parent= variable_ptr,
+	};
+	var VariablePtr mut base_ptr( move(base_) );
+
+	variable.children[ base_field_index ]= base_ptr;
+
 	return move(base_ptr);
 }
 
@@ -1872,8 +1879,7 @@ fn CodeBuilder::AccessClassField(
 {
 	if( field.index == ~0u ) { return ErrorValue(); }
 
-	auto variable_lock= variable_ptr.lock_imut();
-	var Variable& variable= variable_lock.deref();
+	var VariableLite variable= variable_ptr.lock_imut().deref();
 
 	if( !EnsureTypeComplete( variable.t ) )
 	{
@@ -1903,7 +1909,7 @@ fn CodeBuilder::AccessClassField(
 
 	var LLVMValueRef gep_result= ForceCreateConstantIndexGEP( function_context, class_type.lock_imut().deref().llvm_type, variable.llvm_value, field.index );
 
-	var ust::string8 mut node_name= variable.name;
+	var ust::string8 mut node_name= variable_ptr.lock_imut().deref().name;
 	node_name+= ".";
 	node_name+= field.syntax_element.deref().name;
 
@@ -1988,12 +1994,28 @@ fn CodeBuilder::AccessClassField(
 	}
 	else
 	{
+		with( &mut lock : variable_ptr.lock_mut() )
+		{
+			var Variable& mut v= lock.deref();
+			var LLVMTypeRef class_llvm_type= v.t.GetLLVMType();
+			v.children.resize( size_type( unsafe( LLVMCountStructElementTypes( class_llvm_type ) ) ) );
+
+			var VariableNullablePtr prev_node= v.children[ size_type(field.index) ];
+			if( !prev_node.empty() )
+			{
+				var VariablePtr mut prev_node_non_null= prev_node.try_to_non_nullable();
+				function_context.references_graph.AddNodeIfNotExists( prev_node_non_null );
+				return move(prev_node_non_null);
+			}
+		}
+
 		var Variable mut result
 		{
 			.t= field.t,
 			.location= Variable::Location::Pointer,
 			.value_type= select( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.llvm_value= gep_result,
+			.parent= variable_ptr,
 		};
 		if( variable.constexpr_value != LLVMValueRef::Null )
 		{
@@ -2002,12 +2024,12 @@ fn CodeBuilder::AccessClassField(
 
 		var VariablePtr mut result_ptr( move(result) );
 		function_context.references_graph.AddNode( result_ptr );
-		if( !function_context.references_graph.TryAddLink( variable_ptr, result_ptr ) )
+
+		with( &mut lock : variable_ptr.lock_mut() )
 		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, variable_ptr.lock_imut().deref().name )
+			lock.deref().children[ size_type(field.index) ]= result_ptr;
 		}
 
-		RegisterTemporaryVariable( function_context, result_ptr );
 		return move(result_ptr);
 	}
 }
