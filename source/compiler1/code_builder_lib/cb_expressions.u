@@ -3270,52 +3270,7 @@ fn CodeBuilder::DoCallFunction(
 		{
 			if_var( &conversion_constructor_ : GetConversionConstructor( names_scope, expected_arg_type, arg_ptr.lock_imut().deref().t, src_loc ) )
 			{
-				var Variable mut arg_converted
-				{
-					.t= expected_arg_type,
-					.value_type= ValueType::ReferenceMut,
-					.location= Variable::Location::Pointer,
-					.name= "converted arg " + arg_number_str,
-				};
-
-				if( !function_context.is_functionless_context )
-				{
-					arg_converted.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), g_null_string ) );
-					CreateLifetimeStart( function_context, arg_converted.llvm_value );
-				}
-
-				var VariablePtr mut arg_converted_ptr( move(arg_converted) );
-				function_context.references_graph.AddNode( arg_converted_ptr );
-
-				{
-					// Create temp variables storage for preventing of destruction of "arg".
-					var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-					auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-					DoCallFunction(
-						names_scope,
-						function_context,
-						conversion_constructor_,
-						ust::make_array( arg_converted_ptr, arg_ptr ),
-						ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
-						ArgsEvaluationOrder::Direct,
-						src_loc );
-
-					CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
-				}
-
-				// TODO - remove this. Use separate node for initialization instead.
-				with( &mut lock : arg_converted_ptr.lock_mut() )
-				{
-					lock.deref().value_type= ValueType::Value; // Make value after conversion constructor call.
-				}
-
-				DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy source arg, if needed.
-
-				// Register variable for references checking and destruction.
-				RegisterTemporaryVariable( function_context, arg_converted_ptr );
-
-				arg_ptr= move(arg_converted_ptr);
+				arg_ptr= ConvertVariable( names_scope, function_context, arg_ptr, expected_arg_type, conversion_constructor_, src_loc );
 			}
 		}
 
@@ -3842,6 +3797,70 @@ fn CodeBuilder::BuildTempVariableConstruction(
 			lock.deref().constexpr_value= constexpr_value;
 		}
 	}
+
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return move(result_ptr);
+}
+
+fn CodeBuilder::ConvertVariable(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	VariablePtr& src,
+	Type& dst_type,
+	FunctionVariable& conversion_constructor_,
+	SrcLoc& src_loc ) : VariablePtr
+{
+	auto mut llvm_value= LLVMValueRef::Null;
+	if( !function_context.is_functionless_context )
+	{
+		llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, dst_type.GetLLVMType(), g_null_string ) );
+		CreateLifetimeStart( function_context, llvm_value );
+	}
+
+	var Variable mut result
+	{
+		.t= dst_type,
+		.value_type= ValueType::Value,
+		.location= Variable::Location::Pointer,
+		.llvm_value= llvm_value,
+		.name= "converted " + dst_type.ToString(),
+	};
+
+	var VariablePtr mut result_ptr( move(result) );
+	function_context.references_graph.AddNode( result_ptr );
+
+	{
+		// Create temp variables storage for preventing of destruction of "arg".
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
+		var Variable mut result_for_constructor_call
+		{
+			.t= dst_type,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
+			.llvm_value= llvm_value,
+		};
+		var VariablePtr result_for_constructor_call_ptr( move(result_for_constructor_call) );
+		function_context.references_graph.AddNode( result_for_constructor_call_ptr );
+		function_context.references_graph.AddLink( result_ptr, result_for_constructor_call_ptr );
+
+		DoCallFunction(
+			names_scope,
+			function_context,
+			conversion_constructor_,
+			ust::make_array( result_for_constructor_call_ptr, src ),
+			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+			ArgsEvaluationOrder::Direct,
+			src_loc );
+
+		function_context.references_graph.RemoveNode( result_for_constructor_call_ptr );
+
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
+	}
+
+	DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc ); // Destroy source, if needed.
 
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);

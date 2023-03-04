@@ -420,6 +420,14 @@ private:
 		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
 
+	fn ConvertVariable(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& src,
+		Type& dst_type,
+		FunctionVariable& conversion_constructor_,
+		SrcLoc& src_loc ) : VariablePtr;
 
 	// NonSync stuff
 
