@@ -62,7 +62,7 @@ def ExpectedVariable_ForMove_Test1():
 		struct S
 		{
 			i32 x;
-			fn Foo( this )
+			fn Foo( mut this )
 			{
 				move(x); // Error, moving field
 			}

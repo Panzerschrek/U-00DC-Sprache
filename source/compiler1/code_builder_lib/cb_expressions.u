@@ -500,9 +500,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.llvm_value= v.llvm_value;
 	}
 
-	// Register variable for references checking.
 	auto mut result_ptr= VariablePtr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
+	if( !function_context.references_graph.TryAddLink( v_ptr, result_ptr ) )
+	{
+		REPORT_ERROR( ReferenceProtectionError, names_scope, cast_imut_.src_loc, v.name )
+	}
+
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
 }
@@ -539,9 +543,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.llvm_value= v.llvm_value;
 	}
 
-	// Register variable for references checking.
 	auto mut result_ptr= VariablePtr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
+	if( !function_context.references_graph.TryAddLink( v_ptr, result_ptr ) )
+	{
+		REPORT_ERROR( ReferenceProtectionError, names_scope, cast_mut_.src_loc, v.name )
+	}
+
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
 }
@@ -652,6 +660,29 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	var VariablePtr& variable_for_move= input_nodes.range().front();
 	if( variable_for_move.lock_imut().deref().value_type != ValueType::Value )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "wrong reference" )
+		return ErrorValue();
+	}
+
+	auto mut found_in_variables= false;
+	foreach( & frame : function_context.variables_frames )
+	{
+		foreach( &frame_variable : frame )
+		{
+			if( frame_variable == variable_for_move )
+			{
+				found_in_variables= true;
+				break;
+			}
+		}
+		if( found_in_variables )
+		{
+			break;
+		}
+	}
+
+	if( !found_in_variables )
 	{
 		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "wrong reference" )
 		return ErrorValue();
@@ -1899,9 +1930,13 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 		}
 	}
 
-	// Register variable for references checking.
 	auto mut result_ptr= VariablePtr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
+	if( !function_context.references_graph.TryAddLink( v_ptr, result_ptr ) )
+	{
+		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, v.name )
+	}
+
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
 }
