@@ -3,6 +3,7 @@
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/Support/ConvertUTF.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
@@ -19,6 +20,16 @@ extern "C" void U1_SetStructName(const LLVMTypeRef t, const char* const name)
 extern "C" bool U1_BasicBlockHasPredecessors(const LLVMBasicBlockRef basic_block)
 {
 	return llvm::unwrap(basic_block)->hasNPredecessorsOrMore(1);
+}
+
+extern "C" LLVMValueRef U1_CreateOrphanGEP( const LLVMTypeRef t, const LLVMValueRef poiter, LLVMValueRef* const indices, const uint32_t num_indices )
+{
+	return llvm::wrap( llvm::GetElementPtrInst::Create( llvm::unwrap(t), llvm::unwrap(poiter), llvm::ArrayRef<llvm::Value*>( reinterpret_cast<llvm::Value**>(indices), num_indices ) ) );
+}
+
+extern "C" void U1_InsertInstructionAfterAnother( const LLVMValueRef src_instructuon, const LLVMValueRef instruction_for_insert )
+{
+	llvm::dyn_cast<llvm::Instruction>( llvm::unwrap(instruction_for_insert) )->insertAfter( llvm::dyn_cast<llvm::Instruction>( llvm::unwrap( src_instructuon ) ) );
 }
 
 extern "C" void U1_FunctionAddDereferenceableAttr(const LLVMValueRef function, const uint32_t index, const uint64_t bytes)

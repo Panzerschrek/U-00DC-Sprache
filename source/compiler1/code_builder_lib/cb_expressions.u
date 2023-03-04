@@ -1901,7 +1901,7 @@ fn CodeBuilder::AccessClassField(
 		return ErrorValue();
 	}
 
-	var LLVMValueRef gep_result= CreateClassFieldGEP( function_context, class_type, variable.llvm_value, field );
+	var LLVMValueRef gep_result= ForceCreateConstantIndexGEP( function_context, class_type.lock_imut().deref().llvm_type, variable.llvm_value, field.index );
 
 	var ust::string8 mut node_name= variable.name;
 	node_name+= ".";
