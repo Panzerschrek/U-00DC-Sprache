@@ -963,7 +963,7 @@ fn CodeBuilder::PrepareFunction(
 	// enable_if
 	if_var( &expr : function_declaration.condition )
 	{
-		var Variable condition_variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, global_function_context, expr ).lock_imut().deref();
+		var VariableLite condition_variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, global_function_context, expr ).lock_imut().deref();
 		if( condition_variable.t == bool_type_ )
 		{
 			if( condition_variable.constexpr_value != LLVMValueRef::Null )
@@ -1742,7 +1742,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				LLVMAppendExistingBasicBlock( function_context.llvm_function, function_context.destructor_end_block );
 				LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, function_context.destructor_end_block );
 
-				var Variable this_copy= function_context.this_.try_lock_imut().deref();
+				var VariableLite this_copy= function_context.this_.try_lock_imut().deref();
 				if_var( &class_type : this_copy.t.GetClassType() )
 				{
 					BuildMembersDestructors( function_context, this_copy.llvm_value, class_type );
@@ -2560,7 +2560,7 @@ fn CodeBuilder::GetZeroGEPIndex( this ) : LLVMValueRef
 	return unsafe( LLVMConstNull( fundamental_llvm_types_.i32_ ) );
 }
 
-fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( mut this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef
+fn CodeBuilder::CreateMoveToLLVMRegisterInstruction( mut this, VariableLite& variable, FunctionContext& function_context ) : LLVMValueRef
 {
 	if( variable.constexpr_value != LLVMValueRef::Null )
 	{
@@ -2611,7 +2611,7 @@ fn CodeBuilder::CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Typ
 	halt;
 }
 
-fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, Variable& class_variable, ClassField& field ) : LLVMValueRef
+fn CodeBuilder::CreateClassFieldGEP( this, FunctionContext& function_context, VariableLite& class_variable, ClassField& field ) : LLVMValueRef
 {
 	return CreateClassFieldGEP( function_context, class_variable.t.GetClassType().try_deref(), class_variable.llvm_value, field );
 }
@@ -2683,7 +2683,7 @@ fn CodeBuilder::CreateBaseClassFieldGEP( this, FunctionContext& function_context
 	return unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, class_type.lock_imut().deref().llvm_type, value, $<(indexes[0]), 2u, ".base\0"[0] ) );
 }
 
-fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, Variable& tuple_variable, u32 element_index ) : LLVMValueRef
+fn CodeBuilder::CreateTupleElementGEP( this, FunctionContext& function_context, VariableLite& tuple_variable, u32 element_index ) : LLVMValueRef
 {
 	return CreateTupleElementGEP( function_context, tuple_variable.t.GetTupleType().try_deref(), tuple_variable.llvm_value, element_index );
 }

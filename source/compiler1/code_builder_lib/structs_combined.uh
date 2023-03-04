@@ -308,12 +308,30 @@ struct Variable
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 
 	ust::string8 name;
+
+	// This struct is non-copyable.
+	fn constructor( mut this, Variable& other )= delete;
+	op=( mut this, Variable& other )= delete;
 }
 
 type VariablePtr= ust::shared_ptr_mut</Variable/>;
 type VariableNullablePtr= ust::shared_ptr_nullable_mut</Variable/>;
 
-fn ConstantVariableToString( Type&  t, LLVMValueRef constant_value ) : ust::string8;
+// Used to read important variable fields from VariablePtr without copying heavy reference-checking related fields.
+struct VariableLite
+{
+	Type t;
+	ValueType value_type;
+	Variable::Location location;
+	LLVMValueRef llvm_value;
+	LLVMValueRef constexpr_value;
+
+	fn conversion_constructor( mut this, Variable& v )
+		( t= v.t, value_type= v.value_type, location= v.location, llvm_value= v.llvm_value, constexpr_value= v.constexpr_value )
+	{}
+}
+
+fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::string8;
 
 struct VariableTypeExtended
 {

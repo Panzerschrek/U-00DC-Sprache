@@ -679,8 +679,15 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 	// TODO - check reference conversion possibility.
 
-	var Variable this_= this_ptr.lock_imut().deref(); // TODO - avoid taking copy.
-	var Variable mut this_casted= this_;
+	var VariableLite this_= this_ptr.lock_imut().deref();
+	var Variable mut this_casted
+	{
+		.t= this_.t,
+		.value_type= select( this_.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
+		.name= this_ptr.lock_imut().deref().name + " virtual call casted",
+		.llvm_value= this_.llvm_value,
+	};
 	if( this_.t != function_type.params.front().t )
 	{
 		this_casted.t= function_type.params.front().t;

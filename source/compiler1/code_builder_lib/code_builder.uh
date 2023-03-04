@@ -353,7 +353,14 @@ private:
 		ust::string8& field_name,
 		SrcLoc& src_loc ) : Value;
 
-	fn BuildBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, SrcLoc& src_loc ) : Value;
+	fn BuildBinaryOperator(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		VariableLite& l_var,
+		VariableLite& r_var,
+		BinaryOperatorType operator,
+		SrcLoc& src_loc ) : Value;
 	fn BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
 
 	fn TryCallOverloadedBinaryOperator(
@@ -857,14 +864,14 @@ private:
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
-	fn CreateMoveToLLVMRegisterInstruction( mut this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateMoveToLLVMRegisterInstruction( mut this, VariableLite& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
-	fn CreateClassFieldGEP( this, FunctionContext& function_context, Variable& class_variable, ClassField& field ) : LLVMValueRef;
+	fn CreateClassFieldGEP( this, FunctionContext& function_context, VariableLite& class_variable, ClassField& field ) : LLVMValueRef;
 	fn CreateClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field ) : LLVMValueRef;
 	fn CreateClassParentFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassType::Parent& parent ) : LLVMValueRef;
 	fn CreateBaseClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value ) : LLVMValueRef;
-	fn CreateTupleElementGEP( this, FunctionContext& function_context, Variable& tuple_variable, u32 element_index ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, FunctionContext& function_context, VariableLite& tuple_variable, u32 element_index ) : LLVMValueRef;
 	fn CreateTupleElementGEP( this, FunctionContext& function_context, TupleType& t, LLVMValueRef value, u32 element_index ) : LLVMValueRef;
 	fn CreateArrayElementGEP( this, FunctionContext& function_context, ArrayType& t, LLVMValueRef value, u32 index ) : LLVMValueRef;
 	fn CreateArrayElementGEP( this, FunctionContext& function_context, ArrayType& t, LLVMValueRef value, LLVMValueRef index ) : LLVMValueRef;
