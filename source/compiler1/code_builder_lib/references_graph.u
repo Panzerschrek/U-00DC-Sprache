@@ -83,7 +83,7 @@ fn ReferencesGraph::CreateNodeInnerReference( mut this, VariablePtr& node, Value
 {
 	halt if( value_type == ValueType::Value );
 
-	var Variable mut node_src{ .value_type= value_type, .name= node.lock_imut().deref().name + " inner reference" };
+	var Variable mut node_src{ .value_type= value_type, .location= Variable::Location::Pointer, .name= node.lock_imut().deref().name + " inner reference" };
 	var VariablePtr inner_node( move(node_src) );
 
 	AddNode( inner_node );

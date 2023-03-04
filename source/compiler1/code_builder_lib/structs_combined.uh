@@ -302,8 +302,8 @@ struct Variable
 	}
 
 	Type t;
-	Location location= Location::Pointer;
-	ValueType value_type= ValueType::ReferenceImut;
+	ValueType value_type;
+	Location location;
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 

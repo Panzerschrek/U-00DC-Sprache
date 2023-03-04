@@ -512,6 +512,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		var Variable mut return_node_variable
 		{
 			.value_type= function_context.function_type.return_value_type,
+			.location= Variable::Location::Pointer,
 			.name= "return value",
 		};
 		var VariablePtr return_node( move(return_node_variable) );
@@ -1040,6 +1041,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var Variable mut lock_variable
 	{
 		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
 		.name= sequence_expression.name + " sequence lock",
 	};
 	var VariablePtr sequence_lock_node( move(lock_variable) );
@@ -1623,36 +1625,40 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo
 {
-	var Variable mut condition_variable;
+	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+
+	var bool prev_is_functionless_context= function_context.is_functionless_context;
+	function_context.is_functionless_context= true;
+
+	auto state= SaveFunctionContextState( function_context );
+
+	with( &condition_variable: BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression ).lock_imut().deref() )
 	{
-		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-		var bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
-
-		auto state= SaveFunctionContextState( function_context );
-		condition_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, static_assert_.expression ).lock_imut().deref();
-		RestoreFunctionContextState( function_context, state );
-
-		function_context.is_functionless_context= prev_is_functionless_context;
+		if( condition_variable.t == bool_type_ )
+		{
+			if( condition_variable.constexpr_value != LLVMValueRef::Null )
+			{
+				if( unsafe( LLVMConstIntGetZExtValue( condition_variable.constexpr_value ) ) == 0u64 )
+				{
+					REPORT_ERROR( StaticAssertionFailed, names_scope, static_assert_.src_loc )
+				}
+			}
+			else
+			{
+				REPORT_ERROR( StaticAssertExpressionIsNotConstant, names_scope, static_assert_.src_loc )
+				return BlockElementBuildInfo();
+			}
+		}
+		else
+		{
+			REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names_scope, static_assert_.src_loc )
+			return BlockElementBuildInfo();
+		}
 	}
 
-	if( condition_variable.t != bool_type_ )
-	{
-		REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names_scope, static_assert_.src_loc )
-		return BlockElementBuildInfo();
-	}
-	if( condition_variable.constexpr_value == LLVMValueRef::Null )
-	{
-		REPORT_ERROR( StaticAssertExpressionIsNotConstant, names_scope, static_assert_.src_loc )
-		return BlockElementBuildInfo();
-	}
-
-	if( unsafe( LLVMConstIntGetZExtValue( condition_variable.constexpr_value ) ) == 0u64 )
-	{
-		REPORT_ERROR( StaticAssertionFailed, names_scope, static_assert_.src_loc )
-	}
+	RestoreFunctionContextState( function_context, state );
+	function_context.is_functionless_context= prev_is_functionless_context;
 
 	return BlockElementBuildInfo();
 }

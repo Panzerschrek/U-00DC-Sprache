@@ -26,6 +26,7 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 	var Variable mut dummy
 	{
 		.t= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ),
+		.value_type= ValueType::Value,
 		.location= Variable::Location::LLVMRegister,
 		.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.invalid_type_ ) )
 	};
@@ -833,6 +834,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var Variable mut result
 	{
 		.t= branches_types_imut[0].t,
+		.value_type= ValueType::Value, // set later
 		.location= Variable::Location::Pointer,
 		.name= KeywordToString( Keyword::select_ ),
 	};
@@ -1212,6 +1214,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var Variable mut variable_lock_node_variable
 	{
 		.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
 		.name= "[]",
 	};
 	var VariablePtr variable_lock_node( move(variable_lock_node_variable) );
@@ -1523,6 +1526,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			var Variable mut variable_lock_node_variable
 			{
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+				.location= Variable::Location::Pointer,
 				.name= variable.name + " lock",
 			};
 			var VariablePtr variable_lock_node( move(variable_lock_node_variable) );
@@ -2830,6 +2834,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		var Variable mut r_var_lock_node_variable
 		{
 			.value_type= ValueType::ReferenceImut,
+			.location= Variable::Location::Pointer,
 			.name= r_var.name + " lock",
 		};
 		var VariablePtr r_var_lock_node( move(r_var_lock_node_variable ) );
@@ -2900,6 +2905,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		var Variable mut r_var_lock_node_variable
 		{
 			.value_type= ValueType::ReferenceImut,
+			.location= Variable::Location::Pointer,
 			.name= r_var.name + " lock",
 		};
 		var VariablePtr r_var_lock_node( move(r_var_lock_node_variable ) );
@@ -2947,6 +2953,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		var Variable mut l_var_lock_node_variable
 		{
 			.value_type= ValueType::ReferenceImut,
+			.location= Variable::Location::Pointer,
 			.name= l_var.name + " lock",
 		};
 		var VariablePtr l_var_lock_node( move(l_var_lock_node_variable ) );
@@ -3429,10 +3436,10 @@ fn CodeBuilder::DoCallFunction(
 					is_mutable |= inner_reference.lock_imut().deref().value_type == ValueType::ReferenceMut;
 				}
 
-
 				var Variable mut own_reference_node_variable
 				{
 					.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+					.location= Variable::Location::Pointer,
 					.name= "inner reference lock " + arg_number_str,
 				};
 				var VariablePtr own_reference_node( move(own_reference_node_variable) );
@@ -3459,6 +3466,7 @@ fn CodeBuilder::DoCallFunction(
 			var Variable mut arg_node_variable
 			{
 				.value_type= ValueType::Value,
+				.location= Variable::Location::Pointer,
 				.name= "value arg " + arg_number_str,
 			};
 			var VariablePtr arg_node( move(arg_node_variable) );
@@ -3533,6 +3541,7 @@ fn CodeBuilder::DoCallFunction(
 	{
 		.t= function_type.return_type,
 		.value_type= function_type.return_value_type,
+		.location= Variable::Location::Pointer, // set later
 		.name= "call result " + function_type.return_type.ToString(),
 	};
 

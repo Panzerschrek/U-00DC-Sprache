@@ -1621,6 +1621,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				var Variable mut accesible_variable
 				{
 					.value_type= ValueType::Value,
+					.location= Variable::Location::Pointer,
 					.name= in_param.name + " referenced variable"
 				};
 				var VariablePtr accesible_variable_ptr( move(accesible_variable) );
