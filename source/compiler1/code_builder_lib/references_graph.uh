@@ -23,11 +23,11 @@ public:
 
 	fn CreateNodeInnerReference( mut this, VariablePtr& node, ValueType value_type ) : VariablePtr;
 
-	fn MoveNode( mut this, VariablePtr node );
-	fn NodeIsMoved( this, VariablePtr node ) : bool;
+	fn MoveNode( mut this, VariablePtr& node );
+	fn NodeIsMoved( this, VariablePtr& node ) : bool;
 
-	fn HaveOutgoingLinks( this, VariablePtr from ) : bool;
-	fn HaveOutgoingMutableNodes( this, VariablePtr from ) : bool;
+	fn HaveOutgoingLinks( this, VariablePtr& from ) : bool;
+	fn HaveOutgoingMutableNodes( this, VariablePtr& from ) : bool;
 
 	fn GetNodeInnerReference( this, VariablePtr& node ) : VariableNullablePtr;
 

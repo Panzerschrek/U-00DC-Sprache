@@ -369,7 +369,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			return ErrorValue();
 		}
 
-		auto this_lock= function_context.this_.try_lock_imut();
+		var VariablePtr this_ptr= function_context.this_.try_to_non_nullable();
+		auto this_lock= this_ptr.lock_imut();
 		var Variable& this_= this_lock.deref();
 
 		auto class_type= this_.t.GetClassType().try_deref();
@@ -393,10 +394,18 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.value_type= this_.value_type,
 			.location= Variable::Location::Pointer,
 			.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, base_type, function_context ),
+			.name= KeywordToString( Keyword::base_ ),
 		};
 
-		// TODO - register it.
-		return VariablePtr( move(base_) );
+		var VariablePtr mut base_ptr( move(base_) );
+		function_context.references_graph.AddNode( base_ptr );
+		if( !function_context.references_graph.TryAddLink( this_ptr, base_ptr ) )
+		{
+			REPORT_ERROR( ReferenceProtectionError, names_scope, named_operand.src_loc, this_ptr.lock_imut().deref().name )
+		}
+
+		RegisterTemporaryVariable( function_context, base_ptr );
+		return move(base_ptr);
 	}
 
 	return ResolveValue( names_scope, function_context, named_operand );
@@ -564,9 +573,34 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	// Avoid passing constexpr values trough unsafe expression.
 	if_var( &variable_ptr : result.get</VariablePtr/>() )
 	{
-		auto mut variable_copy= variable_ptr.lock_imut().deref();
+		var Variable mut variable_copy= variable_ptr.lock_imut().deref();
 		variable_copy.constexpr_value= LLVMValueRef::Null;
-		return VariablePtr( move(variable_copy) );
+
+		var ValueType value_type= variable_copy.value_type;
+
+		var VariablePtr mut variable_copy_ptr( move(variable_copy) );
+		function_context.references_graph.AddNode( variable_copy_ptr );
+		if( value_type == ValueType::Value )
+		{
+			var VariableNullablePtr inner_node= function_context.references_graph.GetNodeInnerReference( variable_ptr );
+			if( !inner_node.empty() )
+			{
+				var VariablePtr inner_node_non_null= inner_node.try_to_non_nullable();
+				var VariablePtr own_inner_node= function_context.references_graph.CreateNodeInnerReference( variable_copy_ptr, inner_node_non_null.lock_imut().deref().value_type );
+				function_context.references_graph.AddLink( inner_node_non_null, own_inner_node );
+			}
+		}
+		else
+		{
+			if( !function_context.references_graph.TryAddLink( variable_ptr, variable_copy_ptr ) )
+			{
+				REPORT_ERROR( ReferenceProtectionError, names_scope, unsafe_expression.src_loc, variable_ptr.lock_imut().deref().name )
+			}
+		}
+		function_context.references_graph.MoveNode( variable_ptr );
+
+		RegisterTemporaryVariable( function_context, variable_copy_ptr );
+		return move(variable_copy_ptr);
 	}
 
 	return move(result);

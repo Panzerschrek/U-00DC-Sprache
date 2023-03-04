@@ -95,8 +95,10 @@ fn ReferencesGraph::CreateNodeInnerReference( mut this, VariablePtr& node, Value
 	return inner_node;
 }
 
-fn ReferencesGraph::MoveNode( mut this, VariablePtr node )
+fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 {
+	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+
 	var VariableNullablePtr mut inner_reference_node;
 	{
 		var NodeState &mut node= nodes_[node];
@@ -115,13 +117,17 @@ fn ReferencesGraph::MoveNode( mut this, VariablePtr node )
 	RemoveNodeLinks( node );
 }
 
-fn ReferencesGraph::NodeIsMoved( this, VariablePtr node ) : bool
+fn ReferencesGraph::NodeIsMoved( this, VariablePtr& node ) : bool
 {
+	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+
 	return nodes_[node].moved;
 }
 
-fn ReferencesGraph::HaveOutgoingLinks( this, VariablePtr from ) : bool
+fn ReferencesGraph::HaveOutgoingLinks( this, VariablePtr& from ) : bool
 {
+	halt if( nodes_.find(from).empty() ); // TODO - use debug assert instead.
+
 	foreach( &link : links_ )
 	{
 		if( link.src == from )
@@ -132,8 +138,10 @@ fn ReferencesGraph::HaveOutgoingLinks( this, VariablePtr from ) : bool
 	return false;
 }
 
-fn ReferencesGraph::HaveOutgoingMutableNodes( this, VariablePtr from ) : bool
+fn ReferencesGraph::HaveOutgoingMutableNodes( this, VariablePtr& from ) : bool
 {
+	halt if( nodes_.find(from).empty() ); // TODO - use debug assert instead.
+
 	foreach( &link : links_ )
 	{
 		if( link.src == from )
@@ -149,11 +157,15 @@ fn ReferencesGraph::HaveOutgoingMutableNodes( this, VariablePtr from ) : bool
 
 fn ReferencesGraph::GetNodeInnerReference( this, VariablePtr& node ) : VariableNullablePtr
 {
+	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+
 	return nodes_[node].inner_reference_node;
 }
 
 fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet
 {
+	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+
 	var NodesSet mut nodes_set;
 	GetAllAccessibleVariableNodes_r( node, nodes_set );
 	return move(nodes_set);
@@ -161,6 +173,8 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr& node ) : N
 
 fn ReferencesGraph::GetAccessibleVariableNodesInnerReferences( this, VariablePtr& node ) : NodesSet
 {
+	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+
 	var NodesSet mut nodes_set;
 	GetAccessibleVariableNodesInnerReferences_r( node, nodes_set );
 	return move(nodes_set);
@@ -168,6 +182,8 @@ fn ReferencesGraph::GetAccessibleVariableNodesInnerReferences( this, VariablePtr
 
 fn ReferencesGraph::GetNodeInputLinks( this, VariablePtr& node ) : NodesSet
 {
+	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+
 	var NodesSet mut result;
 
 	foreach( &link : links_ )
