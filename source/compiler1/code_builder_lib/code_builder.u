@@ -373,103 +373,26 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	if( !class_field_ptr.empty() )
 	{
 		auto field_lock= class_field_ptr.try_lock_imut();
-		auto& field= field_lock.deref();
-		auto& field_name= field.syntax_element.deref().name;
-
-		if( field.index == ~0u ){ return ErrorValue(); } // May be in case of error
+		var ClassField& field= field_lock.deref();
+		var ust::string8& field_name= field.syntax_element.deref().name;
 
 		if( function_context.this_.empty() )
 		{
 			REPORT_ERROR( ClassFieldAccessInStaticMethod, names_scope, src_loc, field_name )
 			return ErrorValue();
 		}
-
 		var VariablePtr this_ptr= function_context.this_.try_to_non_nullable();
-		auto this_lock= this_ptr.lock_imut();
-		var Variable& this_= this_lock.deref();
-
-		auto mut this_value_corrected= this_.llvm_value;
-
-		var ClassTypePtr this_class= this_.t.GetClassType().try_deref();
-		auto field_source_class= field.source_class;
-		var ust::shared_ptr_nullable_mut</ClassType/> mut current_class= this_class;
-		while( !current_class.empty() && current_class != field_source_class )
-		{
-			auto base_class= current_class.try_lock_imut().deref().base_class;
-			if( base_class.empty() )
-			{
-				current_class= ust::shared_ptr_nullable_mut</ClassType/>();
-				break;
-			}
-			this_value_corrected= CreateBaseClassFieldGEP( function_context, current_class.try_to_non_nullable(), this_value_corrected );
-			current_class= base_class;
-		}
-
-		if( current_class.empty() )
-		{
-			REPORT_ERROR( AccessOfNonThisClassField, names_scope, src_loc, field_name )
-			return ErrorValue();
-		}
 
 		if( function_context.whole_this_is_unavailable )
 		{
 			if( function_context.uninitialized_this_fields.exists( field_name ) ||
-				( field_source_class != this_class && function_context.uninitialized_this_fields.exists( KeywordToString( Keyword::base_ ) ) ) )
+				( field.source_class != this_ptr.lock_imut().deref().t && function_context.uninitialized_this_fields.exists( KeywordToString( Keyword::base_ ) ) ) )
 			{
 				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, src_loc, field_name )
 			}
 		}
 
-		auto op_name_nt= "." + field_name + "\0";
-		if( field.is_reference )
-		{
-			var Variable mut result
-			{
-				.t= field.t,
-				.location= Variable::Location::Pointer,
-				.value_type= select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-			};
-
-			auto ptr_value= CreateClassFieldGEP( function_context, this_class, this_value_corrected, field );
-			result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, ptr_value );
-			MarkLoadInstructionWithNonNullMetadata( result.llvm_value );
-
-			var VariablePtr mut result_ptr( move(result) );
-			function_context.references_graph.AddNode( result_ptr );
-
-			auto inner_nodes= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( this_ptr );
-			foreach( &inner_node : inner_nodes )
-			{
-				if( !function_context.references_graph.TryAddLink( inner_node, result_ptr ) )
-				{
-					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, inner_node.lock_imut().deref().name )
-				}
-			}
-
-			// Register variable for references checking.
-			RegisterTemporaryVariable( function_context, result_ptr );
-			return move(result_ptr);
-		}
-		else
-		{
-			var Variable mut result
-			{
-				.t= field.t,
-				.location= Variable::Location::Pointer,
-				.value_type= select( this_.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-				.llvm_value= CreateClassFieldGEP( function_context, field_source_class, this_value_corrected, field ),
-			};
-
-			var VariablePtr mut result_ptr( move(result) );
-			function_context.references_graph.AddNode( result_ptr );
-			if( !function_context.references_graph.TryAddLink( this_ptr, result_ptr ) )
-			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, this_ptr.lock_imut().deref().name )
-			}
-
-			RegisterTemporaryVariable( function_context, result_ptr );
-			return move(result_ptr);
-		}
+		return AccessClassField( names_scope, function_context, this_ptr, field, field_name, src_loc );
 	}
 
 	auto class_type_ptr= names_scope_value.Get</ClassType/>();
