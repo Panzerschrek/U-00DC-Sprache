@@ -1114,12 +1114,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		if_var( &variable_ptr : res.get</VariablePtr/>() )
 		{
-			var Type t= variable_ptr.lock_imut().deref().t;
-			if( binary_operator.operator == BinaryOperatorType::NotEqual && t == bool_type_ )
+			auto variable_lock= variable_ptr.lock_imut();
+			var Variable& variable= variable_lock.deref();
+			if( binary_operator.operator == BinaryOperatorType::NotEqual && variable.t == bool_type_ )
 			{
 				// "!=" is implemented via "==", so, invert result.
-				auto variable_lock= variable_ptr.lock_imut();
-				var Variable& variable= variable_lock.deref();
 				var Variable mut result
 				{
 					.t= bool_type_,
@@ -1145,12 +1144,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 			else if( overloaded_operator == OverloadedOperator::CompareOrder &&
 				binary_operator.operator != BinaryOperatorType::CompareOrder &&
-				!t.GetFundamentalType().empty() &&
-				IsSignedInteger( t.GetFundamentalType().try_deref().fundamental_type ) )
+				!variable.t.GetFundamentalType().empty() &&
+				IsSignedInteger( variable.t.GetFundamentalType().try_deref().fundamental_type ) )
 			{
-				auto variable_lock= variable_ptr.lock_imut();
-				var Variable& variable= variable_lock.deref();
-
 				var Variable mut result
 				{
 					.t= bool_type_,
@@ -1774,8 +1770,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 {
 	var Type t= PrepareType( names_scope, function_context, type_name );
 	var VariablePtr v_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression );
-	auto v_lock= v_ptr.lock_imut();
-	var Variable& v= v_lock.deref();
+	var VariableLite v= v_ptr.lock_imut().deref();
 
 	var Variable mut result
 	{
@@ -1839,7 +1834,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 	function_context.references_graph.AddNode( result_ptr );
 	if( !function_context.references_graph.TryAddLink( v_ptr, result_ptr ) )
 	{
-		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, v.name )
+		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, v_ptr.lock_imut().deref().name )
 	}
 
 	RegisterTemporaryVariable( function_context, result_ptr );
@@ -2012,12 +2007,12 @@ fn CodeBuilder::AccessDirectClassField(
 	}
 	else
 	{
-		with( &mut lock : variable_ptr.lock_mut() )
-		{
-			var Variable& mut v= lock.deref();
-			var LLVMTypeRef class_llvm_type= v.t.GetLLVMType();
-			v.children.resize( size_type( unsafe( LLVMCountStructElementTypes( class_llvm_type ) ) ) );
+		auto mut lock= variable_ptr.lock_mut();
+		var Variable& mut v= lock.deref();
 
+		var LLVMTypeRef class_llvm_type= v.t.GetLLVMType();
+		v.children.resize( size_type( unsafe( LLVMCountStructElementTypes( class_llvm_type ) ) ) );
+		{
 			var VariableNullablePtr prev_node= v.children[ size_type(field.index) ];
 			if( !prev_node.empty() )
 			{
@@ -2043,10 +2038,7 @@ fn CodeBuilder::AccessDirectClassField(
 		var VariablePtr mut result_ptr( move(result) );
 		function_context.references_graph.AddNode( result_ptr );
 
-		with( &mut lock : variable_ptr.lock_mut() )
-		{
-			lock.deref().children[ size_type(field.index) ]= result_ptr;
-		}
+		v.children[ size_type(field.index) ]= result_ptr;
 
 		return move(result_ptr);
 	}
