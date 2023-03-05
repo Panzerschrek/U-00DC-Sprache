@@ -395,7 +395,11 @@ fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ cha
 
 fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& param )
 {
-	if( param.value_type != ValueType::Value )
+	if( param.value_type == ValueType::Value )
+	{
+		EncodeTypeName( mangler_state, param.t );
+	}
+	else
 	{
 		ADD_NODE( mangler_state )
 		{
@@ -413,10 +417,6 @@ fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& pa
 				}
 			}
 		}
-	}
-	else
-	{
-		EncodeTypeName( mangler_state, param.t );
 	}
 }
 
