@@ -418,20 +418,6 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test11",
 		"TypesMismtach_ForAutoReturnValue_Test0",
 		"TypesMismtach_ForAutoReturnValue_Test1",
-
-		"TupleElementChildNodes_Test0",
-		"TupleElementNodes_Test1",
-		"TupleElementNodes_Test7",
-		"TupleElementNodes_Test9",
-		"TupleElementNodes_Test15",
-		"TupleElementNodes_Test17",
-		"TupleElementNodes_Test18",
-		"TupleElementNodes_Test19",
-		"TupleElementNodes_Test20",
-		"TupleElementNodes_Test24",
-		"TupleElementNodes_Test25",
-		"TupleElementNodes_Test27",
-		"TupleElementNodes_Test28",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )
