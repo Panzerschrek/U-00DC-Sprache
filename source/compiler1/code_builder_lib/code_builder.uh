@@ -353,6 +353,15 @@ private:
 		ust::string8& field_name,
 		SrcLoc& src_loc ) : Value;
 
+	fn AccessDirectClassField(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& variable_ptr,
+		ClassField& field,
+		ust::string8& field_name,
+		SrcLoc& src_loc ) : VariablePtr;
+
 	fn BuildBinaryOperator(
 		mut this,
 		NamesScopePtr& names_scope,

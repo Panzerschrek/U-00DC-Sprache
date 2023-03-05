@@ -1864,6 +1864,7 @@ fn CodeBuilder::AccessClassBase( mut this, NamesScopePtr& names_scope, FunctionC
 	var VariablePtr mut base_ptr( move(base_) );
 
 	variable.children[ base_field_index ]= base_ptr;
+	function_context.references_graph.AddNode( base_ptr );
 
 	return move(base_ptr);
 }
@@ -1879,21 +1880,7 @@ fn CodeBuilder::AccessClassField(
 {
 	if( field.index == ~0u ) { return ErrorValue(); }
 
-	var VariableLite variable= variable_ptr.lock_imut().deref();
-
-	if( !EnsureTypeComplete( variable.t ) )
-	{
-		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, variable.t )
-		return ErrorValue();
-	}
-
-	auto class_type_ref= variable.t.GetClassType();
-	if( class_type_ref.empty() )
-	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, variable.t )
-		return ErrorValue();
-	}
-	var ClassTypePtr class_type= class_type_ref.try_deref();
+	var ClassTypePtr class_type= variable_ptr.lock_imut().deref().t.GetClassType().try_deref();
 
 	if( field.source_class != class_type )
 	{
@@ -1907,11 +1894,27 @@ fn CodeBuilder::AccessClassField(
 		return ErrorValue();
 	}
 
+	return AccessDirectClassField( names_scope, function_context, variable_ptr, field, field_name, src_loc );
+}
+
+fn CodeBuilder::AccessDirectClassField(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	VariablePtr& variable_ptr,
+	ClassField& field,
+	ust::string8& field_name,
+	SrcLoc& src_loc ) : VariablePtr
+{
+	var VariableLite variable= variable_ptr.lock_imut().deref();
+	var ClassTypePtr class_type= variable.t.GetClassType().try_deref();
+	halt if( class_type != field.source_class ); // TODO - use debug assert.
+
 	var LLVMValueRef gep_result= ForceCreateConstantIndexGEP( function_context, class_type.lock_imut().deref().llvm_type, variable.llvm_value, field.index );
 
 	var ust::string8 mut node_name= variable_ptr.lock_imut().deref().name;
 	node_name+= ".";
-	node_name+= field.syntax_element.deref().name;
+	node_name+= field_name;
 
 	auto op_name_nt= "." + field_name + "\0";
 
@@ -1967,7 +1970,7 @@ fn CodeBuilder::AccessClassField(
 			}
 			else
 			{
-				return ErrorValue(); // Actual error will be reported in another place.
+				return variable_ptr; // Actual error will be reported in another place.
 			}
 		}
 		else
