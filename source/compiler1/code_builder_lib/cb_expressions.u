@@ -403,10 +403,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		var VariablePtr mut base_ptr( move(base_) );
 		function_context.references_graph.AddNode( base_ptr );
-		if( !function_context.references_graph.TryAddLink( this_ptr, base_ptr ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, named_operand.src_loc, this_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.TryAddLink( this_ptr, base_ptr, names_scope, named_operand.src_loc );
 
 		RegisterTemporaryVariable( function_context, base_ptr );
 		return move(base_ptr);
@@ -507,10 +504,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	auto mut result_ptr= VariablePtr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
-	if( !function_context.references_graph.TryAddLink( v_ptr, result_ptr ) )
-	{
-		REPORT_ERROR( ReferenceProtectionError, names_scope, cast_imut_.src_loc, v.name )
-	}
+	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, cast_imut_.src_loc );
 
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -551,10 +545,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	auto mut result_ptr= VariablePtr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
-	if( !function_context.references_graph.TryAddLink( v_ptr, result_ptr ) )
-	{
-		REPORT_ERROR( ReferenceProtectionError, names_scope, cast_mut_.src_loc, v.name )
-	}
+	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, cast_mut_.src_loc );
 
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -614,10 +605,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			}
 			else
 			{
-				if( !function_context.references_graph.TryAddLink( variable_ptr, variable_copy_ptr ) )
-				{
-					REPORT_ERROR( ReferenceProtectionError, names_scope, unsafe_expression.src_loc, variable_ptr.lock_imut().deref().name )
-				}
+				function_context.references_graph.TryAddLink( variable_ptr, variable_copy_ptr, names_scope, unsafe_expression.src_loc );
 			}
 			function_context.references_graph.MoveNode( variable_ptr );
 
@@ -959,10 +947,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			else
 			{
 				branches_reference_values[i]= branch_result.llvm_value;
-				if( !function_context.references_graph.TryAddLink( branch_result_ptr, result_ptr ) )
-				{
-					REPORT_ERROR( ReferenceProtectionError, names_scope, ternary_operator.src_loc, branch_result_ptr.lock_imut().deref().name )
-				}
+				function_context.references_graph.TryAddLink( branch_result_ptr, result_ptr, names_scope, ternary_operator.src_loc );
 			}
 
 			CallDestructorsForTopVariablesFrame( names_scope, function_context, ternary_operator.src_loc );
@@ -1244,10 +1229,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		};
 		var VariablePtr variable_lock_node( move(variable_lock_node_variable) );
 		function_context.references_graph.AddNode( variable_lock_node );
-		if( !function_context.references_graph.TryAddLink( variable_ptr, variable_lock_node ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, indexation_operator.src_loc, variable_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.TryAddLink( variable_ptr, variable_lock_node, names_scope, indexation_operator.src_loc );
 
 		var VariableLite index= BuildExpressionCodeEnsureVariable( names_scope, function_context, indexation_operator.index.deref() ).lock_imut().deref();
 
@@ -1839,10 +1821,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 
 	auto mut result_ptr= VariablePtr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
-	if( !function_context.references_graph.TryAddLink( v_ptr, result_ptr ) )
-	{
-		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, v_ptr.lock_imut().deref().name )
-	}
+	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, src_loc );
 
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -2001,10 +1980,7 @@ fn CodeBuilder::AccessDirectClassField(
 		auto inner_nodes= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( variable_ptr );
 		foreach( &inner_node : inner_nodes )
 		{
-			if( !function_context.references_graph.TryAddLink( inner_node, result_ptr ) )
-			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, inner_node.lock_imut().deref().name )
-			}
+			function_context.references_graph.TryAddLink( inner_node, result_ptr, names_scope, src_loc );
 		}
 
 		// Register variable for references checking.
@@ -2906,10 +2882,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		};
 		var VariablePtr r_var_lock_node( move(r_var_lock_node_variable ) );
 		function_context.references_graph.AddNode( r_var_lock_node );
-		if( !function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, r_var_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node, names_scope, src_loc );
 
 		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		var VariableLite l_var= l_var_ptr.lock_imut().deref();
@@ -2977,10 +2950,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		};
 		var VariablePtr r_var_lock_node( move(r_var_lock_node_variable ) );
 		function_context.references_graph.AddNode( r_var_lock_node );
-		if( !function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, r_var_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.TryAddLink( r_var_ptr, r_var_lock_node, names_scope, src_loc );
 
 		var VariablePtr l_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_l.deref() );
 		var VariableLite l_var= l_var_ptr.lock_imut().deref();
@@ -2998,10 +2968,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
 			return ErrorValue();
 		}
-		if( function_context.references_graph.HaveOutgoingLinks( l_var_ptr ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, l_var_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_var_ptr, names_scope, src_loc );
 
 		SetupReferencesInCopyOrMove( names_scope, function_context, l_var_ptr, r_var_ptr, src_loc );
 
@@ -3025,10 +2992,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		};
 		var VariablePtr l_var_lock_node( move(l_var_lock_node_variable ) );
 		function_context.references_graph.AddNode( l_var_lock_node );
-		if( !function_context.references_graph.TryAddLink( l_var_ptr, l_var_lock_node ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, l_var_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.TryAddLink( l_var_ptr, l_var_lock_node, names_scope, src_loc );
 
 		var VariablePtr r_var_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, arg_r.deref() );
 		var VariableLite r_var= r_var_ptr.lock_imut().deref();
@@ -3036,10 +3000,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		function_context.references_graph.RemoveNode( l_var_lock_node );
 
-		if( function_context.references_graph.HaveOutgoingMutableNodes( r_var_ptr ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, r_var_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.EnsureHaveNoOutgoingMutableNodes( r_var_ptr, names_scope, src_loc );
 
 		if( !l_var.t.IsEqualityComparable() )
 		{
@@ -3474,10 +3435,7 @@ fn CodeBuilder::DoCallFunction(
 
 				foreach( &inner_reference : inner_references )
 				{
-					if( !function_context.references_graph.TryAddLink( inner_reference, own_inner_reference ) )
-					{
-						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, inner_reference.lock_imut().deref().name )
-					}
+					function_context.references_graph.TryAddLink( inner_reference, own_inner_reference, names_scope, src_loc );
 				}
 			}
 
@@ -3565,11 +3523,7 @@ fn CodeBuilder::DoCallFunction(
 			var VariablePtr arg_node( move(arg_node_variable) );
 			args_nodes[arg_n]= arg_node;
 			function_context.references_graph.AddNode( arg_node );
-
-			if( !function_context.references_graph.TryAddLink( arg_ptr, arg_node ) )
-			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, arg_ptr.lock_imut().deref().name )
-			}
+			function_context.references_graph.TryAddLink( arg_ptr, arg_node, names_scope, src_loc );
 
 			if( expected_arg_type.GetInnerReferenceKind() != InnerReferenceKind::None )
 			{
@@ -3592,10 +3546,7 @@ fn CodeBuilder::DoCallFunction(
 
 				foreach( &inner_reference : inner_references )
 				{
-					if( !function_context.references_graph.TryAddLink( inner_reference, own_reference_node ) )
-					{
-						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, inner_reference.lock_imut().deref().name )
-					}
+					function_context.references_graph.TryAddLink( inner_reference, own_reference_node, names_scope, src_loc );
 				}
 			}
 		}
@@ -3724,19 +3675,13 @@ fn CodeBuilder::DoCallFunction(
 
 			if( param_reference.reference_index == FunctionType::c_param_reference_number )
 			{
-				if( !function_context.references_graph.TryAddLink( arg_node_non_null, result_ptr ) )
-				{
-					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, arg_node_non_null.lock_imut().deref().name )
-				}
+				function_context.references_graph.TryAddLink( arg_node_non_null, result_ptr, names_scope, src_loc );
 			}
 			if( param_reference.reference_index == 0u8 )
 			{
 				foreach( &inner_node : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg_node_non_null ) )
 				{
-					if( !function_context.references_graph.TryAddLink( inner_node, result_ptr ) )
-					{
-						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, inner_node.lock_imut().deref().name )
-					}
+					function_context.references_graph.TryAddLink( inner_node, result_ptr, names_scope, src_loc );
 				}
 			}
 		}
@@ -3786,19 +3731,13 @@ fn CodeBuilder::DoCallFunction(
 
 			if( param_reference.reference_index == FunctionType::c_param_reference_number )
 			{
-				if( !function_context.references_graph.TryAddLink( arg_node_non_null, inner_node ) )
-				{
-					REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, arg_node_non_null.lock_imut().deref().name )
-				}
+				function_context.references_graph.TryAddLink( arg_node_non_null, inner_node, names_scope, src_loc );
 			}
 			if( param_reference.reference_index == 0u8 )
 			{
 				foreach( &dst_inner_node_id : function_context.references_graph.GetAccessibleVariableNodesInnerReferences( arg_node_non_null ) )
 				{
-					if( !function_context.references_graph.TryAddLink( dst_inner_node_id, inner_node ) )
-					{
-						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, dst_inner_node_id.lock_imut().deref().name )
-					}
+					function_context.references_graph.TryAddLink( dst_inner_node_id, inner_node, names_scope, src_loc );
 				}
 			}
 		}
@@ -3866,10 +3805,7 @@ fn CodeBuilder::DoCallFunction(
 
 				foreach( & src_node : src_nodes )
 				{
-					if( !function_context.references_graph.TryAddLink( src_node, inner_reference_node_no_null ) )
-					{
-						REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, src_node.lock_imut().deref().name )
-					}
+					function_context.references_graph.TryAddLink( src_node, inner_reference_node_no_null, names_scope, src_loc );
 				}
 			}
 		}

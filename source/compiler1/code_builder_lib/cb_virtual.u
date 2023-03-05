@@ -839,10 +839,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 		var VariablePtr mut this_casted_ptr( move(this_casted) );
 		function_context.references_graph.AddNode( this_casted_ptr );
-		if( !function_context.references_graph.TryAddLink( this_ptr, this_casted_ptr ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, this_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.TryAddLink( this_ptr, this_casted_ptr, names_scope, src_loc );
 		RegisterTemporaryVariable( function_context, this_casted_ptr );
 		return ust::make_tuple( move(this_casted_ptr), function_ptr );
 	}

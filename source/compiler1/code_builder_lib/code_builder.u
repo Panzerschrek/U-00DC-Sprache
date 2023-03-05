@@ -2094,10 +2094,7 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 
 		foreach( src_inner_reference_node : src_inner_reference_nodes )
 		{
-			if( !references_graph.TryAddLink( src_inner_reference_node, dst_inner_reference_node_non_null ) )
-			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, dst_inner_reference_node_non_null.lock_imut().deref().name )
-			}
+			references_graph.TryAddLink( src_inner_reference_node, dst_inner_reference_node_non_null, names_scope, src_loc );
 		}
 	}
 }

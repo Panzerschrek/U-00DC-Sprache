@@ -75,16 +75,16 @@ fn ReferencesGraph::AddLink( mut this, VariablePtr& from, VariablePtr& to )
 	links_.push_back( link );
 }
 
-fn ReferencesGraph::TryAddLink( mut this, VariablePtr& from, VariablePtr& to ) : bool
+fn ReferencesGraph::TryAddLink( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc )
 {
 	if( ( to.lock_imut().deref().value_type == ValueType::ReferenceMut && HaveOutgoingLinks( from ) ) ||
 		HaveOutgoingMutableNodes( from ) )
 	{
-		return false;
+		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, from.lock_imut().deref().name )
+		return;
 	}
 
 	AddLink( from, to );
-	return true;
 }
 
 fn ReferencesGraph::CreateNodeInnerReference( mut this, VariablePtr& node, ValueType value_type ) : VariablePtr
@@ -195,6 +195,22 @@ fn ReferencesGraph::HaveOutgoingMutableNodes( this, VariablePtr& from ) : bool
 	}
 
 	return false;
+}
+
+fn ReferencesGraph::EnsureHaveNoOutgoingLinks( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	if( HaveOutgoingLinks( from ) )
+	{
+		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, from.lock_imut().deref().name )
+	}
+}
+
+fn ReferencesGraph::EnsureHaveNoOutgoingMutableNodes( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc )
+{
+	if( HaveOutgoingMutableNodes( from ) )
+	{
+		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, from.lock_imut().deref().name )
+	}
 }
 
 fn ReferencesGraph::GetNodeInnerReference( this, VariablePtr& node ) : VariableNullablePtr

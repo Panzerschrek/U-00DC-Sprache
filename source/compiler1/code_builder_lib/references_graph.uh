@@ -18,8 +18,8 @@ public:
 	fn RemoveNode( mut this, VariablePtr& node );
 	fn AddLink( mut this, VariablePtr& from, VariablePtr& to );
 
-	// Returns "false" in case of ReferenceProtectionError.
-	fn TryAddLink( mut this, VariablePtr& from, VariablePtr& to ) : bool;
+	// Produces error in case if this link violates reference protection rules.
+	fn TryAddLink( mut this, VariablePtr& from, VariablePtr& to, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
 	fn CreateNodeInnerReference( mut this, VariablePtr& node, ValueType value_type ) : VariablePtr;
 
@@ -28,6 +28,9 @@ public:
 
 	fn HaveOutgoingLinks( this, VariablePtr& from ) : bool;
 	fn HaveOutgoingMutableNodes( this, VariablePtr& from ) : bool;
+
+	fn EnsureHaveNoOutgoingLinks( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
+	fn EnsureHaveNoOutgoingMutableNodes( this, VariablePtr& from, NamesScopePtr& names_scope, SrcLoc& src_loc );
 
 	fn GetNodeInnerReference( this, VariablePtr& node ) : VariableNullablePtr;
 

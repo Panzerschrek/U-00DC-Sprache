@@ -226,10 +226,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				continue;
 			}
 
-			if( !function_context.references_graph.TryAddLink( expression_result_ptr, variable_reference ) )
-			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, variable_declaration.src_loc, expression_result.name )
-			}
+			function_context.references_graph.TryAddLink( expression_result_ptr, variable_reference, names_scope, variable_declaration.src_loc );
 
 			with( &mut lock : variable_reference.lock_mut() )
 			{
@@ -326,10 +323,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			return BlockElementBuildInfo();
 		}
 
-		if( !function_context.references_graph.TryAddLink( expr_ptr, variable_reference ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, auto_variable_declaration.src_loc, expr_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.TryAddLink( expr_ptr, variable_reference, names_scope, auto_variable_declaration.src_loc );
 
 		with( &mut lock : variable_reference.lock_mut() )
 		{
@@ -676,10 +670,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, assignment_operator.src_loc )
 			return BlockElementBuildInfo();
 		}
-		if( function_context.references_graph.HaveOutgoingLinks( l_ptr ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, assignment_operator.src_loc, l.name )
-		}
+		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_ptr, names_scope, assignment_operator.src_loc );
 
 		CreateTypedStore( function_context, r.t, r_in_register, l.llvm_value );
 	}
@@ -720,10 +711,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, additive_assignment_operator.src_loc )
 			return BlockElementBuildInfo();
 		}
-		if( function_context.references_graph.HaveOutgoingLinks( l_var_ptr ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, additive_assignment_operator.src_loc, l_var_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_var_ptr,  names_scope, additive_assignment_operator.src_loc );
 
 		auto op_result= BuildBinaryOperator( names_scope, function_context, l_var, r_var, additive_assignment_operator.operator, additive_assignment_operator.src_loc );
 		auto op_result_variable_ptr_ref= op_result.get</VariablePtr/>();
@@ -1047,10 +1035,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var VariablePtr sequence_lock_node( move(lock_variable) );
 
 	function_context.references_graph.AddNode( sequence_lock_node );
-	if( !function_context.references_graph.TryAddLink( sequence_expression_ptr, sequence_lock_node ) )
-	{
-		REPORT_ERROR( ReferenceProtectionError, names_scope, range_for_operator.src_loc, sequence_expression_ptr.lock_imut().deref().name )
-	}
+	function_context.references_graph.TryAddLink( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
 
 	function_context.variables_frames.back().push_back( sequence_lock_node );
 
@@ -1119,10 +1104,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 				debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), variable_name, range_for_operator.src_loc );
 
-				if( !function_context.references_graph.TryAddLink( sequence_lock_node, variable_reference ) )
-				{
-					REPORT_ERROR( ReferenceProtectionError, names_scope, range_for_operator.src_loc, sequence_lock_node.lock_imut().deref().name )
-				}
+				function_context.references_graph.TryAddLink( sequence_lock_node, variable_reference, names_scope, range_for_operator.src_loc );
 			}
 			else if( range_for_operator.reference_modifier == Synt::ReferenceModifier::None )
 			{
@@ -1477,10 +1459,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		debug_info_builder_.try_deref().CreateReferenceVariableInfo( function_context, variable_reference.lock_imut().deref(), with_operator.variable_name, with_operator.src_loc );
 
-		if( !function_context.references_graph.TryAddLink( expr_ptr, variable_reference ) )
-		{
-			REPORT_ERROR( ReferenceProtectionError, names_scope, with_operator.src_loc, expr_ptr.lock_imut().deref().name )
-		}
+		function_context.references_graph.TryAddLink( expr_ptr, variable_reference, names_scope, with_operator.src_loc );
 	}
 	else if( with_operator.reference_modifier == Synt::ReferenceModifier::None )
 	{
@@ -1748,10 +1727,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		REPORT_ERROR( ExpectedReferenceValue, names_scope, src_loc )
 		return;
 	}
-	if( function_context.references_graph.HaveOutgoingLinks( variable_ptr ) )
-	{
-		REPORT_ERROR( ReferenceProtectionError, names_scope, src_loc, variable_ptr.lock_imut().deref().name )
-	}
+	function_context.references_graph.EnsureHaveNoOutgoingLinks( variable_ptr, names_scope, src_loc );
 
 	// Try process overloaded operator.
 	if( ! variable.t.GetClassType().empty() )
