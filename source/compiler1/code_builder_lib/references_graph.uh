@@ -42,6 +42,13 @@ public:
 private:
 	fn GetAllAccessibleVariableNodes_r( this, VariablePtr& node, NodesSet &mut out_nodes );
 	fn GetAccessibleVariableNodesInnerReferences_r( this, VariablePtr& node, NodesSet &mut out_nodes );
+
+	fn HaveDirectOutgoingLinks( this, VariablePtr& from ) : bool;
+	fn HaveOutgoingLinksIncludingChildrenLinks_r( this, VariablePtr& from ) : bool;
+
+	fn HaveDirectOutgoingMutableNodes( this, VariablePtr& from ) : bool;
+	fn HaveOutgoingMutableNodesIncludingChildrenNodes_r( this, VariablePtr& from ) : bool;
+
 	fn RemoveNodeLinks( mut this, VariablePtr& node );
 
 private:

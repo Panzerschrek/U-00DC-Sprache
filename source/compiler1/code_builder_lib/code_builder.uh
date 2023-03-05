@@ -353,6 +353,15 @@ private:
 		ust::string8& field_name,
 		SrcLoc& src_loc ) : Value;
 
+	fn AccessDirectClassField(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& variable_ptr,
+		ClassField& field,
+		ust::string8& field_name,
+		SrcLoc& src_loc ) : VariablePtr;
+
 	fn BuildBinaryOperator(
 		mut this,
 		NamesScopePtr& names_scope,
@@ -877,6 +886,9 @@ private:
 	fn CreateArrayElementGEP( this, FunctionContext& function_context, ArrayType& t, LLVMValueRef value, LLVMValueRef index ) : LLVMValueRef;
 	fn CreateIndexValue( this, u32 index ) : LLVMValueRef;
 
+	// Create GEP instruction even in functionless context.
+	fn ForceCreateConstantIndexGEP( this, FunctionContext& function_context, LLVMTypeRef t, LLVMValueRef value, u32 index ) : LLVMValueRef;
+
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 
 	fn CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );
@@ -895,8 +907,6 @@ private:
 
 	struct FunctionContextState
 	{
-		LLVMValueRef current_block_last_instruction;
-		LLVMValueRef alloca_block_last_instruction;
 		LLVMBasicBlockRef current_block;
 		ReferencesGraph references_graph;
 	}

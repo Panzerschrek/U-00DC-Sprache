@@ -309,6 +309,11 @@ struct Variable
 
 	ust::string8 name;
 
+	// May be non-null for struct or tuple member nodes.
+	ust::weak_ptr_mut</Variable/> parent;
+	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
+	ust::vector</VariableNullablePtr/> children;
+
 	// This struct is non-copyable.
 	fn constructor( mut this, Variable& other )= delete;
 	op=( mut this, Variable& other )= delete;

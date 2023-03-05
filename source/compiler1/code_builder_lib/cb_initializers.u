@@ -1281,8 +1281,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 	// Function context should contain "this" with class type
 	var VariablePtr this_ptr= function_context.this_.try_to_non_nullable();
-	var VariableLite this_= this_ptr.lock_imut().deref();
-	auto class_type= this_.t.GetClassType().try_deref();
+	auto class_type= this_ptr.lock_imut().deref().t.GetClassType().try_deref();
 	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
 	var NamesScope& class_members= class_members_lock.deref();
@@ -1348,20 +1347,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 	// Initialize fields, missing in initializer list.
 	if( !base_class.empty() && !base_initialized )
 	{
-		var Variable mut base_variable
-		{
-			.t= base_class.try_to_non_nullable(),
-			.value_type= ValueType::ReferenceMut,
-			.location= Variable::Location::Pointer,
-			.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_.llvm_value ),
-		};
-		var VariablePtr base_variable_ptr( move(base_variable) );
-		function_context.references_graph.AddNode( base_variable_ptr );
-		function_context.references_graph.AddLink( this_ptr, base_variable_ptr );
-
+		var VariablePtr base_variable_ptr= AccessClassBase( names_scope, function_context, this_ptr, constructor_initialization_list.src_loc );
 		BuildEmptyInitializer( names_scope, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), constructor_initialization_list.src_loc );
-
-		function_context.references_graph.RemoveNode( base_variable_ptr );
 	}
 
 	// Use initial class members namespace for own fields initializers evaluation.
@@ -1379,17 +1366,6 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
-		var Variable mut field_variable
-		{
-			.t= class_field.t,
-			.value_type= ValueType::ReferenceMut,
-			.location= Variable::Location::Pointer,
-			.llvm_value= CreateClassFieldGEP( function_context, this_, class_field ),
-		};
-		var VariablePtr field_variable_ptr( move(field_variable) );
-		function_context.references_graph.AddNode( field_variable_ptr );
-		function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
-
 		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
@@ -1399,34 +1375,21 @@ fn CodeBuilder::BuildConstructorInitialization(
 				continue;
 			}
 
+			var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, field_name, constructor_initialization_list.src_loc );
 			BuildEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
 		}
 		else
 		{
 			if( class_field.is_reference )
 			{
-				var Variable mut this_copy
-				{
-					.t= this_.t,
-					.value_type= ValueType::ReferenceMut,
-					.location= Variable::Location::Pointer,
-					.llvm_value= this_.llvm_value,
-				};
-				var VariablePtr this_copy_ptr( move(this_copy) );
-				function_context.references_graph.AddNode( this_copy_ptr );
-				function_context.references_graph.AddLink( this_ptr, this_copy_ptr );
-
-				InitializeReferenceField( class_members_initial, function_context, this_copy_ptr, class_field, initializer );
-
-				function_context.references_graph.RemoveNode( this_copy_ptr );
+				InitializeReferenceField( class_members_initial, function_context, this_ptr, class_field, initializer );
 			}
 			else
 			{
+				var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, field_name, constructor_initialization_list.src_loc );
 				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 			}
 		}
-
-		function_context.references_graph.RemoveNode( field_variable_ptr );
 	}
 
 	if( have_fields_errors )
@@ -1439,20 +1402,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 	{
 		if( member_initializer.name == KeywordToString( Keyword::base_ ) )
 		{
-			var Variable mut base_variable
-			{
-				.t= base_class.try_to_non_nullable(),
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_.llvm_value ),
-			};
-			var VariablePtr base_variable_ptr( move(base_variable) );
-			function_context.references_graph.AddNode( base_variable_ptr );
-			function_context.references_graph.AddLink( this_ptr, base_variable_ptr );
-
+			var VariablePtr base_variable_ptr= AccessClassBase( names_scope, function_context, this_ptr, constructor_initialization_list.src_loc );
 			BuildInitializer( names_scope, function_context, base_variable_ptr, member_initializer.initializer.deref() );
-
-			function_context.references_graph.RemoveNode( base_variable_ptr );
 
 			function_context.uninitialized_this_fields.drop( KeywordToString( Keyword::base_ ) );
 			continue;
@@ -1466,37 +1417,12 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		if( class_field.is_reference )
 		{
-			var Variable mut this_copy
-			{
-				.t= this_.t,
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= this_.llvm_value,
-			};
-			var VariablePtr this_copy_ptr( move(this_copy) );
-			function_context.references_graph.AddNode( this_copy_ptr );
-			function_context.references_graph.AddLink( this_ptr, this_copy_ptr );
-
-			InitializeReferenceField( names_scope, function_context, this_copy_ptr, class_field, member_initializer.initializer.deref() );
-
-			function_context.references_graph.RemoveNode( this_copy_ptr );
+			InitializeReferenceField( names_scope, function_context, this_ptr, class_field, member_initializer.initializer.deref() );
 		}
 		else
 		{
-			var Variable mut field_variable
-			{
-				.t= class_field.t,
-				.value_type= ValueType::ReferenceMut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= CreateClassFieldGEP( function_context, this_, class_field ),
-			};
-			var VariablePtr field_variable_ptr( move(field_variable) );
-			function_context.references_graph.AddNode( field_variable_ptr );
-			function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
-
+			var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, member_initializer.name, member_initializer.src_loc );
 			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer.deref() );
-
-			function_context.references_graph.RemoveNode( field_variable_ptr );
 		}
 
 		function_context.uninitialized_this_fields.drop( member_initializer.name );
