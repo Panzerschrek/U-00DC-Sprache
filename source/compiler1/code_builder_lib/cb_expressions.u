@@ -28,7 +28,8 @@ fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& name
 		.t= FundamentalType( U_FundamentalType::InvalidType, fundamental_llvm_types_.invalid_type_ ),
 		.value_type= ValueType::Value,
 		.location= Variable::Location::LLVMRegister,
-		.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.invalid_type_ ) )
+		.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.invalid_type_ ) ),
+		.name= "error value"
 	};
 	var VariablePtr mut dummy_ptr( move(dummy) );
 	function_context.references_graph.AddNode( dummy_ptr );
@@ -139,8 +140,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.name= KeywordToString( select( boolean_constant.value ? Keyword::true_ : Keyword::false_ ) ),
 		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ) ),
+		.name= KeywordToString( select( boolean_constant.value ? Keyword::true_ : Keyword::false_ ) ),
 	};
 	res.llvm_value= res.constexpr_value;
 
@@ -281,6 +282,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.value_type= ValueType::ReferenceImut,
 			.llvm_value= global_value,
 			.constexpr_value= constexpr_value,
+			.name= "string literal",
 		};
 		var VariablePtr mut res_ptr( move(res) );
 		function_context.references_graph.AddNode( res_ptr );
@@ -336,6 +338,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.value_type= ValueType::Value,
 			.llvm_value= constexpr_value,
 			.constexpr_value= constexpr_value,
+			.name= "char literal",
 		};
 		var VariablePtr mut res_ptr( move(res) );
 		function_context.references_graph.AddNode( res_ptr );
@@ -447,8 +450,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
-		.name= KeywordToString( Keyword::non_sync_ ),
 		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, select( is_non_sync ? 1u64 : 0u64 ), LLVMBool::True ) ),
+		.name= KeywordToString( Keyword::non_sync_ ),
 	};
 	res.llvm_value= res.constexpr_value;
 
@@ -485,6 +488,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.value_type= ValueType::ReferenceImut,
 		.location= Variable::Location::Pointer,
 		.constexpr_value= v.constexpr_value,
+		.name= "cast_imut(" + v.name + ")",
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
@@ -528,6 +532,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= v.t,
 		.value_type= ValueType::ReferenceMut,
 		.location= Variable::Location::Pointer,
+		.name= "cast_mut(" + v.name + ")",
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
@@ -703,8 +708,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= reference.t,
 		.value_type= ValueType::Value,
 		.location= reference.location,
+		.llvm_value= reference.llvm_value,
 		.name= "moved " + reference.name,
-		.llvm_value= reference.llvm_value
 	};
 	var VariablePtr mut result_ptr( move(result) );
 
@@ -873,8 +878,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.t= t,
 		.value_type= value_type,
 		.location= Variable::Location::Pointer,
-		.name= KeywordToString( Keyword::select_ ),
 		.llvm_value= llvm_value,
+		.name= KeywordToString( Keyword::select_ ),
 	};
 	auto mut result_ptr= VariablePtr( move(result) );
 
@@ -1050,7 +1055,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
 		.llvm_value= v.llvm_value, // llvm value of reference is actually value of pointer
-		.name= "ptr",
+		.name= "$>(" + v.name + ")",
 	};
 
 	// Register variable for references checking.
@@ -1084,6 +1089,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.location= Variable::Location::Pointer,
 		.value_type= ValueType::ReferenceMut, // Unlike C++ all raw pointers in Ü are mutable.
 		.llvm_value= CreateMoveToLLVMRegisterInstruction( v, function_context ), // llvm value of reference is actually value of pointer
+		.name= "$<(" + v.name + ")",
 	};
 
 	// Register variable for references checking.
@@ -1234,7 +1240,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
-			.name= "[]",
+			.name= "lock []",
 		};
 		var VariablePtr variable_lock_node( move(variable_lock_node_variable) );
 		function_context.references_graph.AddNode( variable_lock_node );
@@ -1316,7 +1322,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.llvm_value= CreateArrayElementGEP( function_context, variable_array_type, variable.llvm_value, index_value ),
-				.name= "[]",
+				.name= variable_ptr.lock_imut().deref().name + "[]",
 			};
 
 			if( variable.constexpr_value != LLVMValueRef::Null && index.constexpr_value != LLVMValueRef::Null )
@@ -1404,7 +1410,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				.location= Variable::Location::Pointer,
 				.value_type= select( variable.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 				.llvm_value= ForceCreateConstantIndexGEP( function_context, tuple_type.llvm_type, v.llvm_value, u32(type_index) ),
-				.name= "[]",
+				.name= v.name + "[" + ust::to_string8(type_index) + "]",
 				.parent= variable_ptr
 			};
 			if( variable.constexpr_value != LLVMValueRef::Null )
@@ -1777,6 +1783,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 		.t= t,
 		.value_type= select( v.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 		.location= Variable::Location::Pointer,
+		.name= "casted " + v_ptr.lock_imut().deref().name,
 	};
 
 	// TODO - maybe forbid reference casting for ValueType::Value?
@@ -2027,6 +2034,7 @@ fn CodeBuilder::AccessDirectClassField(
 			.location= Variable::Location::Pointer,
 			.value_type= select( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, field.index ),
+			.name= v.name + "." + field_name,
 			.parent= variable_ptr,
 		};
 		if( variable.constexpr_value != LLVMValueRef::Null )
@@ -3902,7 +3910,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 		return ErrorValue();
 	}
 
-	auto mut name= "temp " + t.ToString();
+	var ust::string8 mut name= "temp " + t.ToString();
 
 	var Variable mut result
 	{
@@ -3932,6 +3940,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 			.value_type= ValueType::ReferenceMut,
 			.location= Variable::Location::Pointer,
 			.llvm_value= llvm_value,
+			.name= name,
 		};
 		var VariablePtr variable_for_initialization_ptr( move(variable_for_initialization) );
 		function_context.references_graph.AddNode( variable_for_initialization_ptr );
@@ -3990,6 +3999,7 @@ fn CodeBuilder::ConvertVariable(
 			.value_type= ValueType::ReferenceMut,
 			.location= Variable::Location::Pointer,
 			.llvm_value= llvm_value,
+			.name= "converted " + dst_type.ToString(),
 		};
 		var VariablePtr result_for_constructor_call_ptr( move(result_for_constructor_call) );
 		function_context.references_graph.AddNode( result_for_constructor_call_ptr );

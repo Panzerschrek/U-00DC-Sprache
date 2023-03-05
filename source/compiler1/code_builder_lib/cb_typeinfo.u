@@ -245,6 +245,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		.t= typeinfo_class,
 		.value_type= ValueType::ReferenceImut,
 		.location= Variable::Location::Pointer,
+		.name= Type(typeinfo_class).ToString()
 	};
 
 	var ust::string8 mut variable_name = "_val_of_";

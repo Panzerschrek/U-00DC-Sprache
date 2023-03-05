@@ -685,8 +685,8 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		.t= this_.t,
 		.value_type= select( this_.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 		.location= Variable::Location::Pointer,
-		.name= this_ptr.lock_imut().deref().name + " virtual call casted",
 		.llvm_value= this_.llvm_value,
+		.name= this_ptr.lock_imut().deref().name + " virtual call casted",
 	};
 	if( this_.t != function_type.params.front().t )
 	{

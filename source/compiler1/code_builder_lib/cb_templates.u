@@ -1409,6 +1409,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				.t= size_type_,
 				.value_type= ValueType::Value,
 				.location= Variable::Location::LLVMRegister,
+				.name= "array_size",
 			};
 			size_var.constexpr_value= unsafe( LLVMConstInt( size_type_.GetLLVMType(), given_array_type.element_count, LLVMBool::False ) );
 			size_var.llvm_value= size_var.constexpr_value;
@@ -1609,6 +1610,7 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 					.location= Variable::Location::Pointer,
 					.llvm_value= AddGlobalConstantVariable( param_name + "\0", v.t.GetLLVMType(), v.constexpr_value ),
 					.constexpr_value= v.constexpr_value,
+					.name= param_name,
 				};
 				template_arg.something= VariablePtr( move(out_var) );
 			}

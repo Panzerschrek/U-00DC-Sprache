@@ -150,6 +150,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.value_type= ValueType::ReferenceMut,
 			.location= Variable::Location::Pointer,
 			.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_llvm_value ),
+			.name= KeywordToString( Keyword::base_ ),
 		};
 		var VariablePtr base_variable_ptr( move(base_variable) );
 		function_context.references_graph.AddNode( base_variable_ptr );
@@ -174,7 +175,8 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			.t= class_field.t,
 			.value_type= ValueType::ReferenceMut,
 			.location= Variable::Location::Pointer,
-			.llvm_value= CreateClassFieldGEP( function_context, class_type, this_llvm_value, class_field )
+			.llvm_value= CreateClassFieldGEP( function_context, class_type, this_llvm_value, class_field ),
+			.name= field_pair[0],
 		};
 		var VariablePtr field_variable_ptr( move(field_variable) );
 		function_context.references_graph.AddNode( field_variable_ptr );
@@ -194,6 +196,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 					.llvm_value= this_llvm_value,
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
+					.name= KeywordToString( Keyword::this_ ),
 				};
 				var VariablePtr this_variable_ptr( move(this_variable) );
 				function_context.references_graph.AddNode( this_variable_ptr );

@@ -1196,6 +1196,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 		.t= t,
 		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 		.location= Variable::Location::Pointer,
+		.name= variable_declaration.name,
 	};
 	auto mut variable_ptr= VariablePtr( move(variable) );
 
@@ -1345,6 +1346,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	{
 		.location= Variable::Location::Pointer,
 		.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.name= auto_variable_declaration.name,
 	};
 
 	var VariablePtr expr_ptr= BuildExpressionCodeEnsureVariable( names_scope_ptr, function_context, auto_variable_declaration.initializer_expression );

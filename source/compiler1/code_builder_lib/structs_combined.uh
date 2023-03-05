@@ -307,7 +307,7 @@ struct Variable
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 
-	ust::string8 name;
+	ust::string8 name; // Used only for error reporting and derived variables names.
 
 	// May be non-null for struct or tuple member nodes.
 	ust::weak_ptr_mut</Variable/> parent;

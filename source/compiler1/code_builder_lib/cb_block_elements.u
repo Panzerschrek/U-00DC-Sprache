@@ -128,8 +128,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				.t= t,
 				.value_type= ValueType::Value,
 				.location= Variable::Location::Pointer,
+				.llvm_value= llvm_value,
 				.name= variable_declaration.name,
-				.llvm_value= llvm_value
 			};
 
 			debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, variable_declaration.name, variable_declaration.src_loc );
@@ -145,8 +145,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 					.t= t,
 					.value_type= ValueType::ReferenceMut,
 					.location= Variable::Location::Pointer,
-					.name= variable_declaration.name,
 					.llvm_value= llvm_value,
+					.name= variable_declaration.name,
 				};
 
 				var VariablePtr variable_for_initialization_ptr( move(variable_for_initialization) );
@@ -376,8 +376,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			.t= expr.t,
 			.value_type= ValueType::Value,
 			.location= Variable::Location::Pointer,
+			.llvm_value= llvm_value,
 			.name= auto_variable_declaration.name,
-			.llvm_value= llvm_value
 		};
 
 		debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, auto_variable_declaration.name, auto_variable_declaration.src_loc );
@@ -1520,8 +1520,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			.t= expr.t,
 			.value_type= ValueType::Value,
 			.location= Variable::Location::Pointer,
+			.llvm_value= llvm_value,
 			.name= with_operator.variable_name,
-			.llvm_value= llvm_value
 		};
 
 		debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, with_operator.variable_name, with_operator.src_loc );

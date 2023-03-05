@@ -701,6 +701,7 @@ fn CodeBuilder::ResolveValue(
 					.location= Variable::Location::Pointer,
 					.llvm_value= element.try_deref().llvm_value,
 					.constexpr_value= element.try_deref().constexpr_value,
+					.name= name_component_name,
 				};
 
 				current_value= move(v);
