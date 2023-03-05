@@ -1920,8 +1920,6 @@ fn CodeBuilder::AccessDirectClassField(
 	var ClassTypePtr class_type= variable.t.GetClassType().try_deref();
 	halt if( class_type != field.source_class ); // TODO - use debug assert.
 
-	var LLVMValueRef gep_result= ForceCreateConstantIndexGEP( function_context, class_type.lock_imut().deref().llvm_type, variable.llvm_value, field.index );
-
 	var ust::string8 mut node_name= variable_ptr.lock_imut().deref().name;
 	node_name+= ".";
 	node_name+= field_name;
@@ -1985,6 +1983,7 @@ fn CodeBuilder::AccessDirectClassField(
 		}
 		else
 		{
+			var LLVMValueRef gep_result= CreateClassFieldGEP( function_context, variable, field );
 			result.llvm_value= CreateTypedReferenceLoad( function_context, field.t, gep_result );
 			MarkLoadInstructionWithNonNullMetadata( result.llvm_value ); // Reference field is never null.
 		}
@@ -2027,7 +2026,7 @@ fn CodeBuilder::AccessDirectClassField(
 			.t= field.t,
 			.location= Variable::Location::Pointer,
 			.value_type= select( variable.value_type == ValueType::ReferenceMut && field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
-			.llvm_value= gep_result,
+			.llvm_value= ForceCreateConstantIndexGEP( function_context, class_llvm_type, variable.llvm_value, field.index ),
 			.parent= variable_ptr,
 		};
 		if( variable.constexpr_value != LLVMValueRef::Null )
