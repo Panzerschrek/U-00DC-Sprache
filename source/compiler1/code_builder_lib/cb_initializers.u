@@ -1249,7 +1249,7 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 					select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
 			}
 
-			auto inner_reference_node_non_null= inner_reference_node.try_to_non_nullable();
+			var VariablePtr inner_reference_node_non_null= inner_reference_node.try_to_non_nullable();
 			auto inner_reference_value_type= inner_reference_node_non_null.lock_imut().deref().value_type;
 			if(
 				(  field.is_mutable && inner_reference_value_type != ValueType::ReferenceMut ) ||

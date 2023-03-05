@@ -711,7 +711,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, additive_assignment_operator.src_loc )
 			return BlockElementBuildInfo();
 		}
-		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_var_ptr,  names_scope, additive_assignment_operator.src_loc );
+		function_context.references_graph.EnsureHaveNoOutgoingLinks( l_var_ptr, names_scope, additive_assignment_operator.src_loc );
 
 		auto op_result= BuildBinaryOperator( names_scope, function_context, l_var, r_var, additive_assignment_operator.operator, additive_assignment_operator.src_loc );
 		auto op_result_variable_ptr_ref= op_result.get</VariablePtr/>();
@@ -1033,7 +1033,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		.name= sequence_expression_ptr.lock_imut().deref().name + " sequence lock",
 	};
 	var VariablePtr sequence_lock_node( move(lock_variable) );
-
 	function_context.references_graph.AddNode( sequence_lock_node );
 	function_context.references_graph.TryAddLink( sequence_expression_ptr, sequence_lock_node, names_scope, range_for_operator.src_loc );
 

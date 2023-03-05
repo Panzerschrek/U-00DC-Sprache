@@ -100,7 +100,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	var Variable mut res
+	var Variable mut result
 	{
 		.t= Type( FundamentalType( t, GetFundamentalLLVMType(t) ) ),
 		.location= Variable::Location::LLVMRegister,
@@ -112,30 +112,30 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		if( IsFloatingPoint( t ) )
 		{
-			res.constexpr_value= LLVMConstReal( res.t.GetLLVMType(), numeric_constant.num.value_double );
+			result.constexpr_value= LLVMConstReal( result.t.GetLLVMType(), numeric_constant.num.value_double );
 		}
 		else if( IsSignedInteger( t ) )
 		{
-			res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::True  );
+			result.constexpr_value= LLVMConstInt( result.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::True  );
 		}
 		else if( IsUnsignedInteger( t ) || IsChar( t ) )
 		{
-			res.constexpr_value= LLVMConstInt( res.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::False );
+			result.constexpr_value= LLVMConstInt( result.t.GetLLVMType(), numeric_constant.num.value_int, LLVMBool::False );
 		}
 		else{ halt; }
 	}
-	res.llvm_value= res.constexpr_value;
+	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
-	auto mut res_ptr= VariablePtr( move(res) );
-	function_context.references_graph.AddNode( res_ptr );
-	RegisterTemporaryVariable( function_context, res_ptr );
-	return move(res_ptr);
+	var VariablePtr mut result_ptr( move(result) );
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return move(result_ptr);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value
 {
-	var Variable mut res
+	var Variable mut result
 	{
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
@@ -143,13 +143,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, select( boolean_constant.value ? 1u64 : 0u64 ), LLVMBool::True ) ),
 		.name= KeywordToString( select( boolean_constant.value ? Keyword::true_ : Keyword::false_ ) ),
 	};
-	res.llvm_value= res.constexpr_value;
+	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
-	auto mut res_ptr= VariablePtr( move(res) );
-	function_context.references_graph.AddNode( res_ptr );
-	RegisterTemporaryVariable( function_context, res_ptr );
-	return move(res_ptr);
+	var VariablePtr mut result_ptr( move(result) );
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return move(result_ptr);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StringLiteral& string_literal ) : Value
@@ -275,7 +275,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.element_count= u64(array_size),
 			.llvm_type= llvm_type,
 		};
-		var Variable mut res
+		var Variable mut result
 		{
 			.t= move(array_type),
 			.location= Variable::Location::Pointer,
@@ -284,10 +284,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.constexpr_value= constexpr_value,
 			.name= "string literal",
 		};
-		var VariablePtr mut res_ptr( move(res) );
-		function_context.references_graph.AddNode( res_ptr );
-		RegisterTemporaryVariable( function_context, res_ptr );
-		return move(res_ptr);
+		var VariablePtr mut result_ptr( move(result) );
+		function_context.references_graph.AddNode( result_ptr );
+		RegisterTemporaryVariable( function_context, result_ptr );
+		return move(result_ptr);
 	}
 	else
 	{
@@ -331,7 +331,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			else{ halt; }
 		}
 
-		var Variable mut res
+		var Variable mut result
 		{
 			.t= FundamentalType( char_type, element_llvm_type ),
 			.location= Variable::Location::LLVMRegister,
@@ -340,10 +340,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			.constexpr_value= constexpr_value,
 			.name= "char literal",
 		};
-		var VariablePtr mut res_ptr( move(res) );
-		function_context.references_graph.AddNode( res_ptr );
-		RegisterTemporaryVariable( function_context, res_ptr );
-		return move(res_ptr);
+		var VariablePtr mut result_ptr( move(result) );
+		function_context.references_graph.AddNode( result_ptr );
+		RegisterTemporaryVariable( function_context, result_ptr );
+		return move(result_ptr);
 	}
 }
 
@@ -442,7 +442,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	var Type t= PrepareType( names_scope, function_context, non_sync_expression.type_name );
 	var bool is_non_sync= GetTypeNonSync( t, names_scope, non_sync_expression.src_loc );
 
-	var Variable mut res
+	var Variable mut result
 	{
 		.t= bool_type_,
 		.location= Variable::Location::LLVMRegister,
@@ -450,13 +450,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, select( is_non_sync ? 1u64 : 0u64 ), LLVMBool::True ) ),
 		.name= KeywordToString( Keyword::non_sync_ ),
 	};
-	res.llvm_value= res.constexpr_value;
+	result.llvm_value= result.constexpr_value;
 
 	// Register variable for references checking.
-	auto mut res_ptr= VariablePtr( move(res) );
-	function_context.references_graph.AddNode( res_ptr );
-	RegisterTemporaryVariable( function_context, res_ptr );
-	return move(res_ptr);
+	var VariablePtr mut result_ptr( move(result) );
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return move(result_ptr);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CastRef& cast_ref_ ) : Value
@@ -502,7 +502,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.llvm_value= v.llvm_value;
 	}
 
-	auto mut result_ptr= VariablePtr( move(result) );
+	var VariablePtr mut result_ptr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
 	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, cast_imut_.src_loc );
 
@@ -543,7 +543,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		result.llvm_value= v.llvm_value;
 	}
 
-	auto mut result_ptr= VariablePtr( move(result) );
+	var VariablePtr mut result_ptr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
 	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, cast_mut_.src_loc );
 
@@ -773,7 +773,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	move(variable_lock);
 
-	auto mut result_ptr= VariablePtr( move(result) );
+	var VariablePtr mut result_ptr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
 
 	SetupReferencesInCopyOrMove( names_scope, function_context, result_ptr, variable_ptr, take_operator.src_loc );
@@ -869,7 +869,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.llvm_value= llvm_value,
 		.name= KeywordToString( Keyword::select_ ),
 	};
-	auto mut result_ptr= VariablePtr( move(result) );
+	var VariablePtr mut result_ptr( move(result) );
 
 	// Do not forget to remove this node in case of error-return!!!
 	function_context.references_graph.AddNode( result_ptr );
@@ -1034,7 +1034,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		.element_type= v.t,
 		.llvm_type= unsafe( LLVMPointerType( v.t.GetLLVMType(), 0u32 ) )
 	};
-	var Variable mut res
+	var Variable mut result
 	{
 		.t= move(t),
 		.location= Variable::Location::LLVMRegister,
@@ -1044,10 +1044,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	};
 
 	// Register variable for references checking.
-	auto mut res_ptr= VariablePtr( move(res) );
-	function_context.references_graph.AddNode( res_ptr );
-	RegisterTemporaryVariable( function_context, res_ptr );
-	return move(res_ptr);
+	var VariablePtr mut result_ptr( move(result) );
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return move(result_ptr);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator ) : Value
@@ -1068,7 +1068,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	var Variable mut res
+	var Variable mut result
 	{
 		.t= pointer_type_ref.try_deref().element_type,
 		.location= Variable::Location::Pointer,
@@ -1078,10 +1078,10 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	};
 
 	// Register variable for references checking.
-	auto mut res_ptr= VariablePtr( move(res) );
-	function_context.references_graph.AddNode( res_ptr );
-	RegisterTemporaryVariable( function_context, res_ptr );
-	return move(res_ptr);
+	var VariablePtr mut result_ptr( move(result) );
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return move(result_ptr);
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
@@ -1312,7 +1312,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32( LLVMConstIntGetZExtValue( index_value ) ) ) );
 			}
 
-			auto mut result_ptr= VariablePtr( move(result) );
+			var VariablePtr mut result_ptr( move(result) );
 			function_context.references_graph.AddNode( result_ptr );
 			function_context.references_graph.AddLink( variable_lock_node, result_ptr );
 			function_context.references_graph.RemoveNode( variable_lock_node );
@@ -1400,7 +1400,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				result.constexpr_value= unsafe( LLVMGetAggregateElement( variable.constexpr_value, u32(type_index) ) );
 			}
 
-			auto mut result_ptr= VariablePtr( move(result) );
+			var VariablePtr mut result_ptr( move(result) );
 			function_context.references_graph.AddNode( result_ptr );
 			v.children[ type_index ]= result_ptr;
 			return move(result_ptr);
@@ -1641,7 +1641,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	auto mut result_ptr= VariablePtr( move(result) );
+	var VariablePtr mut result_ptr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -1684,7 +1684,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	auto mut result_ptr= VariablePtr( move(result) );
+	var VariablePtr mut result_ptr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -1728,7 +1728,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	// Register variable for references checking.
-	auto mut result_ptr= VariablePtr( move(result) );
+	var VariablePtr mut result_ptr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -1819,7 +1819,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 		}
 	}
 
-	auto mut result_ptr= VariablePtr( move(result) );
+	var VariablePtr mut result_ptr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
 	function_context.references_graph.TryAddLink( v_ptr, result_ptr, names_scope, src_loc );
 
@@ -1829,7 +1829,7 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::AccessClassBase( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, VariablePtr& variable_ptr, SrcLoc& src_loc ) : VariablePtr
 {
-	var size_type base_field_index(0);
+	var size_type base_field_index(0); // Base is always first field.
 
 	auto mut variable_lock= variable_ptr.lock_mut();
 	var Variable &mut variable= variable_lock.deref();
@@ -2061,7 +2061,7 @@ fn CodeBuilder::BuildBinaryOperator(
 		is_signed= IsSignedInteger( l_enum_type.try_deref().lock_imut().deref().underlaying_type.fundamental_type );
 	}
 
-	var Variable mut res
+	var Variable mut result
 	{
 		.location= Variable::Location::LLVMRegister,
 		.value_type= ValueType::Value,
@@ -2087,7 +2087,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			int_type= r_fundamental_type.try_deref().fundamental_type;
 			int_size= r_fundamental_type.try_deref().GetSize();
 
-			res.t= l_type;
+			result.t= l_type;
 			ptr_value= l_in_register;
 			index_value= r_in_register;
 		}
@@ -2101,7 +2101,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			int_type= l_fundamental_type.try_deref().fundamental_type;
 			int_size= l_fundamental_type.try_deref().GetSize();
 
-			res.t= r_type;
+			result.t= r_type;
 			ptr_value= r_in_register;
 			index_value= l_in_register;
 		}
@@ -2111,7 +2111,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			return ErrorValue();
 		}
 
-		var Type element_type= res.t.GetRawPointerType().try_deref().element_type;
+		var Type element_type= result.t.GetRawPointerType().try_deref().element_type;
 		if( !EnsureTypeComplete( element_type ) )
 		{
 			// Complete types required for pointer arithmetic.
@@ -2142,7 +2142,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 			if( !function_context.is_functionless_context )
 			{
-				res.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), ptr_value, $<(index_value), 1u, "+\0"[0] );
+				result.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), ptr_value, $<(index_value), 1u, "+\0"[0] );
 			}
 		}
 	}
@@ -2166,7 +2166,7 @@ fn CodeBuilder::BuildBinaryOperator(
 		var U_FundamentalType diff_type= select( pointer_size == 4u ? U_FundamentalType::i32_ : U_FundamentalType::i64_ );
 		var LLVMTypeRef diff_llvm_type= GetFundamentalLLVMType( diff_type );
 
-		res.t= FundamentalType( diff_type, diff_llvm_type );
+		result.t= FundamentalType( diff_type, diff_llvm_type );
 
 		unsafe
 		{
@@ -2186,7 +2186,7 @@ fn CodeBuilder::BuildBinaryOperator(
 					diff= LLVMBuildSub( function_context.llvm_ir_builder, l_as_int, r_as_int, "-\0"[0] ),
 					element_size_contant= LLVMConstInt( diff_llvm_type, element_size, LLVMBool::False ),
 					diff_divided= LLVMBuildExactSDiv( function_context.llvm_ir_builder, diff, element_size_contant, "/\0"[0] );
-				res.llvm_value= diff_divided;
+				result.llvm_value= diff_divided;
 			}
 		}
 	}
@@ -2220,7 +2220,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			return ErrorValue();
 		}
 
-		res.t= l_type;
+		result.t= l_type;
 
 		unsafe
 		{
@@ -2241,7 +2241,7 @@ fn CodeBuilder::BuildBinaryOperator(
 
 			if( !function_context.is_functionless_context )
 			{
-				res.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] );
+				result.llvm_value= LLVMBuildGEP2( function_context.llvm_ir_builder, element_type.GetLLVMType(), l_in_register, $<(index_negative), 1u, "-\0"[0] );
 			}
 		}
 	}
@@ -2276,7 +2276,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			return ErrorValue();
 		}
 
-		res.t= l_type;
+		result.t= l_type;
 
 		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
@@ -2286,73 +2286,73 @@ fn CodeBuilder::BuildBinaryOperator(
 				{
 					if( is_float )
 					{
-						res.llvm_value= LLVMBuildFAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+						result.llvm_value= LLVMBuildFAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+						result.llvm_value= LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
 					}
 				}
 				else if( operator == BinaryOperatorType::Sub )
 				{
 					if( is_float )
 					{
-						res.llvm_value= LLVMBuildFSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+						result.llvm_value= LLVMBuildFSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+						result.llvm_value= LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
 					}
 				}
 				else if( operator == BinaryOperatorType::Mul )
 				{
 					if( is_float )
 					{
-						res.llvm_value= LLVMBuildFMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+						result.llvm_value= LLVMBuildFMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+						result.llvm_value= LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
 					}
 				}
 				else if( operator == BinaryOperatorType::Div )
 				{
 					if( is_float )
 					{
-						res.llvm_value= LLVMBuildFDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+						result.llvm_value= LLVMBuildFDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
 					}
 					else if( is_signed )
 					{
-						res.llvm_value= LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+						result.llvm_value= LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+						result.llvm_value= LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
 					}
 				}
 				else if( operator == BinaryOperatorType::Rem )
 				{
 					if( is_float )
 					{
-						res.llvm_value= LLVMBuildFRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+						result.llvm_value= LLVMBuildFRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
 					}
 					else if( is_signed )
 					{
-						res.llvm_value= LLVMBuildSRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+						result.llvm_value= LLVMBuildSRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildURem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+						result.llvm_value= LLVMBuildURem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
 					}
 				}
 
-				if( LLVMIsConstant( res.llvm_value ) == LLVMBool::True )
+				if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True )
 				{
-					res.constexpr_value= res.llvm_value;
+					result.constexpr_value= result.llvm_value;
 
-					if( LLVMIsUndef( res.constexpr_value ) == LLVMBool::True )
+					if( LLVMIsUndef( result.constexpr_value ) == LLVMBool::True )
 					{
-						res.constexpr_value= LLVMValueRef::Null;
+						result.constexpr_value= LLVMValueRef::Null;
 						REPORT_ERROR( ConstantExpressionResultIsUndefined, names_scope, src_loc )
 					}
 				}
@@ -2380,7 +2380,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			return ErrorValue();
 		}
 
-		res.t= l_type;
+		result.t= l_type;
 
 		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
@@ -2388,15 +2388,15 @@ fn CodeBuilder::BuildBinaryOperator(
 			{
 					 if( operator == BinaryOperatorType::And )
 				{
-					res.llvm_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_in_register, r_in_register, "&\0"[0] );
+					result.llvm_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_in_register, r_in_register, "&\0"[0] );
 				}
 				else if( operator == BinaryOperatorType::Or  )
 				{
-					res.llvm_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_in_register, r_in_register, "|\0"[0] );
+					result.llvm_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_in_register, r_in_register, "|\0"[0] );
 				}
 				else if( operator == BinaryOperatorType::Xor )
 				{
-					res.llvm_value= LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] );
+					result.llvm_value= LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] );
 				}
 			}
 		}
@@ -2417,7 +2417,7 @@ fn CodeBuilder::BuildBinaryOperator(
 		auto mut l_value_for_op= l_in_register;
 		auto mut r_value_for_op= r_in_register;
 
-		res.t= l_type;
+		result.t= l_type;
 
 		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
@@ -2446,17 +2446,17 @@ fn CodeBuilder::BuildBinaryOperator(
 
 				if( operator == BinaryOperatorType::ShiftLeft )
 				{
-					res.llvm_value= LLVMBuildShl( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+					result.llvm_value= LLVMBuildShl( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
 				}
 				else if( operator == BinaryOperatorType::ShiftRight )
 				{
 					if( IsSignedInteger( l_fundamental_type.try_deref().fundamental_type ) )
 					{
-						res.llvm_value= LLVMBuildAShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+						result.llvm_value= LLVMBuildAShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildLShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
+						result.llvm_value= LLVMBuildLShr( function_context.llvm_ir_builder, l_value_for_op, r_value_for_op, g_null_string );
 					}
 				}
 				else{ halt; }
@@ -2476,7 +2476,7 @@ fn CodeBuilder::BuildBinaryOperator(
 			return ErrorValue();
 		}
 
-		res.t= bool_type_;
+		result.t= bool_type_;
 
 		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
@@ -2492,38 +2492,38 @@ fn CodeBuilder::BuildBinaryOperator(
 				{
 					if( is_void )
 					{
-						res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False ); // Two "void" values are always equal.
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 1u64, LLVMBool::False ); // Two "void" values are always equal.
 					}
 					else if( is_float )
 					{
-						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l_in_register, r_in_register, "==\0"[0] );
+						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OEQ, l_in_register, r_in_register, "==\0"[0] );
 					}
 					else if( l_function != LLVMValueRef::Null && r_function != LLVMValueRef::Null )
 					{
-						res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, select( l_function == r_function ? 1u64 : 0u64 ), LLVMBool::False );
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, select( l_function == r_function ? 1u64 : 0u64 ), LLVMBool::False );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l_in_register, r_in_register, "==\0"[0] );
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l_in_register, r_in_register, "==\0"[0] );
 					}
 				}
 				else if( operator == BinaryOperatorType::NotEqual )
 				{
 					if( is_void )
 					{
-						res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False );
 					}
 					else if( is_float )
 					{
-						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::UNE, l_in_register, r_in_register, "!=\0"[0] );
+						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::UNE, l_in_register, r_in_register, "!=\0"[0] );
 					}
 					else if( l_function != LLVMValueRef::Null && r_function != LLVMValueRef::Null )
 					{
-						res.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, select( l_function != r_function ? 1u64 : 0u64 ), LLVMBool::False );
+						result.llvm_value= LLVMConstInt( fundamental_llvm_types_.bool_, select( l_function != r_function ? 1u64 : 0u64 ), LLVMBool::False );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, l_in_register, r_in_register, "!=\0"[0] );
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, l_in_register, r_in_register, "!=\0"[0] );
 					}
 				}
 			}
@@ -2552,7 +2552,7 @@ fn CodeBuilder::BuildBinaryOperator(
 				return ErrorValue();
 		}
 
-		res.t= bool_type_;
+		result.t= bool_type_;
 
 		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
@@ -2562,60 +2562,60 @@ fn CodeBuilder::BuildBinaryOperator(
 				{
 					if( is_float )
 					{
-						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
+						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
 					}
 					else if( is_signed )
 					{
-						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] );
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] );
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] );
 					}
 				}
 				else if( operator == BinaryOperatorType::LessEqual )
 				{
 					if( is_float )
 					{
-						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLE, l_in_register, r_in_register, "<=\0"[0] );
+						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLE, l_in_register, r_in_register, "<=\0"[0] );
 					}
 					else if( is_signed )
 					{
-						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, l_in_register, r_in_register, "<=\0"[0] );
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, l_in_register, r_in_register, "<=\0"[0] );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULE, l_in_register, r_in_register, "<=\0"[0] );
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULE, l_in_register, r_in_register, "<=\0"[0] );
 					}
 				}
 				else if( operator == BinaryOperatorType::Greater )
 				{
 					if( is_float )
 					{
-						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
+						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
 					}
 					else if( is_signed )
 					{
-						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] );
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
 					}
 				}
 				else if( operator == BinaryOperatorType::GreaterEqual )
 				{
 					if( is_float )
 					{
-						res.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGE, l_in_register, r_in_register, ">=\0"[0] );
+						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGE, l_in_register, r_in_register, ">=\0"[0] );
 					}
 					else if( is_signed )
 					{
-						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, l_in_register, r_in_register, ">=\0"[0] );
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, l_in_register, r_in_register, ">=\0"[0] );
 					}
 					else
 					{
-						res.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, l_in_register, r_in_register, ">=\0"[0] );
+						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, l_in_register, r_in_register, ">=\0"[0] );
 					}
 				}
 			}
@@ -2667,7 +2667,7 @@ fn CodeBuilder::BuildBinaryOperator(
 				var LLVMValueRef plus_one= LLVMConstInt( result_llvm_type, 1u64, LLVMBool::True );
 				var LLVMValueRef minus_one= LLVMConstInt( result_llvm_type, ~0u64, LLVMBool::True );
 
-				res.llvm_value=
+				result.llvm_value=
 					LLVMBuildSelect(
 						function_context.llvm_ir_builder,
 						less,
@@ -2676,22 +2676,22 @@ fn CodeBuilder::BuildBinaryOperator(
 						g_null_string );
 			}
 		}
-		res.t= FundamentalType( result_fundamental_type, result_llvm_type );
+		result.t= FundamentalType( result_fundamental_type, result_llvm_type );
 	}
 	else{ halt; }
 
 	if( l_var.constexpr_value != LLVMValueRef::Null &&
 		r_var.constexpr_value != LLVMValueRef::Null &&
-		unsafe( LLVMIsConstant( res.llvm_value ) ) == LLVMBool::True )
+		unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
 	{
-		res.constexpr_value= res.llvm_value;
+		result.constexpr_value= result.llvm_value;
 	}
 
 	// Register variable for references checking.
-	auto mut res_ptr= VariablePtr( move(res) );
-	function_context.references_graph.AddNode( res_ptr );
-	RegisterTemporaryVariable( function_context, res_ptr );
-	return move(res_ptr);
+	var VariablePtr mut result_ptr( move(result) );
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return move(result_ptr);
 }
 
 fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value
@@ -2799,7 +2799,7 @@ fn CodeBuilder::BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, F
 	}
 
 	// Register variable for references checking.
-	auto mut result_ptr= VariablePtr( move(result) );
+	var VariablePtr mut result_ptr( move(result) );
 	function_context.references_graph.AddNode( result_ptr );
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
@@ -3078,7 +3078,7 @@ fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 			}
 		}
 
-		auto mut result_ptr= VariablePtr( move(result) );
+		var VariablePtr mut result_ptr( move(result) );
 		function_context.references_graph.AddNode( result_ptr );
 		RegisterTemporaryVariable( function_context, result_ptr );
 		return move(result_ptr);
@@ -3865,7 +3865,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 	}
 	result.llvm_value= llvm_value;
 
-	auto mut result_ptr= VariablePtr( move(result) );
+	var VariablePtr mut result_ptr( move(result) );
 
 	function_context.references_graph.AddNode( result_ptr );
 

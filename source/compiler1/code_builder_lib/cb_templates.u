@@ -1262,7 +1262,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 		if_var( &given_variable_ptr : given_arg.get</VariablePtr/>() )
 		{
 			auto given_variable_lock= given_variable_ptr.lock_imut();
-			auto& given_variable= given_variable_lock.deref();
+			var Variable& given_variable= given_variable_lock.deref();
 
 			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
 			{
@@ -1298,7 +1298,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
 			{
 				auto lock= v_ptr.lock_imut();
-				auto& v= lock.deref();
+				var Variable& v= lock.deref();
 
 				if( given_variable.t != v.t )
 				{
@@ -1601,7 +1601,7 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 			if_var( &v_ptr : known_template_args[i].get</VariablePtr/>() )
 			{
 				auto lock= v_ptr.lock_imut();
-				auto& v= lock.deref();
+				var Variable& v= lock.deref();
 
 				var Variable mut out_var
 				{

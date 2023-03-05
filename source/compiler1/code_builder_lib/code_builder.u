@@ -356,7 +356,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto var_ptr= names_scope_value.Get</Variable/>();
 	if( !var_ptr.empty() )
 	{
-		auto mut var_ptr_non_null= var_ptr.try_to_non_nullable();
+		var VariablePtr mut var_ptr_non_null= var_ptr.try_to_non_nullable();
 		if( IsGlobalVariable( var_ptr_non_null ) )
 		{
 			function_context.references_graph.AddNodeIfNotExists( var_ptr_non_null );
@@ -425,10 +425,10 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	{
 		BuildGlobalVariable( names_scope, global_variable_ptr.try_to_non_nullable() );
 
-		auto v_ptr= global_variable_ptr.try_lock_imut().deref().variable;
+		var VariableNullablePtr v_ptr= global_variable_ptr.try_lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
-			auto mut v_ptr_non_null= v_ptr.try_to_non_nullable();
+			var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();
 			if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
@@ -445,10 +445,10 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	{
 		BuildGlobalAutoVariable( names_scope, global_auto_variable_ptr.try_to_non_nullable() );
 
-		auto v_ptr= global_auto_variable_ptr.try_lock_imut().deref().variable;
+		var VariableNullablePtr v_ptr= global_auto_variable_ptr.try_lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
-			auto mut v_ptr_non_null= v_ptr.try_to_non_nullable();
+			var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();
 			if( v_ptr_non_null.lock_imut().deref().value_type == ValueType::ReferenceMut && !function_context.is_in_unsafe_block )
 			{
 				REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names_scope, src_loc )
@@ -1694,8 +1694,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		if( is_constructor || is_destructor )
 		{
 			// Setup virtual table pointers before main body of constructor/destructor and after constructor initialization list.
-			auto this_ptr= function_context.this_;
-			with( &this_ : this_ptr.try_lock_imut().deref() )
+			var VariablePtr this_ptr= function_context.this_.try_to_non_nullable();
+			with( &this_ : this_ptr.lock_imut().deref() )
 			{
 				auto class_type= this_.t.GetClassType().try_deref();
 				SetupVirtualTablePointers( this_.llvm_value, class_type, function_context );

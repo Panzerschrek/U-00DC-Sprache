@@ -82,7 +82,7 @@ public:
 		// But in case of errors destructors may not be called.
 		for( auto mut i= 0s; i < function_context_.variables_frames.back().size(); ++i )
 		{
-			auto variable= function_context_.variables_frames.back()[i];
+			var VariablePtr variable= function_context_.variables_frames.back()[i];
 			function_context_.references_graph.RemoveNode( variable );
 		}
 		function_context_.variables_frames.drop_back();
