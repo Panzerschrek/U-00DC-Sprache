@@ -331,6 +331,10 @@ struct VariableLite
 	LLVMValueRef llvm_value;
 	LLVMValueRef constexpr_value;
 
+	fn constructor( mut this, Type mut in_t, ValueType in_value_type, Variable::Location in_location, LLVMValueRef in_llvm_value, LLVMValueRef in_constexpr_value )
+		( t= move(in_t), value_type= in_value_type, location= in_location, llvm_value= in_llvm_value, constexpr_value= in_constexpr_value )
+	{}
+
 	fn conversion_constructor( mut this, Variable& v )
 		( t= v.t, value_type= v.value_type, location= v.location, llvm_value= v.llvm_value, constexpr_value= v.constexpr_value )
 	{}

@@ -702,13 +702,13 @@ private:
 	fn CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
 	fn FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types );
 
-	fn BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : Variable;
-	fn BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : Variable;
-	fn BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable;
-	fn BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable;
-	fn BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable;
-	fn BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable;
-	fn BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : Variable;
+	fn BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : VariableLite;
+	fn BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariableLite;
+	fn BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
+	fn BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
+	fn BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
+	fn BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
+	fn BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : VariableLite;
 
 	// Virtual stuff
 	fn CheckvirtualFunctionOverridingReferenceNotation(
