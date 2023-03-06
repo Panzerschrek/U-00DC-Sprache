@@ -38,8 +38,10 @@ fn CreateTemplateErrorsContext(
 			{
 				result.args_description+= t.ToString();
 			}
-			if_var( &v : arg.something.get</NamesScopeVariable/>() )
+			if_var( &v_ptr : arg.something.get</VariablePtr/>() )
 			{
+				auto lock= v_ptr.lock_imut();
+				auto& v= lock.deref();
 				result.args_description+= ConstantVariableToString( v.t, v.constexpr_value );
 			}
 
@@ -561,15 +563,15 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 		var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
 		return move(type_param);
 	}
-	if_var( &v : value.get</Variable/>() )
+	if_var( &v_ptr : value.get</VariablePtr/>() )
 	{
-		if( v.constexpr_value == LLVMValueRef::Null )
+		if( v_ptr.lock_imut().deref().constexpr_value == LLVMValueRef::Null )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 			return TemplateSignatureParam::TypeParam();
 		}
 
-		var TemplateSignatureParam::VariableParam mut variable_param{ .v= v };
+		var TemplateSignatureParam::VariableParam mut variable_param{ .v= v_ptr };
 		return move(variable_param);
 	}
 
@@ -676,7 +678,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		for( auto mut i= 0s; i < template_args.size(); ++i )
 		{
 			auto arg= BuildExpressionCode( args_names_scope, function_context, template_args[i] );
-			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
+			if( arg.get</Type/>().empty() && arg.get</VariablePtr/>().empty() )
 			{
 				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetSrcLoc(template_args[i]), GetValueKindName(arg) )
 				all_ok= false;
@@ -687,9 +689,9 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 			{
 				result_signature_template_args.push_back( t );
 			}
-			if_var( &v : arg.get</Variable/>() )
+			if_var( &v_ptr : arg.get</VariablePtr/>() )
 			{
-				result_signature_template_args.push_back( v );
+				result_signature_template_args.push_back( v_ptr );
 			}
 
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), Synt::GetSrcLoc(template_args[i]) );
@@ -712,7 +714,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 				arg= BuildExpressionCode( result_names_scope, function_context, syntax_element.signature_params[i].default_value );
 			}
 
-			if( arg.get</Type/>().empty() && arg.get</Variable/>().empty() )
+			if( arg.get</Type/>().empty() && arg.get</VariablePtr/>().empty() )
 			{
 				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, src_loc, GetValueKindName(arg) )
 				all_ok= false;
@@ -723,9 +725,9 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 			{
 				result_signature_template_args.push_back( t );
 			}
-			if_var( &v : arg.get</Variable/>() )
+			if_var( &v_ptr : arg.get</VariablePtr/>() )
 			{
-				result_signature_template_args.push_back( v );
+				result_signature_template_args.push_back( v_ptr );
 			}
 
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), src_loc );
@@ -986,10 +988,9 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 				result_template_args.push_back(t);
 				continue;
 			}
-			if_var( &v : something.get</NamesScopeVariable/>() )
+			if_var( &v_ptr : something.get</VariablePtr/>() )
 			{
-				var Variable mut out_v{ .t= v.t, .llvm_value= v.llvm_value, .constexpr_value= v.constexpr_value, .value_type= select( v.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ), .location= Variable::Location::Pointer };
-				result_template_args.push_back( move(out_v) );
+				result_template_args.push_back( v_ptr );
 				continue;
 			}
 
@@ -1085,15 +1086,18 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			template_args_finished.push_back( t );
 			continue;
 		}
-		if_var( &v : value.get</Variable/>() )
+		if_var( &v_ptr : value.get</VariablePtr/>() )
 		{
-			if( !TypeIsValidForTemplateVariableArgument( v.t ) )
+			with( &t : v_ptr.lock_imut().deref().t )
 			{
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope, src_loc, v.t )
-				have_some_errors= true;
+				if( !TypeIsValidForTemplateVariableArgument( t ) )
+				{
+					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope, src_loc, t )
+					have_some_errors= true;
+				}
 			}
 
-			template_args_finished.push_back( v );
+			template_args_finished.push_back( v_ptr );
 			continue;
 		}
 
@@ -1255,8 +1259,11 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	if( !param_type.empty() )
 	{
 		// Value param
-		if_var( &given_variable : given_arg.get</Variable/>() )
+		if_var( &given_variable_ptr : given_arg.get</VariablePtr/>() )
 		{
+			auto given_variable_lock= given_variable_ptr.lock_imut();
+			var Variable& given_variable= given_variable_lock.deref();
+
 			if( !TypeIsValidForTemplateVariableArgument( given_variable.t ) )
 			{
 				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope, src_loc, given_variable.t )
@@ -1275,19 +1282,24 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
 			{
-				var NamesScopeVariable mut out_var
+				var Variable mut out_var
 				{
 					.t= given_variable.t,
-					.is_mutable= false,
+					.value_type= ValueType::ReferenceImut,
+					.location= Variable::Location::Pointer,
 					.constexpr_value= given_variable.constexpr_value,
 					.llvm_value= AddGlobalConstantVariable( param_name + "\0", given_variable.t.GetLLVMType(), given_variable.constexpr_value ),
+					.name= param_name,
 				};
 
-				template_arg.something= move(out_var);
+				template_arg.something= VariablePtr( move(out_var) );
 				return true;
 			}
-			if_var( &v : template_arg.something.get</NamesScopeVariable/>() )
+			if_var( &v_ptr : template_arg.something.get</VariablePtr/>() )
 			{
+				auto lock= v_ptr.lock_imut();
+				var Variable& v= lock.deref();
+
 				if( given_variable.t != v.t )
 				{
 					return false;
@@ -1348,14 +1360,20 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateArgFinished& given_arg,
 	SrcLoc& src_loc ) : bool
 {
-	if_var( &given_variable : given_arg.get</Variable/>() )
+	if_var( &given_variable_ptr : given_arg.get</VariablePtr/>() )
 	{
-		if( given_variable.t != variable_param.v.t )
+		auto given_variable_lock= given_variable_ptr.lock_imut();
+		auto& given_variable= given_variable_lock.deref();
+
+		auto variable_param_lock= variable_param.v.lock_imut();
+		auto& variable_param_ref= variable_param_lock.deref();
+
+		if( given_variable.t != variable_param_ref.t )
 		{
 			return false;
 		}
 
-		if( given_variable.constexpr_value == LLVMValueRef::Null || variable_param.v.constexpr_value == LLVMValueRef::Null )
+		if( given_variable.constexpr_value == LLVMValueRef::Null || variable_param_ref.constexpr_value == LLVMValueRef::Null )
 		{
 			REPORT_ERROR( ExpectedConstantExpression, names_scope, src_loc )
 			return false;
@@ -1363,7 +1381,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 
 		return unsafe(
 			LLVMConstIntGetZExtValue( given_variable.constexpr_value ) ==
-			LLVMConstIntGetZExtValue( variable_param.v.constexpr_value ) );
+			LLVMConstIntGetZExtValue( variable_param_ref.constexpr_value ) );
 	}
 
 	return false;
@@ -1391,11 +1409,12 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 				.t= size_type_,
 				.value_type= ValueType::Value,
 				.location= Variable::Location::LLVMRegister,
+				.name= "array_size",
 			};
 			size_var.constexpr_value= unsafe( LLVMConstInt( size_type_.GetLLVMType(), given_array_type.element_count, LLVMBool::False ) );
 			size_var.llvm_value= size_var.constexpr_value;
 
-			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_count, move(size_var), src_loc ) )
+			if( !MatchTemplateArgument( names_scope, template_, array_type_param.element_count, VariablePtr( move(size_var) ), src_loc ) )
 			{
 				return false;
 			}
@@ -1579,16 +1598,21 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 			{
 				template_arg.something= t;
 			}
-			if_var( &v : known_template_args[i].get</Variable/>() )
+			if_var( &v_ptr : known_template_args[i].get</VariablePtr/>() )
 			{
-				var NamesScopeVariable mut out_var
+				auto lock= v_ptr.lock_imut();
+				var Variable& v= lock.deref();
+
+				var Variable mut out_var
 				{
 					.t= v.t,
-					.is_mutable= v.value_type != ValueType::ReferenceImut,
+					.value_type= ValueType::ReferenceImut,
+					.location= Variable::Location::Pointer,
 					.llvm_value= AddGlobalConstantVariable( param_name + "\0", v.t.GetLLVMType(), v.constexpr_value ),
 					.constexpr_value= v.constexpr_value,
+					.name= param_name,
 				};
-				template_arg.something= move(out_var);
+				template_arg.something= VariablePtr( move(out_var) );
 			}
 		}
 		target_namespace_ref.AddName( param_name, move(template_arg) );

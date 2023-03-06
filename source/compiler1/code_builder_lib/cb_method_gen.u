@@ -144,14 +144,20 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 	if( !base_class.empty() )
 	{
-		var NamesScopeVariable base_variable
+		var Variable mut base_variable
 		{
 			.t= base_class.try_to_non_nullable(),
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_llvm_value ),
+			.name= KeywordToString( Keyword::base_ ),
 		};
+		var VariablePtr base_variable_ptr( move(base_variable) );
+		function_context.references_graph.AddNode( base_variable_ptr );
 
-		BuildEmptyInitializer( class_members_ptr, function_context, base_variable, KeywordToString( Keyword::base_ ), src_loc );
+		BuildEmptyInitializer( class_members_ptr, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), src_loc );
+
+		function_context.references_graph.RemoveNode( base_variable_ptr );
 	}
 
 	// Use initial class members namespace for own fields initializers evaluation.
@@ -164,30 +170,46 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
-		var NamesScopeVariable field_variable
+		var Variable mut field_variable
 		{
 			.t= class_field.t,
-			.is_mutable= true,
-			.llvm_value= CreateClassFieldGEP( function_context, class_type, this_llvm_value, class_field )
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
+			.llvm_value= CreateClassFieldGEP( function_context, class_type, this_llvm_value, class_field ),
+			.name= field_pair[0],
 		};
+		var VariablePtr field_variable_ptr( move(field_variable) );
+		function_context.references_graph.AddNode( field_variable_ptr );
 
 		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
-			BuildEmptyInitializer( class_members_ptr, function_context, field_variable, field_pair[0], src_loc );
+			BuildEmptyInitializer( class_members_ptr, function_context, field_variable_ptr, field_pair[0], src_loc );
 		}
 		else
 		{
 			if( class_field.is_reference )
 			{
-				var NamesScopeVariable this_variable{ .t= class_type, .llvm_value= this_llvm_value, .is_mutable= true };
-				InitializeReferenceField( class_members_initial, function_context, this_variable, class_field, initializer );
+				var Variable mut this_variable
+				{
+					.t= class_type,
+					.llvm_value= this_llvm_value,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.name= KeywordToString( Keyword::this_ ),
+				};
+				var VariablePtr this_variable_ptr( move(this_variable) );
+				function_context.references_graph.AddNode( this_variable_ptr );
+				InitializeReferenceField( class_members_initial, function_context, this_variable_ptr, class_field, initializer );
+				function_context.references_graph.RemoveNode( this_variable_ptr );
 			}
 			else
 			{
-				BuildInitializer( class_members_initial, function_context, field_variable, initializer );
+				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 			}
 		}
+
+		function_context.references_graph.RemoveNode( field_variable_ptr );
 	}
 
 	SetupVirtualTablePointers( this_llvm_value, class_type, function_context );

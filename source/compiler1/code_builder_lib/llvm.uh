@@ -246,6 +246,7 @@ fn nomangle LLVMIsUndef(LLVMValueRef Val) unsafe : LLVMBool;
 fn nomangle LLVMReplaceAllUsesWith(LLVMValueRef OldVal, LLVMValueRef NewVal) unsafe;
 
 fn nomangle LLVMIsAFunction(LLVMValueRef Val) unsafe : LLVMValueRef;
+fn nomangle LLVMIsAInstruction(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAArgument(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAAllocaInst(LLVMValueRef Val) unsafe : LLVMValueRef;
 fn nomangle LLVMIsAConstantExpr(LLVMValueRef Val) unsafe : LLVMValueRef;
@@ -307,6 +308,8 @@ fn nomangle LLVMGetInsertBlock(LLVMBuilderRef Builder) unsafe : LLVMBasicBlockRe
 
 fn nomangle LLVMPositionBuilderAtEnd(LLVMBuilderRef Builder, LLVMBasicBlockRef Block) unsafe;
 fn nomangle LLVMInsertExistingBasicBlockAfterInsertBlock(LLVMBuilderRef Builder, LLVMBasicBlockRef BB) unsafe;
+
+fn nomangle LLVMInsertIntoBuilder(LLVMBuilderRef Builder, LLVMValueRef Instr) unsafe;
 
 fn nomangle LLVMSetCurrentDebugLocation2(LLVMBuilderRef Builder, LLVMMetadataRef Loc) unsafe;
 

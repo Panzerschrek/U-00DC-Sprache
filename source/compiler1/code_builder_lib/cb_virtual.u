@@ -661,13 +661,15 @@ fn CodeBuilder::SetupVirtualTablePointers(
 
 fn CodeBuilder::TryFetchVirtualFunction(
 	mut this,
-	Variable& this_,
+	VariablePtr& this_ptr,
 	FunctionVariable& function,
-	FunctionContext &mut function_context ) : tup[ Variable, LLVMValueRef ]
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	SrcLoc& src_loc ) : tup[ VariablePtr, LLVMValueRef ]
 {
-	if( function_context.is_functionless_context )
+	if( function_context.is_functionless_context || function.virtual_table_index == ~0u )
 	{
-		return ust::make_tuple( this_, function.llvm_function );
+		return ust::make_tuple( this_ptr, function.llvm_function );
 	}
 
 	auto constexpr c_offset_field_number= 0u;
@@ -677,15 +679,19 @@ fn CodeBuilder::TryFetchVirtualFunction(
 
 	// TODO - check reference conversion possibility.
 
-	var Variable mut this_casted= this_;
+	var VariableLite this_= this_ptr.lock_imut().deref();
+	var Variable mut this_casted
+	{
+		.t= this_.t,
+		.value_type= select( this_.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
+		.location= Variable::Location::Pointer,
+		.llvm_value= this_.llvm_value,
+		.name= this_ptr.lock_imut().deref().name + " virtual call casted",
+	};
 	if( this_.t != function_type.params.front().t )
 	{
 		this_casted.t= function_type.params.front().t;
 		this_casted.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, this_casted.t, function_context );
-	}
-	if( function.virtual_table_index == ~0u )
-	{
-		return ust::make_tuple(move(this_casted), function.llvm_function);
 	}
 
 	var ClassTypePtr class_type_ptr= this_casted.t.GetClassType().try_deref();
@@ -831,7 +837,11 @@ fn CodeBuilder::TryFetchVirtualFunction(
 			this_casted.llvm_value= LLVMBuildIntToPtr( function_context.llvm_ir_builder, this_sub_offset, LLVMPointerType( this_casted.t.GetLLVMType(), 0u ), g_null_string );
 		}
 
-		return ust::make_tuple(move(this_casted), function_ptr);
+		var VariablePtr mut this_casted_ptr( move(this_casted) );
+		function_context.references_graph.AddNode( this_casted_ptr );
+		function_context.references_graph.TryAddLink( this_ptr, this_casted_ptr, names_scope, src_loc );
+		RegisterTemporaryVariable( function_context, this_casted_ptr );
+		return ust::make_tuple( move(this_casted_ptr), function_ptr );
 	}
 }
 

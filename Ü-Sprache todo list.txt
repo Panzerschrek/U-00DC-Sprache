@@ -62,7 +62,6 @@ Compiler:
 *) Rework of "Value" class
 
 Compiler1:
-*) Separate references checking for struct fields and tuple elemens
 
 QtCreator plugin:
 *) Syntax errors highlighting

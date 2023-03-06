@@ -5,26 +5,27 @@ import "code_builder.uh"
 namespace U1
 {
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef
 {
 	variant_visit( &i : initializer )
 	{
-		return BuildInitializer( names_scope, function_context, variable, i );
+		return BuildInitializer( names_scope, function_context, variable_ptr, i );
 	}
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
 {
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& expression_initializer ) : LLVMValueRef
 {
 	auto src_loc= Synt::GetSrcLoc(expression_initializer);
+	var VariableLite variable= variable_ptr.lock_imut().deref();
 	if( !variable.t.GetFundamentalType().empty() || !variable.t.GetEnumType().empty() || !variable.t.GetRawPointerType().empty() )
 	{
-		auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
+		var VariableLite expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer ).lock_imut().deref();
 		if( expr_result.t != variable.t )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr_result.t )
@@ -40,26 +41,25 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	}
 	if( !variable.t.GetFunctionPointerType().empty() )
 	{
-		return InitializeFunctionPointer( names_scope, function_context, variable, expression_initializer );
+		return InitializeFunctionPointer( names_scope, function_context, variable_ptr, expression_initializer );
 	}
 	if( !variable.t.GetArrayType().empty() || !variable.t.GetTupleType().empty() )
 	{
-		auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
+		var VariablePtr expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
+		var VariableLite expr_result= expr_result_ptr.lock_imut().deref();
 		if( expr_result.t != variable.t )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr_result.t )
 			return LLVMValueRef::Null;
 		}
 
-		SetupReferencesInCopyOrMove( names_scope, function_context, variable.t, variable.node_id, expr_result.node_id, src_loc );
+		SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
 
 		if( expr_result.value_type == ValueType::Value )
 		{
 			// Move.
-			if( expr_result.node_id != ReferencesGraph::c_empty_node_id )
-			{
-				function_context.references_graph.MoveNode( expr_result.node_id );
-			}
+			function_context.references_graph.MoveNode( expr_result_ptr );
+
 			CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
 			CreateLifetimeEnd( function_context, expr_result.llvm_value );
 		}
@@ -85,19 +85,17 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	}
 	if_var( &class_type : variable.t.GetClassType() )
 	{
-		auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
+		var VariablePtr expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression_initializer );
+		var VariableLite expr_result= expr_result_ptr.lock_imut().deref();
 
 		if( expr_result.t.ReferenceIsConvertibleTo( variable.t ) )
 		{
-			SetupReferencesInCopyOrMove( names_scope, function_context, variable.t, variable.node_id, expr_result.node_id, src_loc );
+			SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
 
 			if( expr_result.value_type == ValueType::Value && expr_result.t == variable.t )
 			{
 				// Move.
-				if( expr_result.node_id != ReferencesGraph::c_empty_node_id )
-				{
-					function_context.references_graph.MoveNode( expr_result.node_id );
-				}
+				function_context.references_graph.MoveNode( expr_result_ptr );
 				CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
 				CreateLifetimeEnd( function_context, expr_result.llvm_value );
 			}
@@ -119,22 +117,12 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				// Create temp variables storage for preventing of destruction of "expr".
 				var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 				auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-				var [ Variable, 2 ] constructor_args
-				[
-					{
-						.t= variable.t,
-						.llvm_value= variable.llvm_value,
-						.value_type= ValueType::ReferenceMut,
-						.location= Variable::Location::Pointer,
-						.node_id= variable.node_id
-					},
-					expr_result
-				];
+
 				DoCallFunction(
 					names_scope,
 					function_context,
 					conversion_constructor_,
-					constructor_args,
+					ust::make_array( variable_ptr, expr_result_ptr ),
 					ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 					ArgsEvaluationOrder::Direct,
 					src_loc );
@@ -153,8 +141,9 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	halt; // Unhandled type kind
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef
 {
+	var VariableLite variable= variable_ptr.lock_imut().deref();
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
 		if( sequence_initializer.elements_initializers.size() != size_type(array_type.element_count) )
@@ -170,19 +159,24 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		auto mut is_constant= variable.t.CanBeConstexpr();
 		var ust::vector</ LLVMValueRef /> mut elements_constants;
 
-		var NamesScopeVariable mut element_variable
-		{
-			.t= array_type.element_type,
-			.is_mutable= true,
-			.node_id= variable.node_id,
-		};
-
 		auto mut i= 0s;
 		foreach( &element_initializer : sequence_initializer.elements_initializers )
 		{
-			element_variable.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) );
+			var Variable mut element_variable
+			{
+				.t= array_type.element_type,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, u32(i) ),
+				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
+			};
+			var VariablePtr element_variable_ptr( move(element_variable) );
+			function_context.references_graph.AddNode( element_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 
-			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, element_initializer.deref() );
+			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, element_initializer.deref() );
+
+			function_context.references_graph.RemoveNode( element_variable_ptr );
 
 			if( is_constant )
 			{
@@ -202,7 +196,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		if( is_constant )
 		{
 			halt if( elements_constants.size() != size_type(array_type.element_count) ); // TODO - replace with assert
-			return unsafe( LLVMConstArray( element_variable.t.GetLLVMType(), elements_constants.data(), u32(elements_constants.size()) ) );
+			return unsafe( LLVMConstArray( array_type.element_type.GetLLVMType(), elements_constants.data(), u32(elements_constants.size()) ) );
 		}
 		return LLVMValueRef::Null;
 	}
@@ -223,15 +217,21 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var NamesScopeVariable element_variable
+			var Variable mut element_variable
 			{
 				.t= tuple_type.element_types[i],
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
-				.node_id= variable.node_id,
+				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
 			};
+			var VariablePtr element_variable_ptr( move(element_variable) );
+			function_context.references_graph.AddNode( element_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 
-			auto element_constant= BuildInitializer( names_scope, function_context, element_variable, sequence_initializer.elements_initializers[i].deref() );
+			auto element_constant= BuildInitializer( names_scope, function_context, element_variable_ptr, sequence_initializer.elements_initializers[i].deref() );
+
+			function_context.references_graph.RemoveNode( element_variable_ptr );
 
 			if( is_constant )
 			{
@@ -258,8 +258,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef
 {
+	var VariableLite variable= variable_ptr.lock_imut().deref();
+
 	auto class_type_ref= variable.t.GetClassType();
 	if( class_type_ref.empty() )
 	{
@@ -327,7 +329,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( class_field.is_reference )
 		{
-			auto initializer= InitializeReferenceField( names_scope, function_context, variable, class_field, member_initializer.initializer.deref() );
+			auto initializer= InitializeReferenceField( names_scope, function_context, variable_ptr, class_field, member_initializer.initializer.deref() );
 			if( initializer == LLVMValueRef::Null )
 			{
 				is_constexpr= false;
@@ -339,15 +341,22 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 		else
 		{
-			var NamesScopeVariable member_variable
+			var Variable mut member_variable
 			{
 				.t= class_field.t,
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateClassFieldGEP( function_context, variable, class_field ),
-				.node_id= variable.node_id,
+				.name= variable_ptr.lock_imut().deref().name + "." + member_initializer.name,
 			};
+			var VariablePtr member_variable_ptr( move(member_variable) );
+			function_context.references_graph.AddNode( member_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 
-			auto initializer= BuildInitializer( names_scope, function_context, member_variable, member_initializer.initializer.deref() );
+			auto initializer= BuildInitializer( names_scope, function_context, member_variable_ptr, member_initializer.initializer.deref() );
+
+			function_context.references_graph.RemoveNode( member_variable_ptr );
+
 			if( initializer == LLVMValueRef::Null )
 			{
 				is_constexpr= false;
@@ -386,13 +395,17 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		if( field.index == ~0u ){ continue; } // May be in case of error
 
-		var NamesScopeVariable member_variable
+		var Variable mut member_variable
 		{
 			.t= field.t,
-			.is_mutable= true,
+			.value_type= ValueType::ReferenceMut,
+			.location= Variable::Location::Pointer,
 			.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
-			.node_id= variable.node_id,
+			.name= variable_ptr.lock_imut().deref().name + "." + field_name,
 		};
+		var VariablePtr member_variable_ptr( move(member_variable) );
+			function_context.references_graph.AddNode( member_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 
 		auto mut constexpr_initializer= LLVMValueRef::Null;
 		auto& initializer= field.syntax_element.deref().initializer;
@@ -404,19 +417,21 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				continue;
 			}
 
-			constexpr_initializer= BuildEmptyInitializer( names_scope, function_context, member_variable, field_name, struct_named_initializer.src_loc );
+			constexpr_initializer= BuildEmptyInitializer( names_scope, function_context, member_variable_ptr, field_name, struct_named_initializer.src_loc );
 		}
 		else
 		{
 			if( field.is_reference )
 			{
-				constexpr_initializer= InitializeReferenceField( class_members_initial, function_context, variable, field, initializer );
+				constexpr_initializer= InitializeReferenceField( class_members_initial, function_context, variable_ptr, field, initializer );
 			}
 			else
 			{
-				constexpr_initializer= BuildInitializer( class_members_initial, function_context, member_variable, initializer );
+				constexpr_initializer= BuildInitializer( class_members_initial, function_context, member_variable_ptr, initializer );
 			}
 		}
+
+		function_context.references_graph.RemoveNode( member_variable_ptr );
 
 		if( constexpr_initializer == LLVMValueRef::Null )
 		{
@@ -436,13 +451,15 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
 {
-	return BuildConstructorInitializer( names_scope, function_context, variable, constructor_initializer.args, constructor_initializer.src_loc );
+	return BuildConstructorInitializer( names_scope, function_context, variable_ptr, constructor_initializer.args, constructor_initializer.src_loc );
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
 {
+	var VariableLite variable= variable_ptr.lock_imut().deref();
+
 	if( !variable.t.GetFundamentalType().empty() ||
 		!variable.t.GetEnumType().empty() ||
 		!variable.t.GetRawPointerType().empty() ||
@@ -462,14 +479,21 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			function_context,
 			array_type.element_count,
 			{
-				var NamesScopeVariable mut element_variable
+				var Variable mut element_variable
 				{
 					.t= array_type.element_type,
-					.is_mutable= true,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
 					.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
+					.name= variable_ptr.lock_imut().deref().name + "[]",
 				};
+				var VariablePtr element_variable_ptr( move(element_variable) );
+				function_context.references_graph.AddNode( element_variable_ptr );
+				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 
-				BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
+				BuildInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
+
+				function_context.references_graph.RemoveNode( element_variable_ptr );
 			}
 		)
 
@@ -483,14 +507,21 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var NamesScopeVariable element_variable
+			var Variable mut element_variable
 			{
 				.t= tuple_type.element_types[i],
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
+				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
 			};
+			var VariablePtr element_variable_ptr( move(element_variable) );
+			function_context.references_graph.AddNode( element_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 
-			BuildInitializer( names_scope, function_context, element_variable, zero_initializer );
+			BuildInitializer( names_scope, function_context, element_variable_ptr, zero_initializer );
+
+			function_context.references_graph.RemoveNode( element_variable_ptr );
 		}
 
 		if( variable.t.CanBeConstexpr() )
@@ -529,14 +560,21 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				continue;
 			}
 
-			var NamesScopeVariable member_variable
+			var Variable mut member_variable
 			{
 				.t= field.t,
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateClassFieldGEP( function_context, variable, field ),
+				.name= variable_ptr.lock_imut().deref().name + "." + field_pair[0],
 			};
+			var VariablePtr member_variable_ptr( move(member_variable) );
+			function_context.references_graph.AddNode( member_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, member_variable_ptr );
 
-			BuildInitializer( names_scope, function_context, member_variable, zero_initializer );
+			BuildInitializer( names_scope, function_context, member_variable_ptr, zero_initializer );
+
+			function_context.references_graph.RemoveNode( member_variable_ptr );
 		}
 
 		if( class_type.can_be_constexpr )
@@ -549,7 +587,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	halt;
 }
 
-fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
+fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
 {
 	if( !function_context.is_in_unsafe_block )
 	{
@@ -558,8 +596,10 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef
+fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef
 {
+	var VariableLite variable= variable_ptr.lock_imut().deref();
+
 	if( !variable.t.IsDefaultConstructible() )
 	{
 		REPORT_ERROR( ExpectedInitializer, names_scope, src_loc, variable_name )
@@ -574,20 +614,27 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 
 	if_var( &array_type : variable.t.GetArrayType() )
 	{
-		var NamesScopeVariable mut element_variable
-		{
-			.t= array_type.element_type,
-			.is_mutable= true,
-		};
-
 		var LLVMValueRef mut constant_initializer = LLVMValueRef::Null;
 
 		CB_GENERATE_LOOP(
 			function_context,
 			array_type.element_count,
 			{
-				element_variable.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value );
-				constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, src_loc );
+				var Variable mut element_variable
+				{
+					.t= array_type.element_type,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateArrayElementGEP( function_context, array_type, variable.llvm_value, counter_value ),
+					.name= variable_ptr.lock_imut().deref().name + "[]",
+				};
+				var VariablePtr element_variable_ptr( move(element_variable) );
+				function_context.references_graph.AddNode( element_variable_ptr );
+				function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
+
+				constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
+
+				function_context.references_graph.RemoveNode( element_variable_ptr );
 			} )
 
 		if( constant_initializer != LLVMValueRef::Null )
@@ -603,14 +650,22 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
-			var NamesScopeVariable element_variable
+			var Variable mut element_variable
 			{
 				.t= tuple_type.element_types[i],
-				.is_mutable= true,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
 				.llvm_value= CreateTupleElementGEP( function_context, variable, u32(i) ),
+				.name= variable_ptr.lock_imut().deref().name + "[" + ust::to_string8(i) + "]",
 			};
+			var VariablePtr element_variable_ptr( move(element_variable) );
+			function_context.references_graph.AddNode( element_variable_ptr );
+			function_context.references_graph.AddLink( variable_ptr, element_variable_ptr );
 
-			var LLVMValueRef constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable, variable_name, src_loc );
+			var LLVMValueRef constant_initializer= BuildEmptyInitializer( names_scope, function_context, element_variable_ptr, variable_name, src_loc );
+
+			function_context.references_graph.RemoveNode( element_variable_ptr );
+
 			if( constant_initializer != LLVMValueRef::Null )
 			{
 				constant_initializers.push_back( constant_initializer );
@@ -639,18 +694,10 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		// Should be functions set 100%
 		// Should be complete here.
 
-		var Variable this_
-		{
-			.t= variable.t,
-			.value_type= ValueType::ReferenceMut,
-			.location= Variable::Location::Pointer,
-			.llvm_value= variable.llvm_value,
-		};
-
 		CallFunctionsSet(
 			names_scope,
 			function_context,
-			ust::optional_ref_imut</ Variable />( this_ ),
+			variable_ptr,
 			constructors_ptr.try_lock_imut().deref().functions_set,
 			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			src_loc );
@@ -661,8 +708,10 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 	halt;
 }
 
-fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef
+fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef
 {
+	var VariableLite variable= variable_ptr.lock_imut().deref();
+
 	if_var( &dst_type : variable.t.GetFundamentalType() )
 	{
 		if( dst_type.fundamental_type == U_FundamentalType::void_ && args.empty() )
@@ -676,7 +725,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		var Variable src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
+		var VariableLite src_var= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() ).lock_imut().deref();
 
 		var FundamentalType mut src_type;
 		if_var( &fundamental_type : src_var.t.GetFundamentalType() )
@@ -840,22 +889,20 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		auto expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
+		var VariablePtr expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
+		var VariableLite expr_result= expr_result_ptr.lock_imut().deref();
 		if( expr_result.t != variable.t )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr_result.t )
 			return LLVMValueRef::Null;
 		}
 
-		SetupReferencesInCopyOrMove( names_scope, function_context, variable.t, variable.node_id, expr_result.node_id, src_loc );
+		SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
 
 		if( expr_result.value_type == ValueType::Value )
 		{
 			// Move.
-			if( expr_result.node_id != ReferencesGraph::c_empty_node_id )
-			{
-				function_context.references_graph.MoveNode( expr_result.node_id );
-			}
+			function_context.references_graph.MoveNode( expr_result_ptr );
 			CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
 			CreateLifetimeEnd( function_context, expr_result.llvm_value );
 		}
@@ -887,19 +934,23 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		var Variable expr= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
-		if( expr.t != variable.t )
+		auto mut constexpr_value= LLVMValueRef::Null;
+		with( &expr : BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() ).lock_imut().deref() )
 		{
-			REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr.t )
-			return LLVMValueRef::Null;
+			if( expr.t != variable.t )
+			{
+				REPORT_ERROR( TypesMismatch, names_scope, src_loc, variable.t, expr.t )
+				return LLVMValueRef::Null;
+			}
+
+			auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
+			CreateTypedStore( function_context, variable.t, value_in_register, variable.llvm_value );
+
+			constexpr_value= expr.constexpr_value;
 		}
-
-		auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-		CreateTypedStore( function_context, variable.t, value_in_register, variable.llvm_value );
-
 		DestroyUnusedTemporaryVariables( names_scope, function_context, src_loc );
 
-		return expr.constexpr_value;
+		return constexpr_value;
 	}
 	if( !variable.t.GetFunctionPointerType().empty() )
 	{
@@ -909,7 +960,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		return InitializeFunctionPointer( names_scope, function_context, variable, args.front().deref() );
+		return InitializeFunctionPointer( names_scope, function_context, variable_ptr, args.front().deref() );
 	}
 	if_var( &class_type : variable.t.GetClassType() )
 	{
@@ -924,8 +975,10 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 
 			auto state= SaveFunctionContextState( function_context );
 
-			var Variable arg= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
-			needs_move_construct= arg.t == variable.t && arg.value_type == ValueType::Value;
+			with(  &arg : BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() ).lock_imut().deref() )
+			{
+				needs_move_construct= arg.t == variable.t && arg.value_type == ValueType::Value;
+			}
 
 			RestoreFunctionContextState( function_context, state );
 			function_context.is_functionless_context= prev_is_functionless_context;
@@ -933,13 +986,13 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 
 		if( needs_move_construct )
 		{
-			var Variable expr_result= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
-			SetupReferencesInCopyOrMove( names_scope, function_context, variable.t, variable.node_id, expr_result.node_id, src_loc );
+			var VariablePtr expr_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, args.front().deref() );
+			SetupReferencesInCopyOrMove( names_scope, function_context, variable_ptr, expr_result_ptr, src_loc );
 
-			if( expr_result.node_id != ReferencesGraph::c_empty_node_id )
-			{
-				function_context.references_graph.MoveNode( expr_result.node_id );
-			}
+			function_context.references_graph.MoveNode( expr_result_ptr );
+
+			var VariableLite expr_result= expr_result_ptr.lock_imut().deref();
+
 			CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
 			CreateLifetimeEnd( function_context, expr_result.llvm_value );
 
@@ -960,18 +1013,10 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		// Should be functions set 100%
 		// Should be complete here.
 
-		var Variable this_
-		{
-			.t= variable.t,
-			.value_type= ValueType::ReferenceMut,
-			.location= Variable::Location::Pointer,
-			.llvm_value= variable.llvm_value,
-			.node_id= variable.node_id,
-		};
 		CallFunctionsSet(
 			names_scope,
 			function_context,
-			ust::optional_ref_imut</ Variable />( this_ ),
+			variable_ptr,
 			constructors_ptr.try_lock_imut().deref().functions_set,
 			args.range(),
 			src_loc );
@@ -985,15 +1030,19 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& initializer_expression ) : LLVMValueRef
+fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& initializer_expression ) : LLVMValueRef
 {
+	var VariableLite variable= variable_ptr.lock_imut().deref();
+
 	auto initializer_src_loc= Synt::GetSrcLoc( initializer_expression );
 	auto initializer_value= BuildExpressionCode( names_scope, function_context, initializer_expression );
 
 	var FunctionType& function_type= variable.t.GetFunctionPointerType().try_deref().function_type;
 
-	if_var( &initializer_variable : initializer_value.get</Variable/>() )
+	if_var( &initializer_variable_ptr : initializer_value.get</VariablePtr/>() )
 	{
+		var VariableLite initializer_variable= initializer_variable_ptr.lock_imut().deref();
+
 		if( !( !initializer_variable.t.GetFunctionPointerType().empty() &&
 			initializer_variable.t.GetFunctionPointerType().try_deref().function_type.PointerCanBeConvertedTo( function_type ) ) )
 		{
@@ -1135,8 +1184,10 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 	return LLVMValueRef::Null;
 }
 
-fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer ) : LLVMValueRef
+fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ClassField& field, Synt::Initializer& initializer ) : LLVMValueRef
 {
+	var VariableLite variable= variable_ptr.lock_imut().deref();
+
 	auto initializer_src_loc= Synt::GetSrcLoc( initializer );
 
 	var ust::optional_ref_imut</Synt::Expression/> mut initializer_expression;
@@ -1161,7 +1212,9 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 		return LLVMValueRef::Null;
 	}
 
-	var Variable initializer_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.try_deref() );
+	var VariablePtr initializer_variable_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, initializer_expression.try_deref() );
+	var VariableLite initializer_variable= initializer_variable_ptr.lock_imut().deref();
+
 	var SrcLoc initializer_expression_src_loc= Synt::GetSrcLoc( initializer_expression.try_deref() );
 	if( initializer_variable.t != field.t && !initializer_variable.t.ReferenceIsConvertibleTo( field.t ) )
 	{
@@ -1183,30 +1236,30 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 	auto address_of_reference= CreateClassFieldGEP( function_context, variable, field );
 	CreateTypedReferenceStore( function_context, field.t, reference_converted, address_of_reference );
 
-	if( variable.node_id != ReferencesGraph::c_empty_node_id && initializer_variable.node_id != ReferencesGraph::c_empty_node_id )
 	{
 		var ReferencesGraph &mut references_graph= function_context.references_graph;
 
-		foreach( &dst_variable_node_id : references_graph.GetAllAccessibleVariableNodes( variable.node_id ) )
+		foreach( &dst_variable_node : references_graph.GetAllAccessibleVariableNodes( variable_ptr ) )
 		{
-			var ReferencesGraph::NodeId mut inner_reference_node_id= references_graph.GetNodeInnerReference( dst_variable_node_id);
-			if( inner_reference_node_id == ReferencesGraph::c_empty_node_id )
+			var VariableNullablePtr mut inner_reference_node= references_graph.GetNodeInnerReference( dst_variable_node );
+			if( inner_reference_node.empty() )
 			{
-				inner_reference_node_id= references_graph.CreateNodeInnerReference(
-					dst_variable_node_id,
-					select( field.is_mutable ? ReferencesGraph::NodeKind::ReferenceMut : ReferencesGraph::NodeKind::ReferenceImut ) );
-			}
-			else if(
-				(  field.is_mutable && references_graph.GetNodeKind( inner_reference_node_id ) != ReferencesGraph::NodeKind::ReferenceMut ) ||
-				( !field.is_mutable && references_graph.GetNodeKind( inner_reference_node_id ) != ReferencesGraph::NodeKind::ReferenceImut ) )
-			{
-				REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, initializer_src_loc, references_graph.GetNodeName( inner_reference_node_id ) )
+				inner_reference_node= references_graph.CreateNodeInnerReference(
+					dst_variable_node,
+					select( field.is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
 			}
 
-			if( !references_graph.TryAddLink( initializer_variable.node_id, inner_reference_node_id ) )
+			var VariablePtr inner_reference_node_non_null= inner_reference_node.try_to_non_nullable();
+			auto inner_reference_value_type= inner_reference_node_non_null.lock_imut().deref().value_type;
+			if(
+				(  field.is_mutable && inner_reference_value_type != ValueType::ReferenceMut ) ||
+				( !field.is_mutable && inner_reference_value_type != ValueType::ReferenceImut ) )
 			{
-				REPORT_ERROR( ReferenceProtectionError, names_scope, initializer_src_loc, references_graph.GetNodeName( initializer_variable.node_id ) )
+				REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, initializer_src_loc, inner_reference_node_non_null.lock_imut().deref().name )
 			}
+
+			references_graph.TryAddLink( initializer_variable_ptr, inner_reference_node_non_null, names_scope, initializer_src_loc );
+
 		}
 	}
 
@@ -1234,8 +1287,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	// Function context should contain "this" with class type
-	var Variable this_= function_context.this_.try_deref();
-	auto class_type= this_.t.GetClassType().try_deref();
+	var VariablePtr this_ptr= function_context.this_.try_to_non_nullable();
+	auto class_type= this_ptr.lock_imut().deref().t.GetClassType().try_deref();
 	auto class_members_ptr= class_type.lock_imut().deref().members;
 	auto class_members_lock= class_members_ptr.lock_imut();
 	var NamesScope& class_members= class_members_lock.deref();
@@ -1301,14 +1354,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 	// Initialize fields, missing in initializer list.
 	if( !base_class.empty() && !base_initialized )
 	{
-		var NamesScopeVariable base_variable
-		{
-			.t= base_class.try_to_non_nullable(),
-			.is_mutable= true,
-			.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_.llvm_value ),
-		};
-
-		BuildEmptyInitializer( names_scope, function_context, base_variable, KeywordToString( Keyword::base_ ), constructor_initialization_list.src_loc );
+		var VariablePtr base_variable_ptr= AccessClassBase( names_scope, function_context, this_ptr, constructor_initialization_list.src_loc );
+		BuildEmptyInitializer( names_scope, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), constructor_initialization_list.src_loc );
 	}
 
 	// Use initial class members namespace for own fields initializers evaluation.
@@ -1326,14 +1373,6 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
-		var NamesScopeVariable field_variable
-		{
-			.t= class_field.t,
-			.is_mutable= true,
-			.llvm_value= CreateClassFieldGEP( function_context, this_, class_field ),
-			.node_id= this_.node_id,
-		};
-
 		auto& initializer= class_field.syntax_element.deref().initializer;
 		if( !initializer.get</Synt::EmptyVariant/>().empty() )
 		{
@@ -1343,24 +1382,19 @@ fn CodeBuilder::BuildConstructorInitialization(
 				continue;
 			}
 
-			BuildEmptyInitializer( names_scope, function_context, field_variable, field_name, constructor_initialization_list.src_loc );
+			var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, field_name, constructor_initialization_list.src_loc );
+			BuildEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
 		}
 		else
 		{
 			if( class_field.is_reference )
 			{
-				var NamesScopeVariable this_variable
-				{
-					.t= class_type,
-					.is_mutable= true,
-					.llvm_value= this_.llvm_value,
-					.node_id= this_.node_id,
-				};
-				InitializeReferenceField( class_members_initial, function_context, this_variable, class_field, initializer );
+				InitializeReferenceField( class_members_initial, function_context, this_ptr, class_field, initializer );
 			}
 			else
 			{
-				BuildInitializer( class_members_initial, function_context, field_variable, initializer );
+				var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, field_name, constructor_initialization_list.src_loc );
+				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 			}
 		}
 	}
@@ -1375,15 +1409,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 	{
 		if( member_initializer.name == KeywordToString( Keyword::base_ ) )
 		{
-			var NamesScopeVariable base_variable
-			{
-				.t= base_class.try_to_non_nullable(),
-				.is_mutable= true,
-				.llvm_value= CreateBaseClassFieldGEP( function_context, class_type, this_.llvm_value ),
-				.node_id= this_.node_id,
-			};
-
-			BuildInitializer( names_scope, function_context, base_variable, member_initializer.initializer.deref() );
+			var VariablePtr base_variable_ptr= AccessClassBase( names_scope, function_context, this_ptr, constructor_initialization_list.src_loc );
+			BuildInitializer( names_scope, function_context, base_variable_ptr, member_initializer.initializer.deref() );
 
 			function_context.uninitialized_this_fields.drop( KeywordToString( Keyword::base_ ) );
 			continue;
@@ -1397,26 +1424,12 @@ fn CodeBuilder::BuildConstructorInitialization(
 
 		if( class_field.is_reference )
 		{
-			var NamesScopeVariable this_copy
-			{
-				.t= this_.t,
-				.is_mutable= true,
-				.llvm_value= this_.llvm_value,
-				.node_id= this_.node_id,
-			};
-			InitializeReferenceField( names_scope, function_context, this_copy, class_field, member_initializer.initializer.deref() );
+			InitializeReferenceField( names_scope, function_context, this_ptr, class_field, member_initializer.initializer.deref() );
 		}
 		else
 		{
-			var NamesScopeVariable field_variable
-			{
-				.t= class_field.t,
-				.is_mutable= true,
-				.llvm_value= CreateClassFieldGEP( function_context, this_, class_field ),
-				.node_id= this_.node_id,
-			};
-
-			BuildInitializer( names_scope, function_context, field_variable, member_initializer.initializer.deref() );
+			var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, member_initializer.name, member_initializer.src_loc );
+			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer.deref() );
 		}
 
 		function_context.uninitialized_this_fields.drop( member_initializer.name );
@@ -1433,12 +1446,16 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 	var VariablesFrameHolder temp_variables_frame_hodler(global_function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	var NamesScopeVariable this_variable
+	var Variable mut this_variable
 	{
 		.t= class_type,
-		.is_mutable= true,
-		.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, g_null_string ) )
+		.value_type= ValueType::ReferenceMut,
+		.location= Variable::Location::Pointer,
+		.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, class_type.lock_imut().deref().llvm_type, g_null_string ) ),
+		.name= KeywordToString( Keyword::this_ ),
 	};
+	var VariablePtr this_variable_ptr( move(this_variable) );
+	function_context.references_graph.AddNode( this_variable_ptr );
 
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
@@ -1455,19 +1472,26 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 
 		if( class_field.is_reference )
 		{
-			InitializeReferenceField( class_members_ptr, function_context, this_variable, class_field, initializer );
+			InitializeReferenceField( class_members_ptr, function_context, this_variable_ptr, class_field, initializer );
 		}
 		else
 		{
-			var NamesScopeVariable field_variable
+			var Variable mut field_variable
 			{
 				.t= class_field.t,
-				.is_mutable= true,
-				.llvm_value= CreateClassFieldGEP( function_context, this_variable, class_field ),
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= CreateClassFieldGEP( function_context, this_variable_ptr.lock_imut().deref(), class_field ),
+				.name= field_pair[0],
 			};
-			BuildInitializer( class_members_ptr, function_context, field_variable, initializer );
+			var VariablePtr field_variable_ptr( move(field_variable) );
+			function_context.references_graph.AddNode( field_variable_ptr );
+			BuildInitializer( class_members_ptr, function_context, field_variable_ptr, initializer );
+			function_context.references_graph.RemoveNode( field_variable_ptr );
 		}
 	}
+
+		function_context.references_graph.RemoveNode( this_variable_ptr );
 }
 
 } // namespace U1

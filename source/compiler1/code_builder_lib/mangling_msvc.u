@@ -493,8 +493,11 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerStateMSVC &mut mangler_state, T
 
 			EncodeType( mangler_state, t );
 		}
-		if_var( &v : template_arg.get</Variable/>() )
+		if_var( &v_ptr : template_arg.get</VariablePtr/>() )
 		{
+			auto lock= v_ptr.lock_imut();
+			auto& v= lock.deref();
+
 			// HACK!
 			// This is not how C++ compiler encodes value template args.
 			// In C++ this is just numbers.

@@ -395,7 +395,11 @@ fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ cha
 
 fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& param )
 {
-	if( param.value_type != ValueType::Value )
+	if( param.value_type == ValueType::Value )
+	{
+		EncodeTypeName( mangler_state, param.t );
+	}
+	else
 	{
 		ADD_NODE( mangler_state )
 		{
@@ -413,10 +417,6 @@ fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& pa
 				}
 			}
 		}
-	}
-	else
-	{
-		EncodeTypeName( mangler_state, param.t );
 	}
 }
 
@@ -725,8 +725,11 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 		{
 			EncodeTypeName( mangler_state, t );
 		}
-		if_var( &v : arg.get</Variable/>() )
+		if_var( &v_ptr : arg.get</VariablePtr/>() )
 		{
+			auto lock= v_ptr.lock_imut();
+			auto& v= lock.deref();
+
 			mangler_state.Push( "L" );
 			EncodeTypeName( mangler_state, v.t );
 

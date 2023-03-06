@@ -7,7 +7,6 @@ namespace U1
 
 // Sizes for 8-bit pointers.
 static_assert( typeinfo</Type/>.size_of <= 24s ); // 1 pointer for variant, 2 pointers for variant contents
-static_assert( typeinfo</Variable/>.size_of <= 48s ); // type, 2 pointers (llvm values), +8 bytes for value type/location/node_id.
 static_assert( typeinfo</FunctionsSet/>.size_of <= 72s ); // 3 vectors.
 static_assert( typeinfo</Value/>.size_of <= 72s + 48s + 8s ); // 1 pointer for variant + variable + functions set.
 static_assert( typeinfo</NamesScopeValue/>.size_of <= 24s ); // 1 pointer for variant and 2 pointers for contents.
@@ -1003,7 +1002,7 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 namespace ValueKindHelper
 {
 
-fn GetValueKind( Variable& v ) : ust::array_view_imut</ char8 />
+fn GetValueKind( VariablePtr& v ) : ust::array_view_imut</ char8 />
 {
 	return "variable";
 }
@@ -1149,12 +1148,17 @@ fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref
 
 op TemplateSignatureParam::VariableParam::==(VariableParam& l, VariableParam& r) : bool
 {
-	if( l.v.t != r.v.t )
+	auto l_lock= l.v.lock_imut();
+	auto& l_v= l_lock.deref();
+	auto r_lock= r.v.lock_imut();
+	auto& r_v= r_lock.deref();
+
+	if( l_v.t != r_v.t )
 	{
 		return false;
 	}
 
-	return unsafe( LLVMConstIntGetZExtValue(l.v.constexpr_value) == LLVMConstIntGetZExtValue(r.v.constexpr_value) );
+	return unsafe( LLVMConstIntGetZExtValue(l_v.constexpr_value) == LLVMConstIntGetZExtValue(r_v.constexpr_value) );
 }
 
 op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool
@@ -1286,12 +1290,14 @@ fn NamesScope::ToString( this ) : ust::string8
 				res+= "</";
 				foreach( &arg : base_template.signature_args )
 				{
-					if_var( t : arg.get</Type/>() )
+					if_var( &t : arg.get</Type/>() )
 					{
 						res+= t.ToString();
 					}
-					if_var( v : arg.get</Variable/>() )
+					if_var( &v_ptr : arg.get</VariablePtr/>() )
 					{
+						auto lock= v_ptr.lock_imut();
+						auto& v= lock.deref();
 						res+= ConstantVariableToString( v.t, v.constexpr_value );
 					}
 

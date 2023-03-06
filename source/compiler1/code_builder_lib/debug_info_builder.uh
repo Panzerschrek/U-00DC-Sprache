@@ -22,8 +22,8 @@ public:
 	fn StartBlock( mut this, FunctionContext &mut function_context, SrcLoc& src_loc ) : LLVMMetadataRef;
 	fn EndBlock( mut this, FunctionContext &mut function_context, LLVMMetadataRef prev_block );
 
-	fn CreateVariableInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc );
-	fn CreateReferenceVariableInfo( mut this, FunctionContext& function_context, NamesScopeVariable& variable, ust::string8& name, SrcLoc& src_loc );
+	fn CreateVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string8& name, SrcLoc& src_loc );
+	fn CreateReferenceVariableInfo( mut this, FunctionContext& function_context, Variable& variable, ust::string8& name, SrcLoc& src_loc );
 
 private:
 	fn CreateDIType( mut this, Type& t ) : LLVMMetadataRef;

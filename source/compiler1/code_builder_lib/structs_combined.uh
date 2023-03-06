@@ -7,7 +7,6 @@ import "/vector.u"
 import "../lex_synt_lib/syntax_elements.uh"
 import "lang_types.uh"
 import "llvm_ext.uh"
-import "references_graph.uh"
 import "/code_builder_errors.uh"
 
 /*
@@ -303,15 +302,45 @@ struct Variable
 	}
 
 	Type t;
-	Location location= Location::Pointer;
-	ValueType value_type= ValueType::ReferenceImut;
+	ValueType value_type;
+	Location location;
 	LLVMValueRef llvm_value= LLVMValueRef::Null;
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 
-	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
+	ust::string8 name; // Used only for error reporting and derived variables names.
+
+	// May be non-null for struct or tuple member nodes.
+	ust::weak_ptr_mut</Variable/> parent;
+	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
+	ust::vector</VariableNullablePtr/> children;
+
+	// This struct is non-copyable.
+	fn constructor( mut this, Variable& other )= delete;
+	op=( mut this, Variable& other )= delete;
 }
 
-fn ConstantVariableToString( Type&  t, LLVMValueRef constant_value ) : ust::string8;
+type VariablePtr= ust::shared_ptr_mut</Variable/>;
+type VariableNullablePtr= ust::shared_ptr_nullable_mut</Variable/>;
+
+// Used to read important variable fields from VariablePtr without copying heavy reference-checking related fields.
+struct VariableLite
+{
+	Type t;
+	ValueType value_type;
+	Variable::Location location;
+	LLVMValueRef llvm_value;
+	LLVMValueRef constexpr_value;
+
+	fn constructor( mut this, Type mut in_t, ValueType in_value_type, Variable::Location in_location, LLVMValueRef in_llvm_value, LLVMValueRef in_constexpr_value )
+		( t= move(in_t), value_type= in_value_type, location= in_location, llvm_value= in_llvm_value, constexpr_value= in_constexpr_value )
+	{}
+
+	fn conversion_constructor( mut this, Variable& v )
+		( t= v.t, value_type= v.value_type, location= v.location, llvm_value= v.llvm_value, constexpr_value= v.constexpr_value )
+	{}
+}
+
+fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::string8;
 
 struct VariableTypeExtended
 {
@@ -361,19 +390,19 @@ struct FunctionsSet
 
 struct ThisMethodsSet
 {
-	Variable this_;
+	VariablePtr this_;
 	FunctionsSet functions_set;
 }
 
 struct ErrorValue{}
 
 type Value= ust::variant</ tup[
-	Variable,
+	ErrorValue,
+	VariablePtr,
 	Type,
 	FunctionsSet,
 	ThisMethodsSet,
-	ust::shared_ptr_imut</TypeTemplatesSet/>,
-	ErrorValue
+	ust::shared_ptr_imut</TypeTemplatesSet/>
 	] />;
 
 fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />;
@@ -381,16 +410,6 @@ fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />;
 //
 // NamesScopeValue
 //
-
-struct NamesScopeVariable
-{
-	Type t;
-	bool is_mutable;
-	LLVMValueRef llvm_value= LLVMValueRef::Null;
-	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
-
-	ReferencesGraph::NodeId node_id= ReferencesGraph::c_empty_node_id;
-}
 
 struct NamesScopeFunctionsSet
 {
@@ -537,10 +556,10 @@ struct TemplateArg
 	u32 index;
 
 	struct NotKnownYet{}
-	ust::variant</ tup[ NotKnownYet, Type, NamesScopeVariable ] /> something;
+	ust::variant</ tup[ NotKnownYet, Type, VariablePtr ] /> something;
 }
 
-type TemplateArgFinished= ust::variant</ tup[ Type, Variable ] />;
+type TemplateArgFinished= ust::variant</ tup[ Type, VariablePtr ] />;
 type TemplateArgsFinished= ust::vector</ TemplateArgFinished />;
 
 class TemplateSignatureParam
@@ -558,7 +577,7 @@ public:
 
 	struct VariableParam
 	{
-		Variable v;
+		VariablePtr v;
 
 		op==(VariableParam& l, VariableParam& r) : bool;
 	}
@@ -642,7 +661,7 @@ private:
 
 struct GlobalVariable
 {
-	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
+	VariableNullablePtr variable; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::VariablesDeclaration /> syntax_element;
 	u32 variable_index;
@@ -650,7 +669,7 @@ struct GlobalVariable
 
 struct GlobalAutoVariable
 {
-	ust::optional</NamesScopeVariable/> variable; // empty if incomplete
+	VariableNullablePtr variable; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::AutoVariableDeclaration /> syntax_element;
 }
@@ -700,7 +719,7 @@ public:
 	ust::variant</ tup[
 		NamesScopeMutPtr,
 		ust::shared_ptr_mut</Type/>,
-		ust::shared_ptr_mut</NamesScopeVariable/>,
+		ust::shared_ptr_mut</Variable/>,
 		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
 		ClassTypePtr,
 		ClassFieldPtr,

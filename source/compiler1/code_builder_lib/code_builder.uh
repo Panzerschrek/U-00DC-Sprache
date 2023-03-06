@@ -4,7 +4,7 @@ import "constexpr_function_evaluator.uh"
 import "debug_info_builder.uh"
 import "function_context.uh"
 import "mangling.uh"
-import "structs_combined.uh"
+import "references_graph.uh"
 import "tbaa_metadata_builder.uh"
 
 // Macro for loops generation.
@@ -141,7 +141,7 @@ private:
 		ClassesMembersNamespacesTable& src_classes_members_namespaces_table ) : NamesScopeValue;
 
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : NamesScopeValue;
-	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeVariable/>& variable ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Variable/>& variable ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</ClassField/>& class_field ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( EnumTypePtr& enum_type ) : NamesScopeValue;
@@ -189,7 +189,7 @@ private:
 	fn NamesScopeBuild( mut this, NamesScopePtr& names_scope_ptr );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScope/>& namespace_ );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Type/>& t );
-	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeVariable/>& variable );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Variable/>& variable );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassField/>& class_field );
@@ -251,20 +251,20 @@ private:
 		SrcLoc& src_loc ) : LLVMCallConvID;
 
 	// Returns constant value if initializer is contant
-	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Initializer& initializer ) : LLVMValueRef;
-	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef;
-	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& expression_initializer ) : LLVMValueRef;
-	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef;
-	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef;
-	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef;
-	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef;
-	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
-	fn BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef;
-	fn BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& expression_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::SequenceInitializer& sequence_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::StructNamedInitializer& struct_named_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef;
+	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptre, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
+	fn BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef;
+	fn BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef;
 
-	fn InitializeFunctionPointer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, Synt::Expression& initializer_expression ) : LLVMValueRef;
+	fn InitializeFunctionPointer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& initializer_expression ) : LLVMValueRef;
 
-	fn InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeVariable& variable, ClassField& field, Synt::Initializer& initializer ) : LLVMValueRef;
+	fn InitializeReferenceField( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ClassField& field, Synt::Initializer& initializer ) : LLVMValueRef;
 
 	fn BuildConstructorInitialization(
 		mut this,
@@ -307,7 +307,7 @@ private:
 
 	fn BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta );
 
-	fn BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Variable;
+	fn BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr;
 
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value;
@@ -343,7 +343,33 @@ private:
 
 	fn DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value;
 
-	fn BuildBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Variable& l_var, Variable& r_var, BinaryOperatorType operator, SrcLoc& src_loc ) : Value;
+	fn AccessClassBase( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, VariablePtr& variable_ptr, SrcLoc& src_loc ) : VariablePtr;
+	fn AccessClassField(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& variable_ptr,
+		ClassField& field,
+		ust::string8& field_name,
+		SrcLoc& src_loc ) : Value;
+
+	fn AccessDirectClassField(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& variable_ptr,
+		ClassField& field,
+		ust::string8& field_name,
+		SrcLoc& src_loc ) : VariablePtr;
+
+	fn BuildBinaryOperator(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		VariableLite& l_var,
+		VariableLite& r_var,
+		BinaryOperatorType operator,
+		SrcLoc& src_loc ) : Value;
 	fn BuildLazyBinaryOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BinaryOperator& binary_operator ) : Value;
 
 	fn TryCallOverloadedBinaryOperator(
@@ -370,7 +396,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		OverloadedOperator operator,
-		Variable& variable,
+		VariablePtr& variable_ptr,
 		SrcLoc& src_loc ) : ust::optional</Value/>;
 
 	fn TryCallOverloadedPostfixOperator(
@@ -378,7 +404,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		OverloadedOperator operator,
-		Variable& variable,
+		VariablePtr& variable,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& synt_args,
 		SrcLoc& src_loc ) : ust::optional</Value/>;
 
@@ -386,7 +412,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::optional_ref_imut</ Variable /> mut this_,
+		VariableNullablePtr this_,
 		FunctionsSet& functions_set,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
@@ -395,7 +421,7 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::optional_ref_imut</ Variable /> this_,
+		VariableNullablePtr& this_,
 		FunctionVariable& function,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
@@ -407,7 +433,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		FunctionVariable& function,
-		ust::array_view_imut</ Variable />& preevaluated_args,
+		ust::array_view_imut</ VariablePtr />& preevaluated_args,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		ArgsEvaluationOrder args_evaluation_order,
 		SrcLoc& src_loc ) : Value;
@@ -420,6 +446,14 @@ private:
 		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
 
+	fn ConvertVariable(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		VariablePtr& src,
+		Type& dst_type,
+		FunctionVariable& conversion_constructor_,
+		SrcLoc& src_loc ) : VariablePtr;
 
 	// NonSync stuff
 
@@ -661,20 +695,20 @@ private:
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
 	// Typeinfo
-	fn BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable;
-	fn GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : Variable;
-	fn BuildFullTypeinfo( mut this, Type& t ) : Variable;
+	fn BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : VariablePtr;
+	fn GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : VariablePtr;
+	fn BuildFullTypeinfo( mut this, Type& t ) : VariablePtr;
 
 	fn CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
 	fn FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types );
 
-	fn BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : Variable;
-	fn BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : Variable;
-	fn BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable;
-	fn BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable;
-	fn BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable;
-	fn BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : Variable;
-	fn BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : Variable;
+	fn BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : VariableLite;
+	fn BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariableLite;
+	fn BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
+	fn BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
+	fn BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
+	fn BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
+	fn BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : VariableLite;
 
 	// Virtual stuff
 	fn CheckvirtualFunctionOverridingReferenceNotation(
@@ -706,9 +740,11 @@ private:
 
 	fn TryFetchVirtualFunction(
 		mut this,
-		Variable& this_,
+		VariablePtr& this_ptr,
 		FunctionVariable& function,
-		FunctionContext &mut function_context ) : tup[ Variable, LLVMValueRef ];
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		SrcLoc& src_loc ) : tup[ VariablePtr, LLVMValueRef ];
 
 	// Overloading
 
@@ -786,11 +822,11 @@ private:
 
 	fn DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc );
 
-	fn RegisterTemporaryVariable( FunctionContext& mut function_context, Variable variable );
-	fn RegisterTopFrameVariable( FunctionContext& mut function_context, NamesScopeVariable& variable );
-	fn RegisterFrameVariable( FunctionContext& mut function_context, NamesScopeVariable& variable, size_type frame_index_from_top );
+	fn RegisterTemporaryVariable( FunctionContext& mut function_context, VariablePtr variable );
+	fn RegisterTopFrameVariable( FunctionContext& mut function_context, VariablePtr variable );
+	fn RegisterFrameVariable( FunctionContext& mut function_context, VariablePtr variable, size_type frame_index_from_top );
 
-	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, ReferencesGraph::NodeId variable_node ) : bool;
+	fn IsReferenceAllowedForReturn( this, FunctionContext& function_context, VariablePtr& variable_node ) : bool;
 	fn CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names_scope, FunctionContext& function_context, SrcLoc& src_loc );
 
 	fn MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph; // TODO - rename
@@ -799,9 +835,8 @@ private:
 	fn SetupReferencesInCopyOrMove(
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		Type& dst_type,
-		ReferencesGraph::NodeId dst_node,
-		ReferencesGraph::NodeId src_node,
+		VariablePtr& dst_node,
+		VariablePtr& src_node,
 		SrcLoc& src_loc );
 
 	// Returns "false" if not complete.
@@ -826,6 +861,8 @@ private:
 
 	fn SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope );
 
+	fn IsGlobalVariable( VariablePtr& variable ) : bool;
+
 	fn MarkInstructionWithTBAAMetadata( this, LLVMValueRef instruction, LLVMMetadataRef metadata );
 	fn MarkLoadInstructionWithNonNullMetadata( this, LLVMValueRef load_instruction );
 
@@ -836,20 +873,21 @@ private:
 
 	fn GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef;
 	fn GetZeroGEPIndex( this ) : LLVMValueRef;
-	fn CreateMoveToLLVMRegisterInstruction( mut this, Variable& variable, FunctionContext& function_context ) : LLVMValueRef;
+	fn CreateMoveToLLVMRegisterInstruction( mut this, VariableLite& variable, FunctionContext& function_context ) : LLVMValueRef;
 	fn CreateReferenceCast( this, LLVMValueRef ref, Type& src_type, Type& dst_type, FunctionContext& function_context ) : LLVMValueRef;
 
-	fn CreateClassFieldGEP( this, FunctionContext& function_context, Variable& class_variable, ClassField& field ) : LLVMValueRef;
-	fn CreateClassFieldGEP( this, FunctionContext& function_context, NamesScopeVariable& class_variable, ClassField& field ) : LLVMValueRef;
+	fn CreateClassFieldGEP( this, FunctionContext& function_context, VariableLite& class_variable, ClassField& field ) : LLVMValueRef;
 	fn CreateClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassField& field ) : LLVMValueRef;
 	fn CreateClassParentFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value, ClassType::Parent& parent ) : LLVMValueRef;
 	fn CreateBaseClassFieldGEP( this, FunctionContext& function_context, ClassTypePtr& class_type, LLVMValueRef value ) : LLVMValueRef;
-	fn CreateTupleElementGEP( this, FunctionContext& function_context, Variable& tuple_variable, u32 element_index ) : LLVMValueRef;
-	fn CreateTupleElementGEP( this, FunctionContext& function_context, NamesScopeVariable& tuple_variable, u32 element_index ) : LLVMValueRef;
+	fn CreateTupleElementGEP( this, FunctionContext& function_context, VariableLite& tuple_variable, u32 element_index ) : LLVMValueRef;
 	fn CreateTupleElementGEP( this, FunctionContext& function_context, TupleType& t, LLVMValueRef value, u32 element_index ) : LLVMValueRef;
 	fn CreateArrayElementGEP( this, FunctionContext& function_context, ArrayType& t, LLVMValueRef value, u32 index ) : LLVMValueRef;
 	fn CreateArrayElementGEP( this, FunctionContext& function_context, ArrayType& t, LLVMValueRef value, LLVMValueRef index ) : LLVMValueRef;
 	fn CreateIndexValue( this, u32 index ) : LLVMValueRef;
+
+	// Create GEP instruction even in functionless context.
+	fn ForceCreateConstantIndexGEP( this, FunctionContext& function_context, LLVMTypeRef t, LLVMValueRef value, u32 index ) : LLVMValueRef;
 
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 
@@ -869,8 +907,6 @@ private:
 
 	struct FunctionContextState
 	{
-		LLVMValueRef current_block_last_instruction;
-		LLVMValueRef alloca_block_last_instruction;
 		LLVMBasicBlockRef current_block;
 		ReferencesGraph references_graph;
 	}
@@ -956,7 +992,7 @@ private:
 	// Template things for current source graph node added sequentialy into this vector too.
 	ust::vector</ ust::string8 /> generated_template_things_sequence_;
 
-	ust::unordered_map</Type, Variable/> typeinfo_cache_;
+	ust::unordered_map</Type, VariablePtr /> typeinfo_cache_;
 	ust::vector</ ClassTypePtr /> typeinfo_class_table_;
 
 	// Maps string -> llvm::GlobalVariable
