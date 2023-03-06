@@ -1061,8 +1061,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			var VariablesFrameHolder element_pass_temp_variables_frame_hodler(function_context);
 			auto& mut function_context= element_pass_temp_variables_frame_hodler.GetFunctionContext();
 
-			var bool is_mutable= range_for_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;
-
 			var Variable mut variable_reference_variable
 			{
 				.t= variable_type,
@@ -1070,7 +1068,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				.location= Variable::Location::Pointer,
 				.constexpr_value=
 					select(
-						sequence_expression.constexpr_value == LLVMValueRef::Null
+						is_mutable || sequence_expression.constexpr_value == LLVMValueRef::Null
 							? LLVMValueRef::Null
 							: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
 				.name= range_for_operator.loop_variable_name,

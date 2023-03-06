@@ -374,6 +374,37 @@ def WithOperatorForConstexprValue_Test3():
 	tests_lib.build_program( c_program_text )
 
 
+def WithOperatorForConstexprValue_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			with( mut x : 7654 ) // Bind value to mutable value.
+			{
+				static_assert( x == 7654 ); // "x" initialized as constant, but not is an actual constant because it is mutable.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 6 ) )
+
+
+def WithOperatorForConstexprValue_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 v= 44445;
+			with( mut x : v ) // Bind reference to mutable value.
+			{
+				static_assert( x == 44445 ); // "x" initialized as constant, but not is an actual constant because it is mutable.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 7 ) )
+
+
 def BindingConstReferenceToNonconstReference_For_WithOperator_Test0():
 	c_program_text= """
 		fn Foo()

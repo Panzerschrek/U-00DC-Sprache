@@ -550,6 +550,22 @@ def TupleFor_Test8():
 	tests_lib.build_program( c_program_text )
 
 
+def TupleFor_Test9():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ f32, i32, i64 ] t= zero_init;
+			for( mut e : t ) // Tuple element is initialized with constant but not is actually constant, because of "mut"
+			{
+				static_assert( f64(e) == 0.0 );
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 7 ) )
+
+
 def AutoVariableDeclaration_ForTuples_Test0():
 	c_program_text= """
 		fn Foo()

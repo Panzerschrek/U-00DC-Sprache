@@ -625,6 +625,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	RegisterTemporaryVariable( function_context, sequence_lock );
 
+	const bool is_mutable= range_for_operator.mutability_modifier_ == MutabilityModifier::Mutable;
 	if( const TupleType* const tuple_type= sequence_expression->type.GetTupleType() )
 	{
 		llvm::BasicBlock* const finish_basic_block= tuple_type->element_types.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
@@ -642,11 +643,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			const VariableMutPtr variable_reference=
 				std::make_shared<Variable>(
 					element_type,
-					range_for_operator.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+					is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 					Variable::Location::Pointer,
 					range_for_operator.loop_variable_name_,
 					nullptr,
-					sequence_expression->constexpr_value == nullptr
+					is_mutable || sequence_expression->constexpr_value == nullptr
 						? nullptr
 						: sequence_expression->constexpr_value->getAggregateElement( uint32_t(element_index)) );
 
