@@ -543,33 +543,29 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			}
 			else if( overloaded_operator == OverloadedOperator::CompareOrder &&
+				binary_operator.operator_type_ != BinaryOperatorType::CompareOrder &&
 				call_variable->type.GetFundamentalType() != nullptr &&
 				IsSignedInteger( call_variable->type.GetFundamentalType()->fundamental_type ) )
 			{
 				const VariableMutPtr variable=
 					std::make_shared<Variable>(
-						binary_operator.operator_type_ == BinaryOperatorType::CompareOrder ? call_variable->type : bool_type_,
+						bool_type_,
 						ValueType::Value,
 						Variable::Location::LLVMRegister,
 						OverloadedOperatorToString( overloaded_operator ) );
 
 				if( const auto call_value_in_register= CreateMoveToLLVMRegisterInstruction( *call_variable, function_context ) )
 				{
-					if( binary_operator.operator_type_ == BinaryOperatorType::CompareOrder )
-						variable->llvm_value= call_value_in_register;
-					else
-					{
-						const auto zero= llvm::Constant::getNullValue( call_variable->type.GetLLVMType() );
-						if( binary_operator.operator_type_ == BinaryOperatorType::Less )
-							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( call_value_in_register, zero );
-						else if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
-							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( call_value_in_register, zero );
-						else if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
-							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( call_value_in_register, zero );
-						else if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
-							variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( call_value_in_register, zero );
-						else U_ASSERT(false);
-					}
+					const auto zero= llvm::Constant::getNullValue( call_variable->type.GetLLVMType() );
+					if( binary_operator.operator_type_ == BinaryOperatorType::Less )
+						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( call_value_in_register, zero );
+					else if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
+						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( call_value_in_register, zero );
+					else if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
+						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( call_value_in_register, zero );
+					else if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
+						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( call_value_in_register, zero );
+					else U_ASSERT(false);
 
 					variable->constexpr_value= llvm::dyn_cast<llvm::Constant>( variable->llvm_value );
 				}
