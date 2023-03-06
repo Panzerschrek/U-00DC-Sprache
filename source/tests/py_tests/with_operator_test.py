@@ -389,7 +389,7 @@ def WithOperatorForConstexprValue_Test4():
 	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 6 ) )
 
 
-def WithOperatorForConstexprValue_Test4():
+def WithOperatorForConstexprValue_Test5():
 	c_program_text= """
 		fn Foo()
 		{
