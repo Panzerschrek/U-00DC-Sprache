@@ -1625,13 +1625,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			else
 			{
 				REPORT_ERROR( StaticAssertExpressionIsNotConstant, names_scope, static_assert_.src_loc )
-				return BlockElementBuildInfo();
 			}
 		}
 		else
 		{
 			REPORT_ERROR( StaticAssertExpressionMustHaveBoolType, names_scope, static_assert_.src_loc )
-			return BlockElementBuildInfo();
 		}
 	}
 
