@@ -861,7 +861,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				function_context.llvm_ir_builder.SetInsertPoint( branches_basic_blocks[i] );
 			}
 
-			const VariablePtr branch_result= BuildExpressionCodeEnsureVariable( i == 0u ? *ternary_operator.true_branch : *ternary_operator.false_branch, names, function_context );
+			const Synt::Expression& branch_expr= i == 0u ? *ternary_operator.true_branch : *ternary_operator.false_branch;
+
+			const VariablePtr branch_result= BuildExpressionCodeEnsureVariable( branch_expr, names, function_context );
 
 			branches_constexpr_values[i]= branch_result->constexpr_value;
 			if( result->value_type == ValueType::Value )
@@ -918,7 +920,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), ternary_operator.src_loc_, branch_result->name );
 			}
 
-			CallDestructors( branch_temp_variables_storage, names, function_context, ternary_operator.src_loc_ );
+			CallDestructors( branch_temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch_expr ) );
 
 			if( !function_context.is_functionless_context )
 				function_context.llvm_ir_builder.CreateBr( result_block );
@@ -2802,7 +2804,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	llvm::Constant* r_var_constepxr_value= nullptr;
 	{
 		// Right part of lazy operator is conditinal. So, we must destroy its temporaries only in this condition.
-		// We doesn`t needs longer lifetime of epxression temporaries, because we use only bool result.
+		// We doesn`t needs longer lifetime of expression temporaries, because we use only bool result.
 		const StackVariablesStorage r_var_temp_variables_storage( function_context );
 
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( r_expression, names, function_context );

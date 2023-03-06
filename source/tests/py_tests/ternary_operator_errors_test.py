@@ -103,16 +103,71 @@ def TernaryOperator_ReferenceProtectionError_Test1():
 	assert( errors_list[0].text.find( "\"y\"" ) != -1 )
 
 
-def DestroyedVariableStillHaveReference_Test0():
+def TernaryOperator_TemporariesAreDestroyed_Test0():
+	c_program_text= """
+		fn Foo( bool b ) : i32
+		{
+			// Temporary values are produced in each branch of "select" expression.
+			// All temporaries, produced in each branch of "select" operator are destroyed,
+			// because there is no proper way to destroy them after branching - it is not clear what was actually created because of brancing.
+			// Because of that  it is not possible to take a reference to temporary value, using "select" branch.
+			// Alternatives are using values instead of references or using variables with longer lifetimes (stack variables, function params, global variables).
+			return select( b
+				? cast_imut(123) // Cast value to reference in order to "select" result have kind "ReferenceImut".
+				: cast_imut(456) );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) >= 2 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 10 ) )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 11 ) )
+
+
+def TernaryOperator_TemporariesAreDestroyed_Test1():
+	c_program_text= """
+		fn Foo( bool b ) : i32
+		{
+			var i32 x= 456;
+			return select( b
+				? cast_imut(123) // Cast value to reference in order to "select" result have kind "ReferenceImut".
+				: x );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) >= 1 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 6 ) )
+
+
+def TernaryOperator_TemporariesAreDestroyed_Test2():
+	c_program_text= """
+		fn Foo( bool b ) : i32
+		{
+			var i32 x= 123;
+			return select( b
+				? x
+				: cast_imut(456) ); // Cast value to reference in order to "select" result have kind "ReferenceImut".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) >= 1 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 7 ) )
+
+
+def TernaryOperator_TemporariesAreDestroyed_Test3():
 	c_program_text= """
 		fn Pass( i32& x ) : i32& { return x; }
 		fn Foo( bool b )
 		{
-			auto& r= select( b ? Pass(5) : Pass(7) ); // Both branches have value_type= ValueType::ConstReference, so, result will be const reference. But, referenced variables will be destroyed after branches evaluation.
+			auto& r= select(
+				b
+				? Pass(5)
+				: Pass(7) ); // Both branches have value_type= ValueType::ConstReference, so, result will be const reference. But, referenced variables will be destroyed after branches evaluation.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 5 ) )
+	assert( len(errors_list) >= 2 )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 7 ) )
+	assert( HaveError( errors_list, "DestroyedVariableStillHaveReferences", 8 ) )
 
 
 def VariablesStateMerge_ForTernaryOperator_Test0():

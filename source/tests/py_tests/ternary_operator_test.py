@@ -91,6 +91,46 @@ def TernaryOperator_ForReferenceValue_Test1():
 	assert( tests_lib.run_function( "_Z3Foob", False ) == 40 )
 
 
+def TernaryOperator_ForMixedValue_Test0():
+	c_program_text= """
+		fn GetInt() : i32 { return 34; }
+		fn Foo( bool b ) : i32
+		{
+			return select( b ? 42 : GetInt() ); // Value first operand and reference second operand.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foob", True  ) == 42 )
+	assert( tests_lib.run_function( "_Z3Foob", False ) == 34 )
+
+
+def TernaryOperator_ForMixedValue_Test1():
+	c_program_text= """
+		fn GetInt() : i32 { return 34; }
+		fn Foo( bool b ) : i32
+		{
+			return select( b ? GetInt() : 42 ); // Reference first operand and value second operand.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foob", True  ) == 34 )
+	assert( tests_lib.run_function( "_Z3Foob", False ) == 42 )
+
+
+def TernaryOperator_ForMixedValue_Test2():
+	c_program_text= """
+		fn Foo( bool b ) : i32
+		{
+			var i32 mut x= 77, imut y= 88;
+			var i32& res= select( b ? x : y ); // Mutable reference and immutable reference - result will be immutable reference.
+			return res;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foob", True  ) == 77 )
+	assert( tests_lib.run_function( "_Z3Foob", False ) == 88 )
+
+
 def TernaryOperatorIsLazy_Test0():
 	c_program_text= """
 		fn Mul5( i32 &mut x )

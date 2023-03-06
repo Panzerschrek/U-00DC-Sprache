@@ -907,7 +907,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				}
 			}
 
-			var VariablePtr branch_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, ternary_operator.branches[i].deref() );
+			var Synt::Expression& branch_expr= ternary_operator.branches[i].deref();
+			var VariablePtr branch_result_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch_expr );
 			var VariableLite branch_result= branch_result_ptr.lock_imut().deref();
 
 			branches_constexpr_values[i]= branch_result.constexpr_value;
@@ -950,7 +951,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				function_context.references_graph.TryAddLink( branch_result_ptr, result_ptr, names_scope, ternary_operator.src_loc );
 			}
 
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, ternary_operator.src_loc );
+			CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetSrcLoc(branch_expr) );
 		}
 
 		if( !function_context.is_functionless_context )
