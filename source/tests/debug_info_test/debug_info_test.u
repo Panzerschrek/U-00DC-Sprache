@@ -227,13 +227,35 @@ fn TemplateFunc(T x) : T
 	return x * T(2);
 }
 
+template</type T/>
+fn constexpr TemplateFuncConstexpr(T x) : T
+{
+	return x / T(2);
+}
+
 fn FunctionTemplatesTest()
 {
 	auto mut i= 72;
 	auto mut f= 27.0f;
 	TemplateFunc(i);
 	TemplateFunc(f);
+	TemplateFuncConstexpr(i);
+	TemplateFuncConstexpr(f);
 	return;
+}
+
+template</type T, size_type s/> struct ClassTemplate
+{
+	[ T, s ] val;
+	fn constructor()
+		( val= zero_init )
+	{}
+}
+
+fn ClassTemplateTest()
+{
+	var ClassTemplate</u32, 4s/> s0;
+	var ClassTemplate</f64, 16s/> s1;
 }
 
 fn ScopesTest()
@@ -318,6 +340,7 @@ fn nomangle main() : i32
 	StepInto0();
 	DestructorDebugLocationTest();
 	FunctionTemplatesTest();
+	ClassTemplateTest();
 	ImportedFunc();
 	ScopesTest();
 	VariableChangeTest();

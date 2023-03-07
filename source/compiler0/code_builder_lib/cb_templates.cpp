@@ -1143,6 +1143,17 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 
 	FunctionVariable& function_variable= result_functions_set.functions.front();
 	function_variable.base_template= function_template_ptr;
+	if( function_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprComplete )
+		function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
+
+	// Set correct mangled name
+	if( function_variable.llvm_function != nullptr )
+		function_variable.llvm_function->setName(
+			mangler_->MangleFunction(
+				*function_template.parent_namespace,
+				func_name,
+				*function_variable.type.GetFunctionType(),
+				&template_args ) );
 
 	// And generate function body after insertion of prototype.
 	if( !function_variable.have_body ) // if function is constexpr, body may be already generated.
@@ -1154,15 +1165,6 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 			function_declaration.type_.params_,
 			*function_declaration.block_,
 			function_declaration.constructor_initialization_list_.get() );
-
-	// Set correct mangled name
-	if( function_variable.llvm_function != nullptr )
-		function_variable.llvm_function->setName(
-			mangler_->MangleFunction(
-				*function_template.parent_namespace,
-				func_name,
-				*function_variable.type.GetFunctionType(),
-				&template_args ) );
 
 	// Two-step preparation needs for recursive function template call.
 

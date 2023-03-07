@@ -3299,7 +3299,6 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 
 		if( auto function= ParseFunction() )
 		{
-			function->is_template_= true;
 			function_template.function_= std::move(function);
 			return std::move(function_template);
 		}

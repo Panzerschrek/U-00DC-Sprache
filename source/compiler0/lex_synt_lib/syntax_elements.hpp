@@ -781,7 +781,6 @@ struct Function final : public SyntaxElementBase
 	bool no_mangle_= false;
 	bool is_conversion_constructor_= false;
 	bool constexpr_= false;
-	bool is_template_= false;
 };
 
 struct ClassField final : public SyntaxElementBase
