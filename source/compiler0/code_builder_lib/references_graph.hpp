@@ -21,8 +21,8 @@ public:
 	void AddLink( const VariablePtr& from, const VariablePtr& to );
 	void RemoveLink( const VariablePtr& from, const VariablePtr& to );
 
-	// Returns "false" in case of ReferenceProtectionError
-	bool TryAddLink( const VariablePtr& from, const VariablePtr& to );
+	// May emit ReferenceProtectionError.
+	void TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	VariablePtr GetNodeInnerReference( const VariablePtr& node ) const;
 	VariablePtr CreateNodeInnerReference( const VariablePtr& node, ValueType kind );

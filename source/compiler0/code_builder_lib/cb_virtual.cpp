@@ -496,8 +496,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	this_casted->llvm_value= CreateReferenceCast( this_->llvm_value, this_->type, this_casted->type, function_context );
 
 	function_context.variables_state.AddNode( this_casted );
-	if( !function_context.variables_state.TryAddLink( this_, this_casted ) )
-		REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, this_->name );
+	function_context.variables_state.TryAddLink( this_, this_casted, errors_container, src_loc );
 
 	RegisterTemporaryVariable( function_context, this_casted );
 

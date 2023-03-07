@@ -113,10 +113,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				variable->location,
 				variable->name + " lock" );
-
 		function_context.variables_state.AddNode( variable_lock );
-		if( !function_context.variables_state.TryAddLink( variable, variable_lock ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable->name );
+		function_context.variables_state.TryAddLink( variable, variable_lock, names.GetErrors(), indexation_operator.src_loc_ );
 
 		const VariablePtr index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
 
@@ -192,8 +190,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->llvm_value= CreateArrayElementGEP( function_context, *variable, index_value );
 
 		function_context.variables_state.AddNode( result );
-		if( !function_context.variables_state.TryAddLink( variable_lock, result ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), indexation_operator.src_loc_, variable_lock->name );
+		function_context.variables_state.TryAddLink( variable_lock, result, names.GetErrors(), indexation_operator.src_loc_ );
 
 		function_context.variables_state.RemoveNode( variable_lock );
 
@@ -668,9 +665,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, class_.base_class, function_context ) );
 
 			function_context.variables_state.AddNode( base );
-
-			if( !function_context.variables_state.TryAddLink( function_context.this_, base ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), named_operand.src_loc_, function_context.this_->name );
+			function_context.variables_state.TryAddLink( function_context.this_, base, names.GetErrors(), named_operand.src_loc_ );
 
 			RegisterTemporaryVariable( function_context, base );
 
@@ -912,8 +907,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			{
 				branches_reference_values[i]= branch_result->llvm_value;
 
-				if( !function_context.variables_state.TryAddLink( branch_result, result ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), ternary_operator.src_loc_, branch_result->name );
+				function_context.variables_state.TryAddLink( branch_result, result, names.GetErrors(), ternary_operator.src_loc_ );
 			}
 
 			CallDestructors( branch_temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch_expr ) );
@@ -1415,11 +1409,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// TODO - check if it is correct to create mutable links to possible immutable links.
 	function_context.variables_state.AddNode( result );
-	if( !function_context.variables_state.TryAddLink( var, result ) )
-		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), cast_mut.src_loc_, var->name );
+	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_mut.src_loc_ );
 
 	RegisterTemporaryVariable( function_context, result );
-
 	return Value( result, cast_mut.src_loc_ );
 }
 
@@ -1451,11 +1443,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->llvm_value= var->llvm_value;
 
 	function_context.variables_state.AddNode( result );
-	if( !function_context.variables_state.TryAddLink( var, result ) )
-		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), cast_imut.src_loc_, var->name );
+	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_imut.src_loc_ );
 
 	RegisterTemporaryVariable( function_context, result );
-
 	return Value( result, cast_imut.src_loc_ );
 }
 
@@ -1581,10 +1571,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				}
 			}
 			else
-			{
-				if( !function_context.variables_state.TryAddLink( variable_ptr, variable_copy ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), unsafe_expression.src_loc_, variable_ptr->name );
-			}
+				function_context.variables_state.TryAddLink( variable_ptr, variable_copy, names.GetErrors(), unsafe_expression.src_loc_ );
+
 			function_context.variables_state.MoveNode( variable_ptr );
 
 			RegisterTemporaryVariable( function_context, variable_copy );
@@ -1754,10 +1742,7 @@ Value CodeBuilder::AccessClassField(
 
 		function_context.variables_state.AddNode( result );
 		for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( variable ) )
-		{
-			if( !function_context.variables_state.TryAddLink( inner_reference, result ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
-		}
+			function_context.variables_state.TryAddLink( inner_reference, result, names.GetErrors(), src_loc );
 
 		RegisterTemporaryVariable( function_context, result );
 		return Value( result, src_loc );
@@ -1845,11 +1830,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 				r_var_real->location,
 				r_var_real->name + " lock",
 				r_var_real->llvm_value );
-
 		function_context.variables_state.AddNode( r_var_lock );
-
-		if( !function_context.variables_state.TryAddLink( r_var_real, r_var_lock ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var_real->name );
+		function_context.variables_state.TryAddLink( r_var_real, r_var_lock, names.GetErrors(), src_loc );
 
 		const VariablePtr l_var_real= BuildExpressionCode( left_expr, names, function_context ).GetVariable();
 
@@ -1923,11 +1905,8 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				r_var->location,
 				r_var->name + " lock",
 				r_var->llvm_value );
-
 		function_context.variables_state.AddNode( r_var_lock );
-
-		if( !function_context.variables_state.TryAddLink( r_var, r_var_lock ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, r_var->name );
+		function_context.variables_state.TryAddLink( r_var, r_var_lock, names.GetErrors(), src_loc );
 
 		const VariablePtr l_var= BuildExpressionCodeEnsureVariable( left_expr, names, function_context );
 		if( function_context.variables_state.HaveOutgoingLinks( l_var ) )
@@ -1970,11 +1949,8 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				l_var->location,
 				l_var->name + " lock",
 				l_var->llvm_value );
-
 		function_context.variables_state.AddNode( l_var_lock );
-
-		if( !function_context.variables_state.TryAddLink( l_var, l_var_lock ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, l_var->name );
+		function_context.variables_state.TryAddLink( l_var, l_var_lock, names.GetErrors(), src_loc );
 
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( right_expr, names, function_context );
 		if( function_context.variables_state.HaveOutgoingMutableNodes( r_var ) )
@@ -2876,10 +2852,8 @@ Value CodeBuilder::DoReferenceCast(
 			var->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut, // "ValueType" here converts into ConstReference
 			Variable::Location::Pointer,
 			"cast</" + type.ToString() + "/>(" + var->name + ")" );
-
 	function_context.variables_state.AddNode( result );
-	if( !function_context.variables_state.TryAddLink( var, result ) )
-		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, var->name );
+	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), src_loc );
 
 	llvm::Value* src_value= var->llvm_value;
 	if( var->location == Variable::Location::LLVMRegister )
@@ -3195,11 +3169,8 @@ Value CodeBuilder::DoCallFunction(
 				param.value_type,
 				Variable::Location::Pointer,
 				"reference_arg " + std::to_string(i) );
-
 			function_context.variables_state.AddNode( args_nodes[arg_number] );
-
-			if( !function_context.variables_state.TryAddLink( expr, args_nodes[arg_number] ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, expr->name );
+			function_context.variables_state.TryAddLink( expr, args_nodes[arg_number], names.GetErrors(), src_loc );
 
 			// Lock inner references.
 			const auto inner_references= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expr );
@@ -3222,10 +3193,7 @@ Value CodeBuilder::DoCallFunction(
 					function_context.variables_state.AddNode( locked_args_inner_references[arg_number] );
 
 					for( const VariablePtr& inner_reference : inner_references )
-					{
-						if( !function_context.variables_state.TryAddLink( inner_reference, locked_args_inner_references[arg_number] ) )
-							REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
-					}
+						function_context.variables_state.TryAddLink( inner_reference, locked_args_inner_references[arg_number], names.GetErrors(), src_loc );
 				}
 			}
 		}
@@ -3281,11 +3249,8 @@ Value CodeBuilder::DoCallFunction(
 						const auto value_arg_inner_node=
 							function_context.variables_state.CreateNodeInnerReference( args_nodes[arg_number], is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
 
-						for( const VariablePtr inner_reference : inner_references )
-						{
-							if( !function_context.variables_state.TryAddLink( inner_reference, value_arg_inner_node ) )
-								REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), src_loc, inner_reference->name );
-						}
+						for( const VariablePtr& inner_reference : inner_references )
+							function_context.variables_state.TryAddLink( inner_reference, value_arg_inner_node, names.GetErrors(), src_loc );
 					}
 				}
 
@@ -3442,19 +3407,10 @@ Value CodeBuilder::DoCallFunction(
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
 			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
-			{
-				const auto node= args_nodes[arg_reference.first];
-				if( !function_context.variables_state.TryAddLink( node, result ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, node->name );
-			}
+				function_context.variables_state.TryAddLink( args_nodes[arg_reference.first], result, names.GetErrors(), call_src_loc );
 			else
-			{
 				for( const VariablePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first] ) )
-				{
-					if( !function_context.variables_state.TryAddLink( accesible_node, result ) )
-						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, accesible_node->name );
-				}
-			}
+					function_context.variables_state.TryAddLink( accesible_node, result,  names.GetErrors(), call_src_loc );
 		}
 	}
 	else if( function_type.return_type.ReferencesTagsCount() > 0u )
@@ -3492,17 +3448,10 @@ Value CodeBuilder::DoCallFunction(
 		for( const FunctionType::ParamReference& arg_reference : function_type.return_references )
 		{
 			if( arg_reference.second == FunctionType::c_arg_reference_tag_number )
-			{
-				const auto node= args_nodes[arg_reference.first];
-				if( !function_context.variables_state.TryAddLink( node, inner_reference_node ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, node->name );
-			}
+				function_context.variables_state.TryAddLink( args_nodes[arg_reference.first], inner_reference_node, names.GetErrors(), call_src_loc );
 			else
 				for( const VariablePtr& accesible_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( args_nodes[arg_reference.first] ) )
-				{
-					if( !function_context.variables_state.TryAddLink( accesible_node, inner_reference_node ) )
-						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, accesible_node->name );
-				}
+					function_context.variables_state.TryAddLink( accesible_node, inner_reference_node, names.GetErrors(), call_src_loc );
 		}
 	}
 
@@ -3564,10 +3513,7 @@ Value CodeBuilder::DoCallFunction(
 					REPORT_ERROR( InnerReferenceMutabilityChanging, names.GetErrors(), call_src_loc, inner_reference->name );
 
 				for( const VariablePtr& src_node : src_nodes )
-				{
-					if( !function_context.variables_state.TryAddLink( src_node, inner_reference ) )
-						REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), call_src_loc, src_node->name );
-				}
+					function_context.variables_state.TryAddLink( src_node, inner_reference, names.GetErrors(), call_src_loc );
 			}
 		}
 		else

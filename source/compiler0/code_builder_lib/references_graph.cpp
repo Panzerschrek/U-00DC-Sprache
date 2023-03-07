@@ -75,14 +75,15 @@ void ReferencesGraph::RemoveLink( const VariablePtr& from, const VariablePtr& to
 	U_ASSERT(erased); // Removing unexistent link.
 }
 
-bool ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to )
+void ReferencesGraph::TryAddLink( const VariablePtr& from, const VariablePtr& to, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc )
 {
 	if( (to->value_type == ValueType::ReferenceMut && HaveOutgoingLinks( from ) ) ||
 		HaveOutgoingMutableNodes( from ) )
-		return false;
+	{
+		REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, from->name );
+	}
 
 	AddLink( from, to );
-	return true;
 }
 
 VariablePtr ReferencesGraph::GetNodeInnerReference( const VariablePtr& node ) const

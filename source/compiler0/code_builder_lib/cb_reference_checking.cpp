@@ -233,10 +233,7 @@ void CodeBuilder::SetupReferencesInCopyOrMove( FunctionContext& function_context
 			REPORT_ERROR( InnerReferenceMutabilityChanging, errors_container, src_loc, dst_node_inner_reference->name );
 
 		for( const VariablePtr& src_node_inner_reference : src_node_inner_references )
-		{
-			if( !function_context.variables_state.TryAddLink( src_node_inner_reference, dst_node_inner_reference ) )
-				REPORT_ERROR( ReferenceProtectionError, errors_container, src_loc, src_node_inner_reference->name );
-		}
+			function_context.variables_state.TryAddLink( src_node_inner_reference, dst_node_inner_reference, errors_container, src_loc );
 	}
 }
 

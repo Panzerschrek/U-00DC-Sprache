@@ -66,8 +66,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				variable->name + "[]" );
 
 		function_context.variables_state.AddNode( array_member );
-		if( !function_context.variables_state.TryAddLink( variable, array_member ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
+		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc_ );
 
 		bool is_constant= array_type->element_type.CanBeConstexpr();
 		std::vector<llvm::Constant*> members_constants;
@@ -118,8 +117,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					CreateTupleElementGEP( function_context, *variable, i ) );
 
 			function_context.variables_state.AddNode( tuple_element );
-			if( !function_context.variables_state.TryAddLink( variable, tuple_element ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
+			function_context.variables_state.TryAddLink( variable, tuple_element, names.GetErrors(), initializer.src_loc_ );
 
 			llvm::Constant* const member_constant=
 				ApplyInitializer( tuple_element, names, function_context, initializer.initializers[i] );
@@ -215,8 +213,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					CreateClassFieldGEP( function_context, *variable, field->index ) );
 
 			function_context.variables_state.AddNode( struct_member );
-			if( !function_context.variables_state.TryAddLink( variable, struct_member ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
+			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc_ );
 
 			constant_initializer=
 				ApplyInitializer( struct_member, names, function_context, member_initializer.initializer );
@@ -259,8 +256,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					CreateClassFieldGEP( function_context, *variable, field.index ) );
 
 			function_context.variables_state.AddNode( struct_member );
-			if( !function_context.variables_state.TryAddLink( variable, struct_member ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
+			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc_ );
 
 			if( field.syntax_element->initializer != nullptr )
 				constant_initializer=
@@ -450,8 +446,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				variable->name + "[]" );
 
 		function_context.variables_state.AddNode( array_member );
-		if( !function_context.variables_state.TryAddLink( variable, array_member ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
+		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc_ );
 
 		GenerateLoop(
 			array_type->element_count,
@@ -483,8 +478,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					CreateTupleElementGEP( function_context, *variable, i ) );
 
 			function_context.variables_state.AddNode( tuple_element );
-			if( !function_context.variables_state.TryAddLink( variable, tuple_element ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
+			function_context.variables_state.TryAddLink( variable, tuple_element, names.GetErrors(), initializer.src_loc_ );
 
 			ApplyInitializer( tuple_element, names, function_context, initializer );
 
@@ -526,8 +520,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					CreateClassFieldGEP( function_context, *variable, field.index ) );
 
 			function_context.variables_state.AddNode( struct_member );
-			if( !function_context.variables_state.TryAddLink( variable, struct_member ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), initializer.src_loc_, variable->name );
+			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc_ );
 
 			ApplyInitializer( struct_member, names, function_context, initializer );
 
@@ -590,8 +583,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 				variable->name + "[]" );
 
 		function_context.variables_state.AddNode( array_member );
-		if( !function_context.variables_state.TryAddLink( variable, array_member ) )
-			REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->name );
+		function_context.variables_state.TryAddLink( variable, array_member, block_names.GetErrors(), src_loc );
 
 		llvm::Constant* constant_initializer= nullptr;
 
@@ -630,8 +622,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 					CreateTupleElementGEP( function_context, *variable, i ) );
 
 			function_context.variables_state.AddNode( tuple_element );
-			if( !function_context.variables_state.TryAddLink( variable, tuple_element ) )
-				REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->name );
+			function_context.variables_state.TryAddLink( variable, tuple_element, block_names.GetErrors(), src_loc );
 
 			llvm::Constant* const constant_initializer=
 				ApplyEmptyInitializer( variable_name, src_loc, tuple_element, block_names, function_context );
@@ -1179,8 +1170,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 				return nullptr;
 			}
 		}
-		if( !function_context.variables_state.TryAddLink( initializer_variable, inner_reference ) )
-			REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), initializer_src_loc, initializer_variable->name );
+		function_context.variables_state.TryAddLink( initializer_variable, inner_reference, block_names.GetErrors(), initializer_src_loc );
 	}
 
 	llvm::Value* const address_of_reference= CreateClassFieldGEP( function_context, *variable, field.index );

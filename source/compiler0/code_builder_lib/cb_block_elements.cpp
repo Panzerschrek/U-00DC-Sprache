@@ -186,8 +186,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_declaration.name, variable_declaration.src_loc, function_context );
 
-			if( !function_context.variables_state.TryAddLink( expression_result, variable_reference ) )
-				REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), variable_declaration.src_loc, expression_result->name );
+			function_context.variables_state.TryAddLink( expression_result, variable_reference, names.GetErrors(), variable_declaration.src_loc );
 		}
 		else U_ASSERT(false);
 
@@ -287,8 +286,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, auto_variable_declaration.name, auto_variable_declaration.src_loc_, function_context );
 
-		if( !function_context.variables_state.TryAddLink( initializer_experrsion, variable_reference ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion->name );
+		function_context.variables_state.TryAddLink( initializer_experrsion, variable_reference, names.GetErrors(), auto_variable_declaration.src_loc_ );
 	}
 	else if( auto_variable_declaration.reference_modifier == ReferenceModifier::None )
 	{
@@ -620,8 +618,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			sequence_expression->name + " sequence lock" );
 
 	function_context.variables_state.AddNode( sequence_lock );
-	if( !function_context.variables_state.TryAddLink( sequence_expression, sequence_lock ) )
-		REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), range_for_operator.src_loc_, sequence_expression->name );
+	function_context.variables_state.TryAddLink( sequence_expression, sequence_lock,  names.GetErrors(), range_for_operator.src_loc_ );
 
 	RegisterTemporaryVariable( function_context, sequence_lock );
 
@@ -667,8 +664,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 				debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, variable_name, range_for_operator.src_loc_, function_context );
 
-				if( !function_context.variables_state.TryAddLink( sequence_lock, variable_reference ) )
-					REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), range_for_operator.src_loc_, sequence_expression->name );
+				function_context.variables_state.TryAddLink( sequence_lock, variable_reference, names.GetErrors(), range_for_operator.src_loc_ );
 			}
 			else
 			{
@@ -1087,8 +1083,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		debug_info_builder_->CreateReferenceVariableInfo( *variable_reference, with_operator.variable_name_, with_operator.src_loc_, function_context );
 
-		if( !function_context.variables_state.TryAddLink( expr, variable_reference ) )
-			REPORT_ERROR( ReferenceProtectionError, names.GetErrors(), with_operator.src_loc_, expr->name );
+		function_context.variables_state.TryAddLink( expr, variable_reference, names.GetErrors(), with_operator.src_loc_ );
 	}
 	else if( with_operator.reference_modifier_ == ReferenceModifier::None )
 	{
