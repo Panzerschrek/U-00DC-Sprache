@@ -577,7 +577,8 @@ public:
 
 	struct VariableParam
 	{
-		VariablePtr v;
+		Type t;
+		LLVMValueRef constexpr_value;
 
 		op==(VariableParam& l, VariableParam& r) : bool;
 	}

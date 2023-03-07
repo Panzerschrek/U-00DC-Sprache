@@ -1148,17 +1148,7 @@ fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref
 
 op TemplateSignatureParam::VariableParam::==(VariableParam& l, VariableParam& r) : bool
 {
-	auto l_lock= l.v.lock_imut();
-	auto& l_v= l_lock.deref();
-	auto r_lock= r.v.lock_imut();
-	auto& r_v= r_lock.deref();
-
-	if( l_v.t != r_v.t )
-	{
-		return false;
-	}
-
-	return unsafe( LLVMConstIntGetZExtValue(l_v.constexpr_value) == LLVMConstIntGetZExtValue(r_v.constexpr_value) );
+	return l.t == r.t && unsafe( LLVMConstIntGetZExtValue(l.constexpr_value) == LLVMConstIntGetZExtValue(r.constexpr_value) );
 }
 
 op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool
