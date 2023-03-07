@@ -119,6 +119,24 @@ def FieldIsNotInitializedYet_ForBase_Test2():
 	assert( HaveError( errors_list, "FieldIsNotInitializedYet", 10 ) )
 
 
+def FieldIsNotInitializedYet_ForBase_Test3():
+	c_program_text= """
+		class A abstract
+		{
+			fn virtual pure Foo(this) : i32;
+		}
+		class B : A
+		{
+			i32 y;
+			fn constructor() ( y= base.Foo() ) {} // It is unsafe to access "base" here, because it is abstract and whole "this" (with proper virtual table) is still unawailable.
+			fn virtual override Foo(this) : i32 { return 765432; }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "FieldIsNotInitializedYet", 9 ) )
+
+
 def CanNotDeriveFromThisType_Test0():
 	c_program_text= """
 		class A{}   // non-polymorph by-default

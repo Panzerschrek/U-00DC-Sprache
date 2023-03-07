@@ -384,20 +384,21 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( BaseUnavailable, names_scope, named_operand.src_loc )
 			return ErrorValue();
 		}
+		var ClassTypePtr base_class_non_null= base_class.try_to_non_nullable();
+
 		if( function_context.whole_this_is_unavailable &&
-			function_context.uninitialized_this_fields.exists( KeywordToString( Keyword::base_ ) ) )
+			( function_context.uninitialized_this_fields.exists( KeywordToString( Keyword::base_ ) ) || base_class_non_null.lock_imut().deref().kind == ClassType::Kind::Abstract ) )
 		{
 			REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.src_loc, KeywordToString( Keyword::base_ ) )
 			return ErrorValue();
 		}
 
-		var Type base_type= base_class.try_to_non_nullable();
 		var Variable mut base_
 		{
-			.t= base_type,
+			.t= base_class_non_null,
 			.value_type= this_.value_type,
 			.location= Variable::Location::Pointer,
-			.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, base_type, function_context ),
+			.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, base_class_non_null, function_context ),
 			.name= KeywordToString( Keyword::base_ ),
 		};
 
