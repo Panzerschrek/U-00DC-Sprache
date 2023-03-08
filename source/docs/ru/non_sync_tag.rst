@@ -52,12 +52,12 @@
    class A non_sync( non_sync</A/> ) {} // самозависимость - результат будет не non_sync
    static_assert( !non_sync</A/> );
    
-   class B non_sync( non_sync</C/> ) {} // циклическая зависимость - результат будет non_sync
+   class B non_sync( non_sync</C/> ) {} // циклическая зависимость - результат не будет non_sync, т. к. нету источника начального non_sync тега
    class C non_sync( non_sync</B/> ) {}
    static_assert( !non_sync</B/> );
    static_assert( !non_sync</C/> );
    
-   class D non_sync( non_sync</E/> ) {} // циклическая зависимость через поле - результат будет non_sync
+   class D non_sync( non_sync</E/> ) {} // циклическая зависимость через поле - результат будет non_sync, т. к. есть источник начального non_sync тега
    class E non_sync { D d; }
    static_assert( non_sync</D/> );
    static_assert( non_sync</E/> );

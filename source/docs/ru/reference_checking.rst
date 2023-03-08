@@ -33,7 +33,6 @@
    fn Foo()
    {
        var [ f64, 4 ] a= zero_init;
-   
        var f64 &a_ref= a[2]; // "a_ref" - производная ссылка от "a"
    }
 
