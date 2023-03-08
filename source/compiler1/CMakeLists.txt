@@ -147,6 +147,15 @@ if( U_COMPILER1_LTO )
 			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
 			-o ${CODE_BUILDER_LIB_O}
 			--input-filetype=bc
+			--internalize
+			--internalize-preserve U1_BuildProgram
+			--internalize-preserve U1_BuildProgramWithErrors
+			--internalize-preserve U1_BuildProgramWithSyntaxErrors
+			--internalize-preserve U1_BuildMultisourceProgram
+			--internalize-preserve U1_BuildMultisourceProgramWithErrors
+			--internalize-preserve U1_BuildProgramForLifetimesTest
+			--internalize-preserve U1_BuildProgramForMSVCManglingTest
+			--internalize-preserve U1_BuildProgramUsingVFS
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Building ${CODE_BUILDER_LIB_O}"
 		)

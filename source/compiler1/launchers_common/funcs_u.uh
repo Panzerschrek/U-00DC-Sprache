@@ -61,6 +61,11 @@ fn nomangle U1_BuildProgramForLifetimesTest(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
 
+fn nomangle U1_BuildProgramForMSVCManglingTest(
+	U1_StringView& program_text,
+	LLVMContextRef llvm_context,
+	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
+
 struct IVfsInterface ordered
 {
 	type FillStringCallback= fn( UserHandle user_data, U1_StringView& result_path_normalized );
