@@ -87,7 +87,7 @@ using SourceFilePathCallback= void(*)( UserHandle data, const U1_StringView& fil
 
 using LexSyntErrorCallback= void(*)( UserHandle data, uint32_t file_index, uint32_t line, uint32_t column, const U1_StringView& text );
 
-extern "C" LLVMModuleRef U1_BuildProgrammUsingVFS(
+extern "C" LLVMModuleRef U1_BuildProgramUsingVFS(
 	const IVfsInterface& vfs_interface,
 	const U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,

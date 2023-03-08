@@ -120,7 +120,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	CodeBuilderLaunchResult result;
 
 	const LLVMModuleRef llvm_module=
-		U1_BuildProgrammUsingVFS(
+		U1_BuildProgramUsingVFS(
 			IVfsInterface{ reinterpret_cast<UserHandle>(&vfs), GetFullFilePath, LoadFileContent },
 			StringToStringView(input_file),
 			llvm::wrap(&llvm_context),

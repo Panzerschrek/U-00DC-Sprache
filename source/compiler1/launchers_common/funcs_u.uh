@@ -74,7 +74,7 @@ type SourceFilePathCallback= fn( UserHandle data, U1_StringView& file_path_norma
 
 type LexSyntErrorCallback= fn( UserHandle data, u32 file_index, u32 line, u32 column, U1_StringView& text );
 
-fn nomangle U1_BuildProgrammUsingVFS(
+fn nomangle U1_BuildProgramUsingVFS(
 	IVfsInterface& vfs_interface,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,

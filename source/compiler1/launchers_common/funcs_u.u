@@ -139,7 +139,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 	}
 }
 
-fn nomangle U1_BuildProgrammUsingVFS(
+fn nomangle U1_BuildProgramUsingVFS(
 	IVfsInterface& vfs_interface,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
