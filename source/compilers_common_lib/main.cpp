@@ -284,7 +284,36 @@ cl::opt<bool> verify_module(
 	cl::init(false),
 	cl::cat(options_category) );
 
+cl::opt<bool> internalize(
+	"internalize",
+	cl::desc("Internalize symbols with public visibility (functions, global variables) except \"main\" and symobols listed in \"--internalize-preserve\" option. Usefull for whole program optimization."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+cl::list<std::string> internalize_preserve(
+	"internalize-preserve",
+	cl::CommaSeparated,
+	cl::desc("Used together with \"--internalize option\". Preserve listed symbols."),
+	cl::value_desc("symbol1, symbol2, symbolN,..."),
+	cl::Optional,
+	cl::cat(options_category) );
+
 } // namespace Options
+
+bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
+{
+	const llvm::StringRef name= global_value.getName();
+
+	if( name == "main" )
+		return true; // Always preserve "main" - default entry point of executable files.
+
+	// TODO - use StringMap or something like that instead.
+	for( const std::string& name_fro_preserve : Options::internalize_preserve )
+		if( name == name_fro_preserve )
+			return true;
+
+	return false;
+}
 
 int Main( int argc, const char* argv[] )
 {
@@ -704,6 +733,10 @@ int Main( int argc, const char* argv[] )
 
 	// Create pass manager for optimizations and output passes.
 	llvm::legacy::PassManager pass_manager;
+
+	// Apply internalization (if needed) even if optimizations are disabled.
+	if( Options::internalize )
+		pass_manager.add( llvm::createInternalizePass( MustPreserveGlobalValue ) );
 
 	// Create optimization passes.
 	if( optimization_level > 0u || size_optimization_level > 0u )
