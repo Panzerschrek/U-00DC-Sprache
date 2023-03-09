@@ -148,14 +148,17 @@ if( U_COMPILER1_LTO )
 			-o ${CODE_BUILDER_LIB_O}
 			--input-filetype=bc
 			--internalize
-			--internalize-preserve U1_BuildProgram
-			--internalize-preserve U1_BuildProgramWithErrors
-			--internalize-preserve U1_BuildProgramWithSyntaxErrors
-			--internalize-preserve U1_BuildMultisourceProgram
-			--internalize-preserve U1_BuildMultisourceProgramWithErrors
-			--internalize-preserve U1_BuildProgramForLifetimesTest
-			--internalize-preserve U1_BuildProgramForMSVCManglingTest
-			--internalize-preserve U1_BuildProgramUsingVFS
+			"--internalize-preserve=\
+U1_BuildProgram,\
+U1_BuildProgramWithErrors,\
+U1_BuildProgramWithSyntaxErrors,\
+U1_BuildMultisourceProgram,\
+U1_BuildMultisourceProgramWithErrors,\
+U1_BuildMultisourceProgramWithErrors,\
+U1_BuildMultisourceProgramWithErrors,\
+U1_BuildProgramForLifetimesTest,\
+U1_BuildProgramForMSVCManglingTest,\
+U1_BuildProgramUsingVFS"
 		WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 		COMMENT "Building ${CODE_BUILDER_LIB_O}"
 		)

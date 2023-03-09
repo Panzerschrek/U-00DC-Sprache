@@ -286,14 +286,15 @@ cl::opt<bool> verify_module(
 
 cl::opt<bool> internalize(
 	"internalize",
-	cl::desc("Internalize publically-available symbols (functions, global variables) except listed in internalize-preserve option. Usefull for whole program optimization."),
+	cl::desc("Internalize symbols with public visibility (functions, global variables) except \"main\" and symobols listed in \"--internalize-preserve\" option. Usefull for whole program optimization."),
 	cl::init(false),
 	cl::cat(options_category) );
 
 cl::list<std::string> internalize_preserve(
 	"internalize-preserve",
-	cl::desc("Used together with internalize option. Preserve listed symbols."),
-	cl::value_desc("symbol1, symbol2, symbolN..."),
+	cl::CommaSeparated,
+	cl::desc("Used together with \"--internalize option\". Preserve listed symbols."),
+	cl::value_desc("symbol1, symbol2, symbolN,..."),
 	cl::Optional,
 	cl::cat(options_category) );
 
