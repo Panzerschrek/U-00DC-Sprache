@@ -301,8 +301,12 @@ cl::list<std::string> internalize_preserve(
 
 bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 {
-	// TODO - use StringMap or something like that instead.
 	const llvm::StringRef name= global_value.getName();
+
+	if( name == "main" )
+		return true; // Always preserve "main" - default entry point of executable files.
+
+	// TODO - use StringMap or something like that instead.
 	for( const std::string& name_fro_preserve : Options::internalize_preserve )
 		if( name == name_fro_preserve )
 			return true;
