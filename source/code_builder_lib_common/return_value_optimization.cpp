@@ -30,16 +30,16 @@ void TryToPerformReturnValueAllocationOptimization( llvm::Function& function )
 	{
 		if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( user ) )
 		{
-			const llvm::Value* const callee= call_instruction->getOperand(0);
+			const llvm::Value* const callee= call_instruction->getOperand( call_instruction->getNumOperands() - 1u ); // Function is last operand
 			if( const auto callee_function= llvm::dyn_cast<llvm::Function>( callee ) )
 			{
 				if( callee_function->getIntrinsicID() != llvm::Intrinsic::memcpy )
 					return; // Returnning non-alloc - can't perform the optimization.
 
-				if( call_instruction->getOperand(1) != s_ret_value ) // Destination of "memcpy" should be "s_ret".
+				if( call_instruction->getOperand(0) != s_ret_value ) // Destination of "memcpy" should be "s_ret".
 					return; // This should not actually happen.
 
-				llvm::Value* const memcpy_src= call_instruction->getOperand(2);
+				llvm::Value* const memcpy_src= call_instruction->getOperand(1);
 				if( const auto memcpy_src_alloca= llvm::dyn_cast<llvm::AllocaInst>(memcpy_src) )
 				{
 					if( alloca_for_replacing == nullptr )
