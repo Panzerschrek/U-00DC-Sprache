@@ -25,3 +25,5 @@ fn nomangle U1_ConvertUTF8ToUTF32(
 	$(char32) dst_buff, size_type dst_buff_size ) unsafe : size_type;
 
 fn nomangle U1_ConstDataArray(LLVMTypeRef t, $(char8) data, size_type data_size, size_type element_count) unsafe : LLVMValueRef;
+
+fn nomangle U1_TryToPerformReturnValueAllocationOptimization( LLVMValueRef function ) unsafe;

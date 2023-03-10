@@ -1753,6 +1753,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
+	unsafe( U1_TryToPerformReturnValueAllocationOptimization( func_variable.llvm_function ) );
+
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 	{
 		auto mut can_be_constexpr= true;
