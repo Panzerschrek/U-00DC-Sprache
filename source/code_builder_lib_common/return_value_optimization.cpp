@@ -63,17 +63,36 @@ void TryToPerformReturnValueAllocationOptimization( llvm::Function& function )
 	// Ok - can perform return value optimization.
 
 	// First delete all "memcpy" instructions.
-	llvm::SmallVector<llvm::User*, 4> instr_to_remove;
-	for( llvm::User* const user : s_ret_value->users() )
-		instr_to_remove.push_back(user);
-
-	for( llvm::User* const user : instr_to_remove )
 	{
-		if( const auto instr= llvm::dyn_cast<llvm::Instruction>(user) )
-			instr->eraseFromParent();
+		llvm::SmallVector<llvm::User*, 4> memcpy_calls_to_remove;
+		for( llvm::User* const user : s_ret_value->users() )
+			memcpy_calls_to_remove.push_back(user);
+
+		for( llvm::User* const user : memcpy_calls_to_remove )
+		{
+			if( const auto instr= llvm::dyn_cast<llvm::Instruction>(user) )
+				instr->eraseFromParent();
+		}
 	}
 
-	// TODO - remove also "lifetime.end" before "return".
+	// Remove lifetime.end instructions, associated with initial "alloca"
+	{
+		// TODO - is it correct to remove all "lifetime.end" instructions?
+		llvm::SmallVector<llvm::Instruction*, 4> lifetime_end_call_to_remove;
+		for( llvm::User* const user : alloca_for_replacing->users() )
+		{
+			if( const auto call_instruction= llvm::dyn_cast<llvm::CallInst>( user ) )
+			{
+				const llvm::Value* const callee= call_instruction->getOperand( call_instruction->getNumOperands() - 1u ); // Function is last operand
+				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( callee ) )
+					if( callee_function->getIntrinsicID() == llvm::Intrinsic::lifetime_end )
+						lifetime_end_call_to_remove.push_back( call_instruction );
+			}
+		}
+
+		for( llvm::Instruction* const instr : lifetime_end_call_to_remove )
+				instr->eraseFromParent();
+	}
 
 	// Replace "alloca" with "s_ret".
 	alloca_for_replacing->replaceAllUsesWith( s_ret_value );
