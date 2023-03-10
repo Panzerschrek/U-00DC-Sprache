@@ -227,8 +227,7 @@ private:
 	void EncodeNumber( ManglerState& mangler_state, const llvm::APInt& num, bool is_signed ) const;
 
 private:
-	const std::string pointer_types_modifier_;
-	// Reuse mangler state to reduce number of allocations.
+	const std::string_view pointer_types_modifier_;
 };
 
 ManglerMSVC::ManglerMSVC(const bool is_32_bit)
