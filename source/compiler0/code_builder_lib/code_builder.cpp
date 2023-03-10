@@ -7,6 +7,7 @@
 
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
+#include "../../code_builder_lib_common/return_value_optimization.hpp"
 #include "../../sprache_version/sprache_version.hpp"
 #include "error_reporting.hpp"
 
@@ -1448,13 +1449,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
-	// Replace return value allocation at end of function build process.
-	// We can do this only now, because now there is no "llvm_value" for this allocation stored in some intermediate structs.
-	if( function_context.return_value_replaced_allocation != nullptr )
-	{
-		U_ASSERT( function_context.s_ret_ != nullptr );
-		function_context.return_value_replaced_allocation->replaceAllUsesWith( function_context.s_ret_ );
-	}
+	TryToPerformReturnValueAllocationOptimization( *llvm_function );
 
 	return function_type.return_type;
 }

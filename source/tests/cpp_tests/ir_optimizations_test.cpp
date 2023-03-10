@@ -148,8 +148,6 @@ U_TEST(WithOperatorVariableMoveInitializationOptimization_Test1)
 
 U_TEST(MoveReturnVariableAllocationOptimization_Test0)
 {
-	DISABLE_TEST;
-
 	static const char c_program_text[]=
 	R"(
 		struct S{ [i32, 4] x; }
@@ -178,8 +176,6 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test0)
 
 U_TEST(MoveReturnVariableAllocationOptimization_Test1)
 {
-	DISABLE_TEST;
-
 	static const char c_program_text[]=
 	R"(
 	struct S
@@ -220,8 +216,6 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test1)
 
 U_TEST(MoveReturnVariableAllocationOptimization_Test2)
 {
-	DISABLE_TEST;
-
 	static const char c_program_text[]=
 	R"(
 	struct S
@@ -271,8 +265,6 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test2)
 
 U_TEST(MoveReturnVariableAllocationOptimization_Test3)
 {
-	DISABLE_TEST;
-
 	static const char c_program_text[]=
 	R"(
 	struct S
@@ -288,7 +280,7 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test3)
 		}
 		fn GetS(bool b) : S
 		{
-			// At least one of this variables must be allocated in "s_ret" but not both.
+			// Can't perform here return value optimization - returning different local variables.
 			var S mut s0, mut s1;
 			halt if($<(s0) == $<(s1));
 			if(b)
@@ -305,7 +297,8 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test3)
 		{
 			auto mut s0= GetS(false);
 			auto mut s1= GetS(true);
-			halt if( !( $<(s0) == s0.self_ptr || $<(s1) == s1.self_ptr ) );
+			halt if( $<(s0) == s0.self_ptr );
+			halt if( $<(s1) == s1.self_ptr );
 		}
 	)";
 
@@ -321,7 +314,7 @@ U_TEST(MoveReturnVariableAllocationOptimization_Test4)
 {
 	static const char c_program_text[]=
 	R"(
-	struct S
+		struct S
 		{
 			[ u64, 8 ] dummy;
 			$(S) self_ptr;
@@ -420,8 +413,6 @@ U_TEST(ArgumentVariableAllocationOptimization_Test1)
 
 U_TEST(ArgumentVariableAllocationOptimization_Test2)
 {
-	DISABLE_TEST;
-
 	static const char c_program_text[]=
 	R"(
 		struct S

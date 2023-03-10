@@ -1753,12 +1753,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
-	// Replace return value allocation at end of function build process.
-	// We can do this only now, because now there is no "llvm_value" for this allocation stored in some intermediate structs.
-	if( function_context.return_value_replaced_allocation != LLVMValueRef::Null )
-	{
-		unsafe( LLVMReplaceAllUsesWith( function_context.return_value_replaced_allocation, function_context.s_ret ) );
-	}
+	unsafe( U1_TryToPerformReturnValueAllocationOptimization( func_variable.llvm_function ) );
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 	{

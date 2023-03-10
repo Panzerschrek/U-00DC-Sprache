@@ -5,6 +5,7 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/Support/ConvertUTF.h>
+#include "../../code_builder_lib_common/return_value_optimization.hpp"
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 extern "C" LLVMTypeRef U1_GetFunctionType(const LLVMValueRef f)
@@ -82,4 +83,10 @@ extern "C" LLVMValueRef U1_ConstDataArray(LLVMTypeRef t, const char* const data,
 			llvm::StringRef(data, size),
 			element_count,
 			llvm::unwrap(t)));
+}
+
+extern "C" void U1_TryToPerformReturnValueAllocationOptimization( const LLVMValueRef function )
+{
+	const auto function_really= llvm::dyn_cast<llvm::Function>( llvm::unwrap(function) );
+	U::TryToPerformReturnValueAllocationOptimization( *function_really );
 }
