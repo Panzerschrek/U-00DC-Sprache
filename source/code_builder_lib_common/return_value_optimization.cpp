@@ -33,31 +33,32 @@ void TryToPerformReturnValueAllocationOptimization( llvm::Function& function )
 			const llvm::Value* const callee= call_instruction->getOperand(0);
 			if( const auto callee_function= llvm::dyn_cast<llvm::Function>( callee ) )
 			{
-				if( callee_function->getIntrinsicID() == llvm::Intrinsic::memcpy )
-				{
-					if( call_instruction->getOperand(1) != s_ret_value ) // Destination of "memcpy" should be "s_ret".
-						return; // This should not actually happen.
+				if( callee_function->getIntrinsicID() != llvm::Intrinsic::memcpy )
+					return; // Returnning non-alloc - can't perform the optimization.
 
-					llvm::Value* const memcpy_src= call_instruction->getOperand(2);
-					if( const auto memcpy_src_alloca= llvm::dyn_cast<llvm::AllocaInst>(memcpy_src) )
-					{
-						if( alloca_for_replacing == nullptr )
-							alloca_for_replacing= memcpy_src_alloca;
-						else if( memcpy_src_alloca != alloca_for_replacing )
-							return; // Returning different "alloca" in different places - can't perform optimization.
-					}
-					else
-						return; // Returnning non-alloc - can't perform the optimization.
+				if( call_instruction->getOperand(1) != s_ret_value ) // Destination of "memcpy" should be "s_ret".
+					return; // This should not actually happen.
+
+				llvm::Value* const memcpy_src= call_instruction->getOperand(2);
+				if( const auto memcpy_src_alloca= llvm::dyn_cast<llvm::AllocaInst>(memcpy_src) )
+				{
+					if( alloca_for_replacing == nullptr )
+						alloca_for_replacing= memcpy_src_alloca;
+					else if( memcpy_src_alloca != alloca_for_replacing )
+						return; // Returning different "alloca" in different places - can't perform optimization.
 				}
 				else
 					return; // Calling not a "memcpy" for s_ret".
 			}
 			else
-				return; // Calling "s_ret" via pointer - wtf?
+				return; // Calling some function via pointer - wtf?
 		}
 		else
 			return; // This is strange - "s_ret" used somowhere else.
 	}
+
+	if( alloca_for_replacing == nullptr )
+		return;
 
 	// Ok - can perform return value optimization.
 
