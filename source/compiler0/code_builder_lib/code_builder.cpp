@@ -7,6 +7,7 @@
 
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
+#include "../../code_builder_lib_common/return_value_optimization.hpp"
 #include "../../sprache_version/sprache_version.hpp"
 #include "error_reporting.hpp"
 
@@ -1447,6 +1448,8 @@ Type CodeBuilder::BuildFuncCode(
 	}
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+
+	TryToPerformReturnValueAllocationOptimization( *llvm_function );
 
 	return function_type.return_type;
 }
