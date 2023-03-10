@@ -85,13 +85,14 @@ void TryToPerformReturnValueAllocationOptimization( llvm::Function& function )
 			{
 				const llvm::Value* const callee= call_instruction->getOperand( call_instruction->getNumOperands() - 1u ); // Function is last operand
 				if( const auto callee_function= llvm::dyn_cast<llvm::Function>( callee ) )
-					if( callee_function->getIntrinsicID() == llvm::Intrinsic::lifetime_end )
+					if( callee_function->getIntrinsicID() == llvm::Intrinsic::lifetime_end  ||
+						callee_function->getName() == "__U_debug_lifetime_end" )
 						lifetime_end_call_to_remove.push_back( call_instruction );
 			}
 		}
 
 		for( llvm::Instruction* const instr : lifetime_end_call_to_remove )
-				instr->eraseFromParent();
+			instr->eraseFromParent();
 	}
 
 	// Replace "alloca" with "s_ret".
