@@ -121,8 +121,6 @@ private:
 		const SrcLoc& src_loc,
 		CodeBuilderErrorsContainer& errors );
 
-	llvm::Function* EnsureLLVMFunctionCreated( const FunctionVariable& function_variable );
-
 	// Virtual stuff
 	void CheckvirtualFunctionOverridingReferenceNotation(
 		CodeBuilderErrorsContainer& errors_container,
@@ -926,10 +924,11 @@ private:
 
 	bool IsGlobalVariable( const VariablePtr& variable );
 
-	void SetupFunctionParamsAndRetAttributes( const FunctionVariable& function_variable );
+	// Creates LLVM function and its LLVM type lazily. This call may trigger types competion.
+	llvm::Function* EnsureLLVMFunctionCreated( const FunctionVariable& function_variable );
+
 	// Requires complete types
 	void SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
-
 	void SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesScope& names_scope );
 
 	void CreateLifetimeStart( FunctionContext& function_context, llvm::Value* address );

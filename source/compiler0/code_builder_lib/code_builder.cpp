@@ -2038,10 +2038,21 @@ bool CodeBuilder::IsGlobalVariable( const VariablePtr& variable )
 		variable->location == Variable::Location::Pointer;
 }
 
-void CodeBuilder::SetupFunctionParamsAndRetAttributes( const FunctionVariable& function_variable )
+llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& function_variable )
 {
-	llvm::Function* llvm_function= EnsureLLVMFunctionCreated( function_variable );
+	llvm::Function*& llvm_function= function_variable.llvm_function->function;
+
+	if( llvm_function != nullptr )
+		return llvm_function;
+
 	const FunctionType& function_type= *function_variable.type.GetFunctionType();
+
+	llvm_function=
+		llvm::Function::Create(
+			GetLLVMFunctionType( function_type ),
+			llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
+			function_variable.llvm_function->name_mangled,
+			module_.get() );
 
 	const bool first_arg_is_sret= function_type.IsStructRet();
 
@@ -2096,6 +2107,8 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( const FunctionVariable& f
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+
+	return llvm_function;
 }
 
 void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable )

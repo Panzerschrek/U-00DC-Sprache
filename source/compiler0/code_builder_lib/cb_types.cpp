@@ -257,22 +257,4 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention(
 	return llvm::CallingConv::C;
 }
 
-// TODO - move this function into another file?
-llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& function_variable )
-{
-	if( function_variable.llvm_function->function != nullptr )
-		return function_variable.llvm_function->function;
-
-	function_variable.llvm_function->function=
-		llvm::Function::Create(
-			GetLLVMFunctionType( *function_variable.type.GetFunctionType() ),
-			llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-			function_variable.llvm_function->name_mangled,
-			module_.get() );
-
-	SetupFunctionParamsAndRetAttributes( function_variable );
-
-	return function_variable.llvm_function->function;
-}
-
 } // namespace U
