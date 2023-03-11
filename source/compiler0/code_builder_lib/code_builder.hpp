@@ -115,13 +115,13 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 
-	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type ) const;
+	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
 	llvm::CallingConv::ID GetLLVMCallingConvention(
 		const std::optional<std::string>& calling_convention_name,
 		const SrcLoc& src_loc,
 		CodeBuilderErrorsContainer& errors );
 
-	llvm::Function* EnsureLLVMFunctionCreated( const FunctionVariable& function_variable ) const;
+	llvm::Function* EnsureLLVMFunctionCreated( const FunctionVariable& function_variable );
 
 	// Virtual stuff
 	void CheckvirtualFunctionOverridingReferenceNotation(
@@ -926,7 +926,7 @@ private:
 
 	bool IsGlobalVariable( const VariablePtr& variable );
 
-	void SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
+	void SetupFunctionParamsAndRetAttributes( const FunctionVariable& function_variable );
 	// Requires complete types
 	void SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
 

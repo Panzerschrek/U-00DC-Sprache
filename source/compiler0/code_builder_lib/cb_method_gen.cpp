@@ -106,10 +106,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 	constructor_variable->is_generated= true;
 	constructor_variable->is_constructor= true;
 
-	SetupFunctionParamsAndRetAttributes( *constructor_variable );
-
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *constructor_variable );
-	llvm_function->setLinkage( llvm::Function::PrivateLinkage );
 
 	FunctionContext function_context(
 		*constructor_variable->type.GetFunctionType(),
@@ -295,10 +292,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 	constructor_variable->is_generated= true;
 	constructor_variable->is_constructor= true;
 
-	SetupFunctionParamsAndRetAttributes( *constructor_variable );
-
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *constructor_variable );
-	llvm_function->setLinkage( llvm::Function::PrivateLinkage );
 
 	FunctionContext function_context(
 		*constructor_variable->type.GetFunctionType(),
@@ -371,9 +365,6 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr class_
 	destructor_function.is_this_call= true;
 	destructor_function.have_body= false;
 
-
-	SetupFunctionParamsAndRetAttributes( destructor_function );
-
 	return destructor_function;
 }
 
@@ -383,7 +374,6 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVar
 	const FunctionType& destructor_type= *destructor_function.type.GetFunctionType();
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( destructor_function );
-	llvm_function->setLinkage( llvm::Function::PrivateLinkage );
 
 	llvm::Value* const this_llvm_value= &*llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
@@ -553,10 +543,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 	operator_variable->is_this_call= true;
 	operator_variable->is_generated= true;
 
-	SetupFunctionParamsAndRetAttributes( *operator_variable );
-
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
-	llvm_function->setLinkage( llvm::Function::PrivateLinkage );
 
 	FunctionContext function_context(
 		*operator_variable->type.GetFunctionType(),
@@ -707,10 +694,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 	operator_variable->is_this_call= false; // TODO - is there any reason to set this flag?
 	operator_variable->is_generated= true;
 
-	SetupFunctionParamsAndRetAttributes( *operator_variable );
-
 	llvm::Function* llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
-	llvm_function->setLinkage( llvm::Function::PrivateLinkage );
 
 	FunctionContext function_context(
 		*operator_variable->type.GetFunctionType(),

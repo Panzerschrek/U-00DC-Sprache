@@ -180,7 +180,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return invalid_type_;
 }
 
-llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type ) const
+llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type )
 {
 	ArgsVector<llvm::Type*> args_llvm_types;
 
@@ -195,17 +195,21 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 			type= type->getPointerTo();
 		else
 		{
-			if( param.type.GetFundamentalType() != nullptr ||
-				param.type.GetEnumType() != nullptr ||
-				param.type.GetRawPointerType() != nullptr ||
-				param.type.GetFunctionPointerType() )
-			{}
-			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
+			// Require complete type in order to know how to pass value args.
+			if( EnsureTypeComplete( param.type ) )
 			{
-				// Mark value-parameters of composite types as pointer.
-				type= type->getPointerTo();
+				if( param.type.GetFundamentalType() != nullptr ||
+					param.type.GetEnumType() != nullptr ||
+					param.type.GetRawPointerType() != nullptr ||
+					param.type.GetFunctionPointerType() )
+				{}
+				else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
+				{
+					// Mark value-parameters of composite types as pointer.
+					type= type->getPointerTo();
+				}
+				else U_ASSERT( false );
 			}
-			else U_ASSERT( false );
 		}
 		args_llvm_types.push_back( type );
 	}
@@ -253,7 +257,8 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention(
 	return llvm::CallingConv::C;
 }
 
-llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& function_variable ) const
+// TODO - move this function into another file?
+llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& function_variable )
 {
 	if( function_variable.llvm_function->function != nullptr )
 		return function_variable.llvm_function->function;
@@ -264,6 +269,8 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 			llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
 			function_variable.llvm_function->name_mangled,
 			module_.get() );
+
+	SetupFunctionParamsAndRetAttributes( function_variable );
 
 	return function_variable.llvm_function->function;
 }

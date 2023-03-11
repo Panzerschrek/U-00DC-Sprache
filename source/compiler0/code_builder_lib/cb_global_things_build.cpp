@@ -290,8 +290,6 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 
 				function_variable.type= std::move(function_type);
 
-				SetupFunctionParamsAndRetAttributes( function_variable );
-
 				// Then, compile function again, when type already known.
 				BuildFuncCode(
 					function_variable,

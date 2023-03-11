@@ -1153,7 +1153,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 			func_name,
 			*function_variable.type.GetFunctionType(),
 			&template_args );
-	if( function_variable.llvm_function != nullptr )
+	if( function_variable.llvm_function->function != nullptr )
 		function_variable.llvm_function->function->setName( function_variable.llvm_function->name_mangled );
 
 	// And generate function body after insertion of prototype.

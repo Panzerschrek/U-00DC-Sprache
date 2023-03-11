@@ -1004,8 +1004,6 @@ size_t CodeBuilder::PrepareFunction(
 					? func_name
 					: mangler_->MangleFunction( names_scope, func_name, func_type ) );
 
-		SetupFunctionParamsAndRetAttributes( inserted_func_variable );
-
 		return functions_set.functions.size() - 1u;
 	}
 }
@@ -2040,7 +2038,7 @@ bool CodeBuilder::IsGlobalVariable( const VariablePtr& variable )
 		variable->location == Variable::Location::Pointer;
 }
 
-void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
+void CodeBuilder::SetupFunctionParamsAndRetAttributes( const FunctionVariable& function_variable )
 {
 	llvm::Function* llvm_function= EnsureLLVMFunctionCreated( function_variable );
 	const FunctionType& function_type= *function_variable.type.GetFunctionType();
