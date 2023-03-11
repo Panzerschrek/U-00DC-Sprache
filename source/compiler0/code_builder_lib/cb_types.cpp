@@ -191,9 +191,7 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	for( const FunctionType::Param& param : function_type.params )
 	{
 		llvm::Type* type= param.type.GetLLVMType();
-		if( param.value_type != ValueType::Value )
-			type= type->getPointerTo();
-		else
+		if( param.value_type == ValueType::Value )
 		{
 			// Require complete type in order to know how to pass value args.
 			if( EnsureTypeComplete( param.type ) )
@@ -211,17 +209,28 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 				else U_ASSERT( false );
 			}
 		}
+		else
+			type= type->getPointerTo();
+
 		args_llvm_types.push_back( type );
 	}
 
 	llvm::Type* llvm_function_return_type= function_type.return_type.GetLLVMType();
-	if( function_type.return_value_type != ValueType::Value )
-		llvm_function_return_type= llvm_function_return_type->getPointerTo();
-	else if( first_arg_is_sret || function_type.return_type == void_type_ )
+	if( function_type.return_value_type == ValueType::Value )
 	{
-		// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
-		llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
+		// Require complete type in order to know how to return values.
+		if( EnsureTypeComplete( function_type.return_type ) )
+		{
+			if( first_arg_is_sret || function_type.return_type == void_type_ )
+			{
+				// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
+				llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
+			}
+		}
 	}
+	else
+		llvm_function_return_type= llvm_function_return_type->getPointerTo();
+
 
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );
 }
