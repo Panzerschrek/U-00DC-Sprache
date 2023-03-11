@@ -153,13 +153,12 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 
 	FunctionType global_function_type;
 	global_function_type.return_type= void_type_;
-	global_function_type.llvm_type= GetLLVMFunctionType( global_function_type );
 
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this function context.
 	llvm::Function* const global_function=
 		llvm::Function::Create(
-			global_function_type.llvm_type,
+			GetLLVMFunctionType( global_function_type ),
 			llvm::Function::LinkageTypes::ExternalLinkage,
 			"",
 			module_.get() );
@@ -855,8 +854,6 @@ size_t CodeBuilder::PrepareFunction(
 		if( function_type.calling_convention != llvm::CallingConv::C &&
 			( func_variable.is_this_call || func.overloaded_operator_ != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc_ );
-
-		function_type.llvm_type= GetLLVMFunctionType( function_type );
 
 		func_variable.type= std::move(function_type);
 	} // end prepare function type

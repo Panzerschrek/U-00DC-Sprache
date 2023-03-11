@@ -133,8 +133,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention_, function_type_name.src_loc_, names_scope.GetErrors() );
 
-	function_type.llvm_type= GetLLVMFunctionType( function_type );
-	function_pointer_type.llvm_type= function_type.llvm_type->getPointerTo();
+	function_pointer_type.llvm_type= llvm::PointerType::get( llvm_context_, 0 );
 	return std::move(function_pointer_type);
 }
 
@@ -181,7 +180,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return invalid_type_;
 }
 
-llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type )
+llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type ) const
 {
 	ArgsVector<llvm::Type*> args_llvm_types;
 
@@ -261,7 +260,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 
 	function_variable.llvm_function->function=
 		llvm::Function::Create(
-			function_variable.type.GetFunctionType()->llvm_type,
+			GetLLVMFunctionType( *function_variable.type.GetFunctionType() ),
 			llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
 			function_variable.llvm_function->name_mangled,
 			module_.get() );

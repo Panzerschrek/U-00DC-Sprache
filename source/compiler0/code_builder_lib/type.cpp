@@ -56,6 +56,11 @@ llvm::Type* GetLLVMTypeImpl( const T& el )
 	return el.llvm_type;
 }
 
+llvm::Type* GetLLVMTypeImpl( const FunctionType& )
+{
+	return nullptr;
+}
+
 template<typename T>
 llvm::Type* GetLLVMTypeImpl( const std::shared_ptr<const T>& boxed )
 {

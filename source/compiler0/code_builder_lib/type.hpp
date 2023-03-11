@@ -201,7 +201,7 @@ public:
 	std::set<ParamReference> return_references;
 	std::set<ReferencePollution> references_pollution;
 
-	llvm::FunctionType* llvm_type= nullptr;
+	// Do not store llvm type here, because calculating exact llvm type requires complete types of arguments and return value.
 };
 
 bool operator==( const FunctionType::Param& l, const FunctionType::Param& r );

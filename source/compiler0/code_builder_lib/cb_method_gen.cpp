@@ -80,8 +80,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		constructor_type.params.back().type= class_type;
 		constructor_type.params.back().value_type= ValueType::ReferenceMut;
 
-		constructor_type.llvm_type= GetLLVMFunctionType( constructor_type );
-
 		FunctionVariable new_constructor_variable;
 		new_constructor_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ) );
 		new_constructor_variable.type= std::move( constructor_type );
@@ -271,8 +269,6 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 			constructor_type.references_pollution.emplace(pollution);
 		}
 
-		constructor_type.llvm_type= GetLLVMFunctionType( constructor_type );
-
 		// Add generated constructor
 		FunctionVariable new_constructor_variable;
 		new_constructor_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ) );
@@ -367,8 +363,6 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr class_
 	destructor_type.params.resize(1u);
 	destructor_type.params[0].type= class_type;
 	destructor_type.params[0].value_type= ValueType::ReferenceMut;
-
-	destructor_type.llvm_type= GetLLVMFunctionType( destructor_type );
 
 	FunctionVariable destructor_function;
 	destructor_function.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, Keyword( Keywords::destructor_ ), destructor_type ) );
@@ -534,8 +528,6 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 			op_type.references_pollution.emplace(pollution);
 		}
 
-		op_type.llvm_type= GetLLVMFunctionType( op_type );
-
 		// Add generated assignment operator
 		FunctionVariable new_op_variable;
 		new_op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, op_name, op_type ) );
@@ -689,8 +681,6 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 
 		op_type.return_type= bool_type_;
 		op_type.return_value_type= ValueType::Value;
-
-		op_type.llvm_type= GetLLVMFunctionType( op_type );
 
 		// Add generated "==" operator.
 		FunctionVariable new_op_variable;

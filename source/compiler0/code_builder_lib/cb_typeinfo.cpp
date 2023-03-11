@@ -119,7 +119,7 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 	{
 		FunctionPointerType function_pointer_type;
 		function_pointer_type.function_type= *function_type;
-		function_pointer_type.llvm_type= function_type->llvm_type->getPointerTo();
+		function_pointer_type.llvm_type= llvm::PointerType::get( llvm_context_, 0 ); // Just use generic pointers for function pointers.
 		src_type= std::move(function_pointer_type);
 	}
 

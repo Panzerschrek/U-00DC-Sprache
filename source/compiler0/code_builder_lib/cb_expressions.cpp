@@ -3377,7 +3377,13 @@ Value CodeBuilder::DoCallFunction(
 		call_result= nullptr;
 	else if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
 	{
-		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( function_type.llvm_type, function, llvm_args );
+		llvm::FunctionType* llvm_function_type= nullptr;
+		if( const auto really_function= llvm::dyn_cast<llvm::Function>(function) )
+			llvm_function_type= really_function->getFunctionType();
+		else
+			llvm_function_type= GetLLVMFunctionType( function_type );
+
+		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( llvm_function_type, function, llvm_args );
 		call_instruction->setCallingConv( function_type.calling_convention );
 
 		call_result= call_instruction;
@@ -3385,7 +3391,7 @@ Value CodeBuilder::DoCallFunction(
 			call_result= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
 	}
 	else
-		call_result= llvm::UndefValue::get( function_type.llvm_type->getReturnType() );
+		call_result= llvm::UndefValue::get( GetLLVMFunctionType( function_type )->getReturnType() );
 
 	// Clear inner references locks. Do this BEFORE result references management.
 	for( const VariablePtr& node : locked_args_inner_references )
