@@ -121,6 +121,8 @@ private:
 		const SrcLoc& src_loc,
 		CodeBuilderErrorsContainer& errors );
 
+	llvm::Function* EnsureLLVMFunctionCreated( const FunctionVariable& function_variable ) const;
+
 	// Virtual stuff
 	void CheckvirtualFunctionOverridingReferenceNotation(
 		CodeBuilderErrorsContainer& errors_container,

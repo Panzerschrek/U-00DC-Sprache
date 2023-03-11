@@ -1872,7 +1872,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		return
 			DoCallFunction(
-				overloaded_operator->llvm_function,
+				EnsureLLVMFunctionCreated( *overloaded_operator ),
 				*overloaded_operator->type.GetFunctionType(),
 				src_loc,
 				nullptr,
@@ -3016,7 +3016,7 @@ Value CodeBuilder::CallFunction(
 	for( const Synt::Expression& arg : synt_args )
 		synt_args_ptrs.push_back( &arg );
 
-	llvm::Value* llvm_function_ptr= function.llvm_function;
+	llvm::Value* llvm_function_ptr= EnsureLLVMFunctionCreated( function );
 	if( this_ != nullptr )
 	{
 		auto fetch_result= TryFetchVirtualFunction( this_, function, function_context, names.GetErrors(), src_loc );
@@ -3625,7 +3625,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 		function_context.variables_state.AddLink( result, result_for_initialization );
 
 		DoCallFunction(
-			conversion_constructor.llvm_function,
+			EnsureLLVMFunctionCreated( conversion_constructor ),
 			*conversion_constructor.type.GetFunctionType(),
 			src_loc,
 			{ result_for_initialization, variable },

@@ -82,16 +82,9 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 
 		constructor_type.llvm_type= GetLLVMFunctionType( constructor_type );
 
-		llvm::Function* const llvm_constructor_function=
-			llvm::Function::Create(
-				constructor_type.llvm_type,
-				llvm::Function::LinkageTypes::ExternalLinkage,
-				mangler_->MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
-				module_.get() );
-
 		FunctionVariable new_constructor_variable;
+		new_constructor_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ) );
 		new_constructor_variable.type= std::move( constructor_type );
-		new_constructor_variable.llvm_function= llvm_constructor_function;
 
 		// Add generated constructor
 		if( Value* const constructors_value= the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
@@ -117,13 +110,16 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 
 	SetupFunctionParamsAndRetAttributes( *constructor_variable );
 
+	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *constructor_variable );
+	llvm_function->setLinkage( llvm::Function::PrivateLinkage );
+
 	FunctionContext function_context(
 		*constructor_variable->type.GetFunctionType(),
 		void_type_,
 		llvm_context_,
-		constructor_variable->llvm_function );
+		llvm_function );
 	StackVariablesStorage function_variables_storage( function_context );
-	llvm::Value* const this_llvm_value= constructor_variable->llvm_function->args().begin();
+	llvm::Value* const this_llvm_value= llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
 	if( the_class.base_class != nullptr )
@@ -277,17 +273,10 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 
 		constructor_type.llvm_type= GetLLVMFunctionType( constructor_type );
 
-		llvm::Function* const llvm_constructor_function=
-			llvm::Function::Create(
-				constructor_type.llvm_type,
-				llvm::Function::LinkageTypes::ExternalLinkage,
-				mangler_->MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ),
-				module_.get() );
-
 		// Add generated constructor
 		FunctionVariable new_constructor_variable;
+		new_constructor_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, Keyword( Keywords::constructor_ ), constructor_type ) );
 		new_constructor_variable.type= std::move( constructor_type );
-		new_constructor_variable.llvm_function= llvm_constructor_function;
 
 		if( Value* const constructors_value= the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 		{
@@ -312,15 +301,18 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 
 	SetupFunctionParamsAndRetAttributes( *constructor_variable );
 
+	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *constructor_variable );
+	llvm_function->setLinkage( llvm::Function::PrivateLinkage );
+
 	FunctionContext function_context(
 		*constructor_variable->type.GetFunctionType(),
 		void_type_,
 		llvm_context_,
-		constructor_variable->llvm_function );
+		llvm_function );
 
-	llvm::Value* const this_llvm_value= &*constructor_variable->llvm_function->args().begin();
+	llvm::Value* const this_llvm_value= &*llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
-	llvm::Value* const src_llvm_value= &*std::next(constructor_variable->llvm_function->args().begin());
+	llvm::Value* const src_llvm_value= &*std::next(llvm_function->args().begin());
 	src_llvm_value->setName( "src" );
 
 	if( the_class.base_class != nullptr )
@@ -379,17 +371,12 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr class_
 	destructor_type.llvm_type= GetLLVMFunctionType( destructor_type );
 
 	FunctionVariable destructor_function;
+	destructor_function.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, Keyword( Keywords::destructor_ ), destructor_type ) );
 	destructor_function.type= destructor_type;
 	destructor_function.is_generated= true;
 	destructor_function.is_this_call= true;
 	destructor_function.have_body= false;
 
-	destructor_function.llvm_function=
-		llvm::Function::Create(
-			destructor_type.llvm_type,
-			llvm::Function::LinkageTypes::ExternalLinkage,
-			mangler_->MangleFunction( *the_class.members, Keyword( Keywords::destructor_ ), destructor_type ),
-			module_.get() );
 
 	SetupFunctionParamsAndRetAttributes( destructor_function );
 
@@ -399,9 +386,12 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr class_
 void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVariable& destructor_function )
 {
 	Class& the_class= *class_type;
-	const FunctionType& destructor_type= *destructor_function .type.GetFunctionType();
+	const FunctionType& destructor_type= *destructor_function.type.GetFunctionType();
 
-	llvm::Value* const this_llvm_value= &*destructor_function .llvm_function->args().begin();
+	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( destructor_function );
+	llvm_function->setLinkage( llvm::Function::PrivateLinkage );
+
+	llvm::Value* const this_llvm_value= &*llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
 
 	const VariablePtr this_=
@@ -416,7 +406,7 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVar
 		destructor_type,
 		destructor_type.return_type,
 		llvm_context_,
-		destructor_function.llvm_function );
+		llvm_function );
 	function_context.this_= this_;
 
 	function_context.variables_state.AddNode( this_ );
@@ -546,17 +536,10 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 
 		op_type.llvm_type= GetLLVMFunctionType( op_type );
 
-		llvm::Function* const llvm_op_function=
-			llvm::Function::Create(
-				op_type.llvm_type,
-				llvm::Function::LinkageTypes::ExternalLinkage,
-				mangler_->MangleFunction( *the_class.members, op_name, op_type ),
-				module_.get() );
-
 		// Add generated assignment operator
 		FunctionVariable new_op_variable;
+		new_op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, op_name, op_type ) );
 		new_op_variable.type= std::move( op_type );
-		new_op_variable.llvm_function= llvm_op_function;
 
 		if( Value* const operators_value= the_class.members->GetThisScopeValue( op_name ) )
 		{
@@ -580,15 +563,18 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 
 	SetupFunctionParamsAndRetAttributes( *operator_variable );
 
+	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
+	llvm_function->setLinkage( llvm::Function::PrivateLinkage );
+
 	FunctionContext function_context(
 		*operator_variable->type.GetFunctionType(),
 		void_type_,
 		llvm_context_,
-		operator_variable->llvm_function );
+		llvm_function );
 
-	llvm::Value* const this_llvm_value= &*operator_variable->llvm_function->args().begin();
+	llvm::Value* const this_llvm_value= &*llvm_function->args().begin();
 	this_llvm_value->setName( Keyword( Keywords::this_ ) );
-	llvm::Value* const src_llvm_value= &*std::next(operator_variable->llvm_function->args().begin());
+	llvm::Value* const src_llvm_value= &*std::next(llvm_function->args().begin());
 	src_llvm_value->setName( "src" );
 
 	if( the_class.base_class != nullptr )
@@ -706,17 +692,10 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 
 		op_type.llvm_type= GetLLVMFunctionType( op_type );
 
-		llvm::Function* const llvm_op_function=
-			llvm::Function::Create(
-				op_type.llvm_type,
-				llvm::Function::LinkageTypes::ExternalLinkage,
-				mangler_->MangleFunction( *the_class.members, op_name, op_type ),
-				module_.get() );
-
 		// Add generated "==" operator.
 		FunctionVariable new_op_variable;
+		new_op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *the_class.members, op_name, op_type ) );
 		new_op_variable.type= std::move( op_type );
-		new_op_variable.llvm_function= llvm_op_function;
 
 		if( Value* const operators_value= the_class.members->GetThisScopeValue( op_name ) )
 		{
@@ -740,15 +719,18 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 
 	SetupFunctionParamsAndRetAttributes( *operator_variable );
 
+	llvm::Function* llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
+	llvm_function->setLinkage( llvm::Function::PrivateLinkage );
+
 	FunctionContext function_context(
 		*operator_variable->type.GetFunctionType(),
 		bool_type_,
 		llvm_context_,
-		operator_variable->llvm_function );
+		llvm_function );
 
-	llvm::Value* const l_address= &*operator_variable->llvm_function->args().begin();
+	llvm::Value* const l_address= &*llvm_function->args().begin();
 	l_address->setName( "l" );
-	llvm::Value* const r_address= &*std::next(operator_variable->llvm_function->args().begin());
+	llvm::Value* const r_address= &*std::next(llvm_function->args().begin());
 	r_address->setName( "r" );
 
 	const auto false_basic_block= llvm::BasicBlock::Create( llvm_context_ );
@@ -886,7 +868,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 			function_context.have_non_constexpr_operations_inside= true;
 
 		// Call it.
-		function_context.llvm_ir_builder.CreateCall(constructor->llvm_function, { dst, src } );
+		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated(*constructor), { dst, src } );
 	}
 	else
 		U_ASSERT(false);
@@ -960,7 +942,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 			function_context.have_non_constexpr_operations_inside= true;
 
 		// Call it.
-		function_context.llvm_ir_builder.CreateCall( op->llvm_function, { dst, src } );
+		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *op ), { dst, src } );
 	}
 	else
 		U_ASSERT(false);
@@ -1048,7 +1030,7 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 			function_context.have_non_constexpr_operations_inside= true;
 
 		// Call it.
-		const auto eq= function_context.llvm_ir_builder.CreateCall( op->llvm_function, { l_address, r_address } );
+		const auto eq= function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *op ), { l_address, r_address } );
 
 		const auto next_bb= llvm::BasicBlock::Create( llvm_context_ );
 
@@ -1160,7 +1142,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 		U_ASSERT( op != nullptr );
 
 		const ConstexprFunctionEvaluator::Result evaluation_result=
-			constexpr_function_evaluator_.Evaluate( op->llvm_function, { l, r } );
+			constexpr_function_evaluator_.Evaluate( EnsureLLVMFunctionCreated( *op ), { l, r } );
 
 		for( const std::string& error_text : evaluation_result.errors )
 		{

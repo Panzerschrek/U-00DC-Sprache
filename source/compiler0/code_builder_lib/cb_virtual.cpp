@@ -103,7 +103,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 	{
 		FunctionVariable* function;
 		std::string name;
-		bool operator<( ClassFunction& other ) const{ return this->function->llvm_function->getName() < other.function->llvm_function->getName(); }
+		bool operator<( ClassFunction& other ) const{ return this->function->llvm_function->name_mangled < other.function->llvm_function->name_mangled; }
 	};
 	std::vector<ClassFunction> class_functions;
 
@@ -422,13 +422,13 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_cla
 		if( ancestor_virtual_table_entry.parent_virtual_table_index != ~0u )
 			continue;
 
-		llvm::Function* func= ancestor_virtual_table_entry.function_variable.llvm_function;
+		llvm::Function* func= EnsureLLVMFunctionCreated( ancestor_virtual_table_entry.function_variable );
 		for( const Class::VirtualTableEntry& dst_virtual_table_entry : dst_class.virtual_table )
 		{
 			if( dst_virtual_table_entry.name == ancestor_virtual_table_entry.name &&
 				dst_virtual_table_entry.function_variable.VirtuallyEquals( ancestor_virtual_table_entry.function_variable ) )
 			{
-				func= dst_virtual_table_entry.function_variable.llvm_function;
+				func= EnsureLLVMFunctionCreated( dst_virtual_table_entry.function_variable );
 				break;
 			}
 		}
@@ -477,15 +477,15 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	const SrcLoc& src_loc )
 {
 	if( function_context.is_functionless_context )
-		return std::make_pair( this_, function.llvm_function );
+		return std::make_pair( this_, EnsureLLVMFunctionCreated( function ) );
 
 	const FunctionType& function_type= *function.type.GetFunctionType();
 
 	if( !ReferenceIsConvertible( this_->type, function_type.params.front().type, errors_container, src_loc ) )
-		return std::make_pair( this_, function.llvm_function );
+		return std::make_pair( this_, EnsureLLVMFunctionCreated( function ) );
 
 	if( function.virtual_table_index == ~0u && this_->type == function_type.params.front().type )
-		return std::make_pair( this_, function.llvm_function );
+		return std::make_pair( this_, EnsureLLVMFunctionCreated( function ) );
 
 	const VariableMutPtr this_casted=
 		std::make_shared<Variable>(
@@ -501,7 +501,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	RegisterTemporaryVariable( function_context, this_casted );
 
 	if( function.virtual_table_index == ~0u )
-		return std::make_pair( std::move(this_casted), function.llvm_function );
+		return std::make_pair( std::move(this_casted), EnsureLLVMFunctionCreated( function ) );
 
 	const Class& class_type= *this_casted->type.GetClassType();
 	U_ASSERT( function.virtual_table_index < class_type.virtual_table.size() );

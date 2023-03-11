@@ -335,7 +335,7 @@ void CodeBuilder::FinishTypeinfoClass( const ClassPtr class_type, const ClassFie
 	TryGenerateDestructor( class_type );
 
 	const FunctionVariable& destructor= class_.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front();
-	destructor.llvm_function->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
+	EnsureLLVMFunctionCreated( destructor )->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
 }
 
 TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type, NamesScope& root_namespace )
@@ -579,7 +579,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPt
 					CreateTypeinfoClass(
 						root_namespace,
 						class_type,
-						g_typeinfo_class_functions_list_node_class_name + std::string(function.llvm_function->getName()) ); // Use mangled name for type name.
+						g_typeinfo_class_functions_list_node_class_name + std::string(function.llvm_function->name_mangled) ); // Use mangled name for type name.
 				Class& node_type_class= *node_type;
 
 				ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -624,7 +624,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPt
 
 				list_elements.push_back(
 					TypeinfoListElement{
-						function.llvm_function->getName().str(), // Sort, using function mangled name.
+						function.llvm_function->name_mangled, // Sort, using function mangled name.
 						llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 						node_type } );
 			} // for functions with same name

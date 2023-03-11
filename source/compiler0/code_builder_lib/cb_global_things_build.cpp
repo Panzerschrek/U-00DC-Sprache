@@ -286,13 +286,8 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 
 				function_variable.have_body= false;
 				function_variable.return_type_is_auto= false;
-				function_variable.llvm_function->eraseFromParent();
-				function_variable.llvm_function=
-					llvm::Function::Create(
-						function_type.llvm_type,
-						llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-						function_variable.no_mangle ? function->name_.back() : mangler_->MangleFunction( names_scope, function->name_.back(), function_type ),
-						module_.get() );
+				function_variable.llvm_function->function->eraseFromParent();
+				function_variable.llvm_function= std::make_shared<LazyLLVMFunction>( function_variable.no_mangle ? function->name_.back() : mangler_->MangleFunction( names_scope, function->name_.back(), function_type ) );
 
 				function_variable.type= std::move(function_type);
 

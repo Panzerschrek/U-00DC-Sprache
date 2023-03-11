@@ -254,4 +254,19 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention(
 	return llvm::CallingConv::C;
 }
 
+llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& function_variable ) const
+{
+	if( function_variable.llvm_function->function != nullptr )
+		return function_variable.llvm_function->function;
+
+	function_variable.llvm_function->function=
+		llvm::Function::Create(
+			function_variable.type.GetFunctionType()->llvm_type,
+			llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
+			function_variable.llvm_function->name_mangled,
+			module_.get() );
+
+	return function_variable.llvm_function->function;
+}
+
 } // namespace U

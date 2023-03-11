@@ -496,7 +496,7 @@ void CodeBuilder::TryCallCopyConstructor(
 
 	// Call it
 	U_ASSERT(constructor != nullptr);
-	function_context.llvm_ir_builder.CreateCall( constructor->llvm_function, { this_, src } );
+	function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *constructor ), { this_, src } );
 }
 
 void CodeBuilder::GenerateLoop(
@@ -604,7 +604,7 @@ void CodeBuilder::CallDestructor(
 		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
 
 		const FunctionVariable& destructor= destructors->functions.front();
-		function_context.llvm_ir_builder.CreateCall( destructor.llvm_function, { ptr } );
+		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( destructor ), { ptr } );
 	}
 	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
@@ -1002,11 +1002,10 @@ size_t CodeBuilder::PrepareFunction(
 		const FunctionType& func_type= *inserted_func_variable.type.GetFunctionType();
 
 		inserted_func_variable.llvm_function=
-			llvm::Function::Create(
-				func_type.llvm_type,
-				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				inserted_func_variable.no_mangle ? func_name : mangler_->MangleFunction( names_scope, func_name, func_type ),
-				module_.get() );
+			std::make_shared<LazyLLVMFunction>(
+				inserted_func_variable.no_mangle
+					? func_name
+					: mangler_->MangleFunction( names_scope, func_name, func_type ) );
 
 		SetupFunctionParamsAndRetAttributes( inserted_func_variable );
 
@@ -1154,7 +1153,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	const FunctionType& function_type= *func_variable.type.GetFunctionType();
 
-	llvm::Function* const llvm_function= func_variable.llvm_function;
+	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( func_variable );
 
 	// Build debug info only for functions with body.
 	debug_info_builder_->CreateFunctionInfo( func_variable, func_name );
@@ -2046,7 +2045,7 @@ bool CodeBuilder::IsGlobalVariable( const VariablePtr& variable )
 
 void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
 {
-	const auto llvm_function= function_variable.llvm_function;
+	llvm::Function* llvm_function= EnsureLLVMFunctionCreated( function_variable );
 	const FunctionType& function_type= *function_variable.type.GetFunctionType();
 
 	const bool first_arg_is_sret= function_type.IsStructRet();
@@ -2106,7 +2105,7 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 
 void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
 {
-	const auto llvm_function= function_variable.llvm_function;
+	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( function_variable );
 	const FunctionType& function_type= *function_variable.type.GetFunctionType();
 
 	const bool first_arg_is_sret= function_type.IsStructRet();

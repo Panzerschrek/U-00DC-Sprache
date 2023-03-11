@@ -25,6 +25,19 @@ using TypeTemplatePtr= std::shared_ptr<const TypeTemplate>;
 struct FunctionTemplate;
 using FunctionTemplatePtr= std::shared_ptr<const FunctionTemplate>;
 
+struct LazyLLVMFunction
+{
+	std::string name_mangled;
+	llvm::Function* function= nullptr;
+
+	LazyLLVMFunction()= delete;
+	LazyLLVMFunction(std::string name) : name_mangled(std::move(name)) {}
+	LazyLLVMFunction(const LazyLLVMFunction&)= delete;
+	LazyLLVMFunction& operator=(const LazyLLVMFunction&)= delete;
+};
+
+using LazyLLVMFunctionPtr= std::shared_ptr<LazyLLVMFunction>;
+
 struct FunctionVariable final
 {
 	const Synt::Function* syntax_element= nullptr;
@@ -56,7 +69,8 @@ struct FunctionVariable final
 
 	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;
 
-	llvm::Function* llvm_function= nullptr;
+	// Laziliy-initialized in order to make llvm function type dependent on complete types of arguments.
+	LazyLLVMFunctionPtr llvm_function;
 
 	SrcLoc prototype_src_loc;
 	SrcLoc body_src_loc;
