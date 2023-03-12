@@ -103,8 +103,6 @@ struct FunctionType
 	// Sorted.
 	ust::vector</ReferencePollution/> references_pollution;
 
-	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
-
 	op==( FunctionType& l, FunctionType& r ) : bool;
 
 	fn PointerCanBeConvertedTo( this, FunctionType& dst ) : bool;

@@ -144,7 +144,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		.function_type= PrepareFunctionType( names_scope, function_context, function_type, ust::shared_ptr_nullable_mut</ClassType/>() )
 	};
 
-	function_pointer_type.llvm_type= unsafe( LLVMPointerType( function_pointer_type.function_type.llvm_type, 0u ) );
+	function_pointer_type.llvm_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
 
 	return move(function_pointer_type);
 }
@@ -315,12 +315,10 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	}
 	ust::sort( res.references_pollution.range() );
 
-	FillLLVMFunctionType( res );
-
 	return move(res);
 }
 
-fn CodeBuilder::FillLLVMFunctionType( this, FunctionType &mut function_type )
+fn CodeBuilder::GetLLVMFunctionType( this, FunctionType& function_type ) : LLVMTypeRef
 {
 	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
 
@@ -349,20 +347,17 @@ fn CodeBuilder::FillLLVMFunctionType( this, FunctionType &mut function_type )
 		llvm_param_types.push_back( llvm_type );
 	}
 
-	unsafe
+	var LLVMTypeRef mut ret_llvm_type= function_type.return_type.GetLLVMType();
+	if( function_type.return_value_type != ValueType::Value )
 	{
-		auto mut ret_llvm_type= function_type.return_type.GetLLVMType();
-		if( function_type.return_value_type != ValueType::Value )
-		{
-			ret_llvm_type= LLVMPointerType( ret_llvm_type, 0u );
-		}
-		else if( is_s_ret || function_type.return_type == void_type_ )
-		{
-			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
-		}
-
-		function_type.llvm_type= LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool::False );
+		ret_llvm_type= unsafe( LLVMPointerType( ret_llvm_type, 0u ) );
 	}
+	else if( is_s_ret || function_type.return_type == void_type_ )
+	{
+		ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
+	}
+
+	return unsafe( LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool::False ) );
 }
 
 fn CodeBuilder::GetLLVMCallingConvention(

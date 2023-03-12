@@ -786,20 +786,13 @@ fn CodeBuilder::TryFetchVirtualFunction(
 		auto ptr_to_function_ptr=
 			LLVMBuildGEP2( function_context.llvm_ir_builder, function_class_virtual_table_type, function_virtual_table, $<(function_ptr_indexes[0]), 3u, g_null_string );
 
-		auto abstract_function_ptr= LLVMBuildLoad2( function_context.llvm_ir_builder, virtual_function_pointer_type_, ptr_to_function_ptr, g_null_string );
-		MarkLoadInstructionWithNonNullMetadata( abstract_function_ptr ); // Function pointer inside virtual table is never null.
+		auto function_ptr= LLVMBuildLoad2( function_context.llvm_ir_builder, virtual_function_pointer_type_, ptr_to_function_ptr, g_null_string );
+		MarkLoadInstructionWithNonNullMetadata( function_ptr ); // Function pointer inside virtual table is never null.
 		if( generate_tbaa_metadata_ )
 		{
 			auto access_tag= tbaa_metadata_builder_.CreateVirtualTableFunctionPointerAccessTag();
-			MarkInstructionWithTBAAMetadata( abstract_function_ptr, access_tag );
+			MarkInstructionWithTBAAMetadata( function_ptr, access_tag );
 		}
-
-		auto function_ptr=
-			LLVMBuildPointerCast(
-				function_context.llvm_ir_builder,
-				abstract_function_ptr,
-				LLVMPointerType( function_type.llvm_type, 0u ),
-				g_null_string );
 
 		// Correct "this" pointer.
 		// Only interfaces may have non-zero offsets. So, make pointer adjustment only for call via interface.

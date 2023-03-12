@@ -104,8 +104,6 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 			function_type.params.push_back( move(this_param) );
 		}
 
-		FillLLVMFunctionType( function_type );
-
 		// Prepare function variable.
 		var FunctionVariable mut function_variable
 		{
@@ -121,7 +119,7 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 					class_members,
 					KeywordToString( Keyword::constructor_ ),
 					function_variable.t ).front(),
-				function_variable.t.llvm_type ) );
+				GetLLVMFunctionType( function_variable.t ) ) );
 
 		constructor_index= constructors.functions.size();
 		constructors.functions.push_back( move(function_variable) );
@@ -330,8 +328,6 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 			function_type.references_pollution.push_back( move(pollution) );
 		}
 
-		FillLLVMFunctionType( function_type );
-
 		// Prepare function variable.
 		var FunctionVariable mut function_variable
 		{
@@ -347,7 +343,7 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 					class_members,
 					KeywordToString( Keyword::constructor_ ),
 					function_variable.t ).front(),
-				function_variable.t.llvm_type ) );
+				GetLLVMFunctionType( function_variable.t ) ) );
 
 		constructor_index= constructors.functions.size();
 		constructors.functions.push_back( move(function_variable) );
@@ -520,8 +516,6 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 			function_type.references_pollution.push_back( move(pollution) );
 		}
 
-		FillLLVMFunctionType( function_type );
-
 		// Prepare function variable.
 		var FunctionVariable mut function_variable
 		{
@@ -537,7 +531,7 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 					class_members,
 					OverloadedOperatorToString( OverloadedOperator::Assign ),
 					function_variable.t ).front(),
-				function_variable.t.llvm_type) );
+				GetLLVMFunctionType( function_variable.t ) ) );
 
 		operator_index= operators.functions.size();
 		operators.functions.push_back( move(function_variable) );
@@ -727,8 +721,6 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 			function_type.params.push_back( move(param) );
 		}
 
-		FillLLVMFunctionType( function_type );
-
 		// Prepare function variable.
 		var FunctionVariable mut function_variable
 		{
@@ -744,7 +736,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 					class_members_ptr.lock_imut().deref(),
 					op_name,
 					function_variable.t ).front(),
-				function_variable.t.llvm_type) );
+				GetLLVMFunctionType( function_variable.t ) ) );
 
 		operator_index= operators.functions.size();
 		operators.functions.push_back( move(function_variable) );
@@ -846,8 +838,6 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 		function_type.params.push_back( move(this_param) );
 	}
 
-	FillLLVMFunctionType( function_type );
-
 	// Prepare function variable.
 	var FunctionVariable mut function_variable
 	{
@@ -863,7 +853,7 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 				class_members,
 				KeywordToString( Keyword::destructor_ ),
 				function_variable.t ).front(),
-			function_variable.t.llvm_type ) );
+			GetLLVMFunctionType( function_variable.t ) ) );
 
 	SetupFunctionParamsAndRetAttributes( function_variable );
 
@@ -991,7 +981,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 
 				// Call it.
 				var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
-				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, constructor_.t.llvm_type, constructor_.llvm_function, $<(llvm_args[0]), 2u, g_null_string ) );
+				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, GetLLVMFunctionType( constructor_.t ), constructor_.llvm_function, $<(llvm_args[0]), 2u, g_null_string ) );
 				break;
 			}
 		}
@@ -1064,7 +1054,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 
 				// Call it.
 				var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
-				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, operator_.t.llvm_type, operator_.llvm_function, $<(llvm_args[0]), 2u, g_null_string ) );
+				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, GetLLVMFunctionType( operator_.t ), operator_.llvm_function, $<(llvm_args[0]), 2u, g_null_string ) );
 				break;
 			}
 		}
@@ -1164,7 +1154,7 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 			unsafe
 			{
 				var[ LLVMValueRef, 2 ] mut llvm_args[ l_address, r_address ];
-				var LLVMValueRef eq= LLVMBuildCall2( function_context.llvm_ir_builder, op_.t.llvm_type, op_.llvm_function, $<(llvm_args[0]), 2u, g_null_string );
+				var LLVMValueRef eq= LLVMBuildCall2( function_context.llvm_ir_builder, GetLLVMFunctionType( op_.t ), op_.llvm_function, $<(llvm_args[0]), 2u, g_null_string );
 
 				var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
@@ -1215,7 +1205,7 @@ fn CodeBuilder::BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionC
 
 		// Call it.
 		auto mut v= value;
-		unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, destructor_.t.llvm_type, destructor_.llvm_function, $<(v), 1u, g_null_string ) );
+		unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, GetLLVMFunctionType( destructor_.t ), destructor_.llvm_function, $<(v), 1u, g_null_string ) );
 	}
 }
 

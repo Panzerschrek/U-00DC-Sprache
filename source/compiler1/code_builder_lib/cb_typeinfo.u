@@ -264,7 +264,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		if_var( &function_type : t.GetFunctionType() )
 		{
 			var FunctionPointerType mut function_pointer_type{ .function_type= function_type };
-			function_pointer_type.llvm_type= unsafe( LLVMPointerType( function_pointer_type.function_type.llvm_type, 0u ) );
+			function_pointer_type.llvm_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
 			src_type= move(function_pointer_type);
 		}
 
