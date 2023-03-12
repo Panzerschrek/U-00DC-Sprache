@@ -309,7 +309,7 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeValueParamsAttrs )
 	U_TEST_ASSERT( bar->getParamDereferenceableBytes( 1 ) == 8 );
 }
 
-U_TEST( LLVMFunctionAttrsTest_StructTypeSinlgeScalarsValueParamsAttrs )
+U_TEST( LLVMFunctionAttrsTest_StructTypeSingleScalarsValueParamsAttrs )
 {
 	// Structs with single scalar inside are passed by value.
 	static const char c_program_text[]=
@@ -459,6 +459,32 @@ U_TEST( LLVMFunctionAttrsTest_StructTypeReturnValueAttrs )
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
 	U_TEST_ASSERT( !bar->hasRetAttribute( llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
+}
+
+U_TEST( LLVMFunctionAttrsTest_SingleScalarStructTypeReturnValueAttrs )
+{
+	// If struct contains just single scalar inside - pass it in register.
+	static const char c_program_text[]=
+	R"(
+		struct S{ f32 x; }
+		struct E{ S s; }
+		fn Foo() : S;
+		fn Bar() : E;
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* foo= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( foo != nullptr );
+
+	U_TEST_ASSERT( foo->getReturnType()->isFloatTy() );
+	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 0 );
+
+	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
+	U_TEST_ASSERT( bar != nullptr );
+
+	U_TEST_ASSERT( bar->getReturnType()->isFloatTy() );
+	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 0 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_StructTypeReturnReferenceAttrs )
@@ -644,6 +670,40 @@ U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnValueAttrs )
 	U_TEST_ASSERT( bar->getReturnType()->isVoidTy() );
 	U_TEST_ASSERT( !bar->hasRetAttribute( llvm::Attribute::NonNull ) );
 	U_TEST_ASSERT( !bar->hasRetAttribute( llvm::Attribute::Dereferenceable ) );
+}
+
+U_TEST( LLVMFunctionAttrsTest_SingleScalarCompositeTypeReturnValueAttrs )
+{
+	// If function returns value of composite type, containing single scalar inside, just use this scalar type as return value.
+	static const char c_program_text[]=
+	R"(
+		fn Foo() : [ f64, 1 ];
+		fn Bar() : tup[ [ tup[ [ u16, 1 ] ], 1 ] ];
+		fn Baz() : [ $(i64), 1 ];
+		fn Lol() : tup[ (fn (i32 x, f32 y): f64) ];
+	)";
+
+	const auto module= BuildProgram( c_program_text );
+
+	const llvm::Function* foo= module->getFunction( "_Z3Foov" );
+	U_TEST_ASSERT( foo != nullptr );
+	U_TEST_ASSERT( foo->getReturnType()->isDoubleTy() );
+	U_TEST_ASSERT( foo->getFunctionType()->getNumParams() == 0 );
+
+	const llvm::Function* bar= module->getFunction( "_Z3Barv" );
+	U_TEST_ASSERT( bar != nullptr );
+	U_TEST_ASSERT( bar->getReturnType()->isIntegerTy() );
+	U_TEST_ASSERT( bar->getFunctionType()->getNumParams() == 0 );
+
+	const llvm::Function* baz= module->getFunction( "_Z3Bazv" );
+	U_TEST_ASSERT( baz != nullptr );
+	U_TEST_ASSERT( baz->getReturnType()->isPointerTy() );
+	U_TEST_ASSERT( baz->getFunctionType()->getNumParams() == 0 );
+
+	const llvm::Function* lol= module->getFunction( "_Z3Lolv" );
+	U_TEST_ASSERT( lol != nullptr );
+	U_TEST_ASSERT( lol->getReturnType()->isPointerTy() );
+	U_TEST_ASSERT( lol->getFunctionType()->getNumParams() == 0 );
 }
 
 U_TEST( LLVMFunctionAttrsTest_CompositeTypeReturnReferenceAttrs )
