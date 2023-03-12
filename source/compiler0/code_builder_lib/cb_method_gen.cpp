@@ -694,7 +694,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 	operator_variable->is_this_call= false; // TODO - is there any reason to set this flag?
 	operator_variable->is_generated= true;
 
-	llvm::Function* llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
+	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
 
 	FunctionContext function_context(
 		*operator_variable->type.GetFunctionType(),
@@ -1191,17 +1191,17 @@ llvm::Constant* CodeBuilder::WrapRawScalarConstant( llvm::Constant* const consta
 {
 	U_ASSERT( GetSingleScalarType( dst_type ) == constant->getType() );
 
-	if( dst_type->isStructTy() )
+	if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(dst_type) )
 		return
 			llvm::ConstantStruct::get(
-				llvm::dyn_cast<llvm::StructType>(dst_type),
-				{ WrapRawScalarConstant( constant, dst_type->getStructElementType(0) ) } );
+				struct_type,
+				{ WrapRawScalarConstant( constant, struct_type->getElementType(0) ) } );
 
-	if( dst_type->isArrayTy() )
+	if( const auto array_type= llvm::dyn_cast<llvm::ArrayType>(dst_type) )
 		return
 			llvm::ConstantArray::get(
-				llvm::dyn_cast<llvm::ArrayType>(dst_type),
-				{ WrapRawScalarConstant( constant, dst_type->getArrayElementType() ) } );
+				array_type,
+				{ WrapRawScalarConstant( constant, array_type->getElementType() ) } );
 
 	return constant;
 }

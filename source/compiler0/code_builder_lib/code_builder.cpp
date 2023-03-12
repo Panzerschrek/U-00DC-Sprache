@@ -2061,9 +2061,27 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 	llvm_function=
 		llvm::Function::Create(
 			GetLLVMFunctionType( function_type ),
-			llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
+			// Use private linkage for generated function.
+			function_variable.is_generated ? llvm::GlobalValue::PrivateLinkage : llvm::Function::LinkageTypes::ExternalLinkage,
 			function_variable.llvm_function->name_mangled,
 			module_.get() );
+
+	llvm_function->setCallingConv( function_type.calling_convention );
+
+	// Merge functions with identical code.
+	// We doesn`t need different addresses for different functions.
+	llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+
+	llvm_function->setDoesNotThrow(); // We do not support exceptions.
+
+	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+	{
+		llvm::AttrBuilder builder(llvm_context_);
+		builder.addUWTableAttr(llvm::UWTableKind::Async);
+		llvm_function->addFnAttrs( builder );
+	}
+
+	// Prepare args attributes.
 
 	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );
 
@@ -2093,6 +2111,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
 	}
 
+	// Prepare ret attributes.
 	if( first_arg_is_sret )
 	{
 		llvm_function->addParamAttr( 0, llvm::Attribute::NoAlias );
@@ -2103,25 +2122,6 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 	}
 	if( function_type.return_value_type != ValueType::Value )
 		llvm_function->addRetAttr( llvm::Attribute::NonNull );
-
-	// Merge functions with identical code.
-	// We doesn`t need different addresses for different functions.
-	llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
-
-	llvm_function->setDoesNotThrow(); // We do not support exceptions.
-
-	llvm_function->setCallingConv( function_type.calling_convention );
-
-	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
-	{
-		llvm::AttrBuilder builder(llvm_context_);
-		builder.addUWTableAttr(llvm::UWTableKind::Async);
-		llvm_function->addFnAttrs( builder );
-	}
-
-	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
-	if( function_variable.is_generated )
-		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
 
 	return llvm_function;
 }
