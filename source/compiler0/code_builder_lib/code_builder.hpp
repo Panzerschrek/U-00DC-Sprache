@@ -121,6 +121,9 @@ private:
 		const SrcLoc& src_loc,
 		CodeBuilderErrorsContainer& errors );
 
+	// Requires return type to be complete.
+	static bool FunctionTypeIsSRet( const FunctionType& function_type );
+
 	// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
 	// Returns null otherwise.
 	// Requires type to be complete.
@@ -415,6 +418,8 @@ private:
 		const Type& type,
 		llvm::Value* ptr, llvm::Constant* constant,
 		FunctionContext& function_context );
+
+	llvm::Constant* WrapRawScalarConstant( llvm::Constant* constant, llvm::Type* dst_type );
 
 	void TryCallCopyConstructor(
 		CodeBuilderErrorsContainer& errors_container,

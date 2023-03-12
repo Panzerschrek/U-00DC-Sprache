@@ -750,7 +750,7 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 	return true;
 }
 
-bool FunctionType::IsStructRet() const
+bool FunctionType::ReturnsCompositeValue() const
 {
 	return
 		return_value_type == ValueType::Value &&

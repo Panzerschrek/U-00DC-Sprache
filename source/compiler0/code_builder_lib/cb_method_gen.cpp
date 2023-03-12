@@ -1187,6 +1187,25 @@ void CodeBuilder::MoveConstantToMemory(
 	}
 }
 
+llvm::Constant* CodeBuilder::WrapRawScalarConstant( llvm::Constant* const constant, llvm::Type* const dst_type )
+{
+	U_ASSERT( GetSingleScalarType( dst_type ) == constant->getType() );
+
+	if( dst_type->isStructTy() )
+		return
+			llvm::ConstantStruct::get(
+				llvm::dyn_cast<llvm::StructType>(dst_type),
+				{ WrapRawScalarConstant( constant, dst_type->getStructElementType(0) ) } );
+
+	if( dst_type->isArrayTy() )
+		return
+			llvm::ConstantArray::get(
+				llvm::dyn_cast<llvm::ArrayType>(dst_type),
+				{ WrapRawScalarConstant( constant, dst_type->getArrayElementType() ) } );
+
+	return constant;
+}
+
 bool CodeBuilder::IsDefaultConstructor( const FunctionType& function_type, const Type& base_class )
 {
 	return

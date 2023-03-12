@@ -1195,7 +1195,7 @@ Type CodeBuilder::BuildFuncCode(
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		// Skip "sret".
-		if( &llvm_arg == &*llvm_function->arg_begin() && function_type.IsStructRet() )
+		if( &llvm_arg == &*llvm_function->arg_begin() && FunctionTypeIsSRet( function_type ) )
 		{
 			llvm_arg.setName( "_return_value" );
 			function_context.s_ret_= &llvm_arg;
@@ -2065,7 +2065,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 			function_variable.llvm_function->name_mangled,
 			module_.get() );
 
-	const bool first_arg_is_sret= function_type.IsStructRet();
+	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
@@ -2073,6 +2073,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 		const FunctionType::Param& param= function_type.params[i];
 
 		const bool pass_value_param_by_hidden_ref=
+			param.value_type == ValueType::Value &&
 			(param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr ) &&
 			GetSingleScalarType( param.type.GetLLVMType() ) == nullptr;
 
@@ -2088,7 +2089,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ReadOnly );
 		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
 		// It is not possible to capture this reference.
-		if( param.value_type == ValueType::Value && pass_value_param_by_hidden_ref )
+		if( pass_value_param_by_hidden_ref )
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
 	}
 
@@ -2130,7 +2131,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( function_variable );
 	const FunctionType& function_type= *function_variable.type.GetFunctionType();
 
-	const bool first_arg_is_sret= function_type.IsStructRet();
+	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
@@ -2138,6 +2139,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 		const FunctionType::Param& param= function_type.params[i];
 
 		const bool pass_value_param_by_hidden_ref=
+			param.value_type == ValueType::Value &&
 			( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr ) &&
 			GetSingleScalarType( param.type.GetLLVMType() ) == nullptr;
 		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.

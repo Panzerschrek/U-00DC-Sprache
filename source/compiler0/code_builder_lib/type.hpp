@@ -184,7 +184,7 @@ public:
 	};
 
 	bool PointerCanBeConvertedTo( const FunctionType& other ) const;
-	bool IsStructRet() const;
+	bool ReturnsCompositeValue() const;
 
 public:
 	// If this changed, virtual functions compare function must be changed too!

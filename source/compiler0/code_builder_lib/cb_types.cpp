@@ -184,7 +184,12 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 {
 	ArgsVector<llvm::Type*> args_llvm_types;
 
-	const bool first_arg_is_sret= function_type.IsStructRet();
+	// Require complete type in order to know how to return values.
+	if( function_type.return_value_type == ValueType::Value )
+		EnsureTypeComplete( function_type.return_type );
+
+	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );
+
 	if( first_arg_is_sret )
 		args_llvm_types.push_back( function_type.return_type.GetLLVMType()->getPointerTo() );
 
@@ -226,14 +231,15 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	llvm::Type* llvm_function_return_type= function_type.return_type.GetLLVMType();
 	if( function_type.return_value_type == ValueType::Value )
 	{
-		// Require complete type in order to know how to return values.
-		if( EnsureTypeComplete( function_type.return_type ) )
+		if( first_arg_is_sret || function_type.return_type == void_type_ )
 		{
-			if( first_arg_is_sret || function_type.return_type == void_type_ )
-			{
-				// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
-				llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
-			}
+			// Use true "void" LLVM type only for function return value. Use own "void" type in other cases.
+			llvm_function_return_type= fundamental_llvm_types_.void_for_ret_;
+		}
+		else
+		{
+			llvm_function_return_type= GetSingleScalarType( function_type.return_type.GetLLVMType() );
+			U_ASSERT( llvm_function_return_type != nullptr );
 		}
 	}
 	else
@@ -274,8 +280,17 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention(
 	return llvm::CallingConv::C;
 }
 
+bool CodeBuilder::FunctionTypeIsSRet( const FunctionType& function_type )
+{
+	return
+		function_type.ReturnsCompositeValue() &&
+		GetSingleScalarType( function_type.return_type.GetLLVMType() ) == nullptr;
+}
+
 llvm::Type* CodeBuilder::GetSingleScalarType( llvm::Type* type )
 {
+	U_ASSERT( type->isSized() && "expected sized type!" );
+
 	while( true )
 	{
 		if( type->isStructTy() && type->getStructNumElements() == 1 )
@@ -295,9 +310,7 @@ llvm::Type* CodeBuilder::GetSingleScalarType( llvm::Type* type )
 	if( type->isIntegerTy() || type->isFloatingPointTy() || type->isPointerTy() )
 		return type;
 
-	U_ASSERT( false && "Unhandled llvm type kind!" );
 	return nullptr;
-
 }
 
 } // namespace U

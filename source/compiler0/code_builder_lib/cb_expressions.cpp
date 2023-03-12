@@ -3332,7 +3332,8 @@ Value CodeBuilder::DoCallFunction(
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
 	} // for args
 
-	const bool return_value_is_sret= function_type.IsStructRet();
+	const bool return_value_is_composite= function_type.ReturnsCompositeValue();
+	const bool return_value_is_sret= FunctionTypeIsSRet( function_type );
 
 	const VariableMutPtr result= std::make_shared<Variable>();
 	result->type= function_type.return_type;
@@ -3347,11 +3348,11 @@ Value CodeBuilder::DoCallFunction(
 		if( !EnsureTypeComplete( function_type.return_type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
 
-		result->location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
+		result->location= return_value_is_composite ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 	}
 	function_context.variables_state.AddNode( result );
 
-	if( return_value_is_sret )
+	if( return_value_is_composite )
 	{
 		if( !EnsureTypeComplete( function_type.return_type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
@@ -3362,8 +3363,11 @@ Value CodeBuilder::DoCallFunction(
 			CreateLifetimeStart( function_context, result->llvm_value );
 		}
 
-		llvm_args.insert( llvm_args.begin(), result->llvm_value );
-		constant_llvm_args.insert( constant_llvm_args.begin(), nullptr );
+		if( return_value_is_sret )
+		{
+			llvm_args.insert( llvm_args.begin(), result->llvm_value );
+			constant_llvm_args.insert( constant_llvm_args.begin(), nullptr );
+		}
 	}
 
 	llvm::Value* call_result= nullptr;
@@ -3389,11 +3393,13 @@ Value CodeBuilder::DoCallFunction(
 		}
 		if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 		{
-			if( return_value_is_sret ) // We needs here block of memory with result constant struct.
+			if( return_value_is_composite && return_value_is_sret && !function_context.is_functionless_context )
 				MoveConstantToMemory( result->type, result->llvm_value, evaluation_result.result_constant, function_context );
 
 			if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 				constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
+			else if( return_value_is_composite && !return_value_is_sret )
+				constant_call_result= WrapRawScalarConstant( evaluation_result.result_constant, function_type.return_type.GetLLVMType() );
 			else
 				constant_call_result= evaluation_result.result_constant;
 
@@ -3430,8 +3436,15 @@ Value CodeBuilder::DoCallFunction(
 	for( llvm::Value* const value_arg_var : value_args_for_lifetime_end_call )
 		CreateLifetimeEnd( function_context, value_arg_var );
 
-	if( !return_value_is_sret )
+	if( return_value_is_composite )
+	{
+		// If this is a composite type, passed in register, move call result into allocated memory block.
+		if( !return_value_is_sret && !function_context.is_functionless_context )
+			function_context.llvm_ir_builder.CreateStore( call_result, result->llvm_value );
+	}
+	else
 		result->llvm_value= call_result;
+
 	result->constexpr_value= constant_call_result;
 
 	// Prepare result references.

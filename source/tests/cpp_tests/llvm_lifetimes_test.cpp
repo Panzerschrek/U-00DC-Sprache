@@ -526,6 +526,7 @@ U_TEST( ReturnValueLifetime_Test1 )
 		struct S
 		{
 			i32 x;
+			i32 y= 0;
 			fn constructor()(x= 444555){}
 		}
 		fn nomangle CaptureValue(S& data, u64 size);
