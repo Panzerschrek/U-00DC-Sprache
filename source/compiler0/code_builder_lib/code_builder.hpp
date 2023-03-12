@@ -121,6 +121,11 @@ private:
 		const SrcLoc& src_loc,
 		CodeBuilderErrorsContainer& errors );
 
+	// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
+	// Returns null otherwise.
+	// Requires type to be complete.
+	static llvm::Type* GetSingleScalarType( llvm::Type* type );
+
 	// Virtual stuff
 	void CheckvirtualFunctionOverridingReferenceNotation(
 		CodeBuilderErrorsContainer& errors_container,

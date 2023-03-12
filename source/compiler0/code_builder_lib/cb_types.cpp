@@ -203,8 +203,16 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 				{}
 				else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 				{
-					// Mark value-parameters of composite types as pointer.
-					type= type->getPointerTo();
+					if( const auto single_scalar= GetSingleScalarType( param.type.GetLLVMType() ) )
+					{
+						// Pass composite types with single scalar inside in register, using type of this scalar.
+						type= single_scalar;
+					}
+					else
+					{
+						// Pass composite types by hidden pointer.
+						type= type->getPointerTo();
+					}
 				}
 				else U_ASSERT( false );
 			}
@@ -264,6 +272,32 @@ llvm::CallingConv::ID CodeBuilder::GetLLVMCallingConvention(
 
 	REPORT_ERROR( UnknownCallingConvention, errors, src_loc, *calling_convention_name );
 	return llvm::CallingConv::C;
+}
+
+llvm::Type* CodeBuilder::GetSingleScalarType( llvm::Type* type )
+{
+	while( true )
+	{
+		if( type->isStructTy() && type->getStructNumElements() == 1 )
+		{
+			type= type->getStructElementType(0);
+			continue;
+		}
+		if( type->isArrayTy() && type->getArrayNumElements() == 1 )
+		{
+			type= type->getArrayElementType();
+			continue;
+		}
+
+		break; // Not a composite.
+	}
+
+	if( type->isIntegerTy() || type->isFloatingPointTy() || type->isPointerTy() )
+		return type;
+
+	U_ASSERT( false && "Unhandled llvm type kind!" );
+	return nullptr;
+
 }
 
 } // namespace U

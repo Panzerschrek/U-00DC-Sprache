@@ -3258,10 +3258,22 @@ Value CodeBuilder::DoCallFunction(
 				{
 					// Do not call copy constructors - just move.
 					function_context.variables_state.MoveNode( expr );
-					llvm_args[arg_number]= expr->llvm_value;
 
-					if( !function_context.is_functionless_context )
-						value_args_for_lifetime_end_call.push_back( expr->llvm_value );
+					if( const auto single_scalar_type= GetSingleScalarType( param.type.GetLLVMType() ) )
+					{
+						if( !function_context.is_functionless_context )
+						{
+							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expr->llvm_value );
+							CreateLifetimeEnd( function_context, expr->llvm_value );
+							llvm_args[arg_number]= value;
+						}
+					}
+					else
+					{
+						llvm_args[arg_number]= expr->llvm_value;
+						if( !function_context.is_functionless_context )
+							value_args_for_lifetime_end_call.push_back( expr->llvm_value );
+					}
 				}
 				else
 				{
@@ -3285,16 +3297,31 @@ Value CodeBuilder::DoCallFunction(
 						llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( param.type.GetLLVMType() );
 
 						// Create lifetime.start instruction for value arg.
-						// Save it into temporary container to call lifetime.end after call.
 						CreateLifetimeStart( function_context, arg_copy );
-						value_args_for_lifetime_end_call.push_back( arg_copy );
 
-						llvm_args[arg_number]= arg_copy;
 						BuildCopyConstructorPart(
 							arg_copy,
 							CreateReferenceCast( expr->llvm_value, expr->type, param.type, function_context ),
 							param.type,
 							function_context );
+
+						if( const auto single_scalar_type= GetSingleScalarType( param.type.GetLLVMType() ) )
+						{
+							// If this is a single scalar type - just load value and end lifetime of address of copy.
+							if( !function_context.is_functionless_context )
+							{
+								llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
+								CreateLifetimeEnd( function_context, arg_copy );
+								llvm_args[arg_number]= value;
+							}
+						}
+						else
+						{
+							// Pass by hidden reference.
+							llvm_args[arg_number]= arg_copy;
+							// Save address into temporary container to call lifetime.end after call.
+							value_args_for_lifetime_end_call.push_back( arg_copy );
+						}
 					}
 				}
 			}
