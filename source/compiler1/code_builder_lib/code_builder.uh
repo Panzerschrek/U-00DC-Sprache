@@ -242,13 +242,18 @@ private:
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
-	fn GetLLVMFunctionType( this, FunctionType& function_type ) : LLVMTypeRef;
+	fn GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef;
 
 	fn GetLLVMCallingConvention(
 		this,
 		ust::optional</ust::string8/>& calling_convention_name,
 		NamesScopePtr& names_scope,
 		SrcLoc& src_loc ) : LLVMCallConvID;
+
+	// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
+	// Returns null otherwise.
+	// Requires type to be complete.
+	fn GetSingleScalarType( LLVMTypeRef t ) : LLVMTypeRef;
 
 	// Returns constant value if initializer is contant
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Initializer& initializer ) : LLVMValueRef;

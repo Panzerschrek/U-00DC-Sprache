@@ -318,7 +318,7 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	return move(res);
 }
 
-fn CodeBuilder::GetLLVMFunctionType( this, FunctionType& function_type ) : LLVMTypeRef
+fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef
 {
 	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
 
@@ -331,19 +331,32 @@ fn CodeBuilder::GetLLVMFunctionType( this, FunctionType& function_type ) : LLVMT
 
 	foreach( &param : function_type.params )
 	{
-		auto mut llvm_type= param.t.GetLLVMType();
-		if( param.value_type != ValueType::Value )
+		var LLVMTypeRef mut llvm_type= param.t.GetLLVMType();
+		if( param.value_type == ValueType::Value )
 		{
-			llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
+			if( EnsureTypeComplete( param.t ) )
+			{
+				if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
+				{
+					var LLVMTypeRef single_scalar_type= GetSingleScalarType( param.t.GetLLVMType() );
+					if( single_scalar_type != LLVMTypeRef::Null )
+					{
+						// Pass composite types with single scalar inside in register, using type of this scalar.
+						llvm_type= single_scalar_type;
+					}
+					else
+					{
+						// Pass aggregate types by-reference.
+						llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
+					}
+				}
+			}
 		}
 		else
 		{
-			// Pass aggregate types by-reference.
-			if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
-			{
-				llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
-			}
+			llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
 		}
+
 		llvm_param_types.push_back( llvm_type );
 	}
 
@@ -403,6 +416,41 @@ fn CodeBuilder::GetLLVMCallingConvention(
 
 	REPORT_ERROR( UnknownCallingConvention, names_scope, src_loc, cc )
 	return LLVMCallConv::C;
+}
+
+fn CodeBuilder::GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
+{
+	while(true)
+	{
+		var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
+		if( t_kind == LLVMTypeKind::Struct && unsafe( LLVMCountStructElementTypes( t ) ) == 1u )
+		{
+			t= unsafe( LLVMStructGetTypeAtIndex( t, 0u ) );
+			continue;
+		}
+		if( t_kind == LLVMTypeKind::Array && unsafe( LLVMGetArrayLength( t ) ) == 1u )
+		{
+			t= unsafe( LLVMGetElementType( t ) );
+			continue;
+		}
+
+		break; // Not a composite.
+	}
+
+	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
+	if( t_kind == LLVMTypeKind::Half ||
+		t_kind == LLVMTypeKind::Float ||
+		t_kind == LLVMTypeKind::Double ||
+		t_kind == LLVMTypeKind::X86_FP80 ||
+		t_kind == LLVMTypeKind::P128 ||
+		t_kind == LLVMTypeKind::PPC_FP128 ||
+		t_kind == LLVMTypeKind::Integer ||
+		t_kind == LLVMTypeKind::Pointer )
+	{
+		return t;
+	}
+
+	return LLVMTypeRef::Null;
 }
 
 } // namespace U1

@@ -3308,12 +3308,9 @@ Value CodeBuilder::DoCallFunction(
 						if( const auto single_scalar_type= GetSingleScalarType( param.type.GetLLVMType() ) )
 						{
 							// If this is a single scalar type - just load value and end lifetime of address of copy.
-							if( !function_context.is_functionless_context )
-							{
-								llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
-								CreateLifetimeEnd( function_context, arg_copy );
-								llvm_args[arg_number]= value;
-							}
+							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
+							CreateLifetimeEnd( function_context, arg_copy );
+							llvm_args[arg_number]= value;
 						}
 						else
 						{

@@ -1555,30 +1555,34 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				.name= in_param.name,
 			};
 
+			var LLVMValueRef arg_value= unsafe( LLVMGetParam( llvm_function, llvm_arg_n ) );
+			unsafe( LLVMSetValueName2( arg_value, cast_mut(in_param.name).data(), in_param.name.size() ) );
+
 			if( type_param.value_type == ValueType::Value )
 			{
 				if( !type_param.t.GetClassType().empty() || !type_param.t.GetArrayType().empty() || !type_param.t.GetTupleType().empty() )
 				{
-					// Aggregate types are passed by reference.
-					unsafe
+					var LLVMTypeRef single_scalar_type= GetSingleScalarType( type_param.t.GetLLVMType() );
+					if( single_scalar_type != LLVMTypeRef::Null )
 					{
-						auto arg_value= LLVMGetParam( llvm_function, llvm_arg_n );
-						LLVMSetValueName2( arg_value, cast_mut(in_param.name).data(), in_param.name.size() );
+						variable.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() ) );
+						CreateLifetimeStart( function_context, variable.llvm_value );
+
+						// Reinterretete composite type address as scalar type address and store value in it.=
+						unsafe( LLVMBuildStore( function_context.llvm_ir_builder, arg_value, variable.llvm_value ) );
+					}
+					else
+					{
+						// Large aggregate types are passed by reference.
 						variable.llvm_value= arg_value;
 					}
 				}
 				else
 				{
 					auto arg_name= "_arg_" + in_param.name;
-					unsafe
-					{
-						auto arg_value= LLVMGetParam( llvm_function, llvm_arg_n );
-						LLVMSetValueName2( arg_value, cast_mut(arg_name).data(), arg_name.size() );
-
-						variable.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() );
-						CreateLifetimeStart( function_context, variable.llvm_value );
-						CreateTypedStore( function_context, type_param.t, arg_value, variable.llvm_value );
-					}
+					variable.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() ) );
+					CreateLifetimeStart( function_context, variable.llvm_value );
+					CreateTypedStore( function_context, type_param.t, arg_value, variable.llvm_value );
 				}
 
 				debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, in_param.name, in_param.src_loc );
@@ -2326,15 +2330,19 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 		var FunctionType::Param& param= function_variable.t.params[i];
 		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + select( is_s_ret ? 1u : 0u ) + u32(i);
 
-		var bool param_type_is_composite= !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty();
+		var bool pass_value_param_by_hidden_ref=
+			param.value_type == ValueType::Value &&
+			( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() ) &&
+			GetSingleScalarType( param.t.GetLLVMType() ) == LLVMTypeRef::Null;
+
 		// Mark pointer-parameters as "nonnull".
-		if( param.value_type != ValueType::Value || param_type_is_composite )
+		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
 		{
 			AddFunctionAttribute( llvm_function, llvm_param_n, "nonnull" );
 		}
 		// Mutable reference args or composite value-args must not alias.
 		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
-		if( param.value_type != ValueType::Value || param_type_is_composite )
+		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
 		{
 			AddFunctionAttribute( llvm_function, llvm_param_n, "noalias" );
 		}
@@ -2345,7 +2353,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 		}
 		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
 		// It is not possible to capture this reference.
-		if( param.value_type == ValueType::Value && param_type_is_composite )
+		if( param.value_type == ValueType::Value && pass_value_param_by_hidden_ref )
 		{
 			AddFunctionAttribute( llvm_function, llvm_param_n, "nocapture" );
 		}
@@ -2365,9 +2373,13 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( mut this, Fu
 		var FunctionType::Param& param= function_variable.t.params[i];
 		var u32 llvm_param_n= LLVMAttributeFirstParamIndex + select( is_s_ret ? 1u : 0u ) + u32(i);
 
-		var bool param_type_is_composite= !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty();
+		var bool pass_value_param_by_hidden_ref=
+			param.value_type == ValueType::Value &&
+			( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() ) &&
+			GetSingleScalarType( param.t.GetLLVMType() ) == LLVMTypeRef::Null;
+
 		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
-		if( param.value_type != ValueType::Value || param_type_is_composite )
+		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
 		{
 			var LLVMTypeRef llvm_type= param.t.GetLLVMType();
 			unsafe
