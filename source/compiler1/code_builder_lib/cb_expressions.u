@@ -1442,6 +1442,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		{
 			var LLVMValueRef function_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 
+			function_context.have_non_constexpr_operations_inside= true; // Call via pointer is not constexpr.
+
 			return DoCallFunction(
 				names_scope,
 				function_context,
@@ -2914,6 +2916,11 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			return ust::optional</Value/>();
 		}
 
+		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		{
+			function_context.have_non_constexpr_operations_inside= true;
+		}
+
 		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( overloaded_operator );
 
 		return DoCallFunction(
@@ -3115,6 +3122,11 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 	{
 		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
 
+		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		{
+			function_context.have_non_constexpr_operations_inside= true;
+		}
+
 		return DoCallFunction(
 			names_scope,
 			function_context,
@@ -3171,6 +3183,11 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
 	{
 		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
+
+		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		{
+			function_context.have_non_constexpr_operations_inside= true;
+		}
 
 		return DoCallFunction(
 			names_scope,
@@ -3257,6 +3274,11 @@ fn CodeBuilder::CallFunctionsSet(
 		this_.reset();
 	}
 
+	if( !( function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+	{
+		function_context.have_non_constexpr_operations_inside= true;
+	}
+
 	var bool is_constexpr= function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete;
 
 	if( !this_.empty() )
@@ -3327,13 +3349,7 @@ fn CodeBuilder::DoCallFunction(
 	ArgsEvaluationOrder args_evaluation_order,
 	SrcLoc& src_loc ) : Value
 {
-	if( !is_constexpr )
-	{
-		function_context.have_non_constexpr_operations_inside= true;
-	}
-
-	auto total_args= preevaluated_args.size() + args.size();
-
+	var size_type total_args= preevaluated_args.size() + args.size();
 	if( total_args != function_type.params.size() )
 	{
 		REPORT_ERROR( InvalidFunctionArgumentCount, names_scope, src_loc, total_args, function_type.params.size() )
@@ -3371,6 +3387,10 @@ fn CodeBuilder::DoCallFunction(
 	if( is_constexpr && function_type.return_value_type == ValueType::Value )
 	{
 		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
+	}
+	else
+	{
+		is_constexpr= false; // Can't call constexpr function, returning reference.
 	}
 
 	// TODO - use vector of pairs instead of pair of vectors.

@@ -2286,6 +2286,8 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 			lazy_function.name_mangled.front(),
 			GetLLVMFunctionType( function_variable.t ) ) );
 
+	unsafe( LLVMSetFunctionCallConv( llvm_function, function_variable.t.calling_convention ) );
+
 	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
 	if( function_variable.is_generated )
 	{
