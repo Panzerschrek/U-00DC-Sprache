@@ -195,10 +195,15 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
-	SetupDereferenceableFunctionParamsAndRetAttributes_r( cast_imut(source_graph_nodes_build_results_).front().names_scope.try_lock_imut().deref() );
-	foreach( &name_value_pair : cast_imut(generated_template_things_) )
 	{
-		SetupDereferenceableFunctionParamsAndRetAttributes_r( name_value_pair.value().lock_imut().deref() );
+		// TODO - avoid copying "this" fields.
+		var NamesScopePtr root_node_names_scope= source_graph_nodes_build_results_.front().names_scope.try_to_non_nullable();
+		SetupDereferenceableFunctionParamsAndRetAttributes_r( root_node_names_scope.lock_imut().deref() );
+		auto generated_template_things_copy= generated_template_things_;
+		foreach( &name_value_pair : generated_template_things_copy )
+		{
+			SetupDereferenceableFunctionParamsAndRetAttributes_r( name_value_pair.value().lock_imut().deref() );
+		}
 	}
 
 	// Finalize incomplete typeinfo.
@@ -982,9 +987,26 @@ fn CodeBuilder::PrepareFunction(
 		}
 	}
 
+	var FunctionType mut function_type= PrepareFunctionType( names_scope_ptr, global_function_context, function_declaration.function_type, class_type );
+
+	var ust::string8 mut llvm_function_name;
+	if( function_declaration.no_mangle )
+	{
+		llvm_function_name= func_name + "\0";
+	}
+	else
+	{
+		llvm_function_name=
+			mangler_.deref().MangleFunction(
+				names_scope_ptr.lock_imut().deref(),
+				func_name,
+				function_type );
+	}
+
 	var FunctionVariable mut function_variable
 	{
-		.t= PrepareFunctionType( names_scope_ptr, global_function_context, function_declaration.function_type, class_type )
+		.t= move(function_type),
+		.llvm_function( LazyLLVMFunction( move(llvm_function_name) ) ),
 	};
 	if( function_declaration.block.empty() )
 	{
@@ -1274,34 +1296,6 @@ fn CodeBuilder::PrepareFunction(
 		return false;
 	}
 
-
-	var ust::string8 mut llvm_function_name;
-	if( function_variable.no_mangle )
-	{
-		llvm_function_name= func_name + "\0";
-	}
-	else
-	{
-		llvm_function_name=
-			mangler_.deref().MangleFunction(
-				names_scope_ptr.lock_imut().deref(),
-				func_name,
-				function_variable.t );
-	}
-
-	unsafe
-	{
-		function_variable.llvm_function=
-			LLVMAddFunction(
-				module_,
-				llvm_function_name.front(),
-				GetLLVMFunctionType( function_variable.t ) );
-
-		LLVMSetFunctionCallConv( function_variable.llvm_function, function_variable.t.calling_convention );
-	}
-
-	SetupFunctionParamsAndRetAttributes( function_variable );
-
 	return ApplyOverloadedFunction( functions_set, move(function_variable), names_scope_ptr, function_declaration.src_loc );
 }
 
@@ -1465,7 +1459,10 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	{
 		return;
 	}
-	if( unsafe( LLVMCountBasicBlocks( func_variable.llvm_function ) ) != 0u )
+
+	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( func_variable );
+
+	if( unsafe( LLVMCountBasicBlocks( llvm_function ) ) != 0u )
 	{
 		return; // Body already exists
 	}
@@ -1477,13 +1474,13 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	{
 		if( names_scope.lock_imut().deref().IsInsideTemplate() )
 		{
-			LLVMSetLinkage( func_variable.llvm_function, LLVMLinkage::Private );
+			LLVMSetLinkage( llvm_function, LLVMLinkage::Private );
 		}
 		else
 		{
 			// Set comdat. This needed because we want linkage like "inline" in C++ but for all functions.
 			var size_type mut name_length = zero_init;
-			var $(char8) name_start= LLVMGetValueName2( func_variable.llvm_function, name_length );
+			var $(char8) name_start= LLVMGetValueName2( llvm_function, name_length );
 			if( name_length > 0s )
 			{
 				var ust::string8 mut name_str;
@@ -1492,7 +1489,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 				auto comdat= LLVMGetOrInsertComdat( module_, name_str.front() );
 				LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
-				LLVMSetComdat( func_variable.llvm_function, comdat );
+				LLVMSetComdat( llvm_function, comdat );
 			}
 		}
 	}
@@ -1501,7 +1498,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 	var FunctionContext mut function_context_value(
 		llvm_context_,
-		func_variable.llvm_function,
+		llvm_function,
 		func_variable.t );
 
 	var NamesScopeMutPtr args_names_scope_ptr( NamesScope( "", names_scope ) );
@@ -1535,7 +1532,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		{
 			unsafe
 			{
-				function_context.s_ret= LLVMGetParam( func_variable.llvm_function, 0u );
+				function_context.s_ret= LLVMGetParam( llvm_function, 0u );
 				var ust::array_view_imut</ char8 /> param_name= "_return_value";
 				LLVMSetValueName2( function_context.s_ret, param_name.data(), param_name.size() );
 			}
@@ -1565,7 +1562,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					// Aggregate types are passed by reference.
 					unsafe
 					{
-						auto arg_value= LLVMGetParam( func_variable.llvm_function, llvm_arg_n );
+						auto arg_value= LLVMGetParam( llvm_function, llvm_arg_n );
 						LLVMSetValueName2( arg_value, cast_mut(in_param.name).data(), in_param.name.size() );
 						variable.llvm_value= arg_value;
 					}
@@ -1575,7 +1572,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					auto arg_name= "_arg_" + in_param.name;
 					unsafe
 					{
-						auto arg_value= LLVMGetParam( func_variable.llvm_function, llvm_arg_n );
+						auto arg_value= LLVMGetParam( llvm_function, llvm_arg_n );
 						LLVMSetValueName2( arg_value, cast_mut(arg_name).data(), arg_name.size() );
 
 						variable.llvm_value= LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() );
@@ -1591,7 +1588,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			{
 				unsafe
 				{
-					auto arg_value= LLVMGetParam( func_variable.llvm_function, llvm_arg_n );
+					auto arg_value= LLVMGetParam( llvm_function, llvm_arg_n );
 					LLVMSetValueName2( arg_value, cast_mut(in_param.name).data(), in_param.name.size() );
 					variable.llvm_value= arg_value;
 				}
@@ -1753,7 +1750,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
-	unsafe( U1_TryToPerformReturnValueAllocationOptimization( func_variable.llvm_function ) );
+	unsafe( U1_TryToPerformReturnValueAllocationOptimization( llvm_function ) );
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
 	{
@@ -1817,7 +1814,7 @@ fn CodeBuilder::TryCallCopyConstructor(
 	BuildCopyConstructorPart( names_scope, function_context, dst, src, class_type, src_loc );
 }
 
-fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc )
+fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc )
 {
 	// Call destructors in reverse order.
 	for( auto mut i= function_context.variables_frames[variables_frame_index].size(); i > 0s; --i )
@@ -1849,13 +1846,13 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( this, NamesScopePtr& names_sco
 	}
 }
 
-fn CodeBuilder::CallDestructorsForTopVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
+fn CodeBuilder::CallDestructorsForTopVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
 {
 	auto variables_frame_index= function_context.variables_frames.size() - 1s;
 	CallDestructorsForVariablesFrame( names_scope, function_context, variables_frame_index, src_loc );
 }
 
-fn CodeBuilder::CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
+fn CodeBuilder::CallDestructorsForAllVariablesFrames( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
 {
 	for( auto mut i= function_context.variables_frames.size(); i > 0s; --i )
 	{
@@ -1863,7 +1860,7 @@ fn CodeBuilder::CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names
 	}
 }
 
-fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
+fn CodeBuilder::CallDestructorsForLoopInnerVariables( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
 {
 	for( var size_type mut i= function_context.variables_frames.size(), i_end= function_context.loops_stack.back().variable_frames_stack_size; i > i_end; --i )
 	{
@@ -1871,7 +1868,7 @@ fn CodeBuilder::CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names
 	}
 }
 
-fn CodeBuilder::DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc )
+fn CodeBuilder::DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc )
 {
 	// Try to move unused nodes (variables and references) until we can't move anything.
 	// Multiple iterations needed to process complex references chains.
@@ -2273,17 +2270,53 @@ fn CodeBuilder::AddFunctionTypeAttribute( this, LLVMValueRef llvm_function, u32 
 	}
 }
 
-fn CodeBuilder::SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable )
+fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_variable ) : LLVMValueRef
 {
+	auto mut lock= function_variable.llvm_function.lock_mut();
+	var LazyLLVMFunction &mut lazy_function= lock.deref();
+	var LLVMValueRef& mut llvm_function= lazy_function.function;
+	if( llvm_function != LLVMValueRef::Null )
+	{
+		return llvm_function;
+	}
+
+	llvm_function=
+		unsafe( LLVMAddFunction(
+			module_,
+			lazy_function.name_mangled.front(),
+			GetLLVMFunctionType( function_variable.t ) ) );
+
+	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
+	if( function_variable.is_generated )
+	{
+		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+	}
+
+	// Merge functions with identical code.
+	// We doesn't need different addresses for different functions.
+	unsafe( LLVMSetUnnamedAddress( llvm_function, LLVMUnnamedAddr::GlobalUnnamedAddr ) );
+
+	// We do not support exceptions. So, mark all functions as "nounwind".
+	AddFunctionAttribute( llvm_function, LLVMAttributeFunctionIndex, "nounwind" );
+
+	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+	{
+		unsafe
+		{
+			auto attr= LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("uwtable"), 2u64 /* async uwtable */ );
+			LLVMAddAttributeAtIndex( llvm_function, LLVMAttributeFunctionIndex, attr );
+		}
+	}
+
 	var bool is_s_ret= function_variable.t.IsStructRet();
 	if( is_s_ret )
 	{
-		AddFunctionTypeAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "sret", function_variable.t.return_type.GetLLVMType() );
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
+		AddFunctionTypeAttribute( llvm_function, LLVMAttributeFirstParamIndex, "sret", function_variable.t.return_type.GetLLVMType() );
+		AddFunctionAttribute( llvm_function, LLVMAttributeFirstParamIndex, "noalias" );
 	}
 	if( function_variable.t.return_value_type != ValueType::Value )
 	{
-		AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeReturnIndex, "nonnull" );
+		AddFunctionAttribute( llvm_function, LLVMAttributeReturnIndex, "nonnull" );
 	}
 
 	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
@@ -2295,52 +2328,34 @@ fn CodeBuilder::SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable&
 		// Mark pointer-parameters as "nonnull".
 		if( param.value_type != ValueType::Value || param_type_is_composite )
 		{
-			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nonnull" );
+			AddFunctionAttribute( llvm_function, llvm_param_n, "nonnull" );
 		}
 		// Mutable reference args or composite value-args must not alias.
 		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
 		if( param.value_type != ValueType::Value || param_type_is_composite )
 		{
-			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "noalias" );
+			AddFunctionAttribute( llvm_function, llvm_param_n, "noalias" );
 		}
 		// Mark as "readonly" immutable reference params.
 		if( param.value_type == ValueType::ReferenceImut )
 		{
-			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "readonly" );
+			AddFunctionAttribute( llvm_function, llvm_param_n, "readonly" );
 		}
 		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
 		// It is not possible to capture this reference.
 		if( param.value_type == ValueType::Value && param_type_is_composite )
 		{
-			AddFunctionAttribute( function_variable.llvm_function, llvm_param_n, "nocapture" );
+			AddFunctionAttribute( llvm_function, llvm_param_n, "nocapture" );
 		}
 	}
 
-	// Merge functions with identical code.
-	// We doesn't need different addresses for different functions.
-	unsafe( LLVMSetUnnamedAddress( function_variable.llvm_function, LLVMUnnamedAddr::GlobalUnnamedAddr ) );
-
-	// We do not support exceptions. So, mark all functions as "nounwind".
-	AddFunctionAttribute( function_variable.llvm_function, LLVMAttributeFunctionIndex, "nounwind" );
-
-	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
-	{
-		unsafe
-		{
-			auto attr= LLVMCreateEnumAttribute( llvm_context_, GetAttributeKindByName("uwtable"), 2u64 /* async uwtable */ );
-			LLVMAddAttributeAtIndex( function_variable.llvm_function, LLVMAttributeFunctionIndex, attr );
-		}
-	}
-
-	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
-	if( function_variable.is_generated )
-	{
-		unsafe( LLVMSetLinkage( function_variable.llvm_function, LLVMLinkage::Private ) );
-	}
+	return llvm_function;
 }
 
-fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, FunctionVariable& mut function_variable )
+fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable )
 {
+	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
+
 	var bool is_s_ret= function_variable.t.IsStructRet();
 
 	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
@@ -2360,7 +2375,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 					continue; // May be in case of error.
 				}
 
-				U1_FunctionAddDereferenceableAttr( function_variable.llvm_function, llvm_param_n, LLVMABISizeOfType( data_layout_, llvm_type ) );
+				U1_FunctionAddDereferenceableAttr( llvm_function, llvm_param_n, LLVMABISizeOfType( data_layout_, llvm_type ) );
 			}
 		}
 	}
@@ -2375,16 +2390,16 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, Functi
 
 		if( is_s_ret )
 		{
-			U1_FunctionAddDereferenceableAttr( function_variable.llvm_function, LLVMAttributeFirstParamIndex, LLVMABISizeOfType( data_layout_, llvm_type ) );
+			U1_FunctionAddDereferenceableAttr( llvm_function, LLVMAttributeFirstParamIndex, LLVMABISizeOfType( data_layout_, llvm_type ) );
 		}
 		else if( function_variable.t.return_value_type != ValueType::Value )
 		{
-			U1_FunctionAddDereferenceableAttr( function_variable.llvm_function, LLVMAttributeReturnIndex, LLVMABISizeOfType( data_layout_, llvm_type ) );
+			U1_FunctionAddDereferenceableAttr( llvm_function, LLVMAttributeReturnIndex, LLVMABISizeOfType( data_layout_, llvm_type ) );
 		}
 	}
 }
 
-fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope )
+fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( mut this, NamesScope& names_scope )
 {
 	foreach( &el : names_scope )
 	{
@@ -2948,7 +2963,8 @@ fn CodeBuilder::ConstexprCompareEqual(
 
 			// TODO - what if "==" is unsafe?
 
-			auto res= constexpr_function_evaluator_.Evaluate( op_.llvm_function, ust::make_array( l, r ) );
+			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( op_ );
+			auto res= constexpr_function_evaluator_.Evaluate( llvm_function, ust::make_array( l, r ) );
 
 			if( res.errors.empty() )
 			{

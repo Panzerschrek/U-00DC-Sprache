@@ -161,18 +161,8 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 				.functions_set= functions_set_ptr.try_to_non_nullable(),
 				.index= i,
 				.name= class_member.key(),
+				.mangled_name= functions_set.functions[i].llvm_function.lock_imut().deref().name_mangled,
 			};
-
-			unsafe
-			{
-				var size_type mut name_length= 0s;
-				var $(char8) name_start= LLVMGetValueName2( functions_set.functions[i].llvm_function, name_length );
-				if( name_length > 0s )
-				{
-					f.mangled_name.resize( name_length, "\0"c8 );
-					ust::memory_copy( cast_ref_unsafe</byte8/>( f.mangled_name.front() ), cast_ref_unsafe</byte8/>( $>(name_start) ), name_length );
-				}
-			}
 
 			this_virtual_functions.push_back( move(f) );
 		}
@@ -479,7 +469,7 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 	}
 }
 
-fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, u64 offset ) : LLVMValueRef
+fn CodeBuilder::BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, ClassType& dst_class, u64 offset ) : LLVMValueRef
 {
 	var ust::vector</LLVMValueRef/> mut initializer_values;
 
@@ -533,13 +523,13 @@ fn CodeBuilder::BuildClassVirtualTable_r( this, ClassType& ancestor_class, Class
 				continue;
 			}
 
-			auto mut func= ancestor_virtual_table_entry.function_variable.llvm_function;
+			var LLVMValueRef mut func= EnsureLLVMFunctionCreated( ancestor_virtual_table_entry.function_variable );
 			foreach( &dst_virtual_table_entry : dst_class.virtual_table )
 			{
 				if( dst_virtual_table_entry.name == ancestor_virtual_table_entry.name &&
 					dst_virtual_table_entry.function_variable.VirtuallyEquals( ancestor_virtual_table_entry.function_variable ) )
 				{
-					func= dst_virtual_table_entry.function_variable.llvm_function;
+					func= EnsureLLVMFunctionCreated( dst_virtual_table_entry.function_variable );
 					break;
 				}
 			}
@@ -669,7 +659,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 {
 	if( function_context.is_functionless_context || function.virtual_table_index == ~0u )
 	{
-		return ust::make_tuple( this_ptr, function.llvm_function );
+		return ust::make_tuple( this_ptr, EnsureLLVMFunctionCreated( function ) );
 	}
 
 	auto constexpr c_offset_field_number= 0u;

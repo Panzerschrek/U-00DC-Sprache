@@ -1717,16 +1717,17 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 		} ];
 
 		auto operator= select( delta == 1 ? OverloadedOperator::Increment : OverloadedOperator::Decrement );
-		if_var( mut overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
+		if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 		{
 			auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
-			overloaded_operator.llvm_function= fetch_result[1];
 
 			DoCallFunction(
 				names_scope,
 				function_context,
 				fetch_result[0],
-				overloaded_operator,
+				overloaded_operator.t,
+				fetch_result[1],
+				false, // non-constexpr call.
 				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 				src_loc );
 			CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );

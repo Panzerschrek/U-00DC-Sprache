@@ -349,7 +349,7 @@ struct VariableTypeExtended
 struct FunctionVariable
 {
 	FunctionType t;
-	LLVMValueRef llvm_function= LLVMValueRef::Null;
+	LazyLLVMFunctionPtr llvm_function;
 
 	bool is_this_call= false;
 	bool is_constructor= false;
@@ -376,6 +376,19 @@ struct FunctionVariable
 	ust::shared_ptr_final_nullable</ FunctionTemplate /> base_template;
 
 	fn VirtuallyEquals( this, FunctionVariable& other ) : bool;
+}
+
+type LazyLLVMFunctionPtr= ust::shared_ptr_mut</LazyLLVMFunction/>;
+
+struct LazyLLVMFunction
+{
+	ust::string8 name_mangled;
+	LLVMValueRef function= LLVMValueRef::Null;
+
+	fn constructor( ust::string8 mut name ) ( name_mangled= move(name) ) {}
+
+	fn constructor( LazyLLVMFunction& other )= delete;
+	op=( mut this, LazyLLVMFunction& other )= delete;
 }
 
 // Set of functions and function templates with same name in one scope.

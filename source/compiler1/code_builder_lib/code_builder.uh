@@ -422,7 +422,9 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		VariableNullablePtr& this_,
-		FunctionVariable& function,
+		FunctionType& function_type,
+		LLVMValueRef function,
+		bool is_constexpr,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
 
@@ -432,7 +434,9 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		FunctionVariable& function,
+		FunctionType& function_type,
+		LLVMValueRef function,
+		bool is_constexpr,
 		ust::array_view_imut</ VariablePtr />& preevaluated_args,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		ArgsEvaluationOrder args_evaluation_order,
@@ -722,7 +726,7 @@ private:
 	fn PrepareClassVirtualTableType( mut this, ClassTypePtr& class_type_ptr );
 
 	fn BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_ptr );
-	fn BuildClassVirtualTable_r( this, ClassType& ancestor_class, ClassType& dst_class, u64 offset ) : LLVMValueRef;
+	fn BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, ClassType& dst_class, u64 offset ) : LLVMValueRef;
 	fn BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr );
 
 	fn SetupVirtualTablePointers_r(
@@ -804,8 +808,8 @@ private:
 	fn BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc );
 	fn BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc );
 	fn BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef l_address, LLVMValueRef r_address, Type& t, LLVMBasicBlockRef false_basic_block, SrcLoc& src_loc );
-	fn BuildDestructorPart( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, SrcLoc& src_loc );
-	fn BuildMembersDestructors( this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type );
+	fn BuildDestructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, SrcLoc& src_loc );
+	fn BuildMembersDestructors( mut this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type );
 
 	fn TryCallCopyConstructor(
 		mut this,
@@ -815,12 +819,12 @@ private:
 		ClassTypePtr& class_type,
 		SrcLoc& src_loc );
 
-	fn CallDestructorsForVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc );
-	fn CallDestructorsForTopVariablesFrame( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
-	fn CallDestructorsForAllVariablesFrames( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
-	fn CallDestructorsForLoopInnerVariables( this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+	fn CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc );
+	fn CallDestructorsForTopVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+	fn CallDestructorsForAllVariablesFrames( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+	fn CallDestructorsForLoopInnerVariables( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 
-	fn DestroyUnusedTemporaryVariables( this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc );
+	fn DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc );
 
 	fn RegisterTemporaryVariable( FunctionContext& mut function_context, VariablePtr variable );
 	fn RegisterTopFrameVariable( FunctionContext& mut function_context, VariablePtr variable );
@@ -855,11 +859,14 @@ private:
 	fn AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name );
 	fn AddFunctionTypeAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name, LLVMTypeRef t );
 
+	// Creates LLVM function and its LLVM type lazily. This call may trigger types competion.
+	fn EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_variable ) : LLVMValueRef;
+
 	fn SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable );
 	// Requires complete types
-	fn SetupDereferenceableFunctionParamsAndRetAttributes( this, FunctionVariable& mut function_variable );
+	fn SetupDereferenceableFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable );
 
-	fn SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope );
+	fn SetupDereferenceableFunctionParamsAndRetAttributes_r( mut this, NamesScope& names_scope );
 
 	fn IsGlobalVariable( VariablePtr& variable ) : bool;
 
