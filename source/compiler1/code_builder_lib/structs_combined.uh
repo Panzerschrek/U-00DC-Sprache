@@ -106,7 +106,7 @@ struct FunctionType
 	op==( FunctionType& l, FunctionType& r ) : bool;
 
 	fn PointerCanBeConvertedTo( this, FunctionType& dst ) : bool;
-	fn IsStructRet( this ) : bool;
+	fn ReturnsCompositeValue( this ) : bool;
 }
 
 fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8;

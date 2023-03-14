@@ -510,29 +510,62 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 		}
 
-		auto s_ret= function_context.s_ret;
-		if( s_ret != LLVMValueRef::Null )
+		if( !ret_type.GetClassType().empty() || !ret_type.GetArrayType().empty() || !ret_type.GetTupleType().empty() )
 		{
-			if( expr.value_type == ValueType::Value && expr.t == function_context.function_type.return_type )
+			var LLVMTypeRef single_scalar_type= GetSingleScalarType( ret_type.GetLLVMType() );
+
+			if( expr.value_type == ValueType::Value )
 			{
 				// Move
 				function_context.references_graph.MoveNode( expr_ptr );
 
-				CopyBytes( s_ret, expr.llvm_value, expr.t, function_context );
-				if( expr.location == Variable::Location::Pointer )
+				if( single_scalar_type == LLVMTypeRef::Null )
 				{
+					CopyBytes( function_context.s_ret, expr.llvm_value, ret_type, function_context );
 					CreateLifetimeEnd( function_context, expr.llvm_value );
+
+					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
+					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+					unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
+				}
+				else
+				{
+					var LLVMValueRef ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, expr.llvm_value, g_null_string ) );
+					CreateLifetimeEnd( function_context, expr.llvm_value );
+
+					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
+					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+					unsafe( LLVMBuildRet( function_context.llvm_ir_builder, ret ) );
 				}
 			}
 			else
 			{
 				// Copy
-				BuildCopyConstructorPart( names_scope, function_context, s_ret, expr.llvm_value, expr.t, return_operator.src_loc );
-			}
+				if( single_scalar_type == LLVMTypeRef::Null )
+				{
+					// Copy into "s_ret".
+					BuildCopyConstructorPart( names_scope, function_context, function_context.s_ret, expr.llvm_value, ret_type, return_operator.src_loc );
 
-			CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
-			CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-			unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
+					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
+					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+					unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
+				}
+				else
+				{
+					// Copy into temp address, than load the result.
+					var LLVMValueRef temp= unsafe( LLVMBuildAlloca( function_context.llvm_ir_builder, ret_type.GetLLVMType(), g_null_string ) );
+					CreateLifetimeStart( function_context, temp );
+
+					BuildCopyConstructorPart( names_scope, function_context, temp, expr.llvm_value, ret_type, return_operator.src_loc );
+
+					var LLVMValueRef ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, temp, g_null_string ) );
+					CreateLifetimeEnd( function_context, temp );
+
+					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
+					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+					unsafe( LLVMBuildRet( function_context.llvm_ir_builder, ret ) );
+				}
+			}
 		}
 		else
 		{

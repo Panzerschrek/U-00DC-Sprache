@@ -1527,7 +1527,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.deref();
 
-		var bool is_s_ret= func_variable.t.IsStructRet();
+		var bool is_s_ret= FunctionTypeIsSRet( func_variable.t );
 		if( is_s_ret )
 		{
 			unsafe
@@ -2314,7 +2314,7 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 		}
 	}
 
-	var bool is_s_ret= function_variable.t.IsStructRet();
+	var bool is_s_ret= FunctionTypeIsSRet( function_variable.t );
 	if( is_s_ret )
 	{
 		AddFunctionTypeAttribute( llvm_function, LLVMAttributeFirstParamIndex, "sret", function_variable.t.return_type.GetLLVMType() );
@@ -2366,7 +2366,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( mut this, Fu
 {
 	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
 
-	var bool is_s_ret= function_variable.t.IsStructRet();
+	var bool is_s_ret= FunctionTypeIsSRet( function_variable.t );
 
 	for( auto mut i= 0s; i < function_variable.t.params.size(); ++i )
 	{

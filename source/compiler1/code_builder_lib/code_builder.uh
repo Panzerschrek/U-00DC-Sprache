@@ -250,6 +250,9 @@ private:
 		NamesScopePtr& names_scope,
 		SrcLoc& src_loc ) : LLVMCallConvID;
 
+	// Requires return type to be complete.
+	fn FunctionTypeIsSRet( FunctionType& function_type ) : bool;
+
 	// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
 	// Returns null otherwise.
 	// Requires type to be complete.

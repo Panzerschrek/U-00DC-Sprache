@@ -322,11 +322,40 @@ fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : L
 {
 	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
 
-	// s_ret
-	var bool is_s_ret= function_type.IsStructRet();
+	if( function_type.ReturnsCompositeValue() )
+	{
+		EnsureTypeComplete( function_type.return_type );
+	}
+
+	var bool is_s_ret= FunctionTypeIsSRet( function_type );
 	if( is_s_ret )
 	{
 		llvm_param_types.push_back( unsafe( LLVMPointerType( function_type.return_type.GetLLVMType(), 0u ) ) );
+	}
+
+	var LLVMTypeRef mut ret_llvm_type= function_type.return_type.GetLLVMType();
+	if( function_type.return_value_type == ValueType::Value )
+	{
+		if( function_type.return_type == void_type_ )
+		{
+			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
+		}
+		else if( function_type.ReturnsCompositeValue() )
+		{
+			var LLVMTypeRef single_scalar_type= GetSingleScalarType( ret_llvm_type );
+			if( single_scalar_type != LLVMTypeRef::Null )
+			{
+				ret_llvm_type= single_scalar_type;
+			}
+			else
+			{
+				ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
+			}
+		}
+	}
+	else
+	{
+		ret_llvm_type= unsafe( LLVMPointerType( ret_llvm_type, 0u ) );
 	}
 
 	foreach( &param : function_type.params )
@@ -358,16 +387,6 @@ fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : L
 		}
 
 		llvm_param_types.push_back( llvm_type );
-	}
-
-	var LLVMTypeRef mut ret_llvm_type= function_type.return_type.GetLLVMType();
-	if( function_type.return_value_type != ValueType::Value )
-	{
-		ret_llvm_type= unsafe( LLVMPointerType( ret_llvm_type, 0u ) );
-	}
-	else if( is_s_ret || function_type.return_type == void_type_ )
-	{
-		ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
 	}
 
 	return unsafe( LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool::False ) );
@@ -416,6 +435,13 @@ fn CodeBuilder::GetLLVMCallingConvention(
 
 	REPORT_ERROR( UnknownCallingConvention, names_scope, src_loc, cc )
 	return LLVMCallConv::C;
+}
+
+fn CodeBuilder::FunctionTypeIsSRet( FunctionType& function_type ) : bool
+{
+	return
+		function_type.ReturnsCompositeValue() &&
+		GetSingleScalarType( function_type.return_type.GetLLVMType() ) == LLVMTypeRef::Null;
 }
 
 fn CodeBuilder::GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
