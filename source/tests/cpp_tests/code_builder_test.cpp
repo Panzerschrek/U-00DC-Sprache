@@ -404,10 +404,7 @@ U_TEST(CallTest0)
 	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
 	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
-	llvm::GenericValue result_value=
-		engine->runFunction(
-			function,
-			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+	const llvm::GenericValue result_value= engine->runFunction( function, args );
 
 	U_TEST_ASSERT(
 		static_cast<uint64_t>( arg0 * arg0 + 42 + arg1 * arg1 + 42 ) ==
@@ -443,10 +440,7 @@ U_TEST(CallTest1)
 	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
 	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
 
-	llvm::GenericValue result_value=
-		engine->runFunction(
-			function,
-			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+	const llvm::GenericValue result_value= engine->runFunction( function, args );
 
 	U_TEST_ASSERT(
 		static_cast<uint64_t>( arg0 / arg1 ) ==
@@ -811,10 +805,7 @@ U_TEST(WhileOperatorTest)
 	llvm::GenericValue args[2];
 	args[0].IntVal= llvm::APInt( 32, uint64_t(arg0) );
 	args[1].IntVal= llvm::APInt( 32, uint64_t(arg1) );
-	llvm::GenericValue result_value=
-		engine->runFunction(
-			function,
-			llvm::ArrayRef<llvm::GenericValue>( args, 3 ) );
+	const llvm::GenericValue result_value= engine->runFunction( function, args );
 
 	U_TEST_ASSERT(
 		static_cast<uint64_t>( 34 + arg1 ) ==
