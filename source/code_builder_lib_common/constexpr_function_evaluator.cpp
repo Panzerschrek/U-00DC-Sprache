@@ -373,7 +373,8 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	{
 		if( const auto function= llvm::dyn_cast<llvm::Function>(&constant) )
 		{
-			(void)function;
+			const uint64_t val= reinterpret_cast<size_t>(function);
+			std::memcpy( globals_stack_.data() + stack_offset, &val, pointer_size_in_bits_ / 8 );
 		}
 		else
 			std::memset( globals_stack_.data() + stack_offset, 0, size_t( data_layout_.getTypeAllocSize( constant_type ) ) );
@@ -860,6 +861,14 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 			else U_ASSERT(false);
 		}
 		else U_ASSERT(false);
+		break;
+
+	case llvm::Instruction::IntToPtr:
+		val.IntVal= llvm::APInt( pointer_size_in_bits_, op.IntVal.getLimitedValue() );
+		break;
+
+	case llvm::Instruction::PtrToInt:
+		val.IntVal= llvm::APInt( pointer_size_in_bits_, op.IntVal.getLimitedValue() );
 		break;
 
 	case llvm::Instruction::FNeg:
