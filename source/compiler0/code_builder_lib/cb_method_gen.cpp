@@ -1206,6 +1206,17 @@ llvm::Constant* CodeBuilder::WrapRawScalarConstant( llvm::Constant* const consta
 	return constant;
 }
 
+llvm::Constant* CodeBuilder::UnwrapRawScalarConstant( llvm::Constant* const constant )
+{
+	llvm::Type* const constant_type= constant->getType();
+	U_ASSERT( GetSingleScalarType( constant_type ) != nullptr );
+
+	if( constant_type->isStructTy() || constant_type->isArrayTy() )
+		return UnwrapRawScalarConstant( constant->getAggregateElement(0u) );
+
+	return constant;
+}
+
 bool CodeBuilder::IsDefaultConstructor( const FunctionType& function_type, const Type& base_class )
 {
 	return

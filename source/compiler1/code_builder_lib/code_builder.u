@@ -2818,6 +2818,17 @@ fn CodeBuilder::WrapRawScalarConstant( LLVMValueRef constant, LLVMTypeRef dst_ty
 	return constant;
 }
 
+fn CodeBuilder::UnwrapRawScalarConstant( LLVMValueRef constant ) : LLVMValueRef
+{
+	var LLVMTypeKind type_kind= unsafe( LLVMGetTypeKind( LLVMTypeOf( constant ) ) );
+	if( type_kind == LLVMTypeKind::Struct || type_kind == LLVMTypeKind::Array )
+	{
+		return UnwrapRawScalarConstant( unsafe( LLVMGetAggregateElement( constant, 0u ) ) );
+	}
+
+	return constant;
+}
+
 fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context )
 {
 	if( function_context.is_functionless_context )

@@ -3430,12 +3430,7 @@ fn CodeBuilder::DoCallFunction(
 
 		var VariableLite arg= arg_ptr.lock_imut().deref();
 
-		if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null && param.value_type != ValueType::ReferenceMut )
-		{
-			// TODO - what about types conversion in constexpr call?
-			constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
-		}
-		else
+		if( arg.constexpr_value == LLVMValueRef::Null || param.value_type == ValueType::ReferenceMut )
 		{
 			is_constexpr= false;
 		}
@@ -3479,21 +3474,25 @@ fn CodeBuilder::DoCallFunction(
 
 			if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
 			{
+				var LLVMTypeRef single_scalar_type= GetSingleScalarType( arg.t.GetLLVMType() );
+				if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null )
+				{
+					if( single_scalar_type == LLVMTypeRef::Null )
+					{
+						constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
+					}
+					else
+					{
+						constexpr_args[ first_llvm_arg_number + arg_n ]= UnwrapRawScalarConstant( arg.constexpr_value );
+					}
+				}
+
 				if( arg.value_type == ValueType::Value && arg.t == expected_arg_type )
 				{
 					// Move value to argument.
 					function_context.references_graph.MoveNode( arg_ptr );
 
-					var LLVMTypeRef single_scalar_type= GetSingleScalarType( arg.t.GetLLVMType() );
-					if( single_scalar_type != LLVMTypeRef::Null )
-					{
-						if( !function_context.is_functionless_context )
-						{
-							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, arg.llvm_value, g_null_string ) );
-							CreateLifetimeEnd( function_context, arg.llvm_value );
-						}
-					}
-					else
+					if( single_scalar_type == LLVMTypeRef::Null )
 					{
 						llvm_arg= arg.llvm_value;
 						if( !function_context.is_functionless_context )
@@ -3501,6 +3500,15 @@ fn CodeBuilder::DoCallFunction(
 							value_args_for_lifetime_end_call.push_back( llvm_arg );
 						}
 					}
+					else
+					{
+						if( !function_context.is_functionless_context )
+						{
+							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, arg.llvm_value, g_null_string ) );
+							CreateLifetimeEnd( function_context, arg.llvm_value );
+						}
+					}
+
 				}
 				else
 				{
@@ -3520,22 +3528,26 @@ fn CodeBuilder::DoCallFunction(
 						auto mut value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
 						BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, src_loc );
 
-						var LLVMTypeRef single_scalar_type= GetSingleScalarType( expected_arg_llvm_type );
-						if( single_scalar_type != LLVMTypeRef::Null )
-						{
-							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, var_copy, g_null_string ) );
-							CreateLifetimeEnd( function_context, var_copy );
-						}
-						else
+						if( single_scalar_type == LLVMTypeRef::Null )
 						{
 							llvm_arg= var_copy;
 							value_args_for_lifetime_end_call.push_back( var_copy );
+						}
+						else
+						{
+							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, var_copy, g_null_string ) );
+							CreateLifetimeEnd( function_context, var_copy );
 						}
 					}
 				}
 			}
 			else
 			{
+				if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null )
+				{
+					constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
+				}
+
 				llvm_arg= CreateMoveToLLVMRegisterInstruction( arg, function_context );
 			}
 		}
@@ -3556,6 +3568,12 @@ fn CodeBuilder::DoCallFunction(
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, src_loc, arg.t, expected_arg_type )
 				return ErrorValue();
+			}
+
+			if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null && param.value_type != ValueType::ReferenceMut )
+			{
+				// TODO - what about types conversion in constexpr call?
+				constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
 			}
 
 			if( arg.location == Variable::Location::LLVMRegister )

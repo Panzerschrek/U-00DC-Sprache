@@ -3105,9 +3105,6 @@ Value CodeBuilder::DoCallFunction(
 			src_loc= Synt::GetExpressionSrcLoc( *args[ arg_number - preevaluated_args.size() ] );
 		}
 
-		if( expr->constexpr_value != nullptr && param.value_type != ValueType::ReferenceMut )
-			constant_llvm_args.push_back( expr->constexpr_value );
-
 		if( param.value_type != ValueType::Value )
 		{
 			if( !ReferenceIsConvertible( expr->type, param.type, names.GetErrors(), call_src_loc ) &&
@@ -3134,6 +3131,9 @@ Value CodeBuilder::DoCallFunction(
 			}
 			else
 			{
+				if( expr->constexpr_value != nullptr )
+					constant_llvm_args.push_back( expr->constexpr_value );
+
 				if( expr->value_type == ValueType::Value && expr->location == Variable::Location::LLVMRegister )
 				{
 					if( !function_context.is_functionless_context )
@@ -3230,7 +3230,12 @@ Value CodeBuilder::DoCallFunction(
 				param.type.GetEnumType() != nullptr ||
 				param.type.GetRawPointerType() != nullptr ||
 				param.type.GetFunctionPointerType() != nullptr )
+			{
 				llvm_args[arg_number]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+
+				if( expr->constexpr_value != nullptr )
+					constant_llvm_args.push_back( expr->constexpr_value );
+			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Lock inner references.
@@ -3254,12 +3259,28 @@ Value CodeBuilder::DoCallFunction(
 					}
 				}
 
+				llvm::Type* const single_scalar_type= GetSingleScalarType( param.type.GetLLVMType() );
+
+				if( expr->constexpr_value != nullptr )
+				{
+					if( single_scalar_type == nullptr )
+						constant_llvm_args.push_back( expr->constexpr_value );
+					else
+						constant_llvm_args.push_back( UnwrapRawScalarConstant( expr->constexpr_value ) );
+				}
+
 				if( expr->value_type == ValueType::Value && expr->type == param.type )
 				{
 					// Do not call copy constructors - just move.
 					function_context.variables_state.MoveNode( expr );
 
-					if( const auto single_scalar_type= GetSingleScalarType( param.type.GetLLVMType() ) )
+					if( single_scalar_type == nullptr )
+					{
+						llvm_args[arg_number]= expr->llvm_value;
+						if( !function_context.is_functionless_context )
+							value_args_for_lifetime_end_call.push_back( expr->llvm_value );
+					}
+					else
 					{
 						if( !function_context.is_functionless_context )
 						{
@@ -3268,12 +3289,7 @@ Value CodeBuilder::DoCallFunction(
 							llvm_args[arg_number]= value;
 						}
 					}
-					else
-					{
-						llvm_args[arg_number]= expr->llvm_value;
-						if( !function_context.is_functionless_context )
-							value_args_for_lifetime_end_call.push_back( expr->llvm_value );
-					}
+
 				}
 				else
 				{
@@ -3305,19 +3321,19 @@ Value CodeBuilder::DoCallFunction(
 							param.type,
 							function_context );
 
-						if( const auto single_scalar_type= GetSingleScalarType( param.type.GetLLVMType() ) )
-						{
-							// If this is a single scalar type - just load value and end lifetime of address of copy.
-							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
-							CreateLifetimeEnd( function_context, arg_copy );
-							llvm_args[arg_number]= value;
-						}
-						else
+						if( single_scalar_type == nullptr )
 						{
 							// Pass by hidden reference.
 							llvm_args[arg_number]= arg_copy;
 							// Save address into temporary container to call lifetime.end after call.
 							value_args_for_lifetime_end_call.push_back( arg_copy );
+						}
+						else
+						{
+							// If this is a single scalar type - just load value and end lifetime of address of copy.
+							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
+							CreateLifetimeEnd( function_context, arg_copy );
+							llvm_args[arg_number]= value;
 						}
 					}
 				}
