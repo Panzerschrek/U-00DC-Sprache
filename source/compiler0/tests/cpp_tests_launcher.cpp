@@ -275,7 +275,12 @@ int main(int argc, char* argv[])
 		{
 			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
 			failed++;
-		};
+		}
+		catch( const ExecutionEngineException& ex )
+		{
+			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
+			failed++;
+		}
 
 		// We must kill ALL static internal llvm variables after each test.
 		llvm::llvm_shutdown();

@@ -3,6 +3,10 @@
 
 #include <Python.h>
 
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/Signals.h>
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+
 #include "../code_builder_lib/code_builder.hpp"
 #include "../../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
@@ -10,16 +14,7 @@
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "../../tests/tests_common.hpp"
-
-#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/GenericValue.h>
-#include <llvm/ExecutionEngine/Interpreter.h>
-#include <llvm/Support/DynamicLibrary.h>
-#include <llvm/Support/ManagedStatic.h>
-#include <llvm/Support/raw_os_ostream.h>
-#include <llvm/Support/Signals.h>
-#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
+#include "../../tests/execution_engine.hpp"
 
 namespace U
 {
@@ -116,7 +111,7 @@ llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::Generic
 	throw HaltException();
 }
 
-std::unique_ptr<llvm::ExecutionEngine> g_current_engine; // Can have only one.
+EnginePtr g_current_engine; // Can have only one.
 
 PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 {
@@ -157,15 +152,8 @@ PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 		module->print( stream, nullptr );
 	}
 
-	g_current_engine.reset( llvm::EngineBuilder( std::move(module) ).create() );
-	if( g_current_engine == nullptr )
-	{
-		llvm::llvm_shutdown();
-		PyErr_SetString( PyExc_RuntimeError, "engine creation failed" );
-		return nullptr;
-	}
-
-	llvm::sys::DynamicLibrary::AddSymbol( "lle_X___U_halt", reinterpret_cast<void*>( &HaltCalled ) );
+	g_current_engine= CreateEngine( std::move(module) );
+	g_current_engine->RegisterCustomFunction( "__U_halt", HaltCalled );
 
 	Py_INCREF(Py_None);
 	return Py_None;

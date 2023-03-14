@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../code_builder_lib_common/code_builder_errors.hpp"
-#include "../../code_builder_lib_common/execution_engine.hpp"
+#include "../execution_engine.hpp"
 
 #include "funcs_registrator.hpp"
 
