@@ -1872,7 +1872,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		return
 			DoCallFunction(
-				overloaded_operator->llvm_function,
+				EnsureLLVMFunctionCreated( *overloaded_operator ),
 				*overloaded_operator->type.GetFunctionType(),
 				src_loc,
 				nullptr,
@@ -3016,7 +3016,7 @@ Value CodeBuilder::CallFunction(
 	for( const Synt::Expression& arg : synt_args )
 		synt_args_ptrs.push_back( &arg );
 
-	llvm::Value* llvm_function_ptr= function.llvm_function;
+	llvm::Value* llvm_function_ptr= EnsureLLVMFunctionCreated( function );
 	if( this_ != nullptr )
 	{
 		auto fetch_result= TryFetchVirtualFunction( this_, function, function_context, names.GetErrors(), src_loc );
@@ -3105,9 +3105,6 @@ Value CodeBuilder::DoCallFunction(
 			src_loc= Synt::GetExpressionSrcLoc( *args[ arg_number - preevaluated_args.size() ] );
 		}
 
-		if( expr->constexpr_value != nullptr && param.value_type != ValueType::ReferenceMut )
-			constant_llvm_args.push_back( expr->constexpr_value );
-
 		if( param.value_type != ValueType::Value )
 		{
 			if( !ReferenceIsConvertible( expr->type, param.type, names.GetErrors(), call_src_loc ) &&
@@ -3134,6 +3131,9 @@ Value CodeBuilder::DoCallFunction(
 			}
 			else
 			{
+				if( expr->constexpr_value != nullptr )
+					constant_llvm_args.push_back( expr->constexpr_value );
+
 				if( expr->value_type == ValueType::Value && expr->location == Variable::Location::LLVMRegister )
 				{
 					if( !function_context.is_functionless_context )
@@ -3230,7 +3230,12 @@ Value CodeBuilder::DoCallFunction(
 				param.type.GetEnumType() != nullptr ||
 				param.type.GetRawPointerType() != nullptr ||
 				param.type.GetFunctionPointerType() != nullptr )
+			{
 				llvm_args[arg_number]= CreateMoveToLLVMRegisterInstruction( *expr, function_context );
+
+				if( expr->constexpr_value != nullptr )
+					constant_llvm_args.push_back( expr->constexpr_value );
+			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
 				// Lock inner references.
@@ -3254,14 +3259,37 @@ Value CodeBuilder::DoCallFunction(
 					}
 				}
 
+				llvm::Type* const single_scalar_type= GetSingleScalarType( param.type.GetLLVMType() );
+
+				if( expr->constexpr_value != nullptr )
+				{
+					if( single_scalar_type == nullptr )
+						constant_llvm_args.push_back( expr->constexpr_value );
+					else
+						constant_llvm_args.push_back( UnwrapRawScalarConstant( expr->constexpr_value ) );
+				}
+
 				if( expr->value_type == ValueType::Value && expr->type == param.type )
 				{
 					// Do not call copy constructors - just move.
 					function_context.variables_state.MoveNode( expr );
-					llvm_args[arg_number]= expr->llvm_value;
 
-					if( !function_context.is_functionless_context )
-						value_args_for_lifetime_end_call.push_back( expr->llvm_value );
+					if( single_scalar_type == nullptr )
+					{
+						llvm_args[arg_number]= expr->llvm_value;
+						if( !function_context.is_functionless_context )
+							value_args_for_lifetime_end_call.push_back( expr->llvm_value );
+					}
+					else
+					{
+						if( !function_context.is_functionless_context )
+						{
+							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expr->llvm_value );
+							CreateLifetimeEnd( function_context, expr->llvm_value );
+							llvm_args[arg_number]= value;
+						}
+					}
+
 				}
 				else
 				{
@@ -3285,16 +3313,28 @@ Value CodeBuilder::DoCallFunction(
 						llvm::Value* const arg_copy= function_context.alloca_ir_builder.CreateAlloca( param.type.GetLLVMType() );
 
 						// Create lifetime.start instruction for value arg.
-						// Save it into temporary container to call lifetime.end after call.
 						CreateLifetimeStart( function_context, arg_copy );
-						value_args_for_lifetime_end_call.push_back( arg_copy );
 
-						llvm_args[arg_number]= arg_copy;
 						BuildCopyConstructorPart(
 							arg_copy,
 							CreateReferenceCast( expr->llvm_value, expr->type, param.type, function_context ),
 							param.type,
 							function_context );
+
+						if( single_scalar_type == nullptr )
+						{
+							// Pass by hidden reference.
+							llvm_args[arg_number]= arg_copy;
+							// Save address into temporary container to call lifetime.end after call.
+							value_args_for_lifetime_end_call.push_back( arg_copy );
+						}
+						else
+						{
+							// If this is a single scalar type - just load value and end lifetime of address of copy.
+							llvm::Value* const value= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, arg_copy );
+							CreateLifetimeEnd( function_context, arg_copy );
+							llvm_args[arg_number]= value;
+						}
 					}
 				}
 			}
@@ -3305,7 +3345,8 @@ Value CodeBuilder::DoCallFunction(
 		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
 	} // for args
 
-	const bool return_value_is_sret= function_type.IsStructRet();
+	const bool return_value_is_composite= function_type.ReturnsCompositeValue();
+	const bool return_value_is_sret= FunctionTypeIsSRet( function_type );
 
 	const VariableMutPtr result= std::make_shared<Variable>();
 	result->type= function_type.return_type;
@@ -3320,11 +3361,11 @@ Value CodeBuilder::DoCallFunction(
 		if( !EnsureTypeComplete( function_type.return_type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
 
-		result->location= return_value_is_sret ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
+		result->location= return_value_is_composite ? Variable::Location::Pointer : Variable::Location::LLVMRegister;
 	}
 	function_context.variables_state.AddNode( result );
 
-	if( return_value_is_sret )
+	if( return_value_is_composite )
 	{
 		if( !EnsureTypeComplete( function_type.return_type ) )
 			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), call_src_loc, function_type.return_type );
@@ -3335,15 +3376,15 @@ Value CodeBuilder::DoCallFunction(
 			CreateLifetimeStart( function_context, result->llvm_value );
 		}
 
-		llvm_args.insert( llvm_args.begin(), result->llvm_value );
-		constant_llvm_args.insert( constant_llvm_args.begin(), nullptr );
+		if( return_value_is_sret )
+		{
+			llvm_args.insert( llvm_args.begin(), result->llvm_value );
+			constant_llvm_args.insert( constant_llvm_args.begin(), nullptr );
+		}
 	}
 
-	llvm::Value* call_result= nullptr;
-	llvm::Constant* constant_call_result= nullptr;
-
 	// Currently, we can not pass back referenes from constexpr functions evaluator.
-	const auto function_as_real_function= function == nullptr? nullptr : llvm::dyn_cast<llvm::Function>(function);
+	const auto function_as_real_function= function == nullptr ? nullptr : llvm::dyn_cast<llvm::Function>(function);
 	if( func_is_constexpr &&
 		function_as_real_function != nullptr &&
 		constant_llvm_args.size() == function_as_real_function->arg_size() &&
@@ -3362,30 +3403,48 @@ Value CodeBuilder::DoCallFunction(
 		}
 		if( evaluation_result.errors.empty() && evaluation_result.result_constant != nullptr )
 		{
-			if( return_value_is_sret ) // We needs here block of memory with result constant struct.
-				MoveConstantToMemory( result->type, result->llvm_value, evaluation_result.result_constant, function_context );
-
 			if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
-				constant_call_result= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
+				result->llvm_value= result->constexpr_value= llvm::Constant::getNullValue( fundamental_llvm_types_.void_ );
+			else if( return_value_is_composite )
+			{
+				if( return_value_is_sret )
+				{
+					if( !function_context.is_functionless_context )
+						MoveConstantToMemory( result->type, result->llvm_value, evaluation_result.result_constant, function_context );
+					result->constexpr_value= evaluation_result.result_constant;
+				}
+				else
+				{
+					if( !function_context.is_functionless_context )
+						function_context.llvm_ir_builder.CreateStore( evaluation_result.result_constant, result->llvm_value );
+					result->constexpr_value= WrapRawScalarConstant( evaluation_result.result_constant, function_type.return_type.GetLLVMType() );
+				}
+			}
 			else
-				constant_call_result= evaluation_result.result_constant;
-
-			call_result= constant_call_result;
+				result->llvm_value= result->constexpr_value= evaluation_result.result_constant;
 		}
 	}
-	else if( function_context.is_functionless_context )
-		call_result= nullptr;
-	else if( std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
+	else if( !function_context.is_functionless_context && std::find( llvm_args.begin(), llvm_args.end(), nullptr ) == llvm_args.end() )
 	{
-		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( function_type.llvm_type, function, llvm_args );
+		llvm::FunctionType* llvm_function_type= nullptr;
+		if( const auto really_function= llvm::dyn_cast<llvm::Function>(function) )
+			llvm_function_type= really_function->getFunctionType();
+		else
+			llvm_function_type= GetLLVMFunctionType( function_type );
+
+		llvm::CallInst* const call_instruction= function_context.llvm_ir_builder.CreateCall( llvm_function_type, function, llvm_args );
 		call_instruction->setCallingConv( function_type.calling_convention );
 
-		call_result= call_instruction;
 		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
-			call_result= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
+			result->llvm_value= llvm::UndefValue::get( fundamental_llvm_types_.void_ );
+		else if( return_value_is_composite )
+		{
+			if( !return_value_is_sret )
+				function_context.llvm_ir_builder.CreateStore( call_instruction, result->llvm_value );
+		}
+		else
+			result->llvm_value= call_instruction;
 	}
-	else
-		call_result= llvm::UndefValue::get( function_type.llvm_type->getReturnType() );
 
 	// Clear inner references locks. Do this BEFORE result references management.
 	for( const VariablePtr& node : locked_args_inner_references )
@@ -3396,10 +3455,6 @@ Value CodeBuilder::DoCallFunction(
 	// It is fine because there is no way to return reference to value arg (reference protection does not allow this).
 	for( llvm::Value* const value_arg_var : value_args_for_lifetime_end_call )
 		CreateLifetimeEnd( function_context, value_arg_var );
-
-	if( !return_value_is_sret )
-		result->llvm_value= call_result;
-	result->constexpr_value= constant_call_result;
 
 	// Prepare result references.
 	if( function_type.return_value_type != ValueType::Value )
@@ -3625,7 +3680,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 		function_context.variables_state.AddLink( result, result_for_initialization );
 
 		DoCallFunction(
-			conversion_constructor.llvm_function,
+			EnsureLLVMFunctionCreated( conversion_constructor ),
 			*conversion_constructor.type.GetFunctionType(),
 			src_loc,
 			{ result_for_initialization, variable },

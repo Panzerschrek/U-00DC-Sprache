@@ -1147,13 +1147,14 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
 
 	// Set correct mangled name
-	if( function_variable.llvm_function != nullptr )
-		function_variable.llvm_function->setName(
-			mangler_->MangleFunction(
-				*function_template.parent_namespace,
-				func_name,
-				*function_variable.type.GetFunctionType(),
-				&template_args ) );
+	function_variable.llvm_function->name_mangled=
+		mangler_->MangleFunction(
+			*function_template.parent_namespace,
+			func_name,
+			*function_variable.type.GetFunctionType(),
+			&template_args );
+	if( function_variable.llvm_function->function != nullptr )
+		function_variable.llvm_function->function->setName( function_variable.llvm_function->name_mangled );
 
 	// And generate function body after insertion of prototype.
 	if( !function_variable.have_body ) // if function is constexpr, body may be already generated.

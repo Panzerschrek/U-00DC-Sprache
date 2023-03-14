@@ -278,7 +278,7 @@ fn FunctionType::PointerCanBeConvertedTo( this, FunctionType& dst ) : bool
 	return true;
 }
 
-fn FunctionType::IsStructRet( this ) : bool
+fn FunctionType::ReturnsCompositeValue( this ) : bool
 {
 	return
 		return_value_type == ValueType::Value &&
@@ -445,7 +445,7 @@ fn Type::GetLLVMType( this ) : LLVMTypeRef
 	}
 	if_var( &function_type : GetFunctionType() )
 	{
-		return function_type.llvm_type;
+		return LLVMTypeRef::Null;
 	}
 	if_var( &function_pointer_type : GetFunctionPointerType() )
 	{

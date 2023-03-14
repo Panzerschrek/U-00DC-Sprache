@@ -1440,17 +1440,17 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		if_var( &function_pointer_type : variable.t.GetFunctionPointerType() )
 		{
-			var FunctionVariable function_variable
-			{
-				.t= function_pointer_type.function_type,
-				.llvm_function= CreateMoveToLLVMRegisterInstruction( variable, function_context )
-			};
+			var LLVMValueRef function_value= CreateMoveToLLVMRegisterInstruction( variable, function_context );
+
+			function_context.have_non_constexpr_operations_inside= true; // Call via pointer is not constexpr.
 
 			return DoCallFunction(
 				names_scope,
 				function_context,
 				VariableNullablePtr(),
-				function_variable,
+				function_pointer_type.function_type,
+				function_value,
+				false, // Call via pointer is not constexpr.
 				call_operator.args.range(),
 				call_operator.src_loc );
 		}
@@ -2916,10 +2916,19 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			return ust::optional</Value/>();
 		}
 
+		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		{
+			function_context.have_non_constexpr_operations_inside= true;
+		}
+
+		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( overloaded_operator );
+
 		return DoCallFunction(
 			names_scope,
 			function_context,
-			overloaded_operator,
+			overloaded_operator.t,
+			llvm_function,
+			overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
 			ust::array_view_imut</ VariablePtr />(),
 			in_args,
 			args_evaluation_order,
@@ -3109,16 +3118,22 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 
 	var [ VariableTypeExtended, 1 ] args[ { .t(variable.t), .value_type= variable.value_type } ];
 
-	if_var( mut overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
+	if_var( &overloaded_operator : GetOverloadedOperator( args, operator, names_scope, src_loc ) )
 	{
 		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
-		overloaded_operator.llvm_function= fetch_result[1];
+
+		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		{
+			function_context.have_non_constexpr_operations_inside= true;
+		}
 
 		return DoCallFunction(
 			names_scope,
 			function_context,
 			fetch_result[0],
-			overloaded_operator,
+			overloaded_operator.t,
+			fetch_result[1],
+			overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
 			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			src_loc );
 	}
@@ -3165,16 +3180,22 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
-	if_var( mut overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
+	if_var( &overloaded_operator : GetOverloadedOperator( args.range(), operator, names_scope, src_loc ) )
 	{
 		auto fetch_result= TryFetchVirtualFunction( variable_ptr, overloaded_operator, names_scope, function_context, src_loc );
-		overloaded_operator.llvm_function= fetch_result[1];
+
+		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+		{
+			function_context.have_non_constexpr_operations_inside= true;
+		}
 
 		return DoCallFunction(
 			names_scope,
 			function_context,
 			fetch_result[0],
-			overloaded_operator,
+			overloaded_operator.t,
+			fetch_result[1],
+			overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete,
 			synt_args,
 			src_loc );
 	}
@@ -3229,49 +3250,60 @@ fn CodeBuilder::CallFunctionsSet(
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
-	auto mut function_selected=
+	auto function_selected_opt=
 		GetOverloadedFunction(
 			functions_set,
 			args_evaluated.range(),
 			!this_.empty(),
 			names_scope,
 			src_loc );
-	if( function_selected.empty() )
+	if( function_selected_opt.empty() )
 	{
 		return ErrorValue();
 	}
+	var FunctionVariable& function_selected= function_selected_opt.try_deref();
 
-	if( function_selected.try_deref().is_deleted )
+	if( function_selected.is_deleted )
 	{
 		REPORT_ERROR( AccessingDeletedMethod, names_scope, src_loc )
 		return ErrorValue();
 	}
 
-	if( !this_.empty() && !function_selected.try_deref().is_this_call )
+	if( !this_.empty() && !function_selected.is_this_call )
 	{
 		this_.reset();
 	}
 
+	if( !( function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
+	{
+		function_context.have_non_constexpr_operations_inside= true;
+	}
+
+	var bool is_constexpr= function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete;
+
 	if( !this_.empty() )
 	{
-		auto this_non_null= this_.try_to_non_nullable();
-
-		auto fetch_res= TryFetchVirtualFunction( this_non_null, function_selected.try_deref(), names_scope, function_context, src_loc );
-		function_selected.try_deref().llvm_function= fetch_res[1];
+		auto fetch_res= TryFetchVirtualFunction( this_.try_to_non_nullable(), function_selected, names_scope, function_context, src_loc );
 		return DoCallFunction(
 			names_scope,
 			function_context,
 			fetch_res[0],
-			function_selected.try_deref(),
+			function_selected.t,
+			fetch_res[1],
+			is_constexpr,
 			args,
 			src_loc );
 	}
+
+	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_selected );
 
 	return DoCallFunction(
 		names_scope,
 		function_context,
 		this_,
-		function_selected.try_deref(),
+		function_selected.t,
+		llvm_function,
+		is_constexpr,
 		args,
 		src_loc );
 }
@@ -3281,7 +3313,9 @@ fn CodeBuilder::DoCallFunction(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	VariableNullablePtr& this_,
-	FunctionVariable& function,
+	FunctionType& function_type,
+	LLVMValueRef function,
+	bool is_constexpr,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	SrcLoc& src_loc ) : Value
 {
@@ -3294,7 +3328,9 @@ fn CodeBuilder::DoCallFunction(
 	return DoCallFunction(
 		names_scope,
 		function_context,
+		function_type,
 		function,
+		is_constexpr,
 		preevaluated_args.range(),
 		args,
 		ArgsEvaluationOrder::Direct,
@@ -3305,21 +3341,15 @@ fn CodeBuilder::DoCallFunction(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	FunctionVariable& function,
+	FunctionType& function_type,
+	LLVMValueRef function,
+	bool mut is_constexpr,
 	ust::array_view_imut</ VariablePtr />& preevaluated_args,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	ArgsEvaluationOrder args_evaluation_order,
 	SrcLoc& src_loc ) : Value
 {
-	if( !( function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
-	{
-		function_context.have_non_constexpr_operations_inside= true;
-	}
-
-	auto total_args= preevaluated_args.size() + args.size();
-
-	var FunctionType& function_type= function.t;
-
+	var size_type total_args= preevaluated_args.size() + args.size();
 	if( total_args != function_type.params.size() )
 	{
 		REPORT_ERROR( InvalidFunctionArgumentCount, names_scope, src_loc, total_args, function_type.params.size() )
@@ -3340,26 +3370,32 @@ fn CodeBuilder::DoCallFunction(
 	var ust::vector</LLVMValueRef/> mut llvm_args;
 
 	auto mut s_ret_value= LLVMValueRef::Null;
-	var bool is_s_ret= function_type.IsStructRet();
-	if( is_s_ret )
+	var bool return_value_is_composite= function_type.ReturnsCompositeValue();
+	var bool return_value_is_sret= FunctionTypeIsSRet( function_type );
+	if( return_value_is_composite )
 	{
 		if( !function_context.is_functionless_context )
 		{
 			s_ret_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, function_type.return_type.GetLLVMType(), g_null_string ) );
 		}
-		llvm_args.push_back( s_ret_value );
+
+		if( return_value_is_sret )
+		{
+			llvm_args.push_back( s_ret_value );
+		}
 	}
 
-	auto first_llvm_arg_number= select( is_s_ret ? 1s : 0s );
+	auto first_llvm_arg_number= select( return_value_is_sret ? 1s : 0s );
 	llvm_args.resize( first_llvm_arg_number + total_args, LLVMValueRef::Null );
 
 	var ust::vector</ LLVMValueRef /> mut constexpr_args;
-	auto mut is_constexpr= false;
-	if( function.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete &&
-		function_type.return_value_type == ValueType::Value )
+	if( is_constexpr && function_type.return_value_type == ValueType::Value )
 	{
-		is_constexpr= true;
 		constexpr_args.resize( llvm_args.size(), LLVMValueRef::Null );
+	}
+	else
+	{
+		is_constexpr= false; // Can't call constexpr function, returning reference.
 	}
 
 	// TODO - use vector of pairs instead of pair of vectors.
@@ -3394,12 +3430,7 @@ fn CodeBuilder::DoCallFunction(
 
 		var VariableLite arg= arg_ptr.lock_imut().deref();
 
-		if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null && param.value_type != ValueType::ReferenceMut )
-		{
-			// TODO - what about types conversion in constexpr call?
-			constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
-		}
-		else
+		if( arg.constexpr_value == LLVMValueRef::Null || param.value_type == ValueType::ReferenceMut )
 		{
 			is_constexpr= false;
 		}
@@ -3443,13 +3474,41 @@ fn CodeBuilder::DoCallFunction(
 
 			if( !arg.t.GetClassType().empty() || !arg.t.GetArrayType().empty() || !arg.t.GetTupleType().empty() )
 			{
+				var LLVMTypeRef single_scalar_type= GetSingleScalarType( arg.t.GetLLVMType() );
+				if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null )
+				{
+					if( single_scalar_type == LLVMTypeRef::Null )
+					{
+						constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
+					}
+					else
+					{
+						constexpr_args[ first_llvm_arg_number + arg_n ]= UnwrapRawScalarConstant( arg.constexpr_value );
+					}
+				}
+
 				if( arg.value_type == ValueType::Value && arg.t == expected_arg_type )
 				{
 					// Move value to argument.
 					function_context.references_graph.MoveNode( arg_ptr );
 
-					llvm_arg= arg.llvm_value;
-					value_args_for_lifetime_end_call.push_back( llvm_arg );
+					if( single_scalar_type == LLVMTypeRef::Null )
+					{
+						llvm_arg= arg.llvm_value;
+						if( !function_context.is_functionless_context )
+						{
+							value_args_for_lifetime_end_call.push_back( llvm_arg );
+						}
+					}
+					else
+					{
+						if( !function_context.is_functionless_context )
+						{
+							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, arg.llvm_value, g_null_string ) );
+							CreateLifetimeEnd( function_context, arg.llvm_value );
+						}
+					}
+
 				}
 				else
 				{
@@ -3462,19 +3521,33 @@ fn CodeBuilder::DoCallFunction(
 
 					if( !function_context.is_functionless_context )
 					{
-						auto var_copy= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_type.GetLLVMType(), g_null_string ) );
+						var LLVMTypeRef expected_arg_llvm_type= expected_arg_type.GetLLVMType();
+						auto var_copy= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, expected_arg_llvm_type, g_null_string ) );
 						CreateLifetimeStart( function_context, var_copy );
-						value_args_for_lifetime_end_call.push_back( var_copy );
 
 						auto mut value_for_copy= CreateReferenceCast( arg.llvm_value, arg.t, expected_arg_type, function_context );
 						BuildCopyConstructorPart( names_scope, function_context, var_copy, value_for_copy, expected_arg_type, src_loc );
 
-						llvm_arg= var_copy;
+						if( single_scalar_type == LLVMTypeRef::Null )
+						{
+							llvm_arg= var_copy;
+							value_args_for_lifetime_end_call.push_back( var_copy );
+						}
+						else
+						{
+							llvm_arg= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, var_copy, g_null_string ) );
+							CreateLifetimeEnd( function_context, var_copy );
+						}
 					}
 				}
 			}
 			else
 			{
+				if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null )
+				{
+					constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
+				}
+
 				llvm_arg= CreateMoveToLLVMRegisterInstruction( arg, function_context );
 			}
 		}
@@ -3495,6 +3568,12 @@ fn CodeBuilder::DoCallFunction(
 			{
 				REPORT_ERROR( TypesMismatch, names_scope, src_loc, arg.t, expected_arg_type )
 				return ErrorValue();
+			}
+
+			if( is_constexpr && arg.constexpr_value != LLVMValueRef::Null && param.value_type != ValueType::ReferenceMut )
+			{
+				// TODO - what about types conversion in constexpr call?
+				constexpr_args[ first_llvm_arg_number + arg_n ]= arg.constexpr_value;
 			}
 
 			if( arg.location == Variable::Location::LLVMRegister )
@@ -3567,7 +3646,7 @@ fn CodeBuilder::DoCallFunction(
 
 	if( function_type.return_value_type == ValueType::Value )
 	{
-		if( is_s_ret )
+		if( return_value_is_composite )
 		{
 			result.location= Variable::Location::Pointer;
 			result.llvm_value= s_ret_value;
@@ -3585,26 +3664,35 @@ fn CodeBuilder::DoCallFunction(
 
 	if( is_constexpr )
 	{
-		auto res= constexpr_function_evaluator_.Evaluate( function.llvm_function, constexpr_args.range() );
+		auto res= constexpr_function_evaluator_.Evaluate( function, constexpr_args.range() );
 
 		if( res.errors.empty() )
 		{
-			if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
+			if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 			{
 				result.constexpr_value= unsafe( LLVMConstNull( fundamental_llvm_types_.void_ ) );
-			}
-			else
-			{
-				result.constexpr_value= res.constant;
-			}
-
-			if( is_s_ret )
-			{
-				MoveConstantToMemory( s_ret_value, res.constant, function_context );
-			}
-			else
-			{
 				result.llvm_value= result.constexpr_value;
+			}
+			else if( return_value_is_composite )
+			{
+				if( return_value_is_sret )
+				{
+					MoveConstantToMemory( s_ret_value, res.constant, function_context );
+					result.constexpr_value= res.constant;
+				}
+				else
+				{
+					if( !function_context.is_functionless_context )
+					{
+						unsafe( LLVMBuildStore( function_context.llvm_ir_builder, res.constant, result.llvm_value ) );
+					}
+					result.constexpr_value= WrapRawScalarConstant( res.constant, function_type.return_type.GetLLVMType() );
+				}
+			}
+			else
+			{
+				result.llvm_value= res.constant;
+				result.constexpr_value= res.constant;
 			}
 		}
 		else
@@ -3624,19 +3712,39 @@ fn CodeBuilder::DoCallFunction(
 			}
 		}
 	}
-
-	if( result.constexpr_value == LLVMValueRef::Null && !function_context.is_functionless_context )
+	else if( !function_context.is_functionless_context )
 	{
 		// Perform regular call for non-constexpr function or in case of error in constexpr function evaluation.
-		unsafe
+		var LLVMTypeRef function_llvm_type=
+			unsafe( select(
+				LLVMIsAFunction( function ) == LLVMValueRef::Null
+					? GetLLVMFunctionType( function_type )
+					: U1_GetFunctionType( function ) ) );
+
+		var LLVMValueRef call_result=
+			unsafe( LLVMBuildCall2(
+				function_context.llvm_ir_builder,
+				function_llvm_type,
+				function,
+				llvm_args.data(), u32(llvm_args.size()),
+				g_null_string ) );
+
+		unsafe( LLVMSetInstructionCallConv( call_result, function_type.calling_convention ) );
+
+		if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 		{
-			auto call_result= LLVMBuildCall2( function_context.llvm_ir_builder, function_type.llvm_type, function.llvm_function, llvm_args.data(), u32(llvm_args.size()), g_null_string );
-			LLVMSetInstructionCallConv( call_result, function.t.calling_convention );
-			if( !is_s_ret ){  result.llvm_value= call_result;  }
-			if( function.t.return_value_type == ValueType::Value && function.t.return_type == void_type_ )
+			result.llvm_value= unsafe( LLVMGetUndef( fundamental_llvm_types_.void_ ) );
+		}
+		else if( return_value_is_composite )
+		{
+			if( !return_value_is_sret )
 			{
-				result.llvm_value= LLVMGetUndef( fundamental_llvm_types_.void_ );
+				unsafe( LLVMBuildStore( function_context.llvm_ir_builder, call_result, result.llvm_value ) );
 			}
+		}
+		else
+		{
+			result.llvm_value= call_result;
 		}
 	}
 
@@ -3943,10 +4051,14 @@ fn CodeBuilder::ConvertVariable(
 		function_context.references_graph.AddNode( result_for_constructor_call_ptr );
 		function_context.references_graph.AddLink( result_ptr, result_for_constructor_call_ptr );
 
+		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( conversion_constructor_ );
+
 		DoCallFunction(
 			names_scope,
 			function_context,
-			conversion_constructor_,
+			conversion_constructor_.t,
+			llvm_function,
+			false, // Can't call for now constructors as constexpr functions.
 			ust::make_array( result_for_constructor_call_ptr, src ),
 			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 			ArgsEvaluationOrder::Direct,

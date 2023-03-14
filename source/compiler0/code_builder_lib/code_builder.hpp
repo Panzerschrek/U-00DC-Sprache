@@ -121,6 +121,14 @@ private:
 		const SrcLoc& src_loc,
 		CodeBuilderErrorsContainer& errors );
 
+	// Requires return type to be complete.
+	static bool FunctionTypeIsSRet( const FunctionType& function_type );
+
+	// Returns scalar type, if this is a scalar type of a composite type, containing (recursively) such type.
+	// Returns null otherwise.
+	// Requires type to be complete.
+	static llvm::Type* GetSingleScalarType( llvm::Type* type );
+
 	// Virtual stuff
 	void CheckvirtualFunctionOverridingReferenceNotation(
 		CodeBuilderErrorsContainer& errors_container,
@@ -410,6 +418,9 @@ private:
 		const Type& type,
 		llvm::Value* ptr, llvm::Constant* constant,
 		FunctionContext& function_context );
+
+	static llvm::Constant* WrapRawScalarConstant( llvm::Constant* constant, llvm::Type* dst_type );
+	static llvm::Constant* UnwrapRawScalarConstant( llvm::Constant* constant );
 
 	void TryCallCopyConstructor(
 		CodeBuilderErrorsContainer& errors_container,
@@ -924,10 +935,11 @@ private:
 
 	bool IsGlobalVariable( const VariablePtr& variable );
 
-	void SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
+	// Creates LLVM function and its LLVM type lazily. This call may trigger types competion.
+	llvm::Function* EnsureLLVMFunctionCreated( const FunctionVariable& function_variable );
+
 	// Requires complete types
 	void SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable );
-
 	void SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesScope& names_scope );
 
 	void CreateLifetimeStart( FunctionContext& function_context, llvm::Value* address );

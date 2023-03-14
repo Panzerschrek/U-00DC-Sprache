@@ -459,6 +459,7 @@ U_TEST( ArgVariableLifetime_Test2 )
 		struct S
 		{
 			i32 x;
+			i32 y= 0;
 			fn constructor()(x= 99996){}
 		}
 		fn nomangle CaptureValue(S& data, u64 size);
@@ -488,6 +489,51 @@ U_TEST( ArgVariableLifetime_Test2 )
 
 	const int32_t expected_x= 99996;
 	U_TEST_ASSERT( g_lifetimes_call_sequence[1].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[1].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( ArgVariableLifetime_Test3 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		struct S // This type contains single scalar inside and passed in register.
+		{
+			i32 x;
+			fn constructor()(x= 99596){}
+		}
+		fn nomangle CaptureValue(S& data, u64 size);
+		fn Bar(S s)
+		{
+			// Create lifetime start.
+			CaptureValue(s, 4u64);
+			// Create lifetime end.
+		}
+		fn Foo()
+		{
+			Bar(S()); // Create lifetime start here, load value into register and than create lifetime end.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 5 );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[1].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[4].address );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeEnd );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::CaptureValue );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::LifetimeEnd );
+
+	const int32_t expected_x= 99596;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[3].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
 }
 
 U_TEST( ReturnValueLifetime_Test0 )
@@ -525,6 +571,7 @@ U_TEST( ReturnValueLifetime_Test1 )
 		struct S
 		{
 			i32 x;
+			i32 y= 0;
 			fn constructor()(x= 444555){}
 		}
 		fn nomangle CaptureValue(S& data, u64 size);
@@ -557,6 +604,55 @@ U_TEST( ReturnValueLifetime_Test1 )
 
 	const int32_t expected_x= 444555;
 	U_TEST_ASSERT( g_lifetimes_call_sequence[2].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[2].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
+}
+
+U_TEST( ReturnValueLifetime_Test2 )
+{
+	LifetimesTestPrepare();
+
+	static const char c_program_text[]=
+	R"(
+		struct S // This struct contains single scalar inside and because of that is passed in register.
+		{
+			i32 x;
+			fn constructor()(x= 6786){}
+		}
+		fn nomangle CaptureValue(S& data, u64 size);
+		fn Bar() : S
+		{
+			var S mut s; // Create here lifetime for s
+			return s; // Create here lifetime for temporary copy, than load value into register and return ot.
+		}
+		fn Foo()
+		{
+			auto s= Bar(); // Lifetime is created here for result. Move initialization of auto variable is used here too.
+			CaptureValue(s, 4u64);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence.size() == 7 );
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].call_result == CallResult::LifetimeStart ); // start lifetime for call result "s".
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].call_result == CallResult::LifetimeStart ); // start lifetime of variable "s".
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].call_result == CallResult::LifetimeStart ); // start temp return value of type "S".
+	U_TEST_ASSERT( g_lifetimes_call_sequence[3].call_result == CallResult::LifetimeEnd ); // end temp return value of type "S".
+	U_TEST_ASSERT( g_lifetimes_call_sequence[4].call_result == CallResult::LifetimeEnd ); // end lifetime for variable "s".
+	U_TEST_ASSERT( g_lifetimes_call_sequence[5].call_result == CallResult::CaptureValue ); // Capture "s".
+	U_TEST_ASSERT( g_lifetimes_call_sequence[6].call_result == CallResult::LifetimeEnd ); // End lifetime for call result "s".
+
+	U_TEST_ASSERT( g_lifetimes_call_sequence[0].address == g_lifetimes_call_sequence[6].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[1].address == g_lifetimes_call_sequence[4].address );
+	U_TEST_ASSERT( g_lifetimes_call_sequence[2].address == g_lifetimes_call_sequence[3].address );
+
+	const int32_t expected_x= 6786;
+	U_TEST_ASSERT( g_lifetimes_call_sequence[5].captured_data.size() == sizeof(expected_x) && std::memcmp(g_lifetimes_call_sequence[5].captured_data.data(), &expected_x, sizeof(expected_x)) == 0 );
 }
 
 U_TEST( LifetimeEndDuringInitialization_Test0 )

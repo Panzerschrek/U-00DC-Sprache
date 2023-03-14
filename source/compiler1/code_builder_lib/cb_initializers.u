@@ -118,10 +118,14 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 				auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
+				var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( conversion_constructor_ );
+
 				DoCallFunction(
 					names_scope,
 					function_context,
-					conversion_constructor_,
+					conversion_constructor_.t,
+					llvm_function,
+					false, // Non-constexpr call.
 					ust::make_array( variable_ptr, expr_result_ptr ),
 					ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
 					ArgsEvaluationOrder::Direct,
@@ -1145,9 +1149,10 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 				return LLVMValueRef::Null;
 			}
 
-			CreateTypedStore( function_context, variable.t, function_variable.llvm_function, variable.llvm_value );
+			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
+			CreateTypedStore( function_context, variable.t, llvm_function, variable.llvm_value );
 
-			return function_variable.llvm_function;
+			return llvm_function;
 		}
 		else if( exact_type_functions.size() > 1s )
 		{
@@ -1163,7 +1168,7 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 			}
 
 			// TODO - maybe disable conversion for expression initializer?
-			auto ptr_casted= unsafe( LLVMBuildPointerCast( function_context.llvm_ir_builder, function_variable.llvm_function, variable.t.GetLLVMType(), g_null_string ) );
+			auto ptr_casted= unsafe( LLVMBuildPointerCast( function_context.llvm_ir_builder, EnsureLLVMFunctionCreated( function_variable ), variable.t.GetLLVMType(), g_null_string ) );
 			CreateTypedStore( function_context, variable.t, ptr_casted, variable.llvm_value );
 			return ptr_casted;
 		}

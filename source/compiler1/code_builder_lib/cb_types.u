@@ -144,7 +144,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 		.function_type= PrepareFunctionType( names_scope, function_context, function_type, ust::shared_ptr_nullable_mut</ClassType/>() )
 	};
 
-	function_pointer_type.llvm_type= unsafe( LLVMPointerType( function_pointer_type.function_type.llvm_type, 0u ) );
+	function_pointer_type.llvm_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
 
 	return move(function_pointer_type);
 }
@@ -315,54 +315,81 @@ fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, Funct
 	}
 	ust::sort( res.references_pollution.range() );
 
-	FillLLVMFunctionType( res );
-
 	return move(res);
 }
 
-fn CodeBuilder::FillLLVMFunctionType( this, FunctionType &mut function_type )
+fn CodeBuilder::GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef
 {
 	var ust::vector</LLVMTypeRef/> mut llvm_param_types;
 
-	// s_ret
-	var bool is_s_ret= function_type.IsStructRet();
+	if( function_type.ReturnsCompositeValue() )
+	{
+		EnsureTypeComplete( function_type.return_type );
+	}
+
+	var bool is_s_ret= FunctionTypeIsSRet( function_type );
 	if( is_s_ret )
 	{
 		llvm_param_types.push_back( unsafe( LLVMPointerType( function_type.return_type.GetLLVMType(), 0u ) ) );
 	}
 
-	foreach( &param : function_type.params )
+	var LLVMTypeRef mut ret_llvm_type= function_type.return_type.GetLLVMType();
+	if( function_type.return_value_type == ValueType::Value )
 	{
-		auto mut llvm_type= param.t.GetLLVMType();
-		if( param.value_type != ValueType::Value )
-		{
-			llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
-		}
-		else
-		{
-			// Pass aggregate types by-reference.
-			if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
-			{
-				llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
-			}
-		}
-		llvm_param_types.push_back( llvm_type );
-	}
-
-	unsafe
-	{
-		auto mut ret_llvm_type= function_type.return_type.GetLLVMType();
-		if( function_type.return_value_type != ValueType::Value )
-		{
-			ret_llvm_type= LLVMPointerType( ret_llvm_type, 0u );
-		}
-		else if( is_s_ret || function_type.return_type == void_type_ )
+		if( function_type.return_type == void_type_ )
 		{
 			ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
 		}
-
-		function_type.llvm_type= LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool::False );
+		else if( function_type.ReturnsCompositeValue() )
+		{
+			var LLVMTypeRef single_scalar_type= GetSingleScalarType( ret_llvm_type );
+			if( single_scalar_type != LLVMTypeRef::Null )
+			{
+				ret_llvm_type= single_scalar_type;
+			}
+			else
+			{
+				ret_llvm_type= fundamental_llvm_types_.void_for_ret_;
+			}
+		}
 	}
+	else
+	{
+		ret_llvm_type= unsafe( LLVMPointerType( ret_llvm_type, 0u ) );
+	}
+
+	foreach( &param : function_type.params )
+	{
+		var LLVMTypeRef mut llvm_type= param.t.GetLLVMType();
+		if( param.value_type == ValueType::Value )
+		{
+			if( EnsureTypeComplete( param.t ) )
+			{
+				if( !param.t.GetClassType().empty() || !param.t.GetArrayType().empty() || !param.t.GetTupleType().empty() )
+				{
+					var LLVMTypeRef single_scalar_type= GetSingleScalarType( param.t.GetLLVMType() );
+					if( single_scalar_type != LLVMTypeRef::Null )
+					{
+						// Pass composite types with single scalar inside in register, using type of this scalar.
+						llvm_type= single_scalar_type;
+					}
+					else
+					{
+						// Pass aggregate types by-reference.
+						llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
+					}
+				}
+			}
+		}
+		else
+		{
+			llvm_type= unsafe( LLVMPointerType( llvm_type, 0u ) );
+		}
+
+		llvm_param_types.push_back( llvm_type );
+	}
+
+	return unsafe( LLVMFunctionType( ret_llvm_type, llvm_param_types.data(), u32(llvm_param_types.size()), LLVMBool::False ) );
 }
 
 fn CodeBuilder::GetLLVMCallingConvention(
@@ -408,6 +435,48 @@ fn CodeBuilder::GetLLVMCallingConvention(
 
 	REPORT_ERROR( UnknownCallingConvention, names_scope, src_loc, cc )
 	return LLVMCallConv::C;
+}
+
+fn CodeBuilder::FunctionTypeIsSRet( FunctionType& function_type ) : bool
+{
+	return
+		function_type.ReturnsCompositeValue() &&
+		GetSingleScalarType( function_type.return_type.GetLLVMType() ) == LLVMTypeRef::Null;
+}
+
+fn CodeBuilder::GetSingleScalarType( LLVMTypeRef mut t ) : LLVMTypeRef
+{
+	while(true)
+	{
+		var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
+		if( t_kind == LLVMTypeKind::Struct && unsafe( LLVMCountStructElementTypes( t ) ) == 1u )
+		{
+			t= unsafe( LLVMStructGetTypeAtIndex( t, 0u ) );
+			continue;
+		}
+		if( t_kind == LLVMTypeKind::Array && unsafe( LLVMGetArrayLength( t ) ) == 1u )
+		{
+			t= unsafe( LLVMGetElementType( t ) );
+			continue;
+		}
+
+		break; // Not a composite.
+	}
+
+	var LLVMTypeKind t_kind= unsafe( LLVMGetTypeKind( t ) );
+	if( t_kind == LLVMTypeKind::Half ||
+		t_kind == LLVMTypeKind::Float ||
+		t_kind == LLVMTypeKind::Double ||
+		t_kind == LLVMTypeKind::X86_FP80 ||
+		t_kind == LLVMTypeKind::P128 ||
+		t_kind == LLVMTypeKind::PPC_FP128 ||
+		t_kind == LLVMTypeKind::Integer ||
+		t_kind == LLVMTypeKind::Pointer )
+	{
+		return t;
+	}
+
+	return LLVMTypeRef::Null;
 }
 
 } // namespace U1

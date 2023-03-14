@@ -10,7 +10,7 @@ U_TEST(CallingConventionDeclaration_Test0)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo();
+		fn Foo() { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -24,7 +24,7 @@ U_TEST(CallingConventionDeclaration_Test1)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() call_conv("C");
+		fn Foo() call_conv("C") { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -38,7 +38,7 @@ U_TEST(CallingConventionDeclaration_Test2)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() unsafe call_conv("fast") : u32;
+		fn Foo() unsafe call_conv("fast") : u32 { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -52,7 +52,7 @@ U_TEST(CallingConventionDeclaration_Test3)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() unsafe call_conv("Ü") : u32;
+		fn Foo() unsafe call_conv("Ü") : u32 { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -66,7 +66,7 @@ U_TEST(CallingConventionDeclaration_Test4)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() unsafe call_conv("default") : u32;
+		fn Foo() unsafe call_conv("default") : u32 { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );
@@ -90,7 +90,7 @@ U_TEST(CallingConventionDeclaration_Test6)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() unsafe call_conv("system") : u32;
+		fn Foo() unsafe call_conv("system") : u32 { halt; }
 	)";
 
 	BuildProgram( c_program_text );
@@ -100,7 +100,7 @@ U_TEST(CallingConventionDeclaration_Test7)
 {
 	static const char c_program_text[]=
 	R"(
-		fn Foo() unsafe call_conv("cold") : u32;
+		fn Foo() unsafe call_conv("cold") : u32 { halt; }
 	)";
 
 	const auto module= BuildProgram( c_program_text );

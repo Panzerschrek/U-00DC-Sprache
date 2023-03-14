@@ -1292,12 +1292,12 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	if( function_variable->is_deleted )
 		REPORT_ERROR( AccessingDeletedMethod, block_names.GetErrors(), initializer_expression_src_loc );
 
-	llvm::Value* function_value= function_variable->llvm_function;
+	llvm::Value* function_value= EnsureLLVMFunctionCreated( *function_variable );
 	if( function_variable->type != function_pointer_type.function_type )
 		function_value= function_context.llvm_ir_builder.CreatePointerCast( function_value, variable->type.GetLLVMType() );
 
 	CreateTypedStore( function_context, variable->type, function_value, variable->llvm_value );
-	return function_variable->llvm_function;
+	return EnsureLLVMFunctionCreated( *function_variable );
 }
 
 llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(

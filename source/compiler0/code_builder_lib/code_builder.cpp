@@ -153,13 +153,12 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 
 	FunctionType global_function_type;
 	global_function_type.return_type= void_type_;
-	global_function_type.llvm_type= GetLLVMFunctionType( global_function_type );
 
 	// In some places outside functions we need to execute expression evaluation.
 	// Create for this function context.
 	llvm::Function* const global_function=
 		llvm::Function::Create(
-			global_function_type.llvm_type,
+			GetLLVMFunctionType( global_function_type ),
 			llvm::Function::LinkageTypes::ExternalLinkage,
 			"",
 			module_.get() );
@@ -496,7 +495,7 @@ void CodeBuilder::TryCallCopyConstructor(
 
 	// Call it
 	U_ASSERT(constructor != nullptr);
-	function_context.llvm_ir_builder.CreateCall( constructor->llvm_function, { this_, src } );
+	function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *constructor ), { this_, src } );
 }
 
 void CodeBuilder::GenerateLoop(
@@ -604,7 +603,7 @@ void CodeBuilder::CallDestructor(
 		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
 
 		const FunctionVariable& destructor= destructors->functions.front();
-		function_context.llvm_ir_builder.CreateCall( destructor.llvm_function, { ptr } );
+		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( destructor ), { ptr } );
 	}
 	else if( const ArrayType* const array_type= type.GetArrayType() )
 	{
@@ -856,8 +855,6 @@ size_t CodeBuilder::PrepareFunction(
 			( func_variable.is_this_call || func.overloaded_operator_ != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc_ );
 
-		function_type.llvm_type= GetLLVMFunctionType( function_type );
-
 		func_variable.type= std::move(function_type);
 	} // end prepare function type
 
@@ -1002,13 +999,10 @@ size_t CodeBuilder::PrepareFunction(
 		const FunctionType& func_type= *inserted_func_variable.type.GetFunctionType();
 
 		inserted_func_variable.llvm_function=
-			llvm::Function::Create(
-				func_type.llvm_type,
-				llvm::Function::LinkageTypes::ExternalLinkage, // External - for prototype.
-				inserted_func_variable.no_mangle ? func_name : mangler_->MangleFunction( names_scope, func_name, func_type ),
-				module_.get() );
-
-		SetupFunctionParamsAndRetAttributes( inserted_func_variable );
+			std::make_shared<LazyLLVMFunction>(
+				inserted_func_variable.no_mangle
+					? func_name
+					: mangler_->MangleFunction( names_scope, func_name, func_type ) );
 
 		return functions_set.functions.size() - 1u;
 	}
@@ -1154,7 +1148,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	const FunctionType& function_type= *func_variable.type.GetFunctionType();
 
-	llvm::Function* const llvm_function= func_variable.llvm_function;
+	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( func_variable );
 
 	// Build debug info only for functions with body.
 	debug_info_builder_->CreateFunctionInfo( func_variable, func_name );
@@ -1201,7 +1195,7 @@ Type CodeBuilder::BuildFuncCode(
 	for( llvm::Argument& llvm_arg : llvm_function->args() )
 	{
 		// Skip "sret".
-		if( &llvm_arg == &*llvm_function->arg_begin() && function_type.IsStructRet() )
+		if( &llvm_arg == &*llvm_function->arg_begin() && FunctionTypeIsSRet( function_type ) )
 		{
 			llvm_arg.setName( "_return_value" );
 			function_context.s_ret_= &llvm_arg;
@@ -1239,8 +1233,19 @@ Type CodeBuilder::BuildFuncCode(
 			}
 			else if( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr )
 			{
-				// Composite types use llvm-pointers.
-				variable->llvm_value = &llvm_arg;
+				if( GetSingleScalarType( variable->type.GetLLVMType() ) != nullptr )
+				{
+					variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
+					CreateLifetimeStart( function_context, variable->llvm_value );
+
+					// Reinterretete composite type address as scalar type address and store value in it.
+					function_context.llvm_ir_builder.CreateStore( &llvm_arg, variable->llvm_value );
+				}
+				else
+				{
+					// Values of composite types are passed via pointer.
+					variable->llvm_value = &llvm_arg;
+				}
 			}
 			else U_ASSERT(false);
 
@@ -2044,35 +2049,69 @@ bool CodeBuilder::IsGlobalVariable( const VariablePtr& variable )
 		variable->location == Variable::Location::Pointer;
 }
 
-void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
+llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& function_variable )
 {
-	const auto llvm_function= function_variable.llvm_function;
+	llvm::Function*& llvm_function= function_variable.llvm_function->function;
+
+	if( llvm_function != nullptr )
+		return llvm_function;
+
 	const FunctionType& function_type= *function_variable.type.GetFunctionType();
 
-	const bool first_arg_is_sret= function_type.IsStructRet();
+	llvm_function=
+		llvm::Function::Create(
+			GetLLVMFunctionType( function_type ),
+			// Use private linkage for generated function.
+			function_variable.is_generated ? llvm::GlobalValue::PrivateLinkage : llvm::Function::LinkageTypes::ExternalLinkage,
+			function_variable.llvm_function->name_mangled,
+			module_.get() );
+
+	llvm_function->setCallingConv( function_type.calling_convention );
+
+	// Merge functions with identical code.
+	// We doesn`t need different addresses for different functions.
+	llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+
+	llvm_function->setDoesNotThrow(); // We do not support exceptions.
+
+	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
+	{
+		llvm::AttrBuilder builder(llvm_context_);
+		builder.addUWTableAttr(llvm::UWTableKind::Async);
+		llvm_function->addFnAttrs( builder );
+	}
+
+	// Prepare args attributes.
+
+	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
 		const auto param_attr_index= uint32_t(i + (first_arg_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
-		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
+		const bool pass_value_param_by_hidden_ref=
+			param.value_type == ValueType::Value &&
+			(param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr ) &&
+			GetSingleScalarType( param.type.GetLLVMType() ) == nullptr;
+
 		// Mark reference params as nonnull.
-		if( param.value_type != ValueType::Value || param_is_composite )
+		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NonNull );
 		// Mutable reference params or composite value-args must not alias.
 		// Also we can mark as "noalias" non-mutable references. See https://releases.llvm.org/9.0.0/docs/AliasAnalysis.html#must-may-or-no.
-		if( param.value_type != ValueType::Value || param_is_composite )
+		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoAlias );
 		// Mark as "readonly" immutable reference params.
 		if( param.value_type == ValueType::ReferenceImut )
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::ReadOnly );
 		// Mark as "nocapture" value args of composite types, which is actually passed by hidden reference.
 		// It is not possible to capture this reference.
-		if( param.value_type == ValueType::Value && param_is_composite )
+		if( pass_value_param_by_hidden_ref )
 			llvm_function->addParamAttr( param_attr_index, llvm::Attribute::NoCapture );
 	}
 
+	// Prepare ret attributes.
 	if( first_arg_is_sret )
 	{
 		llvm_function->addParamAttr( 0, llvm::Attribute::NoAlias );
@@ -2084,41 +2123,34 @@ void CodeBuilder::SetupFunctionParamsAndRetAttributes( FunctionVariable& functio
 	if( function_type.return_value_type != ValueType::Value )
 		llvm_function->addRetAttr( llvm::Attribute::NonNull );
 
-	// Merge functions with identical code.
-	// We doesn`t need different addresses for different functions.
-	llvm_function->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
-
-	llvm_function->setDoesNotThrow(); // We do not support exceptions.
-
-	llvm_function->setCallingConv( function_type.calling_convention );
-
-	if( build_debug_info_ ) // Unwind table entry for function needed for debug info.
-	{
-		llvm::AttrBuilder builder(llvm_context_);
-		builder.addUWTableAttr(llvm::UWTableKind::Async);
-		llvm_function->addFnAttrs( builder );
-	}
-
-	// Use "private" linkage for generated functions since such functions are emitted in every compilation unit.
-	if( function_variable.is_generated )
-		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	return llvm_function;
 }
 
 void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
 {
-	const auto llvm_function= function_variable.llvm_function;
+	llvm::Function* const llvm_function= function_variable.llvm_function->function;
+	if( llvm_function == nullptr )
+	{
+		// Do not force to create llvm function, if it was not created previously.
+		// This means, that this is only unused declaration.
+		return;
+	}
+
 	const FunctionType& function_type= *function_variable.type.GetFunctionType();
 
-	const bool first_arg_is_sret= function_type.IsStructRet();
+	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );
 
 	for( size_t i= 0u; i < function_type.params.size(); i++ )
 	{
 		const auto param_attr_index= uint32_t(i + (first_arg_is_sret ? 1u : 0u ));
 		const FunctionType::Param& param= function_type.params[i];
 
-		const bool param_is_composite= param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr;
+		const bool pass_value_param_by_hidden_ref=
+			param.value_type == ValueType::Value &&
+			( param.type.GetClassType() != nullptr || param.type.GetArrayType() != nullptr || param.type.GetTupleType() != nullptr ) &&
+			GetSingleScalarType( param.type.GetLLVMType() ) == nullptr;
 		// Mark reference params and passed by hidden reference params with "dereferenceable" attribute.
-		if( param.value_type != ValueType::Value || param_is_composite )
+		if( param.value_type != ValueType::Value || pass_value_param_by_hidden_ref )
 		{
 			const auto llvm_type= param.type.GetLLVMType();
 			if( !llvm_type->isSized() )

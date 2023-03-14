@@ -1048,7 +1048,14 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 	auto name_mangled=
 		mangler_.deref().MangleFunction( function_template.parent_names_scope.lock().try_lock_imut().deref(), function_name, function_variable.t, result_template_args );
-	unsafe( LLVMSetValueName2( function_variable.llvm_function, cast_mut(name_mangled).data(), name_mangled.size() - 1s ) );
+	with( &mut lock : function_variable.llvm_function.lock_mut() )
+	{
+		if( lock.deref().function != LLVMValueRef::Null )
+		{
+			unsafe( LLVMSetValueName2( lock.deref().function, cast_mut(name_mangled).data(), name_mangled.size() - 1s ) );
+		}
+		lock.deref().name_mangled= name_mangled;
+	}
 
 	{
 		auto mut lock= result_functions_set_ptr.try_lock_mut();

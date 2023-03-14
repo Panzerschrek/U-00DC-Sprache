@@ -104,14 +104,14 @@ void DebugInfoBuilder::CreateFunctionInfo( const FunctionVariable& func_variable
 	const auto di_function= builder_->createFunction(
 		GetDIFile( func_variable.body_src_loc ),
 		function_name,
-		func_variable.llvm_function->getName(),
+		func_variable.llvm_function->name_mangled,
 		GetDIFile( func_variable.body_src_loc ),
 		func_variable.body_src_loc.GetLine(),
 		CreateDIType( *func_variable.type.GetFunctionType() ),
 		func_variable.body_src_loc.GetLine(),
 		llvm::DINode::FlagPrototyped,
 		llvm::DISubprogram::SPFlagDefinition );
-	func_variable.llvm_function->setSubprogram( di_function );
+	func_variable.llvm_function->function->setSubprogram( di_function );
 }
 
 void DebugInfoBuilder::SetCurrentLocation( const SrcLoc& src_loc, FunctionContext& function_context )

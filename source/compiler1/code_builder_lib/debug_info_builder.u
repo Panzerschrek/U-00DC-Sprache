@@ -73,28 +73,30 @@ fn DebugInfoBuilder::CreateFunctionInfo( mut this, FunctionVariable& func_variab
 	var SrcLoc& src_loc= syntax_element.src_loc;
 	var ust::string8& name= syntax_element.name.back();
 
-	unsafe
+	with( &lazy_function : func_variable.llvm_function.lock_imut().deref() )
 	{
-		var size_type mut linkage_name_size= 0s;
-		var $(char8) linkage_name_start= LLVMGetValueName2( func_variable.llvm_function, linkage_name_size );
-
 		var LLVMMetadataRef file= source_file_entries_[ src_loc.GetFileIndex() ];
 
-		auto di_function= LLVMDIBuilderCreateFunction(
-			builder_,
-			file,
-			cast_mut(name).data(), name.size(),
-			linkage_name_start, linkage_name_size,
-			file,
-			src_loc.GetLine(),
-			CreateDIType( func_variable.t ),
-			LLVMBool::False, // IsLocalToUnit
-			LLVMBool::True, // IsDefinition
-			src_loc.GetLine(),
-			LLVMDIFlags(0),
-			LLVMBool::False /* TODO - pass optimized flag*/ );
+		var ust::string8& linkage_name= lazy_function.name_mangled;
 
-		LLVMSetSubprogram( func_variable.llvm_function, di_function );
+		unsafe
+		{
+			auto di_function= LLVMDIBuilderCreateFunction(
+				builder_,
+				file,
+				cast_mut(name).data(), name.size(),
+				cast_mut(linkage_name).data(), linkage_name.size(),
+				file,
+				src_loc.GetLine(),
+				CreateDIType( func_variable.t ),
+				LLVMBool::False, // IsLocalToUnit
+				LLVMBool::True, // IsDefinition
+				src_loc.GetLine(),
+				LLVMDIFlags(0),
+				LLVMBool::False /* TODO - pass optimized flag*/ );
+
+			LLVMSetSubprogram( lazy_function.function, di_function );
+		}
 	}
 }
 

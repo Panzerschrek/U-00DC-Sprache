@@ -213,6 +213,7 @@ fn nomangle LLVMFunctionType(
 	LLVMBool IsVarArg) unsafe : LLVMTypeRef;
 
 fn nomangle LLVMPointerType(LLVMTypeRef ElementType, u32 AddressSpace) unsafe : LLVMTypeRef;
+fn nomangle LLVMPointerTypeInContext(LLVMContextRef C, u32 AddressSpace) unsafe : LLVMTypeRef;
 
 fn nomangle LLVMStructTypeInContext(LLVMContextRef C, $(LLVMTypeRef) ElementTypes, u32 ElementCount, LLVMBool Packed) unsafe : LLVMTypeRef;
 fn nomangle LLVMStructCreateNamed(LLVMContextRef C, NullTerminatedString& Name) unsafe : LLVMTypeRef;
