@@ -224,26 +224,6 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 	return std::move( build_result.module );
 }
 
-EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )
-{
-	U_TEST_ASSERT( module != nullptr );
-
-	if( needs_dump )
-	{
-		llvm::raw_os_ostream stream(std::cout);
-		module->print( stream, nullptr );
-	}
-
-	llvm::EngineBuilder builder( std::move(module) );
-	llvm::ExecutionEngine* const engine= builder.create();
-
-	// llvm engine builder uses "new" operator inside it.
-	// So, we can correctly use unique_ptr for engine, because unique_ptr uses "delete" operator in destructor.
-
-	U_TEST_ASSERT( engine != nullptr );
-	return EnginePtr(engine);
-}
-
 bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const uint32_t line )
 {
 	for( const CodeBuilderError& error : errors )

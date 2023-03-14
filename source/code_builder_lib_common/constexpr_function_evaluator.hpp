@@ -28,13 +28,25 @@ public:
 		std::vector<std::string> errors;
 	};
 
+	struct ResultGeneric
+	{
+		llvm::GenericValue result;
+		std::vector<std::string> errors;
+	};
+
 	ConstexprFunctionEvaluator( const llvm::DataLayout& data_layout );
 
 	Result Evaluate(
 		llvm::Function* const llvm_function,
 		llvm::ArrayRef<const llvm::Constant*> args );
 
+	ResultGeneric Evaluate(
+		llvm::Function* const llvm_function,
+		llvm::ArrayRef<llvm::GenericValue> args );
+
 private:
+	Result PrepareResultAndClear();
+
 	llvm::GenericValue CallFunction( const llvm::Function& llvm_function, size_t stack_depth );
 
 	// Returns offset

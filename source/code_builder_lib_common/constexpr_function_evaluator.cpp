@@ -109,6 +109,60 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	return result;
 }
 
+ConstexprFunctionEvaluator::ResultGeneric ConstexprFunctionEvaluator::Evaluate(
+	llvm::Function* const llvm_function,
+	const llvm::ArrayRef<llvm::GenericValue> args )
+{
+	stack_.resize(16u); // reserve null pointer
+
+	U_ASSERT( args.size() == llvm_function->getFunctionType()->getNumParams() );
+
+	// Fill arguments
+	size_t i= 0u;
+	for( const llvm::Argument& param : llvm_function->args() )
+	{
+		if( param.getType()->isPointerTy() )
+		{
+			if( const auto s_ret_type= param.getParamStructRetType() )
+			{
+				U_ASSERT(i == 0u);
+
+				const size_t s_ret_ptr= stack_.size();
+				const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(s_ret_type) );
+				if( new_stack_size >= g_max_data_stack_size )
+				{
+					ReportDataStackOverflow();
+					continue;
+				}
+				stack_.resize( new_stack_size );
+
+				llvm::GenericValue val;
+				val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
+				instructions_map_[ &param ]= std::move(val);
+			}
+			else
+				instructions_map_[ &param ]= args[i];
+		}
+		else
+			instructions_map_[ &param ]= args[i];
+
+		++i;
+	}
+
+	ConstexprFunctionEvaluator::ResultGeneric res;
+	res.result= CallFunction( *llvm_function, 0u );
+
+	res.errors= std::move(errors_);
+	errors_= {};
+
+	instructions_map_.clear();
+	stack_.clear();
+	external_constant_mapping_.clear();
+	constants_stack_.clear();
+
+	return res;
+}
+
 llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Function& llvm_function, const size_t stack_depth )
 {
 	if( llvm_function.getBasicBlockList().empty() )
