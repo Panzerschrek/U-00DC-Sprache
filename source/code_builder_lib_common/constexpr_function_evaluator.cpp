@@ -843,7 +843,7 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 		}
 		else if( dst_type->isDoubleTy() )
 		{
-			if( src_type->isFloatTy() ) val.DoubleVal= llvm::APFloat(op.FloatVal).convertToDouble();
+			if( src_type->isFloatTy() ) val.DoubleVal= double(op.FloatVal);
 			else U_ASSERT(false);
 		}
 		else U_ASSERT(false);
@@ -853,7 +853,7 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 		if( dst_type->isFloatTy() )
 		{
 			if( src_type->isFloatTy() ) val.FloatVal= op.FloatVal;
-			else if( src_type->isDoubleTy() ) val.FloatVal= llvm::APFloat(op.DoubleVal).convertToFloat();
+			else if( src_type->isDoubleTy() ) val.FloatVal= float(op.DoubleVal);
 			else U_ASSERT(false);
 		}
 		else if( dst_type->isDoubleTy() )
