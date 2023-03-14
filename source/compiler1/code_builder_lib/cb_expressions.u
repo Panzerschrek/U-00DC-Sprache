@@ -3668,7 +3668,7 @@ fn CodeBuilder::DoCallFunction(
 					{
 						unsafe( LLVMBuildStore( function_context.llvm_ir_builder, res.constant, result.llvm_value ) );
 					}
-					result.constexpr_value= res.constant; // TODO - fix this.
+					result.constexpr_value= WrapRawScalarConstant( res.constant, function_type.return_type.GetLLVMType() );
 				}
 			}
 			else

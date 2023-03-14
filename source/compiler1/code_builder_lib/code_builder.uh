@@ -904,6 +904,8 @@ private:
 	// Create GEP instruction even in functionless context.
 	fn ForceCreateConstantIndexGEP( this, FunctionContext& function_context, LLVMTypeRef t, LLVMValueRef value, u32 index ) : LLVMValueRef;
 
+	fn WrapRawScalarConstant( LLVMValueRef constant, LLVMTypeRef dst_type ) : LLVMValueRef;
+
 	fn MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context );
 
 	fn CopyBytes( mut this, LLVMValueRef dst, LLVMValueRef src, Type& t, FunctionContext &mut function_context );

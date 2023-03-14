@@ -2799,6 +2799,24 @@ fn CodeBuilder::ForceCreateConstantIndexGEP( this, FunctionContext& function_con
 	return gep;
 }
 
+fn CodeBuilder::WrapRawScalarConstant( LLVMValueRef constant, LLVMTypeRef dst_type ) : LLVMValueRef
+{
+	var LLVMTypeKind type_kind= unsafe( LLVMGetTypeKind( dst_type ) );
+	if( type_kind == LLVMTypeKind::Struct )
+	{
+		var [ LLVMValueRef, 1 ] mut i[ WrapRawScalarConstant( constant, unsafe( LLVMStructGetTypeAtIndex( dst_type, 0u ) ) ) ];
+		return unsafe( LLVMConstNamedStruct( dst_type, $<(i[0]), 1u ) );
+	}
+	if( type_kind == LLVMTypeKind::Array )
+	{
+		var LLVMTypeRef element_type= unsafe( LLVMGetElementType( dst_type ) );
+		var [ LLVMValueRef, 1 ] mut i[ WrapRawScalarConstant( constant, element_type ) ];
+		return unsafe( LLVMConstArray( element_type, $<(i[0]), 1u ) );
+	}
+
+	return constant;
+}
+
 fn CodeBuilder::MoveConstantToMemory( this, LLVMValueRef ptr, LLVMValueRef constant, FunctionContext& function_context )
 {
 	if( function_context.is_functionless_context )
