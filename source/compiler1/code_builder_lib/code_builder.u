@@ -195,15 +195,10 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
+	SetupDereferenceableFunctionParamsAndRetAttributes_r( cast_imut(source_graph_nodes_build_results_).front().names_scope.try_lock_imut().deref() );
+	foreach( &name_value_pair : cast_imut(generated_template_things_) )
 	{
-		// TODO - avoid copying "this" fields.
-		var NamesScopePtr root_node_names_scope= source_graph_nodes_build_results_.front().names_scope.try_to_non_nullable();
-		SetupDereferenceableFunctionParamsAndRetAttributes_r( root_node_names_scope.lock_imut().deref() );
-		auto generated_template_things_copy= generated_template_things_;
-		foreach( &name_value_pair : generated_template_things_copy )
-		{
-			SetupDereferenceableFunctionParamsAndRetAttributes_r( name_value_pair.value().lock_imut().deref() );
-		}
+		SetupDereferenceableFunctionParamsAndRetAttributes_r( name_value_pair.value().lock_imut().deref() );
 	}
 
 	// Finalize incomplete typeinfo.
@@ -2362,9 +2357,15 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 	return llvm_function;
 }
 
-fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable )
+fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( this, FunctionVariable& mut function_variable )
 {
-	var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
+	var LLVMValueRef llvm_function= function_variable.llvm_function.lock_imut().deref().function;
+	if( llvm_function == LLVMValueRef::Null )
+	{
+		// Do not force to create llvm function, if it was not created previously.
+		// This means, that this is only unused declaration.
+		return;
+	}
 
 	var bool is_s_ret= FunctionTypeIsSRet( function_variable.t );
 
@@ -2413,7 +2414,7 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( mut this, Fu
 	}
 }
 
-fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( mut this, NamesScope& names_scope )
+fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope )
 {
 	foreach( &el : names_scope )
 	{

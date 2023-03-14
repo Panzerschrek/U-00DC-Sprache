@@ -2128,7 +2128,14 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 
 void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVariable& function_variable )
 {
-	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( function_variable );
+	llvm::Function* const llvm_function= function_variable.llvm_function->function;
+	if( llvm_function == nullptr )
+	{
+		// Do not force to create llvm function, if it was not created previously.
+		// This means, that this is only unused declaration.
+		return;
+	}
+
 	const FunctionType& function_type= *function_variable.type.GetFunctionType();
 
 	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );

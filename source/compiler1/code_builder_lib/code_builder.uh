@@ -872,9 +872,9 @@ private:
 
 	fn SetupFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable );
 	// Requires complete types
-	fn SetupDereferenceableFunctionParamsAndRetAttributes( mut this, FunctionVariable& mut function_variable );
+	fn SetupDereferenceableFunctionParamsAndRetAttributes( this, FunctionVariable& mut function_variable );
 
-	fn SetupDereferenceableFunctionParamsAndRetAttributes_r( mut this, NamesScope& names_scope );
+	fn SetupDereferenceableFunctionParamsAndRetAttributes_r( this, NamesScope& names_scope );
 
 	fn IsGlobalVariable( VariablePtr& variable ) : bool;
 
