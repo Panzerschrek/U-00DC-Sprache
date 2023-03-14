@@ -4,6 +4,7 @@
 #include <llvm/ADT/StringMap.h>
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/DataLayout.h>
+#include <llvm/IR/Instructions.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include "pop_llvm_warnings.hpp"
 #include "small_types.hpp"
@@ -72,7 +73,7 @@ private:
 	void DoStore( void* ptr, const llvm::GenericValue& val, llvm::Type* t );
 
 	void ProcessGEP( const llvm::Instruction* instruction );
-	void ProcessCall( const llvm::Instruction* instruction, size_t stack_depth );
+	void ProcessCall( const llvm::CallInst* instruction, size_t stack_depth );
 	void ProcessMemmove( const llvm::Instruction* instruction );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
@@ -85,6 +86,7 @@ private:
 	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
 
 	const llvm::DataLayout data_layout_;
+	const uint32_t pointer_size_in_bits_;
 
 	InstructionsMap instructions_map_;
 	std::vector<unsigned char> stack_;
