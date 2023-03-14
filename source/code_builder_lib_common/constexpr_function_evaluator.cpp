@@ -18,7 +18,7 @@ namespace
 // TODO - add possibility to setup these values, using compiler options.
 constexpr size_t g_max_data_stack_size= 1024u * 1024u * 64u - 16u; // 64 Megabytes will be enough for stack.
 constexpr size_t g_constants_segment_offset= g_max_data_stack_size + 16u;
-constexpr size_t g_max_constants_stack_size =1024u * 1024u * 64u; // 64 Megabytes will be enough for constants.
+constexpr size_t g_max_globals_stack_size =1024u * 1024u * 64u; // 64 Megabytes will be enough for constants.
 constexpr size_t g_max_call_stack_depth = 1024u;
 
 }
@@ -103,7 +103,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	instructions_map_.clear();
 	stack_.clear();
 	external_constant_mapping_.clear();
-	constants_stack_.clear();
+	globals_stack_.clear();
 
 	return result;
 }
@@ -157,7 +157,7 @@ ConstexprFunctionEvaluator::ResultGeneric ConstexprFunctionEvaluator::Evaluate(
 	instructions_map_.clear();
 	stack_.clear();
 	external_constant_mapping_.clear();
-	constants_stack_.clear();
+	globals_stack_.clear();
 
 	return res;
 }
@@ -289,14 +289,14 @@ size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& co
 
 	// Use separate stack for constants, because we can push constants to it in any time.
 
-	const size_t stack_offset= constants_stack_.size();
-	const size_t new_stack_size= constants_stack_.size() + size_t( data_layout_.getTypeAllocSize( constant.getType() ) );
-	if( new_stack_size >= g_max_constants_stack_size )
+	const size_t stack_offset= globals_stack_.size();
+	const size_t new_stack_size= globals_stack_.size() + size_t( data_layout_.getTypeAllocSize( constant.getType() ) );
+	if( new_stack_size >= g_max_globals_stack_size )
 	{
-		ReportConstantsStackOverflow();
+		ReportGlobalsStackOverflow();
 		return 0u;
 	}
-	constants_stack_.resize( new_stack_size );
+	globals_stack_.resize( new_stack_size );
 
 	external_constant_mapping_[&constant]= stack_offset + g_constants_segment_offset;
 
@@ -337,7 +337,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 					element_ptr= reinterpret_cast<size_t>( function );
 				else U_ASSERT(false);
 
-				std::memcpy( constants_stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
+				std::memcpy( globals_stack_.data() + stack_offset + element_offset, &element_ptr, sizeof(size_t) );
 			}
 			else
 				CopyConstantToStack( *element, stack_offset + element_offset );
@@ -356,18 +356,18 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 		// TODO - check big-endian/little-endian correctness.
 		const llvm::APInt val = constant.getUniqueInteger();
 		if( val.getBitWidth() <= 64 || val.getBitWidth() % 64u == 0 )
-			std::memcpy( constants_stack_.data() + stack_offset, val.getRawData(), size_t(data_layout_.getTypeAllocSize( constant_type )) );
+			std::memcpy( globals_stack_.data() + stack_offset, val.getRawData(), size_t(data_layout_.getTypeAllocSize( constant_type )) );
 		else U_ASSERT(false);
 	}
 	else if( constant_type->isFloatTy() )
 	{
 		const float val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToFloat();
-		std::memcpy( constants_stack_.data() + stack_offset, &val, sizeof(float) );
+		std::memcpy( globals_stack_.data() + stack_offset, &val, sizeof(float) );
 	}
 	else if( constant_type->isDoubleTy() )
 	{
 		const double val= llvm::dyn_cast<llvm::ConstantFP>(&constant)->getValueAPF().convertToDouble();
-		std::memcpy( constants_stack_.data() + stack_offset, &val, sizeof(double) );
+		std::memcpy( globals_stack_.data() + stack_offset, &val, sizeof(double) );
 	}
 	else if( constant_type->isPointerTy() )
 	{
@@ -376,7 +376,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 			(void)function;
 		}
 		else
-			std::memset( constants_stack_.data() + stack_offset, 0, size_t( data_layout_.getTypeAllocSize( constant_type ) ) );
+			std::memset( globals_stack_.data() + stack_offset, 0, size_t( data_layout_.getTypeAllocSize( constant_type ) ) );
 	}
 	else U_ASSERT(false);
 }
@@ -596,7 +596,7 @@ void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const ins
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
 	const unsigned char* data_ptr= nullptr;
 	if( offset >= g_constants_segment_offset )
-		data_ptr= constants_stack_.data() + ( offset - g_constants_segment_offset );
+		data_ptr= globals_stack_.data() + ( offset - g_constants_segment_offset );
 	else
 		data_ptr= stack_.data() + offset;
 
@@ -658,14 +658,12 @@ llvm::GenericValue ConstexprFunctionEvaluator::DoLoad( const void* ptr, llvm::Ty
 
 void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const instruction )
 {
-	const llvm::Value* const address= instruction->getOperand(1u);
-	U_ASSERT( instructions_map_.find( address ) != instructions_map_.end() );
-	const llvm::GenericValue& address_val= instructions_map_[address];
+	const llvm::GenericValue address_val= GetVal( instruction->getOperand(1u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
 	unsigned char* data_ptr= nullptr;
 	if( offset >= g_constants_segment_offset )
-		data_ptr= constants_stack_.data() + ( offset - g_constants_segment_offset );
+		data_ptr= globals_stack_.data() + ( offset - g_constants_segment_offset );
 	else
 		data_ptr= stack_.data() + offset;
 
@@ -801,11 +799,11 @@ void ConstexprFunctionEvaluator::ProcessMemmove( const llvm::Instruction* const 
 
 	unsigned char* const dst_ptr=
 		( dst_offset >= g_constants_segment_offset )
-			? ( constants_stack_.data() + ( dst_offset - g_constants_segment_offset ) )
+			? ( globals_stack_.data() + ( dst_offset - g_constants_segment_offset ) )
 			: ( stack_.data() + dst_offset );
 	const unsigned char* const src_ptr=
 		( src_offset >= g_constants_segment_offset )
-			? ( constants_stack_.data() + ( src_offset - g_constants_segment_offset ) )
+			? ( globals_stack_.data() + ( src_offset - g_constants_segment_offset ) )
 			: ( stack_.data() + src_offset );
 
 	std::memmove( dst_ptr, src_ptr, size );
@@ -1162,9 +1160,9 @@ void ConstexprFunctionEvaluator::ReportDataStackOverflow()
 	errors_.push_back( "Max data stack size (" + std::to_string( g_max_data_stack_size ) + ") reached");
 }
 
-void ConstexprFunctionEvaluator::ReportConstantsStackOverflow()
+void ConstexprFunctionEvaluator::ReportGlobalsStackOverflow()
 {
-	errors_.push_back( "Max constants stack size (" + std::to_string( g_max_constants_stack_size ) + ") reached" );
+	errors_.push_back( "Max globals stack size (" + std::to_string( g_max_globals_stack_size ) + ") reached" );
 }
 
 } // namespace U

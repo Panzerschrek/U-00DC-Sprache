@@ -80,7 +80,7 @@ private:
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
 
 	void ReportDataStackOverflow();
-	void ReportConstantsStackOverflow();
+	void ReportGlobalsStackOverflow();
 
 private:
 	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
@@ -90,7 +90,7 @@ private:
 
 	InstructionsMap instructions_map_;
 	std::vector<unsigned char> stack_;
-	std::vector<unsigned char> constants_stack_;
+	std::vector<unsigned char> globals_stack_;
 
 	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
 
