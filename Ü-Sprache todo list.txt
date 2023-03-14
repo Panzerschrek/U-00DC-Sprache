@@ -49,7 +49,9 @@ Compiler:
 *) Fix non-dethermenistic compilation result caused by non-dethermenistic address of global constant variables,
 	including "typeinfo" variables.
 *) Imporve TBAA - use struct path-based TBAA.
-*) Pass/return by-value composite values with single scalar inside.
+*) Pass/return by-value composite values containing more than one scalar inside.
+	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,
+	or it would be better to pass it in memory.
 *) Faster calling convention for non-cross-language functions.
 *) Fix possible UB in float->int conversion.
 *) Virtual call for final function optimization
