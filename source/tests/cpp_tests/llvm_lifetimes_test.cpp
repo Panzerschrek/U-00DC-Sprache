@@ -478,8 +478,6 @@ U_TEST( ArgVariableLifetime_Test2 )
 
 U_TEST( ArgVariableLifetime_Test3 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S // This type contains single scalar inside and passed in register.
@@ -592,8 +590,6 @@ U_TEST( ReturnValueLifetime_Test1 )
 
 U_TEST( ReturnValueLifetime_Test2 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S // This struct contains single scalar inside and because of that is passed in register.
@@ -834,6 +830,7 @@ U_TEST( LifetimesForRawPointers_Test0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -878,6 +875,7 @@ U_TEST( LifetimesForRawPointers_Test1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
