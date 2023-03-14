@@ -952,7 +952,8 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 
 				// Call it.
 				var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
-				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, GetLLVMFunctionType( constructor_.t ), EnsureLLVMFunctionCreated( constructor_ ), $<(llvm_args[0]), 2u, g_null_string ) );
+				var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( constructor_ );
+				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( llvm_function ), llvm_function, $<(llvm_args[0]), 2u, g_null_string ) );
 				break;
 			}
 		}
@@ -1025,7 +1026,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 
 				// Call it.
 				var[ LLVMValueRef, 2 ] mut llvm_args[ dst, src ];
-				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, GetLLVMFunctionType( operator_.t ), EnsureLLVMFunctionCreated( operator_ ), $<(llvm_args[0]), 2u, g_null_string ) );
+				var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( operator_ );
+				unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( llvm_function ), llvm_function, $<(llvm_args[0]), 2u, g_null_string ) );
 				break;
 			}
 		}
@@ -1125,7 +1127,8 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 			unsafe
 			{
 				var[ LLVMValueRef, 2 ] mut llvm_args[ l_address, r_address ];
-				var LLVMValueRef eq= LLVMBuildCall2( function_context.llvm_ir_builder, GetLLVMFunctionType( op_.t ), EnsureLLVMFunctionCreated( op_ ), $<(llvm_args[0]), 2u, g_null_string );
+				var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( op_ );
+				var LLVMValueRef eq= LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( llvm_function ),llvm_function, $<(llvm_args[0]), 2u, g_null_string );
 
 				var LLVMBasicBlockRef next_bb= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
 
@@ -1176,7 +1179,8 @@ fn CodeBuilder::BuildDestructorPart( mut this, NamesScopePtr& names_scope, Funct
 
 		// Call it.
 		auto mut v= value;
-		unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, GetLLVMFunctionType( destructor_.t ), EnsureLLVMFunctionCreated( destructor_ ), $<(v), 1u, g_null_string ) );
+		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( destructor_ );
+		unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType( llvm_function ), llvm_function, $<(v), 1u, g_null_string ) );
 	}
 }
 
