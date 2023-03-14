@@ -163,6 +163,11 @@ ConstexprFunctionEvaluator::ResultGeneric ConstexprFunctionEvaluator::Evaluate(
 	return res;
 }
 
+void ConstexprFunctionEvaluator::RegisterCustomFunction( const llvm::StringRef name, const CustomFunction function )
+{
+	custom_functions_.insert_or_assign( name, function );
+}
+
 llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Function& llvm_function, const size_t stack_depth )
 {
 	if( llvm_function.getBasicBlockList().empty() )
@@ -741,6 +746,16 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::Instruction* const ins
 			ProcessMemmove( instruction );
 			return;
 		}
+	}
+	else if( const auto func_it= custom_functions_.find( function->getName() ); func_it != custom_functions_.end() )
+	{
+		const CustomFunction func= func_it->second;
+		llvm::SmallVector<llvm::GenericValue, 8> args;
+		for( size_t i= 0; i < function->arg_size(); ++i )
+			args.push_back( GetVal( instruction->getOperand(uint32_t(i)) ) );
+
+		instructions_map_[instruction]= func( function->getFunctionType(), args );
+		return;
 	}
 
 	InstructionsMap new_instructions_map;

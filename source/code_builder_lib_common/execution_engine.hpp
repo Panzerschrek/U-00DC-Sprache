@@ -18,6 +18,9 @@ public:
 
 	llvm::GenericValue runFunction( llvm::Function* function, llvm::ArrayRef<llvm::GenericValue> args );
 
+	using CustomFunction= ConstexprFunctionEvaluator::CustomFunction;
+	void RegisterCustomFunction( llvm::StringRef name, CustomFunction function );
+
 private:
 	std::unique_ptr<llvm::Module> module_;
 	ConstexprFunctionEvaluator evaluator_;

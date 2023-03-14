@@ -1,6 +1,7 @@
 #pragma once
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/DenseMap.h>
+#include <llvm/ADT/StringMap.h>
 #include <llvm/IR/Constant.h>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/ExecutionEngine/GenericValue.h>
@@ -34,6 +35,8 @@ public:
 		std::vector<std::string> errors;
 	};
 
+	using CustomFunction= llvm::GenericValue (*)( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> );
+
 	ConstexprFunctionEvaluator( const llvm::DataLayout& data_layout );
 
 	Result Evaluate(
@@ -43,6 +46,8 @@ public:
 	ResultGeneric Evaluate(
 		llvm::Function* const llvm_function,
 		llvm::ArrayRef<llvm::GenericValue> args );
+
+	void RegisterCustomFunction( llvm::StringRef name, CustomFunction function );
 
 private:
 	Result PrepareResultAndClear();
@@ -86,6 +91,8 @@ private:
 	std::vector<unsigned char> constants_stack_;
 
 	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
+
+	llvm::StringMap<CustomFunction> custom_functions_;
 
 	std::vector<std::string> errors_;
 };

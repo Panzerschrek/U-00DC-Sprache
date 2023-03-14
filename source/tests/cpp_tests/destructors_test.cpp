@@ -1,5 +1,3 @@
-#include <llvm/Support/DynamicLibrary.h>
-
 #include "tests.hpp"
 
 namespace U
@@ -18,18 +16,15 @@ llvm::GenericValue DestructorCalled(
 	return llvm::GenericValue();
 }
 
-void DestructorTestPrepare()
+void DestructorTestPrepare(const EnginePtr& engine)
 {
 	g_destructors_call_sequence.clear();
 
-	// "lle_X_" - common prefix for all external functions, called from LLVM Interpreter
-	llvm::sys::DynamicLibrary::AddSymbol( "lle_X__Z16DestructorCalledi", reinterpret_cast<void*>( &DestructorCalled ) );
+	engine->RegisterCustomFunction( "_Z16DestructorCalledi", DestructorCalled );
 }
 
 U_TEST(DestructorsTest0)
 {
-	DestructorTestPrepare();
-
 	// Must call destructor for variable.
 	static const char c_program_text[]=
 	R"(
@@ -52,6 +47,7 @@ U_TEST(DestructorsTest0)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -64,8 +60,6 @@ U_TEST(DestructorsTest0)
 
 U_TEST(DestructorsTest1)
 {
-	DestructorTestPrepare();
-
 	// Must call destructors in reverse order.
 	static const char c_program_text[]=
 	R"(
@@ -90,6 +84,7 @@ U_TEST(DestructorsTest1)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -102,8 +97,6 @@ U_TEST(DestructorsTest1)
 
 U_TEST(DestructorsTest2)
 {
-	DestructorTestPrepare();
-
 	// Destructors for arguments.
 	static const char c_program_text[]=
 	R"(
@@ -129,6 +122,7 @@ U_TEST(DestructorsTest2)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -141,8 +135,6 @@ U_TEST(DestructorsTest2)
 
 U_TEST(DestructorsTest3)
 {
-	DestructorTestPrepare();
-
 	// Must call destructors after return.
 	static const char c_program_text[]=
 	R"(
@@ -172,6 +164,7 @@ U_TEST(DestructorsTest3)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -186,8 +179,6 @@ U_TEST(DestructorsTest3)
 
 U_TEST(DestructorsTest4)
 {
-	DestructorTestPrepare();
-
 	// Must call destructors after return.
 	static const char c_program_text[]=
 	R"(
@@ -221,6 +212,7 @@ U_TEST(DestructorsTest4)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -235,8 +227,6 @@ U_TEST(DestructorsTest4)
 
 U_TEST(DestructorsTest5)
 {
-	DestructorTestPrepare();
-
 	// Must call destructors of arguments in each return.
 	static const char c_program_text[]=
 	R"(
@@ -265,6 +255,7 @@ U_TEST(DestructorsTest5)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -279,8 +270,6 @@ U_TEST(DestructorsTest5)
 
 U_TEST(DestructorsTest6)
 {
-	DestructorTestPrepare();
-
 	// Must call destructors of loop local variables before "break".
 	static const char c_program_text[]=
 	R"(
@@ -318,6 +307,7 @@ U_TEST(DestructorsTest6)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -332,8 +322,6 @@ U_TEST(DestructorsTest6)
 
 U_TEST(DestructorsTest7)
 {
-	DestructorTestPrepare();
-
 	// Must call destructors of inner loop, but not call destructors of outer loop before "break".
 	static const char c_program_text[]=
 	R"(
@@ -368,6 +356,7 @@ U_TEST(DestructorsTest7)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -382,8 +371,6 @@ U_TEST(DestructorsTest7)
 
 U_TEST(DestructorsTest8)
 {
-	DestructorTestPrepare();
-
 	// Explicit destructor must contains implicit calls to destructors of members.
 	static const char c_program_text[]=
 	R"(
@@ -411,6 +398,7 @@ U_TEST(DestructorsTest8)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -425,8 +413,6 @@ U_TEST(DestructorsTest8)
 
 U_TEST(DestructorsTest9)
 {
-	DestructorTestPrepare();
-
 	// Explicit destructor must contains implicit calls to destructors of members.
 	// Members destructors must be called in all return ways.
 	static const char c_program_text[]=
@@ -464,6 +450,7 @@ U_TEST(DestructorsTest9)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -478,8 +465,6 @@ U_TEST(DestructorsTest9)
 
 U_TEST(DestructorsTest10)
 {
-	DestructorTestPrepare();
-
 	// Must call generated destructor.
 	static const char c_program_text[]=
 	R"(
@@ -504,6 +489,7 @@ U_TEST(DestructorsTest10)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -518,8 +504,6 @@ U_TEST(DestructorsTest10)
 
 U_TEST(DestructorsTest11)
 {
-	DestructorTestPrepare();
-
 	// Destructors for temporaries must be called.
 	static const char c_program_text[]=
 	R"(
@@ -560,6 +544,7 @@ U_TEST(DestructorsTest11)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -594,6 +579,7 @@ U_TEST( DestructorsTest12_ShouldCorrectlyReturnValueFromDestructibleStruct )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -630,6 +616,7 @@ U_TEST( DestructorsTest13_ShouldBeDesdtroyedAfterUsage0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -662,6 +649,7 @@ U_TEST( DestructorsTest14_ShouldBeDesdtroyedAfterUsage1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -693,6 +681,7 @@ U_TEST( DestructorsTest15_ShouldBeDesdtroyedAfterUsage2 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -720,6 +709,7 @@ U_TEST( DestructorsTest16_ShouldBeDesdtroyedAfterUsage3 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -748,6 +738,7 @@ U_TEST( DestructorsTest17_ShouldBeDesdtroyedAfterUsage4 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -786,8 +777,6 @@ U_TEST( DestructorsTest18_ShouldBeDesdtroyedAfterUsage5 )
 
 U_TEST(DestructorsTest19_DestuctorForInterface)
 {
-	DestructorTestPrepare();
-
 	// Must call destructor for of interface-parent.
 	static const char c_program_text[]=
 	R"(
@@ -807,6 +796,7 @@ U_TEST(DestructorsTest19_DestuctorForInterface)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -817,8 +807,6 @@ U_TEST(DestructorsTest19_DestuctorForInterface)
 
 U_TEST(DestructorsTest20_EarlyDestructorCallUsingMoveOperator)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -838,6 +826,7 @@ U_TEST(DestructorsTest20_EarlyDestructorCallUsingMoveOperator)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -848,8 +837,6 @@ U_TEST(DestructorsTest20_EarlyDestructorCallUsingMoveOperator)
 
 U_TEST(DestructorsTest21_ChangeDestructionOrderUsingMoveOperator)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -874,6 +861,7 @@ U_TEST(DestructorsTest21_ChangeDestructionOrderUsingMoveOperator)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -884,8 +872,6 @@ U_TEST(DestructorsTest21_ChangeDestructionOrderUsingMoveOperator)
 
 U_TEST(DestructorsTest22_DestructorForTemporaryConvertedReferenceArgument)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -905,6 +891,7 @@ U_TEST(DestructorsTest22_DestructorForTemporaryConvertedReferenceArgument)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -915,8 +902,6 @@ U_TEST(DestructorsTest22_DestructorForTemporaryConvertedReferenceArgument)
 
 U_TEST(DestructorsTest22_DestructorForTuples)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -936,6 +921,7 @@ U_TEST(DestructorsTest22_DestructorForTuples)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -946,8 +932,6 @@ U_TEST(DestructorsTest22_DestructorForTuples)
 
 U_TEST(DestructorsTest23_DestructorForTuples)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -971,6 +955,7 @@ U_TEST(DestructorsTest23_DestructorForTuples)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -981,8 +966,6 @@ U_TEST(DestructorsTest23_DestructorForTuples)
 
 U_TEST(DestructorsTest24_DestructorForTuples)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1005,6 +988,7 @@ U_TEST(DestructorsTest24_DestructorForTuples)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -1015,8 +999,6 @@ U_TEST(DestructorsTest24_DestructorForTuples)
 
 U_TEST(DestructorsTest25_DestructorForTuples)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1045,6 +1027,7 @@ U_TEST(DestructorsTest25_DestructorForTuples)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -1055,8 +1038,6 @@ U_TEST(DestructorsTest25_DestructorForTuples)
 
 U_TEST(DestructorsTest26_DestructorForTuples)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1085,6 +1066,7 @@ U_TEST(DestructorsTest26_DestructorForTuples)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -1095,8 +1077,6 @@ U_TEST(DestructorsTest26_DestructorForTuples)
 
 U_TEST(DestructorsTest27_DestructorForTuples)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1126,6 +1106,7 @@ U_TEST(DestructorsTest27_DestructorForTuples)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -1136,8 +1117,6 @@ U_TEST(DestructorsTest27_DestructorForTuples)
 
 U_TEST(DestructorsTest28_DestructorForTuples)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1163,6 +1142,7 @@ U_TEST(DestructorsTest28_DestructorForTuples)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -1173,8 +1153,6 @@ U_TEST(DestructorsTest28_DestructorForTuples)
 
 U_TEST(DestructorsTest29_DestructorForTuples)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1205,6 +1183,7 @@ U_TEST(DestructorsTest29_DestructorForTuples)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -1215,8 +1194,6 @@ U_TEST(DestructorsTest29_DestructorForTuples)
 
 U_TEST(DestructorsTest30_MembersDestructorCallOrder)
 {
-	DestructorTestPrepare();
-
 	// Destructors of members should be called in fields order.
 	static const char c_program_text[]=
 	R"(
@@ -1254,6 +1231,7 @@ U_TEST(DestructorsTest30_MembersDestructorCallOrder)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -1264,8 +1242,6 @@ U_TEST(DestructorsTest30_MembersDestructorCallOrder)
 
 U_TEST(DestructorsTest31_DestructorNotCalledForReferenceField)
 {
-	DestructorTestPrepare();
-
 	// Destructors of members should be called in fields order.
 	static const char c_program_text[]=
 	R"(
@@ -1289,6 +1265,7 @@ U_TEST(DestructorsTest31_DestructorNotCalledForReferenceField)
 		)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -1299,8 +1276,6 @@ U_TEST(DestructorsTest31_DestructorNotCalledForReferenceField)
 
 U_TEST(EralyTempVariablesDestruction_Test0)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1327,6 +1302,7 @@ U_TEST(EralyTempVariablesDestruction_Test0)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1338,8 +1314,6 @@ U_TEST(EralyTempVariablesDestruction_Test0)
 
 U_TEST(EralyTempVariablesDestruction_Test1)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1365,6 +1339,7 @@ U_TEST(EralyTempVariablesDestruction_Test1)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1376,8 +1351,6 @@ U_TEST(EralyTempVariablesDestruction_Test1)
 
 U_TEST(EralyTempVariablesDestruction_Test2)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1404,6 +1377,7 @@ U_TEST(EralyTempVariablesDestruction_Test2)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1415,8 +1389,6 @@ U_TEST(EralyTempVariablesDestruction_Test2)
 
 U_TEST(EralyTempVariablesDestruction_Test3)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1442,6 +1414,7 @@ U_TEST(EralyTempVariablesDestruction_Test3)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1453,8 +1426,6 @@ U_TEST(EralyTempVariablesDestruction_Test3)
 
 U_TEST(EralyTempVariablesDestruction_Test4)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1481,6 +1452,7 @@ U_TEST(EralyTempVariablesDestruction_Test4)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1492,8 +1464,6 @@ U_TEST(EralyTempVariablesDestruction_Test4)
 
 U_TEST(EralyTempVariablesDestruction_Test5)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1517,6 +1487,7 @@ U_TEST(EralyTempVariablesDestruction_Test5)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1528,8 +1499,6 @@ U_TEST(EralyTempVariablesDestruction_Test5)
 
 U_TEST(EralyTempVariablesDestruction_Test6)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1553,6 +1522,7 @@ U_TEST(EralyTempVariablesDestruction_Test6)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1564,8 +1534,6 @@ U_TEST(EralyTempVariablesDestruction_Test6)
 
 U_TEST(EralyTempVariablesDestruction_Test7)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1587,6 +1555,7 @@ U_TEST(EralyTempVariablesDestruction_Test7)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1598,8 +1567,6 @@ U_TEST(EralyTempVariablesDestruction_Test7)
 
 U_TEST(EralyTempVariablesDestruction_Test8)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1622,6 +1589,7 @@ U_TEST(EralyTempVariablesDestruction_Test8)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1633,8 +1601,6 @@ U_TEST(EralyTempVariablesDestruction_Test8)
 
 U_TEST(EralyTempVariablesDestruction_Test9)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1661,6 +1627,7 @@ U_TEST(EralyTempVariablesDestruction_Test9)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1672,8 +1639,6 @@ U_TEST(EralyTempVariablesDestruction_Test9)
 
 U_TEST(EralyTempVariablesDestruction_Test10)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1700,6 +1665,7 @@ U_TEST(EralyTempVariablesDestruction_Test10)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1711,8 +1677,6 @@ U_TEST(EralyTempVariablesDestruction_Test10)
 
 U_TEST(EralyTempVariablesDestruction_Test11)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1736,6 +1700,7 @@ U_TEST(EralyTempVariablesDestruction_Test11)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1747,8 +1712,6 @@ U_TEST(EralyTempVariablesDestruction_Test11)
 
 U_TEST(EralyTempVariablesDestruction_Test12)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1772,6 +1735,7 @@ U_TEST(EralyTempVariablesDestruction_Test12)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1783,8 +1747,6 @@ U_TEST(EralyTempVariablesDestruction_Test12)
 
 U_TEST(EralyTempVariablesDestruction_Test13)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1813,6 +1775,7 @@ U_TEST(EralyTempVariablesDestruction_Test13)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1824,8 +1787,6 @@ U_TEST(EralyTempVariablesDestruction_Test13)
 
 U_TEST(EralyTempVariablesDestruction_Test14)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1856,6 +1817,7 @@ U_TEST(EralyTempVariablesDestruction_Test14)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
@@ -1867,8 +1829,6 @@ U_TEST(EralyTempVariablesDestruction_Test14)
 
 U_TEST(EralyTempVariablesDestruction_Test15)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1896,6 +1856,7 @@ U_TEST(EralyTempVariablesDestruction_Test15)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 	engine->runFunction( function, {} );
@@ -1907,8 +1868,6 @@ U_TEST(EralyTempVariablesDestruction_Test15)
 
 U_TEST(DestructorTest_ForCStyleForOperator0)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1929,6 +1888,7 @@ U_TEST(DestructorTest_ForCStyleForOperator0)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -1941,8 +1901,6 @@ U_TEST(DestructorTest_ForCStyleForOperator0)
 
 U_TEST(DestructorTest_ForCStyleForOperator1)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -1967,6 +1925,7 @@ U_TEST(DestructorTest_ForCStyleForOperator1)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -1979,8 +1938,6 @@ U_TEST(DestructorTest_ForCStyleForOperator1)
 
 U_TEST(DestructorTest_ForCStyleForOperator2)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2005,6 +1962,7 @@ U_TEST(DestructorTest_ForCStyleForOperator2)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2017,8 +1975,6 @@ U_TEST(DestructorTest_ForCStyleForOperator2)
 
 U_TEST(DestructorTest_ForCStyleForOperator3)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2043,6 +1999,7 @@ U_TEST(DestructorTest_ForCStyleForOperator3)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2055,8 +2012,6 @@ U_TEST(DestructorTest_ForCStyleForOperator3)
 
 U_TEST(DestructorTest_ForCStyleForOperator4)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2081,6 +2036,7 @@ U_TEST(DestructorTest_ForCStyleForOperator4)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2093,8 +2049,6 @@ U_TEST(DestructorTest_ForCStyleForOperator4)
 
 U_TEST(DestructorTest_ForCStyleForOperator5)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2120,6 +2074,7 @@ U_TEST(DestructorTest_ForCStyleForOperator5)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2132,8 +2087,6 @@ U_TEST(DestructorTest_ForCStyleForOperator5)
 
 U_TEST(DestructorTest_For_WithOperator0)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2159,6 +2112,7 @@ U_TEST(DestructorTest_For_WithOperator0)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2169,8 +2123,6 @@ U_TEST(DestructorTest_For_WithOperator0)
 
 U_TEST(DestructorTest_For_WithOperator1)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2196,6 +2148,7 @@ U_TEST(DestructorTest_For_WithOperator1)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2206,8 +2159,6 @@ U_TEST(DestructorTest_For_WithOperator1)
 
 U_TEST(DestructorTest_For_WithOperator2)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2233,6 +2184,7 @@ U_TEST(DestructorTest_For_WithOperator2)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2243,8 +2195,6 @@ U_TEST(DestructorTest_For_WithOperator2)
 
 U_TEST(DestructorTest_For_WithOperator3)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2270,6 +2220,7 @@ U_TEST(DestructorTest_For_WithOperator3)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2280,8 +2231,6 @@ U_TEST(DestructorTest_For_WithOperator3)
 
 U_TEST(DestructorTest_For_WithOperator4)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2311,6 +2260,7 @@ U_TEST(DestructorTest_For_WithOperator4)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2321,8 +2271,6 @@ U_TEST(DestructorTest_For_WithOperator4)
 
 U_TEST(DestructorTest_For_WithOperator5)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2348,6 +2296,7 @@ U_TEST(DestructorTest_For_WithOperator5)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2358,8 +2307,6 @@ U_TEST(DestructorTest_For_WithOperator5)
 
 U_TEST(DestructorTest_For_WithOperator6)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2385,6 +2332,7 @@ U_TEST(DestructorTest_For_WithOperator6)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2395,8 +2343,6 @@ U_TEST(DestructorTest_For_WithOperator6)
 
 U_TEST(DestructorTest_For_WithOperator7)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2427,6 +2373,7 @@ U_TEST(DestructorTest_For_WithOperator7)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2437,8 +2384,6 @@ U_TEST(DestructorTest_For_WithOperator7)
 
 U_TEST(DestructorTest_For_WithOperator8)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2463,6 +2408,7 @@ U_TEST(DestructorTest_For_WithOperator8)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2473,8 +2419,6 @@ U_TEST(DestructorTest_For_WithOperator8)
 
 U_TEST(DestructorTest_For_WithOperator9)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2499,6 +2443,7 @@ U_TEST(DestructorTest_For_WithOperator9)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2509,8 +2454,6 @@ U_TEST(DestructorTest_For_WithOperator9)
 
 U_TEST(DestructorTest_ForArrayValueArgument_Test0)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2537,6 +2480,7 @@ U_TEST(DestructorTest_ForArrayValueArgument_Test0)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -2547,8 +2491,6 @@ U_TEST(DestructorTest_ForArrayValueArgument_Test0)
 
 U_TEST(DestructorTest_ForArrayValueArgument_Test1)
 {
-	DestructorTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn DestructorCalled(i32 x);
@@ -2579,6 +2521,7 @@ U_TEST(DestructorTest_ForArrayValueArgument_Test1)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 

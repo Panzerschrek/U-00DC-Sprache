@@ -36,6 +36,11 @@ llvm::GenericValue ExecutionEngine::runFunction(
 	return std::move(res.result);
 }
 
+void ExecutionEngine::RegisterCustomFunction( const llvm::StringRef name, const CustomFunction function )
+{
+	evaluator_.RegisterCustomFunction( name, function );
+}
+
 EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )
 {
 	if( needs_dump )
