@@ -692,15 +692,11 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	{
 		// Fetch vtable pointer.
 		// Virtual table pointer is always first field.
-		auto virtual_table_ptr_type= LLVMPointerType( class_type.virtual_table_llvm_type, 0u );
-		auto ptr_to_virtual_table_ptr=
-			LLVMBuildPointerCast(
+		var LLVMValueRef virtual_table_ptr=
+			LLVMBuildLoad2(
 				function_context.llvm_ir_builder,
-				this_casted.llvm_value,
-				LLVMPointerType( virtual_table_ptr_type, 0u ),
-				g_null_string );
-
-		auto virtual_table_ptr= LLVMBuildLoad2( function_context.llvm_ir_builder, virtual_table_ptr_type, ptr_to_virtual_table_ptr, g_null_string );
+				LLVMPointerType( class_type.virtual_table_llvm_type, 0u ),
+				this_casted.llvm_value, g_null_string );
 		MarkLoadInstructionWithNonNullMetadata( virtual_table_ptr ); // Virtual table pointer is never null.
 		if( generate_tbaa_metadata_ )
 		{
