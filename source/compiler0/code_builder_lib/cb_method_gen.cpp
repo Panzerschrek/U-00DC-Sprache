@@ -1115,8 +1115,8 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 		}
 		U_ASSERT( op != nullptr );
 
-		const ConstexprFunctionEvaluator::Result evaluation_result=
-			constexpr_function_evaluator_.Evaluate( EnsureLLVMFunctionCreated( *op ), { l, r } );
+		const Interpreter::ResultConstexpr evaluation_result=
+			constexpr_function_evaluator_.EvaluateConstexpr( EnsureLLVMFunctionCreated( *op ), { l, r } );
 
 		for( const std::string& error_text : evaluation_result.errors )
 		{

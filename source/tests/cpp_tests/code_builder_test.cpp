@@ -2009,10 +2009,6 @@ U_TEST(FunctionPrototypeTest0)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
-	// This test fails in llvm-15.0.7.src/lib/ExecutionEngine/Interpreter/Execution.cpp:1142 during lifetimes instruction processing.
-	// I presume this is because of recursive calls.
-	DISABLE_TEST;
-
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
@@ -2077,30 +2073,6 @@ U_TEST(FunctionPrototypeTest3)
 			llvm::ArrayRef<llvm::GenericValue>());
 
 	U_TEST_ASSERT( static_cast<uint64_t>( 666 * 1937 ) == result_value.IntVal.getLimitedValue() );
-}
-
-U_TEST(AccessExternalAddressSpace)
-{
-	// Actually, this test is for "llvm::ExecutionEngine". It tests possibility to access host address space inside interpreter.
-	static const char c_program_text[]=
-	R"(
-		fn Sub([ i32, 2 ]& arr) : i32
-		{
-			return arr[0] - arr[1];
-		}
-	)";
-
-	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	llvm::Function* const function= engine->FindFunctionNamed( "_Z3SubRKA2_i" );
-	U_TEST_ASSERT( function != nullptr );
-
-	int32_t i[]{643, 12};
-	llvm::GenericValue arg;
-	arg.PointerVal= &i;
-
-	const llvm::GenericValue result_value= engine->runFunction( function, { arg } );
-
-	U_TEST_ASSERT( result_value.IntVal.getLimitedValue() == uint64_t(i[0] - i[1]) );
 }
 
 } // namespace

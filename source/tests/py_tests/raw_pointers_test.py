@@ -635,6 +635,7 @@ def RawPointerIntegerSub_Test1():
 	c_program_text= """
 		fn Foo()
 		{
+			unsafe{ var [ u64, 1024 * 1024 ] arr= uninitialized; } // Add to stack some large value in order to avoid pointer overflow.
 			var [ i32, 3 ] mut a[ 33, 55, 77 ];
 			var $(i32) ptr0= $<(a[0]), ptr1= $<(a[1]), ptr2= $<(a[2]);
 

@@ -1,12 +1,7 @@
 #pragma once
 
-#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
-#include <llvm/ExecutionEngine/GenericValue.h>
-#include <llvm/ExecutionEngine/Interpreter.h>
-#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
-
 #include "../../code_builder_lib_common/code_builder_errors.hpp"
+#include "../execution_engine.hpp"
 
 #include "funcs_registrator.hpp"
 
@@ -25,8 +20,6 @@ namespace U
 // Utility tests functions.
 
 #define ASSERT_NEAR( x, y, eps ) U_TEST_ASSERT( std::abs( (x) - (y) ) <= (eps) )
-
-using EnginePtr= std::unique_ptr<llvm::ExecutionEngine>;
 
 struct ErrorTestBuildResult
 {
@@ -47,8 +40,6 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 
 std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text );
 std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text );
-
-EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, bool needs_dump= false );
 
 bool HaveError( const std::vector<CodeBuilderError>& errors, CodeBuilderErrorCode code, uint32_t line );
 

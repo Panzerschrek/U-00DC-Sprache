@@ -1,5 +1,3 @@
-#include <llvm/Support/DynamicLibrary.h>
-
 #include "tests.hpp"
 
 namespace U
@@ -17,17 +15,18 @@ enum class CallResult
 
 struct LifetimeCallResult
 {
-	void* address;
+	uint64_t address;
 	CallResult call_result;
 	std::vector<uint8_t> captured_data;
 };
 
 std::vector<LifetimeCallResult> g_lifetimes_call_sequence;
+ExecutionEngine* g_current_execution_engine= nullptr;
 
 llvm::GenericValue LifetimeStartCalled( llvm::FunctionType* , const llvm::ArrayRef<llvm::GenericValue> args )
 {
 	LifetimeCallResult res{};
-	res.address= args[0].PointerVal;
+	res.address= args[0].IntVal.getLimitedValue();
 	res.call_result= CallResult::LifetimeStart;
 	g_lifetimes_call_sequence.push_back(res);
 
@@ -37,7 +36,7 @@ llvm::GenericValue LifetimeStartCalled( llvm::FunctionType* , const llvm::ArrayR
 llvm::GenericValue LifetimeEndCalled( llvm::FunctionType* , const llvm::ArrayRef<llvm::GenericValue> args )
 {
 	LifetimeCallResult res{};
-	res.address= args[0].PointerVal;
+	res.address= args[0].IntVal.getLimitedValue();
 	res.call_result= CallResult::LifetimeEnd;
 	g_lifetimes_call_sequence.push_back(res);
 
@@ -46,29 +45,32 @@ llvm::GenericValue LifetimeEndCalled( llvm::FunctionType* , const llvm::ArrayRef
 
 llvm::GenericValue ValueCaputeCalled( llvm::FunctionType* , const llvm::ArrayRef<llvm::GenericValue> args )
 {
-	LifetimeCallResult res{};
-	res.address= args[0].PointerVal;
-	res.call_result= CallResult::CaptureValue;
-	res.captured_data.insert( res.captured_data.end(), reinterpret_cast<uint8_t*>(res.address), reinterpret_cast<uint8_t*>(res.address) + args[1].IntVal.getLimitedValue() );
-	g_lifetimes_call_sequence.push_back(res);
+	const uint64_t data_address= args[0].IntVal.getLimitedValue();
+	const size_t data_size= size_t(args[1].IntVal.getLimitedValue());
 
+	LifetimeCallResult res{};
+	res.address= data_address;
+	res.call_result= CallResult::CaptureValue;
+	res.captured_data.resize( data_size );
+	g_current_execution_engine->ReadExecutinEngineData( res.captured_data.data(), data_address, data_size );
+
+	g_lifetimes_call_sequence.push_back(res);
 	return llvm::GenericValue();
 }
 
-void LifetimesTestPrepare()
+void LifetimesTestPrepare(const EnginePtr& engine)
 {
+	// HACK! Use global variables in order to avoid passing arguments trough execution engine.
+	g_current_execution_engine= engine.get();
 	g_lifetimes_call_sequence.clear();
 
-	// "lle_X_" - common prefix for all external functions, called from LLVM Interpreter
-	llvm::sys::DynamicLibrary::AddSymbol( "lle_X___U_debug_lifetime_start", reinterpret_cast<void*>( &LifetimeStartCalled ) );
-	llvm::sys::DynamicLibrary::AddSymbol( "lle_X___U_debug_lifetime_end", reinterpret_cast<void*>( &LifetimeEndCalled ) );
-	llvm::sys::DynamicLibrary::AddSymbol( "lle_X_CaptureValue", reinterpret_cast<void*>( &ValueCaputeCalled ) );
+	engine->RegisterCustomFunction( "__U_debug_lifetime_start", LifetimeStartCalled );
+	engine->RegisterCustomFunction( "__U_debug_lifetime_end", LifetimeEndCalled );
+	engine->RegisterCustomFunction( "CaptureValue", ValueCaputeCalled );
 }
 
 U_TEST( StackVariableLifetime_Test0 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(i32& data, u64 size);
@@ -80,6 +82,7 @@ U_TEST( StackVariableLifetime_Test0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -98,8 +101,6 @@ U_TEST( StackVariableLifetime_Test0 )
 
 U_TEST( StackVariableLifetime_Test1 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(f64& data, u64 size);
@@ -115,6 +116,7 @@ U_TEST( StackVariableLifetime_Test1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -144,8 +146,6 @@ U_TEST( StackVariableLifetime_Test1 )
 
 U_TEST( StackVariableLifetime_Test2 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(u16& data, u64 size);
@@ -163,6 +163,7 @@ U_TEST( StackVariableLifetime_Test2 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -192,8 +193,6 @@ U_TEST( StackVariableLifetime_Test2 )
 
 U_TEST( StackVariableLifetime_Test3 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue([f32, 4]& data, u64 size);
@@ -205,6 +204,7 @@ U_TEST( StackVariableLifetime_Test3 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -223,8 +223,6 @@ U_TEST( StackVariableLifetime_Test3 )
 
 U_TEST( StackVariableLifetime_Test4 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(u64& data, u64 size);
@@ -236,6 +234,7 @@ U_TEST( StackVariableLifetime_Test4 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -254,8 +253,6 @@ U_TEST( StackVariableLifetime_Test4 )
 
 U_TEST( StackVariableLifetime_Test5 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -272,6 +269,7 @@ U_TEST( StackVariableLifetime_Test5 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -290,8 +288,6 @@ U_TEST( StackVariableLifetime_Test5 )
 
 U_TEST( StackVariableLifetime_Test6 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(u64& data, u64 size);
@@ -307,6 +303,7 @@ U_TEST( StackVariableLifetime_Test6 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -329,8 +326,6 @@ U_TEST( StackVariableLifetime_Test6 )
 
 U_TEST( StackVariableLifetime_Test7 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(u32& data, u64 size);
@@ -344,6 +339,7 @@ U_TEST( StackVariableLifetime_Test7 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -357,8 +353,6 @@ U_TEST( StackVariableLifetime_Test7 )
 
 U_TEST( StackVariableLifetime_Test8 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(u32& data, u64 size);
@@ -372,6 +366,7 @@ U_TEST( StackVariableLifetime_Test8 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -385,8 +380,6 @@ U_TEST( StackVariableLifetime_Test8 )
 
 U_TEST( ArgVariableLifetime_Test0 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(u8& data, u64 size);
@@ -401,6 +394,7 @@ U_TEST( ArgVariableLifetime_Test0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -419,8 +413,6 @@ U_TEST( ArgVariableLifetime_Test0 )
 
 U_TEST( ArgVariableLifetime_Test1 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(char16& data, u64 size);
@@ -437,6 +429,7 @@ U_TEST( ArgVariableLifetime_Test1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -452,8 +445,6 @@ U_TEST( ArgVariableLifetime_Test1 )
 
 U_TEST( ArgVariableLifetime_Test2 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -475,6 +466,7 @@ U_TEST( ArgVariableLifetime_Test2 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -493,8 +485,6 @@ U_TEST( ArgVariableLifetime_Test2 )
 
 U_TEST( ArgVariableLifetime_Test3 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S // This type contains single scalar inside and passed in register.
@@ -516,6 +506,7 @@ U_TEST( ArgVariableLifetime_Test3 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -538,8 +529,6 @@ U_TEST( ArgVariableLifetime_Test3 )
 
 U_TEST( ReturnValueLifetime_Test0 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn Bar() : i32
@@ -553,6 +542,7 @@ U_TEST( ReturnValueLifetime_Test0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -564,8 +554,6 @@ U_TEST( ReturnValueLifetime_Test0 )
 
 U_TEST( ReturnValueLifetime_Test1 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -588,6 +576,7 @@ U_TEST( ReturnValueLifetime_Test1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -608,8 +597,6 @@ U_TEST( ReturnValueLifetime_Test1 )
 
 U_TEST( ReturnValueLifetime_Test2 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S // This struct contains single scalar inside and because of that is passed in register.
@@ -631,6 +618,7 @@ U_TEST( ReturnValueLifetime_Test2 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -657,8 +645,6 @@ U_TEST( ReturnValueLifetime_Test2 )
 
 U_TEST( LifetimeEndDuringInitialization_Test0 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(i32& data, u64 size);
@@ -672,6 +658,7 @@ U_TEST( LifetimeEndDuringInitialization_Test0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -698,8 +685,6 @@ U_TEST( LifetimeEndDuringInitialization_Test0 )
 
 U_TEST( LifetimeEndDuringInitialization_Test1 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn nomangle CaptureValue(i32& data, u64 size);
@@ -713,6 +698,7 @@ U_TEST( LifetimeEndDuringInitialization_Test1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -739,8 +725,6 @@ U_TEST( LifetimeEndDuringInitialization_Test1 )
 
 U_TEST( LifetimeEndDuringInitialization_Test2 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -759,6 +743,7 @@ U_TEST( LifetimeEndDuringInitialization_Test2 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -785,8 +770,6 @@ U_TEST( LifetimeEndDuringInitialization_Test2 )
 
 U_TEST( LifetimesForTakeOperator_Test )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -806,6 +789,7 @@ U_TEST( LifetimesForTakeOperator_Test )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -834,8 +818,6 @@ U_TEST( LifetimesForTakeOperator_Test )
 
 U_TEST( LifetimesForRawPointers_Test0 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -855,6 +837,7 @@ U_TEST( LifetimesForRawPointers_Test0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
@@ -880,8 +863,6 @@ U_TEST( LifetimesForRawPointers_Test0 )
 
 U_TEST( LifetimesForRawPointers_Test1 )
 {
-	LifetimesTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		struct S
@@ -901,6 +882,7 @@ U_TEST( LifetimesForRawPointers_Test1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForLifetimesTest( c_program_text ) );
+	LifetimesTestPrepare(engine);
 
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );

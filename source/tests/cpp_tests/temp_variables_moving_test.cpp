@@ -1,4 +1,3 @@
-#include <llvm/Support/DynamicLibrary.h>
 #include "tests.hpp"
 
 namespace U
@@ -26,20 +25,17 @@ llvm::GenericValue DestructorCalled(
 	return llvm::GenericValue();
 }
 
-void TestPrepare()
+void TestPrepare(const EnginePtr& engine)
 {
 	g_constructirs_call_sequence.clear();
 	 g_destructors_call_sequence.clear();
 
-	// "lle_X_" - common prefix for all external functions, called from LLVM Interpreter
-	llvm::sys::DynamicLibrary::AddSymbol( "lle_X__Z17ConstructorCalledi", reinterpret_cast<void*>( &ConstructorCalled ) );
-	llvm::sys::DynamicLibrary::AddSymbol(  "lle_X__Z16DestructorCalledi", reinterpret_cast<void*>( & DestructorCalled ) );
+	engine->RegisterCustomFunction( "_Z17ConstructorCalledi",  ConstructorCalled );
+	engine->RegisterCustomFunction( "_Z16DestructorCalledi", DestructorCalled );
 }
 
 U_TEST(TempVariablesMovingTest0_MoveTempVariableToArgument)
 {
-	TestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn ConstructorCalled(i32 x);
@@ -78,6 +74,7 @@ U_TEST(TempVariablesMovingTest0_MoveTempVariableToArgument)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	TestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -90,8 +87,6 @@ U_TEST(TempVariablesMovingTest0_MoveTempVariableToArgument)
 
 U_TEST(TempVariablesMovingTest1_MoveTempVariableToReturnValue)
 {
-	TestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn ConstructorCalled(i32 x);
@@ -133,6 +128,7 @@ U_TEST(TempVariablesMovingTest1_MoveTempVariableToReturnValue)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	TestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -145,8 +141,6 @@ U_TEST(TempVariablesMovingTest1_MoveTempVariableToReturnValue)
 
 U_TEST(TempVariablesMovingTest2_MoveTempVariableInExpressionInitialization)
 {
-	TestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn ConstructorCalled(i32 x);
@@ -183,6 +177,7 @@ U_TEST(TempVariablesMovingTest2_MoveTempVariableInExpressionInitialization)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	TestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -195,8 +190,6 @@ U_TEST(TempVariablesMovingTest2_MoveTempVariableInExpressionInitialization)
 
 U_TEST(TempVariablesMovingTest3_MoveTempVariableInAutoVariableInitialization)
 {
-	TestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn ConstructorCalled(i32 x);
@@ -233,6 +226,7 @@ U_TEST(TempVariablesMovingTest3_MoveTempVariableInAutoVariableInitialization)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	TestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -245,8 +239,6 @@ U_TEST(TempVariablesMovingTest3_MoveTempVariableInAutoVariableInitialization)
 
 U_TEST(TempVariablesMovingTest4_MoveFunctionResult)
 {
-	TestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn ConstructorCalled(i32 x);
@@ -288,6 +280,7 @@ U_TEST(TempVariablesMovingTest4_MoveFunctionResult)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	TestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -300,8 +293,6 @@ U_TEST(TempVariablesMovingTest4_MoveFunctionResult)
 
 U_TEST(TempVariablesMovingTest5_MoveInAssignment)
 {
-	TestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn ConstructorCalled(i32 x);
@@ -339,6 +330,7 @@ U_TEST(TempVariablesMovingTest5_MoveInAssignment)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	TestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -351,8 +343,6 @@ U_TEST(TempVariablesMovingTest5_MoveInAssignment)
 
 U_TEST(TempVariablesMovingTest6_MoveInConstructorInitializer)
 {
-	TestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn ConstructorCalled(i32 x);
@@ -389,6 +379,7 @@ U_TEST(TempVariablesMovingTest6_MoveInConstructorInitializer)
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	TestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -401,8 +392,6 @@ U_TEST(TempVariablesMovingTest6_MoveInConstructorInitializer)
 
 U_TEST(TempVariablesMovingTest7_MoveTempVariableReturningFromFunctionToAnotherFunction)
 {
-	TestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn ConstructorCalled(i32 x);
@@ -442,6 +431,7 @@ U_TEST(TempVariablesMovingTest7_MoveTempVariableReturningFromFunctionToAnotherFu
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	TestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -479,6 +469,7 @@ U_TEST(TempVariablesMovingTest8_MoveVariableFromFunctionResultWithMutableReferen
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	TestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 

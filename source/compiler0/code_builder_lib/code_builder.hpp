@@ -11,7 +11,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/source_graph_loader.hpp"
-#include "../../code_builder_lib_common/constexpr_function_evaluator.hpp"
+#include "../../code_builder_lib_common/interpreter.hpp"
 #include "../../code_builder_lib_common/mangling.hpp"
 #include "class.hpp"
 #include "debug_info_builder.hpp"
@@ -1011,7 +1011,7 @@ private:
 	llvm::PointerType* virtual_function_pointer_type_= nullptr; // Use common type for all function pointers in virtual table - for simplicity.
 	llvm::StructType* polymorph_type_id_table_element_type_= nullptr;
 
-	ConstexprFunctionEvaluator constexpr_function_evaluator_;
+	Interpreter constexpr_function_evaluator_;
 	const std::shared_ptr<IMangler> mangler_;
 	TBAAMetadataBuilder tbaa_metadata_builder_;
 

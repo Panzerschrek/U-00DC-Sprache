@@ -1,5 +1,3 @@
-#include <llvm/Support/DynamicLibrary.h>
-
 #include "tests.hpp"
 
 namespace U
@@ -23,16 +21,13 @@ llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::Generic
 	throw HaltException();
 }
 
-void HaltTestPrepare()
+void HaltTestPrepare(const EnginePtr& engine )
 {
-	// "lle_X_" - common prefix for all external functions, called from LLVM Interpreter
-	llvm::sys::DynamicLibrary::AddSymbol( "lle_X___U_halt", reinterpret_cast<void*>( &HaltCalled ) );
+	engine->RegisterCustomFunction( "__U_halt", HaltCalled );
 }
 
 U_TEST( HaltTest0 )
 {
-	HaltTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
@@ -42,6 +37,7 @@ U_TEST( HaltTest0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -59,8 +55,6 @@ U_TEST( HaltTest0 )
 
 U_TEST( HaltTest1_ShouldHaltInsteadOfReturn )
 {
-	HaltTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn Foo() : i32
@@ -74,6 +68,7 @@ U_TEST( HaltTest1_ShouldHaltInsteadOfReturn )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -91,8 +86,6 @@ U_TEST( HaltTest1_ShouldHaltInsteadOfReturn )
 
 U_TEST( HaltTest2_ShouldHaltWithDeepCallStack )
 {
-	HaltTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn Bar()
@@ -115,6 +108,7 @@ U_TEST( HaltTest2_ShouldHaltWithDeepCallStack )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -152,8 +146,6 @@ U_TEST( HaltTest3_CodeAfterHaltMustBeUnreachable )
 
 U_TEST( HaltTest4_HaltIsLikeReturn )
 {
-	HaltTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn SometimesReturns( bool cond ) : i32
@@ -175,8 +167,6 @@ U_TEST( HaltTest4_HaltIsLikeReturn )
 
 U_TEST( HaltIfTest0 )
 {
-	HaltTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn Foo( bool cond ) : i32
@@ -187,6 +177,7 @@ U_TEST( HaltIfTest0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foob" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -219,8 +210,6 @@ U_TEST( HaltIfTest0 )
 
 U_TEST( ArrayOutOfBoundsShouldHalt0 )
 {
-	HaltTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
@@ -232,6 +221,7 @@ U_TEST( ArrayOutOfBoundsShouldHalt0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -249,8 +239,6 @@ U_TEST( ArrayOutOfBoundsShouldHalt0 )
 
 U_TEST( ArrayOutOfBoundsShouldHalt1 )
 {
-	HaltTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
@@ -262,6 +250,7 @@ U_TEST( ArrayOutOfBoundsShouldHalt1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -279,8 +268,6 @@ U_TEST( ArrayOutOfBoundsShouldHalt1 )
 
 U_TEST( ArrayOutOfBoundsShouldHalt2 )
 {
-	HaltTestPrepare();
-
 	static const char c_program_text[]=
 	R"(
 		fn Foo()
@@ -292,6 +279,7 @@ U_TEST( ArrayOutOfBoundsShouldHalt2 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
