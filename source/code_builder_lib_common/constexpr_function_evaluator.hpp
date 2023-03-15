@@ -50,6 +50,9 @@ public:
 
 	void RegisterCustomFunction( llvm::StringRef name, CustomFunction function );
 
+	// Read data from address space of execution engine.
+	void ReadExecutinEngineData( void* dst, uint64_t address, size_t size ) const;
+
 private:
 	Result PrepareResultAndClear();
 

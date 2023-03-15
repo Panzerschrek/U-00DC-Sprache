@@ -167,6 +167,18 @@ void ConstexprFunctionEvaluator::RegisterCustomFunction( const llvm::StringRef n
 	custom_functions_.insert_or_assign( name, function );
 }
 
+void ConstexprFunctionEvaluator::ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
+{
+	const size_t offset= size_t(address);
+	const unsigned char* data_ptr= nullptr;
+	if( offset >= g_constants_segment_offset )
+		data_ptr= globals_stack_.data() + ( address - g_constants_segment_offset );
+	else
+		data_ptr= stack_.data() + address;
+
+	std::memcpy( dst, data_ptr, size );
+}
+
 llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Function& llvm_function, const size_t stack_depth )
 {
 	if( llvm_function.getBasicBlockList().empty() )

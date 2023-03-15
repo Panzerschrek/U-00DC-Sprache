@@ -55,6 +55,12 @@ public:
 		evaluator_.RegisterCustomFunction( name, function );
 	}
 
+	// Read data from address space of execution engine.
+	void ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
+	{
+		return evaluator_.ReadExecutinEngineData( dst, address, size );
+	}
+
 private:
 	std::unique_ptr<llvm::Module> module_;
 	ConstexprFunctionEvaluator evaluator_;

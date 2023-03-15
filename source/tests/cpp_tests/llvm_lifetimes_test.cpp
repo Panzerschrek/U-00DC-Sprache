@@ -15,17 +15,18 @@ enum class CallResult
 
 struct LifetimeCallResult
 {
-	void* address;
+	uint64_t address;
 	CallResult call_result;
 	std::vector<uint8_t> captured_data;
 };
 
 std::vector<LifetimeCallResult> g_lifetimes_call_sequence;
+ExecutionEngine* g_current_execution_engine= nullptr;
 
 llvm::GenericValue LifetimeStartCalled( llvm::FunctionType* , const llvm::ArrayRef<llvm::GenericValue> args )
 {
 	LifetimeCallResult res{};
-	res.address= args[0].PointerVal;
+	res.address= args[0].IntVal.getLimitedValue();
 	res.call_result= CallResult::LifetimeStart;
 	g_lifetimes_call_sequence.push_back(res);
 
@@ -35,7 +36,7 @@ llvm::GenericValue LifetimeStartCalled( llvm::FunctionType* , const llvm::ArrayR
 llvm::GenericValue LifetimeEndCalled( llvm::FunctionType* , const llvm::ArrayRef<llvm::GenericValue> args )
 {
 	LifetimeCallResult res{};
-	res.address= args[0].PointerVal;
+	res.address= args[0].IntVal.getLimitedValue();
 	res.call_result= CallResult::LifetimeEnd;
 	g_lifetimes_call_sequence.push_back(res);
 
@@ -44,17 +45,23 @@ llvm::GenericValue LifetimeEndCalled( llvm::FunctionType* , const llvm::ArrayRef
 
 llvm::GenericValue ValueCaputeCalled( llvm::FunctionType* , const llvm::ArrayRef<llvm::GenericValue> args )
 {
-	LifetimeCallResult res{};
-	res.address= args[0].PointerVal;
-	res.call_result= CallResult::CaptureValue;
-	res.captured_data.insert( res.captured_data.end(), reinterpret_cast<uint8_t*>(res.address), reinterpret_cast<uint8_t*>(res.address) + args[1].IntVal.getLimitedValue() );
-	g_lifetimes_call_sequence.push_back(res);
+	const uint64_t data_address= args[0].IntVal.getLimitedValue();
+	const size_t data_size= size_t(args[1].IntVal.getLimitedValue());
 
+	LifetimeCallResult res{};
+	res.address= data_address;
+	res.call_result= CallResult::CaptureValue;
+	res.captured_data.resize( data_size );
+	g_current_execution_engine->ReadExecutinEngineData( res.captured_data.data(), data_address, data_size );
+
+	g_lifetimes_call_sequence.push_back(res);
 	return llvm::GenericValue();
 }
 
 void LifetimesTestPrepare(const EnginePtr& engine)
 {
+	// HACK! Use global variables in order to avoid passing arguments trough execution engine.
+	g_current_execution_engine= engine.get();
 	g_lifetimes_call_sequence.clear();
 
 	engine->RegisterCustomFunction( "__U_debug_lifetime_start", LifetimeStartCalled );
