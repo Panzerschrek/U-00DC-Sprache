@@ -433,7 +433,7 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_cla
 			}
 		}
 
-		function_pointers_initializer_values.push_back( llvm::ConstantExpr::getBitCast( func, virtual_function_pointer_type_ ) );
+		function_pointers_initializer_values.push_back( func );
 	}
 
 	initializer_values.push_back( llvm::ConstantArray::get( array_type, function_pointers_initializer_values ) );
@@ -477,31 +477,33 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	const SrcLoc& src_loc )
 {
 	if( function_context.is_functionless_context )
+		return std::make_pair( this_, nullptr );
+
+	if( function.virtual_table_index == ~0u )
+		return std::make_pair( this_, EnsureLLVMFunctionCreated( function ) ); // No need to perform virtual call.
+
+	const Type& function_this_type= function.type.GetFunctionType()->params.front().type;
+
+	if( !ReferenceIsConvertible( this_->type, function_this_type, errors_container, src_loc ) )
+	{
+		// This normally should not happen, if reference compatibility is checked during overloaded function selecting.
+		// If not - error will be generated during call itself
 		return std::make_pair( this_, EnsureLLVMFunctionCreated( function ) );
+	}
 
-	const FunctionType& function_type= *function.type.GetFunctionType();
-
-	if( !ReferenceIsConvertible( this_->type, function_type.params.front().type, errors_container, src_loc ) )
-		return std::make_pair( this_, EnsureLLVMFunctionCreated( function ) );
-
-	if( function.virtual_table_index == ~0u && this_->type == function_type.params.front().type )
-		return std::make_pair( this_, EnsureLLVMFunctionCreated( function ) );
-
+	// Cast "this" into type of class, where this virtual function is declared.
+	// This is needed to perform (possible) pointer correction later.
 	const VariableMutPtr this_casted=
 		std::make_shared<Variable>(
-			function_type.params.front().type,
+			function_this_type,
 			this_->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
-			Variable::Location::Pointer );
-
-	this_casted->llvm_value= CreateReferenceCast( this_->llvm_value, this_->type, this_casted->type, function_context );
-
+			Variable::Location::Pointer,
+			"casted " + this_->name,
+			CreateReferenceCast( this_->llvm_value, this_->type, function_this_type, function_context ) );
 	function_context.variables_state.AddNode( this_casted );
 	function_context.variables_state.TryAddLink( this_, this_casted, errors_container, src_loc );
 
 	RegisterTemporaryVariable( function_context, this_casted );
-
-	if( function.virtual_table_index == ~0u )
-		return std::make_pair( std::move(this_casted), EnsureLLVMFunctionCreated( function ) );
 
 	const Class& class_type= *this_casted->type.GetClassType();
 	U_ASSERT( function.virtual_table_index < class_type.virtual_table.size() );

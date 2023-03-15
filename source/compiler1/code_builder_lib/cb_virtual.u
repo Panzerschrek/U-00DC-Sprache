@@ -534,8 +534,7 @@ fn CodeBuilder::BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, C
 				}
 			}
 
-			auto function_pointer_casted= unsafe( LLVMBuildPointerCast( function_context.llvm_ir_builder, func, fn_type_ptr, g_null_string ) );
-			function_pointers_initializer_values.push_back( function_pointer_casted );
+			function_pointers_initializer_values.push_back( func );
 		}
 
 		initializer_values.push_back( LLVMConstArray( fn_type_ptr, function_pointers_initializer_values.data(), u32(function_pointers_initializer_values.size()) ) );
@@ -657,32 +656,33 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	FunctionContext &mut function_context,
 	SrcLoc& src_loc ) : tup[ VariablePtr, LLVMValueRef ]
 {
-	if( function_context.is_functionless_context || function.virtual_table_index == ~0u )
+	if( function_context.is_functionless_context )
 	{
-		return ust::make_tuple( this_ptr, EnsureLLVMFunctionCreated( function ) );
+		return ust::make_tuple( this_ptr, LLVMValueRef::Null );
+	}
+	if( function.virtual_table_index == ~0u )
+	{
+		return ust::make_tuple( this_ptr, EnsureLLVMFunctionCreated( function ) ); // No need to perform virtual call.
 	}
 
 	auto constexpr c_offset_field_number= 0u;
 	auto constexpr c_funcs_table_field_number= 2u;
 
-	var FunctionType& function_type= function.t;
+	var Type& function_this_type= function.t.params.front().t;
 
 	// TODO - check reference conversion possibility.
 
 	var VariableLite this_= this_ptr.lock_imut().deref();
+	// Cast "this" into type of class, where this virtual function is declared.
+	// This is needed to perform (possible) pointer correction later.
 	var Variable mut this_casted
 	{
-		.t= this_.t,
+		.t= function_this_type,
 		.value_type= select( this_.value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 		.location= Variable::Location::Pointer,
-		.llvm_value= this_.llvm_value,
 		.name= this_ptr.lock_imut().deref().name + " virtual call casted",
+		.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, function_this_type, function_context ),
 	};
-	if( this_.t != function_type.params.front().t )
-	{
-		this_casted.t= function_type.params.front().t;
-		this_casted.llvm_value= CreateReferenceCast( this_.llvm_value, this_.t, this_casted.t, function_context );
-	}
 
 	var ClassTypePtr class_type_ptr= this_casted.t.GetClassType().try_deref();
 	auto class_type_lock= class_type_ptr.lock_imut();
