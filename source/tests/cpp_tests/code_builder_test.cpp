@@ -2009,10 +2009,6 @@ U_TEST(FunctionPrototypeTest0)
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
-	// This test fails in llvm-15.0.7.src/lib/ExecutionEngine/Interpreter/Execution.cpp:1142 during lifetimes instruction processing.
-	// I presume this is because of recursive calls.
-	DISABLE_TEST;
-
 	llvm::GenericValue result_value=
 		engine->runFunction(
 			function,
