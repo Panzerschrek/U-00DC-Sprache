@@ -688,140 +688,137 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	auto class_type_lock= class_type_ptr.lock_imut();
 	var ClassType& class_type= class_type_lock.deref();
 
-	unsafe // Unsafe because a lot of C calls.
+	// Fetch vtable pointer.
+	// Virtual table pointer is always first field.
+	var LLVMValueRef virtual_table_ptr=
+		unsafe( LLVMBuildLoad2(
+			function_context.llvm_ir_builder,
+			LLVMPointerType( class_type.virtual_table_llvm_type, 0u ),
+			this_casted.llvm_value, g_null_string ) );
+	MarkLoadInstructionWithNonNullMetadata( virtual_table_ptr ); // Virtual table pointer is never null.
+	if( generate_tbaa_metadata_ )
 	{
-		// Fetch vtable pointer.
-		// Virtual table pointer is always first field.
-		var LLVMValueRef virtual_table_ptr=
-			LLVMBuildLoad2(
-				function_context.llvm_ir_builder,
-				LLVMPointerType( class_type.virtual_table_llvm_type, 0u ),
-				this_casted.llvm_value, g_null_string );
-		MarkLoadInstructionWithNonNullMetadata( virtual_table_ptr ); // Virtual table pointer is never null.
-		if( generate_tbaa_metadata_ )
+		auto access_tag= tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag();
+		MarkInstructionWithTBAAMetadata( virtual_table_ptr, access_tag );
+	}
+
+	var ClassType::VirtualTableEntry& first_virtual_table_entry= class_type.virtual_table[ function.virtual_table_index ];
+	auto mut parent_virtual_table_index= first_virtual_table_entry.parent_virtual_table_index;
+	auto mut index_in_table= first_virtual_table_entry.index_in_table;
+	var ClassTypePtr mut current_class_ptr= class_type_ptr;
+	var LLVMValueRef mut function_virtual_table= virtual_table_ptr;
+	while( parent_virtual_table_index != ~0u )
+	{
+		auto current_class_ptr_copy= current_class_ptr;
+		auto current_class_lock= current_class_ptr_copy.lock_imut();
+		auto& current_class= current_class_lock.deref();
+
+		auto mut field_index= ~0u;
+		if( current_class.parents[ parent_virtual_table_index ].field_number == 0u )
 		{
-			auto access_tag= tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag();
-			MarkInstructionWithTBAAMetadata( virtual_table_ptr, access_tag );
+			field_index= 0u;
 		}
-
-		var ClassType::VirtualTableEntry& first_virtual_table_entry= class_type.virtual_table[ function.virtual_table_index ];
-		auto mut parent_virtual_table_index= first_virtual_table_entry.parent_virtual_table_index;
-		auto mut index_in_table= first_virtual_table_entry.index_in_table;
-		var ClassTypePtr mut current_class_ptr= class_type_ptr;
-		var LLVMValueRef mut function_virtual_table= virtual_table_ptr;
-		while( parent_virtual_table_index != ~0u )
+		else
 		{
-			auto current_class_ptr_copy= current_class_ptr;
-			auto current_class_lock= current_class_ptr_copy.lock_imut();
-			auto& current_class= current_class_lock.deref();
-
-			auto mut field_index= ~0u;
-			if( current_class.parents[ parent_virtual_table_index ].field_number == 0u )
+			field_index= 1u;
+			for( auto mut i= 0s; i < size_type(parent_virtual_table_index); ++i )
 			{
-				field_index= 0u;
-			}
-			else
-			{
-				field_index= 1u;
-				for( auto mut i= 0s; i < size_type(parent_virtual_table_index); ++i )
+				if( current_class.parents[i].field_number != 0u )
 				{
-					if( current_class.parents[i].field_number != 0u )
-					{
-						++field_index;
-					}
+					++field_index;
 				}
 			}
-
-			unsafe
-			{
-				var [ LLVMValueRef, 2 ] mut index_list
-				[
-					GetZeroGEPIndex(),
-					CreateIndexValue(field_index),
-				];
-				function_virtual_table= LLVMBuildGEP2( function_context.llvm_ir_builder,current_class.virtual_table_llvm_type, function_virtual_table, $<(index_list[0]), 2u, g_null_string );
-			}
-
-			auto next_class_ptr= current_class.parents[ parent_virtual_table_index ].class_;
-
-			auto next_class_lock= next_class_ptr.lock_imut();
-			auto& next_class= next_class_lock.deref();
-			var ClassType::VirtualTableEntry& next_virtual_table_entry= next_class.virtual_table[ index_in_table ];
-			parent_virtual_table_index= next_virtual_table_entry.parent_virtual_table_index;
-			index_in_table= next_virtual_table_entry.index_in_table;
-
-			current_class_ptr= next_class_ptr;
 		}
 
-		var u32 mut functions_table_field_number= ~0u;
-		auto mut function_class_virtual_table_type= LLVMTypeRef::Null;
+		unsafe
 		{
-			auto current_class_lock= current_class_ptr.lock_imut();
-			auto& current_class= current_class_lock.deref();
-			functions_table_field_number= select( current_class.parents.empty() ? c_funcs_table_field_number : u32( current_class.parents.size() ) );
-			function_class_virtual_table_type= current_class.virtual_table_llvm_type;
-		}
-
-		// Fetch function.
-		var [ LLVMValueRef, 3 ] mut function_ptr_indexes
-		[
-			GetZeroGEPIndex(),
-			CreateIndexValue( functions_table_field_number ),
-			CreateIndexValue( index_in_table ),
-		];
-		auto ptr_to_function_ptr=
-			LLVMBuildGEP2( function_context.llvm_ir_builder, function_class_virtual_table_type, function_virtual_table, $<(function_ptr_indexes[0]), 3u, g_null_string );
-
-		auto function_ptr= LLVMBuildLoad2( function_context.llvm_ir_builder, virtual_function_pointer_type_, ptr_to_function_ptr, g_null_string );
-		MarkLoadInstructionWithNonNullMetadata( function_ptr ); // Function pointer inside virtual table is never null.
-		if( generate_tbaa_metadata_ )
-		{
-			auto access_tag= tbaa_metadata_builder_.CreateVirtualTableFunctionPointerAccessTag();
-			MarkInstructionWithTBAAMetadata( function_ptr, access_tag );
-		}
-
-		// Correct "this" pointer.
-		// Only interfaces may have non-zero offsets. So, make pointer adjustment only for call via interface.
-		if( class_type.kind == ClassType::Kind::Interface )
-		{
-			// Fetch "this" pointer offset. It is located in deepest first virtual table (actual offset should always be zero).
-			auto mut root_class= class_type_ptr;
-			while( true )
-			{
-				auto next_root_class= root_class.lock_imut().deref().base_class;
-				if( next_root_class.empty() )
-				{
-					break;
-				}
-				root_class= next_root_class.try_to_non_nullable();
-			}
-
-			var [ LLVMValueRef, 2 ] mut offset_indeces
+			var [ LLVMValueRef, 2 ] mut index_list
 			[
 				GetZeroGEPIndex(),
-				CreateIndexValue(c_offset_field_number),
+				CreateIndexValue(field_index),
 			];
-			auto offset_ptr=
-				LLVMBuildGEP2(
-					function_context.llvm_ir_builder,
-					root_class.lock_imut().deref().virtual_table_llvm_type,
-					virtual_table_ptr, // Reinterpretate this pointer as pointer to root table.
-					$<(offset_indeces[0]), 2u, g_null_string );
-
-			auto offset_type= size_type_;
-			auto offset= CreateTypedLoad( function_context, offset_type, offset_ptr );
-
-			auto this_ptr_as_int= LLVMBuildPtrToInt( function_context.llvm_ir_builder, this_casted.llvm_value, fundamental_llvm_types_.int_ptr, g_null_string );
-			auto this_sub_offset= LLVMBuildSub( function_context.llvm_ir_builder, this_ptr_as_int, offset, g_null_string );
-			this_casted.llvm_value= LLVMBuildIntToPtr( function_context.llvm_ir_builder, this_sub_offset, LLVMPointerType( this_casted.t.GetLLVMType(), 0u ), g_null_string );
+			function_virtual_table= LLVMBuildGEP2( function_context.llvm_ir_builder,current_class.virtual_table_llvm_type, function_virtual_table, $<(index_list[0]), 2u, g_null_string );
 		}
 
-		var VariablePtr mut this_casted_ptr( move(this_casted) );
-		function_context.references_graph.AddNode( this_casted_ptr );
-		function_context.references_graph.TryAddLink( this_ptr, this_casted_ptr, names_scope, src_loc );
-		RegisterTemporaryVariable( function_context, this_casted_ptr );
-		return ust::make_tuple( move(this_casted_ptr), function_ptr );
+		auto next_class_ptr= current_class.parents[ parent_virtual_table_index ].class_;
+
+		auto next_class_lock= next_class_ptr.lock_imut();
+		auto& next_class= next_class_lock.deref();
+		var ClassType::VirtualTableEntry& next_virtual_table_entry= next_class.virtual_table[ index_in_table ];
+		parent_virtual_table_index= next_virtual_table_entry.parent_virtual_table_index;
+		index_in_table= next_virtual_table_entry.index_in_table;
+
+		current_class_ptr= next_class_ptr;
 	}
+
+	var u32 mut functions_table_field_number= ~0u;
+	auto mut function_class_virtual_table_type= LLVMTypeRef::Null;
+	{
+		auto current_class_lock= current_class_ptr.lock_imut();
+		auto& current_class= current_class_lock.deref();
+		functions_table_field_number= select( current_class.parents.empty() ? c_funcs_table_field_number : u32( current_class.parents.size() ) );
+		function_class_virtual_table_type= current_class.virtual_table_llvm_type;
+	}
+
+	// Fetch function.
+	var [ LLVMValueRef, 3 ] mut function_ptr_indexes
+	[
+		GetZeroGEPIndex(),
+		CreateIndexValue( functions_table_field_number ),
+		CreateIndexValue( index_in_table ),
+	];
+	auto ptr_to_function_ptr=
+		unsafe( LLVMBuildGEP2( function_context.llvm_ir_builder, function_class_virtual_table_type, function_virtual_table, $<(function_ptr_indexes[0]), 3u, g_null_string ) );
+
+	auto function_ptr= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, virtual_function_pointer_type_, ptr_to_function_ptr, g_null_string ) );
+	MarkLoadInstructionWithNonNullMetadata( function_ptr ); // Function pointer inside virtual table is never null.
+	if( generate_tbaa_metadata_ )
+	{
+		auto access_tag= tbaa_metadata_builder_.CreateVirtualTableFunctionPointerAccessTag();
+		MarkInstructionWithTBAAMetadata( function_ptr, access_tag );
+	}
+
+	// Correct "this" pointer.
+	// Only interfaces may have non-zero offsets. So, make pointer adjustment only for call via interface.
+	if( class_type.kind == ClassType::Kind::Interface )
+	{
+		// Fetch "this" pointer offset. It is located in deepest first virtual table (actual offset should always be zero).
+		auto mut root_class= class_type_ptr;
+		while( true )
+		{
+			auto next_root_class= root_class.lock_imut().deref().base_class;
+			if( next_root_class.empty() )
+			{
+				break;
+			}
+			root_class= next_root_class.try_to_non_nullable();
+		}
+
+		var [ LLVMValueRef, 2 ] mut offset_indeces
+		[
+			GetZeroGEPIndex(),
+			CreateIndexValue(c_offset_field_number),
+		];
+		auto offset_ptr=
+			unsafe( LLVMBuildGEP2(
+				function_context.llvm_ir_builder,
+				root_class.lock_imut().deref().virtual_table_llvm_type,
+				virtual_table_ptr, // Reinterpretate this pointer as pointer to root table.
+				$<(offset_indeces[0]), 2u, g_null_string ) );
+
+		auto offset_type= size_type_;
+		auto offset= CreateTypedLoad( function_context, offset_type, offset_ptr );
+
+		auto this_ptr_as_int= unsafe( LLVMBuildPtrToInt( function_context.llvm_ir_builder, this_casted.llvm_value, fundamental_llvm_types_.int_ptr, g_null_string ) );
+		auto this_sub_offset= unsafe( LLVMBuildSub( function_context.llvm_ir_builder, this_ptr_as_int, offset, g_null_string ) );
+		this_casted.llvm_value= unsafe( LLVMBuildIntToPtr( function_context.llvm_ir_builder, this_sub_offset, LLVMPointerType( this_casted.t.GetLLVMType(), 0u ), g_null_string ) );
+	}
+
+	var VariablePtr mut this_casted_ptr( move(this_casted) );
+	function_context.references_graph.AddNode( this_casted_ptr );
+	function_context.references_graph.TryAddLink( this_ptr, this_casted_ptr, names_scope, src_loc );
+	RegisterTemporaryVariable( function_context, this_casted_ptr );
+	return ust::make_tuple( move(this_casted_ptr), function_ptr );
 }
 
 } // namespace U1
