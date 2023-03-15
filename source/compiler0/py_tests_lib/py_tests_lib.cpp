@@ -293,6 +293,11 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 		PyErr_SetString( PyExc_RuntimeError, "Program halted" );
 		return nullptr;
 	}
+	catch( const ExecutionEngineException& )
+	{
+		PyErr_SetString( PyExc_RuntimeError, "Execution engine error" );
+		return nullptr;
+	}
 
 	const llvm::Type* const return_type= function_type->getReturnType();
 	if( return_type->isVoidTy() )

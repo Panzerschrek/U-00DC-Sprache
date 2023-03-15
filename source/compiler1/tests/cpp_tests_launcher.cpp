@@ -4,7 +4,6 @@
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/InitLLVM.h>
 #include <llvm/Support/ManagedStatic.h>
-#include <llvm/Support/raw_os_ostream.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../tests/tests_common.hpp"
@@ -216,26 +215,6 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
 }
 
-EnginePtr CreateEngine( std::unique_ptr<llvm::Module> module, const bool needs_dump )
-{
-	U_TEST_ASSERT( module != nullptr );
-
-	if( needs_dump )
-	{
-		llvm::raw_os_ostream stream(std::cout);
-		module->print( stream, nullptr );
-	}
-
-	llvm::EngineBuilder builder( std::move(module) );
-	llvm::ExecutionEngine* const engine= builder.create();
-
-	// llvm engine builder uses "new" operator inside it.
-	// So, we can correctly use unique_ptr for engine, because unique_ptr uses "delete" operator in destructor.
-
-	U_TEST_ASSERT( engine != nullptr );
-	return EnginePtr(engine);
-}
-
 bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderErrorCode code, const uint32_t line )
 {
 	for( const CodeBuilderError& error : errors )
@@ -285,7 +264,12 @@ int main(int argc, char* argv[])
 		{
 			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
 			failed++;
-		};
+		}
+		catch( const ExecutionEngineException& ex )
+		{
+			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
+			failed++;
+		}
 
 		// We must kill ALL static internal llvm variables after each test.
 		llvm::llvm_shutdown();

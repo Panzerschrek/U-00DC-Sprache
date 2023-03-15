@@ -68,13 +68,12 @@ else()
 	message( FATAL_ERROR "llvm not found. Define LLVM_SRC_DIR for building llvm from sources, or define LLVM_LIB_DIR for installed llvm." )
 endif()
 
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_CODE_BUILDER_LIB Core )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_CODE_BUILDER_LIB Core Target )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	Linker # for linking of multiple llvm modules
 	IPO # for pass manager builder, etc.
 	${LLVM_TARGETS_TO_BUILD}
 	)
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_TESTS Interpreter )
 
 # Python
 
@@ -224,7 +223,6 @@ if( U_BUILD_TESTS )
 
 	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
 	add_library( TestsLib ${TESTS_SOURCES} )
-	target_link_libraries( TestsLib PUBLIC ${LLVM_LIBS_FOR_TESTS} )
 
 	# Hack! Force use static variables with initializers with tests registration
 	set( TESTS_LIB_WRAPPED TestsLib )

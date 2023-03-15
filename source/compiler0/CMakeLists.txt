@@ -95,7 +95,7 @@ endif()
 #
 if( U_BUILD_PY_TESTS )
 	add_library( PyTestsLib SHARED py_tests_lib/py_tests_lib.cpp )
-	target_link_libraries( PyTestsLib CodeBuilderLib ${LLVM_LIBS_FOR_TESTS} ${PYTHON_LIBRARIES} )
+	target_link_libraries( PyTestsLib CodeBuilderLib ${PYTHON_LIBRARIES} )
 	target_include_directories( PyTestsLib PRIVATE ${PYTHON_INCLUDE_DIRS} )
 
 	# Set proper name for result dynamic library.
