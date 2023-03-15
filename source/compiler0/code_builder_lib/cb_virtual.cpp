@@ -508,9 +508,10 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 
 	// Fetch vtable pointer.
 	// Virtual table pointer is always first field.
-	llvm::Type* const virtual_table_ptr_type= class_type.virtual_table_llvm_type->getPointerTo();
-	llvm::Value* const ptr_to_virtual_table_ptr= function_context.llvm_ir_builder.CreatePointerCast( this_casted->llvm_value, virtual_table_ptr_type->getPointerTo() );
-	llvm::LoadInst* const virtual_table_ptr= function_context.llvm_ir_builder.CreateLoad( virtual_table_ptr_type, ptr_to_virtual_table_ptr );
+	llvm::LoadInst* const virtual_table_ptr=
+		function_context.llvm_ir_builder.CreateLoad(
+			class_type.virtual_table_llvm_type->getPointerTo(),
+			this_casted->llvm_value );
 	virtual_table_ptr->setMetadata( llvm::LLVMContext::MD_nonnull, llvm::MDNode::get( llvm_context_, llvm::None ) ); // Virtual table pointer is never null.
 	if( generate_tbaa_metadata_ )
 		virtual_table_ptr->setMetadata( llvm::LLVMContext::MD_tbaa, tbaa_metadata_builder_.CreateVirtualTablePointerAccessTag() );
