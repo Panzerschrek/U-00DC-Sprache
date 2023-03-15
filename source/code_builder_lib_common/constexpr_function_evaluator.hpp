@@ -40,13 +40,13 @@ public:
 
 	ConstexprFunctionEvaluator( const llvm::DataLayout& data_layout );
 
-	Result Evaluate(
-		llvm::Function* const llvm_function,
-		llvm::ArrayRef<const llvm::Constant*> args );
+	// Evaluate result of "constexpr" call.
+	Result Evaluate( llvm::Function* llvm_function, llvm::ArrayRef<const llvm::Constant*> args );
 
-	ResultGeneric Evaluate(
-		llvm::Function* const llvm_function,
-		llvm::ArrayRef<llvm::GenericValue> args );
+	// Evaluate any other call.
+	// Pointer args are not supported.
+	// Also globals state is preserved after this call.
+	ResultGeneric EvaluateGeneric( llvm::Function* llvm_function, llvm::ArrayRef<llvm::GenericValue> args );
 
 	void RegisterCustomFunction( llvm::StringRef name, CustomFunction function );
 

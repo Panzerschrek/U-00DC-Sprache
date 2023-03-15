@@ -39,7 +39,7 @@ public:
 
 	llvm::GenericValue runFunction( llvm::Function* const function, const llvm::ArrayRef<llvm::GenericValue> args )
 	{
-		ConstexprFunctionEvaluator::ResultGeneric res= evaluator_.Evaluate( function, args );
+		ConstexprFunctionEvaluator::ResultGeneric res= evaluator_.EvaluateGeneric( function, args );
 
 		for (const std::string& error : res.errors )
 			std::cout << error << std::endl;

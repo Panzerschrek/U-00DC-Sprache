@@ -108,7 +108,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	return result;
 }
 
-ConstexprFunctionEvaluator::ResultGeneric ConstexprFunctionEvaluator::Evaluate(
+ConstexprFunctionEvaluator::ResultGeneric ConstexprFunctionEvaluator::EvaluateGeneric(
 	llvm::Function* const llvm_function,
 	const llvm::ArrayRef<llvm::GenericValue> args )
 {
@@ -156,8 +156,8 @@ ConstexprFunctionEvaluator::ResultGeneric ConstexprFunctionEvaluator::Evaluate(
 
 	instructions_map_.clear();
 	stack_.clear();
-	external_constant_mapping_.clear();
-	globals_stack_.clear();
+
+	// Preserve globals and external constants here.
 
 	return res;
 }
