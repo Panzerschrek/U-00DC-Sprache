@@ -642,20 +642,20 @@ def RawPointerIntegerSub_Test1():
 			unsafe
 			{
 				// Subtract signed positive value.
-				//halt if( ptr1 - i32(1) != ptr0 );
-				//halt if( $>( ptr1 - i32(1) ) != 33 );
+				halt if( ptr1 - i32(1) != ptr0 );
+				halt if( $>( ptr1 - i32(1) ) != 33 );
 			}
 			unsafe
 			{
 				// Subtract unsigned positive value.
-				//halt if( ptr2 - u16(1) != ptr1 );
-				//halt if( $>( ptr2 - u16(1) ) != 55 );
+				halt if( ptr2 - u16(1) != ptr1 );
+				halt if( $>( ptr2 - u16(1) ) != 55 );
 			}
 			unsafe
 			{
 				// Subtract signed negative value value.
-				//halt if( ptr0 - i8(-2) != ptr2 );
-				//halt if( $>( ptr0 - i8(-2) ) != 77 );
+				halt if( ptr0 - i8(-2) != ptr2 );
+				halt if( $>( ptr0 - i8(-2) ) != 77 );
 			}
 			unsafe
 			{

@@ -30,7 +30,7 @@ namespace U
 class Interpreter final
 {
 public:
-	struct Result
+	struct ResultConstexpr
 	{
 		llvm::Constant* result_constant= nullptr;
 		std::vector<std::string> errors;
@@ -44,10 +44,13 @@ public:
 
 	using CustomFunction= llvm::GenericValue (*)( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> );
 
+public:
 	Interpreter( const llvm::DataLayout& data_layout );
+	Interpreter( const Interpreter& ) = delete;
+	Interpreter& operator=( const Interpreter& )= delete;
 
 	// Evaluate result of "constexpr" call.
-	Result ConstexprEvaluate( llvm::Function* llvm_function, llvm::ArrayRef<const llvm::Constant*> args );
+	ResultConstexpr EvaluateConstexpr( llvm::Function* llvm_function, llvm::ArrayRef<const llvm::Constant*> args );
 
 	// Evaluate any other call.
 	// Pointer args are not supported.
@@ -60,7 +63,7 @@ public:
 	void ReadExecutinEngineData( void* dst, uint64_t address, size_t size ) const;
 
 private:
-	Result PrepareResultAndClear();
+	ResultConstexpr PrepareResultAndClear();
 
 	llvm::GenericValue CallFunction( const llvm::Function& llvm_function, size_t stack_depth );
 

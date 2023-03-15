@@ -62,7 +62,7 @@ public:
 	}
 
 private:
-	std::unique_ptr<llvm::Module> module_;
+	const std::unique_ptr<llvm::Module> module_;
 	Interpreter interpreter_;
 };
 

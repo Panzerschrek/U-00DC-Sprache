@@ -27,7 +27,7 @@ Interpreter::Interpreter( const llvm::DataLayout& data_layout )
 	: data_layout_(data_layout), pointer_size_in_bits_( data_layout_.getPointerSizeInBits() )
 {}
 
-Interpreter::Result Interpreter::ConstexprEvaluate(
+Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 	llvm::Function* const llvm_function,
 	const llvm::ArrayRef<const llvm::Constant*> args )
 {
@@ -82,7 +82,7 @@ Interpreter::Result Interpreter::ConstexprEvaluate(
 
 	const llvm::GenericValue res= CallFunction( *llvm_function, 0u );
 
-	Result result;
+	ResultConstexpr result;
 	result.errors= std::move(errors_);
 	errors_= {};
 
@@ -752,6 +752,7 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 	{
 		const CustomFunction func= func_it->second;
 		llvm::SmallVector<llvm::GenericValue, 8> args;
+		args.reserve( function->arg_size() );
 		for( size_t i= 0; i < function->arg_size(); ++i )
 			args.push_back( GetVal( instruction->getOperand(uint32_t(i)) ) );
 
