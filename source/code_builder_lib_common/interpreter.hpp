@@ -14,14 +14,20 @@ namespace U
 
 /*
 	This class is simple virtual machine for llvm functions executing.
-	It have some limitations and supports subset ob instructions, using in Ü compiler.
+	It has some limitations and supports subset ob instructions, using in Ü compiler.
 
-	Supported calls of functions with no side effects.
-	Supported returning of scalar types and composite types via "sret".
-	Returning of pointers not supported.
+	It supports calls of constexpr functions with no side effects,
+	with possibility of scalar type return or return of composite types via "sret".
+	Pointers return values are not supported.
+
+	It also supports calls of any other functions, but only with scalar types arguments and return value.
+	For such calls state of global variables is preserved.
+
+	This Interpreter has its own virtual address space consisting of two stacks - for local and for global data.
+	External memory access is not supported.
 */
 
-class ConstexprFunctionEvaluator final
+class Interpreter final
 {
 public:
 	struct Result
@@ -38,10 +44,10 @@ public:
 
 	using CustomFunction= llvm::GenericValue (*)( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> );
 
-	ConstexprFunctionEvaluator( const llvm::DataLayout& data_layout );
+	Interpreter( const llvm::DataLayout& data_layout );
 
 	// Evaluate result of "constexpr" call.
-	Result Evaluate( llvm::Function* llvm_function, llvm::ArrayRef<const llvm::Constant*> args );
+	Result ConstexprEvaluate( llvm::Function* llvm_function, llvm::ArrayRef<const llvm::Constant*> args );
 
 	// Evaluate any other call.
 	// Pointer args are not supported.

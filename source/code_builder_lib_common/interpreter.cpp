@@ -7,7 +7,7 @@
 #include "pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib_common/assert.hpp"
-#include "constexpr_function_evaluator.hpp"
+#include "interpreter.hpp"
 
 namespace U
 {
@@ -23,11 +23,11 @@ constexpr size_t g_max_call_stack_depth = 1024u;
 
 }
 
-ConstexprFunctionEvaluator::ConstexprFunctionEvaluator( const llvm::DataLayout& data_layout )
+Interpreter::Interpreter( const llvm::DataLayout& data_layout )
 	: data_layout_(data_layout), pointer_size_in_bits_( data_layout_.getPointerSizeInBits() )
 {}
 
-ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
+Interpreter::Result Interpreter::ConstexprEvaluate(
 	llvm::Function* const llvm_function,
 	const llvm::ArrayRef<const llvm::Constant*> args )
 {
@@ -108,7 +108,7 @@ ConstexprFunctionEvaluator::Result ConstexprFunctionEvaluator::Evaluate(
 	return result;
 }
 
-ConstexprFunctionEvaluator::ResultGeneric ConstexprFunctionEvaluator::EvaluateGeneric(
+Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 	llvm::Function* const llvm_function,
 	const llvm::ArrayRef<llvm::GenericValue> args )
 {
@@ -120,35 +120,13 @@ ConstexprFunctionEvaluator::ResultGeneric ConstexprFunctionEvaluator::EvaluateGe
 	size_t i= 0u;
 	for( const llvm::Argument& param : llvm_function->args() )
 	{
-		if( param.getType()->isPointerTy() )
-		{
-			if( const auto s_ret_type= param.getParamStructRetType() )
-			{
-				U_ASSERT(i == 0u);
-
-				const size_t s_ret_ptr= stack_.size();
-				const size_t new_stack_size= stack_.size() + size_t( data_layout_.getTypeAllocSize(s_ret_type) );
-				if( new_stack_size >= g_max_data_stack_size )
-				{
-					ReportDataStackOverflow();
-					continue;
-				}
-				stack_.resize( new_stack_size );
-
-				llvm::GenericValue val;
-				val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
-				instructions_map_[ &param ]= std::move(val);
-			}
-			else
-				instructions_map_[ &param ]= args[i];
-		}
-		else
-			instructions_map_[ &param ]= args[i];
+		U_ASSERT( ! param.getType()->isPointerTy() );
+		instructions_map_[ &param ]= args[i];
 
 		++i;
 	}
 
-	ConstexprFunctionEvaluator::ResultGeneric res;
+	Interpreter::ResultGeneric res;
 	res.result= CallFunction( *llvm_function, 0u );
 
 	res.errors= std::move(errors_);
@@ -162,12 +140,12 @@ ConstexprFunctionEvaluator::ResultGeneric ConstexprFunctionEvaluator::EvaluateGe
 	return res;
 }
 
-void ConstexprFunctionEvaluator::RegisterCustomFunction( const llvm::StringRef name, const CustomFunction function )
+void Interpreter::RegisterCustomFunction( const llvm::StringRef name, const CustomFunction function )
 {
 	custom_functions_.insert_or_assign( name, function );
 }
 
-void ConstexprFunctionEvaluator::ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
+void Interpreter::ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
 {
 	const size_t offset= size_t(address);
 	const unsigned char* data_ptr= nullptr;
@@ -179,7 +157,7 @@ void ConstexprFunctionEvaluator::ReadExecutinEngineData( void* const dst, const 
 	std::memcpy( dst, data_ptr, size );
 }
 
-llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Function& llvm_function, const size_t stack_depth )
+llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_function, const size_t stack_depth )
 {
 	if( llvm_function.getBasicBlockList().empty() )
 	{
@@ -290,7 +268,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::CallFunction( const llvm::Functio
 	return llvm::GenericValue();
 }
 
-size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& constant )
+size_t Interpreter::MoveConstantToStack( const llvm::Constant& constant )
 {
 	const auto prev_it= external_constant_mapping_.find( &constant );
 	if( prev_it != external_constant_mapping_.end() )
@@ -317,7 +295,7 @@ size_t ConstexprFunctionEvaluator::MoveConstantToStack( const llvm::Constant& co
 	return stack_offset + g_constants_segment_offset;
 }
 
-void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& constant, const size_t stack_offset )
+void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const size_t stack_offset )
 {
 	// TODO - check big-endian/little-endian correctness.
 
@@ -394,7 +372,7 @@ void ConstexprFunctionEvaluator::CopyConstantToStack( const llvm::Constant& cons
 	else U_ASSERT(false);
 }
 
-llvm::Constant* ConstexprFunctionEvaluator::ReadConstantFromStack( llvm::Type* const type, const size_t value_ptr )
+llvm::Constant* Interpreter::ReadConstantFromStack( llvm::Type* const type, const size_t value_ptr )
 {
 	if( const auto integer_type= llvm::dyn_cast<llvm::IntegerType>(type) )
 	{
@@ -456,7 +434,7 @@ llvm::Constant* ConstexprFunctionEvaluator::ReadConstantFromStack( llvm::Type* c
 	return nullptr;
 }
 
-llvm::GenericValue ConstexprFunctionEvaluator::BuildGEP( const llvm::User* const instruction )
+llvm::GenericValue Interpreter::BuildGEP( const llvm::User* const instruction )
 {
 	U_ASSERT( instruction->getNumOperands() >= 2u );
 
@@ -500,7 +478,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::BuildGEP( const llvm::User* const
 	return new_ptr;
 }
 
-llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const val )
+llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 {
 	llvm::GenericValue res;
 	if( const auto constant_fp= llvm::dyn_cast<llvm::ConstantFP>(val) )
@@ -581,7 +559,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 	return res;
 }
 
-void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const instruction )
+void Interpreter::ProcessAlloca( const llvm::Instruction* const instruction )
 {
 	const auto alloca_instruction= llvm::dyn_cast<llvm::AllocaInst>(instruction);
 	llvm::Type* const element_type= alloca_instruction->getAllocatedType();
@@ -600,7 +578,7 @@ void ConstexprFunctionEvaluator::ProcessAlloca( const llvm::Instruction* const i
 	instructions_map_[ instruction ]= val;
 }
 
-void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const instruction )
+void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
 {
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(0u) );
 
@@ -614,7 +592,7 @@ void ConstexprFunctionEvaluator::ProcessLoad( const llvm::Instruction* const ins
 	instructions_map_[ instruction ]= DoLoad( data_ptr, instruction->getType() );
 }
 
-llvm::GenericValue ConstexprFunctionEvaluator::DoLoad( const void* ptr, llvm::Type* const t )
+llvm::GenericValue Interpreter::DoLoad( const void* ptr, llvm::Type* const t )
 {
 	llvm::GenericValue val;
 	if( t->isIntegerTy() )
@@ -667,7 +645,7 @@ llvm::GenericValue ConstexprFunctionEvaluator::DoLoad( const void* ptr, llvm::Ty
 	return val;
 }
 
-void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const instruction )
+void Interpreter::ProcessStore( const llvm::Instruction* const instruction )
 {
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(1u) );
 
@@ -682,7 +660,7 @@ void ConstexprFunctionEvaluator::ProcessStore( const llvm::Instruction* const in
 	DoStore( data_ptr, GetVal( value_operand ), value_operand->getType() );
 }
 
-void ConstexprFunctionEvaluator::DoStore( void* const ptr, const llvm::GenericValue& val, llvm::Type* const t )
+void Interpreter::DoStore( void* const ptr, const llvm::GenericValue& val, llvm::Type* const t )
 {
 	if( t->isIntegerTy() )
 	{
@@ -738,12 +716,12 @@ void ConstexprFunctionEvaluator::DoStore( void* const ptr, const llvm::GenericVa
 	else U_ASSERT(false);
 }
 
-void ConstexprFunctionEvaluator::ProcessGEP( const llvm::Instruction* const instruction )
+void Interpreter::ProcessGEP( const llvm::Instruction* const instruction )
 {
 	instructions_map_[instruction]= BuildGEP( instruction );
 }
 
-void ConstexprFunctionEvaluator::ProcessCall( const llvm::CallInst* const instruction, const size_t stack_depth )
+void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const size_t stack_depth )
 {
 	const llvm::Value* const calle= instruction->getCalledOperand();
 	const llvm::Function* function= llvm::dyn_cast<llvm::Function>(calle);
@@ -802,7 +780,7 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::CallInst* const instru
 	stack_.resize( prev_stack_size ); // Drop temporary byval arguments.
 }
 
-void ConstexprFunctionEvaluator::ProcessMemmove( const llvm::Instruction* const instruction )
+void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
 {
 	const size_t dst_offset= size_t( GetVal( instruction->getOperand(0u) ).IntVal.getLimitedValue() );
 	const size_t src_offset= size_t( GetVal( instruction->getOperand(1u) ).IntVal.getLimitedValue() );
@@ -820,7 +798,7 @@ void ConstexprFunctionEvaluator::ProcessMemmove( const llvm::Instruction* const 
 	std::memmove( dst_ptr, src_ptr, size );
 }
 
-void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )
+void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )
 {
 	const llvm::GenericValue op= GetVal( instruction->getOperand(0u) );
 
@@ -980,7 +958,7 @@ void ConstexprFunctionEvaluator::ProcessUnaryArithmeticInstruction( const llvm::
 	instructions_map_[instruction]= val;
 }
 
-void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm::Instruction* const instruction )
+void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* const instruction )
 {
 	const llvm::GenericValue op0= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue op1= GetVal( instruction->getOperand(1u) );
@@ -1174,12 +1152,12 @@ void ConstexprFunctionEvaluator::ProcessBinaryArithmeticInstruction( const llvm:
 	instructions_map_[instruction]= val;
 }
 
-void ConstexprFunctionEvaluator::ReportDataStackOverflow()
+void Interpreter::ReportDataStackOverflow()
 {
 	errors_.push_back( "Max data stack size (" + std::to_string( g_max_data_stack_size ) + ") reached");
 }
 
-void ConstexprFunctionEvaluator::ReportGlobalsStackOverflow()
+void Interpreter::ReportGlobalsStackOverflow()
 {
 	errors_.push_back( "Max globals stack size (" + std::to_string( g_max_globals_stack_size ) + ") reached" );
 }

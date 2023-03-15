@@ -5,7 +5,7 @@
 #include <llvm/Support/raw_os_ostream.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../code_builder_lib_common/constexpr_function_evaluator.hpp"
+#include "../code_builder_lib_common/interpreter.hpp"
 
 namespace U
 {
@@ -24,7 +24,7 @@ class ExecutionEngine
 {
 public:
 	explicit ExecutionEngine( std::unique_ptr<llvm::Module> module ): module_( std::move(module) )
-		, evaluator_( module_->getDataLayout() )
+		, interpreter_( module_->getDataLayout() )
 	{}
 
 	llvm::Function* FindFunctionNamed( const llvm::StringRef name )
@@ -39,7 +39,7 @@ public:
 
 	llvm::GenericValue runFunction( llvm::Function* const function, const llvm::ArrayRef<llvm::GenericValue> args )
 	{
-		ConstexprFunctionEvaluator::ResultGeneric res= evaluator_.EvaluateGeneric( function, args );
+		Interpreter::ResultGeneric res= interpreter_.EvaluateGeneric( function, args );
 
 		for (const std::string& error : res.errors )
 			std::cout << error << std::endl;
@@ -49,21 +49,21 @@ public:
 		return std::move(res.result);
 	}
 
-	using CustomFunction= ConstexprFunctionEvaluator::CustomFunction;
+	using CustomFunction= Interpreter::CustomFunction;
 	void RegisterCustomFunction( llvm::StringRef name, CustomFunction function )
 	{
-		evaluator_.RegisterCustomFunction( name, function );
+		interpreter_.RegisterCustomFunction( name, function );
 	}
 
 	// Read data from address space of execution engine.
 	void ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
 	{
-		return evaluator_.ReadExecutinEngineData( dst, address, size );
+		return interpreter_.ReadExecutinEngineData( dst, address, size );
 	}
 
 private:
 	std::unique_ptr<llvm::Module> module_;
-	ConstexprFunctionEvaluator evaluator_;
+	Interpreter interpreter_;
 };
 
 using EnginePtr= std::unique_ptr<ExecutionEngine>;

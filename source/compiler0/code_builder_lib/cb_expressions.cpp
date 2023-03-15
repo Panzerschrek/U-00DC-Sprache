@@ -3390,8 +3390,8 @@ Value CodeBuilder::DoCallFunction(
 		constant_llvm_args.size() == function_as_real_function->arg_size() &&
 		function_type.return_value_type == ValueType::Value && function_type.return_type.ReferencesTagsCount() == 0u )
 	{
-		const ConstexprFunctionEvaluator::Result evaluation_result=
-			constexpr_function_evaluator_.Evaluate( function_as_real_function, constant_llvm_args );
+		const Interpreter::Result evaluation_result=
+			constexpr_function_evaluator_.ConstexprEvaluate( function_as_real_function, constant_llvm_args );
 
 		for( const std::string& error_text : evaluation_result.errors )
 		{
