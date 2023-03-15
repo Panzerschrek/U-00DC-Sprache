@@ -17,25 +17,6 @@ def ConstexprHalt_Test0():
 	assert( errors_list[0].src_loc.line == 8 )
 
 
-def ConstexprFunctionEvaluationError_Test1():
-	c_program_text= """
-		type fn_ptr= fn();
-		struct S{ fn_ptr ptr; }
-		fn constexpr Foo( S s ) : i32
-		{
-			return 0;
-		}
-
-		fn Bar(){}
-		var S constexpr s{ .ptr(Bar) };
-		fn Baz(){  Foo( s );  } // Passing function pointer to constexpr function.
-	"""
-	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ConstexprFunctionEvaluationError" )
-	assert( errors_list[0].src_loc.line == 11 )
-
-
 def ConstexprFunctionEvaluationError_Test3():
 	c_program_text= """
 		fn constexpr Count( u32 x ) : u32

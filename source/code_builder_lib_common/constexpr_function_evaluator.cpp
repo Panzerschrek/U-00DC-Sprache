@@ -565,8 +565,6 @@ llvm::GenericValue ConstexprFunctionEvaluator::GetVal( const llvm::Value* const 
 		}
 		else U_ASSERT(false);
 	}
-	//else if( llvm::dyn_cast<llvm::Function>(val) != nullptr )
-	//	errors_.push_back( "accessing function pointer" );
 	else if( const auto function= llvm::dyn_cast<llvm::Function>(val) )
 		res.IntVal= llvm::APInt( pointer_size_in_bits_, reinterpret_cast<size_t>( function ) );
 	else if( auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
@@ -754,7 +752,7 @@ void ConstexprFunctionEvaluator::ProcessCall( const llvm::CallInst* const instru
 
 	if( function == nullptr )
 	{
-		errors_.push_back( "Calling non-function pointer" );
+		errors_.push_back( "Calling zero functon pointer" );
 		return;
 	}
 
