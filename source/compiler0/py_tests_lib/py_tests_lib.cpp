@@ -13,8 +13,8 @@
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
-#include "../../tests/tests_common.hpp"
 #include "../../tests/execution_engine.hpp"
+#include "../../tests/tests_common.hpp"
 
 namespace U
 {
@@ -146,13 +146,8 @@ PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 		return nullptr;
 	}
 
-	if( print_llvm_asm != 0 )
-	{
-		llvm::raw_os_ostream stream(std::cout);
-		module->print( stream, nullptr );
-	}
 
-	g_current_engine= CreateEngine( std::move(module) );
+	g_current_engine= CreateEngine( std::move(module), print_llvm_asm != 0 );
 	g_current_engine->RegisterCustomFunction( "__U_halt", HaltCalled );
 
 	Py_INCREF(Py_None);

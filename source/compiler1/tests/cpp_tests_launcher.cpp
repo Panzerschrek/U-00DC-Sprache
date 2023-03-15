@@ -6,8 +6,8 @@
 #include <llvm/Support/ManagedStatic.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../../tests/tests_common.hpp"
 #include "../../tests/cpp_tests/tests.hpp"
+#include "../../tests/tests_common.hpp"
 #include  "../launchers_common/funcs_c.hpp"
 
 namespace U

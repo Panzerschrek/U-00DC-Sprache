@@ -10,9 +10,9 @@
 
 #include "../../code_builder_lib_common/code_builder_errors.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../../tests/execution_engine.hpp"
 #include "../../tests/tests_common.hpp"
 #include "../launchers_common/funcs_c.hpp"
-#include "../../tests/execution_engine.hpp"
 
 namespace U
 {
@@ -92,13 +92,7 @@ PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 		return nullptr;
 	}
 
-	if( print_llvm_asm != 0 )
-	{
-		llvm::raw_os_ostream stream(std::cout);
-		module->print( stream, nullptr );
-	}
-
-	g_current_engine= CreateEngine( std::move(module) );
+	g_current_engine= CreateEngine( std::move(module), print_llvm_asm != 0 );
 	g_current_engine->RegisterCustomFunction( "__U_halt", HaltCalled );
 
 	Py_INCREF(Py_None);

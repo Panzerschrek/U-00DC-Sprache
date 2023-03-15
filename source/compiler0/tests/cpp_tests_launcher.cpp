@@ -11,9 +11,8 @@
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
-#include "../../tests/tests_common.hpp"
-
 #include "../../tests/cpp_tests/tests.hpp"
+#include "../../tests/tests_common.hpp"
 
 namespace U
 {
