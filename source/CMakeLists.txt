@@ -72,6 +72,7 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_CODE_BUILDER_LIB Core Target )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	Linker # for linking of multiple llvm modules
 	IPO # for pass manager builder, etc.
+	Passes
 	${LLVM_TARGETS_TO_BUILD}
 	)
 
