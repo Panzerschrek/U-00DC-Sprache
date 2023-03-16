@@ -32,7 +32,7 @@ declare i32 @llvm.coro.size.i32() #2
 ; Function Attrs: nounwind readnone
 declare i64 @llvm.coro.size.i64() #2
 
-define i8* @f(i32 %n) {
+define i8* @f(i32 %n) #3 {
 entry:
   %id = call token @llvm.coro.id(i32 0, i8* null, i8* null, i8* null)
   %size = call i64 @llvm.coro.size.i64()
@@ -63,3 +63,4 @@ suspend:                                          ; preds = %cleanup, %loop
 attributes #0 = { nounwind }
 attributes #1 = { argmemonly nounwind readonly }
 attributes #2 = { nounwind readnone }
+attributes #3 = { presplitcoroutine }
