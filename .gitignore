@@ -17,3 +17,6 @@ CMakeLists.txt.user
 
 # Python cache
 __pycache__
+
+# Directory with temporary stuff (using during work )
+other/
