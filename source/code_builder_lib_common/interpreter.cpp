@@ -201,17 +201,15 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 			break;
 
 		case llvm::Instruction::Br:
+			prev_basic_block= current_basic_block;
+			if( instruction->getNumOperands() == 1u ) // Unconditional
+				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(0u));
+			else
 			{
-				prev_basic_block= current_basic_block;
-				if( instruction->getNumOperands() == 1u ) // Unconditional
-					current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(0u));
-				else
-				{
-					const llvm::GenericValue val= GetVal(instruction->getOperand(0u));
-					current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand( val.IntVal.getBoolValue() ? 2u : 1u ));
-				}
-				instruction= &*current_basic_block->begin();
+				const llvm::GenericValue val= GetVal(instruction->getOperand(0u));
+				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand( val.IntVal.getBoolValue() ? 2u : 1u ));
 			}
+			instruction= &*current_basic_block->begin();
 			continue; // Continue loop without advancing instruction.
 
 		case llvm::Instruction::PHI:
@@ -263,6 +261,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 			}
 		};
 
+		// If this is not a terminal instruction, just advance to next instruction in block.
 		instruction= instruction->getNextNode();
 	}
 	return llvm::GenericValue();
@@ -274,13 +273,15 @@ size_t Interpreter::MoveConstantToStack( const llvm::Constant& constant )
 	if( prev_it != external_constant_mapping_.end() )
 		return prev_it->second;
 
-	if( !constant.getType()->isSized() )
+	llvm::Type* const constant_type= constant.getType();
+
+	if( !constant_type->isSized() )
 		return 0u; // Constant have incomplete type.
 
 	// Use separate stack for constants, because we can push constants to it in any time.
 
 	const size_t stack_offset= globals_stack_.size();
-	const size_t new_stack_size= globals_stack_.size() + size_t( data_layout_.getTypeAllocSize( constant.getType() ) );
+	const size_t new_stack_size= globals_stack_.size() + size_t( data_layout_.getTypeAllocSize( constant_type ) );
 	if( new_stack_size >= g_max_globals_stack_size )
 	{
 		ReportGlobalsStackOverflow();
@@ -545,7 +546,7 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 	}
 	else if( const auto function= llvm::dyn_cast<llvm::Function>(val) )
 		res.IntVal= llvm::APInt( pointer_size_in_bits_, reinterpret_cast<size_t>( function ) );
-	else if( auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
+	else if( const auto constant_expression= llvm::dyn_cast<llvm::ConstantExpr>( val ) )
 	{
 		if( constant_expression->getOpcode() == llvm::Instruction::GetElementPtr )
 			res= BuildGEP( constant_expression );
@@ -599,7 +600,6 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 	{
 		uint64_t buff[4];
 		std::memcpy( buff, ptr, size_t(data_layout_.getTypeStoreSize( t )) );
-
 		val.IntVal= llvm::APInt( t->getIntegerBitWidth() , buff );
 	}
 	else if( t->isFloatTy() )
@@ -609,12 +609,11 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 	else if( t->isPointerTy() )
 	{
 		uint64_t int_ptr;
-		std::memcpy( &int_ptr, ptr, size_t(data_layout_.getTypeAllocSize( t )) );
+		std::memcpy( &int_ptr, ptr, size_t(data_layout_.getTypeAllocSize( t ) ) );
 		val.IntVal= llvm::APInt( 64u, int_ptr );
 	}
-	else if( t->isStructTy() )
+	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(t) )
 	{
-		const auto struct_type= llvm::dyn_cast<llvm::StructType>(t);
 		const uint32_t num_elements= struct_type->getNumElements();
 		const llvm::StructLayout *const struct_layout= data_layout_.getStructLayout(struct_type);
 
@@ -626,9 +625,8 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 					struct_type->getElementType(i));
 
 	}
-	else if( t->isArrayTy() )
+	else if( const auto array_type= llvm::cast<llvm::ArrayType>(t) )
 	{
-		const auto array_type= llvm::cast<llvm::ArrayType>(t);
 		const uint64_t num_elements= array_type->getNumElements();
 		const auto element_type= array_type->getElementType();
 		const uint64_t element_size= data_layout_.getTypeAllocSize(element_type);
@@ -671,10 +669,7 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 		}
 		else if( t->getIntegerBitWidth() % 64u == 0 )
 			std::memcpy( ptr, val.IntVal.getRawData(), t->getIntegerBitWidth() / 8u );
-		else
-		{
-			U_ASSERT(false); // Not implemented yet.
-		}
+		else U_ASSERT(false); // Not implemented yet.
 	}
 	else if( t->isFloatTy() )
 		std::memcpy( ptr, &val.FloatVal, size_t(data_layout_.getTypeAllocSize( t )) );
@@ -685,9 +680,8 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 		const uint64_t int_ptr= val.IntVal.getLimitedValue();
 		std::memcpy( ptr, &int_ptr, size_t(data_layout_.getTypeAllocSize( t )) );
 	}
-	else if( t->isStructTy() )
+	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(t) )
 	{
-		const auto struct_type= llvm::dyn_cast<llvm::StructType>(t);
 		const uint32_t num_elements= struct_type->getNumElements();
 		const llvm::StructLayout *const struct_layout= data_layout_.getStructLayout(struct_type);
 
@@ -699,9 +693,8 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 				struct_type->getElementType(i));
 
 	}
-	else if( t->isArrayTy() )
+	else if( const auto array_type= llvm::cast<llvm::ArrayType>(t) )
 	{
-		const auto array_type= llvm::cast<llvm::ArrayType>(t);
 		const uint64_t num_elements= array_type->getNumElements();
 		const auto element_type= array_type->getElementType();
 		const uint64_t element_size= data_layout_.getTypeAllocSize(element_type);
@@ -801,10 +794,11 @@ void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
 
 void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )
 {
-	const llvm::GenericValue op= GetVal( instruction->getOperand(0u) );
+	llvm::Value* const operand0= instruction->getOperand(0u);
+	const llvm::GenericValue op= GetVal( operand0 );
 
 	llvm::Type* const dst_type= instruction->getType();
-	llvm::Type* const src_type= instruction->getOperand(0u)->getType();
+	llvm::Type* const src_type= operand0->getType();
 	llvm::GenericValue val;
 	switch(instruction->getOpcode())
 	{
@@ -1078,21 +1072,19 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 
 	case llvm::Instruction::FRem:
+		if( type->isFloatTy() )
 		{
-			if( type->isFloatTy() )
-			{
-				llvm::APFloat result_val(op0.FloatVal);
-				result_val.mod( llvm::APFloat(op1.FloatVal));
-				val.FloatVal= result_val.convertToFloat();
-			}
-			else if( type->isDoubleTy() )
-			{
-				llvm::APFloat result_val(op0.DoubleVal);
-				result_val.mod( llvm::APFloat(op1.DoubleVal) );
-				val.DoubleVal= result_val.convertToDouble();
-			}
-			else U_ASSERT(false);
+			llvm::APFloat result_val(op0.FloatVal);
+			result_val.mod( llvm::APFloat(op1.FloatVal));
+			val.FloatVal= result_val.convertToFloat();
 		}
+		else if( type->isDoubleTy() )
+		{
+			llvm::APFloat result_val(op0.DoubleVal);
+			result_val.mod( llvm::APFloat(op1.DoubleVal) );
+			val.DoubleVal= result_val.convertToDouble();
+		}
+		else U_ASSERT(false);
 		break;
 
 	case llvm::Instruction::ICmp:
