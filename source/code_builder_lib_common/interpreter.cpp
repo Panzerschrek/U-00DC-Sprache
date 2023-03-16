@@ -148,7 +148,7 @@ void Interpreter::RegisterCustomFunction( const llvm::StringRef name, const Cust
 void Interpreter::ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
 {
 	const size_t offset= size_t(address);
-	const unsigned char* data_ptr= nullptr;
+	const std::byte* data_ptr= nullptr;
 	if( offset >= g_constants_segment_offset )
 		data_ptr= globals_stack_.data() + ( address - g_constants_segment_offset );
 	else
@@ -583,7 +583,7 @@ void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(0u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	const unsigned char* data_ptr= nullptr;
+	const std::byte* data_ptr= nullptr;
 	if( offset >= g_constants_segment_offset )
 		data_ptr= globals_stack_.data() + ( offset - g_constants_segment_offset );
 	else
@@ -592,7 +592,7 @@ void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
 	instructions_map_[ instruction ]= DoLoad( data_ptr, instruction->getType() );
 }
 
-llvm::GenericValue Interpreter::DoLoad( const void* ptr, llvm::Type* const t )
+llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const t )
 {
 	llvm::GenericValue val;
 	if( t->isIntegerTy() )
@@ -622,7 +622,7 @@ llvm::GenericValue Interpreter::DoLoad( const void* ptr, llvm::Type* const t )
 		for (uint32_t i= 0; i < num_elements; ++i)
 			val.AggregateVal[i]=
 				DoLoad(
-					reinterpret_cast<const char*>(ptr) + struct_layout->getElementOffset(i),
+					ptr + struct_layout->getElementOffset(i),
 					struct_type->getElementType(i));
 
 	}
@@ -637,7 +637,7 @@ llvm::GenericValue Interpreter::DoLoad( const void* ptr, llvm::Type* const t )
 		for( uint64_t i= 0; i < num_elements; ++i)
 			val.AggregateVal[i]=
 				DoLoad(
-					reinterpret_cast<const char*>(ptr)+ i * element_size,
+					ptr+ i * element_size,
 					element_type );
 	}
 	else U_ASSERT(false);
@@ -650,7 +650,7 @@ void Interpreter::ProcessStore( const llvm::Instruction* const instruction )
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(1u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	unsigned char* data_ptr= nullptr;
+	std::byte* data_ptr= nullptr;
 	if( offset >= g_constants_segment_offset )
 		data_ptr= globals_stack_.data() + ( offset - g_constants_segment_offset );
 	else
@@ -660,7 +660,7 @@ void Interpreter::ProcessStore( const llvm::Instruction* const instruction )
 	DoStore( data_ptr, GetVal( value_operand ), value_operand->getType() );
 }
 
-void Interpreter::DoStore( void* const ptr, const llvm::GenericValue& val, llvm::Type* const t )
+void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, llvm::Type* const t )
 {
 	if( t->isIntegerTy() )
 	{
@@ -694,7 +694,7 @@ void Interpreter::DoStore( void* const ptr, const llvm::GenericValue& val, llvm:
 		U_ASSERT( val.AggregateVal.size() == num_elements );
 		for (uint32_t i= 0; i < num_elements; ++i)
 			DoStore(
-				reinterpret_cast<char*>(ptr) + struct_layout->getElementOffset(i),
+				ptr + struct_layout->getElementOffset(i),
 				val.AggregateVal[i],
 				struct_type->getElementType(i));
 
@@ -709,7 +709,7 @@ void Interpreter::DoStore( void* const ptr, const llvm::GenericValue& val, llvm:
 		U_ASSERT( val.AggregateVal.size() == num_elements );
 		for( uint64_t i= 0; i < num_elements; ++i)
 				DoStore(
-					reinterpret_cast<char*>(ptr)+ i * element_size,
+					ptr + i * element_size,
 					val.AggregateVal[i],
 					element_type );
 	}
@@ -787,11 +787,11 @@ void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
 	const size_t src_offset= size_t( GetVal( instruction->getOperand(1u) ).IntVal.getLimitedValue() );
 	const size_t size= size_t( GetVal( instruction->getOperand(2u) ).IntVal.getLimitedValue() );
 
-	unsigned char* const dst_ptr=
+	std::byte* const dst_ptr=
 		( dst_offset >= g_constants_segment_offset )
 			? ( globals_stack_.data() + ( dst_offset - g_constants_segment_offset ) )
 			: ( stack_.data() + dst_offset );
-	const unsigned char* const src_ptr=
+	const std::byte* const src_ptr=
 		( src_offset >= g_constants_segment_offset )
 			? ( globals_stack_.data() + ( src_offset - g_constants_segment_offset ) )
 			: ( stack_.data() + src_offset );

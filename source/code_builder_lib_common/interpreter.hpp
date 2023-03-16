@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/StringMap.h>
@@ -79,10 +80,10 @@ private:
 	void ProcessAlloca( const llvm::Instruction* instruction );
 
 	void ProcessLoad( const llvm::Instruction* instruction );
-	llvm::GenericValue DoLoad( const void* ptr, llvm::Type* t );
+	llvm::GenericValue DoLoad( const std::byte* ptr, llvm::Type* t );
 
 	void ProcessStore( const llvm::Instruction* instruction );
-	void DoStore( void* ptr, const llvm::GenericValue& val, llvm::Type* t );
+	void DoStore( std::byte* ptr, const llvm::GenericValue& val, llvm::Type* t );
 
 	void ProcessGEP( const llvm::Instruction* instruction );
 	void ProcessCall( const llvm::CallInst* instruction, size_t stack_depth );
@@ -101,8 +102,8 @@ private:
 	const uint32_t pointer_size_in_bits_;
 
 	InstructionsMap instructions_map_;
-	std::vector<unsigned char> stack_;
-	std::vector<unsigned char> globals_stack_;
+	std::vector<std::byte> stack_;
+	std::vector<std::byte> globals_stack_;
 
 	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
 
