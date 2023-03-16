@@ -34,6 +34,8 @@ declare i64 @llvm.coro.size.i64() #2
 
 define i8* @f(i32 %n) #3 {
 entry:
+  %n_addr= alloca i32
+  store i32 %n, i32* %n_addr
   %id = call token @llvm.coro.id(i32 0, i8* null, i8* null, i8* null)
   %size = call i64 @llvm.coro.size.i64()
   %alloc = call i8* @malloc(i64 %size)
@@ -41,8 +43,9 @@ entry:
   br label %loop
 
 loop:                                             ; preds = %loop, %entry
-  %n.val = phi i32 [ %n, %entry ], [ %inc, %loop ]
+  %n.val = load i32, i32* %n_addr
   %inc = add nsw i32 %n.val, 1
+  store i32 %inc, i32* %n_addr
   call void @print(i32 %n.val)
   %0 = call i8 @llvm.coro.suspend(token none, i1 false)
   switch i8 %0, label %suspend [
