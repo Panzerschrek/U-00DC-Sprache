@@ -25,6 +25,12 @@
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/GlobalDCE.h>
 #include <llvm/Transforms/IPO/PassManagerBuilder.h>
+
+#include <llvm/IR/PassManager.h>
+#include <llvm/Transforms/Scalar/LoopPassManager.h>
+#include <llvm/Analysis/CGSCCPassManager.h>
+#include <llvm/Passes/PassBuilder.h>
+
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib_common/assert.hpp"
@@ -741,49 +747,86 @@ int Main( int argc, const char* argv[] )
 	// Create optimization passes.
 	if( optimization_level > 0u || size_optimization_level > 0u )
 	{
-		llvm::legacy::FunctionPassManager function_pass_manager( result_module.get() );
-
-		// Setup target-dependent optimizations.
-		pass_manager.add( llvm::createTargetTransformInfoWrapperPass( target_machine->getTargetIRAnalysis() ) );
-
+		const bool use_new_pass_manager= true;
+		if( use_new_pass_manager )
 		{
-			llvm::PassManagerBuilder pass_manager_builder;
-			pass_manager_builder.OptLevel = optimization_level;
-			pass_manager_builder.SizeLevel = size_optimization_level;
+			// Create the analysis managers.
+			llvm::LoopAnalysisManager loop_analysis_manager;
+			llvm::FunctionAnalysisManager function_analysis_manager;
+			llvm::CGSCCAnalysisManager cg_analysis_manager;
+			llvm::ModuleAnalysisManager module_analysis_manager;
 
-			if( optimization_level == 0u )
-				pass_manager_builder.Inliner= nullptr;
-			else
-				pass_manager_builder.Inliner= llvm::createFunctionInliningPass( optimization_level, size_optimization_level, false );
+			// Create the new pass manager builder.
+			// Take a look at the PassBuilder constructor parameters for more
+			// customization, e.g. specifying a TargetMachine or various debugging
+			// options.
+			llvm::PassBuilder pass_builder;
 
-			// vectorization/unroll is same as in "opt"
-			pass_manager_builder.DisableUnrollLoops= optimization_level == 0;
-			pass_manager_builder.LoopVectorize= optimization_level > 1 && size_optimization_level < 2;
-			pass_manager_builder.SLPVectorize= optimization_level > 1 && size_optimization_level < 2;
+			// Register all the basic analyses with the managers.
+			pass_builder.registerModuleAnalyses(module_analysis_manager);
+			pass_builder.registerCGSCCAnalyses(cg_analysis_manager);
+			pass_builder.registerFunctionAnalyses(function_analysis_manager);
+			pass_builder.registerLoopAnalyses(loop_analysis_manager);
+			pass_builder.crossRegisterProxies(
+				loop_analysis_manager,
+					function_analysis_manager,
+					cg_analysis_manager,
+					module_analysis_manager);
 
-			// It's fine to merge functions in Ü because we have no guarantee for different addresses for diffrerent functions.
-			pass_manager_builder.MergeFunctions= true;
+			// Create the pass manager.
+			llvm::ModulePassManager module_pass_manager=
+				pass_builder.buildPerModuleDefaultPipeline(
+					llvm::OptimizationLevel::O2);
 
-			target_machine->adjustPassManager(pass_manager_builder);
-
-			if (llvm::TargetPassConfig* const target_pass_config= static_cast<llvm::LLVMTargetMachine &>(*target_machine).createPassConfig(pass_manager))
-				pass_manager.add(target_pass_config);
-
-			pass_manager_builder.populateFunctionPassManager(function_pass_manager);
-			pass_manager_builder.populateModulePassManager(pass_manager);
+			// Optimize the IR!
+			module_pass_manager.run( *result_module, module_analysis_manager );
 		}
+		else
+		{
+			llvm::legacy::FunctionPassManager function_pass_manager( result_module.get() );
 
-		{ // Remove unused functions, before run optimizations for them.
-			llvm::ModuleAnalysisManager mm;
-			llvm::GlobalDCEPass pass;
-			pass.run(*result_module, mm);
+			// Setup target-dependent optimizations.
+			pass_manager.add( llvm::createTargetTransformInfoWrapperPass( target_machine->getTargetIRAnalysis() ) );
+
+			{
+				llvm::PassManagerBuilder pass_manager_builder;
+				pass_manager_builder.OptLevel = optimization_level;
+				pass_manager_builder.SizeLevel = size_optimization_level;
+
+				if( optimization_level == 0u )
+					pass_manager_builder.Inliner= nullptr;
+				else
+					pass_manager_builder.Inliner= llvm::createFunctionInliningPass( optimization_level, size_optimization_level, false );
+
+				// vectorization/unroll is same as in "opt"
+				pass_manager_builder.DisableUnrollLoops= optimization_level == 0;
+				pass_manager_builder.LoopVectorize= optimization_level > 1 && size_optimization_level < 2;
+				pass_manager_builder.SLPVectorize= optimization_level > 1 && size_optimization_level < 2;
+
+				// It's fine to merge functions in Ü because we have no guarantee for different addresses for diffrerent functions.
+				pass_manager_builder.MergeFunctions= true;
+
+				target_machine->adjustPassManager(pass_manager_builder);
+
+				if (llvm::TargetPassConfig* const target_pass_config= static_cast<llvm::LLVMTargetMachine &>(*target_machine).createPassConfig(pass_manager))
+					pass_manager.add(target_pass_config);
+
+				pass_manager_builder.populateFunctionPassManager(function_pass_manager);
+				pass_manager_builder.populateModulePassManager(pass_manager);
+			}
+
+			{ // Remove unused functions, before run optimizations for them.
+				llvm::ModuleAnalysisManager mm;
+				llvm::GlobalDCEPass pass;
+				pass.run(*result_module, mm);
+			}
+
+			// Run per-function optimizations.
+			function_pass_manager.doInitialization();
+			for( llvm::Function& func : *result_module )
+				function_pass_manager.run(func);
+			function_pass_manager.doFinalization();
 		}
-
-		// Run per-function optimizations.
-		function_pass_manager.doInitialization();
-		for( llvm::Function& func : *result_module )
-			function_pass_manager.run(func);
-		function_pass_manager.doFinalization();
 	}
 
 	switch( Options::file_type )
