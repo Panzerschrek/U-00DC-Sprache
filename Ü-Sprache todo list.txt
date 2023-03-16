@@ -5,9 +5,9 @@ Delete the features from the list as soon as they are implemented.
 General:
 *) Anonymous (module-local) symbols - functions, classes, variables.
 *) build-in "for" for array types.
-*) Accessing overloaded operators directly, take pointers to overloaded operators.
 *) switch-case
 *) break/continue to outer loop.
+*) Use smallest possible underlaying type for enums (mostly "u8").
 *) "Disassembly operator" - declare variables with initializer as members of value of structure type.
 *) Function to function pointer assignment
 *) Functions references info in "typeinfo".
@@ -16,8 +16,6 @@ General:
 *) Lambdas.
 *) Coroutines.
 *) Continious initializer for arrays
-*) Function pointers inside constexpr functions
-*) Reference result of constexpr function evaluation
 *) More advanced macros - more context, elements, string manipulations
 *) Some code customization mechanism (like preprocessor directives and ifdef/endif in C++).
 *) debug_assert
@@ -40,14 +38,12 @@ Standart library:
 *) Iterators library with transformations/operations (map, filter, reduce, etc.)
 *) Time library - get time functions, timers
 *) File library
+*) Console input/output library
+*) Formatting library
 *) More type traits
 *) More math functions
 
 Compiler:
-*) Fix non-dethermenistic result of inline functions caused by different addresses of functions with "private" linkage
-	in different compilation units.
-*) Fix non-dethermenistic compilation result caused by non-dethermenistic address of global constant variables,
-	including "typeinfo" variables.
 *) Imporve TBAA - use struct path-based TBAA.
 *) Pass/return by-value composite values containing more than one scalar inside.
 	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,
@@ -57,10 +53,8 @@ Compiler:
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
 *) Prevent execution of constexpr functions with errors
-*) Return value optimization
 *) Precompiled modules
 *) More calling conventions (including platform-dependent)
-*) Rework of "Value" class
 
 Compiler1:
 
