@@ -731,7 +731,12 @@ int Main( int argc, const char* argv[] )
 		llvm::CGSCCAnalysisManager cg_analysis_manager;
 		llvm::ModuleAnalysisManager module_analysis_manager;
 
-		llvm::PassBuilder pass_builder;
+		llvm::PipelineTuningOptions tuning_options;
+		tuning_options.LoopUnrolling= optimization_level.getSpeedupLevel() > 0;
+		tuning_options.LoopVectorization= optimization_level.getSpeedupLevel() > 1 && optimization_level.getSizeLevel() < 2;
+		tuning_options.SLPVectorization= optimization_level.getSpeedupLevel() > 1 && optimization_level.getSizeLevel() < 2;
+
+		llvm::PassBuilder pass_builder( target_machine.get(), tuning_options );
 
 		target_machine->registerPassBuilderCallbacks( pass_builder );
 
