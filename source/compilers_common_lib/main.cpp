@@ -759,7 +759,10 @@ int Main( int argc, const char* argv[] )
 			module_analysis_manager);
 
 		// Create the pass manager.
-		llvm::ModulePassManager module_pass_manager= pass_builder.buildPerModuleDefaultPipeline( optimization_level );
+		llvm::ModulePassManager module_pass_manager=
+			optimization_level == llvm::OptimizationLevel::O0
+				? pass_builder.buildO0DefaultPipeline( optimization_level )
+				: pass_builder.buildPerModuleDefaultPipeline( optimization_level );
 
 		// Optimize the IR!
 		module_pass_manager.run( *result_module, module_analysis_manager );
