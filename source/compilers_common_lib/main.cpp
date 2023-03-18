@@ -28,8 +28,6 @@
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/GlobalDCE.h>
 #include <llvm/Transforms/IPO/Internalize.h>
-#include <llvm/Transforms/IPO/PassManagerBuilder.h>
-#include <llvm/Transforms/Scalar/LoopPassManager.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib_common/assert.hpp"
