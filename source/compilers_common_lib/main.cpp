@@ -726,11 +726,6 @@ int Main( int argc, const char* argv[] )
 
 	// Create and run optimization passes.
 	{
-		llvm::LoopAnalysisManager loop_analysis_manager;
-		llvm::FunctionAnalysisManager function_analysis_manager;
-		llvm::CGSCCAnalysisManager cg_analysis_manager;
-		llvm::ModuleAnalysisManager module_analysis_manager;
-
 		llvm::PipelineTuningOptions tuning_options;
 		tuning_options.LoopUnrolling= optimization_level.getSpeedupLevel() > 0;
 		tuning_options.LoopVectorization= optimization_level.getSpeedupLevel() > 1 && optimization_level.getSizeLevel() < 2;
@@ -738,21 +733,11 @@ int Main( int argc, const char* argv[] )
 
 		llvm::PassBuilder pass_builder( target_machine.get(), tuning_options );
 
-		target_machine->registerPassBuilderCallbacks( pass_builder );
-
-		pass_builder.registerPipelineStartEPCallback(
-			[&](llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel o )
-		{
-			// Remove unused functions, before run optimizations for them.
-			if( o.getSizeLevel() > 0 )
-				module_pass_manager.addPass( llvm::GlobalDCEPass() );
-
-			// Internalize (if needed).
-			if( Options::internalize )
-				module_pass_manager.addPass( llvm::InternalizePass( MustPreserveGlobalValue ) );
-		} );
-
 		// Register all the basic analyses with the managers.
+		llvm::LoopAnalysisManager loop_analysis_manager;
+		llvm::FunctionAnalysisManager function_analysis_manager;
+		llvm::CGSCCAnalysisManager cg_analysis_manager;
+		llvm::ModuleAnalysisManager module_analysis_manager;
 		pass_builder.registerModuleAnalyses(module_analysis_manager);
 		pass_builder.registerCGSCCAnalyses(cg_analysis_manager);
 		pass_builder.registerFunctionAnalyses(function_analysis_manager);
@@ -762,6 +747,19 @@ int Main( int argc, const char* argv[] )
 			function_analysis_manager,
 			cg_analysis_manager,
 			module_analysis_manager);
+
+		// Add callbacks for early passes creation.
+		pass_builder.registerPipelineStartEPCallback(
+			[](llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel o )
+		{
+			// Remove unused functions, before run optimizations for them.
+			if( o.getSizeLevel() > 0 )
+				module_pass_manager.addPass( llvm::GlobalDCEPass() );
+
+			// Internalize (if needed).
+			if( Options::internalize )
+				module_pass_manager.addPass( llvm::InternalizePass( MustPreserveGlobalValue ) );
+		} );
 
 		// Create the pass manager.
 		llvm::ModulePassManager module_pass_manager=
