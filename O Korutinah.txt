@@ -1,0 +1,65 @@
+Planirujetsä realizovatj v jazyke t. n. korutiny.
+Po suti eto dva klassa ocenj blizkih objektov - generatory i asinhronnyje funkçii.
+Generatory eto objekty, kotoryje v osnovnom vyglädät kak funkçii, kotoryje sozdajutsä vyzovom t. n. funkçii-generatora i kotoryje mogut bytj mnogokratno vyzvany s vozvrascenijem rezuljtata.
+Asinhronnyje funkçii, eto objekty, kotoryje v osnovnom vyglädät kak funkçii, kotoryje sozdajutsä vyzovom t. n. asinhronnoj-funkçii i kotoryje možno vyzyvatj do teh por, poka oni ne vernut rezuljtat.
+
+Realizovatj eto planirujetsä na osnove funkçionala iz "llvm" (https://releases.llvm.org/15.0.0/docs/Coroutines.html).
+Pri etom poka cto plonirujetsä ispoljzovatj raznovidnostj korutin tipa "Switched-Resume Lowering".
+Vkratçe sutj sledujuscaja: frontend kompilätora sozdajot funkçiju-korutinu (pomecennuju speçialjnym obrazom).
+V nej kompilätor vstavläjet raznoobraznyje služebnyje vyzovy "llvm" funkçij dlä korutin.
+Pri vyzove tože ispoljzujutsä opredelönnyje funkçii iz "llvm".
+Tip korutiny vnutri eto prosto ukazatelj.
+Pamätj pod sostojanije korutiny (sobstvennyj stek) vydeläjetsä iz kuci, no v nekotoryh slucajah optimizator "llvm" možet zamenitj allokaçiju iz kuci stekovoj allokaçijej.
+
+Korutiny dolžny sozdavatjsä kak funkçija s klücevym slovom vrode "generator" ili "async" v objavlenii.
+
+V "async" funkçijah dostupen obycnyj "return", "await" bez argumentov - dlä priostanovki ispolnenija i "await" s argumentom dlä ožidanija vypolnenija drugoj "async" funkçii (po suti s proverkoj i uslovnym preryvanijem sebä).
+
+V generatorah dostupen operator "yield" so znacenijem dlä vozvrata ocerednogo znacenija. "return" dostupen toljko pustoj.
+Hotä, možno ispoljzovatj i nepustoj "return" dlä slucajev, kogda nužno proizvesti posledneje znacenije i zaveršitjsä.
+
+Argumenty kompozitnyh tipov, peredavajemyh po-zanaceniju s ispoljzovanijem skrytoj ssylki nado budet kopirovatj na stek.
+
+Dolžny suscestvovatj tipy dlä objektov korutin, pri cöm ne unikaljnyje, ctoby možno bylo, naprimer v odnu peremennuju sohranitj razlicnyje korutiny, ne pribegaja k šablonnoj virtualizaçii.
+Tipy pri etom dolžny razlicatjsä po tipu (i modifikatoram) vozvrascajemogo znacenija, a takže ssylocnyh effektov.
+No ne dolžno bytj razlicija (otcasti) po tipam argumentov, ibo po suti eto vesgo lišj argumenty konstruktora.
+Vozmožno, stoit vvseti v jazyk kakuju-to konstrukçiju dlä sozdanija imeni korutiny.
+Poka ne ponätno, dolžen li vnutri kompilätora suschestvovatj otdeljnyj vid tipa dlä korutin, ili možno budet scitatj korutiny klassami.
+Objekty korutin samo soboj nekopirujemy.
+U korutin estj destruktor, kotoryj vnutri vyzyvajet "llvm.coro.destroy", cto kak nado vyzyvajet destruktory vseh lokaljnyh peremennyh.
+
+Odnoj iz poka cto nerešönnyh problem javläjetsä kontrolj ssylok dlä korutin.
+Korutina so ssylocnymi argumentami po suti javläjetsä objektom, logiceski hranäscim ssylki vnutri.
+Jesli korutina vozvrascajet ssylki, to oni ukazyvajut na vnutrennij uzel grafa ssylok objekta korutiny.
+Problema zaklücajetsä v tom, cto objekty hranät v sebe poka cto toljko odin uzel grafa ssylok, k kotoromu budut priväzany vse ssylocnyje argumenty korutiny.
+Iz-za etogo, naprimer, ssylocnyj rezuljtat "async" funkçii budet ukazyvatj na vse ssylocnyje argumenty, cto ne sovsem tocno v sravnenii s vyzovom obycnoj funkçii.
+Analogicnaja problema, kstati, možet bytj i s lämbdami.
+Po-horošemu problemu možno rešitj vvedenijem množestva vnutrennih ssylocnyh uzlov.
+No eto rešenije ocenj složnoje i zatragivajet ocenj mnogo aspektov jazyka i kompilätora, posemu täželo realizujemo.
+Vozmožno, pervonacaljno možno budet realizovatj korutiny bez etih izmenenij.
+Vozmožno, cerez vvedenije kostylej vrode otdeljnoj obrabotki vyzova "async" funkçii s "await".
+
+Iz generatorov v prinçipe možno vozvrascatj ssylki na lokaljnyje peremennyje.
+Logicestki tut problemy netu, kolj skoro peremennaja pereživajet "yield", cerez kotoryj ona vozvroscena.
+Logicceski takaja ssylka scitajetsä ssylkoj na objekt korutiny.
+No takaja ssylka dolžna budeet umeretj do sledujuscego vyzova generatora (kompilätor dolžen eto prokontrolirovatj).
+Po suti vedj ocerednoj vyzov generatora eto vyzov metoda s "mut this".
+
+Kak rabotatj s korutinoj posle sozdanija, jescö ne vpolne ponätno.
+Odin iz variantov - na urovne kompilätora zavoracivatj rezuljtat v "ust::optional" ili "ust::optional_ref", dlä signalizaçii otsutstvija znacenija v nezaveršivšihsä "async" funkçijah i zaveršivšihsä generatorah.
+No eto ne ocenj horošo, t. k. sozdajot zavisimostj kompilätora ot standartnoj biblioteki.
+Aljternativnyj variant - vvesti v jazyk speçialjnyj operator, kotoryj by vyzyval korutinu i proveräl "llvm.coro.done", posle cego by polucal ssylku na rezuljtat i peredaval by upravlenije ukazannomu bloku.
+Po suti eto nekaja raznovidnostj operatora "if".
+Nazvatj možno bylo by takoj operator kak "coro_advance", "generator_advance", "async_advance" i t. d.
+Ctenije rezuljtata vo vseh slucajah osuscestvläjetsä cerez "llvm.coro.promise".
+
+Operator "await" bez argumenta rabotajet ocenj prosto - eto po suti vyzov "llvm.coro.suspend".
+Operator "await" so znacenijem vyzyvajet vozobnovlenije korutiny-znacenija, i jesli ta jescö ne zaveršilasj, vyzyvajet "llvm.coro.suspend", posle že vozobnovlenija povtoräjet çikl, poka ta korutina ne vernöt znacenije.
+"return" v "async" funkçijah realizujetsä kak sohranenije rezuljtata v "promise" znacenije i vyzov "llvm.coro.suspend" s "final" flagom.
+
+Operator "yield" v generatorah realizujetsä cerez sohranenije rezuljtata v "promise" i vyzov "llvm.coro.suspend".
+"return" eto tože vyzov "llvm.coro.suspend", no s "final" flagom.
+
+Stoit obdumatj vnutrennüju realizaçiju "async" funkçij, otlicnuju ot "Switched-Resume Lowering".
+Naprimer dlä slucajev, kogda v kode idöt rabota s kakim-nibudj asinhronnym sistemnym "API", kogda nado ždatj signal ot sistemy, vmesto togo, ctoby vpustuju krutitj çikly "await".
+Prosto ždatj v "async" funkçii vypolnenija sistemnogo vyzova ožidanija eto ne effektivno, ibo na etom ožidanii budet tormozitj vesj potok, ispolnäjuscij asinhronnyje funkçii, vmesto togo, naprimer, ctoby vypolnätj vmesto etogo drugije asinhronnyje funkçii.
