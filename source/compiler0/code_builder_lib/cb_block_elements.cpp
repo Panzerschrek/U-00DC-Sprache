@@ -590,11 +590,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.variables_state.RemoveNode( return_value_node );
 
 	if( function_context.destructor_end_block != nullptr )
-		function_context.llvm_ir_builder.CreateRetVoid();
+	{
+		// In explicit destructor, break to block with destructor calls for class members.
+		function_context.llvm_ir_builder.CreateBr(function_context.destructor_end_block);
+	}
 	else if( ret != nullptr )
+	{
+		// Return simple scalar - fundamental type value, reference, pointer.
 		function_context.llvm_ir_builder.CreateRet(ret);
+	}
 	else
+	{
+		// Return "void" or return value via "s_ret".
 		function_context.llvm_ir_builder.CreateRetVoid();
+	}
 
 	return block_info;
 }
