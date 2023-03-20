@@ -551,6 +551,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		}
 		else
 		{
+			const VariablePtr return_value_lock=
+				std::make_shared<Variable>(
+					*function_context.return_type,
+					function_context.function_type.return_value_type,
+					Variable::Location::Pointer,
+					"return value lock" );
+			function_context.variables_state.AddNode( return_value_lock );
+			// Setup references in order to catch errors, when referene to local variable is returned inside struct.
+			SetupReferencesInCopyOrMove( function_context, return_value_lock, expression_result, names.GetErrors(), return_operator.src_loc_ );
+
+			llvm::Value* ret= nullptr;
 			if( expression_result->value_type == ValueType::Value )
 			{
 				function_context.variables_state.MoveNode( expression_result );
@@ -558,33 +569,23 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
 				{
 					U_ASSERT( function_context.s_ret_ == nullptr );
-					llvm::Value* const ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expression_result->llvm_value );
-
-					if( expression_result->location == Variable::Location::Pointer )
-						CreateLifetimeEnd( function_context, expression_result->llvm_value );
-
-					CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-					CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-					function_context.llvm_ir_builder.CreateRet(ret);
+					ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expression_result->llvm_value );
 				}
 				else
 				{
 					U_ASSERT( function_context.s_ret_ != nullptr );
 					CopyBytes( function_context.s_ret_, expression_result->llvm_value, *function_context.return_type, function_context );
-
-					if( expression_result->location == Variable::Location::Pointer )
-						CreateLifetimeEnd( function_context, expression_result->llvm_value );
-
-					CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-					CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-					function_context.llvm_ir_builder.CreateRetVoid();
 				}
+
+				if( expression_result->location == Variable::Location::Pointer )
+					CreateLifetimeEnd( function_context, expression_result->llvm_value );
 			}
 			else
 			{
 				if( !expression_result->type.IsCopyConstructible() )
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), return_operator.src_loc_, expression_result->type );
+					function_context.variables_state.RemoveNode( return_value_lock );
 					return block_info;
 				}
 
@@ -601,13 +602,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						*function_context.return_type,
 						function_context );
 
-					llvm::Value* const ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, temp );
+					ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, temp );
 
 					CreateLifetimeEnd( function_context, temp );
-
-					CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-					CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-					function_context.llvm_ir_builder.CreateRet(ret);
 				}
 				else
 				{
@@ -618,12 +615,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ),
 						*function_context.return_type,
 						function_context );
-
-					CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-					CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-					function_context.llvm_ir_builder.CreateRetVoid();
 				}
 			}
+
+			CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
+			CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
+			function_context.variables_state.RemoveNode( return_value_lock );
+
+			ret == nullptr
+				? function_context.llvm_ir_builder.CreateRetVoid()
+				: function_context.llvm_ir_builder.CreateRet(ret);
+
 		}
 	}
 
