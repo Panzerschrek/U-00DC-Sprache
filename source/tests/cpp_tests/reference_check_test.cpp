@@ -457,6 +457,29 @@ U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_3 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( ReferenceCheckTest_ReturnReferenceToLocalVariable_4 )
+{
+	// Return of reference to stack variable, passed inside a struct.
+	static const char c_program_text[]=
+	R"(
+		struct S{ i32& x; }
+		fn GetS() : S;
+		fn DoPollution( S &mut x'a', i32 &'b y ) ' a <- b ';
+		fn Foo() : S
+		{
+			var S mut s= GetS();
+			var i32 x= 0;
+			DoPollution( s, x );
+			return move(s);
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::DestroyedVariableStillHaveReferences, 10u ) );
+}
+
 U_TEST( ReferenceCheckTest_ReturnReferenceToValueArgument_0 )
 {
 	static const char c_program_text[]=

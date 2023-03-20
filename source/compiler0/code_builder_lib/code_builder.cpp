@@ -1420,25 +1420,13 @@ Type CodeBuilder::BuildFuncCode(
 	// In other case, we have "return" in all branches and destructors call before each "return".
 	if( !block_build_info.have_terminal_instruction_inside )
 	{
-		if( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value )
-		{
-			// Manually generate "return" for void-return functions.
-			CallDestructors( args_storage, function_names, function_context, block.end_src_loc_ );
-			CheckReferencesPollutionBeforeReturn( function_context, function_names.GetErrors(), block.end_src_loc_ );
-
-			if( function_context.destructor_end_block == nullptr )
-				function_context.llvm_ir_builder.CreateRetVoid();
-			else
-			{
-				// In explicit destructor, break to block with destructor calls for class members.
-				function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
-			}
-		}
-		else
+		// Manually generate "return" for void-return functions.
+		if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 		{
 			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc_ );
 			return function_type.return_type;
 		}
+		BuildEmptyReturn( function_names, function_context, block.end_src_loc_ );
 	}
 
 	if( is_destructor )

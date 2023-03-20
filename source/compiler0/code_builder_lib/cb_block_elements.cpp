@@ -408,22 +408,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		if( !( function_context.return_type == void_type_ && function_context.function_type.return_value_type == ValueType::Value ) )
-		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, void_type_, *function_context.return_type );
-			return block_info;
-		}
-
-		CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-
-		if( function_context.destructor_end_block == nullptr )
-			function_context.llvm_ir_builder.CreateRetVoid();
-		else
-		{
-			// In explicit destructor, break to block with destructor calls for class members.
-			function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
-		}
+		BuildEmptyReturn( names, function_context, return_operator.src_loc_ );
 
 		return block_info;
 	}
@@ -449,62 +434,25 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return block_info;
 	}
 
-	if( function_context.function_type.return_value_type != ValueType::Value ) // TODO - replace != with == and swap code blocks.
-	{
-		if( !ReferenceIsConvertible( expression_result->type, *function_context.return_type, names.GetErrors(), return_operator.src_loc_ ) )
-		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.return_type, expression_result->type );
-			return block_info;
-		}
+	const VariablePtr return_value_node=
+		std::make_shared<Variable>(
+			*function_context.return_type,
+			function_context.function_type.return_value_type,
+			Variable::Location::Pointer,
+			"return value lock" );
+	function_context.variables_state.AddNode( return_value_node );
 
-		if( expression_result->value_type == ValueType::Value )
-		{
-			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.src_loc_ );
-			return block_info;
-		}
-		if( expression_result->value_type == ValueType::ReferenceImut && function_context.function_type.return_value_type == ValueType::ReferenceMut )
-		{
-			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc_ );
-			return block_info;
-		}
-
-		// Check correctness of returning reference.
-		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result ) )
-		{
-			if( !IsReferenceAllowedForReturn( function_context, var_node ) )
-				REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.src_loc_ );
-		}
-
-		{ // Lock references to return value variables.
-			const VariablePtr return_value_lock=
-				std::make_shared<Variable>(
-					*function_context.return_type,
-					function_context.function_type.return_value_type,
-					Variable::Location::Pointer,
-					"return value lock" );
-
-			function_context.variables_state.AddNode( return_value_lock );
-			// TODO - shouldn't we check for reference protection errors here?
-			function_context.variables_state.AddLink( expression_result, return_value_lock );
-
-			CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-			function_context.variables_state.RemoveNode( return_value_lock );
-		} // Reset locks AFTER destructors call. We must get error in case of returning of reference to stack variable or value-argument.
-
-		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-
-		function_context.llvm_ir_builder.CreateRet(
-			CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ) );
-	}
-	else
+	llvm::Value* ret= nullptr;
+	if( function_context.function_type.return_value_type == ValueType::Value )
 	{
 		if( expression_result->type != function_context.return_type )
 		{
-			if( const auto conversion_contructor = GetConversionConstructor( expression_result->type, *function_context.return_type, names.GetErrors(), return_operator.src_loc_ ) )
+			if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, *function_context.return_type, names.GetErrors(), return_operator.src_loc_ ) )
 				expression_result= ConvertVariable( expression_result, *function_context.return_type, *conversion_contructor, names, function_context, return_operator.src_loc_ );
 			else
 			{
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.return_type, expression_result->type );
+				function_context.variables_state.RemoveNode( return_value_node );
 				return block_info;
 			}
 		}
@@ -522,109 +470,124 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 		}
 
+		// Setup references in order to catch errors, when referene to local variable is returned inside struct.
+		SetupReferencesInCopyOrMove( function_context, return_value_node, expression_result, names.GetErrors(), return_operator.src_loc_ );
+
 		if( expression_result->type.GetFundamentalType() != nullptr||
 			expression_result->type.GetEnumType() != nullptr ||
 			expression_result->type.GetRawPointerType() != nullptr ||
-			expression_result->type.GetFunctionPointerType() != nullptr )
+			expression_result->type.GetFunctionPointerType() != nullptr ) // Just copy simple scalar.
 		{
-			if( expression_result->type == void_type_ )
+			if( expression_result->type != void_type_ )
+				ret= CreateMoveToLLVMRegisterInstruction( *expression_result, function_context );
+		}
+		else if( expression_result->value_type == ValueType::Value ) // Move composite value.
+		{
+			function_context.variables_state.MoveNode( expression_result );
+
+			if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
 			{
-				CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-				CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-				if( function_context.destructor_end_block == nullptr )
-					function_context.llvm_ir_builder.CreateRetVoid();
-				else
-				{
-					// In explicit destructor, break to block with destructor calls for class members.
-					function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
-				}
+				U_ASSERT( function_context.s_ret_ == nullptr );
+				ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expression_result->llvm_value );
 			}
 			else
 			{
-				// We must read return value before call of destructors.
-				llvm::Value* const ret= CreateMoveToLLVMRegisterInstruction( *expression_result, function_context );
-
-				CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-				CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-				function_context.llvm_ir_builder.CreateRet(ret);
+				U_ASSERT( function_context.s_ret_ != nullptr );
+				CopyBytes( function_context.s_ret_, expression_result->llvm_value, *function_context.return_type, function_context );
 			}
+
+			if( expression_result->location == Variable::Location::Pointer )
+				CreateLifetimeEnd( function_context, expression_result->llvm_value );
 		}
-		else
+		else // Copy composite value.
 		{
-			if( expression_result->value_type == ValueType::Value )
+			if( !expression_result->type.IsCopyConstructible() )
 			{
-				function_context.variables_state.MoveNode( expression_result );
+				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), return_operator.src_loc_, expression_result->type );
+				function_context.variables_state.RemoveNode( return_value_node );
+				return block_info;
+			}
 
-				if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
-				{
-					U_ASSERT( function_context.s_ret_ == nullptr );
-					llvm::Value* const ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expression_result->llvm_value );
+			if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
+			{
+				U_ASSERT( function_context.s_ret_ == nullptr );
+				// Call copy constructor on temp address, load then value from it.
+				llvm::Value* const temp= function_context.alloca_ir_builder.CreateAlloca( expression_result->type.GetLLVMType() );
+				CreateLifetimeStart( function_context, temp );
 
-					if( expression_result->location == Variable::Location::Pointer )
-						CreateLifetimeEnd( function_context, expression_result->llvm_value );
+				BuildCopyConstructorPart(
+					temp,
+					CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ),
+					*function_context.return_type,
+					function_context );
 
-					CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-					CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-					function_context.llvm_ir_builder.CreateRet(ret);
-				}
-				else
-				{
-					U_ASSERT( function_context.s_ret_ != nullptr );
-					CopyBytes( function_context.s_ret_, expression_result->llvm_value, *function_context.return_type, function_context );
+				ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, temp );
 
-					if( expression_result->location == Variable::Location::Pointer )
-						CreateLifetimeEnd( function_context, expression_result->llvm_value );
-
-					CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-					CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-					function_context.llvm_ir_builder.CreateRetVoid();
-				}
+				CreateLifetimeEnd( function_context, temp );
 			}
 			else
 			{
-				if( !expression_result->type.IsCopyConstructible() )
-				{
-					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), return_operator.src_loc_, expression_result->type );
-					return block_info;
-				}
-
-				if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
-				{
-					U_ASSERT( function_context.s_ret_ == nullptr );
-					// Call copy constructor on temp address, load then value from it.
-					llvm::Value* const temp= function_context.alloca_ir_builder.CreateAlloca( expression_result->type.GetLLVMType() );
-					CreateLifetimeStart( function_context, temp );
-
-					BuildCopyConstructorPart(
-						temp,
-						CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ),
-						*function_context.return_type,
-						function_context );
-
-					llvm::Value* const ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, temp );
-
-					CreateLifetimeEnd( function_context, temp );
-
-					CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-					CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-					function_context.llvm_ir_builder.CreateRet(ret);
-				}
-				else
-				{
-					// Call copy constructor on "s_ret".
-					U_ASSERT( function_context.s_ret_ != nullptr );
-					BuildCopyConstructorPart(
-						function_context.s_ret_,
-						CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ),
-						*function_context.return_type,
-						function_context );
-
-					CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-					CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-					function_context.llvm_ir_builder.CreateRetVoid();
-				}
+				// Call copy constructor on "s_ret".
+				U_ASSERT( function_context.s_ret_ != nullptr );
+				BuildCopyConstructorPart(
+					function_context.s_ret_,
+					CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ),
+					*function_context.return_type,
+					function_context );
 			}
 		}
+	}
+	else
+	{
+		if( !ReferenceIsConvertible( expression_result->type, *function_context.return_type, names.GetErrors(), return_operator.src_loc_ ) )
+		{
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, *function_context.return_type, expression_result->type );
+			function_context.variables_state.RemoveNode( return_value_node );
+			return block_info;
+		}
+
+		if( expression_result->value_type == ValueType::Value )
+		{
+			REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), return_operator.src_loc_ );
+			function_context.variables_state.RemoveNode( return_value_node );
+			return block_info;
+		}
+		if( expression_result->value_type == ValueType::ReferenceImut && function_context.function_type.return_value_type == ValueType::ReferenceMut )
+		{
+			REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), return_operator.src_loc_ );
+		}
+
+		// Check correctness of returning reference.
+		for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result ) )
+		{
+			if( !IsReferenceAllowedForReturn( function_context, var_node ) )
+				REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), return_operator.src_loc_ );
+		}
+
+		// Add link to return value in order to catch error, when reference to local variable is returned.
+		function_context.variables_state.AddLink( expression_result, return_value_node );
+
+		ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context );
+	}
+
+	CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
+	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
+	function_context.variables_state.RemoveNode( return_value_node );
+
+	if( function_context.destructor_end_block != nullptr )
+	{
+		// In explicit destructor, break to block with destructor calls for class members.
+		function_context.llvm_ir_builder.CreateBr(function_context.destructor_end_block);
+	}
+	else if( ret != nullptr )
+	{
+		// Return simple scalar - fundamental type value, reference, pointer.
+		function_context.llvm_ir_builder.CreateRet(ret);
+	}
+	else
+	{
+		// Return "void" or return value via "s_ret".
+		function_context.llvm_ir_builder.CreateRetVoid();
 	}
 
 	return block_info;
@@ -1734,6 +1697,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	debug_info_builder_->EndBlock( function_context );
 
 	return block_build_info;
+}
+
+void CodeBuilder::BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc )
+{
+	if( !( function_context.return_type == void_type_ && function_context.function_type.return_value_type == ValueType::Value ) )
+	{
+		REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, void_type_, *function_context.return_type );
+		return;
+	}
+
+	CallDestructorsBeforeReturn( names, function_context, src_loc );
+	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
+
+	if( function_context.destructor_end_block == nullptr )
+		function_context.llvm_ir_builder.CreateRetVoid();
+	else
+	{
+		// In explicit destructor, break to block with destructor calls for class members.
+		function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
+	}
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
