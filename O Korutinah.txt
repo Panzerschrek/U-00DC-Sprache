@@ -17,6 +17,7 @@ V "async" funkçijah dostupen obycnyj "return", "await" bez argumentov - dlä pr
 
 V generatorah dostupen operator "yield" so znacenijem dlä vozvrata ocerednogo znacenija. "return" dostupen toljko pustoj.
 Hotä, možno ispoljzovatj i nepustoj "return" dlä slucajev, kogda nužno proizvesti posledneje znacenije i zaveršitjsä.
+Togda "return" so znacenijem budet analogicen kombinaçii "yield" s etim znacenijem i posledujuscim pustym "return".
 
 Argumenty kompozitnyh tipov, peredavajemyh po-zanaceniju s ispoljzovanijem skrytoj ssylki nado budet kopirovatj na stek.
 
@@ -27,6 +28,14 @@ Vozmožno, stoit vvseti v jazyk kakuju-to konstrukçiju dlä sozdanija imeni kor
 Poka ne ponätno, dolžen li vnutri kompilätora suschestvovatj otdeljnyj vid tipa dlä korutin, ili možno budet scitatj korutiny klassami.
 Objekty korutin samo soboj nekopirujemy.
 U korutin estj destruktor, kotoryj vnutri vyzyvajet "llvm.coro.destroy", cto kak nado vyzyvajet destruktory vseh lokaljnyh peremennyh.
+
+Tip korutiny dolžen vklücatj v sebä tip i vid vozvrascajemogo znacenija, kolicestvo i vid vnutrennih ssylocnyh uzlov (dlä korutin so ssylocnymi parametrami), tegi vozvrascajemuh ssylok.
+Ne dolžny vlijatj na tip argumenty-znacenija i notaçija sväzyvanija ssylok.
+Sväzyvanije ssylok dolžno pri etom proishoditj pri vyzove funkçii sozdanija korutiny (analogicno sväzovaniju ssylok v konstruktorov klassov).
+
+Na pervyh porah možno ne realizovyvatj obscih tipov dlä korutin i vmesto etogo ispoljzovatj unikaljnyje tipy dlä každoj korutiny.
+Eto ogranicit ih ispoljzovanije sozdanijem korutin, hranäscihsä toljko na steke.
+Dlä etogo budet ispoljzovatjsä "auto".
 
 Odnoj iz poka cto nerešönnyh problem javläjetsä kontrolj ssylok dlä korutin.
 Korutina so ssylocnymi argumentami po suti javläjetsä objektom, logiceski hranäscim ssylki vnutri.
@@ -42,7 +51,7 @@ Vozmožno, cerez vvedenije kostylej vrode otdeljnoj obrabotki vyzova "async" fun
 Iz generatorov v prinçipe možno vozvrascatj ssylki na lokaljnyje peremennyje.
 Logicestki tut problemy netu, kolj skoro peremennaja pereživajet "yield", cerez kotoryj ona vozvroscena.
 Logicceski takaja ssylka scitajetsä ssylkoj na objekt korutiny.
-No takaja ssylka dolžna budeet umeretj do sledujuscego vyzova generatora (kompilätor dolžen eto prokontrolirovatj).
+No takaja ssylka dolžna budet umeretj do sledujuscego vyzova generatora (kompilätor dolžen eto prokontrolirovatj).
 Po suti vedj ocerednoj vyzov generatora eto vyzov metoda s "mut this".
 
 Kak rabotatj s korutinoj posle sozdanija, jescö ne vpolne ponätno.
@@ -60,6 +69,9 @@ Operator "await" so znacenijem vyzyvajet vozobnovlenije korutiny-znacenija, i je
 Operator "yield" v generatorah realizujetsä cerez sohranenije rezuljtata v "promise" i vyzov "llvm.coro.suspend".
 "return" eto tože vyzov "llvm.coro.suspend", no s "final" flagom.
 
+Dlä podderžki nizkourovnego koda vozmožno stoit realizovatj nebezopasnyje metody, vrode "resume", "done" i "promise" dlä klassov korutin.
+No ispoljzovanije etih metodov ne dolžno trebovatjsä v obycnom poljzovateljskom kode.
+
 Stoit obdumatj vnutrennüju realizaçiju "async" funkçij, otlicnuju ot "Switched-Resume Lowering".
 Naprimer dlä slucajev, kogda v kode idöt rabota s kakim-nibudj asinhronnym sistemnym "API", kogda nado ždatj signal ot sistemy, vmesto togo, ctoby vpustuju krutitj çikly "await".
-Prosto ždatj v "async" funkçii vypolnenija sistemnogo vyzova ožidanija eto ne effektivno, ibo na etom ožidanii budet tormozitj vesj potok, ispolnäjuscij asinhronnyje funkçii, vmesto togo, naprimer, ctoby vypolnätj vmesto etogo drugije asinhronnyje funkçii.
+Prosto ždatj v "async" funkçii vypolnenija sistemnogo vyzova ožidanija eto ne effektivno, ibo na etom ožidanii budet tormozitj vesj potok, ispolnäjuscij asinhronnyje funkçii, vmesto togo, ctoby vypolnätj drugije asinhronnyje funkçii.
