@@ -2083,7 +2083,7 @@ fn CodeBuilder::SetupReferencesInCopyOrMove(
 			REPORT_ERROR( InnerReferenceMutabilityChanging, names_scope, src_loc, dst_inner_reference_node_non_null.lock_imut().deref().name )
 		}
 
-		foreach( src_inner_reference_node : src_inner_reference_nodes )
+		foreach( &src_inner_reference_node : src_inner_reference_nodes )
 		{
 			references_graph.TryAddLink( src_inner_reference_node, dst_inner_reference_node_non_null, names_scope, src_loc );
 		}

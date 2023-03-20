@@ -476,6 +476,19 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	var VariablePtr mut expr_ptr= BuildExpressionCodeEnsureVariable( names_scope, function_context, return_operator.expr );
 
+	// Create return reference node and link it with expression node.
+	var Variable mut return_node_variable
+	{
+		.t= function_context.function_type.return_type,
+		.value_type= function_context.function_type.return_value_type,
+		.location= Variable::Location::Pointer,
+		.name= "return value",
+	};
+	var VariablePtr return_node( move(return_node_variable) );
+	function_context.references_graph.AddNode( return_node );
+
+	auto mut ret= LLVMValueRef::Null;
+
 	if( function_context.function_type.return_value_type == ValueType::Value )
 	{
 		var Type ret_type= function_context.function_type.return_type;
@@ -493,6 +506,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( expr.t != ret_type )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, return_operator.src_loc, function_context.function_type.return_type, expr.t )
+			function_context.references_graph.RemoveNode( return_node );
 			return block_element_build_info;
 		}
 
@@ -510,6 +524,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 		}
 
+		// Setup references in order to pervent returning of reference to local variable inside struct.
+		SetupReferencesInCopyOrMove( names_scope, function_context, return_node, expr_ptr, return_operator.src_loc );
+
 		if( !ret_type.GetClassType().empty() || !ret_type.GetArrayType().empty() || !ret_type.GetTupleType().empty() )
 		{
 			var LLVMTypeRef single_scalar_type= GetSingleScalarType( ret_type.GetLLVMType() );
@@ -523,32 +540,24 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				{
 					CopyBytes( function_context.s_ret, expr.llvm_value, ret_type, function_context );
 					CreateLifetimeEnd( function_context, expr.llvm_value );
-
-					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
-					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-					unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
 				}
 				else
 				{
-					var LLVMValueRef ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, expr.llvm_value, g_null_string ) );
+					ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, expr.llvm_value, g_null_string ) );
 					CreateLifetimeEnd( function_context, expr.llvm_value );
-
-					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
-					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-					unsafe( LLVMBuildRet( function_context.llvm_ir_builder, ret ) );
 				}
 			}
 			else
 			{
 				// Copy
-				if( single_scalar_type == LLVMTypeRef::Null )
+				if( !ret_type.IsCopyConstructible() )
+				{
+					REPORT_ERROR( OperationNotSupportedForThisType, names_scope, return_operator.src_loc, ret_type )
+				}
+				else if( single_scalar_type == LLVMTypeRef::Null )
 				{
 					// Copy into "s_ret".
 					BuildCopyConstructorPart( names_scope, function_context, function_context.s_ret, expr.llvm_value, ret_type, return_operator.src_loc );
-
-					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
-					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-					unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
 				}
 				else
 				{
@@ -558,40 +567,18 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 					BuildCopyConstructorPart( names_scope, function_context, temp, expr.llvm_value, ret_type, return_operator.src_loc );
 
-					var LLVMValueRef ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, temp, g_null_string ) );
+					ret= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, single_scalar_type, temp, g_null_string ) );
 					CreateLifetimeEnd( function_context, temp );
-
-					CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
-					CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-					unsafe( LLVMBuildRet( function_context.llvm_ir_builder, ret ) );
 				}
 			}
 		}
 		else
 		{
-			if( ret_type == void_type_ )
+			if( ret_type != void_type_ )
 			{
-				CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
-				CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-
-				if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
-				{
-					unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block ) );
-				}
-				else
-				{
-					unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
-				}
-			}
-			else
-			{
-				auto value_in_register= CreateMoveToLLVMRegisterInstruction( expr, function_context );
-				CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
-				CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
-				unsafe( LLVMBuildRet( function_context.llvm_ir_builder, value_in_register ) );
+				ret= CreateMoveToLLVMRegisterInstruction( expr, function_context );
 			}
 		}
-		return block_element_build_info;
 	}
 	else
 	{
@@ -600,6 +587,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( expr.t != function_context.function_type.return_type && !expr.t.ReferenceIsConvertibleTo( function_context.function_type.return_type ) )
 		{
 			REPORT_ERROR( TypesMismatch, names_scope, return_operator.src_loc, function_context.function_type.return_type, expr.t )
+			function_context.references_graph.RemoveNode( return_node );
 			return block_element_build_info;
 		}
 		if( function_context.function_type.return_value_type == ValueType::ReferenceMut && expr.value_type != ValueType::ReferenceMut )
@@ -609,6 +597,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( expr.value_type == ValueType::Value )
 		{
 			REPORT_ERROR( ExpectedReferenceValue, names_scope, return_operator.src_loc )
+			function_context.references_graph.RemoveNode( return_node );
 			return block_element_build_info;
 		}
 		foreach( &node : function_context.references_graph.GetAllAccessibleVariableNodes( expr_ptr ) )
@@ -619,26 +608,27 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 		}
 
-		// Create return reference node and link it with expression node.
-		var Variable mut return_node_variable
-		{
-			.value_type= function_context.function_type.return_value_type,
-			.location= Variable::Location::Pointer,
-			.name= "return value",
-		};
-		var VariablePtr return_node( move(return_node_variable) );
-		function_context.references_graph.AddNode( return_node );
+		// Link result with return node. This allow us to prevent returning of reference to local variable.
 		function_context.references_graph.AddLink( expr_ptr, return_node );
 
-		// Call destructors. In this process we check if destroyed variables still have references.
-		// This allow us to prevent returning of reference to local variable.
-		CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
-		CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+		ret= CreateReferenceCast( expr.llvm_value, expr.t, function_context.function_type.return_type, function_context );
+	}
 
-		function_context.references_graph.RemoveNode( return_node );
+	CallDestructorsForAllVariablesFrames( names_scope, function_context, return_operator.src_loc );
+	CheckReferencesPollutionBeforeReturn( names_scope, function_context, return_operator.src_loc );
+	function_context.references_graph.RemoveNode( return_node );
 
-		auto reference_converted= CreateReferenceCast( expr.llvm_value, expr.t, function_context.function_type.return_type, function_context );
-		unsafe( LLVMBuildRet( function_context.llvm_ir_builder, reference_converted ) );
+	if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
+	{
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block ) );
+	}
+	else if( ret != LLVMValueRef::Null )
+	{
+		unsafe( LLVMBuildRet( function_context.llvm_ir_builder, ret ) );
+	}
+	else
+	{
+		unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
 	}
 
 	return block_element_build_info;
