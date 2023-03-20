@@ -408,22 +408,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			return block_info;
 		}
 
-		if( !( function_context.return_type == void_type_ && function_context.function_type.return_value_type == ValueType::Value ) )
-		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), return_operator.src_loc_, void_type_, *function_context.return_type );
-			return block_info;
-		}
-
-		CallDestructorsBeforeReturn( names, function_context, return_operator.src_loc_ );
-		CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), return_operator.src_loc_ );
-
-		if( function_context.destructor_end_block == nullptr )
-			function_context.llvm_ir_builder.CreateRetVoid();
-		else
-		{
-			// In explicit destructor, break to block with destructor calls for class members.
-			function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
-		}
+		BuildEmptyReturn( names, function_context, return_operator.src_loc_ );
 
 		return block_info;
 	}
@@ -1712,6 +1697,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	debug_info_builder_->EndBlock( function_context );
 
 	return block_build_info;
+}
+
+void CodeBuilder::BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc )
+{
+	if( !( function_context.return_type == void_type_ && function_context.function_type.return_value_type == ValueType::Value ) )
+	{
+		REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, void_type_, *function_context.return_type );
+		return;
+	}
+
+	CallDestructorsBeforeReturn( names, function_context, src_loc );
+	CheckReferencesPollutionBeforeReturn( function_context, names.GetErrors(), src_loc );
+
+	if( function_context.destructor_end_block == nullptr )
+		function_context.llvm_ir_builder.CreateRetVoid();
+	else
+	{
+		// In explicit destructor, break to block with destructor calls for class members.
+		function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
+	}
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(

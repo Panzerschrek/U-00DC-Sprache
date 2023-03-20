@@ -699,6 +699,8 @@ private:
 
 	BlockBuildInfo BuildBlock( NamesScope& names, FunctionContext& function_context, const Synt::Block& block );
 
+	void BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc );
+
 	// ++ and -- operations
 	void BuildDeltaOneOperatorCode(
 		const Synt::Expression& expression,
