@@ -1707,25 +1707,14 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
-			if( func_variable.t.return_type == void_type_ && func_variable.t.return_value_type == ValueType::Value )
-			{
-				// Manually generate "return" for void-return functions.
-				CallDestructorsForAllVariablesFrames( args_names_scope_ptr, function_context, block.end_src_loc );
-				CheckReferencesPollutionBeforeReturn( names_scope, function_context, block.end_src_loc );
-				if( function_context.destructor_end_block != LLVMBasicBlockRef::Null )
-				{
-					unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.destructor_end_block ) );
-				}
-				else
-				{
-					unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
-				}
-			}
-			else
+			// Manually generate "return" for void-return functions.
+			if( !( func_variable.t.return_type == void_type_ && func_variable.t.return_value_type == ValueType::Value ) )
 			{
 				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_src_loc )
 				return;
 			}
+
+			BuildEmptyReturn( args_names_scope_ptr, function_context, block.end_src_loc );
 		}
 
 		// Finsih function - add remaining instructions
