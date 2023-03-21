@@ -217,8 +217,12 @@ PyObject* RunFunction( PyObject* const self, PyObject* const args )
 		PyErr_SetString( PyExc_RuntimeError, "Program halted" );
 		return nullptr;
 	}
-	catch( const ExecutionEngineException& )
+	catch( const ExecutionEngineException& ex )
 	{
+		for( const std::string& e : ex.errors )
+			std::cerr << "\n" << e;
+		std::cerr << std::endl;
+
 		PyErr_SetString( PyExc_RuntimeError, "Execution engine error" );
 		return nullptr;
 	}

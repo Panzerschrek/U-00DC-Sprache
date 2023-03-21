@@ -274,9 +274,17 @@ int main(int argc, char* argv[])
 			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
 			failed++;
 		}
+		catch( const HaltException& )
+		{
+			std::cout << "Test " << func_data.name << " halted" << std::endl;
+			failed++;
+		}
 		catch( const ExecutionEngineException& ex )
 		{
-			std::cout << "Test " << func_data.name << " failed: " << ex.what() << "\n" << std::endl;
+			std::cout << "Test " << func_data.name << " failed:";
+			for( const std::string& e : ex.errors )
+				std::cout << "\n" << e;
+			std::cout << std::endl;
 			failed++;
 		}
 

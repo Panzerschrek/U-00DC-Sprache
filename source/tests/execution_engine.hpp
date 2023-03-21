@@ -22,9 +22,12 @@ public:
 class ExecutionEngineException  final : public std::runtime_error
 {
 public:
-	ExecutionEngineException()
-		: std::runtime_error( "execution engine exception" )
+	ExecutionEngineException(std::vector<std::string> in_errors)
+		: std::runtime_error( "execution engine exception" ), errors(std::move(in_errors))
 	{}
+
+public:
+	std::vector<std::string> errors;
 };
 
 // Wrapper class over handmade execution engine, that is used for tests.
@@ -52,10 +55,8 @@ public:
 	{
 		Interpreter::ResultGeneric res= interpreter_.EvaluateGeneric( function, args );
 
-		for (const std::string& error : res.errors )
-			std::cout << error << std::endl;
 		if( !res.errors.empty() )
-			throw ExecutionEngineException();
+			throw ExecutionEngineException( std::move(res.errors) );
 
 		return std::move(res.result);
 	}
