@@ -60,7 +60,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 				REPORT_ERROR( ArraySizeIsNotInteger, names_scope.GetErrors(), num_src_loc );
 		}
 		else
-			U_ASSERT( false && "Nonfundamental constexpr? WTF?" );
+			REPORT_ERROR( ArraySizeIsNotInteger, names_scope.GetErrors(), num_src_loc );
 	}
 	else
 		REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), num_src_loc );

@@ -782,7 +782,7 @@ U_TEST(NoMatchBinaryOperatorForGivenTypesTest1)
 	U_TEST_ASSERT( error.src_loc.GetLine() == 6u );
 }
 
-U_TEST(ArraySizeIsNotInteger)
+U_TEST(ArraySizeIsNotInteger_Test0)
 {
 	static const char c_program_text[]=
 	R"(
@@ -800,6 +800,26 @@ U_TEST(ArraySizeIsNotInteger)
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArraySizeIsNotInteger );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
+}
+
+U_TEST(ArraySizeIsNotInteger_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			var tup[i32] constexpr s= zero_init;
+			var [ i32, s ] x;
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	const CodeBuilderError& error= build_result.errors.front();
+
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ArraySizeIsNotInteger );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
 U_TEST(ArraySizeIsNegative)

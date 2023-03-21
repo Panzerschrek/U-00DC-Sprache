@@ -3289,7 +3289,6 @@ Value CodeBuilder::DoCallFunction(
 							llvm_args[arg_number]= value;
 						}
 					}
-
 				}
 				else
 				{
