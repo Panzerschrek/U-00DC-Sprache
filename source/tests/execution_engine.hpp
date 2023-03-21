@@ -10,7 +10,14 @@
 namespace U
 {
 
-// Wrapper class over handmade execution engine, that is used for tests.
+class HaltException final : public std::exception
+{
+public:
+	virtual const char* what() const noexcept override
+	{
+		return "Halt exception";
+	}
+};
 
 class ExecutionEngineException  final : public std::runtime_error
 {
@@ -20,12 +27,16 @@ public:
 	{}
 };
 
+// Wrapper class over handmade execution engine, that is used for tests.
+
 class ExecutionEngine
 {
 public:
 	explicit ExecutionEngine( std::unique_ptr<llvm::Module> module ): module_( std::move(module) )
 		, interpreter_( module_->getDataLayout() )
-	{}
+	{
+		RegisterCustomFunction( "__U_halt", HaltCalled );
+	}
 
 	llvm::Function* FindFunctionNamed( const llvm::StringRef name )
 	{
@@ -59,6 +70,13 @@ public:
 	void ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
 	{
 		return interpreter_.ReadExecutinEngineData( dst, address, size );
+	}
+
+private:
+	static llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> )
+	{
+		// Return from interpreter, using native exception.
+		throw HaltException();
 	}
 
 private:

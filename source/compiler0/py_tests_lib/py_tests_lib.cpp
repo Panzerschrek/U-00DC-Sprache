@@ -96,21 +96,6 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	return std::move(build_result.module);
 }
 
-class HaltException final : public std::exception
-{
-public:
-	virtual const char* what() const noexcept override
-	{
-		return "Halt exception";
-	}
-};
-
-llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> )
-{
-	// Return from interpreter, using native exception.
-	throw HaltException();
-}
-
 EnginePtr g_current_engine; // Can have only one.
 
 PyObject* BuildProgram( PyObject* const self, PyObject* const args )
@@ -148,7 +133,6 @@ PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 
 
 	g_current_engine= CreateEngine( std::move(module), print_llvm_asm != 0 );
-	g_current_engine->RegisterCustomFunction( "__U_halt", HaltCalled );
 
 	Py_INCREF(Py_None);
 	return Py_None;

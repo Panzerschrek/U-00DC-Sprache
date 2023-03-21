@@ -6,26 +6,6 @@ namespace U
 namespace
 {
 
-class HaltException final : public std::exception
-{
-public:
-	virtual const char* what() const noexcept override
-	{
-		return "Halt exception";
-	}
-};
-
-llvm::GenericValue HaltCalled( llvm::FunctionType*, llvm::ArrayRef<llvm::GenericValue> )
-{
-	// Return from interpreter, using native exception.
-	throw HaltException();
-}
-
-void HaltTestPrepare(const EnginePtr& engine )
-{
-	engine->RegisterCustomFunction( "__U_halt", HaltCalled );
-}
-
 U_TEST( HaltTest0 )
 {
 	static const char c_program_text[]=
@@ -37,7 +17,6 @@ U_TEST( HaltTest0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -68,7 +47,6 @@ U_TEST( HaltTest1_ShouldHaltInsteadOfReturn )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -108,7 +86,6 @@ U_TEST( HaltTest2_ShouldHaltWithDeepCallStack )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -177,7 +154,6 @@ U_TEST( HaltIfTest0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foob" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -221,7 +197,6 @@ U_TEST( ArrayOutOfBoundsShouldHalt0 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -250,7 +225,6 @@ U_TEST( ArrayOutOfBoundsShouldHalt1 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
@@ -279,7 +253,6 @@ U_TEST( ArrayOutOfBoundsShouldHalt2 )
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
-	HaltTestPrepare(engine);
 	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
 	U_TEST_ASSERT( function != nullptr );
 
