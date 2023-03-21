@@ -396,7 +396,7 @@ fn ActualArgsToString( ust::array_view_imut</VariableTypeExtended/> actual_args 
 	return move(result);
 }
 
-fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref_mut</ FunctionVariable />'x'
+fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, FunctionType& function_type ) : ust::optional_ref_mut</ FunctionVariable />'x'
 {
 	foreach( &mut function : functions_set.functions )
 	{

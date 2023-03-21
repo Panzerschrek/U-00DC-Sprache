@@ -31,10 +31,11 @@ private:
 	fn CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, RawPointerType& t ) : LLVMMetadataRef;
-	fn CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, FunctionPointerType& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadataRef;
 	fn CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadataRef;
+
+	fn CreateFunctionDIType( mut this, FunctionType& t ) : LLVMMetadataRef;
 
 private:
 	LLVMContextRef imut llvm_context_;

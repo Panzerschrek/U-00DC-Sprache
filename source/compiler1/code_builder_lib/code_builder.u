@@ -2102,10 +2102,6 @@ fn CodeBuilder::IsTypeComplete( this, Type& t ) : bool
 		}
 		return complete;
 	}
-	if( !t.GetFunctionType().empty() )
-	{
-		return false; // Function type is always incomplete.
-	}
 
 	return true;
 }
@@ -2139,10 +2135,6 @@ fn CodeBuilder::EnsureTypeComplete( mut this, Type& t ) : bool
 			ok&= EnsureTypeComplete( element_type );
 		}
 		return ok;
-	}
-	if( !t.GetFunctionType().empty() )
-	{
-		return false; // Function type is always incomplete.
 	}
 
 	return true;

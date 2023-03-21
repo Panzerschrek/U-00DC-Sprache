@@ -575,107 +575,107 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 		ADD_NODE( mangler_state )
 		{
 			mangler_state.Push( "P" );
-			EncodeTypeName( mangler_state, function_pointer_type.function_type );
-		}
-		return;
-	}
-	if_var( &function_type : t.GetFunctionType() )
-	{
-		ADD_NODE( mangler_state )
-		{
-			if( function_type.calling_convention == LLVMCallConv::C ) {}
-			else if( function_type.calling_convention == LLVMCallConv::Cold )
-			{
-				mangler_state.Push( "U" );
-				mangler_state.PushLengthPrefixed( "cold" );
-			}
-			else if( function_type.calling_convention == LLVMCallConv::Fast )
-			{
-				mangler_state.Push( "U" );
-				mangler_state.PushLengthPrefixed( "fast" );
-			}
-			else if( function_type.calling_convention == LLVMCallConv::X86Stdcall )
-			{
-				mangler_state.Push( "U" );
-				mangler_state.PushLengthPrefixed( "stdcall" );
-			}
-
-			mangler_state.Push( "F" );
-
-			{
-				var FunctionType::Param ret_param
-				{
-					.t( function_type.return_type ),
-					.value_type= function_type.return_value_type,
-				};
-
-				EncodeFunctionParam( mangler_state, ret_param );
-			}
-
-			EncodeFunctionParams( mangler_state, function_type.params );
-
-			if( !function_type.return_references.empty() )
-			{
-				ADD_NODE( mangler_state )
-				{
-					mangler_state.Push( "_RR" );
-
-					halt if( function_type.return_references.size() >= 36s );
-					mangler_state.Push( Base36Digit(function_type.return_references.size()) );
-
-					foreach( &param_reference : function_type.return_references )
-					{
-						halt if( param_reference.param_index >= 36u8 );
-						halt if( param_reference.reference_index >= 36u8 && param_reference.reference_index != FunctionType::c_param_reference_number );
-
-						mangler_state.Push( Base36Digit( size_type(param_reference.param_index) ) );
-						mangler_state.Push( select(
-							param_reference.reference_index == FunctionType::c_param_reference_number
-							? "_"c8
-							: Base36Digit( size_type(param_reference.reference_index) ) ) );
-					}
-				}
-			}
-			if( !function_type.references_pollution.empty() )
-			{
-				ADD_NODE( mangler_state )
-				{
-					mangler_state.Push( "_RP" );
-
-					halt if( function_type.references_pollution.size() >= 36s );
-					mangler_state.Push( Base36Digit(function_type.references_pollution.size()) );
-
-					foreach( &pollution : function_type.references_pollution )
-					{
-						halt if( pollution.dst.param_index >= 36u8 );
-						halt if( pollution.dst.reference_index >= 36u8 && pollution.dst.reference_index != FunctionType::c_param_reference_number );
-						halt if( pollution.src.param_index >= 36u8 );
-						halt if( pollution.src.reference_index >= 36u8 && pollution.src.reference_index != FunctionType::c_param_reference_number );
-
-						mangler_state.Push( Base36Digit( size_type(pollution.dst.param_index) ) );
-						mangler_state.Push( select(
-							pollution.dst.reference_index == FunctionType::c_param_reference_number
-							? "_"c8
-							: Base36Digit( size_type(pollution.dst.reference_index) ) ) );
-						mangler_state.Push( Base36Digit( size_type(pollution.src.param_index) ) );
-						mangler_state.Push( select(
-							pollution.src.reference_index == FunctionType::c_param_reference_number
-							? "_"c8
-							: Base36Digit( size_type(pollution.src.reference_index) ) ) );
-					}
-				}
-			}
-			if( function_type.is_unsafe )
-			{
-				mangler_state.Push( "unsafe" );
-			}
-
-			mangler_state.Push( "E" );
+			EncodeFunctionTypeName( mangler_state, function_pointer_type.function_type );
 		}
 		return;
 	}
 
 	halt;
+}
+
+fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& function_type )
+{
+	ADD_NODE( mangler_state )
+	{
+		if( function_type.calling_convention == LLVMCallConv::C ) {}
+		else if( function_type.calling_convention == LLVMCallConv::Cold )
+		{
+			mangler_state.Push( "U" );
+			mangler_state.PushLengthPrefixed( "cold" );
+		}
+		else if( function_type.calling_convention == LLVMCallConv::Fast )
+		{
+			mangler_state.Push( "U" );
+			mangler_state.PushLengthPrefixed( "fast" );
+		}
+		else if( function_type.calling_convention == LLVMCallConv::X86Stdcall )
+		{
+			mangler_state.Push( "U" );
+			mangler_state.PushLengthPrefixed( "stdcall" );
+		}
+
+		mangler_state.Push( "F" );
+
+		{
+			var FunctionType::Param ret_param
+			{
+				.t( function_type.return_type ),
+				.value_type= function_type.return_value_type,
+			};
+
+			EncodeFunctionParam( mangler_state, ret_param );
+		}
+
+		EncodeFunctionParams( mangler_state, function_type.params );
+
+		if( !function_type.return_references.empty() )
+		{
+			ADD_NODE( mangler_state )
+			{
+				mangler_state.Push( "_RR" );
+
+				halt if( function_type.return_references.size() >= 36s );
+				mangler_state.Push( Base36Digit(function_type.return_references.size()) );
+
+				foreach( &param_reference : function_type.return_references )
+				{
+					halt if( param_reference.param_index >= 36u8 );
+					halt if( param_reference.reference_index >= 36u8 && param_reference.reference_index != FunctionType::c_param_reference_number );
+
+					mangler_state.Push( Base36Digit( size_type(param_reference.param_index) ) );
+					mangler_state.Push( select(
+						param_reference.reference_index == FunctionType::c_param_reference_number
+						? "_"c8
+						: Base36Digit( size_type(param_reference.reference_index) ) ) );
+				}
+			}
+		}
+		if( !function_type.references_pollution.empty() )
+		{
+			ADD_NODE( mangler_state )
+			{
+				mangler_state.Push( "_RP" );
+
+				halt if( function_type.references_pollution.size() >= 36s );
+				mangler_state.Push( Base36Digit(function_type.references_pollution.size()) );
+
+				foreach( &pollution : function_type.references_pollution )
+				{
+					halt if( pollution.dst.param_index >= 36u8 );
+					halt if( pollution.dst.reference_index >= 36u8 && pollution.dst.reference_index != FunctionType::c_param_reference_number );
+					halt if( pollution.src.param_index >= 36u8 );
+					halt if( pollution.src.reference_index >= 36u8 && pollution.src.reference_index != FunctionType::c_param_reference_number );
+
+					mangler_state.Push( Base36Digit( size_type(pollution.dst.param_index) ) );
+					mangler_state.Push( select(
+						pollution.dst.reference_index == FunctionType::c_param_reference_number
+						? "_"c8
+						: Base36Digit( size_type(pollution.dst.reference_index) ) ) );
+					mangler_state.Push( Base36Digit( size_type(pollution.src.param_index) ) );
+					mangler_state.Push( select(
+						pollution.src.reference_index == FunctionType::c_param_reference_number
+						? "_"c8
+						: Base36Digit( size_type(pollution.src.reference_index) ) ) );
+				}
+			}
+		}
+		if( function_type.is_unsafe )
+		{
+			mangler_state.Push( "unsafe" );
+		}
+
+		mangler_state.Push( "E" );
+	}
 }
 
 fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_scope )

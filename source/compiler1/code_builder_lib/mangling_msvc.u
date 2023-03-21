@@ -312,11 +312,6 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 		EncodeFunctionType( mangler_state, function_pointer_type.function_type, true );
 		return;
 	}
-	if_var( &function_type : t.GetFunctionType() )
-	{
-		EncodeFunctionType( mangler_state, function_type, true );
-		return;
-	}
 
 	halt;
 }

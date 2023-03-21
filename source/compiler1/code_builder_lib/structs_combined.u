@@ -344,10 +344,6 @@ fn Type::conversion_constructor( RawPointerType mut raw_pointer_type )
 	( something_( ust::make_shared_ptr_final(move(raw_pointer_type)) ) )
 {}
 
-fn Type::conversion_constructor( FunctionType mut function_type )
-	( something_( ust::make_shared_ptr_final(move(function_type)) ) )
-{}
-
 fn Type::conversion_constructor( FunctionPointerType mut function_pointer_type )
 	( something_( ust::make_shared_ptr_final(move(function_pointer_type)) ) )
 {}
@@ -395,16 +391,6 @@ fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType
 	return ust::optional_ref_imut</RawPointerType />();
 }
 
-fn Type::GetFunctionType( imut this ) : ust::optional_ref_imut</FunctionType />'this'
-{
-	if_var( &b : something_.get</ust::shared_ptr_final</FunctionType/>/>() )
-	{
-		return ust::optional_ref_imut</FunctionType/>( b.deref() );
-	}
-
-	return ust::optional_ref_imut</FunctionType />();
-}
-
 fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType />'this'
 {
 	if_var( &b : something_.get</ust::shared_ptr_final</FunctionPointerType/>/>() )
@@ -442,10 +428,6 @@ fn Type::GetLLVMType( this ) : LLVMTypeRef
 	if_var( &raw_pointer_type : GetRawPointerType() )
 	{
 		return raw_pointer_type.llvm_type;
-	}
-	if_var( &function_type : GetFunctionType() )
-	{
-		return LLVMTypeRef::Null;
 	}
 	if_var( &function_pointer_type : GetFunctionPointerType() )
 	{
@@ -715,7 +697,6 @@ op Type::==( Type& l, Type& r ) : bool
 			ust::is_same_type</ LeftT, ust::shared_ptr_final</ArrayType/> />() ||
 			ust::is_same_type</ LeftT, ust::shared_ptr_final</TupleType/> />() ||
 			ust::is_same_type</ LeftT, ust::shared_ptr_final</RawPointerType/> />() ||
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</FunctionType/> />() ||
 			ust::is_same_type</ LeftT, ust::shared_ptr_final</FunctionPointerType/> />() )
 		{
 			return l_t.deref() == r.something_.get</ LeftT />().try_deref().deref();
@@ -751,21 +732,17 @@ fn TypeHasher::hash( Type& t ) : size_type
 	{
 		return hash_combine( 3s, hash(raw_pointer_type) );
 	}
-	if_var( &function_type : t.GetFunctionType() )
-	{
-		return hash_combine( 4s, hash(function_type) );
-	}
 	if_var( &function_pointer_type : t.GetFunctionPointerType() )
 	{
-		return hash_combine( 5s, hash(function_pointer_type) );
+		return hash_combine( 4s, hash(function_pointer_type) );
 	}
 	if_var( &class_type : t.GetClassType() )
 	{
-		return hash_combine( 6s, hash(class_type) );
+		return hash_combine( 5s, hash(class_type) );
 	}
 	if_var( &enum_type : t.GetEnumType() )
 	{
-		return hash_combine( 7s, hash(enum_type) );
+		return hash_combine( 6s, hash(enum_type) );
 	}
 
 	// Unhandled type kind.
@@ -1134,7 +1111,6 @@ fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</
 
 	return ust::optional_ref_imut</ FunctionTypeParam />();
 }
-
 
 fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this'
 {
