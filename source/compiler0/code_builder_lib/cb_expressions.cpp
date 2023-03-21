@@ -1873,7 +1873,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 		return
 			DoCallFunction(
 				EnsureLLVMFunctionCreated( *overloaded_operator ),
-				*overloaded_operator->type.GetFunctionType(),
+				overloaded_operator->type,
 				src_loc,
 				nullptr,
 				{ &left_expr, &right_expr },
@@ -2062,7 +2062,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	return
 		DoCallFunction(
 			fetch_result.second,
-			*overloaded_operator->type.GetFunctionType(),
+			overloaded_operator->type,
 			src_loc,
 			fetch_result.first,
 			{},
@@ -2113,7 +2113,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 
 	return DoCallFunction(
 		fetch_result.second,
-		*function->type.GetFunctionType(),
+		function->type,
 		src_loc,
 		fetch_result.first,
 		synt_args_ptrs,
@@ -2995,7 +2995,7 @@ Value CodeBuilder::CallFunction(
 	if( function_ptr == nullptr )
 		return ErrorValue();
 	const FunctionVariable& function= *function_ptr;
-	const FunctionType& function_type= *function.type.GetFunctionType();
+	const FunctionType& function_type= function.type;
 
 	if( this_ != nullptr && !function.is_this_call )
 	{
@@ -3680,7 +3680,7 @@ VariablePtr CodeBuilder::ConvertVariable(
 
 		DoCallFunction(
 			EnsureLLVMFunctionCreated( conversion_constructor ),
-			*conversion_constructor.type.GetFunctionType(),
+			conversion_constructor.type,
 			src_loc,
 			{ result_for_initialization, variable },
 			{},

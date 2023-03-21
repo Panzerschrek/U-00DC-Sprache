@@ -120,8 +120,6 @@ bool CodeBuilder::IsTypeComplete( const Type& type ) const
 {
 	if( type.GetFundamentalType() != nullptr )
 		return true;
-	else if( type.GetFunctionType() != nullptr )
-		return false; // Function type is always incomplete.
 	else if( type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumType() )
@@ -150,8 +148,6 @@ bool CodeBuilder::EnsureTypeComplete( const Type& type )
 {
 	if( type.GetFundamentalType() != nullptr )
 		return true;
-	else if( type.GetFunctionType() != nullptr )
-		return false; // Function type is always incomplete.
 	else if( type.GetFunctionPointerType() != nullptr )
 		return true;
 	else if( const auto enum_type= type.GetEnumType() )
@@ -280,7 +276,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 						*function_variable.syntax_element->block_,
 						function_variable.syntax_element->constructor_initialization_list_.get() );
 
-				FunctionType function_type= *function_variable.type.GetFunctionType();
+				FunctionType function_type= function_variable.type;
 				function_type.return_type= return_type;
 
 				function_variable.have_body= false;
@@ -647,7 +643,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
-			if( !IsCopyConstructor( *constructor.type.GetFunctionType(), class_type ) )
+			if( !IsCopyConstructor( constructor.type, class_type ) )
 			{
 				the_class.have_explicit_noncopy_constructors= true;
 				break;
@@ -676,7 +672,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
-			if( IsCopyConstructor( *constructor.type.GetFunctionType(), class_type ) && !constructor.is_generated )
+			if( IsCopyConstructor( constructor.type, class_type ) && !constructor.is_generated )
 				the_class.can_be_constexpr= false;
 		}
 	}
@@ -687,7 +683,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		U_ASSERT( operators != nullptr );
 		for( const FunctionVariable& op : operators->functions )
 		{
-			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) && !op.is_generated )
+			if( IsCopyAssignmentOperator( op.type, class_type ) && !op.is_generated )
 				the_class.can_be_constexpr= false;
 		}
 	}
@@ -698,7 +694,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		U_ASSERT( operators != nullptr );
 		for( const FunctionVariable& op : operators->functions )
 		{
-			if( IsEqualityCompareOperator( *op.type.GetFunctionType(), class_type ) && !op.is_generated )
+			if( IsEqualityCompareOperator( op.type, class_type ) && !op.is_generated )
 				the_class.can_be_constexpr= false;
 		}
 	}

@@ -50,11 +50,11 @@ private:
 	llvm::DIType* CreateDIType( const FundamentalType& type );
 	llvm::DICompositeType* CreateDIType( const ArrayType& type );
 	llvm::DICompositeType* CreateDIType( const TupleType& type );
-	llvm::DISubroutineType* CreateDIType( const FunctionType& type );
 	llvm::DIDerivedType* CreateDIType( const RawPointerType& type );
 	llvm::DIDerivedType* CreateDIType( const FunctionPointerType& type );
 	llvm::DICompositeType* CreateDIType( ClassPtr type );
 	llvm::DICompositeType* CreateDIType( EnumPtr type );
+	llvm::DISubroutineType* CreateDIFunctionType( const FunctionType& type );
 
 private:
 	llvm::LLVMContext& llvm_context_;

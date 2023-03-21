@@ -51,7 +51,7 @@ struct FunctionVariable final
 		ConstexprAuto, // May be, or may be not constexpr.
 	};
 
-	Type type; // Function type 100%
+	FunctionType type;
 
 	// For functions generated from templates.
 	FunctionTemplatePtr base_template;

@@ -56,11 +56,6 @@ llvm::Type* GetLLVMTypeImpl( const T& el )
 	return el.llvm_type;
 }
 
-llvm::Type* GetLLVMTypeImpl( const FunctionType& )
-{
-	return nullptr;
-}
-
 template<typename T>
 llvm::Type* GetLLVMTypeImpl( const std::shared_ptr<const T>& boxed )
 {
@@ -133,10 +128,6 @@ Type::Type( FundamentalType fundamental_type )
 	: something_( std::move(fundamental_type) )
 {}
 
-Type::Type( FunctionType function_type )
-	: something_( std::make_shared<FunctionType>( std::move(function_type) ) )
-{}
-
 Type::Type( FunctionPointerType function_pointer_type )
 	: something_( std::make_shared<FunctionPointerType>( std::move(function_pointer_type) ) )
 {}
@@ -166,12 +157,6 @@ const FundamentalType* Type::GetFundamentalType() const
 	return std::get_if<FundamentalType>( &something_ );
 }
 
-const FunctionType* Type::GetFunctionType() const
-{
-	if( const auto function_type= std::get_if<FunctionPtr>( &something_ )  )
-		return function_type->get();
-	return nullptr;
-}
 
 const FunctionPointerType* Type::GetFunctionPointerType() const
 {
@@ -418,11 +403,6 @@ std::string Type::ToString() const
 			return GetFundamentalTypeName( fundamental.fundamental_type );
 		}
 
-		std::string operator()( const FunctionPtr& function ) const
-		{
-			return ProcessFunctionType( *function );
-		}
-
 		std::string operator()( const ArrayPtr& array ) const
 		{
 			return
@@ -544,11 +524,6 @@ size_t Type::Hash() const
 			return size_t(fundamental.fundamental_type);
 		}
 
-		size_t operator()( const FunctionPtr& function ) const
-		{
-			return ProcessFunctionType( *function );
-		}
-
 		size_t operator()( const ArrayPtr& array ) const
 		{
 			return llvm::hash_combine( array->element_type.Hash(), array->element_count );
@@ -621,29 +596,25 @@ bool operator==( const Type& l, const Type& r )
 	}
 	else if( l.something_.index() == 1 )
 	{
-		return *l.GetFunctionType() == *r.GetFunctionType();
+		return *l.GetArrayType() == *r.GetArrayType();
 	}
 	else if( l.something_.index() == 2 )
 	{
-		return *l.GetArrayType() == *r.GetArrayType();
+		return *l.GetRawPointerType() == *r.GetRawPointerType();
 	}
 	else if( l.something_.index() == 3 )
 	{
-		return *l.GetRawPointerType() == *r.GetRawPointerType();
+		return l.GetClassType() == r.GetClassType();
 	}
 	else if( l.something_.index() == 4 )
 	{
-		return l.GetClassType() == r.GetClassType();
+		return l.GetEnumType() == r.GetEnumType();
 	}
 	else if( l.something_.index() == 5 )
 	{
-		return l.GetEnumType() == r.GetEnumType();
-	}
-	else if( l.something_.index() == 6 )
-	{
 		return *l.GetFunctionPointerType() == *r.GetFunctionPointerType();
 	}
-	else if( l.something_.index() == 7 )
+	else if( l.something_.index() == 6 )
 	{
 		return *l.GetTupleType() == *r.GetTupleType();
 	}

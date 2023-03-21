@@ -12,8 +12,8 @@ void CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	const FunctionVariable& src_function,
 	const FunctionVariable& new_function )
 {
-	const FunctionType& src_function_type= *src_function.type.GetFunctionType();
-	const FunctionType& new_function_type= *new_function.type.GetFunctionType();
+	const FunctionType& src_function_type= src_function.type;
+	const FunctionType& new_function_type= new_function.type;
 	U_ASSERT( !src_function_type.params.empty() );
 	U_ASSERT( !new_function_type.params.empty() );
 	U_ASSERT( src_function_type.params.front().type.GetClassType() != nullptr );
@@ -482,7 +482,7 @@ std::pair<VariablePtr, llvm::Value*> CodeBuilder::TryFetchVirtualFunction(
 	if( function.virtual_table_index == ~0u )
 		return std::make_pair( this_, EnsureLLVMFunctionCreated( function ) ); // No need to perform virtual call.
 
-	const Type& function_this_type= function.type.GetFunctionType()->params.front().type;
+	const Type& function_this_type= function.type.params.front().type;
 
 	if( !ReferenceIsConvertible( this_->type, function_this_type, errors_container, src_loc ) )
 	{

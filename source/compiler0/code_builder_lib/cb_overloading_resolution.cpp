@@ -313,7 +313,7 @@ FunctionVariable* CodeBuilder::GetFunctionWithSameType(
 {
 	for( FunctionVariable& function_varaible : functions_set.functions )
 	{
-		if( *function_varaible.type.GetFunctionType() == function_type )
+		if( function_varaible.type == function_type )
 			return &function_varaible;
 	}
 
@@ -332,8 +332,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 		return true;
 	}
 
-	const FunctionType* function_type= function.type.GetFunctionType();
-	U_ASSERT(function_type);
+	const FunctionType& function_type= function.type;
 
 	/*
 	Algorithm for overloading applying:
@@ -342,17 +341,17 @@ bool CodeBuilder::ApplyOverloadedFunction(
 	*/
 	for( const FunctionVariable& set_function : functions_set.functions )
 	{
-		const FunctionType& set_function_type= *set_function.type.GetFunctionType(); // Must be function type 100 %
+		const FunctionType& set_function_type= set_function.type;
 
 		// If argument count differs - allow overloading.
 		// SPRACHE_TODO - handle default arguments.
-		if( function_type->params.size() != set_function_type.params.size() )
+		if( function_type.params.size() != set_function_type.params.size() )
 			continue;
 
 		uint32_t param_is_same_count= 0u;
-		for( size_t i= 0u; i < function_type->params.size(); i++ )
+		for( size_t i= 0u; i < function_type.params.size(); i++ )
 		{
-			const FunctionType::Param& param= function_type->params[i];
+			const FunctionType::Param& param= function_type.params[i];
 			const FunctionType::Param& set_param= set_function_type.params[i];
 
 			if( param.type != set_param.type )
@@ -362,7 +361,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 				param_is_same_count++;
 		} // For args.
 
-		if( param_is_same_count == function_type->params.size() )
+		if( param_is_same_count == function_type.params.size() )
 		{
 			REPORT_ERROR( CouldNotOverloadFunction, errors_container, src_loc );
 			return false;
@@ -390,7 +389,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	// First, found functions, compatible with given arguments.
 	for( const FunctionVariable& function : functions_set.functions )
 	{
-		const FunctionType& function_type= *function.type.GetFunctionType();
+		const FunctionType& function_type= function.type;
 
 		size_t actial_arg_count;
 		const FunctionType::Param* actual_args_begin;
@@ -503,7 +502,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				l_arg_n= arg_n - 1u;
 			}
 
-			const FunctionType& l_type=* function_l->type.GetFunctionType();
+			const FunctionType& l_type= function_l->type;
 
 			bool is_best_function_for_current_arg= true;
 			for( const FunctionVariable* const function_r : match_functions )
@@ -516,7 +515,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 					r_arg_n= arg_n - 1u;
 				}
 
-				const FunctionType& r_type=* function_r->type.GetFunctionType();
+				const FunctionType& r_type= function_r->type;
 
 				const ConversionsCompareResult comp=
 					CompareConversions(
@@ -548,7 +547,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 						r_arg_n= arg_n - 1u;
 					}
 
-					const FunctionType& r_type=* function_r.type.GetFunctionType();
+					const FunctionType& r_type= function_r.type;
 
 					const ConversionsCompareResult comp=
 						CompareConversions(

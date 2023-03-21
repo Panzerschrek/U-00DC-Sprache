@@ -78,7 +78,6 @@ public:
 
 	// Construct from different type kinds.
 	Type( FundamentalType fundamental_type );
-	Type( FunctionType function_type );
 	Type( FunctionPointerType function_pointer_type );
 	Type( ArrayType array_type );
 	Type( RawPointerType raw_pointer_type );
@@ -88,7 +87,6 @@ public:
 
 	// Get different type kinds.
 	const FundamentalType* GetFundamentalType() const;
-	const FunctionType* GetFunctionType() const;
 	const FunctionPointerType* GetFunctionPointerType() const;
 	const ArrayType* GetArrayType() const;
 	const RawPointerType* GetRawPointerType() const;
@@ -119,7 +117,6 @@ public:
 private:
 	friend bool operator==( const Type&, const Type&);
 
-	using FunctionPtr= std::shared_ptr<const FunctionType>;
 	using FunctionPointerPtr= std::shared_ptr<const FunctionPointerType>;
 	using ArrayPtr= std::shared_ptr<const ArrayType>;
 	using RawPointerPtr= std::shared_ptr<const RawPointerType>;
@@ -127,7 +124,6 @@ private:
 
 	using Variant= std::variant<
 		FundamentalType,
-		FunctionPtr,
 		ArrayPtr,
 		RawPointerPtr,
 		ClassPtr,

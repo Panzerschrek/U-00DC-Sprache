@@ -114,15 +114,6 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 
 	Type src_type= type;
 
-	// Replace function type alias with function pointer type alias to forbid usage of function type in user code.
-	if( const auto function_type= type.GetFunctionType() )
-	{
-		FunctionPointerType function_pointer_type;
-		function_pointer_type.function_type= *function_type;
-		function_pointer_type.llvm_type= llvm::PointerType::get( llvm_context_, 0 ); // Just use generic pointers for function pointers.
-		src_type= std::move(function_pointer_type);
-	}
-
 	// This allows to get typename itself, using typeinfo variable and use such type as normal.
 	typeinfo_class->members->AddName( "src_type", Value( src_type, g_dummy_src_loc ) );
 
@@ -131,7 +122,7 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 
 void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typeinfo_variable, NamesScope& root_namespace )
 {
-	if( !( EnsureTypeComplete( type ) || type.GetFunctionType() != nullptr ) )
+	if( !EnsureTypeComplete( type ) )
 	{
 		// Just ignore here incomplete types, report about error while building "typeinfo" operator.
 		return;
@@ -193,7 +184,6 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 
 	// Fields sorted by alignment - first, "size_type" types and reference types, then, bool types.
 
-	if( type.GetFunctionType() == nullptr )
 	{
 		llvm::Type* const llvm_type= type.GetLLVMType();
 		// see llvm/lib/IR/DataLayout.cpp:40
@@ -211,7 +201,6 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	add_bool_field( "is_class"           , type.GetClassType()           != nullptr );
 	add_bool_field( "is_raw_pointer"     , type.GetRawPointerType()      != nullptr );
 	add_bool_field( "is_function_pointer", type.GetFunctionPointerType() != nullptr );
-	add_bool_field( "is_function"        , type.GetFunctionType()        != nullptr );
 
 	add_bool_field( "is_default_constructible", type.IsDefaultConstructible() );
 	add_bool_field( "is_copy_constructible"   , type.IsCopyConstructible()    );
@@ -302,16 +291,14 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	}
 	else if( const FunctionPointerType* const function_pointer_type= type.GetFunctionPointerType() )
 	{
-		add_typeinfo_field( "element_type", function_pointer_type->function_type );
-	}
-	else if( const FunctionType* const function_type= type.GetFunctionType() )
-	{
-		add_typeinfo_field( "return_type", function_type->return_type );
-		add_list_field( "arguments_list"      , BuildTypeinfoFunctionArguments( *function_type, root_namespace ) );
-		add_bool_field( "return_value_is_reference", function_type->return_value_type != ValueType::Value );
-		add_bool_field( "return_value_is_mutable"  , function_type->return_value_type == ValueType::ReferenceMut );
-		add_bool_field( "unsafe"                   , function_type->unsafe );
+		const FunctionType& function_type= function_pointer_type->function_type;
+		add_typeinfo_field( "return_type", function_type.return_type );
+		add_list_field( "arguments_list"      , BuildTypeinfoFunctionArguments( function_type, root_namespace ) );
+		add_bool_field( "return_value_is_reference", function_type.return_value_type != ValueType::Value );
+		add_bool_field( "return_value_is_mutable"  , function_type.return_value_type == ValueType::ReferenceMut );
+		add_bool_field( "unsafe"                   , function_type.unsafe );
 		// SPRACHE_TODO - add also reference pollution.
+
 	}
 	else U_ASSERT(false);
 
@@ -335,7 +322,7 @@ void CodeBuilder::FinishTypeinfoClass( const ClassPtr class_type, const ClassFie
 	TryGenerateDestructor( class_type );
 
 	const FunctionVariable& destructor= class_.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) )->GetFunctionsSet()->functions.front();
-	EnsureLLVMFunctionCreated( destructor )->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), *destructor.type.GetFunctionType() ) );
+	EnsureLLVMFunctionCreated( destructor )->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), destructor.type ) );
 }
 
 TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type, NamesScope& root_namespace )

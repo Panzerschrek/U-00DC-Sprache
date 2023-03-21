@@ -1151,7 +1151,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		mangler_->MangleFunction(
 			*function_template.parent_namespace,
 			func_name,
-			*function_variable.type.GetFunctionType(),
+			function_variable.type,
 			&template_args );
 	if( function_variable.llvm_function->function != nullptr )
 		function_variable.llvm_function->function->setName( function_variable.llvm_function->name_mangled );
