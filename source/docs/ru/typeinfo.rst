@@ -28,7 +28,6 @@
 * ``bool is_tuple`` - является ли тип кортежем
 * ``bool is_raw_pointer`` - является ли тип сырым указателем
 * ``bool is_class`` - является ли тип структурой или классом
-* ``bool is_function``  - является ли тип функцией
 * ``bool is_function_pointer`` - является ли тип указателем на функцию
 * ``size_type references_tags_count`` - количество ссылок внутри (0 или 1)
 * ``bool is_default_constructible`` - является ли тип конструируемым по умолчанию
@@ -209,9 +208,9 @@
    static_assert( typeinfo</PNF/>.parent_count == 1s );
    static_assert( typeinfo</S/>.field_count == 3s );
 
-*****************************
-*Состав информации о функции*
-*****************************
+*******************************************
+*Состав информации об указателе на функцию*
+*******************************************
 
 * ``typeinfo & return_type`` - описание типа возвращаемого значения
 * ``bool return_value_is_reference`` - является ли возвращаемое значение ссылкой
@@ -228,7 +227,7 @@
 .. code-block:: u_spr
 
    type fn_ptr= fn( i32 x, f32& y, bool &mut z ) : i32;
-   auto& info = typeinfo</fn_ptr/>.element_type;
+   auto& info = typeinfo</fn_ptr/>;
    static_assert( info.return_type.is_signed_integer );
    static_assert( info.return_type.size_of == 4s );
    static_assert( !info.unsafe );
@@ -236,11 +235,6 @@
    static_assert( info.arguments_list[1].is_reference );
    static_assert( info.arguments_list[2].is_mutable );
 
-*******************************************
-*Состав информации об указателе на функцию*
-*******************************************
-
-* ``typeinfo & element_type`` - информация о типе функции, на которую указывает указатель
 
 *************************************
 *Состав информации о сыром указателе*
