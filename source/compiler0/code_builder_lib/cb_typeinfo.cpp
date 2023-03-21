@@ -112,10 +112,8 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 			GetTypeinfoVariableName( typeinfo_class ),
 			result->constexpr_value );
 
-	Type src_type= type;
-
 	// This allows to get typename itself, using typeinfo variable and use such type as normal.
-	typeinfo_class->members->AddName( "src_type", Value( src_type, g_dummy_src_loc ) );
+	typeinfo_class->members->AddName( "src_type", Value( type, g_dummy_src_loc ) );
 
 	return result;
 }

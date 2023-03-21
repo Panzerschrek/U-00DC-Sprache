@@ -477,12 +477,7 @@ std::string Type::ToString() const
 
 		std::string operator()( const FunctionPointerPtr& function_pointer ) const
 		{
-			return ProcessFunctionType( function_pointer->function_type );
-		}
-
-	private:
-		std::string ProcessFunctionType( const FunctionType& function ) const
-		{
+			const FunctionType& function= function_pointer->function_type;
 			// TODO - add references pollution/return references
 
 			std::string result;
@@ -554,12 +549,8 @@ size_t Type::Hash() const
 
 		size_t operator()( const FunctionPointerPtr& function_pointer ) const
 		{
-			return ProcessFunctionType( function_pointer->function_type );
-		}
+			const FunctionType& function= function_pointer->function_type;
 
-	private:
-		size_t ProcessFunctionType( const FunctionType& function ) const
-		{
 			size_t hash= 0;
 			for( const FunctionType::Param& param : function.params )
 				hash= llvm::hash_combine( hash, param.type.Hash(), param.value_type );
@@ -660,7 +651,7 @@ constexpr uint8_t FunctionType::c_arg_reference_tag_number;
 
 bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 {
-	const FunctionType&  src_function_type= *this;
+	const FunctionType& src_function_type= *this;
 	const FunctionType& dst_function_type= other;
 	if( src_function_type.return_type != dst_function_type.return_type )
 		return false;
@@ -688,10 +679,10 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 	}
 
 	// We can convert function, returning less references to function, returning more referenes.
-	for( const FunctionType::ParamReference& src_inner_arg_reference : src_function_type.return_references )
+	for( const ParamReference& src_inner_arg_reference : src_function_type.return_references )
 	{
 		bool found= false;
-		for( const FunctionType::ParamReference& dst_inner_arg_reference : dst_function_type.return_references )
+		for( const ParamReference& dst_inner_arg_reference : dst_function_type.return_references )
 		{
 			if( dst_inner_arg_reference == src_inner_arg_reference )
 			{
@@ -704,7 +695,7 @@ bool FunctionType::PointerCanBeConvertedTo( const FunctionType& other ) const
 	}
 
 	// We can convert function, linkink less references to function, linking more references
-	for( const FunctionType::ReferencePollution& src_pollution : src_function_type.references_pollution )
+	for( const ReferencePollution& src_pollution : src_function_type.references_pollution )
 	{
 		 // TODO - maybe compare with mutability conversion possibility?
 		if( dst_function_type.references_pollution.count(src_pollution) == 0u )
