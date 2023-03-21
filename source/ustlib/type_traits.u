@@ -126,7 +126,7 @@ fn constexpr class_have_method( [ char8, name_size ]& name ) : bool
 			if( type_traits_impl::string_equals( list_element.name, name ) )
 			{
 				// Same type of typeinfo means same type
-				if( type_traits_impl::args_are_same( list_element.type, typeinfo</FnT/>.element_type ) )
+				if( type_traits_impl::args_are_same( list_element.type, typeinfo</FnT/> ) )
 				{ return true; }
 			}
 		}
