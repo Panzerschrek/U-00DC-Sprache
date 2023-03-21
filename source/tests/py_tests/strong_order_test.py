@@ -177,7 +177,7 @@ def TypeinfoFunctionParamsList_Order_Test0():
 	c_program_text= """
 		struct S{}
 		type FnPtr= fn( i32 x, f32 y, bool z, S& s );
-		auto& ti= typeinfo</FnPtr/>.element_type;
+		auto& ti= typeinfo</FnPtr/>;
 
 		static_assert( ti.arguments_list[0].type.is_signed_integer );
 		static_assert( !ti.arguments_list[0].is_reference );

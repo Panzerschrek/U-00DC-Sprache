@@ -94,8 +94,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 {
 	const Synt::FunctionType& function_type_name= *function_type_name_ptr;
 
-	FunctionPointerType function_pointer_type;
-	FunctionType& function_type= function_pointer_type.function_type;
+	FunctionType function_type;
 
 	if( function_type_name.return_type_ == nullptr )
 		function_type.return_type= void_type_;
@@ -133,8 +132,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention_, function_type_name.src_loc_, names_scope.GetErrors() );
 
-	function_pointer_type.llvm_type= llvm::PointerType::get( llvm_context_, 0 );
-	return std::move(function_pointer_type);
+	return FunctionTypeToPointer( std::move(function_type) );
 }
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name )
@@ -178,6 +176,11 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), named_type_name.src_loc_, named_type_name );
 
 	return invalid_type_;
+}
+
+FunctionPointerType CodeBuilder::FunctionTypeToPointer( FunctionType function_type )
+{
+	return FunctionPointerType{ std::move(function_type), llvm::PointerType::get( llvm_context_, 0 ) };
 }
 
 llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type )

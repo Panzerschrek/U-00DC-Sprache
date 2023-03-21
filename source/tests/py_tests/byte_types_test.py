@@ -426,7 +426,6 @@ def ByteTypesTypeinfo_Test0():
 		static_assert( !typeinfo</byte16/>.is_class );
 		static_assert( !typeinfo</byte16/>.is_raw_pointer );
 		static_assert( !typeinfo</byte16/>.is_function_pointer );
-		static_assert( !typeinfo</byte16/>.is_function );
 		static_assert( !typeinfo</byte16/>.is_numeric );
 		static_assert( !typeinfo</byte16/>.is_integer );
 		static_assert( !typeinfo</byte16/>.is_signed_integer );

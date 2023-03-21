@@ -213,8 +213,7 @@ def FunctionPointerTypesInfo_Test0():
 		fn Foo()
 		{
 			static_assert( typeinfo</FnPtr/>.is_function_pointer );
-			static_assert( typeinfo</FnPtr/>.element_type.is_function );
-			static_assert( typeinfo</FnPtr/>.element_type.return_type.is_float );
+			static_assert( typeinfo</FnPtr/>.return_type.is_float );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -554,8 +553,8 @@ def TypeinfoList_FunctionTypeParams_Test0():
 	c_program_text= """
 		fn Foo()
 		{
-			auto& ti= typeinfo</ ( fn( i32 x, f32 & y, bool &mut z ) : size_type ) />.element_type;
-			static_assert( ti.is_function );
+			auto& ti= typeinfo</ ( fn( i32 x, f32 & y, bool &mut z ) : size_type ) />;
+			static_assert( ti.is_function_pointer );
 
 			static_assert( ti.arguments_list[0].type.is_signed_integer );
 			static_assert( !ti.arguments_list[0].is_mutable );
@@ -972,27 +971,6 @@ def Typeinfo_SrcType_Test0():
 		type FS= MustBeSame</ TIF::src_type, f32 />;
 
 		type TA= MustBeSame</ PassType</ typeof(typeinfo</ [u64, 8] /> ) />::type_passed::src_type, [u64, 8] />;
-	"""
-
-	tests_lib.build_program( c_program_text )
-
-
-def Typeinfo_SrcType_Test1():
-	c_program_text= """
-		struct S{}
-
-		static_assert( typeinfo</S/>.functions_list[0].type.is_function );
-
-		// Should get function pointer type for "src_type" for function type.
-		// Function type itself should be unobtainable.
-		type FuncType = typeof( typeinfo</S/>.functions_list[0].type )::src_type;
-
-		static_assert( typeinfo</FuncType/>.is_function_pointer );
-
-		fn Foo()
-		{
-			var FuncType ptr= zero_init;
-		}
 	"""
 
 	tests_lib.build_program( c_program_text )

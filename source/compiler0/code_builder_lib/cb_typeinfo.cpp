@@ -573,7 +573,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPt
 				ClassFieldsVector<llvm::Constant*> fields_initializers;
 
 				{
-					const VariablePtr dependent_type_typeinfo= BuildTypeInfo( function.type, root_namespace );
+					const VariablePtr dependent_type_typeinfo= BuildTypeInfo( FunctionTypeToPointer( function.type ), root_namespace );
 					ClassField field( node_type, dependent_type_typeinfo->type, uint32_t(fields_llvm_types.size()), false, true );
 
 					node_type_class.members->AddName( g_type_field_name, Value( std::move(field), g_dummy_src_loc ) );
@@ -680,10 +680,12 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoFunctionArguments( const Function
 	list_elements_llvm_types.reserve( function_type.params.size() );
 	list_elements_initializers.reserve( function_type.params.size() );
 
+	const FunctionPointerType function_pointer_type= FunctionTypeToPointer( function_type );
+
 	for( const FunctionType::Param& param : function_type.params )
 	{
 		const size_t param_index= size_t(&param - function_type.params.data());
-		const ClassPtr node_type= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_arguments_list_node_class_name + std::to_string(param_index) );
+		const ClassPtr node_type= CreateTypeinfoClass( root_namespace, function_pointer_type, g_typeinfo_function_arguments_list_node_class_name + std::to_string(param_index) );
 		Class& node_type_class= *node_type;
 
 		ClassFieldsVector<llvm::Type*> fields_llvm_types;
