@@ -257,18 +257,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 	{
 		auto class_members= typeinfo_class.lock_imut().deref().members;
 		auto mut members_lock= class_members.lock_mut();
-
-		auto mut src_type= t;
-
-		// Replace function type alias with function pointer type alias to forbid usage of function type in user code.
-		if_var( &function_type : t.GetFunctionType() )
-		{
-			var FunctionPointerType mut function_pointer_type{ .function_type= function_type };
-			function_pointer_type.llvm_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
-			src_type= move(function_pointer_type);
-		}
-
-		members_lock.deref().AddName( "src_type", src_type );
+		members_lock.deref().AddName( "src_type", t );
 	}
 
 	return move(v_ptr);
@@ -284,7 +273,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		return typeinfo_variable_ptr;
 	}
 
-	if( !( EnsureTypeComplete( t ) || !t.GetFunctionType().empty() ) )
+	if( !EnsureTypeComplete( t ) )
 	{
 		// Ignore incomplete types here, generate error in "typeinfo" operator evaluation instead.
 		// TODO - what if user try to access incomplete member of incomplete typeinfo class?
@@ -299,10 +288,8 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 	var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
 	var ust::vector</LLVMValueRef/> mut fields_initializers;
 
-	if( t.GetFunctionType().empty() )
 	{
 		var LLVMTypeRef llvm_type= t.GetLLVMType();
-
 		// see llvm/lib/IR/DataLayout.cpp:40
 		ADD_SIZE_FIELD( "size_of", LLVMABISizeOfType( data_layout_, llvm_type ) )
 		ADD_SIZE_FIELD( "align_of", LLVMABIAlignmentOfType( data_layout_, llvm_type ) )
@@ -315,7 +302,6 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 	ADD_BOOL_FIELD( "is_array"           , !t.GetArrayType          ().empty() )
 	ADD_BOOL_FIELD( "is_tuple"           , !t.GetTupleType          ().empty() )
 	ADD_BOOL_FIELD( "is_raw_pointer"     , !t.GetRawPointerType     ().empty() )
-	ADD_BOOL_FIELD( "is_function"        , !t.GetFunctionType       ().empty() )
 	ADD_BOOL_FIELD( "is_function_pointer", !t.GetFunctionPointerType().empty() )
 	ADD_BOOL_FIELD( "is_class"           , !t.GetClassType          ().empty() )
 	ADD_BOOL_FIELD( "is_enum"            , !t.GetEnumType           ().empty() )
@@ -351,18 +337,15 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 	{
 		ADD_TYPEINFO_FIELD( "element_type", pointer_type.element_type )
 	}
-	if_var( &function_type : t.GetFunctionType() )
+	if_var( &function_pointer_type : t.GetFunctionPointerType() )
 	{
+		var FunctionType& function_type= function_pointer_type.function_type;
 		ADD_TYPEINFO_FIELD( "return_type", function_type.return_type )
 		ADD_LIST_FIELD( "arguments_list", BuildTypeinfoFunctionParamsList( root_namespace, function_type ) )
 		ADD_BOOL_FIELD( "return_value_is_reference", function_type.return_value_type != ValueType::Value )
 		ADD_BOOL_FIELD( "return_value_is_mutable"  , function_type.return_value_type == ValueType::ReferenceMut )
 		ADD_BOOL_FIELD( "unsafe"                   , function_type.is_unsafe )
 		// SPRACHE_TODO - add also reference pollution.
-	}
-	if_var( &function_pointer_type : t.GetFunctionPointerType() )
-	{
-		ADD_TYPEINFO_FIELD( "element_type", function_pointer_type.function_type )
 	}
 	if_var( &class_ptr : t.GetClassType() )
 	{
@@ -547,9 +530,11 @@ fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_n
 
 	var ust::shared_ptr_final</ Synt::ClassField /> dummy_syntax_element( Synt::ClassField() );
 
+	var FunctionPointerType function_pointer_type= FunctionTypeToPointer( function_type );
+
 	for( auto mut i= 0s; i < function_type.params.size(); ++i )
 	{
-		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, function_type, g_typeinfo_function_params_list_node_class_name + ust::to_string8(i) );
+		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, function_pointer_type, g_typeinfo_function_params_list_node_class_name + ust::to_string8(i) );
 		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
 
 		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
@@ -676,7 +661,8 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
 		var ust::vector</LLVMValueRef/> mut fields_initializers;
 
-		ADD_TYPEINFO_FIELD( "type", function.t )
+		var FunctionPointerType function_pointer_type= FunctionTypeToPointer(function.t);
+		ADD_TYPEINFO_FIELD( "type", function_pointer_type )
 
 		ADD_BOOL_FIELD( "is_this_call" , function.is_this_call )
 		ADD_BOOL_FIELD( "is_generated" , function.is_generated )

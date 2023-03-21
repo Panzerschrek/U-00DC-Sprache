@@ -348,8 +348,7 @@ void CodeBuilder::MergeNameScopes(
 
 				for( const FunctionVariable& src_func : src_funcs_set->functions )
 				{
-					FunctionVariable* same_dst_func=
-						GetFunctionWithSameType( *src_func.type.GetFunctionType(), *dst_funcs_set );
+					FunctionVariable* const same_dst_func= GetFunctionWithSameType( src_func.type, *dst_funcs_set );
 					if( same_dst_func != nullptr )
 					{
 						if( same_dst_func->prototype_src_loc != src_func.prototype_src_loc )
@@ -483,7 +482,7 @@ void CodeBuilder::TryCallCopyConstructor(
 	const FunctionVariable* constructor= nullptr;
 	for( const FunctionVariable& candidate : constructors->functions )
 	{
-		if( IsCopyConstructor( *candidate.type.GetFunctionType(), class_type ) )
+		if( IsCopyConstructor( candidate.type, class_type ) )
 		{
 			constructor= &candidate;
 			break;
@@ -899,7 +898,7 @@ size_t CodeBuilder::PrepareFunction(
 	// Set conversion constructor.
 	func_variable.is_conversion_constructor= func.is_conversion_constructor_;
 	U_ASSERT( !( func.is_conversion_constructor_ && !is_constructor ) );
-	if( func.is_conversion_constructor_ && func_variable.type.GetFunctionType()->params.size() != 2u )
+	if( func.is_conversion_constructor_ && func_variable.type.params.size() != 2u )
 		REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope.GetErrors(), func.src_loc_ );
 	func_variable.is_constructor= is_constructor;
 
@@ -907,7 +906,7 @@ size_t CodeBuilder::PrepareFunction(
 	if( func.body_kind != Synt::Function::BodyKind::None )
 	{
 		U_ASSERT( func.block_ == nullptr );
-		const FunctionType& function_type= *func_variable.type.GetFunctionType();
+		const FunctionType& function_type= func_variable.type;
 
 		bool invalid_func= false;
 		if( base_class == nullptr )
@@ -932,7 +931,7 @@ size_t CodeBuilder::PrepareFunction(
 		}
 	}
 
-	if( FunctionVariable* const prev_function= GetFunctionWithSameType( *func_variable.type.GetFunctionType(), functions_set ) )
+	if( FunctionVariable* const prev_function= GetFunctionWithSameType( func_variable.type, functions_set ) )
 	{
 			 if( prev_function->syntax_element->block_ == nullptr && func.block_ != nullptr )
 		{ // Ok, body after prototype.
@@ -996,13 +995,11 @@ size_t CodeBuilder::PrepareFunction(
 		inserted_func_variable.body_src_loc= inserted_func_variable.prototype_src_loc= func.src_loc_;
 		inserted_func_variable.syntax_element= &func;
 
-		const FunctionType& func_type= *inserted_func_variable.type.GetFunctionType();
-
 		inserted_func_variable.llvm_function=
 			std::make_shared<LazyLLVMFunction>(
 				inserted_func_variable.no_mangle
 					? func_name
-					: mangler_->MangleFunction( names_scope, func_name, func_type ) );
+					: mangler_->MangleFunction( names_scope, func_name, inserted_func_variable.type ) );
 
 		return functions_set.functions.size() - 1u;
 	}
@@ -1146,7 +1143,7 @@ Type CodeBuilder::BuildFuncCode(
 	U_ASSERT( !func_variable.have_body );
 	func_variable.have_body= true;
 
-	const FunctionType& function_type= *func_variable.type.GetFunctionType();
+	const FunctionType& function_type= func_variable.type;
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( func_variable );
 
@@ -2044,7 +2041,7 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 	if( llvm_function != nullptr )
 		return llvm_function;
 
-	const FunctionType& function_type= *function_variable.type.GetFunctionType();
+	const FunctionType& function_type= function_variable.type;
 
 	llvm_function=
 		llvm::Function::Create(
@@ -2124,7 +2121,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes( FunctionVa
 		return;
 	}
 
-	const FunctionType& function_type= *function_variable.type.GetFunctionType();
+	const FunctionType& function_type= function_variable.type;
 
 	const bool first_arg_is_sret= FunctionTypeIsSRet( function_type );
 

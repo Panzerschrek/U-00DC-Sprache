@@ -115,6 +115,8 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 
+	FunctionPointerType FunctionTypeToPointer( FunctionType function_type );
+
 	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
 	llvm::CallingConv::ID GetLLVMCallingConvention(
 		const std::optional<std::string>& calling_convention_name,

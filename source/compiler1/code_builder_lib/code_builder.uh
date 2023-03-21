@@ -244,6 +244,8 @@ private:
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
 	fn GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef;
 
+	fn FunctionTypeToPointer( mut this, FunctionType function_type ) : FunctionPointerType;
+
 	fn GetLLVMCallingConvention(
 		this,
 		ust::optional</ust::string8/>& calling_convention_name,
@@ -762,7 +764,7 @@ private:
 
 	// Overloading
 
-	fn GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Type& function_type ) : ust::optional_ref_mut</ FunctionVariable />'x';
+	fn GetFunctionWithSameType( FunctionsSet &'x mut functions_set, FunctionType& function_type ) : ust::optional_ref_mut</ FunctionVariable />'x';
 
 	fn ApplyOverloadedFunction(
 		FunctionsSet &mut functions_set,

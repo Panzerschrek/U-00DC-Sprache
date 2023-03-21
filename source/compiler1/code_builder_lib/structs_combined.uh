@@ -215,7 +215,6 @@ public:
 	fn conversion_constructor( ArrayType mut array_type );
 	fn conversion_constructor( TupleType mut tuple_type );
 	fn conversion_constructor( RawPointerType mut raw_pointer_type );
-	fn conversion_constructor( FunctionType mut function_type );
 	fn conversion_constructor( FunctionPointerType mut function_pointer_type );
 	fn conversion_constructor( ClassTypePtr mut class_type );
 	fn conversion_constructor( EnumTypePtr mut enum_type );
@@ -224,7 +223,6 @@ public:
 	fn GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this';
 	fn GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this';
 	fn GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType />'this';
-	fn GetFunctionType( imut this ) : ust::optional_ref_imut</FunctionType />'this';
 	fn GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType />'this';
 	fn GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr />'this';
 	fn GetEnumType( imut this ) : ust::optional_ref_imut</EnumTypePtr />'this';
@@ -253,7 +251,6 @@ private:
 		ust::shared_ptr_final</ArrayType/>,
 		ust::shared_ptr_final</TupleType/>,
 		ust::shared_ptr_final</RawPointerType/>,
-		ust::shared_ptr_final</FunctionType/>,
 		ust::shared_ptr_final</FunctionPointerType/>,
 		ClassTypePtr,
 		EnumTypePtr

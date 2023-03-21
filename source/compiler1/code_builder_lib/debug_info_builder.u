@@ -88,7 +88,7 @@ fn DebugInfoBuilder::CreateFunctionInfo( mut this, FunctionVariable& func_variab
 				cast_mut(linkage_name).data(), linkage_name.size(),
 				file,
 				src_loc.GetLine(),
-				CreateDIType( func_variable.t ),
+				CreateFunctionDIType( func_variable.t ),
 				LLVMBool::False, // IsLocalToUnit
 				LLVMBool::True, // IsDefinition
 				src_loc.GetLine(),
@@ -235,12 +235,6 @@ fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& fun
 
 fn DebugInfoBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 {
-	// Function type is incomplete but we can create typeinfo for it.
-	if_var( &tt : t.GetFunctionType() )
-	{
-		return CreateDITypeImpl( tt );
-	}
-
 	if( unsafe( LLVMTypeIsSized( t.GetLLVMType() ) ) == LLVMBool::True )
 	{
 		if_var( &tt : t.GetFundamentalType() )
@@ -394,61 +388,11 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, RawPointerType& t ) : LLVMMetad
 		ust::nullptr</char8/>(), 0s ) );
 }
 
-fn DebugInfoBuilder::CreateDITypeImpl( mut this, FunctionType& t ) : LLVMMetadataRef
-{
-	var ust::vector</LLVMMetadataRef/> mut di_types;
-	{
-		auto mut di_type= CreateDIType( t.return_type );
-		if( t.return_value_type != ValueType::Value )
-		{
-			unsafe
-			{
-				auto pointer_llvm_type= LLVMPointerType( t.return_type.GetLLVMType(), 0u );
-				di_type= LLVMDIBuilderCreatePointerType(
-					builder_,
-					di_type,
-					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
-					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
-					0u, // address space
-					ust::nullptr</char8/>(), 0s );
-			}
-		}
-
-		di_types.push_back( di_type );
-	}
-
-	foreach( &param : t.params )
-	{
-		auto mut di_type= CreateDIType( param.t );
-		if( param.value_type != ValueType::Value )
-		{
-			unsafe
-			{
-				auto pointer_llvm_type= LLVMPointerType( param.t.GetLLVMType(), 0u );
-				di_type= LLVMDIBuilderCreatePointerType(
-					builder_,
-					di_type,
-					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
-					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
-					0u, // address space
-					ust::nullptr</char8/>(), 0s );
-			}
-		}
-		di_types.push_back( di_type );
-	}
-
-	return unsafe( LLVMDIBuilderCreateSubroutineType(
-		builder_,
-		source_file_entries_.front(),
-		di_types.data(), u32( di_types.size() ),
-		LLVMDIFlags(0) ) );
-}
-
 fn DebugInfoBuilder::CreateDITypeImpl( mut this, FunctionPointerType& t ) : LLVMMetadataRef
 {
 	return unsafe( LLVMDIBuilderCreatePointerType(
 		builder_,
-		CreateDITypeImpl( t.function_type ),
+		CreateFunctionDIType( t.function_type ),
 		LLVMABISizeOfType( data_layout_, t.llvm_type ) * 8u64,
 		LLVMABIAlignmentOfType( data_layout_, t.llvm_type ) * 8u32,
 		0u, // address space
@@ -604,6 +548,56 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, EnumTypePtr& t ) : LLVMMetadata
 
 	enums_di_types_.insert( t, di_type );
 	return di_type;
+}
+
+fn DebugInfoBuilder::CreateFunctionDIType( mut this, FunctionType& t ) : LLVMMetadataRef
+{
+	var ust::vector</LLVMMetadataRef/> mut di_types;
+	{
+		auto mut di_type= CreateDIType( t.return_type );
+		if( t.return_value_type != ValueType::Value )
+		{
+			unsafe
+			{
+				auto pointer_llvm_type= LLVMPointerType( t.return_type.GetLLVMType(), 0u );
+				di_type= LLVMDIBuilderCreatePointerType(
+					builder_,
+					di_type,
+					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
+					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
+					0u, // address space
+					ust::nullptr</char8/>(), 0s );
+			}
+		}
+
+		di_types.push_back( di_type );
+	}
+
+	foreach( &param : t.params )
+	{
+		auto mut di_type= CreateDIType( param.t );
+		if( param.value_type != ValueType::Value )
+		{
+			unsafe
+			{
+				auto pointer_llvm_type= LLVMPointerType( param.t.GetLLVMType(), 0u );
+				di_type= LLVMDIBuilderCreatePointerType(
+					builder_,
+					di_type,
+					LLVMABISizeOfType( data_layout_, pointer_llvm_type ) * 8u64,
+					LLVMABIAlignmentOfType( data_layout_, pointer_llvm_type ) * 8u32,
+					0u, // address space
+					ust::nullptr</char8/>(), 0s );
+			}
+		}
+		di_types.push_back( di_type );
+	}
+
+	return unsafe( LLVMDIBuilderCreateSubroutineType(
+		builder_,
+		source_file_entries_.front(),
+		di_types.data(), u32( di_types.size() ),
+		LLVMDIFlags(0) ) );
 }
 
 } // namespace U1

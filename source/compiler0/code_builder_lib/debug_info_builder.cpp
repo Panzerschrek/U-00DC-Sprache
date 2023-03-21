@@ -107,7 +107,7 @@ void DebugInfoBuilder::CreateFunctionInfo( const FunctionVariable& func_variable
 		func_variable.llvm_function->name_mangled,
 		GetDIFile( func_variable.body_src_loc ),
 		func_variable.body_src_loc.GetLine(),
-		CreateDIType( *func_variable.type.GetFunctionType() ),
+		CreateDIFunctionType( func_variable.type ),
 		func_variable.body_src_loc.GetLine(),
 		llvm::DINode::FlagPrototyped,
 		llvm::DISubprogram::SPFlagDefinition );
@@ -168,8 +168,6 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const Type& type )
 		result_type= CreateDIType( *array_type );
 	else if( const auto tuple_type= type.GetTupleType() )
 		result_type= CreateDIType( *tuple_type );
-	else if( const auto function_type= type.GetFunctionType() )
-		result_type= CreateDIType( *function_type );
 	else if( const auto function_pointer_type= type.GetFunctionPointerType() )
 		result_type= CreateDIType( *function_pointer_type );
 	else if( const auto raw_pointer_type= type.GetRawPointerType() )
@@ -291,31 +289,6 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const TupleType& type )
 		builder_->getOrCreateArray(elements).get() );
 }
 
-llvm::DISubroutineType* DebugInfoBuilder::CreateDIType( const FunctionType& type )
-{
-	U_ASSERT(builder_ != nullptr);
-
-	ArgsVector<llvm::Metadata*> args;
-	args.reserve( type.params.size() + 1u );
-
-	{
-		llvm::DIType* di_type= CreateDIType( type.return_type );
-		if( type.return_value_type != ValueType::Value )
-			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( type.return_type.GetLLVMType()->getPointerTo() ) );
-		args.push_back( di_type );
-	}
-
-	for( const FunctionType::Param& param : type.params )
-	{
-		llvm::DIType* di_type= CreateDIType( param.type );
-		if( param.value_type != ValueType::Value )
-			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( param.type.GetLLVMType()->getPointerTo() ) );
-		args.push_back( di_type );
-	}
-
-	return builder_->createSubroutineType( builder_->getOrCreateTypeArray(args) );
-}
-
 llvm::DIDerivedType* DebugInfoBuilder::CreateDIType( const RawPointerType& type )
 {
 	U_ASSERT(builder_ != nullptr);
@@ -332,7 +305,7 @@ llvm::DIDerivedType* DebugInfoBuilder::CreateDIType( const FunctionPointerType& 
 
 	return
 		builder_->createPointerType(
-			CreateDIType(type.function_type),
+			CreateDIFunctionType(type.function_type),
 			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 
@@ -477,6 +450,32 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 
 	enums_di_cache_.insert( std::make_pair( type, result ) );
 	return result;
+}
+
+
+llvm::DISubroutineType* DebugInfoBuilder::CreateDIFunctionType( const FunctionType& type )
+{
+	U_ASSERT(builder_ != nullptr);
+
+	ArgsVector<llvm::Metadata*> args;
+	args.reserve( type.params.size() + 1u );
+
+	{
+		llvm::DIType* di_type= CreateDIType( type.return_type );
+		if( type.return_value_type != ValueType::Value )
+			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( type.return_type.GetLLVMType()->getPointerTo() ) );
+		args.push_back( di_type );
+	}
+
+	for( const FunctionType::Param& param : type.params )
+	{
+		llvm::DIType* di_type= CreateDIType( param.type );
+		if( param.value_type != ValueType::Value )
+			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( param.type.GetLLVMType()->getPointerTo() ) );
+		args.push_back( di_type );
+	}
+
+	return builder_->createSubroutineType( builder_->getOrCreateTypeArray(args) );
 }
 
 } // namespace U

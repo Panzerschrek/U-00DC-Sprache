@@ -56,7 +56,6 @@ bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const
 {
 	// Simple non-recursive types without "non_sync" tag.
 	if( type.GetFundamentalType() != nullptr ||
-		type.GetFunctionType() != nullptr ||
 		type.GetFunctionPointerType() != nullptr ||
 		type.GetRawPointerType() != nullptr ||
 		type.GetEnumType() != nullptr )

@@ -1245,9 +1245,9 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 
 	for( const FunctionVariable& func : candidate_functions->functions )
 	{
-		if( *func.type.GetFunctionType() == function_pointer_type.function_type )
+		if( func.type == function_pointer_type.function_type )
 			exact_match_function_variable= &func;
-		else if( func.type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function_type ) )
+		else if( func.type.PointerCanBeConvertedTo( function_pointer_type.function_type ) )
 			convertible_function_variables.push_back(&func);
 	}
 	// Try also select template functions with zero template parameters and template functions with all template parameters known.
@@ -1266,7 +1266,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 				}
 				exact_match_function_variable= func;
 			}
-			else if( func->type.GetFunctionType()->PointerCanBeConvertedTo( function_pointer_type.function_type ) )
+			else if( func->type.PointerCanBeConvertedTo( function_pointer_type.function_type ) )
 				convertible_function_variables.push_back(func);
 		}
 	}

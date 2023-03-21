@@ -184,6 +184,7 @@ namespace
 {
 
 void EncodeTypeName( ManglerState& mangler_state, const Type& type );
+void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& function_type );
 void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope );
 
 void EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& template_args )
@@ -437,94 +438,95 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 	{
 		const ManglerState::NodeHolder result_node( mangler_state );
 		mangler_state.Push( "P" );
-		EncodeTypeName( mangler_state, function_pointer->function_type );
-	}
-	else if( const auto function= type.GetFunctionType() )
-	{
-		const ManglerState::NodeHolder function_node( mangler_state );
-
-		if( function->calling_convention == llvm::CallingConv::C ){}
-		else if( function->calling_convention == llvm::CallingConv::Cold )
-		{
-			mangler_state.Push( "U" );
-			mangler_state.PushLengthPrefixed( "cold" );
-		}
-		else if( function->calling_convention == llvm::CallingConv::Fast )
-		{
-			mangler_state.Push( "U" );
-			mangler_state.PushLengthPrefixed( "fast" );
-		}
-		else if( function->calling_convention == llvm::CallingConv::X86_StdCall )
-		{
-			mangler_state.Push( "U" );
-			mangler_state.PushLengthPrefixed( "stdcall" );
-		}
-		else U_ASSERT(false);
-
-		mangler_state.Push( "F" );
-
-		{
-			FunctionType::Param ret;
-			ret.value_type= function->return_value_type;
-			ret.type= function->return_type;
-			EncodeFunctionParam( mangler_state, ret );
-		}
-
-		EncodeFunctionParams( mangler_state, function->params );
-
-		if( !function->return_references.empty() )
-		{
-			const ManglerState::NodeHolder rr_node( mangler_state );
-			mangler_state.Push( "_RR" );
-			mangler_state.Push( Base36Digit(function->return_references.size()) );
-
-			for( const FunctionType::ParamReference& arg_and_tag : function->return_references )
-			{
-				U_ASSERT( arg_and_tag.first  < 36u );
-				U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == FunctionType::c_arg_reference_tag_number );
-
-				mangler_state.Push( Base36Digit(arg_and_tag.first) );
-				mangler_state.Push(
-					arg_and_tag.second == FunctionType::c_arg_reference_tag_number
-					? '_'
-					: Base36Digit(arg_and_tag.second) );
-			}
-		}
-		if( !function->references_pollution.empty() )
-		{
-			const ManglerState::NodeHolder rp_node( mangler_state );
-			mangler_state.Push( "_RP" );
-			U_ASSERT( function->references_pollution.size() < 36u );
-			mangler_state.Push( Base36Digit(function->references_pollution.size()) );
-
-			for( const FunctionType::ReferencePollution& pollution : function->references_pollution )
-			{
-				U_ASSERT( pollution.dst.first  < 36u );
-				U_ASSERT( pollution.dst.second < 36u || pollution.dst.second == FunctionType::c_arg_reference_tag_number );
-				U_ASSERT( pollution.src.first  < 36u );
-				U_ASSERT( pollution.src.second < 36u || pollution.src.second == FunctionType::c_arg_reference_tag_number );
-
-				mangler_state.Push( Base36Digit(pollution.dst.first) );
-				mangler_state.Push(
-					pollution.dst.second == FunctionType::c_arg_reference_tag_number
-					? '_'
-					: Base36Digit(pollution.dst.second) );
-				mangler_state.Push( Base36Digit(pollution.src.first) );
-				mangler_state.Push(
-					pollution.src.second == FunctionType::c_arg_reference_tag_number
-					? '_'
-					: Base36Digit(pollution.src.second) );
-			}
-		}
-		if( function->unsafe )
-		{
-			const ManglerState::NodeHolder unsafe_node( mangler_state );
-			mangler_state.Push( "unsafe" );
-		}
-
-		mangler_state.Push( "E" );
+		EncodeFunctionTypeName( mangler_state, function_pointer->function_type );
 	}
 	else U_ASSERT(false);
+}
+
+void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& function_type )
+{
+	const ManglerState::NodeHolder function_node( mangler_state );
+
+	if( function_type.calling_convention == llvm::CallingConv::C ){}
+	else if( function_type.calling_convention == llvm::CallingConv::Cold )
+	{
+		mangler_state.Push( "U" );
+		mangler_state.PushLengthPrefixed( "cold" );
+	}
+	else if( function_type.calling_convention == llvm::CallingConv::Fast )
+	{
+		mangler_state.Push( "U" );
+		mangler_state.PushLengthPrefixed( "fast" );
+	}
+	else if( function_type.calling_convention == llvm::CallingConv::X86_StdCall )
+	{
+		mangler_state.Push( "U" );
+		mangler_state.PushLengthPrefixed( "stdcall" );
+	}
+	else U_ASSERT(false);
+
+	mangler_state.Push( "F" );
+
+	{
+		FunctionType::Param ret;
+		ret.value_type= function_type.return_value_type;
+		ret.type= function_type.return_type;
+		EncodeFunctionParam( mangler_state, ret );
+	}
+
+	EncodeFunctionParams( mangler_state, function_type.params );
+
+	if( !function_type.return_references.empty() )
+	{
+		const ManglerState::NodeHolder rr_node( mangler_state );
+		mangler_state.Push( "_RR" );
+		mangler_state.Push( Base36Digit(function_type.return_references.size()) );
+
+		for( const FunctionType::ParamReference& arg_and_tag : function_type.return_references )
+		{
+			U_ASSERT( arg_and_tag.first  < 36u );
+			U_ASSERT( arg_and_tag.second < 36u || arg_and_tag.second == FunctionType::c_arg_reference_tag_number );
+
+			mangler_state.Push( Base36Digit(arg_and_tag.first) );
+			mangler_state.Push(
+				arg_and_tag.second == FunctionType::c_arg_reference_tag_number
+				? '_'
+				: Base36Digit(arg_and_tag.second) );
+		}
+	}
+	if( !function_type.references_pollution.empty() )
+	{
+		const ManglerState::NodeHolder rp_node( mangler_state );
+		mangler_state.Push( "_RP" );
+		U_ASSERT( function_type.references_pollution.size() < 36u );
+		mangler_state.Push( Base36Digit(function_type.references_pollution.size()) );
+
+		for( const FunctionType::ReferencePollution& pollution : function_type.references_pollution )
+		{
+			U_ASSERT( pollution.dst.first  < 36u );
+			U_ASSERT( pollution.dst.second < 36u || pollution.dst.second == FunctionType::c_arg_reference_tag_number );
+			U_ASSERT( pollution.src.first  < 36u );
+			U_ASSERT( pollution.src.second < 36u || pollution.src.second == FunctionType::c_arg_reference_tag_number );
+
+			mangler_state.Push( Base36Digit(pollution.dst.first) );
+			mangler_state.Push(
+				pollution.dst.second == FunctionType::c_arg_reference_tag_number
+				? '_'
+				: Base36Digit(pollution.dst.second) );
+			mangler_state.Push( Base36Digit(pollution.src.first) );
+			mangler_state.Push(
+				pollution.src.second == FunctionType::c_arg_reference_tag_number
+				? '_'
+				: Base36Digit(pollution.src.second) );
+		}
+	}
+	if( function_type.unsafe )
+	{
+		const ManglerState::NodeHolder unsafe_node( mangler_state );
+		mangler_state.Push( "unsafe" );
+	}
+
+	mangler_state.Push( "E" );
 }
 
 const ProgramStringMap<std::string> g_op_names

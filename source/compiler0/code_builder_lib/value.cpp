@@ -15,8 +15,8 @@ bool FunctionVariable::VirtuallyEquals( const FunctionVariable& other ) const
 {
 	U_ASSERT( this->is_this_call && other.is_this_call );
 
-	const FunctionType& l_type= *this->type.GetFunctionType();
-	const FunctionType& r_type= *other.type.GetFunctionType();
+	const FunctionType& l_type= this->type;
+	const FunctionType& r_type= other.type;
 
 	return
 		l_type.return_type == r_type.return_type &&

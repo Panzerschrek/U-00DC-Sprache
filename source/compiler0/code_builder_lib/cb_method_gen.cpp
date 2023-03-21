@@ -25,7 +25,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		U_ASSERT( constructors != nullptr );
 		for( FunctionVariable& constructor : constructors->functions )
 		{
-			if( IsDefaultConstructor( *constructor.type.GetFunctionType(), class_type ) )
+			if( IsDefaultConstructor( constructor.type, class_type ) )
 			{
 				if( constructor.is_generated )
 				{
@@ -109,7 +109,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *constructor_variable );
 
 	FunctionContext function_context(
-		*constructor_variable->type.GetFunctionType(),
+		constructor_variable->type,
 		void_type_,
 		llvm_context_,
 		llvm_function );
@@ -201,7 +201,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 		U_ASSERT( constructors != nullptr );
 		for( FunctionVariable& constructor : constructors->functions )
 		{
-			if( IsCopyConstructor( *constructor.type.GetFunctionType(), class_type ) )
+			if( IsCopyConstructor( constructor.type, class_type ) )
 			{
 				if( constructor.is_generated )
 				{
@@ -295,7 +295,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *constructor_variable );
 
 	FunctionContext function_context(
-		*constructor_variable->type.GetFunctionType(),
+		constructor_variable->type,
 		void_type_,
 		llvm_context_,
 		llvm_function );
@@ -371,7 +371,7 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr class_
 void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVariable& destructor_function )
 {
 	Class& the_class= *class_type;
-	const FunctionType& destructor_type= *destructor_function.type.GetFunctionType();
+	const FunctionType& destructor_type= destructor_function.type;
 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( destructor_function );
 
@@ -452,7 +452,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 		for( FunctionVariable& op : operators->functions )
 		{
 			// SPRACHE_TODO - support assignment operator with value src argument.
-			if( IsCopyAssignmentOperator( *op.type.GetFunctionType(), class_type ) )
+			if( IsCopyAssignmentOperator( op.type, class_type ) )
 			{
 				if( op.is_generated )
 				{
@@ -546,7 +546,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
 
 	FunctionContext function_context(
-		*operator_variable->type.GetFunctionType(),
+		operator_variable->type,
 		void_type_,
 		llvm_context_,
 		llvm_function );
@@ -602,7 +602,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 		const OverloadedFunctionsSetPtr operators= assignment_operator_value->GetFunctionsSet();
 		for( FunctionVariable& op : operators->functions )
 		{
-			if( IsEqualityCompareOperator( *op.type.GetFunctionType(), class_type ) )
+			if( IsEqualityCompareOperator( op.type, class_type ) )
 			{
 				if( op.is_generated )
 				{
@@ -697,7 +697,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
 
 	FunctionContext function_context(
-		*operator_variable->type.GetFunctionType(),
+		operator_variable->type,
 		bool_type_,
 		llvm_context_,
 		llvm_function );
@@ -830,7 +830,7 @@ void CodeBuilder::BuildCopyConstructorPart(
 		const FunctionVariable* constructor= nullptr;;
 		for( const FunctionVariable& candidate_constructor : constructors_set->functions )
 		{
-			if( IsCopyConstructor( *candidate_constructor.type.GetFunctionType(), type ) )
+			if( IsCopyConstructor( candidate_constructor.type, type ) )
 			{
 				constructor= &candidate_constructor;
 				break;
@@ -904,7 +904,7 @@ void CodeBuilder::BuildCopyAssignmentOperatorPart(
 		const FunctionVariable* op= nullptr;;
 		for( const FunctionVariable& candidate_op : operators_set->functions )
 		{
-			if( IsCopyAssignmentOperator( *candidate_op .type.GetFunctionType(), type ) )
+			if( IsCopyAssignmentOperator( candidate_op.type, type ) )
 			{
 				op= &candidate_op;
 				break;
@@ -992,7 +992,7 @@ void CodeBuilder::BuildEqualityCompareOperatorPart(
 		const FunctionVariable* op= nullptr;
 		for( const FunctionVariable& candidate_op : operators_set->functions )
 		{
-			if( IsEqualityCompareOperator( *candidate_op .type.GetFunctionType(), type ) )
+			if( IsEqualityCompareOperator( candidate_op .type, type ) )
 			{
 				op= &candidate_op;
 				break;
@@ -1107,7 +1107,7 @@ llvm::Constant* CodeBuilder::ConstexprCompareEqual(
 		const FunctionVariable* op= nullptr;
 		for( const FunctionVariable& candidate_op : operators_set->functions )
 		{
-			if( IsEqualityCompareOperator( *candidate_op .type.GetFunctionType(), type ) )
+			if( IsEqualityCompareOperator( candidate_op.type, type ) )
 			{
 				op= &candidate_op;
 				break;
