@@ -54,6 +54,20 @@ Logicceski takaja ssylka scitajetsä ssylkoj na objekt korutiny.
 No takaja ssylka dolžna budet umeretj do sledujuscego vyzova generatora (kompilätor dolžen eto prokontrolirovatj).
 Po suti vedj ocerednoj vyzov generatora eto vyzov metoda s "mut this".
 
+Korutiny mogut bytj šablonnymi, s etim osobyh problem netu.
+Vnutri Kompilätora korutina eto prosto funkçija, vozvrascajuscaja objekt opredelönnogo tipa.
+Poetomu vybor naiboleje speçializirovannoj šablonnoj funkçii budet rabotatj kak nado.
+
+Korutiny daže mogut bytj "constexpr", jesli ih telo udovletvoräjet "constexpr" usloviju.
+Pri etom vyzvatj korutinu i polucitj "constexpr" rezuljtat neljzä, ibo metod vyzova mutabelen.
+No možno ispoljzovatj korutiny vnutri "constexpr" vyzova.
+
+Ne vpolne jasno, mogut li suscestvovatj korutiny kak "thiscall" metody klassov.
+Problema v tom, cto v korutine jestj sobstvennyj skrytyj "this" - dlä objekta korutiny.
+Pri obrascenii k "this" ne ponätno, kakoj "this" imejetsä v vidu.
+No netu osobyh problem so staticeskimi metodami klassov - korutinami.
+Takže, jesli budet rešena problema s "this", možno budet realizovatj virtualjnyje korutiny.
+
 Kak rabotatj s korutinoj posle sozdanija, jescö ne vpolne ponätno.
 Odin iz variantov - na urovne kompilätora zavoracivatj rezuljtat v "ust::optional" ili "ust::optional_ref", dlä signalizaçii otsutstvija znacenija v nezaveršivšihsä "async" funkçijah i zaveršivšihsä generatorah.
 No eto ne ocenj horošo, t. k. sozdajot zavisimostj kompilätora ot standartnoj biblioteki.
@@ -71,6 +85,10 @@ Operator "yield" v generatorah realizujetsä cerez sohranenije rezuljtata v "pro
 
 Dlä podderžki nizkourovnego koda vozmožno stoit realizovatj nebezopasnyje metody, vrode "resume", "done" i "promise" dlä klassov korutin.
 No ispoljzovanije etih metodov ne dolžno trebovatjsä v obycnom poljzovateljskom kode.
+
+V interpretator "IR" koda nužno budet dobavitj podderžku funkçij korutin - kak vnutrennih, tak i vnešnih.
+Eto možet okazatjsä ne sovsem trivialjno.
+Krome togo nužno realizovatj v kakoj-to mere "malloc" i "free".
 
 Stoit obdumatj vnutrennüju realizaçiju "async" funkçij, otlicnuju ot "Switched-Resume Lowering".
 Naprimer dlä slucajev, kogda v kode idöt rabota s kakim-nibudj asinhronnym sistemnym "API", kogda nado ždatj signal ot sistemy, vmesto togo, ctoby vpustuju krutitj çikly "await".
