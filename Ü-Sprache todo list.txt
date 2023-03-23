@@ -50,6 +50,7 @@ Compiler:
 	or it would be better to pass it in memory.
 *) Faster calling convention for non-cross-language functions.
 *) Fix possible UB in float->int conversion.
+*) Add possibility to use proper "LTO" - build "llvm::PassManager" for LTO/PerLinkLTO configurations.
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
 *) Prevent execution of constexpr functions with errors
