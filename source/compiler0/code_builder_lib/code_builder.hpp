@@ -870,6 +870,12 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
+	// Coroutines
+
+	Type GetGeneratorFunctionReturnType( const FunctionType& generator_function_type );
+
+	void CreateGeneratorEntryBlock( FunctionContext& function_context );
+
 	// NamesScope fill
 
 	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );

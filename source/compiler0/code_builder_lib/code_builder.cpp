@@ -746,6 +746,9 @@ size_t CodeBuilder::PrepareFunction(
 	}
 
 	FunctionVariable func_variable;
+
+	func_variable.is_generator= func.kind == Synt::Function::Kind::Generator;
+
 	{ // Prepare function type
 		FunctionType function_type;
 
@@ -853,6 +856,9 @@ size_t CodeBuilder::PrepareFunction(
 		if( function_type.calling_convention != llvm::CallingConv::C &&
 			( func_variable.is_this_call || func.overloaded_operator_ != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc_ );
+
+		if( func_variable.is_generator )
+			function_type.return_type= GetGeneratorFunctionReturnType( function_type );
 
 		func_variable.type= std::move(function_type);
 	} // end prepare function type
@@ -1415,7 +1421,11 @@ Type CodeBuilder::BuildFuncCode(
 
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
-	if( !block_build_info.have_terminal_instruction_inside )
+	if( func_variable.is_generator )
+	{
+		// TODO - do something here.
+	}
+	else if( !block_build_info.have_terminal_instruction_inside )
 	{
 		// Manually generate "return" for void-return functions.
 		if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
@@ -2065,6 +2075,9 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 		builder.addUWTableAttr(llvm::UWTableKind::Async);
 		llvm_function->addFnAttrs( builder );
 	}
+
+	if( function_variable.is_generator )
+		llvm_function->addFnAttr( llvm::Attribute::PresplitCoroutine );
 
 	// Prepare args attributes.
 
