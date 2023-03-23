@@ -2685,6 +2685,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			}
 		}
 	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::generator_ )
+	{
+		NextLexem();
+		result->kind= Function::Kind::Generator;
+	}
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::constexpr_ )
 	{
 		NextLexem();
@@ -2695,6 +2700,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		NextLexem();
 		result->no_mangle_= true;
 	}
+	// TODO - parse "enalbe_if" prior to other modifiers?
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enable_if_ )
 	{
 		NextLexem();

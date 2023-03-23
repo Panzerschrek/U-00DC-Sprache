@@ -27,6 +27,7 @@ call_conv
 virtual
 override
 pure
+generator
 namespace
 public
 private

@@ -770,6 +770,12 @@ struct Function final : public SyntaxElementBase
 		BodyGenerationDisabled,
 	};
 
+	enum class Kind : uint8_t
+	{
+		Regular,
+		Generator,
+	};
+
 	std::vector<std::string> name_; // A, A::B, A::B::C::D, ::A, ::A::B
 	Expression condition_;
 	FunctionType type_;
@@ -778,6 +784,7 @@ struct Function final : public SyntaxElementBase
 	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
 	BodyKind body_kind= BodyKind::None;
+	Kind kind= Kind::Regular;
 	bool no_mangle_= false;
 	bool is_conversion_constructor_= false;
 	bool constexpr_= false;
