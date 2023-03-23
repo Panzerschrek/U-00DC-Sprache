@@ -1209,10 +1209,6 @@ Type CodeBuilder::BuildFuncCode(
 		llvm_context_,
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
-
-	if( func_variable.is_generator )
-		CreateGeneratorEntryBlock( function_context );
-
 	function_context.args_nodes.resize( function_type.params.size() );
 
 	debug_info_builder_->SetCurrentLocation( func_variable.body_src_loc, function_context );
@@ -1339,6 +1335,10 @@ Type CodeBuilder::BuildFuncCode(
 		llvm_arg.setName( "_arg_" + arg_name );
 		++arg_number;
 	}
+
+	// Create generator entry block after saving args to stack.
+	if( func_variable.is_generator )
+		CreateGeneratorEntryBlock( function_names, function_context, block.src_loc_ );
 
 	if( is_constructor )
 	{

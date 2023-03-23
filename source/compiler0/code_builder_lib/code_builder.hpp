@@ -874,7 +874,7 @@ private:
 
 	Type GetGeneratorFunctionReturnType( const FunctionType& generator_function_type );
 
-	void CreateGeneratorEntryBlock( FunctionContext& function_context );
+	void CreateGeneratorEntryBlock( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 	void CreateGeneratorEndBlock( FunctionContext& function_context );
 
 	// NamesScope fill

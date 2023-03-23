@@ -61,6 +61,8 @@ struct FunctionContext
 	// Specific for coroutines data.
 	llvm::Value* coro_id= nullptr;
 	llvm::Value* coro_handle= nullptr;
+	llvm::BasicBlock* coro_suspend_bb= nullptr;
+	llvm::BasicBlock* coro_cleanup_bb= nullptr;
 
 	std::unordered_set<std::string> uninitialized_this_fields;
 
