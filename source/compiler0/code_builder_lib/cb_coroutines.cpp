@@ -87,13 +87,15 @@ void CodeBuilder::CreateGeneratorEntryBlock( NamesScope& names_scope, FunctionCo
 void CodeBuilder::CreateGeneratorEndBlock( FunctionContext& function_context )
 {
 	// End suspention point
-	function_context.llvm_ir_builder.CreateCall(
+	llvm::Value* const final_suspend_value= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
 		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getTrue( llvm_context_ ) },
 		"final_suspend_value" );
 
-	// Create undonditional jump, since it's undefined behaviour to return from funal suspention point.
-	function_context.llvm_ir_builder.CreateBr(function_context.coro_suspend_bb );
+	llvm::SwitchInst* const switch_instr= function_context.llvm_ir_builder.CreateSwitch( final_suspend_value, function_context.coro_suspend_bb, 2 );
+	// It's undefined behaviour to resume coroutine from final state. So, use break to cleanup basic block for case of such impossible resume.
+	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), function_context.coro_cleanup_bb );
+	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 1u, false ), function_context.coro_cleanup_bb );
 
 	// Cleanup block.
 
