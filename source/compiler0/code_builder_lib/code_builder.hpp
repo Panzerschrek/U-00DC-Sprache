@@ -875,6 +875,7 @@ private:
 	Type GetGeneratorFunctionReturnType( const FunctionType& generator_function_type );
 
 	void CreateGeneratorEntryBlock( FunctionContext& function_context );
+	void CreateGeneratorEndBlock( FunctionContext& function_context );
 
 	// NamesScope fill
 
@@ -1057,6 +1058,12 @@ private:
 	std::vector<GlobalThing> global_things_stack_;
 
 	std::optional<DebugInfoBuilder> debug_info_builder_;
+
+	struct
+	{
+		llvm::Function* malloc= nullptr;
+		llvm::Function* free= nullptr;
+	} coro_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

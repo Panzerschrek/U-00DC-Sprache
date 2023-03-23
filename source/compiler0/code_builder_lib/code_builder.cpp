@@ -151,6 +151,31 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 				module_.get() );
 	}
 
+	// Prepare coroutine helper prototypes.
+	{
+		// TODO - use ustlib wrapper malloc functions?
+		llvm::Type* const ptr_type= llvm::PointerType::get( llvm_context_, 0 );
+		coro_.malloc=
+			llvm::Function::Create(
+					llvm::FunctionType::get(
+						ptr_type,
+						{ fundamental_llvm_types_.int_ptr },
+						false ),
+					llvm::Function::ExternalLinkage,
+					"malloc",
+					module_.get() );
+
+		coro_.free=
+			llvm::Function::Create(
+					llvm::FunctionType::get(
+						fundamental_llvm_types_.void_for_ret_,
+						{ ptr_type },
+						false ),
+					llvm::Function::ExternalLinkage,
+					"free",
+					module_.get() );
+	}
+
 	FunctionType global_function_type;
 	global_function_type.return_type= void_type_;
 
@@ -1185,6 +1210,9 @@ Type CodeBuilder::BuildFuncCode(
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
 
+	if( func_variable.is_generator )
+		CreateGeneratorEntryBlock( function_context );
+
 	function_context.args_nodes.resize( function_type.params.size() );
 
 	debug_info_builder_->SetCurrentLocation( func_variable.body_src_loc, function_context );
@@ -1423,7 +1451,7 @@ Type CodeBuilder::BuildFuncCode(
 	// In other case, we have "return" in all branches and destructors call before each "return".
 	if( func_variable.is_generator )
 	{
-		// TODO - do something here.
+		CreateGeneratorEndBlock( function_context );
 	}
 	else if( !block_build_info.have_terminal_instruction_inside )
 	{

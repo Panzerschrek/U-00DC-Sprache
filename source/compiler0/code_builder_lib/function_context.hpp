@@ -58,6 +58,10 @@ struct FunctionContext
 	VariablePtr this_= nullptr; // null for nonclass functions or static member functions.
 	llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions.
 
+	// Specific for coroutines data.
+	llvm::Value* coro_id= nullptr;
+	llvm::Value* coro_handle= nullptr;
+
 	std::unordered_set<std::string> uninitialized_this_fields;
 
 	llvm::Function* const function;
