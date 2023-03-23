@@ -598,11 +598,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::YieldOperator& yield_operator )
 {
-	// TODO
+	// TODO - evaluate value and move/copy it into promice.
 	(void) names;
 	(void) function_context;
 	(void) yield_operator;
 
+	GeneratorSuspend( names, function_context, yield_operator.src_loc_ );
 	// "Yield" is not a terminal operator. Execution (logically) continues after it.
 	return BlockBuildInfo();
 }

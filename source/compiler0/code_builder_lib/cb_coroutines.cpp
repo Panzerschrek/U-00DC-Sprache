@@ -15,7 +15,7 @@ Type CodeBuilder::GetGeneratorFunctionReturnType( const FunctionType& generator_
 	return std::move( raw_pointer_type );
 }
 
-void CodeBuilder::CreateGeneratorEntryBlock( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc  )
+void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 {
 	llvm::Value* const null= llvm::ConstantPointerNull::get( llvm::PointerType::get( llvm_context_, 0 ) );
 
@@ -56,24 +56,26 @@ void CodeBuilder::CreateGeneratorEntryBlock( NamesScope& names_scope, FunctionCo
 	function_context.coro_id= coro_id;
 	function_context.coro_handle= coro_handle;
 
-	llvm::Value* const initial_suspend_value= function_context.llvm_ir_builder.CreateCall(
-		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
-		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getFalse( llvm_context_ ) },
-		"initial_suspend_value" );
-
 	function_context.coro_cleanup_bb= llvm::BasicBlock::Create( llvm_context_, "coro_cleanup" );
 	function_context.coro_suspend_bb= llvm::BasicBlock::Create( llvm_context_, "coro_suspend" );
+}
 
-	llvm::BasicBlock* const next_basic_block= llvm::BasicBlock::Create( llvm_context_, "initial_suspend_normal" );
-	function_context.function->getBasicBlockList().push_back( next_basic_block );
-	llvm::BasicBlock* const destroy_basic_block= llvm::BasicBlock::Create( llvm_context_, "initial_suspend_destroy" );
-	function_context.function->getBasicBlockList().push_back( destroy_basic_block );
+void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+{
+	llvm::Value* const suspend_value= function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
+		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getFalse( llvm_context_ ) },
+		"suspend_value" );
 
-	llvm::SwitchInst* const switch_instr= function_context.llvm_ir_builder.CreateSwitch( initial_suspend_value, function_context.coro_suspend_bb, 2 );
-	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), next_basic_block );
-	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 1u, false ), destroy_basic_block );
+	llvm::BasicBlock* const next_block= llvm::BasicBlock::Create( llvm_context_, "suspend_normal" );
+	llvm::BasicBlock* const destroy_block= llvm::BasicBlock::Create( llvm_context_, "suspend_destroy" );
 
-	function_context.llvm_ir_builder.SetInsertPoint( destroy_basic_block );
+	llvm::SwitchInst* const switch_instr= function_context.llvm_ir_builder.CreateSwitch( suspend_value, function_context.coro_suspend_bb, 2 );
+	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), next_block );
+	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 1u, false ), destroy_block );
+
+	function_context.function->getBasicBlockList().push_back( destroy_block );
+	function_context.llvm_ir_builder.SetInsertPoint( destroy_block );
 	{
 		ReferencesGraph references_graph= function_context.variables_state;
 		CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
@@ -81,7 +83,8 @@ void CodeBuilder::CreateGeneratorEntryBlock( NamesScope& names_scope, FunctionCo
 	}
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_cleanup_bb );
 
-	function_context.llvm_ir_builder.SetInsertPoint( next_basic_block );
+	function_context.function->getBasicBlockList().push_back( next_block );
+	function_context.llvm_ir_builder.SetInsertPoint( next_block );
 }
 
 void CodeBuilder::CreateGeneratorEndBlock( FunctionContext& function_context )
