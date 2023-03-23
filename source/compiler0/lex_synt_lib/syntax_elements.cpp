@@ -179,6 +179,10 @@ ReturnOperator::ReturnOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+YieldOperator::YieldOperator( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 WhileOperator::WhileOperator( const SrcLoc& src_loc)
 	: SyntaxElementBase(src_loc)
 	, block_(src_loc)

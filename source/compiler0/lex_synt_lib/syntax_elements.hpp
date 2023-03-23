@@ -62,6 +62,7 @@ struct Block;
 struct VariablesDeclaration;
 struct AutoVariableDeclaration;
 struct ReturnOperator;
+struct YieldOperator;
 struct WhileOperator;
 struct RangeForOperator;
 struct CStyleForOperator;
@@ -159,6 +160,7 @@ using BlockElement= std::variant<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	ReturnOperator,
+	YieldOperator,
 	WhileOperator,
 	RangeForOperator,
 	CStyleForOperator,
@@ -580,6 +582,13 @@ struct ReturnOperator final : public SyntaxElementBase
 	ReturnOperator( const SrcLoc& src_loc );
 
 	Expression expression_;
+};
+
+struct YieldOperator final : public SyntaxElementBase
+{
+	YieldOperator( const SrcLoc& src_loc );
+
+	Expression expression;
 };
 
 struct WhileOperator final : public SyntaxElementBase

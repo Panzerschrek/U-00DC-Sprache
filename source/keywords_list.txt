@@ -3,6 +3,7 @@ op
 var
 auto
 return
+yield
 while
 break
 continue

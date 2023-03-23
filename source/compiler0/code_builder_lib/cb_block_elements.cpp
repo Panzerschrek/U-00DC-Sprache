@@ -596,6 +596,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::YieldOperator& yield_operator )
+{
+	// TODO
+	(void) names;
+	(void) function_context;
+	(void) yield_operator;
+
+	// "Yield" is not a terminal operator. Execution (logically) continues after it.
+	return BlockBuildInfo();
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::RangeForOperator& range_for_operator )
 {
 	BlockBuildInfo block_build_info;

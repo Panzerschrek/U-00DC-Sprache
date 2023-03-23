@@ -290,6 +290,7 @@ private:
 	AutoVariableDeclaration ParseAutoVariableDeclaration();
 
 	ReturnOperator ParseReturnOperator();
+	YieldOperator ParseYieldOperator();
 	WhileOperator ParseWhileOperator();
 	BlockElement ParseForOperator();
 	RangeForOperator ParseRangeForOperator();
@@ -1995,6 +1996,20 @@ ReturnOperator SyntaxAnalyzer::ParseReturnOperator()
 	return result;
 }
 
+YieldOperator SyntaxAnalyzer::ParseYieldOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::yield_ );
+
+	YieldOperator result( it_->src_loc );
+	NextLexem();
+
+	result.expression= ParseExpression();
+
+	ExpectSemicolon();
+
+	return result;
+}
+
 WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ );
@@ -2406,6 +2421,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseAutoVariableDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ )
 			elements.emplace_back( ParseReturnOperator() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::yield_ )
+			elements.emplace_back( ParseYieldOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ )
 			elements.emplace_back( ParseWhileOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ )
