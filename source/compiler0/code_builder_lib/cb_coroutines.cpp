@@ -56,7 +56,9 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 	function_context.coro_id= coro_id;
 	function_context.coro_handle= coro_handle;
 
-	// TODO - make here initial suspend?
+	function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
+		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getFalse( llvm_context_ ) } );
 }
 
 void CodeBuilder::CreateGeneratorEndBlock( FunctionContext& function_context )
