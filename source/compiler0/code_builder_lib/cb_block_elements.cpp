@@ -598,11 +598,100 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::YieldOperator& yield_operator )
 {
-	// TODO - evaluate value and move/copy it into promice.
-	(void) names;
-	(void) function_context;
-	(void) yield_operator;
+	// TODO - check if it is a coroutine here.
 
+	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
+	U_ASSERT( coroutine_class != nullptr );
+	U_ASSERT( coroutine_class->coroutine_type_description != std::nullopt );
+
+	const Type& yield_type= coroutine_class->coroutine_type_description->return_type;
+	llvm::Value* const promise= function_context.s_ret_;
+	U_ASSERT( promise != nullptr );
+
+	// TODO - perform necessary reference checks.
+
+	// Fill promise.
+	{
+		const StackVariablesStorage temp_variables_storage( function_context );
+
+		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( yield_operator.expression, names, function_context );
+		if( coroutine_class->coroutine_type_description->return_value_type == ValueType::Value )
+		{
+			if( expression_result->type != yield_type )
+			{
+				if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, yield_type, names.GetErrors(), yield_operator.src_loc_ ) )
+					expression_result= ConvertVariable( expression_result, yield_type, *conversion_contructor, names, function_context, yield_operator.src_loc_ );
+				else
+				{
+					REPORT_ERROR( TypesMismatch, names.GetErrors(), yield_operator.src_loc_, yield_type, expression_result->type );
+					return BlockBuildInfo();
+				}
+			}
+
+			//TODO - check correctness of returning references here.
+
+			if( expression_result->type.GetFundamentalType() != nullptr||
+				expression_result->type.GetEnumType() != nullptr ||
+				expression_result->type.GetRawPointerType() != nullptr ||
+				expression_result->type.GetFunctionPointerType() != nullptr ) // Just copy simple scalar.
+			{
+				if( expression_result->type != void_type_ )
+					CreateTypedStore( function_context, yield_type, CreateMoveToLLVMRegisterInstruction( *expression_result, function_context ), promise );
+			}
+			else if( expression_result->value_type == ValueType::Value ) // Move composite value.
+			{
+				function_context.variables_state.MoveNode( expression_result );
+
+				CopyBytes( promise, expression_result->llvm_value, yield_type, function_context );
+
+				if( expression_result->location == Variable::Location::Pointer )
+					CreateLifetimeEnd( function_context, expression_result->llvm_value );
+			}
+			else // Copy composite value.
+			{
+				if( !expression_result->type.IsCopyConstructible() )
+					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), yield_operator.src_loc_, expression_result->type );
+				else
+				{
+					BuildCopyConstructorPart(
+						promise,
+						CreateReferenceCast( expression_result->llvm_value, expression_result->type, yield_type, function_context ),
+						yield_type,
+						function_context );
+				}
+			}
+		}
+		else
+		{
+			if( !ReferenceIsConvertible( expression_result->type, yield_type, names.GetErrors(), yield_operator.src_loc_ ) )
+			{
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), yield_operator.src_loc_, yield_type, expression_result->type );
+				return BlockBuildInfo();
+			}
+
+			if( expression_result->value_type == ValueType::Value )
+			{
+				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), yield_operator.src_loc_ );
+				return BlockBuildInfo();
+			}
+			if( expression_result->value_type == ValueType::ReferenceImut && function_context.function_type.return_value_type == ValueType::ReferenceMut )
+			{
+				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), yield_operator.src_loc_ );
+			}
+
+			// TODO - check correctness of returning reference.
+
+			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
+
+			llvm::Value* const ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, yield_type, function_context );
+			CreateTypedReferenceStore( function_context, yield_type, ret, promise );
+		}
+
+		// Destroy temporaries of expression evaluation frame.
+		CallDestructors( temp_variables_storage, names, function_context, yield_operator.src_loc_ );
+	}
+
+	// Suspend generator. Now generator caller will recieve filled promise.
 	GeneratorSuspend( names, function_context, yield_operator.src_loc_ );
 	// "Yield" is not a terminal operator. Execution (logically) continues after it.
 	return BlockBuildInfo();
