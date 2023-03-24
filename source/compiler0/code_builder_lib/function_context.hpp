@@ -56,7 +56,7 @@ struct FunctionContext
 	ArgsVector< std::pair< VariablePtr, VariablePtr > > args_nodes;
 
 	VariablePtr this_= nullptr; // null for nonclass functions or static member functions.
-	llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions.
+	llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions. Also it is a promise for coroutines.
 
 	// Specific for coroutines data.
 	llvm::Value* coro_id= nullptr;

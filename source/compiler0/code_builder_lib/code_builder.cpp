@@ -240,6 +240,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	non_sync_expression_stack_.clear();
 	generated_template_things_storage_.clear();
 	generated_template_things_sequence_.clear();
+	coroutine_classes_table_.clear();
 	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
 
 	BuildResult build_result;
@@ -882,8 +883,12 @@ size_t CodeBuilder::PrepareFunction(
 			( func_variable.is_this_call || func.overloaded_operator_ != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc_ );
 
+		// Coroutine functions return value of coroutine type.
 		if( func_variable.is_generator )
-			function_type.return_type= GetGeneratorFunctionReturnType( function_type );
+		{
+			function_type.return_type= GetGeneratorFunctionReturnType( *names_scope.GetRoot(), function_type );
+			function_type.return_value_type= ValueType::Value;
+		}
 
 		func_variable.type= std::move(function_type);
 	} // end prepare function type

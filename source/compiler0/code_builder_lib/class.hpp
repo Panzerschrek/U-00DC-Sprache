@@ -1,5 +1,6 @@
 #pragma once
 #include "../lex_synt_lib/program_string.hpp"
+#include "coroutine.hpp"
 #include "template_types.hpp"
 
 namespace U
@@ -86,11 +87,16 @@ public:
 	// Names of this class fields in order of field number. Empty string for parent classes fields.
 	std::vector<std::string> fields_order;
 
+	// TODO - use "unique_ptr" instead of "optional" for info for special classes?
+
 	// Exists only for classes, generated from class templates.
 	std::optional<BaseTemplate> base_template;
 
 	// If this class is typeinfo, contains source type.
 	std::optional<Type> typeinfo_type;
+
+	// Non-empty if this is a coroutine type.
+	std::optional<CoroutineTypeDescription> coroutine_type_description;
 
 	ClassPtr base_class= nullptr;
 	std::vector<Parent> parents; // Parents, include base class.

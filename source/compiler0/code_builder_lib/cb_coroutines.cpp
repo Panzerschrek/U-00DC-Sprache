@@ -1,29 +1,82 @@
+#include "keywords.hpp"
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "code_builder.hpp"
 
 namespace U
 {
 
-Type CodeBuilder::GetGeneratorFunctionReturnType( const FunctionType& generator_function_type )
+Type CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type )
 {
-	// TODO - create specail class type.
-	(void)generator_function_type;
+	CoroutineTypeDescription coroutine_type_description;
+	coroutine_type_description.kind= CoroutineKind::Generator;
+	coroutine_type_description.return_type= generator_function_type.return_type;
+	coroutine_type_description.return_value_type= generator_function_type.return_value_type;
+	coroutine_type_description.inner_reference_type= InnerReferenceType::None;
+	for( const FunctionType::Param& param : generator_function_type.params )
+	{
+		if( param.value_type == ValueType::ReferenceMut )
+			coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
+		else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_type == InnerReferenceType::None )
+			coroutine_type_description.inner_reference_type= InnerReferenceType::Imut;
+	}
 
-	RawPointerType raw_pointer_type;
-	raw_pointer_type.element_type= FundamentalType( U_FundamentalType::byte8_, fundamental_llvm_types_.byte8_ );
-	raw_pointer_type.llvm_type= llvm::PointerType::get( llvm_context_, 0 );
+	if( const auto it= coroutine_classes_table_.find( coroutine_type_description ); it != coroutine_classes_table_.end() )
+		return it->second.get();
 
-	return std::move( raw_pointer_type );
+	auto coroutine_class= std::make_unique<Class>( Keyword( Keywords::generator_ ), &root_namespace );
+
+	coroutine_class->coroutine_type_description= coroutine_type_description;
+	coroutine_class->parents_list_prepared= true;
+	coroutine_class->is_default_constructible= false;
+	coroutine_class->is_copy_constructible= false;
+	coroutine_class->have_destructor= true;
+	coroutine_class->is_copy_assignable= false;
+	coroutine_class->is_equality_comparable= false; // TDO - maybe implement == operator?
+	coroutine_class->can_be_constexpr= false; // TODO - make "constexpr" depending on return type.
+
+	// TODO - create named struct type instead.
+	coroutine_class->llvm_type= llvm::StructType::get( llvm_context_, llvm::ArrayRef<llvm::Type*>{ llvm::PointerType::get( llvm_context_, 0 ) } );
+	coroutine_class->is_complete= true;
+
+	// Generate destructor.
+	{
+		llvm::Function* const destructor_function= EnsureLLVMFunctionCreated( GenerateDestructorPrototype( coroutine_class.get() ) );
+		const auto bb= llvm::BasicBlock::Create( llvm_context_, "func_code", destructor_function );
+		llvm::IRBuilder<> ir_builder( bb );
+
+		// TODO - call llvm.coro.destruy here.
+
+		ir_builder.CreateRetVoid();
+	}
+
+	const ClassPtr res_type= coroutine_class.get();
+	coroutine_classes_table_[coroutine_type_description]= std::move(coroutine_class);
+	return res_type;
 }
 
 void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 {
+	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
+	U_ASSERT( coroutine_class != nullptr );
+	U_ASSERT( coroutine_class->coroutine_type_description != std::nullopt );
+	llvm::Type* const promise_type=
+		coroutine_class->coroutine_type_description->return_value_type == ValueType::Value
+		? coroutine_class->coroutine_type_description->return_type.GetLLVMType()
+		: llvm::PointerType::get( llvm_context_, 0 );
+
+	// Yes, create "alloca" not in "alloca" block. It is safe to do such here.
+	llvm::Value* const promise= function_context.llvm_ir_builder.CreateAlloca( promise_type, nullptr, "coro_promise" );
+
+	U_ASSERT( function_context.s_ret_ == nullptr );
+	function_context.s_ret_= promise;
+
 	llvm::Value* const null= llvm::ConstantPointerNull::get( llvm::PointerType::get( llvm_context_, 0 ) );
 
 	llvm::Value* const coro_id= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_id ),
 		{
 			llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, uint64_t(0) ) ),
-			null,
+			promise,
 			null,
 			null,
 		},
@@ -33,15 +86,6 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_size, { fundamental_llvm_types_.int_ptr } ),
 		{},
 		"coro_frame_size" );
-
-	if( false )
-	{
-		llvm::Value* const coro_frame_align= function_context.llvm_ir_builder.CreateCall(
-			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_align, { fundamental_llvm_types_.int_ptr } ),
-			{},
-			"coro_frame_align" );
-		(void)coro_frame_align;
-	}
 
 	llvm::Value* const coro_frame_memory= function_context.llvm_ir_builder.CreateCall(
 		coro_.malloc,

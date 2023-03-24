@@ -873,7 +873,7 @@ private:
 
 	// Coroutines
 
-	Type GetGeneratorFunctionReturnType( const FunctionType& generator_function_type );
+	Type GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type );
 
 	void CreateGeneratorEntryBlock( FunctionContext& function_context );
 	void GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
@@ -1066,6 +1066,8 @@ private:
 		llvm::Function* malloc= nullptr;
 		llvm::Function* free= nullptr;
 	} coro_;
+
+	std::unordered_map<CoroutineTypeDescription, std::unique_ptr<Class>, CoroutineTypeDescriptionHasher> coroutine_classes_table_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;
