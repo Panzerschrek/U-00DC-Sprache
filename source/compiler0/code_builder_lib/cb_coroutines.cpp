@@ -34,8 +34,10 @@ Type CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, co
 	coroutine_class->is_equality_comparable= false; // TDO - maybe implement == operator?
 	coroutine_class->can_be_constexpr= false; // TODO - make "constexpr" depending on return type.
 
+	llvm::Type* const handle_type= llvm::PointerType::get( llvm_context_, 0 );
+
 	// TODO - create named struct type instead.
-	coroutine_class->llvm_type= llvm::StructType::get( llvm_context_, llvm::ArrayRef<llvm::Type*>{ llvm::PointerType::get( llvm_context_, 0 ) } );
+	coroutine_class->llvm_type= llvm::StructType::get( llvm_context_, llvm::ArrayRef<llvm::Type*>{ handle_type } );
 	coroutine_class->is_complete= true;
 
 	// Generate destructor.
@@ -44,7 +46,13 @@ Type CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, co
 		const auto bb= llvm::BasicBlock::Create( llvm_context_, "func_code", destructor_function );
 		llvm::IRBuilder<> ir_builder( bb );
 
-		// TODO - call llvm.coro.destruy here.
+		llvm::Argument* const this_arg= destructor_function->getArg(0);
+		this_arg->setName( Keyword( Keywords::this_ ) );
+		llvm::Value* const coro_handle= ir_builder.CreateLoad( handle_type, this_arg, false, "coro_handle" );
+
+		ir_builder.CreateCall(
+			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_destroy ),
+			{ coro_handle} );
 
 		ir_builder.CreateRetVoid();
 	}
