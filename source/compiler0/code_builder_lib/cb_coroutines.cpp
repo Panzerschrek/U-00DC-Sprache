@@ -42,7 +42,14 @@ Type CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, co
 
 	// Generate destructor.
 	{
-		llvm::Function* const destructor_function= EnsureLLVMFunctionCreated( GenerateDestructorPrototype( coroutine_class.get() ) );
+		FunctionVariable destructor_variable= GenerateDestructorPrototype( coroutine_class.get() );
+		destructor_variable.have_body= true;
+		llvm::Function* const destructor_function= EnsureLLVMFunctionCreated( destructor_variable );
+
+		OverloadedFunctionsSetPtr functions_set= std::make_shared<OverloadedFunctionsSet>();
+		functions_set->functions.push_back( std::move( destructor_variable ) );
+		coroutine_class->members->AddName( Keyword( Keywords::destructor_ ), std::move( functions_set ) );
+
 		const auto bb= llvm::BasicBlock::Create( llvm_context_, "func_code", destructor_function );
 		llvm::IRBuilder<> ir_builder( bb );
 
