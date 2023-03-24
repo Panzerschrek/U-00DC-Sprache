@@ -259,7 +259,13 @@ cl::opt<bool> tests_output(
 
 cl::opt<bool> print_llvm_asm(
 	"print-llvm-asm",
-	cl::desc("Print LLVM code."),
+	cl::desc("Print LLVM code (faster optimizations)."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+cl::opt<bool> print_llvm_asm_initial(
+	"print-llvm-asm-initial",
+	cl::desc("Print LLVM code (initial)."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -720,6 +726,13 @@ int Main( int argc, const char* argv[] )
 			std::cerr << "Module verify error:\n" << err_stream.str() << std::endl;
 			return 1;
 		}
+	}
+
+	// Dump llvm code before optimization passes.
+	if( Options::print_llvm_asm_initial )
+	{
+		llvm::raw_os_ostream stream(std::cout);
+		result_module->print( stream, nullptr );
 	}
 
 	// Create and run optimization passes.
