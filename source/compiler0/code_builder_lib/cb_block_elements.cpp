@@ -1463,6 +1463,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			coro_expr->name + "lock" );
 	function_context.variables_state.AddNode( coro_expr_lock );
 	function_context.variables_state.TryAddLink( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc_ );
+	variables_storage.RegisterVariable( coro_expr_lock );
 
 	llvm::Value* const coro_handle=
 		function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), coro_expr->llvm_value, false, "coro_handle" );
@@ -1639,8 +1640,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// End block.
 	function_context.function->getBasicBlockList().push_back( end_block );
 	function_context.llvm_ir_builder.SetInsertPoint( end_block );
-
-	function_context.variables_state.RemoveNode( coro_expr_lock );
 
 	CallDestructors( variables_storage, names, function_context, if_coro_advance.src_loc_ );
 
