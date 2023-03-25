@@ -181,10 +181,17 @@ void CodeBuilder::CreateGeneratorEndBlock( FunctionContext& function_context )
 		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getTrue( llvm_context_ ) },
 		"final_suspend_value" );
 
+	const auto unreachable_block= llvm::BasicBlock::Create( llvm_context_, "coro_final_suspend_unreachable" );
+
 	llvm::SwitchInst* const switch_instr= function_context.llvm_ir_builder.CreateSwitch( final_suspend_value, function_context.coro_suspend_bb, 2 );
-	// It's undefined behaviour to resume coroutine from final state. So, use break to cleanup basic block for case of such impossible resume.
-	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), function_context.coro_cleanup_bb );
+	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), unreachable_block );
 	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 1u, false ), function_context.coro_cleanup_bb );
+
+	// Final suspend unreachable block.
+	// It's undefined behaviour to resume coroutine in final suspention state. So, just add unreachable instruction here.
+	function_context.function->getBasicBlockList().push_back( unreachable_block );
+	function_context.llvm_ir_builder.SetInsertPoint( unreachable_block );
+	function_context.llvm_ir_builder.CreateUnreachable();
 
 	// Cleanup block.
 
