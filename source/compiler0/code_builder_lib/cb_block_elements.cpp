@@ -1438,20 +1438,212 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::IfCoroAdvanceOperator& if_coro_advance )
 {
-	// TODO -finish this
 	StackVariablesStorage variables_storage( function_context );
 
-	const VariablePtr expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression_, names, function_context );
+	const VariablePtr coro_expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression_, names, function_context );
 
-	(void)expr;
-
-	const BlockBuildInfo block_build_info= BuildBlock( names, function_context, if_coro_advance.block_ );
-
-	if( !block_build_info.have_terminal_instruction_inside )
+	const ClassPtr coro_class_type= coro_expr->type.GetClassType();
+	if( coro_class_type == nullptr )
 	{
-		// Destroy all temporaries.
-		CallDestructors( variables_storage, names, function_context, if_coro_advance.src_loc_ );
+		// TODO - generate error.
+		return BlockBuildInfo();
 	}
+	if( coro_class_type->coroutine_type_description == std::nullopt )
+	{
+		// TODO - generate error.
+		return BlockBuildInfo();
+	}
+
+	 // TODO - maybe disallow this operator for temporary coroutines?
+	const VariableMutPtr coro_expr_lock=
+		std::make_shared<Variable>(
+			coro_expr->type,
+			ValueType::ReferenceMut,
+			Variable::Location::Pointer,
+			coro_expr->name + "lock" );
+	function_context.variables_state.AddNode( coro_expr_lock );
+	function_context.variables_state.TryAddLink( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc_ );
+
+	llvm::Value* const coro_handle=
+		function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), coro_expr->llvm_value, false, "coro_handle" );
+
+	/* for generators code looks like this:
+			if( !llvm.coro.done( coro_handle ) )
+			{
+				llvm.coro.resume( coro_handle )
+				if( !llvm.coro.done( coro_handle ) )
+				{
+					auto promise= llvm.coro.promise( coro_handle );
+				}
+			}
+		// TODO - adopt this code for async functions (that return value only once and when they are done).
+	 */
+
+	llvm::Value* const done= function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
+		{ coro_handle },
+		"coro_done" );
+
+	const auto end_block= llvm::BasicBlock::Create( llvm_context_ );
+
+	const auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "coro_not_done" );
+	function_context.llvm_ir_builder.CreateCondBr( done, end_block, not_done_block );
+
+	// Not done block.
+	function_context.function->getBasicBlockList().push_back( not_done_block );
+	function_context.llvm_ir_builder.SetInsertPoint( not_done_block );
+
+	function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_resume ),
+		{ coro_handle } );
+
+	llvm::Value* const done_after_resume= function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_done ),
+		{ coro_handle },
+		"coro_done_after_resume" );
+
+	const auto not_done_after_resume_block= llvm::BasicBlock::Create( llvm_context_, "not_done_after_resume" );
+	function_context.llvm_ir_builder.CreateCondBr( done_after_resume, end_block, not_done_after_resume_block );
+
+	// Not done after resume block.
+	function_context.function->getBasicBlockList().push_back( not_done_after_resume_block );
+	function_context.llvm_ir_builder.SetInsertPoint( not_done_after_resume_block );
+
+	llvm::Type* const promise_llvm_type=
+		coro_class_type->coroutine_type_description->return_value_type == ValueType::Value
+			? coro_class_type->coroutine_type_description->return_type.GetLLVMType()
+			: llvm::PointerType::get( llvm_context_, 0 );
+
+	llvm::Value* const promise=
+		function_context.llvm_ir_builder.CreateCall(
+			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_promise ),
+			{
+				coro_handle,
+				llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, data_layout_.getABITypeAlignment( promise_llvm_type ) ) ),
+				llvm::ConstantInt::getFalse( llvm_context_ ),
+			},
+			"promise" );
+
+	{
+		StackVariablesStorage coro_result_variables_storage( function_context );
+
+		const Type& result_type= coro_class_type->coroutine_type_description->return_type;
+		const ValueType result_value_type= coro_class_type->coroutine_type_description->return_value_type;
+
+		const VariableMutPtr variable_reference=
+			std::make_shared<Variable>(
+				result_type,
+				if_coro_advance.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				Variable::Location::Pointer,
+				if_coro_advance.variable_name_ );
+		// Do not forget to remove node in case of error-return!!!
+		function_context.variables_state.AddNode( variable_reference );
+
+		if( result_value_type == ValueType::Value )
+		{
+			// Create variable for value result of coroutine.
+
+			const VariableMutPtr variable=
+				std::make_shared<Variable>(
+					result_type,
+					ValueType::Value,
+					Variable::Location::Pointer,
+					if_coro_advance.variable_name_ + " variable itself",
+					promise );
+			function_context.variables_state.AddNode( variable );
+
+			variable->llvm_value->setName( if_coro_advance.variable_name_ );
+
+			debug_info_builder_->CreateVariableInfo( *variable, if_coro_advance.variable_name_, if_coro_advance.src_loc_, function_context );
+
+			if( !variable->type.CanBeConstexpr() )
+				function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+
+			// TODO - setup references here (somehow).
+
+			variable_reference->llvm_value= variable->llvm_value;
+
+			coro_result_variables_storage.RegisterVariable( variable );
+			function_context.variables_state.AddLink( variable, variable_reference );
+
+			// TODO - maybe create additional reference node here in case of reference modifier for target variable?
+		}
+		else
+		{
+			llvm::Value* const coroutine_reference_result= CreateTypedReferenceLoad( function_context, result_type, promise );
+			if( if_coro_advance.reference_modifier_ == ReferenceModifier::None )
+			{
+				// Create variable and copy into it reference result of coroutine.
+
+				const VariableMutPtr variable=
+					std::make_shared<Variable>(
+						result_type,
+						ValueType::Value,
+						Variable::Location::Pointer,
+						if_coro_advance.variable_name_ + " variable itself",
+						function_context.alloca_ir_builder.CreateAlloca( result_type.GetLLVMType(), nullptr, if_coro_advance.variable_name_ ) );
+				function_context.variables_state.AddNode( variable );
+
+				CreateLifetimeStart( function_context, variable->llvm_value );
+				debug_info_builder_->CreateVariableInfo( *variable, if_coro_advance.variable_name_, if_coro_advance.src_loc_, function_context );
+
+				if( !result_type.CanBeConstexpr() )
+					function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
+
+				if( !result_type.IsCopyConstructible() )
+					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), if_coro_advance.src_loc_, result_type );
+				else
+					BuildCopyConstructorPart(
+						variable->llvm_value, coroutine_reference_result,
+						variable->type,
+						function_context );
+
+				variable_reference->llvm_value= variable->llvm_value;
+
+				coro_result_variables_storage.RegisterVariable( variable );
+				function_context.variables_state.AddLink( variable, variable_reference );
+
+				// TODO - setup references here (somehow).
+			}
+			else
+			{
+				// Create reference to reference result of coroutine.
+
+				if( result_value_type == ValueType::ReferenceImut && variable_reference->value_type != ValueType::ReferenceImut )
+					REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), if_coro_advance.src_loc_ );
+
+				variable_reference->llvm_value= coroutine_reference_result;
+
+				for( const VariablePtr& internal_reference_node : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( coro_expr ) )
+					function_context.variables_state.TryAddLink( internal_reference_node, variable_reference, names.GetErrors(), if_coro_advance.src_loc_ );
+			}
+		}
+
+		if( IsKeyword( if_coro_advance.variable_name_ ) )
+			REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), if_coro_advance.src_loc_ );
+
+		coro_result_variables_storage.RegisterVariable( variable_reference );
+
+		NamesScope variable_names_scope( "", &names );
+		variable_names_scope.AddName( if_coro_advance.variable_name_, Value( variable_reference, if_coro_advance.src_loc_ ) );
+
+		const BlockBuildInfo block_build_info= BuildBlock( variable_names_scope, function_context, if_coro_advance.block_ );
+		if( !block_build_info.have_terminal_instruction_inside )
+		{
+			// Destroy all temporaries.
+			CallDestructors( coro_result_variables_storage, variable_names_scope, function_context, if_coro_advance.src_loc_ );
+		}
+	}
+
+	function_context.llvm_ir_builder.CreateBr( end_block );
+
+	// End block.
+	function_context.function->getBasicBlockList().push_back( end_block );
+	function_context.llvm_ir_builder.SetInsertPoint( end_block );
+
+	function_context.variables_state.RemoveNode( coro_expr_lock );
+
+	CallDestructors( variables_storage, names, function_context, if_coro_advance.src_loc_ );
 
 	return BlockBuildInfo();
 }
