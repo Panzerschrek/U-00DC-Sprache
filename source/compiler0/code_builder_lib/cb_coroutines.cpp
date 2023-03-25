@@ -71,13 +71,15 @@ Type CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, co
 
 void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 {
+	llvm::PointerType* const pointer_type= llvm::PointerType::get( llvm_context_, 0 );
+
 	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
 	U_ASSERT( coroutine_class != nullptr );
 	U_ASSERT( coroutine_class->coroutine_type_description != std::nullopt );
 	llvm::Type* const promise_type=
 		coroutine_class->coroutine_type_description->return_value_type == ValueType::Value
 		? coroutine_class->coroutine_type_description->return_type.GetLLVMType()
-		: llvm::PointerType::get( llvm_context_, 0 );
+		: pointer_type;
 
 	// Yes, create "alloca" not in "alloca" block. It is safe to do such here.
 	llvm::Value* const promise= function_context.llvm_ir_builder.CreateAlloca( promise_type, nullptr, "coro_promise" );
@@ -85,7 +87,7 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 	U_ASSERT( function_context.s_ret_ == nullptr );
 	function_context.s_ret_= promise;
 
-	llvm::Value* const null= llvm::ConstantPointerNull::get( llvm::PointerType::get( llvm_context_, 0 ) );
+	llvm::Value* const null= llvm::ConstantPointerNull::get( pointer_type );
 
 	llvm::Value* const coro_id= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_id ),
@@ -97,15 +99,40 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 		},
 		"coro_id" );
 
+	llvm::Value* const coro_need_to_alloc= function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_alloc ),
+		{
+			coro_id,
+		},
+		"coro_need_to_alloc" );
+
+	llvm::BasicBlock* const coro_need_to_alloc_check_block= function_context.llvm_ir_builder.GetInsertBlock();
+
+	const auto block_need_to_alloc= llvm::BasicBlock::Create( llvm_context_, "need_to_alloc" );
+	const auto block_coro_begin= llvm::BasicBlock::Create( llvm_context_, "coro_begin" );
+
+	function_context.llvm_ir_builder.CreateCondBr( coro_need_to_alloc, block_need_to_alloc, block_coro_begin );
+
+	function_context.function->getBasicBlockList().push_back( block_need_to_alloc );
+	function_context.llvm_ir_builder.SetInsertPoint( block_need_to_alloc );
+
 	llvm::Value* const coro_frame_size= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_size, { fundamental_llvm_types_.int_ptr } ),
 		{},
 		"coro_frame_size" );
 
-	llvm::Value* const coro_frame_memory= function_context.llvm_ir_builder.CreateCall(
+	llvm::Value* const coro_frame_memory_allocated= function_context.llvm_ir_builder.CreateCall(
 		coro_.malloc,
 		{ coro_frame_size },
-		"coro_frame_memory" );
+		"coro_frame_memory_allocated" );
+
+	function_context.llvm_ir_builder.CreateBr( block_coro_begin );
+
+	function_context.function->getBasicBlockList().push_back( block_coro_begin );
+	function_context.llvm_ir_builder.SetInsertPoint( block_coro_begin );
+	llvm::PHINode* const coro_frame_memory= function_context.llvm_ir_builder.CreatePHI( pointer_type, 2, "coro_frame_memory" );
+	coro_frame_memory->addIncoming( null, coro_need_to_alloc_check_block );
+	coro_frame_memory->addIncoming( coro_frame_memory_allocated, block_need_to_alloc );
 
 	llvm::Value* const coro_handle= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_begin ),
@@ -169,6 +196,17 @@ void CodeBuilder::CreateGeneratorEndBlock( FunctionContext& function_context )
 		{ function_context.coro_id, function_context.coro_handle },
 		"coro_frame_memory_for_free" );
 
+	llvm::Value* const need_to_free=
+		function_context.llvm_ir_builder.CreateICmpNE(
+			mem_for_free,
+			llvm::ConstantPointerNull::get( llvm::PointerType::get( llvm_context_, 0 ) ),
+			"coro_need_to_free" );
+
+	const auto block_need_to_free= llvm::BasicBlock::Create( llvm_context_, "need_to_free" );
+	function_context.llvm_ir_builder.CreateCondBr( need_to_free, block_need_to_free, function_context.coro_suspend_bb );
+
+	function_context.function->getBasicBlockList().push_back( block_need_to_free );
+	function_context.llvm_ir_builder.SetInsertPoint( block_need_to_free );
 	function_context.llvm_ir_builder.CreateCall( coro_.free, { mem_for_free } );
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_suspend_bb );
 
