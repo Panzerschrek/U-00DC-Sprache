@@ -220,6 +220,11 @@ StaticIfOperator::StaticIfOperator( const SrcLoc& src_loc )
 	, if_operator_(src_loc)
 {}
 
+IfCoroAdvanceOperator::IfCoroAdvanceOperator( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+	, block_(src_loc)
+{}
+
 SingleExpressionOperator::SingleExpressionOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}

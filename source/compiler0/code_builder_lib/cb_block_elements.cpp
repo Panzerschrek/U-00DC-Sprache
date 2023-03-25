@@ -1436,6 +1436,29 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::IfCoroAdvanceOperator& if_coro_advance )
+{
+	// TODO -finish this
+	StackVariablesStorage variables_storage( function_context );
+
+	const VariablePtr expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression_, names, function_context );
+
+	(void)expr;
+
+	const BlockBuildInfo block_build_info= BuildBlock( names, function_context, if_coro_advance.block_ );
+
+	if( !block_build_info.have_terminal_instruction_inside )
+	{
+		// Destroy all temporaries.
+		CallDestructors( variables_storage, names, function_context, if_coro_advance.src_loc_ );
+	}
+
+	return BlockBuildInfo();
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::SingleExpressionOperator& single_expression_operator )
 {
 	const StackVariablesStorage temp_variables_storage( function_context );

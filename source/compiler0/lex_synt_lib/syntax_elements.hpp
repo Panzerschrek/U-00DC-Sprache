@@ -71,6 +71,7 @@ struct ContinueOperator;
 struct WithOperator;
 struct IfOperator;
 struct StaticIfOperator;
+struct IfCoroAdvanceOperator;
 struct SingleExpressionOperator;
 struct AssignmentOperator;
 struct AdditiveAssignmentOperator;
@@ -169,6 +170,7 @@ using BlockElement= std::variant<
 	WithOperator,
 	IfOperator,
 	StaticIfOperator,
+	IfCoroAdvanceOperator,
 	SingleExpressionOperator,
 	AssignmentOperator,
 	AdditiveAssignmentOperator,
@@ -675,6 +677,17 @@ struct StaticIfOperator final : public SyntaxElementBase
 	StaticIfOperator( const SrcLoc& src_loc );
 
 	IfOperator if_operator_;
+};
+
+struct IfCoroAdvanceOperator final : public SyntaxElementBase
+{
+	IfCoroAdvanceOperator( const SrcLoc& src_loc );
+
+	ReferenceModifier reference_modifier_= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
+	std::string variable_name_;
+	Expression expression_;
+	Block block_;
 };
 
 struct SingleExpressionOperator final : public SyntaxElementBase

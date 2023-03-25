@@ -300,6 +300,7 @@ private:
 	WithOperator ParseWithOperator();
 	IfOperator ParseIfOperator();
 	StaticIfOperator ParseStaticIfOperator();
+	IfCoroAdvanceOperator ParseIfCoroAdvanceOperator();
 	StaticAssert ParseStaticAssert();
 	Enum ParseEnum();
 	BlockElement ParseHalt();
@@ -2295,6 +2296,48 @@ StaticIfOperator SyntaxAnalyzer::ParseStaticIfOperator()
 	return result;
 }
 
+IfCoroAdvanceOperator SyntaxAnalyzer::ParseIfCoroAdvanceOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_coro_advance_ );
+	IfCoroAdvanceOperator result( it_->src_loc );
+	NextLexem();
+
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	if( it_->type == Lexem::Type::And )
+	{
+		result.reference_modifier_= ReferenceModifier::Reference;
+		NextLexem();
+	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+	{
+		result.mutability_modifier_= MutabilityModifier::Mutable;
+		NextLexem();
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+	{
+		result.mutability_modifier_= MutabilityModifier::Immutable;
+		NextLexem();
+	}
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	result.variable_name_= it_->text;
+	NextLexem();
+
+	ExpectLexem( Lexem::Type::Colon );
+
+	result.expression_= ParseExpression();
+
+	ExpectLexem( Lexem::Type::BracketRight );
+
+	result.block_= ParseBlock();
+	return result;
+}
+
 StaticAssert SyntaxAnalyzer::ParseStaticAssert()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ );
@@ -2437,6 +2480,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseIfOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ )
 			elements.emplace_back( ParseStaticIfOperator() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_coro_advance_ )
+			elements.emplace_back( ParseIfCoroAdvanceOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 			elements.emplace_back( ParseStaticAssert() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
