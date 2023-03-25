@@ -789,11 +789,11 @@ int Main( int argc, const char* argv[] )
 		result_module->print( stream, nullptr );
 	}
 
-	// Create pass manager for output passes.
-	llvm::legacy::PassManager pass_manager;
-
 	std::error_code file_error_code;
 	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
+
+	// Create pass manager for output passes.
+	llvm::legacy::PassManager pass_manager;
 
 	switch( Options::file_type )
 	{
