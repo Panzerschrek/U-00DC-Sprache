@@ -1632,10 +1632,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			// Destroy all temporaries.
 			CallDestructors( coro_result_variables_storage, variable_names_scope, function_context, if_coro_advance.src_loc_ );
+			function_context.llvm_ir_builder.CreateBr( end_block );
 		}
 	}
-
-	function_context.llvm_ir_builder.CreateBr( end_block );
 
 	// End block.
 	function_context.function->getBasicBlockList().push_back( end_block );
