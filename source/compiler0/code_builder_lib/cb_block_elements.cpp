@@ -393,7 +393,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( std::get_if<Synt::EmptyVariant>(&return_operator.expression_) != nullptr )
 	{
-		if( function_context.coro_handle != nullptr )
+		if( function_context.coro_suspend_bb != nullptr )
 		{
 			// For generators enter into final suspend state in case of manual "return".
 			GeneratorFinalSuspend( names, function_context, return_operator.src_loc_ );

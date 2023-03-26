@@ -141,9 +141,6 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 		{ coro_id, coro_frame_memory },
 		"coro_handle" );
 
-	function_context.coro_id= coro_id;
-	function_context.coro_handle= coro_handle;
-
 	function_context.coro_suspend_bb= llvm::BasicBlock::Create( llvm_context_, "coro_suspend" );
 
 	const auto func_code_block= llvm::BasicBlock::Create( llvm_context_, "func_code" );
@@ -156,7 +153,7 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 
 	llvm::Value* const mem_for_free= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_free ),
-		{ function_context.coro_id, function_context.coro_handle },
+		{ coro_id, coro_handle },
 		"coro_frame_memory_for_free" );
 
 	llvm::Value* const need_to_free=
@@ -179,9 +176,9 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 
 	function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_end ),
-		{ function_context.coro_handle, llvm::ConstantInt::getFalse( llvm_context_ ) } );
+		{ coro_handle, llvm::ConstantInt::getFalse( llvm_context_ ) } );
 
-	function_context.llvm_ir_builder.CreateRet( function_context.coro_handle );
+	function_context.llvm_ir_builder.CreateRet( coro_handle );
 
 	// End suspention point.
 	function_context.coro_final_suspend_bb= llvm::BasicBlock::Create( llvm_context_, "coro_suspend_final" );

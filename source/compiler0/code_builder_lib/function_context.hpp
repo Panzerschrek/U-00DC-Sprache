@@ -59,8 +59,6 @@ struct FunctionContext
 	llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions. Also it is a promise for coroutines.
 
 	// Specific for coroutines data.
-	llvm::Value* coro_id= nullptr;
-	llvm::Value* coro_handle= nullptr;
 	llvm::BasicBlock* coro_final_suspend_bb= nullptr; // Used to jump from "return" operator.
 	llvm::BasicBlock* coro_suspend_bb= nullptr; // Used as final destination for "yield" and "return".
 	llvm::BasicBlock* coro_cleanup_bb= nullptr; // Used as final destination after suspention destruction blocks.
