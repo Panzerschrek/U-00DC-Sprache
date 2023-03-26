@@ -2094,13 +2094,19 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 
 	const FunctionType& function_type= function_variable.type;
 
-	llvm_function=
-		llvm::Function::Create(
-			GetLLVMFunctionType( function_type ),
-			// Use private linkage for generated function.
-			function_variable.is_generated ? llvm::GlobalValue::PrivateLinkage : llvm::Function::LinkageTypes::ExternalLinkage,
-			function_variable.llvm_function->name_mangled,
-			module_.get() );
+	if( const auto prev_function= module_->getFunction( function_variable.llvm_function->name_mangled ) )
+	{
+		// In case of errors and for accessing built-ins reuse declaration, created by compiler itself.
+		llvm_function= prev_function;
+	}
+	else
+		llvm_function=
+			llvm::Function::Create(
+				GetLLVMFunctionType( function_type ),
+				// Use private linkage for generated function.
+				function_variable.is_generated ? llvm::GlobalValue::PrivateLinkage : llvm::Function::LinkageTypes::ExternalLinkage,
+				function_variable.llvm_function->name_mangled,
+				module_.get() );
 
 	llvm_function->setCallingConv( function_type.calling_convention );
 

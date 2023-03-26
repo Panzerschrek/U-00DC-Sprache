@@ -79,6 +79,8 @@ private:
 	llvm::GenericValue GetVal( const llvm::Value* val );
 	void ProcessAlloca( const llvm::Instruction* instruction );
 
+	std::byte* GetMemoryForVirtualAddress( size_t offset );
+
 	void ProcessLoad( const llvm::Instruction* instruction );
 	llvm::GenericValue DoLoad( const std::byte* ptr, llvm::Type* t );
 
@@ -88,6 +90,8 @@ private:
 	void ProcessGEP( const llvm::Instruction* instruction );
 	void ProcessCall( const llvm::CallInst* instruction, size_t stack_depth );
 	void ProcessMemmove( const llvm::Instruction* instruction );
+	void ProcessMalloc( const llvm::CallInst* instruction );
+	void ProcessFree( const llvm::CallInst* instruction );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
@@ -104,6 +108,7 @@ private:
 	InstructionsMap instructions_map_;
 	std::vector<std::byte> stack_;
 	std::vector<std::byte> globals_stack_;
+	std::vector<std::byte> heap_;
 
 	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
 

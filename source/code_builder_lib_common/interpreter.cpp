@@ -17,8 +17,13 @@ namespace
 
 // TODO - add possibility to setup these values, using compiler options.
 constexpr size_t g_max_data_stack_size= 1024u * 1024u * 64u - 16u; // 64 Megabytes will be enough for stack.
-constexpr size_t g_constants_segment_offset= g_max_data_stack_size + 16u;
+
+constexpr size_t g_globals_segment_offset= g_max_data_stack_size + 16u;
 constexpr size_t g_max_globals_stack_size =1024u * 1024u * 64u; // 64 Megabytes will be enough for constants.
+
+constexpr size_t g_heap_segment_offset= g_globals_segment_offset + g_max_globals_stack_size + 16u;
+constexpr size_t g_max_heap_segment_size= 1024u * 1024u * 64u - 16u; // 64 Megabytes will be enough for heap.
+
 constexpr size_t g_max_call_stack_depth = 1024u;
 
 }
@@ -102,8 +107,9 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 
 	instructions_map_.clear();
 	stack_.clear();
-	external_constant_mapping_.clear();
 	globals_stack_.clear();
+	heap_.clear();
+	external_constant_mapping_.clear();
 
 	return result;
 }
@@ -135,7 +141,7 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 	instructions_map_.clear();
 	stack_.clear();
 
-	// Preserve globals and external constants here.
+	// Preserve globals, heap and external constants here.
 
 	return res;
 }
@@ -147,13 +153,7 @@ void Interpreter::RegisterCustomFunction( const llvm::StringRef name, const Cust
 
 void Interpreter::ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
 {
-	const size_t offset= size_t(address);
-	const std::byte* data_ptr= nullptr;
-	if( offset >= g_constants_segment_offset )
-		data_ptr= globals_stack_.data() + ( address - g_constants_segment_offset );
-	else
-		data_ptr= stack_.data() + address;
-
+	const std::byte* const data_ptr= const_cast<Interpreter*>(this)->GetMemoryForVirtualAddress( size_t(address ) );
 	std::memcpy( dst, data_ptr, size );
 }
 
@@ -289,11 +289,11 @@ size_t Interpreter::MoveConstantToStack( const llvm::Constant& constant )
 	}
 	globals_stack_.resize( new_stack_size );
 
-	external_constant_mapping_[&constant]= stack_offset + g_constants_segment_offset;
+	external_constant_mapping_[&constant]= stack_offset + g_globals_segment_offset;
 
 	CopyConstantToStack( constant, stack_offset );
 
-	return stack_offset + g_constants_segment_offset;
+	return stack_offset + g_globals_segment_offset;
 }
 
 void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const size_t stack_offset )
@@ -579,17 +579,23 @@ void Interpreter::ProcessAlloca( const llvm::Instruction* const instruction )
 	instructions_map_[ instruction ]= val;
 }
 
+std::byte* Interpreter::GetMemoryForVirtualAddress( const size_t offset )
+{
+	// Map virtual memory addresses to one of existing segments.
+	// TODO - produce error if address is wrong.
+	if( offset >= g_heap_segment_offset )
+		return heap_.data() + ( offset - g_heap_segment_offset );
+	if( offset >= g_globals_segment_offset )
+		return globals_stack_.data() + ( offset - g_globals_segment_offset );
+	return stack_.data() + offset;
+}
+
 void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
 {
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(0u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	const std::byte* data_ptr= nullptr;
-	if( offset >= g_constants_segment_offset )
-		data_ptr= globals_stack_.data() + ( offset - g_constants_segment_offset );
-	else
-		data_ptr= stack_.data() + offset;
-
+	const std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
 	instructions_map_[ instruction ]= DoLoad( data_ptr, instruction->getType() );
 }
 
@@ -648,11 +654,7 @@ void Interpreter::ProcessStore( const llvm::Instruction* const instruction )
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(1u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	std::byte* data_ptr= nullptr;
-	if( offset >= g_constants_segment_offset )
-		data_ptr= globals_stack_.data() + ( offset - g_constants_segment_offset );
-	else
-		data_ptr= stack_.data() + offset;
+	std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
 
 	const auto value_operand= instruction->getOperand(0u);
 	DoStore( data_ptr, GetVal( value_operand ), value_operand->getType() );
@@ -729,6 +731,8 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 
 	U_ASSERT( function->arg_size() == instruction->getNumOperands() - 1u );
 
+	const llvm::StringRef function_name= function->getName();
+
 	if( function->isIntrinsic() )
 	{
 		if( function->getIntrinsicID() == llvm::Intrinsic::dbg_declare ||
@@ -741,7 +745,17 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 			return;
 		}
 	}
-	else if( const auto func_it= custom_functions_.find( function->getName() ); func_it != custom_functions_.end() )
+	else if( function_name == "malloc" )
+	{
+		ProcessMalloc( instruction );
+		return;
+	}
+	else if( function_name == "free" )
+	{
+		ProcessFree( instruction );
+		return;
+	}
+	else if( const auto func_it= custom_functions_.find( function_name ); func_it != custom_functions_.end() )
 	{
 		const CustomFunction func= func_it->second;
 		llvm::SmallVector<llvm::GenericValue, 8> args;
@@ -781,15 +795,40 @@ void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
 	const size_t size= size_t( GetVal( instruction->getOperand(2u) ).IntVal.getLimitedValue() );
 
 	std::byte* const dst_ptr=
-		( dst_offset >= g_constants_segment_offset )
-			? ( globals_stack_.data() + ( dst_offset - g_constants_segment_offset ) )
+		( dst_offset >= g_globals_segment_offset )
+			? ( globals_stack_.data() + ( dst_offset - g_globals_segment_offset ) )
 			: ( stack_.data() + dst_offset );
 	const std::byte* const src_ptr=
-		( src_offset >= g_constants_segment_offset )
-			? ( globals_stack_.data() + ( src_offset - g_constants_segment_offset ) )
+		( src_offset >= g_globals_segment_offset )
+			? ( globals_stack_.data() + ( src_offset - g_globals_segment_offset ) )
 			: ( stack_.data() + src_offset );
 
 	std::memmove( dst_ptr, src_ptr, size );
+}
+
+void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
+{
+	const size_t size= size_t( GetVal( instruction->getOperand(0u) ).IntVal.getLimitedValue() );
+
+	const size_t offset= heap_.size();
+
+	const size_t new_size= offset + size;
+	if( new_size >= g_max_heap_segment_size )
+	{
+		errors_.push_back( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached" );
+		return;
+	}
+	heap_.resize( new_size );
+
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(offset + g_heap_segment_offset) );
+	instructions_map_[ instruction ]= val;
+}
+
+void Interpreter::ProcessFree( const llvm::CallInst* const instruction )
+{
+	(void) instruction;
+	// Now we manage heap as stack and can't properly free memory from it.
 }
 
 void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )
