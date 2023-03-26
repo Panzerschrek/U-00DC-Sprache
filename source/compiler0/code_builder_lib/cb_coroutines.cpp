@@ -81,6 +81,8 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 		? coroutine_class->coroutine_type_description->return_type.GetLLVMType()
 		: pointer_type;
 
+	function_context.llvm_ir_builder.GetInsertBlock()->setName( "coro_prepare" );
+
 	// Yes, create "alloca" not in "alloca" block. It is safe to do such here.
 	llvm::Value* const promise= function_context.llvm_ir_builder.CreateAlloca( promise_type, nullptr, "coro_promise" );
 
@@ -142,59 +144,13 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 	function_context.coro_id= coro_id;
 	function_context.coro_handle= coro_handle;
 
-	function_context.coro_cleanup_bb= llvm::BasicBlock::Create( llvm_context_, "coro_cleanup" );
 	function_context.coro_suspend_bb= llvm::BasicBlock::Create( llvm_context_, "coro_suspend" );
-}
 
-void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
-{
-	llvm::Value* const suspend_value= function_context.llvm_ir_builder.CreateCall(
-		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
-		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getFalse( llvm_context_ ) },
-		"suspend_value" );
-
-	llvm::BasicBlock* const next_block= llvm::BasicBlock::Create( llvm_context_, "suspend_normal" );
-	llvm::BasicBlock* const destroy_block= llvm::BasicBlock::Create( llvm_context_, "suspend_destroy" );
-
-	llvm::SwitchInst* const switch_instr= function_context.llvm_ir_builder.CreateSwitch( suspend_value, function_context.coro_suspend_bb, 2 );
-	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), next_block );
-	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 1u, false ), destroy_block );
-
-	function_context.function->getBasicBlockList().push_back( destroy_block );
-	function_context.llvm_ir_builder.SetInsertPoint( destroy_block );
-	{
-		ReferencesGraph references_graph= function_context.variables_state;
-		CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
-		function_context.variables_state= std::move(references_graph);
-	}
-	function_context.llvm_ir_builder.CreateBr( function_context.coro_cleanup_bb );
-
-	function_context.function->getBasicBlockList().push_back( next_block );
-	function_context.llvm_ir_builder.SetInsertPoint( next_block );
-}
-
-void CodeBuilder::CreateGeneratorEndBlock( FunctionContext& function_context )
-{
-	// End suspention point
-	llvm::Value* const final_suspend_value= function_context.llvm_ir_builder.CreateCall(
-		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
-		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getTrue( llvm_context_ ) },
-		"final_suspend_value" );
-
-	const auto unreachable_block= llvm::BasicBlock::Create( llvm_context_, "coro_final_suspend_unreachable" );
-
-	llvm::SwitchInst* const switch_instr= function_context.llvm_ir_builder.CreateSwitch( final_suspend_value, function_context.coro_suspend_bb, 2 );
-	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), unreachable_block );
-	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 1u, false ), function_context.coro_cleanup_bb );
-
-	// Final suspend unreachable block.
-	// It's undefined behaviour to resume coroutine in final suspention state. So, just add unreachable instruction here.
-	function_context.function->getBasicBlockList().push_back( unreachable_block );
-	function_context.llvm_ir_builder.SetInsertPoint( unreachable_block );
-	function_context.llvm_ir_builder.CreateUnreachable();
+	const auto func_code_block= llvm::BasicBlock::Create( llvm_context_, "func_code" );
+	function_context.llvm_ir_builder.CreateBr( func_code_block );
 
 	// Cleanup block.
-
+	function_context.coro_cleanup_bb= llvm::BasicBlock::Create( llvm_context_, "coro_cleanup" );
 	function_context.function->getBasicBlockList().push_back( function_context.coro_cleanup_bb );
 	function_context.llvm_ir_builder.SetInsertPoint( function_context.coro_cleanup_bb );
 
@@ -226,6 +182,71 @@ void CodeBuilder::CreateGeneratorEndBlock( FunctionContext& function_context )
 		{ function_context.coro_handle, llvm::ConstantInt::getFalse( llvm_context_ ) } );
 
 	function_context.llvm_ir_builder.CreateRet( function_context.coro_handle );
+
+	// End suspention point.
+	function_context.coro_final_suspend_bb= llvm::BasicBlock::Create( llvm_context_, "coro_suspend_final" );
+	function_context.function->getBasicBlockList().push_back( function_context.coro_final_suspend_bb );
+	function_context.llvm_ir_builder.SetInsertPoint( function_context.coro_final_suspend_bb );
+
+	llvm::Value* const final_suspend_value= function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
+		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getTrue( llvm_context_ ) },
+		"final_suspend_value" );
+
+	const auto unreachable_block= llvm::BasicBlock::Create( llvm_context_, "coro_final_suspend_unreachable" );
+
+	llvm::SwitchInst* const switch_instr= function_context.llvm_ir_builder.CreateSwitch( final_suspend_value, function_context.coro_suspend_bb, 2 );
+	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), unreachable_block );
+	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 1u, false ), function_context.coro_cleanup_bb );
+
+	// Final suspend unreachable block.
+	// It's undefined behaviour to resume coroutine in final suspention state. So, just add unreachable instruction here.
+	function_context.function->getBasicBlockList().push_back( unreachable_block );
+	function_context.llvm_ir_builder.SetInsertPoint( unreachable_block );
+	function_context.llvm_ir_builder.CreateUnreachable();
+
+	// Block for further function code.
+	function_context.function->getBasicBlockList().push_back( func_code_block );
+	function_context.llvm_ir_builder.SetInsertPoint( func_code_block );
+}
+
+void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+{
+	llvm::Value* const suspend_value= function_context.llvm_ir_builder.CreateCall(
+		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_suspend ),
+		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getFalse( llvm_context_ ) },
+		"suspend_value" );
+
+	llvm::BasicBlock* const next_block= llvm::BasicBlock::Create( llvm_context_, "suspend_normal" );
+	llvm::BasicBlock* const destroy_block= llvm::BasicBlock::Create( llvm_context_, "suspend_destroy" );
+
+	llvm::SwitchInst* const switch_instr= function_context.llvm_ir_builder.CreateSwitch( suspend_value, function_context.coro_suspend_bb, 2 );
+	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), next_block );
+	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 1u, false ), destroy_block );
+
+	function_context.function->getBasicBlockList().push_back( destroy_block );
+	function_context.llvm_ir_builder.SetInsertPoint( destroy_block );
+	{
+		ReferencesGraph references_graph= function_context.variables_state;
+		CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
+		function_context.variables_state= std::move(references_graph);
+	}
+	function_context.llvm_ir_builder.CreateBr( function_context.coro_cleanup_bb );
+
+	function_context.function->getBasicBlockList().push_back( next_block );
+	function_context.llvm_ir_builder.SetInsertPoint( next_block );
+}
+
+void CodeBuilder::GeneratorFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+{
+	// We can destroy all local variables right now. Leave only coroutine cleanup code in destroy block.
+	{
+		ReferencesGraph references_graph= function_context.variables_state;
+		CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
+		function_context.variables_state= std::move(references_graph);
+	}
+
+	function_context.llvm_ir_builder.CreateBr( function_context.coro_final_suspend_bb );
 }
 
 } // namespace U

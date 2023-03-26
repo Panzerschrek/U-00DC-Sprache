@@ -878,7 +878,7 @@ private:
 
 	void CreateGeneratorEntryBlock( FunctionContext& function_context );
 	void GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
-	void CreateGeneratorEndBlock( FunctionContext& function_context );
+	void GeneratorFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 
 	// NamesScope fill
 

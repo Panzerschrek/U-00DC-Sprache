@@ -61,8 +61,9 @@ struct FunctionContext
 	// Specific for coroutines data.
 	llvm::Value* coro_id= nullptr;
 	llvm::Value* coro_handle= nullptr;
-	llvm::BasicBlock* coro_suspend_bb= nullptr;
-	llvm::BasicBlock* coro_cleanup_bb= nullptr;
+	llvm::BasicBlock* coro_final_suspend_bb= nullptr; // Used to jump from "return" operator.
+	llvm::BasicBlock* coro_suspend_bb= nullptr; // Used as final destination for "yield" and "return".
+	llvm::BasicBlock* coro_cleanup_bb= nullptr; // Used as final destination after suspention destruction blocks.
 
 	std::unordered_set<std::string> uninitialized_this_fields;
 

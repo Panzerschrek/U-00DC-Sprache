@@ -393,6 +393,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( std::get_if<Synt::EmptyVariant>(&return_operator.expression_) != nullptr )
 	{
+		if( function_context.coro_handle != nullptr )
+		{
+			// For generators enter into final suspend state in case of manual "return".
+			GeneratorFinalSuspend( names, function_context, return_operator.src_loc_ );
+			return block_info;
+		}
 		if( function_context.return_type == std::nullopt )
 		{
 			if( function_context.function_type.return_value_type != ValueType::Value )
@@ -1485,7 +1491,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{ coro_handle },
 		"coro_done" );
 
-	const auto end_block= llvm::BasicBlock::Create( llvm_context_ );
+	const auto end_block= llvm::BasicBlock::Create( llvm_context_, "after_if_coro_advance" );
 
 	const auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "coro_not_done" );
 	function_context.llvm_ir_builder.CreateCondBr( done, end_block, not_done_block );

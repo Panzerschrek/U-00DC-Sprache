@@ -1458,19 +1458,23 @@ Type CodeBuilder::BuildFuncCode(
 
 	// We need call destructors for arguments only if function returns "void".
 	// In other case, we have "return" in all branches and destructors call before each "return".
-	if( func_variable.is_generator )
+	if( !block_build_info.have_terminal_instruction_inside )
 	{
-		CreateGeneratorEndBlock( function_context );
-	}
-	else if( !block_build_info.have_terminal_instruction_inside )
-	{
-		// Manually generate "return" for void-return functions.
-		if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
+		if( func_variable.is_generator )
 		{
-			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc_ );
-			return function_type.return_type;
+			// Add final suspention point for generators.
+			GeneratorFinalSuspend( function_names, function_context, block.end_src_loc_ );
 		}
-		BuildEmptyReturn( function_names, function_context, block.end_src_loc_ );
+		else
+		{
+			// Manually generate "return" for void-return functions.
+			if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
+			{
+				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc_ );
+				return function_type.return_type;
+			}
+			BuildEmptyReturn( function_names, function_context, block.end_src_loc_ );
+		}
 	}
 
 	if( is_destructor )
