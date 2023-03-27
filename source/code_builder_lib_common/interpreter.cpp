@@ -66,18 +66,18 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 
 				llvm::GenericValue val;
 				val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
-				instructions_map_[ &param ]= std::move(val);
+				current_function_frame_.instructions_map[ &param ]= std::move(val);
 			}
 			else
 			{
 				// Assume this is reference param.
 				llvm::GenericValue val;
 				val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
-				instructions_map_[ &param ]= std::move(val);
+				current_function_frame_.instructions_map[ &param ]= std::move(val);
 			}
 		}
 		else if( param.getType() == args[i]->getType() )
-			instructions_map_[ &param ]= GetVal( args[i] );
+			current_function_frame_.instructions_map[ &param ]= GetVal( args[i] );
 		else U_ASSERT(false);
 
 		++i;
@@ -105,7 +105,7 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 		errors_.push_back( "returning pointer in constexpr function" );
 	else U_ASSERT(false);
 
-	instructions_map_.clear();
+	current_function_frame_.instructions_map.clear();
 	stack_.clear();
 	globals_stack_.clear();
 	heap_.clear();
@@ -127,7 +127,7 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 	for( const llvm::Argument& param : llvm_function->args() )
 	{
 		U_ASSERT( ! param.getType()->isPointerTy() );
-		instructions_map_[ &param ]= args[i];
+		current_function_frame_.instructions_map[ &param ]= args[i];
 
 		++i;
 	}
@@ -138,7 +138,7 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 	res.errors= std::move(errors_);
 	errors_= {};
 
-	instructions_map_.clear();
+	current_function_frame_.instructions_map.clear();
 	stack_.clear();
 
 	// Preserve globals, heap and external constants here.
@@ -220,7 +220,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 				{
 					if( phi_node->getIncomingBlock(i) == prev_basic_block)
 					{
-						instructions_map_[instruction]= GetVal( phi_node->getIncomingValue(i) );
+						current_function_frame_.instructions_map[instruction]= GetVal( phi_node->getIncomingValue(i) );
 						break;
 					}
 					U_ASSERT( i + 1u != phi_node->getNumIncomingValues() );
@@ -241,7 +241,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		case llvm::Instruction::Select:
 			{
 				const llvm::GenericValue bool_val= GetVal(instruction->getOperand(0u));
-				instructions_map_[instruction]= GetVal( instruction->getOperand( bool_val.IntVal.getBoolValue() ? 1u : 2u ) );
+				current_function_frame_.instructions_map[instruction]= GetVal( instruction->getOperand( bool_val.IntVal.getBoolValue() ? 1u : 2u ) );
 			}
 			break;
 
@@ -554,8 +554,8 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 	}
 	else
 	{
-		U_ASSERT( instructions_map_.find( val ) != instructions_map_.end() );
-		res= instructions_map_[val];
+		U_ASSERT( current_function_frame_.instructions_map.find( val ) != current_function_frame_.instructions_map.end() );
+		res= current_function_frame_.instructions_map[val];
 	}
 	return res;
 }
@@ -564,19 +564,37 @@ void Interpreter::ProcessAlloca( const llvm::Instruction* const instruction )
 {
 	const auto alloca_instruction= llvm::dyn_cast<llvm::AllocaInst>(instruction);
 	llvm::Type* const element_type= alloca_instruction->getAllocatedType();
+	const size_t element_size= size_t(data_layout_.getTypeAllocSize( element_type ));
 
-	const size_t stack_offset= stack_.size();
-	const size_t new_stack_size= stack_.size() + size_t(data_layout_.getTypeAllocSize( element_type ));
-	if( new_stack_size >= g_max_data_stack_size )
+	size_t address= 0u;
+	if( current_function_frame_.is_coroutine )
 	{
-		ReportDataStackOverflow();
-		return;
+		// Allocate from heap if this is a coroutine.
+		// This is needed, because we need stable addresses during coroutine resume.
+		address= heap_.size() + g_heap_segment_offset;
+		const size_t new_heap_size= heap_.size() + element_size;
+		if( new_heap_size >= g_max_heap_segment_size )
+		{
+			errors_.push_back( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached" );
+			return;
+		}
+		heap_.resize( new_heap_size );
 	}
-	stack_.resize( new_stack_size );
+	else
+	{
+		address= stack_.size();
+		const size_t new_stack_size= stack_.size() + element_size;
+		if( new_stack_size >= g_max_data_stack_size )
+		{
+			ReportDataStackOverflow();
+			return;
+		}
+		stack_.resize( new_stack_size );
+	}
 
 	llvm::GenericValue val;
-	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(stack_offset) );
-	instructions_map_[ instruction ]= val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(address) );
+	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
 std::byte* Interpreter::GetMemoryForVirtualAddress( const size_t offset )
@@ -596,7 +614,7 @@ void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
 	const std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
-	instructions_map_[ instruction ]= DoLoad( data_ptr, instruction->getType() );
+	current_function_frame_.instructions_map[ instruction ]= DoLoad( data_ptr, instruction->getType() );
 }
 
 llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const t )
@@ -713,7 +731,7 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 
 void Interpreter::ProcessGEP( const llvm::Instruction* const instruction )
 {
-	instructions_map_[instruction]= BuildGEP( instruction );
+	current_function_frame_.instructions_map[instruction]= BuildGEP( instruction );
 }
 
 void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const size_t stack_depth )
@@ -763,27 +781,28 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 		for( size_t i= 0; i < function->arg_size(); ++i )
 			args.push_back( GetVal( instruction->getOperand(uint32_t(i)) ) );
 
-		instructions_map_[instruction]= func( function->getFunctionType(), args );
+		current_function_frame_.instructions_map[instruction]= func( function->getFunctionType(), args );
 		return;
 	}
 
-	InstructionsMap new_instructions_map;
+	CallFrame call_frame;
+	call_frame.is_coroutine= function->hasFnAttribute( llvm::Attribute::PresplitCoroutine );
 
 	const size_t prev_stack_size= stack_.size();
 
 	uint32_t i= 0u;
 	for( const llvm::Argument& arg : function->args() )
 	{
-		new_instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
+		call_frame.instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
 		++i;
 	}
 
-	instructions_map_.swap(new_instructions_map);
+	std::swap( call_frame, current_function_frame_ );
 	llvm::GenericValue result_val= CallFunction( *function, stack_depth + 1u );
-	instructions_map_.swap(new_instructions_map);
+	std::swap( call_frame, current_function_frame_ );
 
 	if( !function->getReturnType()->isVoidTy() )
-		instructions_map_[instruction]= result_val;
+		current_function_frame_.instructions_map[instruction]= result_val;
 
 	stack_.resize( prev_stack_size ); // Drop temporary byval arguments.
 }
@@ -822,7 +841,7 @@ void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
 
 	llvm::GenericValue val;
 	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(offset + g_heap_segment_offset) );
-	instructions_map_[ instruction ]= val;
+	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
 void Interpreter::ProcessFree( const llvm::CallInst* const instruction )
@@ -989,7 +1008,7 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		break;
 	}
 
-	instructions_map_[instruction]= val;
+	current_function_frame_.instructions_map[instruction]= val;
 }
 
 void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* const instruction )
@@ -1181,7 +1200,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 	};
 
-	instructions_map_[instruction]= val;
+	current_function_frame_.instructions_map[instruction]= val;
 }
 
 void Interpreter::ReportDataStackOverflow()

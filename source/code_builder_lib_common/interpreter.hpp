@@ -102,10 +102,18 @@ private:
 private:
 	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
 
+	struct CallFrame
+	{
+		InstructionsMap instructions_map;
+		bool is_coroutine= false;
+	};
+
+private:
 	const llvm::DataLayout data_layout_;
 	const uint32_t pointer_size_in_bits_;
 
-	InstructionsMap instructions_map_;
+	CallFrame current_function_frame_;
+
 	std::vector<std::byte> stack_;
 	std::vector<std::byte> globals_stack_;
 	std::vector<std::byte> heap_;
