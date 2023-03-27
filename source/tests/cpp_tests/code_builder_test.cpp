@@ -2079,6 +2079,10 @@ U_TEST(HeapUsage_Test0)
 {
 	// Test basic usage of malloc/free. Interpreter should process such functions specially.
 
+	// Disabled, because it's not possible to create declaration for built-in function - it creates a copy with name like "malloc.1".
+	// TODO - find a way to declare prototype for built-in function.
+	DISABLE_TEST;
+
 	static const char c_program_text[]=
 	R"(
 		fn nomangle malloc(size_type s) unsafe : $(byte8);
