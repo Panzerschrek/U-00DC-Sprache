@@ -753,15 +753,52 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 
 	if( function->isIntrinsic() )
 	{
-		if( function->getIntrinsicID() == llvm::Intrinsic::dbg_declare ||
-			function->getIntrinsicID() == llvm::Intrinsic::lifetime_start ||
-			function->getIntrinsicID() == llvm::Intrinsic::lifetime_end)
-			return;
-		if( function->getIntrinsicID() == llvm::Intrinsic::memcpy || function->getIntrinsicID() == llvm::Intrinsic::memmove )
+		switch( function->getIntrinsicID() )
 		{
+		case llvm::Intrinsic::dbg_declare:
+		case llvm::Intrinsic::lifetime_start:
+		case llvm::Intrinsic::lifetime_end:
+			return;
+		case llvm::Intrinsic::memcpy:
+		case llvm::Intrinsic::memmove:
 			ProcessMemmove( instruction );
 			return;
-		}
+		case llvm::Intrinsic::coro_id:
+			ProcessCoroId( instruction );
+			return;
+		case llvm::Intrinsic::coro_alloc:
+			ProcessCoroAlloc( instruction );
+			return;
+		case llvm::Intrinsic::coro_free:
+			ProcessCoroFree( instruction );
+			return;
+		case llvm::Intrinsic::coro_size:
+			ProcessCoroSize( instruction );
+			return;
+		case llvm::Intrinsic::coro_begin:
+			ProcessCoroBegin( instruction );
+			return;
+		case llvm::Intrinsic::coro_end:
+			ProcessCoroEnd( instruction );
+			return;
+		case llvm::Intrinsic::coro_suspend:
+			ProcessCoroSuspend( instruction );
+			return;
+		case llvm::Intrinsic::coro_resume:
+			ProcessCoroResume( instruction );
+			return;
+		case llvm::Intrinsic::coro_destroy:
+			ProcessCoroDestroy( instruction );
+			return;
+		case llvm::Intrinsic::coro_done:
+			ProcessCoroDone( instruction );
+			return;
+		case llvm::Intrinsic::coro_promise:
+			ProcessCoroPromise( instruction );
+			return;
+		default:
+			break;
+		};
 	}
 	else if( function_name == "malloc" )
 	{
@@ -848,6 +885,72 @@ void Interpreter::ProcessFree( const llvm::CallInst* const instruction )
 {
 	(void) instruction;
 	// Now we manage heap as stack and can't properly free memory from it.
+}
+
+void Interpreter::ProcessCoroId( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroAlloc( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroFree( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroSize( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroBegin( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroEnd( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroSuspend( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroResume( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroDestroy( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
+{
+	// TODO
+	(void) instruction;
 }
 
 void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )

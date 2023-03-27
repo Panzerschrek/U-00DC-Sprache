@@ -93,6 +93,18 @@ private:
 	void ProcessMalloc( const llvm::CallInst* instruction );
 	void ProcessFree( const llvm::CallInst* instruction );
 
+	void ProcessCoroId( const llvm::CallInst* instruction );
+	void ProcessCoroAlloc( const llvm::CallInst* instruction );
+	void ProcessCoroFree( const llvm::CallInst* instruction );
+	void ProcessCoroSize( const llvm::CallInst* instruction );
+	void ProcessCoroBegin( const llvm::CallInst* instruction );
+	void ProcessCoroEnd( const llvm::CallInst* instruction );
+	void ProcessCoroSuspend( const llvm::CallInst* instruction );
+	void ProcessCoroResume( const llvm::CallInst* instruction );
+	void ProcessCoroDestroy( const llvm::CallInst* instruction );
+	void ProcessCoroDone( const llvm::CallInst* instruction );
+	void ProcessCoroPromise( const llvm::CallInst* instruction );
+
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
 
