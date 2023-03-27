@@ -216,6 +216,23 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 			instruction= &*current_basic_block->begin();
 			continue; // Continue loop without advancing instruction.
 
+		case llvm::Instruction::Switch:
+			{
+				prev_basic_block= current_basic_block;
+				const uint64_t index= GetVal(instruction->getOperand(0u)).IntVal.getLimitedValue();
+				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(1u));
+				for( uint32_t i = 2; i < instruction->getNumOperands(); i+= 2 )
+				{
+					if( GetVal( instruction->getOperand(i) ).IntVal.getLimitedValue() == index )
+					{
+						current_basic_block= llvm::dyn_cast<llvm::BasicBlock>( instruction->getOperand( i + 1 ) );
+						break;
+					}
+				}
+				instruction= &*current_basic_block->begin();
+			}
+			continue; // Continue loop without advancing instruction.
+
 		case llvm::Instruction::PHI:
 			{
 				const auto phi_node= llvm::dyn_cast<llvm::PHINode>(instruction);
