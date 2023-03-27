@@ -981,10 +981,8 @@ void Interpreter::ProcessCoroSuspend( const llvm::CallInst* const instruction )
 {
 	U_ASSERT( current_function_frame_.coroutine_data != nullptr );
 
-	const llvm::GenericValue token_save= GetVal( instruction->getOperand(0u) );
+	// const llvm::GenericValue token_save= GetVal( instruction->getOperand(0u) );
 	const llvm::GenericValue is_final= GetVal( instruction->getOperand(1u) );
-
-	(void)token_save;
 
 	current_function_frame_.coroutine_data->instructions_map= current_function_frame_.instructions_map;
 	current_function_frame_.coroutine_data->suspend_instruction= instruction;
