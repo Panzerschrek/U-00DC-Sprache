@@ -67,6 +67,8 @@ private:
 	ResultConstexpr PrepareResultAndClear();
 
 	llvm::GenericValue CallFunction( const llvm::Function& llvm_function, size_t stack_depth );
+	llvm::GenericValue CallFunctionImpl( const llvm::Instruction* instruction, size_t stack_depth );
+
 
 	// Returns offset
 	size_t MoveConstantToStack( const llvm::Constant& constant );
@@ -100,10 +102,12 @@ private:
 	void ProcessCoroBegin( const llvm::CallInst* instruction );
 	void ProcessCoroEnd( const llvm::CallInst* instruction );
 	void ProcessCoroSuspend( const llvm::CallInst* instruction );
-	void ProcessCoroResume( const llvm::CallInst* instruction );
-	void ProcessCoroDestroy( const llvm::CallInst* instruction );
+	void ProcessCoroResume( const llvm::CallInst* instruction, size_t stack_depth );
+	void ProcessCoroDestroy( const llvm::CallInst* instruction, size_t stack_depth );
 	void ProcessCoroDone( const llvm::CallInst* instruction );
 	void ProcessCoroPromise( const llvm::CallInst* instruction );
+
+	void ResumeCoroutine( const llvm::CallInst* instruction, size_t stack_depth, bool destroy );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
@@ -114,10 +118,21 @@ private:
 private:
 	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
 
+	struct CoroutineData;
+
 	struct CallFrame
 	{
 		InstructionsMap instructions_map;
+		CoroutineData* coroutine_data= nullptr; // observer ptr
 		bool is_coroutine= false;
+	};
+
+	struct CoroutineData
+	{
+		InstructionsMap instructions_map; // Save here all instruction in case of suspend.
+		llvm::GenericValue promise;
+		const llvm::CallInst* suspend_instruction= nullptr;
+		bool done= false;
 	};
 
 private:

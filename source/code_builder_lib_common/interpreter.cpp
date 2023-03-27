@@ -170,12 +170,16 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
+	return CallFunctionImpl( &*llvm_function.getBasicBlockList().front().begin(), stack_depth );
+}
+
+llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instruction, const size_t stack_depth )
+{
 	const size_t prev_stack_size= stack_.size();
 
 	const llvm::BasicBlock* prev_basic_block= nullptr;
-	const llvm::BasicBlock* current_basic_block= &llvm_function.getBasicBlockList().front();
+	const llvm::BasicBlock* current_basic_block= instruction->getParent();
 
-	const llvm::Instruction* instruction= &*current_basic_block->begin();
 	while( errors_.empty() )
 	{
 		switch( instruction->getOpcode() )
@@ -785,10 +789,10 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 			ProcessCoroSuspend( instruction );
 			return;
 		case llvm::Intrinsic::coro_resume:
-			ProcessCoroResume( instruction );
+			ProcessCoroResume( instruction, stack_depth );
 			return;
 		case llvm::Intrinsic::coro_destroy:
-			ProcessCoroDestroy( instruction );
+			ProcessCoroDestroy( instruction, stack_depth );
 			return;
 		case llvm::Intrinsic::coro_done:
 			ProcessCoroDone( instruction );
@@ -889,68 +893,145 @@ void Interpreter::ProcessFree( const llvm::CallInst* const instruction )
 
 void Interpreter::ProcessCoroId( const llvm::CallInst* const instruction )
 {
-	// TODO
-	(void) instruction;
+	const llvm::GenericValue alignment= GetVal( instruction->getOperand(0u) );
+	const llvm::GenericValue promise= GetVal( instruction->getOperand(1u) );
+	const llvm::GenericValue coroaddr= GetVal( instruction->getOperand(2u) );
+	const llvm::GenericValue fnaddrs= GetVal( instruction->getOperand(3u) );
+
+	(void)alignment;
+	(void)coroaddr;
+	(void)fnaddrs;
+
+	CoroutineData coroutine_data;
+	coroutine_data.promise= promise;
+
+	const auto allocated_coroutine_data= new CoroutineData( std::move(coroutine_data ) );
+	current_function_frame_.coroutine_data= allocated_coroutine_data;
+
+	// TODO - check if it is safe to cast host address into pointer of guest size.
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t( reinterpret_cast<uintptr_t>(allocated_coroutine_data) ) );
+	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
 void Interpreter::ProcessCoroAlloc( const llvm::CallInst* const instruction )
 {
-	// TODO
-	(void) instruction;
+	// Do not allocate memory for coroutine - return false.
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( 1u, uint64_t(0u) );
+	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
 void Interpreter::ProcessCoroFree( const llvm::CallInst* const instruction )
 {
-	// TODO
-	(void) instruction;
+	const llvm::GenericValue token= GetVal( instruction->getOperand(0u) );
+	const auto coroutine_data= reinterpret_cast<CoroutineData*>( uintptr_t( token.IntVal.getLimitedValue() ) );
+
+	delete coroutine_data;
+
+	// Return "false" in order to signal, that there is no need to call "free".
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(0u) );
+	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
 void Interpreter::ProcessCoroSize( const llvm::CallInst* const instruction )
 {
-	// TODO
-	(void) instruction;
+	// Do not allocate memory for coroutine - return zero size.
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(0) );
+	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
 void Interpreter::ProcessCoroBegin( const llvm::CallInst* const instruction )
 {
-	// TODO
-	(void) instruction;
+	const llvm::GenericValue token= GetVal( instruction->getOperand(0u) );
+	const llvm::GenericValue memory= GetVal( instruction->getOperand(1u) );
+
+	(void)memory;
+
+	// Reuse token also as coroutine handle.
+	current_function_frame_.instructions_map[ instruction ]= token;
 }
 
 void Interpreter::ProcessCoroEnd( const llvm::CallInst* const instruction )
 {
-	// TODO
+	// Do nothing here
 	(void) instruction;
 }
 
 void Interpreter::ProcessCoroSuspend( const llvm::CallInst* const instruction )
 {
-	// TODO
-	(void) instruction;
+	U_ASSERT( current_function_frame_.coroutine_data != nullptr );
+
+	const llvm::GenericValue token_save= GetVal( instruction->getOperand(0u) );
+	const llvm::GenericValue is_final= GetVal( instruction->getOperand(1u) );
+
+	(void)token_save;
+
+	current_function_frame_.coroutine_data->instructions_map= current_function_frame_.instructions_map;
+	current_function_frame_.coroutine_data->suspend_instruction= instruction;
+	current_function_frame_.coroutine_data->done= is_final.IntVal.isAllOnes();
+
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( 8u, uint64_t(255) ); // return -1 as result for suspension.
+	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
-void Interpreter::ProcessCoroResume( const llvm::CallInst* const instruction )
+void Interpreter::ProcessCoroResume( const llvm::CallInst* const instruction, const size_t stack_depth )
 {
-	// TODO
-	(void) instruction;
+	ResumeCoroutine( instruction, stack_depth, false );
 }
 
-void Interpreter::ProcessCoroDestroy( const llvm::CallInst* const instruction )
+void Interpreter::ProcessCoroDestroy( const llvm::CallInst* const instruction, const size_t stack_depth )
 {
-	// TODO
-	(void) instruction;
+	ResumeCoroutine( instruction, stack_depth, true );
 }
 
 void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
 {
-	// TODO
-	(void) instruction;
+	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
+	const auto coroutine_data= reinterpret_cast<CoroutineData*>( uintptr_t( handle.IntVal.getLimitedValue() ) );
+
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( 1u, coroutine_data->done ? uint64_t(1) : uint64_t(0) );
+	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
 void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
 {
-	// TODO
-	(void) instruction;
+	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
+	const auto coroutine_data= reinterpret_cast<CoroutineData*>( uintptr_t( handle.IntVal.getLimitedValue() ) );
+
+	current_function_frame_.instructions_map[ instruction ]= coroutine_data->promise;
+}
+
+void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const size_t stack_depth, const bool destroy )
+{
+	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
+	const auto coroutine_data= reinterpret_cast<CoroutineData*>( uintptr_t( handle.IntVal.getLimitedValue() ) );
+
+	CallFrame call_frame;
+	call_frame.instructions_map= coroutine_data->instructions_map;
+	call_frame.coroutine_data= coroutine_data;
+	call_frame.is_coroutine= true;
+
+	const size_t prev_stack_size= stack_.size();
+
+	std::swap( call_frame, current_function_frame_ );
+
+	{ // Set resuly of "suspend" instriction.
+		llvm::GenericValue val;
+		val.IntVal= llvm::APInt( 8u, destroy ? uint64_t(1) : uint64_t(0) );
+		current_function_frame_.instructions_map[ coroutine_data->suspend_instruction ]= val;
+	}
+	// Continue execution starting with next instruction.
+	CallFunctionImpl( coroutine_data->suspend_instruction->getNextNode(), stack_depth );
+
+	std::swap( call_frame, current_function_frame_ );
+
+	// Coroutine should not allocate anything on stack.
+	U_ASSERT( stack_.size() == prev_stack_size );
 }
 
 void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )
