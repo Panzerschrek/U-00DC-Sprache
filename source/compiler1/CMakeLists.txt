@@ -21,6 +21,7 @@ function( CompileUSource u_source_file out_object )
 				Compiler${CURRENT_COMPILER_GENERATION}
 				${u_source_file}
 				-filetype=bc
+				-lto-mode=prelink
 				-o ${current_subdir}/${u_source_file_relative}.bc
 				-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 				--verify-module
@@ -147,6 +148,7 @@ if( U_COMPILER1_LTO )
 			${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
 			-o ${CODE_BUILDER_LIB_O}
 			--input-filetype=bc
+			-lto-mode=link
 			--internalize
 			"--internalize-preserve=\
 U1_BuildProgram,\
