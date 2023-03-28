@@ -872,14 +872,8 @@ void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
 	const size_t src_offset= size_t( GetVal( instruction->getOperand(1u) ).IntVal.getLimitedValue() );
 	const size_t size= size_t( GetVal( instruction->getOperand(2u) ).IntVal.getLimitedValue() );
 
-	std::byte* const dst_ptr=
-		( dst_offset >= g_globals_segment_offset )
-			? ( globals_stack_.data() + ( dst_offset - g_globals_segment_offset ) )
-			: ( stack_.data() + dst_offset );
-	const std::byte* const src_ptr=
-		( src_offset >= g_globals_segment_offset )
-			? ( globals_stack_.data() + ( src_offset - g_globals_segment_offset ) )
-			: ( stack_.data() + src_offset );
+	std::byte* const dst_ptr= GetMemoryForVirtualAddress( dst_offset );
+	const std::byte* const src_ptr= GetMemoryForVirtualAddress( src_offset );
 
 	std::memmove( dst_ptr, src_ptr, size );
 }
