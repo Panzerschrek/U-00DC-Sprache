@@ -321,6 +321,17 @@ cl::list<std::string> internalize_preserve(
 	cl::Optional,
 	cl::cat(options_category) );
 
+enum class LTOMode{ None, PreLink, Link };
+cl::opt< LTOMode > lto_mode(
+	"lto-mode",
+	cl::init(LTOMode::None),
+	cl::desc("LTO mode:"),
+	cl::values(
+		clEnumValN( LTOMode::None, "none", "Do not apply LTO (default)." ),
+		clEnumValN( LTOMode::PreLink, "prelink", "Run Pre-link LTO pipeline. Usable for initial modules for later LTO link stage." ),
+		clEnumValN( LTOMode::Link, "link", "Run link LTO pipeline. Input llvm modules should be optimized with link stage before this." ) ),
+	cl::cat(options_category) );
+
 } // namespace Options
 
 bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
@@ -790,10 +801,15 @@ int Main( int argc, const char* argv[] )
 		} );
 
 		// Create the pass manager.
-		llvm::ModulePassManager module_pass_manager=
-			optimization_level == llvm::OptimizationLevel::O0
-				? pass_builder.buildO0DefaultPipeline( optimization_level )
-				: pass_builder.buildPerModuleDefaultPipeline( optimization_level );
+		llvm::ModulePassManager module_pass_manager;
+		if( optimization_level == llvm::OptimizationLevel::O0 )
+			module_pass_manager= pass_builder.buildO0DefaultPipeline( optimization_level );
+		else if( Options::lto_mode == Options::LTOMode::PreLink )
+			module_pass_manager= pass_builder.buildLTOPreLinkDefaultPipeline( optimization_level );
+		else if( Options::lto_mode == Options::LTOMode::Link )
+			module_pass_manager= pass_builder.buildLTODefaultPipeline( optimization_level, nullptr );
+		else
+			module_pass_manager= pass_builder.buildPerModuleDefaultPipeline( optimization_level );
 
 		// Optimize the IR!
 		module_pass_manager.run( *result_module, module_analysis_manager );
