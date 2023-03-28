@@ -1276,7 +1276,16 @@ Type CodeBuilder::BuildFuncCode(
 				else
 				{
 					// Values of composite types are passed via pointer.
-					variable->llvm_value = &llvm_arg;
+					if( func_variable.is_generator )
+					{
+						// In generators we must save value args, passed by hidden reference, on local stack (this may be compiled as heap allocation).
+						// This is needed, because address, allocated by generator function initial call, does not live long enough.
+						variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
+						CreateLifetimeStart( function_context, variable->llvm_value );
+						CopyBytes( variable->llvm_value, &llvm_arg, param.type, function_context );
+					}
+					else
+						variable->llvm_value = &llvm_arg;
 				}
 			}
 			else U_ASSERT(false);
