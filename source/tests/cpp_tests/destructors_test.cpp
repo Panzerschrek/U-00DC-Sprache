@@ -2530,6 +2530,229 @@ U_TEST(DestructorTest_ForArrayValueArgument_Test1)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 62, 11, 99 } ) );
 }
 
+U_TEST(CoroutineDestruction_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn generator SomeGen() : i32
+		{
+			var S s(789);
+			yield 77;
+		}
+		fn Foo()
+		{
+			auto gen= SomeGen();
+			var S s(14445);
+			// Destroy here "s". internal "s" in "gen" is not destroyed, because it was not constructed.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 14445 } ) );
+}
+
+U_TEST(CoroutineDestruction_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn generator SomeGen() : i32
+		{
+			var S s(99957);
+			yield 77;
+		}
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			var S s(5241);
+			if_coro_advance( x : gen ) { halt if( x !=  77 ); }
+			// Destroy here "s".
+			// Destroy internal "s" inside "gen", because it was constructed after "advance".
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 5241, 99957 } ) );
+}
+
+U_TEST(CoroutineDestruction_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn generator SomeGen() : i32
+		{
+			yield S(1114).x; // temp of type "S" is destroyed in evaluation of "yield" operator.
+		}
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			var S s(4441);
+			if_coro_advance( x : gen ) { halt if( x !=  1114 ); }
+			// Destroy "s" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 1114, 4441 } ) );
+}
+
+U_TEST(CoroutineDestruction_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn generator SomeGen(S s) : i32
+		{
+			yield 123;
+		}
+		fn Foo()
+		{
+			var S s0(999);
+			auto mut gen= SomeGen(S(887));
+			var S s1(778);
+			// Do not advance.
+			// Destroy "s0" here.
+			// Destroy generator argument of type "S" here. Even if coroutine was not advanced, arguments still should be destroyed.
+			// Destroy "s1" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 778, 887, 999 } ) );
+}
+
+U_TEST(CoroutineDestruction_Test4)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+
+		fn generator SomeGen() : i32
+		{
+			var S s(77744);
+			yield 432;
+		}
+		fn Foo()
+		{
+			var S s0(852);
+			auto mut gen= SomeGen();
+			var S s1(258);
+			if_coro_advance( x : gen ) { halt if( x !=432 ); }
+			var S s2(678);
+			if_coro_advance( x : gen ) { halt; } // Reach here final suspention point. All destructors shold be called here.
+			var S s3(907);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 77744, 907, 678, 258, 852 } ) );
+}
+
+U_TEST(CoroutineDestruction_Test5)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		template</type T/> struct Box{ T t; }
+		template</type T/> fn MakeBox(T mut t) : Box</T/> { var Box</T/> mut box{ .t= move(t) }; return move(box); }
+		fn generator SomeGen() : i32
+		{
+			var S s(954);
+			yield 77;
+		}
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			var S s(774411);
+			if_coro_advance( x : gen ) { halt if( x != 77 ); }
+			auto box= MakeBox( move(gen) );
+			// Destroy "gen" inside "box" here, including internal variable "s".
+			// Destroy local "s".
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 954, 774411 } ) );
+}
+
 } // namespace
 
 } // namespace U

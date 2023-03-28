@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <unordered_map>
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/StringMap.h>
@@ -67,6 +68,8 @@ private:
 	ResultConstexpr PrepareResultAndClear();
 
 	llvm::GenericValue CallFunction( const llvm::Function& llvm_function, size_t stack_depth );
+	llvm::GenericValue CallFunctionImpl( const llvm::Instruction* instruction, size_t stack_depth );
+
 
 	// Returns offset
 	size_t MoveConstantToStack( const llvm::Constant& constant );
@@ -79,6 +82,8 @@ private:
 	llvm::GenericValue GetVal( const llvm::Value* val );
 	void ProcessAlloca( const llvm::Instruction* instruction );
 
+	std::byte* GetMemoryForVirtualAddress( size_t offset );
+
 	void ProcessLoad( const llvm::Instruction* instruction );
 	llvm::GenericValue DoLoad( const std::byte* ptr, llvm::Type* t );
 
@@ -88,6 +93,22 @@ private:
 	void ProcessGEP( const llvm::Instruction* instruction );
 	void ProcessCall( const llvm::CallInst* instruction, size_t stack_depth );
 	void ProcessMemmove( const llvm::Instruction* instruction );
+	void ProcessMalloc( const llvm::CallInst* instruction );
+	void ProcessFree( const llvm::CallInst* instruction );
+
+	void ProcessCoroId( const llvm::CallInst* instruction );
+	void ProcessCoroAlloc( const llvm::CallInst* instruction );
+	void ProcessCoroFree( const llvm::CallInst* instruction );
+	void ProcessCoroSize( const llvm::CallInst* instruction );
+	void ProcessCoroBegin( const llvm::CallInst* instruction );
+	void ProcessCoroEnd( const llvm::CallInst* instruction );
+	void ProcessCoroSuspend( const llvm::CallInst* instruction );
+	void ProcessCoroResume( const llvm::CallInst* instruction, size_t stack_depth );
+	void ProcessCoroDestroy( const llvm::CallInst* instruction, size_t stack_depth );
+	void ProcessCoroDone( const llvm::CallInst* instruction );
+	void ProcessCoroPromise( const llvm::CallInst* instruction );
+
+	void ResumeCoroutine( const llvm::CallInst* instruction, size_t stack_depth, bool destroy );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
 	void ProcessBinaryArithmeticInstruction( const llvm::Instruction* instruction );
@@ -98,12 +119,36 @@ private:
 private:
 	using InstructionsMap= llvm::DenseMap< const llvm::Value*, llvm::GenericValue >;
 
+	struct CoroutineData;
+
+	struct CallFrame
+	{
+		InstructionsMap instructions_map;
+		CoroutineData* coroutine_data= nullptr; // observer ptr
+		bool is_coroutine= false;
+	};
+
+	struct CoroutineData
+	{
+		InstructionsMap instructions_map; // Save here all instruction in case of suspend.
+		llvm::GenericValue promise;
+		const llvm::CallInst* suspend_instruction= nullptr;
+		bool done= false;
+	};
+
+private:
 	const llvm::DataLayout data_layout_;
 	const uint32_t pointer_size_in_bits_;
 
-	InstructionsMap instructions_map_;
+	CallFrame current_function_frame_;
+
 	std::vector<std::byte> stack_;
 	std::vector<std::byte> globals_stack_;
+	std::vector<std::byte> heap_;
+
+	// Allocate coroutine data here and provide user code only handle value.
+	uint32_t next_coroutine_id_= 1u;
+	std::unordered_map<uint32_t, CoroutineData> coroutines_data_;
 
 	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
 

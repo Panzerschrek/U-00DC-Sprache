@@ -2075,6 +2075,57 @@ U_TEST(FunctionPrototypeTest3)
 	U_TEST_ASSERT( static_cast<uint64_t>( 666 * 1937 ) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(HeapUsage_Test0)
+{
+	// Test basic usage of malloc/free. Interpreter should process such functions specially.
+
+	// Disabled, because it's not possible to create declaration for built-in function - it creates a copy with name like "malloc.1".
+	// TODO - find a way to declare prototype for built-in function.
+	DISABLE_TEST;
+
+	static const char c_program_text[]=
+	R"(
+		fn nomangle malloc(size_type s) unsafe : $(byte8);
+		fn nomangle free($(byte8) ptr) unsafe;
+
+		fn Write( $(byte8) addr )
+		{
+			unsafe
+			{
+				$>(addr + 0s)= byte8("Q"c8);
+				$>(addr + 1s)= byte8("y"c8);
+				$>(addr + 2s)= byte8("!"c8);
+			}
+		}
+		fn Read( $(byte8) addr )
+		{
+			unsafe
+			{
+				halt if( $>(addr + 0s) != byte8("Q"c8) );
+				halt if( $>(addr + 1s) != byte8("y"c8) );
+				halt if( $>(addr + 2s) != byte8("!"c8) );
+			}
+		}
+		fn Free( $(byte8) addr )
+		{
+			unsafe( free(addr) );
+		}
+		fn Foo()
+		{
+			auto addr= unsafe( malloc(3s) );
+			Write(addr);
+			Read(addr);
+			Free(addr);
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>());
+}
+
 } // namespace
 
 } // namespace U
