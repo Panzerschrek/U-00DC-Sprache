@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <unordered_map>
 #include "push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/DenseMap.h>
 #include <llvm/ADT/StringMap.h>
@@ -144,6 +145,10 @@ private:
 	std::vector<std::byte> stack_;
 	std::vector<std::byte> globals_stack_;
 	std::vector<std::byte> heap_;
+
+	// Allocate coroutine data here and provide user code only handle value.
+	uint32_t next_coroutine_id_= 1u;
+	std::unordered_map<uint32_t, CoroutineData> coroutines_data_;
 
 	llvm::DenseMap<const llvm::Constant*, size_t> external_constant_mapping_;
 

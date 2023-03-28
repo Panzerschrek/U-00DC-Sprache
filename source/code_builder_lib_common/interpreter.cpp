@@ -109,6 +109,7 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 	stack_.clear();
 	globals_stack_.clear();
 	heap_.clear();
+	coroutines_data_.clear();
 	external_constant_mapping_.clear();
 
 	return result;
@@ -922,12 +923,14 @@ void Interpreter::ProcessCoroId( const llvm::CallInst* const instruction )
 	CoroutineData coroutine_data;
 	coroutine_data.promise= promise;
 
-	const auto allocated_coroutine_data= new CoroutineData( std::move(coroutine_data ) );
-	current_function_frame_.coroutine_data= allocated_coroutine_data;
+	const auto coroutine_id= next_coroutine_id_;
+	++next_coroutine_id_;
+	coroutines_data_[coroutine_id]= std::move(coroutine_data);
 
-	// TODO - check if it is safe to cast host address into pointer of guest size.
+	current_function_frame_.coroutine_data= &coroutines_data_[coroutine_id];
+
 	llvm::GenericValue val;
-	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t( reinterpret_cast<uintptr_t>(allocated_coroutine_data) ) );
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t( coroutine_id ) );
 	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
@@ -942,9 +945,8 @@ void Interpreter::ProcessCoroAlloc( const llvm::CallInst* const instruction )
 void Interpreter::ProcessCoroFree( const llvm::CallInst* const instruction )
 {
 	const llvm::GenericValue token= GetVal( instruction->getOperand(0u) );
-	const auto coroutine_data= reinterpret_cast<CoroutineData*>( uintptr_t( token.IntVal.getLimitedValue() ) );
-
-	delete coroutine_data;
+	const uint32_t coroutine_id= uint32_t(token.IntVal.getLimitedValue());
+	coroutines_data_.erase( coroutine_id );
 
 	// Return "false" in order to signal, that there is no need to call "free".
 	llvm::GenericValue val;
@@ -1006,29 +1008,32 @@ void Interpreter::ProcessCoroDestroy( const llvm::CallInst* const instruction, c
 void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
 {
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
-	const auto coroutine_data= reinterpret_cast<CoroutineData*>( uintptr_t( handle.IntVal.getLimitedValue() ) );
+	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
+	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
 
 	llvm::GenericValue val;
-	val.IntVal= llvm::APInt( 1u, coroutine_data->done ? uint64_t(1) : uint64_t(0) );
+	val.IntVal= llvm::APInt( 1u, coroutine_data.done ? uint64_t(1) : uint64_t(0) );
 	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
 void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
 {
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
-	const auto coroutine_data= reinterpret_cast<CoroutineData*>( uintptr_t( handle.IntVal.getLimitedValue() ) );
+	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
+	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
 
-	current_function_frame_.instructions_map[ instruction ]= coroutine_data->promise;
+	current_function_frame_.instructions_map[ instruction ]= coroutine_data.promise;
 }
 
 void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const size_t stack_depth, const bool destroy )
 {
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
-	const auto coroutine_data= reinterpret_cast<CoroutineData*>( uintptr_t( handle.IntVal.getLimitedValue() ) );
+	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
+	CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
 
 	CallFrame call_frame;
-	call_frame.instructions_map= coroutine_data->instructions_map;
-	call_frame.coroutine_data= coroutine_data;
+	call_frame.instructions_map= coroutine_data.instructions_map;
+	call_frame.coroutine_data= &coroutine_data;
 	call_frame.is_coroutine= true;
 
 	const size_t prev_stack_size= stack_.size();
@@ -1038,10 +1043,10 @@ void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const size
 	{ // Set resuly of "suspend" instriction.
 		llvm::GenericValue val;
 		val.IntVal= llvm::APInt( 8u, destroy ? uint64_t(1) : uint64_t(0) );
-		current_function_frame_.instructions_map[ coroutine_data->suspend_instruction ]= val;
+		current_function_frame_.instructions_map[ coroutine_data.suspend_instruction ]= val;
 	}
 	// Continue execution starting with next instruction.
-	CallFunctionImpl( coroutine_data->suspend_instruction->getNextNode(), stack_depth );
+	CallFunctionImpl( coroutine_data.suspend_instruction->getNextNode(), stack_depth );
 
 	std::swap( call_frame, current_function_frame_ );
 
