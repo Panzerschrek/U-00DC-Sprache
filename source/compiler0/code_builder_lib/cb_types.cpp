@@ -167,6 +167,26 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return raw_pointer;
 }
 
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name )
+{
+	(void)function_context;
+
+	CoroutineTypeDescription coroutine_type_description;
+	coroutine_type_description.kind= CoroutineKind::Generator;
+	coroutine_type_description.return_type= PrepareType( *generator_type_name.return_type, names_scope, function_context );
+
+	if( generator_type_name.return_value_reference_modifier == ReferenceModifier::Reference )
+		coroutine_type_description.return_value_type=
+			generator_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable
+				? ValueType::ReferenceMut
+				: ValueType::ReferenceImut;
+	else
+		coroutine_type_description.return_value_type= ValueType::Value;
+
+	coroutine_type_description.inner_reference_type= InnerReferenceType::None;
+	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
+}
+
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name )
 {
 	const Value value= ResolveValue( names_scope, function_context, named_type_name );

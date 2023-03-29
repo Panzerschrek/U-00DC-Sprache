@@ -1174,7 +1174,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(expr);
 		}
-		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
+		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ || it_->text == Keywords::generator_ )
 			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
 		else
 		{
@@ -1460,6 +1460,38 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		ExpectLexem(Lexem::Type::BracketRight );
 
 		return std::move(raw_pointer_type);
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::generator_ )
+	{
+		GeneratorType generator_type( it_->src_loc );
+		NextLexem();
+
+		ExpectLexem( Lexem::Type::Colon );
+		generator_type.return_type= std::make_unique<TypeName>( ParseTypeName() );
+
+		// TODO - parse also reference tags.
+
+		if( it_->type == Lexem::Type::And )
+		{
+			NextLexem();
+			generator_type.return_value_reference_modifier= ReferenceModifier::Reference;
+
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				if( it_->text == Keywords::mut_ )
+				{
+					generator_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
+					NextLexem();
+				}
+				else if( it_->text == Keywords::imut_ )
+				{
+					generator_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
+					NextLexem();
+				}
+			}
+		}
+
+		return std::move(generator_type);
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return ParseFunctionType();

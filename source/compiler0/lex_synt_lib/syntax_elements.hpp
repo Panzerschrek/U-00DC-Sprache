@@ -24,6 +24,7 @@ struct TypeofTypeName;
 struct FunctionType;
 struct TupleType;
 struct RawPointerType;
+struct GeneratorType;
 
 struct UnaryPlus;
 struct UnaryMinus;
@@ -104,7 +105,8 @@ using TypeName= std::variant<
 	ComplexName,
 	FunctionTypePtr,
 	TupleType,
-	RawPointerType >;
+	RawPointerType,
+	GeneratorType >;
 
 using TypeNamePtr= std::unique_ptr<const TypeName>;
 
@@ -142,7 +144,8 @@ using Expression= std::variant<
 	ArrayTypeName,
 	FunctionTypePtr,
 	TupleType,
-	RawPointerType
+	RawPointerType,
+	GeneratorType
 	>;
 
 using ExpressionPtr= std::unique_ptr<const Expression>;
@@ -282,6 +285,16 @@ struct RawPointerType final : public SyntaxElementBase
 	RawPointerType( const SrcLoc& src_loc );
 
 	TypeNamePtr element_type;
+};
+
+struct GeneratorType final : public SyntaxElementBase
+{
+	GeneratorType( const SrcLoc& src_loc );
+
+	std::optional<MutabilityModifier> inner_reference_mutability_modifier;
+	TypeNamePtr return_type;
+	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 };
 
 using FunctionReferencesPollution= std::pair< std::string, std::string >;

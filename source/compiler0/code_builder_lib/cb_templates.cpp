@@ -482,6 +482,24 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	return raw_pointer_param;
 }
 
+TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+	std::vector<bool>& template_parameters_usage_flags,
+	const Synt::GeneratorType& generator_type_name )
+{
+	// TODO
+	U_ASSERT(false);
+	(void)names_scope;
+	(void)function_context;
+	(void)template_parameters;
+	(void)template_parameters_usage_flags;
+	(void)generator_type_name;
+
+	return TemplateSignatureParam::TypeParam();
+}
+
 TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, NamesScope& names_scope )
 {
 	if( const auto type= value.GetTypeName() )

@@ -38,6 +38,10 @@ RawPointerType::RawPointerType( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+GeneratorType::GeneratorType( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 ComplexName::ComplexName( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}

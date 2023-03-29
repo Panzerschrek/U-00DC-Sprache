@@ -1616,6 +1616,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
 }
 
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::GeneratorType& type_name )
+{
+	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
+}
+
+
 VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionContext& function_context )
 {
 	const Class* const variabe_type_class= variable->type.GetClassType();

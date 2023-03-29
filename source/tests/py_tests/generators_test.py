@@ -241,3 +241,80 @@ def SimpleGenerator_Test6():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorTypeName_Test0():
+	c_program_text= """
+		fn generator SimpleGen() : u32 {}
+		fn Foo()
+		{
+			var generator : u32 gen= SimpleGen();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorTypeName_Test1():
+	c_program_text= """
+		fn generator SimpleGen() : u32 {}
+		fn Foo()
+		{
+			var generator : u32 mut gen= SimpleGen();
+			var (generator : u32) &mut gen_ref= gen;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorTypeName_Test2():
+	c_program_text= """
+		fn generator SimpleGen() : u32 & {}
+		fn Foo()
+		{
+			var generator : u32& gen= SimpleGen(); // Type name for generator that returns reference.
+			var generator : u32 & &imut gen_ref= gen;
+			var (generator : u32 &imut) & gen_ref_ref= gen_ref;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorTypeName_Test3():
+	c_program_text= """
+		type FloatGen= generator : f32;
+		type IntRefGen= generator : i32 &mut;
+		type ArrayMutRefGen = ((( generator : [ u64, 4 ] &mut )));
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def GeneratorTypeName_Test4():
+	c_program_text= """
+		struct S
+		{
+			generator : u64 gen; // Use generator type name as name for struct field.
+		}
+		fn generator SimpleGen() : u64
+		{
+			yield 7u64;
+			yield 12345u64;
+		}
+		fn Foo()
+		{
+			var S mut s{ .gen= SimpleGen() };
+			if_coro_advance( x : s.gen )
+			{
+				halt if( x != 7u64 );
+			}
+			if_coro_advance( x : s.gen )
+			{
+				halt if( x != 12345u64 );
+			}
+			if_coro_advance( x : s.gen ) { halt; }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

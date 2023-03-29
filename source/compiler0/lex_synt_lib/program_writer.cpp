@@ -20,6 +20,7 @@ void ElementWrite( const ComplexName& complex_name, std::ostream& stream );
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
 void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream );
 void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& stream );
+void ElementWrite( const GeneratorType& generator_type_name, std::ostream& stream );
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
 void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream );
 void ElementWrite( const FunctionType& function_type_name, std::ostream& stream );
@@ -129,6 +130,16 @@ void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& st
 	stream << "(";
 	ElementWrite( *raw_pointer_type_name.element_type, stream );
 	stream << ")";
+}
+
+void ElementWrite( const GeneratorType& generator_name, std::ostream& stream )
+{
+	// TOOD
+	(void) generator_name;
+	stream << Keyword( Keywords::generator_ ) << ":";
+	ElementWrite( *generator_name.return_type, stream );
+	ElementWrite( generator_name.return_value_reference_modifier, stream );
+	ElementWrite( generator_name.return_value_mutability_modifier, stream );
 }
 
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
@@ -491,6 +502,10 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		void operator()( const RawPointerType& raw_pointer_type ) const
 		{
 			ElementWrite( raw_pointer_type, stream );
+		}
+		void operator()( const GeneratorType& generator_type ) const
+		{
+			ElementWrite( generator_type, stream );
 		}
 
 	private:

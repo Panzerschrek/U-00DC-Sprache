@@ -20,6 +20,11 @@ Type CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, co
 			coroutine_type_description.inner_reference_type= InnerReferenceType::Imut;
 	}
 
+	return GetCoroutineType( root_namespace, coroutine_type_description );
+}
+
+Type CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description )
+{
 	if( const auto it= coroutine_classes_table_.find( coroutine_type_description ); it != coroutine_classes_table_.end() )
 		return it->second.get();
 
