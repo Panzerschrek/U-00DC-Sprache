@@ -323,6 +323,30 @@ fn WithOperatorTest()
 	}
 }
 
+fn generator SomeGenerator() : f32
+{
+	var S1 mut s1{ .i(5), .s0{ .x= -5, .y= -1e16f }, .d= 2.5 };
+	yield 3.14f;
+	s1.i= 66i16;
+	yield 2.718281828f;
+	s1.d= 0.0;
+	var StructWithDestructor s;
+	yield f32(s1.d);
+}
+
+fn GeneratorsTest()
+{
+	auto mut gen= SomeGenerator();
+	while(true)
+	{
+		if_coro_advance( x : gen )
+		{
+			continue;
+		}
+		break;
+	}
+}
+
 fn nomangle main() : i32
 {
 	FundamentalTypesTest();
@@ -347,5 +371,6 @@ fn nomangle main() : i32
 	ReferencesTest();
 	TupleForTest();
 	WithOperatorTest();
+	GeneratorsTest();
 	return 0;
 }
