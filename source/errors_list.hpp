@@ -210,3 +210,7 @@ PROCESS_ERROR( ValueIsNotReference, "Value is not a reference. Expected mutable 
 PROCESS_ERROR( ValueIsNotPointer, "Value of type \"{0}\" is not a pointer." )
 PROCESS_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, "Raw pointer to reference conversion outside unsafe block." )
 PROCESS_ERROR( DifferenceBetweenRawPointersWithZeroElementSize, "Can not calculate difference between pointers of type \"{0}\" with zero element size." )
+
+// Generators
+PROCESS_ERROR( YieldOutsideGenerator, "Yield operator is allowed only inside generator functions." )
+PROCESS_ERROR( IfCoroAdvanceForNonCoroutineValue, "if_coro_advance used for non-coroutine value of type \"{0}\"." )

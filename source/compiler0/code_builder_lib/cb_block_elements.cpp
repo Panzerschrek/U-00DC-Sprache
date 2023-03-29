@@ -605,12 +605,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const Synt::YieldOperator& yield_operator )
 {
 	// TODO - check if it is a coroutine here.
+	if( function_context.coro_suspend_bb == nullptr )
+	{
+		REPORT_ERROR( YieldOutsideGenerator, names.GetErrors(), yield_operator.src_loc_ );
+		return BlockBuildInfo();
+	}
 
 	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
 	U_ASSERT( coroutine_class != nullptr );
 	U_ASSERT( coroutine_class->coroutine_type_description != std::nullopt );
+	const CoroutineTypeDescription& coroutine_type_description= *coroutine_class->coroutine_type_description;
 
-	const Type& yield_type= coroutine_class->coroutine_type_description->return_type;
+	const Type& yield_type= coroutine_type_description.return_type;
 	llvm::Value* const promise= function_context.s_ret_;
 	U_ASSERT( promise != nullptr );
 
@@ -621,7 +627,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const StackVariablesStorage temp_variables_storage( function_context );
 
 		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( yield_operator.expression, names, function_context );
-		if( coroutine_class->coroutine_type_description->return_value_type == ValueType::Value )
+		if( coroutine_type_description.return_value_type == ValueType::Value )
 		{
 			if( expression_result->type != yield_type )
 			{
@@ -680,7 +686,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), yield_operator.src_loc_ );
 				return BlockBuildInfo();
 			}
-			if( expression_result->value_type == ValueType::ReferenceImut && function_context.function_type.return_value_type == ValueType::ReferenceMut )
+			if( expression_result->value_type == ValueType::ReferenceImut && coroutine_type_description.return_value_type == ValueType::ReferenceMut )
 			{
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), yield_operator.src_loc_ );
 			}
@@ -1449,14 +1455,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const VariablePtr coro_expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression_, names, function_context );
 
 	const ClassPtr coro_class_type= coro_expr->type.GetClassType();
-	if( coro_class_type == nullptr )
+	if( coro_class_type == nullptr || coro_class_type->coroutine_type_description == std::nullopt )
 	{
-		// TODO - generate error.
+		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names.GetErrors(), if_coro_advance.src_loc_, coro_expr->type );
 		return BlockBuildInfo();
 	}
-	if( coro_class_type->coroutine_type_description == std::nullopt )
+
+	if( coro_expr->value_type == ValueType::ReferenceImut )
 	{
-		// TODO - generate error.
+		REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), if_coro_advance.src_loc_ );
 		return BlockBuildInfo();
 	}
 
