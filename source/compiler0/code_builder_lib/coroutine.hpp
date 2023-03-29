@@ -11,6 +11,7 @@ enum class CoroutineKind : uint8_t
 struct CoroutineTypeDescription
 {
 public:
+	// If this changed - mangling must be changed too!
 	CoroutineKind kind= CoroutineKind::Generator;
 	Type return_type;
 	ValueType return_value_type= ValueType::Value;

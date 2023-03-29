@@ -31,6 +31,7 @@ Type CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineT
 	auto coroutine_class= std::make_unique<Class>( Keyword( Keywords::generator_ ), &root_namespace );
 
 	coroutine_class->coroutine_type_description= coroutine_type_description;
+	coroutine_class->members->SetClass( coroutine_class.get() );
 	coroutine_class->parents_list_prepared= true;
 	coroutine_class->is_default_constructible= false;
 	coroutine_class->is_copy_constructible= false;
@@ -41,8 +42,11 @@ Type CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineT
 
 	llvm::Type* const handle_type= llvm::PointerType::get( llvm_context_, 0 );
 
-	// TODO - create named struct type instead.
-	coroutine_class->llvm_type= llvm::StructType::get( llvm_context_, llvm::ArrayRef<llvm::Type*>{ handle_type } );
+	coroutine_class->llvm_type=
+		llvm::StructType::create(
+			llvm_context_,
+			llvm::ArrayRef<llvm::Type*>{ handle_type },
+			mangler_->MangleType( coroutine_class.get() ) );
 	coroutine_class->is_complete= true;
 
 	// Generate destructor.
