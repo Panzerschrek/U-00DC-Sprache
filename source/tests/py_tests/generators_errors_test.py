@@ -308,3 +308,60 @@ def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test2():
 		fn generator Foo( S s ) : i32 {} // Ok - pass struct with reference inside by value.
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test0():
+	c_program_text= """
+		fn generator SomeGen(i32& x) : i32;
+		fn Foo()
+		{
+			var i32 mut x= 42;
+			auto gen= SomeGen(x);
+			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // Generator type must contain references inside.
+		}
+	"""
+	tests_lib.build_program ( c_program_text )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test1():
+	c_program_text= """
+		fn generator SomeGen(i32& x) : i32;
+		fn Foo()
+		{
+			var i32 mut x= 42;
+			auto gen= SomeGen(x);
+			++x; // Error, generator "gen" contains a reference to "x", that was passed as reference parameter.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test2():
+	c_program_text= """
+		fn generator SomeGen(i32 &mut x) : i32;
+		fn Foo()
+		{
+			var i32 mut x= 42;
+			auto gen= SomeGen(x);
+			Bar( x ); // Error - taking immutable reference to "x", that has mutable reference inside "gen".
+		}
+		fn Bar( i32& x );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test3():
+	c_program_text= """
+		fn generator SomeGen(i32 x) : i32;
+		fn Foo()
+		{
+			var i32 mut x= 42;
+			auto gen= SomeGen(x);
+			++x; // Ok, "x" is passed by value and was not linked to "gen".
+		}
+	"""
+	tests_lib.build_program( c_program_text )

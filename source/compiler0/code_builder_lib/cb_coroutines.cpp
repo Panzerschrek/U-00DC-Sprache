@@ -14,6 +14,7 @@ Type CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, co
 	coroutine_type_description.inner_reference_type= InnerReferenceType::None;
 	for( const FunctionType::Param& param : generator_function_type.params )
 	{
+		// TODO - what if value argument contains references inside?
 		if( param.value_type == ValueType::ReferenceMut )
 			coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
 		else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_type == InnerReferenceType::None )
