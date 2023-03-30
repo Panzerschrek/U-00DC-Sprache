@@ -883,11 +883,19 @@ size_t CodeBuilder::PrepareFunction(
 			( func_variable.is_this_call || func.overloaded_operator_ != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc_ );
 
-		// Coroutine functions return value of coroutine type.
 		if( func_variable.is_generator )
 		{
+			// Coroutine functions return value of coroutine type.
 			function_type.return_type= GetGeneratorFunctionReturnType( *names_scope.GetRoot(), function_type );
 			function_type.return_value_type= ValueType::Value;
+
+			// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
+			if( !func.type_.return_value_reference_tag_.empty() || !func.type_.return_value_inner_reference_tag_.empty() )
+				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type_.src_loc_, "Explicit return tags for generators." );
+
+			// Disable references pollution for generator. It is too complicated for now.
+			if( !func.type_.references_pollution_list_.empty() )
+				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type_.src_loc_, "References pollution for generators." );
 		}
 
 		func_variable.type= std::move(function_type);

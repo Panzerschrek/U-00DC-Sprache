@@ -251,3 +251,32 @@ def NameNotFound_ForGeneratorTypeTag_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "NameNotFound", 2 ) )
+
+
+def ReferencesPollution_ForGenerator_Test0():
+	c_program_text= """
+		struct S{ i32 & x; }
+		fn generator Foo( S &mut s'a', i32 &'b x ) ' a <- b ' : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NotImplemented", 3 ) )
+
+
+def ExplicitReturReferenceTags_ForGenerators_Test0():
+	c_program_text= """
+		fn generator Foo( i32 &'a x ) : i32 &'a;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NotImplemented", 2 ) )
+
+
+def ExplicitReturReferenceTags_ForGenerators_Test1():
+	c_program_text= """
+		struct S{ i32 & x; }
+		fn generator Foo( i32 &'a x ) : S'a';
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NotImplemented", 3 ) )
