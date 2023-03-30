@@ -167,13 +167,15 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return raw_pointer;
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorTypePtr& generator_type_name_ptr )
 {
 	(void)function_context;
 
+	const Synt::GeneratorType& generator_type_name= *generator_type_name_ptr;
+
 	CoroutineTypeDescription coroutine_type_description;
 	coroutine_type_description.kind= CoroutineKind::Generator;
-	coroutine_type_description.return_type= PrepareType( *generator_type_name.return_type, names_scope, function_context );
+	coroutine_type_description.return_type= PrepareType( generator_type_name.return_type, names_scope, function_context );
 
 	if( generator_type_name.return_value_reference_modifier == ReferenceModifier::Reference )
 		coroutine_type_description.return_value_type=
@@ -183,7 +185,27 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	else
 		coroutine_type_description.return_value_type= ValueType::Value;
 
-	coroutine_type_description.inner_reference_type= InnerReferenceType::None;
+	if( generator_type_name.inner_reference_tag == nullptr )
+		coroutine_type_description.inner_reference_type= InnerReferenceType::None;
+	else
+		coroutine_type_description.inner_reference_type=
+			generator_type_name.inner_reference_tag->is_mutable
+				? InnerReferenceType::Mut
+				: InnerReferenceType::Imut;
+
+	if( !generator_type_name.return_value_reference_tag.empty() )
+	{
+		bool found= false;
+		if( generator_type_name.inner_reference_tag != nullptr && generator_type_name.inner_reference_tag->name == generator_type_name.return_value_reference_tag )
+			found= true;
+
+		if( !found )
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc_, generator_type_name.return_value_reference_tag );
+	}
+
+	// For now there is no reason to process reference tag.
+	// Assume, that if generator returns a reference, it points to single possible reference tag - inner reference tag.
+
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 }
 

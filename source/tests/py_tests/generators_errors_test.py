@@ -232,3 +232,22 @@ def IfCoroAdvance_ForNonCopyableValue_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 11 ) )
+
+
+def NameNotFound_ForGeneratorTypeTag_Test0():
+	c_program_text= """
+		struct S{ i32 &imut x; }
+		type Gen= generator : S'unknown_tag';
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NameNotFound", 3 ) )
+
+
+def NameNotFound_ForGeneratorTypeTag_Test1():
+	c_program_text= """
+		type Gen= generator'imut known_tag' : i32 &'unknow_tag;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NameNotFound", 2 ) )

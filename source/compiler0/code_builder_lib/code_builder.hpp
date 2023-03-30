@@ -113,7 +113,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionTypePtr& function_type_name_ptr );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorTypePtr& generator_type_name_ptr );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 
 	FunctionPointerType FunctionTypeToPointer( FunctionType function_type );
@@ -251,7 +251,7 @@ private:
 		FunctionContext& function_context,
 		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 		std::vector<bool>& template_parameters_usage_flags,
-		const Synt::GeneratorType& generator_type_name );
+		const Synt::GeneratorTypePtr& generator_type_name_ptr );
 
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope );
 
@@ -537,7 +537,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionTypePtr& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::GeneratorType& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::GeneratorTypePtr& type_name );
 
 	VariablePtr AccessClassBase( const VariablePtr& variable, FunctionContext& function_context );
 	Value AccessClassField(

@@ -1619,9 +1619,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::GeneratorType& type_name )
+	const Synt::GeneratorTypePtr& type_name )
 {
-	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
+	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name->src_loc_ );
 }
 
 

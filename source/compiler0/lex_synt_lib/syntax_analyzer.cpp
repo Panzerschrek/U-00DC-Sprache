@@ -1466,15 +1466,55 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		GeneratorType generator_type( it_->src_loc );
 		NextLexem();
 
-		ExpectLexem( Lexem::Type::Colon );
-		generator_type.return_type= std::make_unique<TypeName>( ParseTypeName() );
+		if( it_->type == Lexem::Type::Apostrophe )
+		{
+			NextLexem();
 
-		// TODO - parse also reference tags.
+			GeneratorType::InnerReferenceTag inner_reference_tag;
+
+			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+			{
+				generator_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
+				NextLexem();
+				inner_reference_tag.is_mutable= true;
+			}
+			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+			{
+				generator_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
+				NextLexem();
+				inner_reference_tag.is_mutable= false;
+			}
+
+			if( it_->type != Lexem::Type::Identifier )
+				PushErrorMessage();
+			inner_reference_tag.name= it_->text;
+			NextLexem();
+
+			ExpectLexem( Lexem::Type::Apostrophe );
+
+			generator_type.inner_reference_tag= std::make_unique<GeneratorType::InnerReferenceTag>( std::move(inner_reference_tag) );
+		}
+
+		ExpectLexem( Lexem::Type::Colon );
+		generator_type.return_type= ParseTypeName();
 
 		if( it_->type == Lexem::Type::And )
 		{
 			NextLexem();
 			generator_type.return_value_reference_modifier= ReferenceModifier::Reference;
+
+			if( it_->type == Lexem::Type::Apostrophe )
+			{
+				NextLexem();
+
+				if( it_->type == Lexem::Type::Identifier )
+				{
+					generator_type.return_value_reference_tag= it_->text;
+					NextLexem();
+				}
+				else
+					PushErrorMessage();
+			}
 
 			if( it_->type == Lexem::Type::Identifier )
 			{
@@ -1490,8 +1530,10 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 				}
 			}
 		}
+		else if( it_->type == Lexem::Type::Apostrophe )
+			generator_type.return_value_reference_tag= ParseInnerReferenceTag();
 
-		return std::move(generator_type);
+		return std::make_unique<GeneratorType>(std::move(generator_type));
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return ParseFunctionType();

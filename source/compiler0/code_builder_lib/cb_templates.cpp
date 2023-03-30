@@ -487,7 +487,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	FunctionContext& function_context,
 	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
 	std::vector<bool>& template_parameters_usage_flags,
-	const Synt::GeneratorType& generator_type_name )
+	const Synt::GeneratorTypePtr& generator_type_name_ptr )
 {
 	// TODO
 	U_ASSERT(false);
@@ -495,7 +495,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	(void)function_context;
 	(void)template_parameters;
 	(void)template_parameters_usage_flags;
-	(void)generator_type_name;
+	(void)generator_type_name_ptr;
 
 	return TemplateSignatureParam::TypeParam();
 }

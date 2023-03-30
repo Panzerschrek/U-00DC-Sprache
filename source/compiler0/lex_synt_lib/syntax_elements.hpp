@@ -94,6 +94,7 @@ struct FunctionTemplate;
 struct Namespace;
 
 using FunctionTypePtr= std::unique_ptr<const FunctionType>;
+using GeneratorTypePtr= std::unique_ptr<const GeneratorType>;
 using BlockPtr= std::unique_ptr<const Block>;
 using ClassPtr= std::unique_ptr<const Class>;
 using FunctionPtr= std::unique_ptr<const Function>;
@@ -106,7 +107,7 @@ using TypeName= std::variant<
 	FunctionTypePtr,
 	TupleType,
 	RawPointerType,
-	GeneratorType >;
+	GeneratorTypePtr >;
 
 using TypeNamePtr= std::unique_ptr<const TypeName>;
 
@@ -145,7 +146,7 @@ using Expression= std::variant<
 	FunctionTypePtr,
 	TupleType,
 	RawPointerType,
-	GeneratorType
+	GeneratorTypePtr
 	>;
 
 using ExpressionPtr= std::unique_ptr<const Expression>;
@@ -289,10 +290,20 @@ struct RawPointerType final : public SyntaxElementBase
 
 struct GeneratorType final : public SyntaxElementBase
 {
+public:
 	GeneratorType( const SrcLoc& src_loc );
 
+	struct InnerReferenceTag
+	{
+		std::string name;
+		bool is_mutable= false;
+	};
+
+public:
 	std::optional<MutabilityModifier> inner_reference_mutability_modifier;
-	TypeNamePtr return_type;
+	TypeName return_type;
+	std::unique_ptr<const InnerReferenceTag> inner_reference_tag; // Make array when multiple inner reference tags will be implemented.
+	std::string return_value_reference_tag; // Inner tag for values, reference tag for references.
 	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 };

@@ -134,12 +134,25 @@ void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& st
 
 void ElementWrite( const GeneratorType& generator_name, std::ostream& stream )
 {
-	// TOOD
-	(void) generator_name;
-	stream << Keyword( Keywords::generator_ ) << ":";
-	ElementWrite( *generator_name.return_type, stream );
+	stream << Keyword( Keywords::generator_ );
+	if( generator_name.inner_reference_tag != nullptr )
+	{
+		stream << "'";
+		stream << Keyword(generator_name.inner_reference_tag->is_mutable ? Keywords::mut_ : Keywords::imut_ );
+		stream << generator_name.inner_reference_tag->name;
+		stream << "'";
+	}
+
+	stream << ":";
+	ElementWrite( generator_name.return_type, stream );
+
 	ElementWrite( generator_name.return_value_reference_modifier, stream );
+	if( generator_name.return_value_reference_modifier == ReferenceModifier::Reference && !generator_name.return_value_reference_tag.empty() )
+		stream << "'" << generator_name.return_value_reference_tag;
+
 	ElementWrite( generator_name.return_value_mutability_modifier, stream );
+	if( generator_name.return_value_reference_modifier != ReferenceModifier::Reference && !generator_name.return_value_reference_tag.empty() )
+		stream << "'" << generator_name.return_value_reference_tag << "'";
 }
 
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
@@ -503,9 +516,9 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			ElementWrite( raw_pointer_type, stream );
 		}
-		void operator()( const GeneratorType& generator_type ) const
+		void operator()( const GeneratorTypePtr& generator_type ) const
 		{
-			ElementWrite( generator_type, stream );
+			ElementWrite( *generator_type, stream );
 		}
 
 	private:
