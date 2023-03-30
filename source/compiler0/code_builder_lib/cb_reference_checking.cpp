@@ -106,7 +106,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 {
 	if( func.name_.back() == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
-		if( !func.type_.referecnces_pollution_list_.empty() )
+		if( !func.type_.references_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.src_loc_ );
 
 		// This is copy constructor. Generate reference pollution for it automatically.
@@ -119,7 +119,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 	else if( func.name_.back() == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
-		if( !func.type_.referecnces_pollution_list_.empty() )
+		if( !func.type_.references_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.src_loc_ );
 
 		// This is copy assignment operator. Generate reference pollution for it automatically.
@@ -132,14 +132,14 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 	else if( func.name_.back() == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function_type, base_class ) )
 	{
-		if( !func.type_.referecnces_pollution_list_.empty() )
+		if( !func.type_.references_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, errors_container, func.src_loc_ );
 	}
 	else
 	{
 		if( func.name_.back() == Keywords::constructor_ )
 		{
-			for( const Synt::FunctionReferencesPollution& pollution : func.type_.referecnces_pollution_list_ )
+			for( const Synt::FunctionReferencesPollution& pollution : func.type_.references_pollution_list_ )
 				if( pollution.second == Keywords::this_ )
 					REPORT_ERROR( ConstructorThisReferencePollution, errors_container, func.src_loc_ );
 		}
@@ -174,7 +174,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 		return result;
 	};
 
-	for( const Synt::FunctionReferencesPollution& pollution : func.referecnces_pollution_list_ )
+	for( const Synt::FunctionReferencesPollution& pollution : func.references_pollution_list_ )
 	{
 		if( pollution.first == pollution.second )
 		{

@@ -321,7 +321,7 @@ struct FunctionType final : public SyntaxElementBase
 	std::optional<std::string> calling_convention_;
 	TypeNamePtr return_type_;
 	std::string return_value_reference_tag_;
-	FunctionReferencesPollutionList referecnces_pollution_list_;
+	FunctionReferencesPollutionList references_pollution_list_;
 	FunctionParams params_;
 	std::string return_value_inner_reference_tag_;
 

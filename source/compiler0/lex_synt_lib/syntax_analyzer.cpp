@@ -1272,7 +1272,7 @@ FunctionParam SyntaxAnalyzer::ParseFunctionArgument()
 void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 {
 	if( it_->type == Lexem::Type::Apostrophe )
-		result.referecnces_pollution_list_= ParseFunctionReferencesPollutionList();
+		result.references_pollution_list_= ParseFunctionReferencesPollutionList();
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
 	{
