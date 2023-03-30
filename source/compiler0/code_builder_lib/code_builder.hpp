@@ -889,6 +889,7 @@ private:
 	Type GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 
 	void CreateGeneratorEntryBlock( FunctionContext& function_context );
+	void GeneratorYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	void GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 	void GeneratorFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 

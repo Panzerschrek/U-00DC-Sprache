@@ -1,5 +1,6 @@
 #include "keywords.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "error_reporting.hpp"
 #include "code_builder.hpp"
 
 namespace U
@@ -241,6 +242,110 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 	function_context.llvm_ir_builder.SetInsertPoint( func_code_block );
 }
 
+void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc )
+{
+	if( function_context.coro_suspend_bb == nullptr )
+	{
+		REPORT_ERROR( YieldOutsideGenerator, names.GetErrors(), src_loc );
+		return;
+	}
+
+	const ClassPtr coroutine_class= function_context.return_type->GetClassType();
+	U_ASSERT( coroutine_class != nullptr );
+	U_ASSERT( coroutine_class->coroutine_type_description != std::nullopt );
+	const CoroutineTypeDescription& coroutine_type_description= *coroutine_class->coroutine_type_description;
+
+	const Type& yield_type= coroutine_type_description.return_type;
+	llvm::Value* const promise= function_context.s_ret_;
+	U_ASSERT( promise != nullptr );
+
+	// TODO - perform necessary reference checks.
+
+	// Fill promise.
+	{
+		const StackVariablesStorage temp_variables_storage( function_context );
+
+		VariablePtr expression_result= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+		if( coroutine_type_description.return_value_type == ValueType::Value )
+		{
+			if( expression_result->type != yield_type )
+			{
+				if( const auto conversion_contructor= GetConversionConstructor( expression_result->type, yield_type, names.GetErrors(), src_loc ) )
+					expression_result= ConvertVariable( expression_result, yield_type, *conversion_contructor, names, function_context, src_loc );
+				else
+				{
+					REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, expression_result->type );
+					return;
+				}
+			}
+
+			//TODO - check correctness of returning references here.
+
+			if( expression_result->type.GetFundamentalType() != nullptr||
+				expression_result->type.GetEnumType() != nullptr ||
+				expression_result->type.GetRawPointerType() != nullptr ||
+				expression_result->type.GetFunctionPointerType() != nullptr ) // Just copy simple scalar.
+			{
+				if( expression_result->type != void_type_ )
+					CreateTypedStore( function_context, yield_type, CreateMoveToLLVMRegisterInstruction( *expression_result, function_context ), promise );
+			}
+			else if( expression_result->value_type == ValueType::Value ) // Move composite value.
+			{
+				function_context.variables_state.MoveNode( expression_result );
+
+				CopyBytes( promise, expression_result->llvm_value, yield_type, function_context );
+
+				if( expression_result->location == Variable::Location::Pointer )
+					CreateLifetimeEnd( function_context, expression_result->llvm_value );
+			}
+			else // Copy composite value.
+			{
+				if( !expression_result->type.IsCopyConstructible() )
+					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, expression_result->type );
+				else
+				{
+					BuildCopyConstructorPart(
+						promise,
+						CreateReferenceCast( expression_result->llvm_value, expression_result->type, yield_type, function_context ),
+						yield_type,
+						function_context );
+				}
+			}
+		}
+		else
+		{
+			if( !ReferenceIsConvertible( expression_result->type, yield_type, names.GetErrors(), src_loc ) )
+			{
+				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, expression_result->type );
+				return;
+			}
+
+			if( expression_result->value_type == ValueType::Value )
+			{
+				REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), src_loc );
+				return;
+			}
+			if( expression_result->value_type == ValueType::ReferenceImut && coroutine_type_description.return_value_type == ValueType::ReferenceMut )
+			{
+				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
+			}
+
+			// TODO - check correctness of returning reference.
+
+			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
+
+			llvm::Value* const ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, yield_type, function_context );
+			CreateTypedReferenceStore( function_context, yield_type, ret, promise );
+		}
+
+		// Destroy temporaries of expression evaluation frame.
+		CallDestructors( temp_variables_storage, names, function_context, src_loc );
+	}
+
+	// Suspend generator. Now generator caller will recieve filled promise.
+	GeneratorSuspend( names, function_context, src_loc );
+}
+
 void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	llvm::Value* const suspend_value= function_context.llvm_ir_builder.CreateCall(
@@ -276,6 +381,8 @@ void CodeBuilder::GeneratorFinalSuspend( NamesScope& names_scope, FunctionContex
 		CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
 		function_context.variables_state= std::move(references_graph);
 	}
+
+	// TODO - check references pollution here.
 
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_final_suspend_bb );
 }

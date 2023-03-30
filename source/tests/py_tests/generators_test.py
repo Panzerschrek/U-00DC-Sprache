@@ -243,6 +243,120 @@ def SimpleGenerator_Test6():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def GeneratorReturn_Test0():
+	c_program_text= """
+		fn generator SimpleGen( bool cond ) : i32
+		{
+			yield 42;
+			if( cond )
+			{
+				yield 24;
+			}
+			else
+			{
+				return; // Conditional return - stops evaluation of generator.
+			}
+		}
+		fn Bar( bool cond )
+		{
+			auto mut gen= SimpleGen( cond );
+			auto mut advanced= 0s;
+			if_coro_advance( val : gen )
+			{
+				halt if( val != 42 );
+				+++advanced;
+			}
+			if_coro_advance( val : gen )
+			{
+				halt if( val != 24 );
+				+++advanced;
+			}
+			halt if( advanced != select( cond ? 2s : 1s ) );
+		}
+		fn Foo()
+		{
+			Bar(true);
+			Bar(false);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorReturn_Test1():
+	c_program_text= """
+		fn generator SimpleGen( bool cond ) : i32
+		{
+			yield 66;
+			if( !cond )
+			{
+				return; // Conditional return - stops evaluation of generator.
+			}
+			yield 77;
+		}
+		fn Bar( bool cond )
+		{
+			auto mut gen= SimpleGen( cond );
+			auto mut advanced= 0s;
+			if_coro_advance( val : gen )
+			{
+				halt if( val != 66 );
+				+++advanced;
+			}
+			if_coro_advance( val : gen )
+			{
+				halt if( val != 77 );
+				+++advanced;
+			}
+			halt if( advanced != select( cond ? 2s : 1s ) );
+		}
+		fn Foo()
+		{
+			Bar(true);
+			Bar(false);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorReturn_Test2():
+	c_program_text= """
+		fn generator SimpleGen( bool cond ) : i32
+		{
+			yield 17;
+			if( cond )
+			{
+				return 19; // ""return" with a value in generator is equivalent to "yield" + empty "return".
+			}
+			yield 23;
+		}
+		fn Bar( bool cond )
+		{
+			auto mut gen= SimpleGen( cond );
+			auto mut advanced= 0s;
+			if_coro_advance( val : gen )
+			{
+				halt if( val != 17 );
+				+++advanced;
+			}
+			if_coro_advance( val : gen )
+			{
+				halt if( val != select( cond ? 19 : 23 ) );
+				+++advanced;
+			}
+			halt if( advanced != 2s );
+		}
+		fn Foo()
+		{
+			Bar(true);
+			Bar(false);
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def GeneratorTypeName_Test0():
 	c_program_text= """
 		fn generator SimpleGen() : u32 {}
