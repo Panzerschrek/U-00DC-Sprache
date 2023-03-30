@@ -885,17 +885,25 @@ size_t CodeBuilder::PrepareFunction(
 
 		if( func_variable.is_generator )
 		{
+			FunctionType generator_function_type= function_type;
+
 			// Coroutine functions return value of coroutine type.
-			function_type.return_type= GetGeneratorFunctionReturnType( *names_scope.GetRoot(), function_type );
-			function_type.return_value_type= ValueType::Value;
+			generator_function_type.return_type= GetGeneratorFunctionReturnType( *names_scope.GetRoot(), function_type );
+			generator_function_type.return_value_type= ValueType::Value;
+
+			// Generate for now own return references mapping.
+			generator_function_type.return_references= GetGeneratorFunctionReturnReferences( function_type );
 
 			// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
 			if( !func.type_.return_value_reference_tag_.empty() || !func.type_.return_value_inner_reference_tag_.empty() )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type_.src_loc_, "Explicit return tags for generators." );
 
+
 			// Disable references pollution for generator. It is too complicated for now.
 			if( !func.type_.references_pollution_list_.empty() )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type_.src_loc_, "References pollution for generators." );
+
+			function_type= std::move(generator_function_type);
 		}
 
 		func_variable.type= std::move(function_type);
@@ -1211,6 +1219,13 @@ Type CodeBuilder::BuildFuncCode(
 	{
 		if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc_, arg.type );
+
+		// Generator is an object, that holds references to reference-args of generator function.
+		// It's forbidden to create types with references inside to types with other references inside.
+		// So, check if this rule is not violated for generators.
+		// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
+		if( func_variable.is_generator && arg.value_type != ValueType::Value && arg.type.GetInnerReferenceType() != InnerReferenceType::None )
+			REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc_, "some arg" ); // TODO - use separate error code.
 	}
 	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );

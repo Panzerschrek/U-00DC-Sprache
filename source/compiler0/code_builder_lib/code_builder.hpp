@@ -884,6 +884,8 @@ private:
 	// Coroutines
 
 	Type GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type );
+	std::set<FunctionType::ParamReference> GetGeneratorFunctionReturnReferences( const FunctionType& generator_function_type );
+
 	Type GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 
 	void CreateGeneratorEntryBlock( FunctionContext& function_context );

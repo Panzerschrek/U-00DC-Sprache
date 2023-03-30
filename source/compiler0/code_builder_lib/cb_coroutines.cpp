@@ -23,6 +23,29 @@ Type CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, co
 	return GetCoroutineType( root_namespace, coroutine_type_description );
 }
 
+std::set<FunctionType::ParamReference> CodeBuilder::GetGeneratorFunctionReturnReferences( const FunctionType& generator_function_type )
+{
+	std::set<FunctionType::ParamReference> result;
+	for( const FunctionType::Param& param : generator_function_type.params )
+	{
+		const size_t i= size_t(&param - generator_function_type.params.data());
+		if( param.value_type == ValueType::Value )
+		{
+			// Assume, that value can have a reference inside. If it has no reference inside - this is not a problem.
+			FunctionType::ParamReference param_reference{ uint8_t(i), uint8_t(0) };
+			result.insert( param_reference );
+		}
+		else
+		{
+			// Assume, that generator function returns a generator, which internal node points to all reference args.
+			FunctionType::ParamReference param_reference{ uint8_t(i), FunctionType::c_arg_reference_tag_number };
+			result.insert( param_reference );
+		}
+	}
+
+	return result;
+}
+
 Type CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description )
 {
 	if( const auto it= coroutine_classes_table_.find( coroutine_type_description ); it != coroutine_classes_table_.end() )

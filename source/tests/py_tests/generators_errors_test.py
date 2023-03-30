@@ -280,3 +280,31 @@ def ExplicitReturReferenceTags_ForGenerators_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "NotImplemented", 3 ) )
+
+
+def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test0():
+	c_program_text= """
+		struct S{ i32 & x; }
+		fn generator Foo( S & s ) : i32 {} // Can't pass structs with references inside by a reference into a generator.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 3 ) )
+
+
+def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test1():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn generator Foo( S & s ) : i32 {} // Can't pass structs with references inside by a reference into a generator.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceFieldOfTypeWithReferencesInside", 3 ) )
+
+
+def ReferenceFieldOfTypeWithReferencesInside_ForGenerators_Test2():
+	c_program_text= """
+		struct S{ i32 & x; }
+		fn generator Foo( S s ) : i32 {} // Ok - pass struct with reference inside by value.
+	"""
+	tests_lib.build_program( c_program_text )
