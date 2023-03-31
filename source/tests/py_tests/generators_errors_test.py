@@ -465,3 +465,32 @@ def ReturningUnallowedReference_ForGeneratorYield_Test7():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def UnallowedReferencePollution_ForGenerator_Test0():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn generator Foo( S &mut s, i32 & x ) : i32
+		{
+			DoPollution( s, x );
+		}
+		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnallowedReferencePollution", 6 ) )
+
+
+def UnallowedReferencePollution_ForGenerator_Test1():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn generator Foo( S &mut s, i32 &mut x ) : i32
+		{
+			DoPollution( s, x );
+			return;
+		}
+		fn DoPollution( S &mut s'a', i32 &'b mut x ) ' a <- b ';
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnallowedReferencePollution", 6 ) )

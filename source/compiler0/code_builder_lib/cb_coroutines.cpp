@@ -398,7 +398,7 @@ void CodeBuilder::GeneratorFinalSuspend( NamesScope& names_scope, FunctionContex
 		function_context.variables_state= std::move(references_graph);
 	}
 
-	// TODO - check references pollution here.
+	CheckReferencesPollutionBeforeReturn( function_context, names_scope.GetErrors(), src_loc );
 
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_final_suspend_bb );
 }
