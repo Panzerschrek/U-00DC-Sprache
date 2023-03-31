@@ -392,12 +392,7 @@ void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& fu
 void CodeBuilder::GeneratorFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	// We can destroy all local variables right now. Leave only coroutine cleanup code in destroy block.
-	{
-		ReferencesGraph references_graph= function_context.variables_state;
-		CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
-		function_context.variables_state= std::move(references_graph);
-	}
-
+	CallDestructorsBeforeReturn( names_scope, function_context, src_loc );
 	CheckReferencesPollutionBeforeReturn( function_context, names_scope.GetErrors(), src_loc );
 
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_final_suspend_bb );
