@@ -365,3 +365,103 @@ def AccessingVariable_LinkedToGeneratorArgument_Test3():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test0():
+	c_program_text= """
+		fn generator Foo() : i32&
+		{
+			var i32 x= 0;
+			yield x; // Returning reference to local variable. For now it is forbidden, only references to arguments may be returned.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 5 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test1():
+	c_program_text= """
+		fn generator Foo( i32 x ) : i32&
+		{
+			yield x; // Returning reference to value-argument. This is also forbidden.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 4 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test2():
+	c_program_text= """
+		fn generator Foo( i32& x ) : i32&
+		{
+			yield x; // Returning reference to reference-argument. This is ok.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test3():
+	c_program_text= """
+		var i32 some_global= 0;
+		fn generator Foo() : i32&
+		{
+			yield some_global; // Returning reference to global variable. This is ok.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test4():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn generator Foo() : S
+		{
+			var i32 x= 0;
+			var S s{ .x= x };
+			yield s; // Returning reference inside a struct to local variable. For now it is forbidden, only references to arguments may be returned.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 7 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test5():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn generator Foo( i32 x ) : S
+		{
+			var S s{ .x= x };
+			yield s; // Returning reference inside a struct to value-argument. This is also forbidden.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReturningUnallowedReference", 6 ) )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test6():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn generator Foo( i32& x ) : S
+		{
+			var S s{ .x= x };
+			yield s; // Returning reference inside a struct to reference-argument. This is ok.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def ReturningUnallowedReference_ForGeneratorYield_Test7():
+	c_program_text= """
+		struct S{ i32& x; }
+		var i32 some_global= 0;
+		fn generator Foo() : S
+		{
+			var S s{ .x= some_global };
+			yield s; // Returning reference inside a struct to global variable. This is ok.
+		}
+	"""
+	tests_lib.build_program( c_program_text )

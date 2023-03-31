@@ -279,7 +279,18 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				}
 			}
 
-			//TODO - check correctness of returning references here.
+			// Check correctness of returning references.
+			if( expression_result->type.ReferencesTagsCount() > 0u )
+			{
+				for( const VariablePtr& inner_reference : function_context.variables_state.GetAccessibleVariableNodesInnerReferences( expression_result ) )
+				{
+					for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( inner_reference ) )
+					{
+						if( !IsReferenceAllowedForReturn( function_context, var_node ) )
+							REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+					}
+				}
+			}
 
 			if( expression_result->type.GetFundamentalType() != nullptr||
 				expression_result->type.GetEnumType() != nullptr ||
@@ -330,7 +341,12 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 				REPORT_ERROR( BindingConstReferenceToNonconstReference, names.GetErrors(), src_loc );
 			}
 
-			// TODO - check correctness of returning reference.
+			// Check correctness of returning reference.
+			for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result ) )
+			{
+				if( !IsReferenceAllowedForReturn( function_context, var_node ) )
+					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
+			}
 
 			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
 
