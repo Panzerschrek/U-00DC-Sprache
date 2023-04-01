@@ -898,10 +898,12 @@ size_t CodeBuilder::PrepareFunction(
 			if( !func.type_.return_value_reference_tag_.empty() || !func.type_.return_value_inner_reference_tag_.empty() )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type_.src_loc_, "Explicit return tags for generators." );
 
-
 			// Disable references pollution for generator. It is too complicated for now.
 			if( !func.type_.references_pollution_list_.empty() )
 				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type_.src_loc_, "References pollution for generators." );
+
+			if( function_type.calling_convention != llvm::CallingConv::C )
+				REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
 
 			function_type= std::move(generator_function_type);
 		}

@@ -8,7 +8,6 @@ def GeneratorMismatch_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	print( errors_list[0].error_code )
 	assert( HaveError( errors_list, "GeneratorMismatch", 2 ) or HaveError( errors_list, "GeneratorMismatch", 3 ) )
 
 
@@ -20,8 +19,39 @@ def GeneratorMismatch_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	print( errors_list[0].error_code )
 	assert( HaveError( errors_list, "GeneratorMismatch", 2 ) or HaveError( errors_list, "GeneratorMismatch", 3 ) )
+
+
+def NonDefaultCallingConventionForGenerator_Test0():
+	c_program_text= """
+		fn generator Foo() call_conv("fast") : i32 {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NonDefaultCallingConventionForGenerator", 2 ) )
+
+
+def NonDefaultCallingConventionForGenerator_Test1():
+	c_program_text= """
+		fn generator Foo() call_conv("cold") : i32 {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NonDefaultCallingConventionForGenerator", 2 ) )
+
+
+def NonDefaultCallingConventionForGenerator_Test2():
+	c_program_text= """
+		fn generator Foo() call_conv("default") : i32 {} // Ok - using default calling convention.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def NonDefaultCallingConventionForGenerator_Test3():
+	c_program_text= """
+		fn generator Foo() call_conv("C") : i32 {} // Ok - "C" is default calling convention.
+	"""
+	tests_lib.build_program( c_program_text )
 
 
 def YieldOutsideGenerator_Test0():

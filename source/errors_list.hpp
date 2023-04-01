@@ -215,3 +215,4 @@ PROCESS_ERROR( DifferenceBetweenRawPointersWithZeroElementSize, "Can not calcula
 PROCESS_ERROR( YieldOutsideGenerator, "Yield operator is allowed only inside generator functions." )
 PROCESS_ERROR( IfCoroAdvanceForNonCoroutineValue, "if_coro_advance used for non-coroutine value of type \"{0}\"." )
 PROCESS_ERROR( GeneratorMismatch, "\"generator\" specifiers mismatch for function \"{0}\"." )
+PROCESS_ERROR( NonDefaultCallingConventionForGenerator, "generator function can have only default calling convention." )
