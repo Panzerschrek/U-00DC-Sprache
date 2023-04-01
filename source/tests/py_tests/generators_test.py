@@ -457,3 +457,268 @@ def GeneratorTypeName_Test7():
 		static_assert( typeinfo</ImutGen/>.references_tags_count == 1s );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def GeneratorsNonTrivialUsage_Test0():
+	c_program_text= """
+		fn generator SimpleGen() : i32
+		{
+			yield 0;
+			yield 1;
+			yield 4;
+			yield 9;
+			yield 16;
+		}
+		fn MakeGen() : generator : i32 // This function returns object of generator type.
+		{
+			return SimpleGen();
+		}
+		fn Foo()
+		{
+			auto mut gen= MakeGen();
+			auto mut advanced= 0;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != advanced * advanced );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 5 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorsNonTrivialUsage_Test1():
+	c_program_text= """
+		fn generator SimpleGen() : i32
+		{
+			yield 0;
+			yield 1;
+			yield 8;
+			yield 27;
+			yield 64;
+		}
+		fn MakeGen() : generator : i32
+		{
+			auto mut gen= SimpleGen();
+			if_coro_advance( x : gen )
+			{
+				halt if( x != 0 );
+			}
+			return move(gen);
+		}
+		fn Foo()
+		{
+			auto mut gen= MakeGen(); // Obtain generator object, that was already advanced by one step.
+			auto mut advanced= 1;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != advanced * advanced * advanced );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 5 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorsNonTrivialUsage_Test2():
+	c_program_text= """
+		fn generator SimpleGen() : i32
+		{
+			yield -0;
+			yield -1;
+			yield -2;
+			yield -3;
+		}
+		fn ProcessGen( (generator : i32) mut gen )
+		{
+			auto mut advanced= 0;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != -advanced );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 4 );
+		}
+		fn Foo()
+		{
+			auto mut gen= SimpleGen();
+			ProcessGen( move(gen) ); // Move value of generator type.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorsNonTrivialUsage_Test3():
+	c_program_text= """
+		fn generator SimpleGen(i32 add) : i32
+		{
+			yield add +  0;
+			yield add +  2;
+			yield add +  4;
+			yield add +  6;
+			yield add +  8;
+			yield add + 10;
+		}
+		fn Foo()
+		{
+			// Use simultaniously two generator objects.
+			var[ (generator : i32), 2 ] mut gens[ SimpleGen(1), SimpleGen(2) ];
+			var [i32, 2] mut advanced[ 0, 0 ];
+			while(true)
+			{
+				auto mut num_current_advanced= 0;
+				if_coro_advance( x : gens[0] )
+				{
+					halt if( x != advanced[0] * 2 + 1 );
+					++advanced[0];
+					++num_current_advanced;
+				}
+				if_coro_advance( x : gens[1] )
+				{
+					halt if( x != advanced[1] * 2 + 2 );
+					++advanced[1];
+					++num_current_advanced;
+				}
+
+				if( num_current_advanced == 0 )
+				{
+					break;
+				}
+			}
+			halt if( advanced[0] != 6 );
+			halt if( advanced[1] != 6 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorsNonTrivialUsage_Test4():
+	c_program_text= """
+		// Use generator inside generator inside generator...
+		fn generator GenNumbers( u32 max ) : u32
+		{
+			for( auto mut i= 0u; i < max; ++i )
+			{
+				yield i;
+			}
+		}
+		fn generator GenSquareNumbers( u32 max ) : u32
+		{
+			auto mut gen= GenNumbers( max );
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					yield x * x;
+					continue;
+				}
+				break;
+			}
+		}
+		fn generator GenSquareNumbersPairs( u32 max ) : u32
+		{
+			auto mut gen= GenSquareNumbers( max );
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					yield x * 2u + 0u;
+					yield x * 2u + 1u;
+					continue;
+				}
+				break;
+			}
+		}
+		fn Foo()
+		{
+			auto mut gen= GenSquareNumbersPairs( 17u );
+			auto mut advanced= 0u;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != (advanced / 2u) * (advanced / 2u) * 2u + advanced % 2u );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 17u * 2u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorsNonTrivialUsage_Test4():
+	c_program_text= """
+		// Create twodimetional loop with generators.
+		fn generator GenNumbers( u32 max ) : u32
+		{
+			for( auto mut i= 0u; i < max; ++i )
+			{
+				yield i;
+			}
+		}
+		fn generator GenNumbersGrid( u32 width, u32 height ) : u32
+		{
+			auto mut height_gen= GenNumbers( height );
+			while( true )
+			{
+				if_coro_advance( y : height_gen )
+				{
+					auto mut width_gen= GenNumbers( width );
+					while( true )
+					{
+						if_coro_advance( x : width_gen )
+						{
+							yield x + y * width;
+							continue;
+						}
+						break;
+					}
+					continue;
+				}
+				break;
+			}
+		}
+		fn Foo()
+		{
+			auto mut gen= GenNumbersGrid( 5u, 9u );
+			auto mut advanced= 0u;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != advanced );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 5u * 9u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

@@ -254,6 +254,130 @@ def BindingConstReferenceToNonconstReference_For_IfCoroAdvance_Test3():
 	assert( HaveError( errors_list, "BindingConstReferenceToNonconstReference", 6 ) )
 
 
+def GeneratorIsNonCopyable_Test0():
+	c_program_text= """
+		fn generator SomeGen() : i32 {}
+		fn Foo()
+		{
+			auto gen= SomeGen();
+			auto gen_copy= gen;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+
+
+def GeneratorIsNonCopyable_Test1():
+	c_program_text= """
+		fn generator SomeGen() : i32 {}
+		fn Foo()
+		{
+			auto gen= SomeGen();
+			var (generator : i32) gen_copy= gen;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+
+
+def GeneratorIsNonCopyable_Test2():
+	c_program_text= """
+		fn generator SomeGen() : i32 {}
+		fn Foo()
+		{
+			auto gen= SomeGen();
+			var (generator : i32) gen_copy(gen);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ClassHaveNoConstructors", 6 ) )
+
+
+def GeneratorIsNonCopyable_Test3():
+	c_program_text= """
+		fn generator SomeGen() : i32 {}
+		struct S{ (generator : i32) gen; }
+		fn Foo()
+		{
+			auto gen= SomeGen();
+			var S s { .gen= gen };
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+
+
+def GeneratorIsNonCopyable_Test4():
+	c_program_text= """
+		fn generator SomeGen() : i32 {}
+		fn Foo()
+		{
+			auto gen= SomeGen();
+			var [ (generator : i32 ), 1 ] arr[ gen ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+
+
+def GeneratorIsNonCopyable_Test5():
+	c_program_text= """
+		fn generator SomeGen() : i32 {}
+		fn Foo()
+		{
+			auto mut gen0= SomeGen();
+			auto mut gen1= SomeGen();
+			gen0= gen1; // Try to call copy assignment operator here.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+
+
+def GeneratorIsNonCopyable_Test6():
+	c_program_text= """
+		fn generator SomeGen() : i32 {}
+		fn Foo() : (generator : i32)
+		{
+			auto gen= SomeGen();
+			return gen; // Try to call copy constructor for return value.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+
+
+def GeneratorIsNonCopyable_Test7():
+	c_program_text= """
+		fn generator SomeGen() : i32 {}
+		fn Pass( (generator : i32) gen );
+		fn Foo()
+		{
+			auto gen= SomeGen();
+			Pass( gen ); // Try to call copy constructor for argument.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+
+
+def GeneratorIsNonCopyable_Test8():
+	c_program_text= """
+		type Gen= generator : i32;
+		static_assert( !typeinfo</Gen/>.is_copy_constructible );
+		static_assert( !typeinfo</Gen/>.is_copy_assignable );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def UsingKeywordAsName_For_IfCoroAdvance_Test0():
 	c_program_text= """
 		fn generator SomeGen() : i32;
