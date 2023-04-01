@@ -722,3 +722,57 @@ def GeneratorsNonTrivialUsage_Test4():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def Typeinfo_ForGenerators_Test0():
+	c_program_text= """
+		type IntGen= generator : i32;
+		auto& int_gen_typeinfo= typeinfo</IntGen/>;
+
+		static_assert( int_gen_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
+		static_assert( int_gen_typeinfo.is_class ); // Generators are classes, because they have destructor method.
+		static_assert( int_gen_typeinfo.is_coroutine );
+		static_assert( int_gen_typeinfo.is_generator );
+		static_assert( int_gen_typeinfo.coroutine_return_type.is_integer );
+		static_assert( int_gen_typeinfo.coroutine_return_type.size_of == 4s );
+		static_assert( !int_gen_typeinfo.coroutine_return_value_is_mutable );
+		static_assert( !int_gen_typeinfo.coroutine_return_value_is_reference );
+		static_assert( int_gen_typeinfo.references_tags_count == 0s ); // This coroutine type has no references inside.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_ForGenerators_Test1():
+	c_program_text= """
+		type F64RefGen= generator'imut some_tag' : f64 &;
+		auto& f64_ref_gen_typeinfo= typeinfo</F64RefGen/>;
+
+		static_assert( f64_ref_gen_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
+		static_assert( f64_ref_gen_typeinfo.is_class ); // Generators are classes, because they have destructor method.
+		static_assert( f64_ref_gen_typeinfo.is_coroutine );
+		static_assert( f64_ref_gen_typeinfo.is_generator );
+		static_assert( f64_ref_gen_typeinfo.coroutine_return_type.is_float );
+		static_assert( f64_ref_gen_typeinfo.coroutine_return_type.size_of == 8s );
+		static_assert( !f64_ref_gen_typeinfo.coroutine_return_value_is_mutable );
+		static_assert( f64_ref_gen_typeinfo.coroutine_return_value_is_reference );
+		static_assert( f64_ref_gen_typeinfo.references_tags_count == 1s ); // This coroutine type has references inside.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Typeinfo_ForGenerators_Test2():
+	c_program_text= """
+		type MutCharRefGen= generator'mut some_tag' : char8 &mut;
+		auto& mut_ref_char_gen_typeinfo= typeinfo</MutCharRefGen/>;
+
+		static_assert( mut_ref_char_gen_typeinfo.size_of == typeinfo</$(byte8)/>.size_of ); // Coroutines have size of pointer.
+		static_assert( mut_ref_char_gen_typeinfo.is_class ); // Generators are classes, because they have destructor method.
+		static_assert( mut_ref_char_gen_typeinfo.is_coroutine );
+		static_assert( mut_ref_char_gen_typeinfo.is_generator );
+		static_assert( mut_ref_char_gen_typeinfo.coroutine_return_type.is_char );
+		static_assert( mut_ref_char_gen_typeinfo.coroutine_return_type.size_of == 1s );
+		static_assert( mut_ref_char_gen_typeinfo.coroutine_return_value_is_mutable );
+		static_assert( mut_ref_char_gen_typeinfo.coroutine_return_value_is_reference );
+		static_assert( mut_ref_char_gen_typeinfo.references_tags_count == 1s ); // This coroutine type has references inside.
+	"""
+	tests_lib.build_program( c_program_text )

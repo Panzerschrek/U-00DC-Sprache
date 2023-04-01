@@ -282,6 +282,18 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 		add_bool_field( "is_interface", class_type->kind == Class::Kind::Interface );
 
 		add_bool_field( "is_typeinfo", class_type->typeinfo_type != std::nullopt );
+
+		add_bool_field( "is_coroutine", class_type->coroutine_type_description != std::nullopt );
+		if( class_type->coroutine_type_description != std::nullopt )
+		{
+			if( class_type->coroutine_type_description->kind == CoroutineKind::Generator )
+				add_bool_field( "is_generator", true );
+			else U_ASSERT( false );
+
+			add_typeinfo_field( "coroutine_return_type", class_type->coroutine_type_description->return_type );
+			add_bool_field( "coroutine_return_value_is_reference", class_type->coroutine_type_description->return_value_type != ValueType::Value );
+			add_bool_field( "coroutine_return_value_is_mutable"  , class_type->coroutine_type_description->return_value_type == ValueType::ReferenceMut );
+		}
 	}
 	else if( const RawPointerType* const raw_pointer_type= type.GetRawPointerType() )
 	{
