@@ -1015,6 +1015,9 @@ size_t CodeBuilder::PrepareFunction(
 		if( prev_function->no_mangle != func_variable.no_mangle )
 			REPORT_ERROR( NoMangleMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
 
+		if( prev_function->is_generator != func_variable.is_generator )
+			REPORT_ERROR( GeneratorMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
+
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
 			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc_ );
 

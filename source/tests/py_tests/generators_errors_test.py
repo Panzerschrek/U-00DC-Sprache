@@ -1,6 +1,29 @@
 from py_tests_common import *
 
 
+def GeneratorMismatch_Test0():
+	c_program_text= """
+		fn generator Foo() : i32;
+		fn Foo() : ( generator : i32 ) { }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	print( errors_list[0].error_code )
+	assert( HaveError( errors_list, "GeneratorMismatch", 2 ) or HaveError( errors_list, "GeneratorMismatch", 3 ) )
+
+
+
+def GeneratorMismatch_Test1():
+	c_program_text= """
+		fn generator Foo() : i32 {}
+		fn Foo() : ( generator : i32 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	print( errors_list[0].error_code )
+	assert( HaveError( errors_list, "GeneratorMismatch", 2 ) or HaveError( errors_list, "GeneratorMismatch", 3 ) )
+
+
 def YieldOutsideGenerator_Test0():
 	c_program_text= """
 		fn Foo() : i32
