@@ -724,6 +724,50 @@ def GeneratorsNonTrivialUsage_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def GeneratorsNonTrivialUsage_Test5():
+	c_program_text= """
+		// Recursive generator.
+		fn generator GenSequenceUpToPow2( u32 power ) : u32
+		{
+			if( power == 0u )
+			{
+				yield 0u;
+				return;
+			}
+
+			auto mut gen= GenSequenceUpToPow2( power - 1u );
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					yield x * 2u + 0u;
+					yield x * 2u + 1u;
+					continue;
+				}
+				return;
+			}
+		}
+		fn Foo()
+		{
+			auto mut gen= GenSequenceUpToPow2( 5u );
+			auto mut advanced= 0u;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != advanced );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 1u << 5u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def Typeinfo_ForGenerators_Test0():
 	c_program_text= """
 		type IntGen= generator : i32;
