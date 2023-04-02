@@ -256,10 +256,19 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 	const CoroutineTypeDescription& coroutine_type_description= *coroutine_class->coroutine_type_description;
 
 	const Type& yield_type= coroutine_type_description.return_type;
+
+	if( std::get_if<Synt::EmptyVariant>(&expression) != nullptr )
+	{
+		// Allow empty expression "yield" for void-return coroutines.
+		if( !( yield_type == void_type_ && coroutine_type_description.return_value_type == ValueType::Value ) )
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, yield_type, void_type_ );
+
+		GeneratorSuspend( names, function_context, src_loc );
+		return;
+	}
+
 	llvm::Value* const promise= function_context.s_ret_;
 	U_ASSERT( promise != nullptr );
-
-	// TODO - perform necessary reference checks.
 
 	// Fill promise.
 	{

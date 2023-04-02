@@ -2078,7 +2078,8 @@ YieldOperator SyntaxAnalyzer::ParseYieldOperator()
 	YieldOperator result( it_->src_loc );
 	NextLexem();
 
-	result.expression= ParseExpression();
+	if( it_->type != Lexem::Type::Semicolon )
+		result.expression= ParseExpression();
 
 	ExpectSemicolon();
 

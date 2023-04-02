@@ -459,6 +459,65 @@ def GeneratorTypeName_Test7():
 	tests_lib.build_program( c_program_text )
 
 
+def VoidTypeGenerator_Test0():
+	c_program_text= """
+		fn generator VoidGen() // Useless generator, but totally valid.
+		{
+			yield void();
+			yield void();
+			yield void();
+		}
+		fn Foo()
+		{
+			auto mut gen= VoidGen();
+			auto mut advanced= 0;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != void() );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def VoidTypeGenerator_Test1():
+	c_program_text= """
+		// Useless generator, but totally valid.
+		// Actually, void-return generators may be usable together with mutable-reference parameters or other kind of mutability.
+		fn generator VoidGen()
+		{
+			yield; yield; // It is totally fine to use empty "yield" for void-return generator.
+			yield; yield;
+		}
+		fn Foo()
+		{
+			auto mut gen= VoidGen();
+			auto mut advanced= 0;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != void() );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 4 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def GeneratorMethod_Test0():
 	c_program_text= """
 		struct S

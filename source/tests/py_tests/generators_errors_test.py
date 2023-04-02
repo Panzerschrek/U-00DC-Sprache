@@ -132,6 +132,30 @@ def Yield_TypesMismatch_Test1():
 	assert( HaveError( errors_list, "TypesMismatch", 6 ) )
 
 
+def Yield_TypesMismatch_Test2():
+	c_program_text= """
+		fn generator Foo() : i32
+		{
+			yield; // Expected non-void "yield".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+
+
+def Yield_TypesMismatch_Test3():
+	c_program_text= """
+		fn generator Foo() : void&
+		{
+			yield; // Expected non-void "yield".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 4 ) )
+
+
 def Yield_ForNonCopyableValue_Test0():
 	c_program_text= """
 		struct S
