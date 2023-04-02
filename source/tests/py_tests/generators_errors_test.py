@@ -11,7 +11,6 @@ def GeneratorMismatch_Test0():
 	assert( HaveError( errors_list, "GeneratorMismatch", 2 ) or HaveError( errors_list, "GeneratorMismatch", 3 ) )
 
 
-
 def GeneratorMismatch_Test1():
 	c_program_text= """
 		fn generator Foo() : i32 {}
@@ -20,6 +19,32 @@ def GeneratorMismatch_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "GeneratorMismatch", 2 ) or HaveError( errors_list, "GeneratorMismatch", 3 ) )
+
+
+def GeneratorMismatch_Test2():
+	c_program_text= """
+		struct S
+		{
+			fn generator Foo(this) : i32;
+		}
+		fn S::Foo(this) : ( generator'imut this_tag' : i32 )'this' { }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GeneratorMismatch", 4 ) or HaveError( errors_list, "GeneratorMismatch", 6 ) )
+
+
+def GeneratorMismatch_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn Foo(this) : ( generator'imut this_tag' : i32 )'this';
+		}
+		fn generator S::Foo(this) : i32 { }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GeneratorMismatch", 4 ) or HaveError( errors_list, "GeneratorMismatch", 6 ) )
 
 
 def NonDefaultCallingConventionForGenerator_Test0():
@@ -529,6 +554,43 @@ def AccessingVariable_LinkedToGeneratorArgument_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn generator SomeGen(this) : i32;
+		}
+		fn Foo()
+		{
+			var S mut s;
+			auto gen= s.SomeGen();
+			Bar( x ); // Error - taking mutable reference to "s", that has immutable reference inside "gen".
+		}
+		fn Bar( S &mut s );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
+
+
+def AccessingVariable_LinkedToGeneratorArgument_Test4():
+	c_program_text= """
+		struct S
+		{
+			fn generator SomeGen(mut this) : i32;
+		}
+		fn Foo()
+		{
+			var S mut s;
+			auto gen= s.SomeGen();
+			auto& s_ref= s; // Error - taking immutable reference to "s", that has mutable reference inside "gen".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
 
 
 def AccessingVariable_LinkedToGeneratorArgument_Test3():

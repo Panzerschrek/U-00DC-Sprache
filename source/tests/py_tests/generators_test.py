@@ -459,6 +459,148 @@ def GeneratorTypeName_Test7():
 	tests_lib.build_program( c_program_text )
 
 
+def GeneratorMethod_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn generator SimpleGen() : i32 // Static generator method
+			{
+				yield 7;
+				yield 14;
+				yield 21;
+			}
+		}
+		fn Foo()
+		{
+			auto mut gen= S::SimpleGen();
+			auto mut advanced= 0;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != (advanced + 1) * 7 );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 3 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorMethod_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn generator SimpleGen(this) : i32 // Thiscall generator method.
+			{
+				yield x + 1;
+				yield x + 2;
+				yield x + 3;
+				yield x + 4;
+			}
+		}
+		fn Foo()
+		{
+			var S s{ .x= 42 };
+			auto mut gen= s.SimpleGen();
+			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // generator holds reference to "this".
+			auto mut advanced= 0;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != 42 + 1 + advanced );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 4 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorMethod_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn generator SimpleGen( mut this, i32 step ) : i32 &mut // Thiscall generator method, that mutates "this".
+			{
+				for( auto mut i= 0s; i < 10s; ++i )
+				{
+					yield x;
+					x += step;
+				}
+			}
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 17 };
+			auto mut gen= s.SimpleGen(3);
+			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // generator holds reference to "this".
+			auto mut advanced= 0;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != 17 + 3 * advanced );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 10 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorMethod_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn generator SimpleGen(this) : i32; // Thiscall generator method.
+		}
+		fn generator S::SimpleGen(this) : i32 // External implementation of generator method.
+		{
+			yield x + 10;
+			yield x + 20;
+			yield x + 30;
+			yield x + 40;
+		}
+		fn Foo()
+		{
+			var S s{ .x= 777 };
+			auto mut gen= s.SimpleGen();
+			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // generator holds reference to "this".
+			auto mut advanced= 0;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != 777 + (1 + advanced) * 10 );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 4 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def GeneratorsNonTrivialUsage_Test0():
 	c_program_text= """
 		fn generator SimpleGen() : i32
