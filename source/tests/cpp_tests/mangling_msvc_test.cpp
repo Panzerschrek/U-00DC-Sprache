@@ -906,6 +906,55 @@ U_TEST( OperatorsMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "??$?RM@Box@@YAXAEBU0@M@Z" ) != nullptr ); // Template op()</f32/>
 }
 
+U_TEST( GeneratorsMangling_Test0 )
+{
+	// Generator type is encoded like template with two params - extended return type and inner reference kind, encoded as variable param of type u32.
+	// 0 - means no references inside, 1 - immutable references inside, 2 - mutable references inside.
+
+	static const char c_program_text[]=
+	R"(
+		type Gen= generator : i32;
+		fn Foo( Gen gen ) {}
+		fn Bar( f32 x, Gen gen, u32 z ) {}
+
+		type ImutRefGen= generator'imut some_tag' : f64;
+		fn Baz( ImutRefGen gen ) {}
+
+		type MutRefRetGen= generator'mut some_tag' : char8 &mut;
+		fn Lol( MutRefRetGen gen ) {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+
+	// Functions with generator param.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YAXU?$generator@HI$0A@@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YAXMU?$generator@HI$0A@@@I@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Baz@@YAXU?$generator@NI$00@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@@YAXU?$generator@AEADI$01@@@Z" ) != nullptr );
+
+	// Generated generator type destructors.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@HI$0A@@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@NI$00@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@AEADI$01@@YAXAEAU1@@Z" ) != nullptr );
+}
+
+U_TEST( GeneratorsMangling_Test1 )
+{
+	// In MSVC mangling return type is also encoded in function name.
+	// For generator function return type is generator type.
+	static const char c_program_text[]=
+	R"(
+		fn generator Foo() : i32 {}
+		fn Bar() : (generator : i32) { halt; } // Type of this function is identical to previous.
+		fn generator nomangle NoMangleGenerator() : f32 {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Foo@@YA?AU?$generator@HI$0A@@@XZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YA?AU?$generator@HI$0A@@@XZ" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "NoMangleGenerator" ) != nullptr );
+}
+
 U_TEST( VirtualTableManglingTest )
 {
 	static const char c_program_text[]=
