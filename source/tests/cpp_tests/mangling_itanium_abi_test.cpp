@@ -820,6 +820,38 @@ U_TEST( FunctionTemplatesMangling_Test3 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN3Abc14default_hasher4hashI9OuterTypeEEvRKS2_" ) != nullptr );
 }
 
+U_TEST( GeneratorsMangling_Test0 )
+{
+	// Generator type is encoded like template with two params - extended return type and inner reference kind, encoded as variable param of type u32.
+	// 0 - means no references inside, 1 - immutable references inside, 2 - mutable references inside.
+
+	static const char c_program_text[]=
+	R"(
+		type Gen= generator : i32;
+		fn Foo( Gen gen ) {}
+		fn Bar( f32 x, Gen gen, u32 z ) {}
+
+		type ImutRefGen= generator'imut some_tag' : f64;
+		fn Baz( ImutRefGen gen ) {}
+
+		type MutRefRetGen= generator'mut some_tag' : char8 &mut;
+		fn Lol( MutRefRetGen gen ) {}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	// Functions with generator param.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Foo9generatorIiLj0EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Barf9generatorIiLj0EEj" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Baz9generatorIdLj1EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol9generatorIRcLj2EE" ) != nullptr );
+
+	// Generated generator type destructors.
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIiLj0EE10destructorERS0_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIdLj1EE10destructorERS0_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIRcLj2EE10destructorERS1_" ) != nullptr );
+}
+
 U_TEST( VirtualTableMangling_Test0 )
 {
 	static const char c_program_text[]=

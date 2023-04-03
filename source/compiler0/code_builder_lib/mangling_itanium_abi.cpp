@@ -186,7 +186,7 @@ namespace
 void EncodeTypeName( ManglerState& mangler_state, const Type& type );
 void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& function_type );
 void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope );
-void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type );
+void EncodeCoroutineType( ManglerState& mangler_state, ClassPtr class_type );
 
 void EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& template_args )
 {
