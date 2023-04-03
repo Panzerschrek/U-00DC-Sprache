@@ -459,6 +459,44 @@ def GeneratorTypeName_Test7():
 	tests_lib.build_program( c_program_text )
 
 
+def GeneratorTypeName_AsTemplateSignatureArgument_Test0():
+	c_program_text= """
+		template</ type T />
+		struct S</ generator : T />
+		{
+			type GenRet= T;
+		}
+		static_assert( typeinfo</ S</ generator : bool />::GenRet />.is_bool );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def GeneratorTypeName_AsTemplateSignatureArgument_Test1():
+	c_program_text= """
+		template</ type T />
+		struct S</ generator : tup[T] />
+		{
+			type GenRet= T;
+		}
+		static_assert( typeinfo</ S</ generator : tup[f32] />::GenRet />.is_float );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def GeneratorTypeName_AsTemplateSignatureArgument_Test2():
+	c_program_text= """
+		template</ type T />
+		struct S</ generator : T& />
+		{
+			type GenRet= T;
+		}
+		type Some= S</ generator : i32 />; // Deduction failed - expected generator, returning reference, given generator, returning value.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 7 ) )
+
+
 def VoidTypeGenerator_Test0():
 	c_program_text= """
 		fn generator VoidGen() // Useless generator, but totally valid.

@@ -322,6 +322,13 @@ private:
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
 		const SrcLoc& src_loc,
+		const TemplateSignatureParam::CoroutineParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const SrcLoc& src_loc,
 		const TemplateSignatureParam::SpecializedTemplateParam& template_param );
 
 	// Returns nullptr in case of fail.
