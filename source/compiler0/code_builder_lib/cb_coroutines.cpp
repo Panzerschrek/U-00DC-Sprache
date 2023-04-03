@@ -64,7 +64,12 @@ Type CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineT
 	coroutine_class->have_destructor= true;
 	coroutine_class->is_copy_assignable= false;
 	coroutine_class->is_equality_comparable= false; // TDO - maybe implement == operator?
-	coroutine_class->can_be_constexpr= false; // TODO - make "constexpr" depending on return type.
+
+	// Coroutines can't be constexpr, because heap memory allocation is required in order to call coroutine function.
+	// So, we can't just call constexpr generator and save result into some global variable.
+	// We can't allocate heap memory in consexpr context and store it somehow later.
+	// And we can't deallocate memory too (for global variables of coroutine types).
+	coroutine_class->can_be_constexpr= false;
 
 	llvm::Type* const handle_type= llvm::PointerType::get( llvm_context_, 0 );
 

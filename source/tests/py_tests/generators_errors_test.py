@@ -757,3 +757,53 @@ def UnallowedReferencePollution_ForGenerator_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnallowedReferencePollution", 6 ) )
+
+
+def GeneratorsCanNotBeConstexpr_Test0():
+	c_program_text= """
+		fn generator constexpr Foo() : i32 {} // Generator is not constexpr.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
+
+
+def GeneratorsCanNotBeConstexpr_Test1():
+	c_program_text= """
+		fn constexpr Foo() : ( generator : i32 ) { halt; } // Return type is not constexpr.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
+
+
+def GeneratorsCanNotBeConstexpr_Test2():
+	c_program_text= """
+		fn constexpr Foo( ( generator : i32 ) gen ) { } // Param type is not constexpr.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 2 ) )
+
+
+def GeneratorsCanNotBeConstexpr_Test3():
+	c_program_text= """
+		fn generator SomeGen() : f32 {}
+		fn constexpr Foo()
+		{
+			auto gen= SomeGen(); // Creating generator variable is not constexpr operation.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstexprFunctionContainsUnallowedOperations", 3 ) )
+
+
+def GeneratorsCanNotBeConstexpr_Test4():
+	c_program_text= """
+		struct S{ (generator : bool) gen_field; } // This is not a constexpr type, because of generator field.
+		fn constexpr Foo( S s ) {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 3 ) )
