@@ -54,6 +54,7 @@ Type CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineT
 		return it->second.get();
 
 	auto coroutine_class= std::make_unique<Class>( Keyword( Keywords::generator_ ), &root_namespace );
+	const ClassPtr res_type= coroutine_class.get();
 
 	coroutine_class->coroutine_type_description= coroutine_type_description;
 	coroutine_class->inner_reference_type= coroutine_type_description.inner_reference_type;
@@ -63,7 +64,7 @@ Type CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineT
 	coroutine_class->is_copy_constructible= false;
 	coroutine_class->have_destructor= true;
 	coroutine_class->is_copy_assignable= false;
-	coroutine_class->is_equality_comparable= false; // TDO - maybe implement == operator?
+	coroutine_class->is_equality_comparable= true;
 
 	// Coroutines can't be constexpr, because heap memory allocation is required in order to call coroutine function.
 	// So, we can't just call constexpr generator and save result into some global variable.
@@ -90,8 +91,7 @@ Type CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineT
 		functions_set->functions.push_back( std::move( destructor_variable ) );
 		coroutine_class->members->AddName( Keyword( Keywords::destructor_ ), std::move( functions_set ) );
 
-		const auto bb= llvm::BasicBlock::Create( llvm_context_, "func_code", destructor_function );
-		llvm::IRBuilder<> ir_builder( bb );
+		llvm::IRBuilder<> ir_builder( llvm::BasicBlock::Create( llvm_context_, "func_code", destructor_function ) );
 
 		llvm::Argument* const this_arg= destructor_function->getArg(0);
 		this_arg->setName( Keyword( Keywords::this_ ) );
@@ -104,7 +104,45 @@ Type CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineT
 		ir_builder.CreateRetVoid();
 	}
 
-	const ClassPtr res_type= coroutine_class.get();
+	// Generate equality-comparison operator.
+	{
+		FunctionType op_type;
+		op_type.params.resize(2u);
+		for( size_t i= 0; i < 2; ++i )
+		{
+			op_type.params[i].type= res_type;
+			op_type.params[i].value_type= ValueType::ReferenceImut;
+		}
+		op_type.return_type= bool_type_;
+		op_type.return_value_type= ValueType::Value;
+
+		FunctionVariable op_variable;
+		const std::string op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *coroutine_class->members, op_name, op_type ) );
+		op_variable.type= std::move( op_type );
+		op_variable.is_generated= true;
+		op_variable.is_this_call= false;
+		op_variable.have_body= true;
+
+		// Generate code.
+		llvm::Function* const op_llvm_function= EnsureLLVMFunctionCreated( op_variable );
+		llvm::IRBuilder<> ir_builder( llvm::BasicBlock::Create( llvm_context_, "func_code", op_llvm_function ) );
+
+		llvm::Argument* const l_arg= op_llvm_function->getArg(0);
+		llvm::Argument* const r_arg= op_llvm_function->getArg(1);
+		l_arg->setName( "l" );
+		r_arg->setName( "r" );
+		ir_builder.CreateRet(
+				ir_builder.CreateICmpEQ(
+					ir_builder.CreateLoad( handle_type, l_arg, false, "coro_handle_l" ),
+					ir_builder.CreateLoad( handle_type, r_arg, false, "coro_handle_r" ) ) );
+
+		// Insert operator.
+		OverloadedFunctionsSetPtr operators= std::make_shared<OverloadedFunctionsSet>();
+		operators->functions.push_back( std::move( op_variable ) );
+		coroutine_class->members->AddName( op_name, std::move( operators ) );
+	}
+
 	coroutine_classes_table_[coroutine_type_description]= std::move(coroutine_class);
 	return res_type;
 }

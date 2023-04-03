@@ -1021,3 +1021,29 @@ def Typeinfo_ForGenerators_Test2():
 		static_assert( mut_ref_char_gen_typeinfo.references_tags_count == 1s ); // This coroutine type has references inside.
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def GeneratorsEqualityCompare_Test0():
+	c_program_text= """
+		fn generator SomeGen() : i32
+		{
+			yield 1;
+			yield 2;
+			yield 3;
+		}
+		static_assert( typeinfo</ typeof(SomeGen()) />.is_equality_comparable );
+		fn Foo()
+		{
+			auto mut gen0= SomeGen();
+			auto mut gen1= SomeGen();
+			// == compares objects of generator type. Each object is unique.
+			halt if( gen0 == gen1 );
+			halt if( !( gen1 != gen0 ) );
+			halt if( gen0 != gen0 );
+			halt if( gen1 != gen1 );
+			halt if( !( gen0 == gen0 ) );
+			halt if( !( gen1 == gen1 ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
