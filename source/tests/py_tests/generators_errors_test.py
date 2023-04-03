@@ -427,6 +427,56 @@ def GeneratorIsNonCopyable_Test8():
 	tests_lib.build_program( c_program_text )
 
 
+def GeneratorIsNonDefaultConstructible_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var (generator : u64) gen;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedInitializer", 4 ) )
+
+
+def GeneratorIsNonDefaultConstructible_Test1():
+	c_program_text= """
+		struct S{ (generator : char16) gen; }
+		fn Foo()
+		{
+			var S s{}; // Missing initializer for "gen" field.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedInitializer", 5 ) )
+
+
+def GeneratorIsNonDefaultConstructible_Test2():
+	c_program_text= """
+		struct S{ (generator : char16) gen; }
+		fn Foo()
+		{
+			var S s; // "S" has no default constructor, because "gen" is not default-constructible.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedInitializer", 5 ) )
+
+
+def GeneratorIsNonDefaultConstructible_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var[ generator : byte32, 16 ] arr;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedInitializer", 4 ) )
+
+
 def UsingKeywordAsName_For_IfCoroAdvance_Test0():
 	c_program_text= """
 		fn generator SomeGen() : i32;
