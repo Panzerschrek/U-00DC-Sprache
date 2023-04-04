@@ -857,3 +857,42 @@ def GeneratorsCanNotBeConstexpr_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "InvalidTypeForConstexprFunction", 3 ) )
+
+
+def VirtualGenerator_Test0():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual generator Foo(this) : i32;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "VirtualGenerator", 4 ) )
+
+
+def VirtualGenerator_Test1():
+	c_program_text= """
+		class A polymorph
+		{
+			fn virtual Foo(this) : (generator'imut some_tag' : i32); // Ok - virtual method, returning generator.
+		}
+		class B : A
+		{
+			fn virtual override generator Foo(this) : i32; // Error, declaring overrided virtual function as generator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HaveError( errors_list, "VirtualGenerator", 4 ) )
+	assert( HaveError( errors_list, "VirtualGenerator", 8 ) )
+
+
+def VirtualGenerator_Test2():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this) : (generator'imut some_tag' : i32); // Ok - virtual method, returning generator.
+		}
+	"""
+	tests_lib.build_program( c_program_text )

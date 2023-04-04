@@ -905,6 +905,11 @@ size_t CodeBuilder::PrepareFunction(
 			if( function_type.calling_convention != llvm::CallingConv::C )
 				REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
 
+			// It is too complicated to support virtual generators. It is simplier to just forbid such generators.
+			// But this is stil lpossible to return a generator value from virtual function.
+			if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+				REPORT_ERROR( VirtualGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
+
 			function_type= std::move(generator_function_type);
 		}
 
