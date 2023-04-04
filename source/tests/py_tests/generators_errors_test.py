@@ -896,3 +896,12 @@ def VirtualGenerator_Test2():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def AutoReturnGenerator_Test0():
+	c_program_text= """
+		fn generator Foo() : auto {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "AutoReturnGenerator", 2 ) )
