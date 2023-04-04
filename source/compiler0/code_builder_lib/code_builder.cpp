@@ -883,6 +883,12 @@ size_t CodeBuilder::PrepareFunction(
 			( func_variable.is_this_call || func.overloaded_operator_ != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc_ );
 
+		if( func_variable.return_type_is_auto && func_variable.is_generator )
+		{
+			REPORT_ERROR( AutoReturnGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
+			func_variable.is_generator= false;
+		}
+
 		if( func_variable.is_generator )
 		{
 			FunctionType generator_function_type= function_type;

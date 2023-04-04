@@ -217,3 +217,4 @@ PROCESS_ERROR( IfCoroAdvanceForNonCoroutineValue, "if_coro_advance used for non-
 PROCESS_ERROR( GeneratorMismatch, "\"generator\" specifiers mismatch for function \"{0}\"." )
 PROCESS_ERROR( NonDefaultCallingConventionForGenerator, "generator function can have only default calling convention." )
 PROCESS_ERROR( VirtualGenerator, "generator method can't be virtual." )
+PROCESS_ERROR( AutoReturnGenerator, "auto return is not supported for generator functions." )
