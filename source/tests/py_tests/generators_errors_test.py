@@ -905,3 +905,28 @@ def AutoReturnGenerator_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "AutoReturnGenerator", 2 ) )
+
+
+def GlobalsLoopDetected_ForGenerators_Test0():
+	c_program_text= """
+		struct S
+		{
+			// All methods type completeness required for class to be complete.
+			// Generator function requires generator type completeness, for which value-param of type "S" completeness is required.
+			fn generator Foo(S s) : char8;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GlobalsLoopDetected", 2 ) )
+
+
+def GlobalsLoopDetected_ForGenerators_Test1():
+	c_program_text= """
+		struct S
+		{
+			// Ok - type completeness is not required for reference params of generator method.
+			fn generator Foo(S& s) : char8;
+		}
+	"""
+	tests_lib.build_program( c_program_text )

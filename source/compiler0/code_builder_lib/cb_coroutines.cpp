@@ -15,11 +15,28 @@ Type CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, co
 	coroutine_type_description.inner_reference_type= InnerReferenceType::None;
 	for( const FunctionType::Param& param : generator_function_type.params )
 	{
-		// TODO - what if value argument contains references inside?
-		if( param.value_type == ValueType::ReferenceMut )
-			coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
-		else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_type == InnerReferenceType::None )
-			coroutine_type_description.inner_reference_type= InnerReferenceType::Imut;
+		if( param.value_type == ValueType::Value )
+		{
+			// Require type completeness for value params in order to know inner reference kind.
+			if( EnsureTypeComplete( param.type ) )
+			{
+				const InnerReferenceType param_type_inner_reference_type= param.type.GetInnerReferenceType();
+				if( param_type_inner_reference_type == InnerReferenceType::Mut )
+					coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
+				else if( param_type_inner_reference_type == InnerReferenceType::Imut && coroutine_type_description.inner_reference_type == InnerReferenceType::None )
+					coroutine_type_description.inner_reference_type= InnerReferenceType::Imut;
+			}
+		}
+		else
+		{
+			// Assume this is a reference to type with no references inside.
+			// This is checked later - when building function code.
+			// Do this later in order to avoid full type building for reference params.
+			if( param.value_type == ValueType::ReferenceMut )
+				coroutine_type_description.inner_reference_type= InnerReferenceType::Mut;
+			else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_type == InnerReferenceType::None )
+				coroutine_type_description.inner_reference_type= InnerReferenceType::Imut;
+		}
 	}
 
 	return GetCoroutineType( root_namespace, coroutine_type_description );

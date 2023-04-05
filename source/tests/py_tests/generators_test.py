@@ -1085,3 +1085,63 @@ def GeneratorsEqualityCompare_Test0():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def Generator_InnerReferenceTagDeduction_Test0():
+	c_program_text= """
+		fn generator Gen() : i32 {}
+		static_assert( typeinfo</typeof(Gen())/>.references_tags_count == 0s ); // No references for generator with no params.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Generator_InnerReferenceTagDeduction_Test1():
+	c_program_text= """
+		struct S{ i32 x; f32 y; }
+		fn generator Gen(bool b, S s, [i32, 4] a, tup[f32, char8] t) : i32 {}
+		fn Foo()
+		{
+			var S s= zero_init;
+			var [i32, 4] a=zero_init;
+			var tup[f32, char8] t= zero_init;
+			auto gen= Gen(false, s, a, t);
+			static_assert( typeinfo</typeof(gen)/>.references_tags_count == 0s ); // No references for generator with value params.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Generator_InnerReferenceTagDeduction_Test1():
+	c_program_text= """
+		fn generator Gen(i32& x) : i32 {}
+		static_assert( typeinfo</typeof(Gen(0))/>.references_tags_count == 1s ); // Has references for generator with reference-params.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Generator_InnerReferenceTagDeduction_Test2():
+	c_program_text= """
+		fn generator Gen(f32& mut x) : i32 {}
+		fn Foo()
+		{
+			var f32 mut x= 0.0f;
+			auto mut gen= Gen(x);
+			static_assert( typeinfo</typeof(gen)/>.references_tags_count == 1s ); // Has references for generator with mutable reference-params.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def Generator_InnerReferenceTagDeduction_Test3():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn generator Gen(S s) : i32 {}
+		fn Foo()
+		{
+			var i32 x= 0;
+			var S s{ .x= x };
+			auto gen= Gen(s);
+			static_assert( typeinfo</typeof(gen)/>.references_tags_count == 1s ); // Has references for generator with value-params, containing refrerences inside.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
