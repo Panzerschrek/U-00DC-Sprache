@@ -1360,7 +1360,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 {
 	StackVariablesStorage variables_storage( function_context );
 
-	const VariablePtr coro_expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression_, names, function_context );
+	const VariablePtr coro_expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression, names, function_context );
 
 	const ClassPtr coro_class_type= coro_expr->type.GetClassType();
 	if( coro_class_type == nullptr || coro_class_type->coroutine_type_description == std::nullopt )
@@ -1455,9 +1455,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const VariableMutPtr variable_reference=
 			std::make_shared<Variable>(
 				result_type,
-				if_coro_advance.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				if_coro_advance.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
-				if_coro_advance.variable_name_ );
+				if_coro_advance.variable_name );
 		// Do not forget to remove node in case of error-return!!!
 		function_context.variables_state.AddNode( variable_reference );
 
@@ -1470,13 +1470,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					result_type,
 					ValueType::Value,
 					Variable::Location::Pointer,
-					if_coro_advance.variable_name_ + " variable itself",
+					if_coro_advance.variable_name + " variable itself",
 					promise );
 			function_context.variables_state.AddNode( variable );
 
-			variable->llvm_value->setName( if_coro_advance.variable_name_ );
+			variable->llvm_value->setName( if_coro_advance.variable_name );
 
-			debug_info_builder_->CreateVariableInfo( *variable, if_coro_advance.variable_name_, if_coro_advance.src_loc_, function_context );
+			debug_info_builder_->CreateVariableInfo( *variable, if_coro_advance.variable_name, if_coro_advance.src_loc_, function_context );
 
 			if( !variable->type.CanBeConstexpr() )
 				function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
@@ -1493,7 +1493,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			llvm::Value* const coroutine_reference_result= CreateTypedReferenceLoad( function_context, result_type, promise );
-			if( if_coro_advance.reference_modifier_ == ReferenceModifier::None )
+			if( if_coro_advance.reference_modifier == ReferenceModifier::None )
 			{
 				// Create variable and copy into it reference result of coroutine.
 
@@ -1502,12 +1502,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						result_type,
 						ValueType::Value,
 						Variable::Location::Pointer,
-						if_coro_advance.variable_name_ + " variable itself",
-						function_context.alloca_ir_builder.CreateAlloca( result_type.GetLLVMType(), nullptr, if_coro_advance.variable_name_ ) );
+						if_coro_advance.variable_name + " variable itself",
+						function_context.alloca_ir_builder.CreateAlloca( result_type.GetLLVMType(), nullptr, if_coro_advance.variable_name ) );
 				function_context.variables_state.AddNode( variable );
 
 				CreateLifetimeStart( function_context, variable->llvm_value );
-				debug_info_builder_->CreateVariableInfo( *variable, if_coro_advance.variable_name_, if_coro_advance.src_loc_, function_context );
+				debug_info_builder_->CreateVariableInfo( *variable, if_coro_advance.variable_name, if_coro_advance.src_loc_, function_context );
 
 				if( !result_type.CanBeConstexpr() )
 					function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
@@ -1541,15 +1541,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			}
 		}
 
-		if( IsKeyword( if_coro_advance.variable_name_ ) )
+		if( IsKeyword( if_coro_advance.variable_name ) )
 			REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), if_coro_advance.src_loc_ );
 
 		coro_result_variables_storage.RegisterVariable( variable_reference );
 
 		NamesScope variable_names_scope( "", &names );
-		variable_names_scope.AddName( if_coro_advance.variable_name_, Value( variable_reference, if_coro_advance.src_loc_ ) );
+		variable_names_scope.AddName( if_coro_advance.variable_name, Value( variable_reference, if_coro_advance.src_loc_ ) );
 
-		const BlockBuildInfo block_build_info= BuildBlock( variable_names_scope, function_context, if_coro_advance.block_ );
+		const BlockBuildInfo block_build_info= BuildBlock( variable_names_scope, function_context, if_coro_advance.block );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
 			// Destroy all temporaries.

@@ -138,7 +138,7 @@ void ElementWrite( const GeneratorType& generator_name, std::ostream& stream )
 	if( generator_name.inner_reference_tag != nullptr )
 	{
 		stream << "'";
-		stream << Keyword(generator_name.inner_reference_tag->is_mutable ? Keywords::mut_ : Keywords::imut_ );
+		ElementWrite( generator_name.inner_reference_tag->mutability_modifier, stream );
 		stream << generator_name.inner_reference_tag->name;
 		stream << "'";
 	}

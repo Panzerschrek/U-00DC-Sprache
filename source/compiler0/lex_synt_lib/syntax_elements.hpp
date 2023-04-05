@@ -296,7 +296,7 @@ public:
 	struct InnerReferenceTag
 	{
 		std::string name;
-		bool is_mutable= false;
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	};
 
 public:
@@ -707,11 +707,11 @@ struct IfCoroAdvanceOperator final : public SyntaxElementBase
 {
 	IfCoroAdvanceOperator( const SrcLoc& src_loc );
 
-	ReferenceModifier reference_modifier_= ReferenceModifier::None;
-	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
-	std::string variable_name_;
-	Expression expression_;
-	Block block_;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	std::string variable_name;
+	Expression expression;
+	Block block;
 };
 
 struct SingleExpressionOperator final : public SyntaxElementBase

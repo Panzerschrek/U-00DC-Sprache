@@ -189,7 +189,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		coroutine_type_description.inner_reference_type= InnerReferenceType::None;
 	else
 		coroutine_type_description.inner_reference_type=
-			generator_type_name.inner_reference_tag->is_mutable
+			generator_type_name.inner_reference_tag->mutability_modifier == MutabilityModifier::Mutable
 				? InnerReferenceType::Mut
 				: InnerReferenceType::Imut;
 

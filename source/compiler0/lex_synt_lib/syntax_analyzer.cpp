@@ -1474,15 +1474,13 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 
 			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
 			{
-				generator_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
 				NextLexem();
-				inner_reference_tag.is_mutable= true;
+				inner_reference_tag.mutability_modifier= MutabilityModifier::Mutable;
 			}
 			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
 			{
-				generator_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
 				NextLexem();
-				inner_reference_tag.is_mutable= false;
+				inner_reference_tag.mutability_modifier= MutabilityModifier::Immutable;
 			}
 
 			if( it_->type != Lexem::Type::Identifier )
@@ -2381,17 +2379,17 @@ IfCoroAdvanceOperator SyntaxAnalyzer::ParseIfCoroAdvanceOperator()
 
 	if( it_->type == Lexem::Type::And )
 	{
-		result.reference_modifier_= ReferenceModifier::Reference;
+		result.reference_modifier= ReferenceModifier::Reference;
 		NextLexem();
 	}
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
 	{
-		result.mutability_modifier_= MutabilityModifier::Mutable;
+		result.mutability_modifier= MutabilityModifier::Mutable;
 		NextLexem();
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
 	{
-		result.mutability_modifier_= MutabilityModifier::Immutable;
+		result.mutability_modifier= MutabilityModifier::Immutable;
 		NextLexem();
 	}
 
@@ -2400,16 +2398,16 @@ IfCoroAdvanceOperator SyntaxAnalyzer::ParseIfCoroAdvanceOperator()
 		PushErrorMessage();
 		return result;
 	}
-	result.variable_name_= it_->text;
+	result.variable_name= it_->text;
 	NextLexem();
 
 	ExpectLexem( Lexem::Type::Colon );
 
-	result.expression_= ParseExpression();
+	result.expression= ParseExpression();
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
-	result.block_= ParseBlock();
+	result.block= ParseBlock();
 	return result;
 }
 
