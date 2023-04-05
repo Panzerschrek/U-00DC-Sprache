@@ -6,7 +6,7 @@
 namespace U
 {
 
-Type CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type )
+ClassPtr CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type )
 {
 	CoroutineTypeDescription coroutine_type_description;
 	coroutine_type_description.kind= CoroutineKind::Generator;
@@ -65,7 +65,7 @@ std::set<FunctionType::ParamReference> CodeBuilder::GetGeneratorFunctionReturnRe
 	return result;
 }
 
-Type CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description )
+ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description )
 {
 	if( const auto it= coroutine_classes_table_.find( coroutine_type_description ); it != coroutine_classes_table_.end() )
 		return it->second.get();

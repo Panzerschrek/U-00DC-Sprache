@@ -890,10 +890,10 @@ private:
 
 	// Coroutines
 
-	Type GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type );
+	ClassPtr GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type );
 	std::set<FunctionType::ParamReference> GetGeneratorFunctionReturnReferences( const FunctionType& generator_function_type );
 
-	Type GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
+	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 
 	void CreateGeneratorEntryBlock( FunctionContext& function_context );
 	void GeneratorYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
