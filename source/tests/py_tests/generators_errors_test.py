@@ -924,6 +924,66 @@ def GeneratorSpecialMethod_Test1():
 	assert( HaveError( errors_list, "GeneratorSpecialMethod", 4 ) )
 
 
+def InvalidReturnTypeForOperator_ForGeneratorOperator_Test0():
+	c_program_text= """
+		struct S
+		{
+			op generator ++(this); // This operator returns value of generator type and for this operator this is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
+
+
+def InvalidReturnTypeForOperator_ForGeneratorOperator_Test1():
+	c_program_text= """
+		struct S
+		{
+			op generator =(mut this, S& other); // This operator returns value of generator type and for this operator this is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
+
+
+def InvalidReturnTypeForOperator_ForGeneratorOperator_Test2():
+	c_program_text= """
+		struct S
+		{
+			op generator *=(mut this, S& other); // This operator returns value of generator type and for this operator this is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
+
+
+def InvalidReturnTypeForOperator_ForGeneratorOperator_Test3():
+	c_program_text= """
+		struct S
+		{
+			op generator ==(mut this, S& other) : bool; // This operator returns value of generator type and for this operator this is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
+
+
+def InvalidReturnTypeForOperator_ForGeneratorOperator_Test4():
+	c_program_text= """
+		struct S
+		{
+			op generator <=>(mut this, S& other) : i32; // This operator returns value of generator type and for this operator this is not allowed.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "InvalidReturnTypeForOperator", 4 ) )
+
+
 def AutoReturnGenerator_Test0():
 	c_program_text= """
 		fn generator Foo() : auto {}
