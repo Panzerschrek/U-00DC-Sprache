@@ -910,7 +910,7 @@ def GeneratorsNonTrivialUsage_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def GeneratorsNonTrivialUsage_Test4():
+def GeneratorsNonTrivialUsage_Test5():
 	c_program_text= """
 		// Create twodimetional loop with generators.
 		fn generator GenNumbers( u32 max ) : u32
@@ -963,7 +963,7 @@ def GeneratorsNonTrivialUsage_Test4():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def GeneratorsNonTrivialUsage_Test5():
+def GeneratorsNonTrivialUsage_Test6():
 	c_program_text= """
 		// Recursive generator.
 		fn generator GenSequenceUpToPow2( u32 power ) : u32
@@ -1001,6 +1001,82 @@ def GeneratorsNonTrivialUsage_Test5():
 				break;
 			}
 			halt if( advanced != 1u << 5u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorsNonTrivialUsage_Test6():
+	c_program_text= """
+		fn generator GenNumbers( u32 size ) : u32
+		{
+			for( auto mut i= 0u; i < size; ++i ) { yield i; }
+		}
+		// Generator, that returns other generator.
+		fn generator GenSequences( u32 size ) : (generator : u32)
+		{
+			for( auto mut i= 0u; i < size; ++i ) { yield GenNumbers(i); }
+		}
+		fn Foo()
+		{
+			auto mut gen= GenSequences( 6u );
+			auto mut advanced= 0u;
+			while( true )
+			{
+				if_coro_advance( mut inner_gen : gen )
+				{
+					auto mut inner_advanced= 0u;
+					while(true)
+					{
+						if_coro_advance( x : inner_gen )
+						{
+							halt if( x != inner_advanced );
+							++inner_advanced;
+							continue;
+						}
+						break;
+					}
+					halt if( inner_advanced != advanced );
+
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( advanced != 6u );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorsNonTrivialUsage_Test7():
+	c_program_text= """
+		// Create generator inside "if_coro_advance"
+		fn generator NoAdvanceGen() : i32 {}
+		fn Foo()
+		{
+			if_coro_advance( x : NoAdvanceGen() ){ halt; }
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def GeneratorsNonTrivialUsage_Test8():
+	c_program_text= """
+		// Create generator inside "if_coro_advance"
+		fn generator SingleAdvanceGen() : i32 { yield 42; }
+		fn Foo()
+		{
+			auto mut advanced= false;
+			if_coro_advance( x : SingleAdvanceGen() )
+			{
+				halt if( x != 42 );
+				advanced= true;
+			}
+			halt if( !advanced );
 		}
 	"""
 	tests_lib.build_program( c_program_text )

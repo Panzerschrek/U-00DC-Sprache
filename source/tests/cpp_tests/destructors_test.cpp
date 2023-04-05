@@ -2874,6 +2874,49 @@ U_TEST(IfCoroAdvance_Destruction_Test2)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 888, 65456, 65456 } ) );
 }
 
+U_TEST(IfCoroAdvance_Destruction_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( mut this, S& other )= default;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn generator SomeGen(S s) : i32
+		{
+			yield 343;
+			yield 555;
+		}
+		fn Foo()
+		{
+			var S s(222343);
+			var S other_s(787);
+			if_coro_advance( x : SomeGen(s) ) // Create temporary value of generator here.
+			{
+				halt if( x != 343 );
+				var S inner_s(998);
+				// Destroy "inner_s" here.
+			}
+			// Destroy "s" copy as "SomeGen" argument here.
+			// Destroy "other_s" here.
+			// Destroy "s" here.
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 998, 222343, 787, 222343 } ) );
+}
+
 } // namespace
 
 } // namespace U
