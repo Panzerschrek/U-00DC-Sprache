@@ -218,3 +218,4 @@ PROCESS_ERROR( GeneratorMismatch, "\"generator\" specifiers mismatch for functio
 PROCESS_ERROR( NonDefaultCallingConventionForGenerator, "generator function can have only default calling convention." )
 PROCESS_ERROR( VirtualGenerator, "generator method can't be virtual." )
 PROCESS_ERROR( AutoReturnGenerator, "auto return is not supported for generator functions." )
+PROCESS_ERROR( GeneratorSpecialMethod, "Special method can't be generator." )

@@ -898,6 +898,32 @@ def VirtualGenerator_Test2():
 	tests_lib.build_program( c_program_text )
 
 
+def GeneratorSpecialMethod_Test0():
+	c_program_text= """
+		struct S
+		{
+			fn generator constructor();
+			fn generator constructor(i32 x);
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GeneratorSpecialMethod", 4 ) )
+	assert( HaveError( errors_list, "GeneratorSpecialMethod", 5 ) )
+
+
+def GeneratorSpecialMethod_Test1():
+	c_program_text= """
+		struct S
+		{
+			fn generator destructor();
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GeneratorSpecialMethod", 4 ) )
+
+
 def AutoReturnGenerator_Test0():
 	c_program_text= """
 		fn generator Foo() : auto {}

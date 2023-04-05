@@ -872,10 +872,6 @@ size_t CodeBuilder::PrepareFunction(
 			}
 		}
 
-		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type_, function_type );
-		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
-		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
-
 		function_type.calling_convention= GetLLVMCallingConvention( func.type_.calling_convention_, func.type_.src_loc_, names_scope.GetErrors() );
 		// Disable non-default calling conventions for this-call methods and operators because of problems with call of generated methods/operators.
 		// But it's fine to use custom calling convention for static methods.
@@ -886,6 +882,11 @@ size_t CodeBuilder::PrepareFunction(
 		if( func_variable.return_type_is_auto && func_variable.is_generator )
 		{
 			REPORT_ERROR( AutoReturnGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
+			func_variable.is_generator= false;
+		}
+		if( is_special_method && func_variable.is_generator )
+		{
+			REPORT_ERROR( GeneratorSpecialMethod, names_scope.GetErrors(), func.type_.src_loc_ );
 			func_variable.is_generator= false;
 		}
 
@@ -918,6 +919,10 @@ size_t CodeBuilder::PrepareFunction(
 
 			function_type= std::move(generator_function_type);
 		}
+
+		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type_, function_type );
+		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
+		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
 
 		func_variable.type= std::move(function_type);
 	} // end prepare function type
