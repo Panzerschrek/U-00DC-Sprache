@@ -218,10 +218,8 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 		{},
 		"coro_frame_size" );
 
-	llvm::Value* const coro_frame_memory_allocated= function_context.llvm_ir_builder.CreateCall(
-		coro_.malloc,
-		{ coro_frame_size },
-		"coro_frame_memory_allocated" );
+	llvm::Value* const coro_frame_memory_allocated=
+		function_context.llvm_ir_builder.CreateCall( malloc_func_, { coro_frame_size }, "coro_frame_memory_allocated" );
 
 	function_context.llvm_ir_builder.CreateBr( block_coro_begin );
 
@@ -262,7 +260,7 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 
 	function_context.function->getBasicBlockList().push_back( block_need_to_free );
 	function_context.llvm_ir_builder.SetInsertPoint( block_need_to_free );
-	function_context.llvm_ir_builder.CreateCall( coro_.free, { mem_for_free } );
+	function_context.llvm_ir_builder.CreateCall( free_func_, { mem_for_free } );
 	function_context.llvm_ir_builder.CreateBr( function_context.coro_suspend_bb );
 
 	// Suspend block.

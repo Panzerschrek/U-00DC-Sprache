@@ -1007,7 +1007,7 @@ def GeneratorsNonTrivialUsage_Test6():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def GeneratorsNonTrivialUsage_Test6():
+def GeneratorsNonTrivialUsage_Test7():
 	c_program_text= """
 		fn generator GenNumbers( u32 size ) : u32
 		{
@@ -1051,7 +1051,7 @@ def GeneratorsNonTrivialUsage_Test6():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def GeneratorsNonTrivialUsage_Test7():
+def GeneratorsNonTrivialUsage_Test8():
 	c_program_text= """
 		// Create generator inside "if_coro_advance"
 		fn generator NoAdvanceGen() : i32 {}
@@ -1064,7 +1064,7 @@ def GeneratorsNonTrivialUsage_Test7():
 	tests_lib.run_function( "_Z3Foov" )
 
 
-def GeneratorsNonTrivialUsage_Test8():
+def GeneratorsNonTrivialUsage_Test9():
 	c_program_text= """
 		// Create generator inside "if_coro_advance"
 		fn generator SingleAdvanceGen() : i32 { yield 42; }

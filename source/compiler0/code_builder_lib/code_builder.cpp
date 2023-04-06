@@ -151,28 +151,29 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 				module_.get() );
 	}
 
-	// Prepare coroutine helper prototypes.
+	// Prepare heap allocation functions.
 	{
-		// TODO - use ustlib wrapper malloc functions?
+		// Use some temporary names for allocation functions.
+		// Do this in order to avoid collisions with user-defined names.
 		llvm::Type* const ptr_type= llvm::PointerType::get( llvm_context_, 0 );
-		coro_.malloc=
+		malloc_func_=
 			llvm::Function::Create(
 					llvm::FunctionType::get(
 						ptr_type,
 						{ fundamental_llvm_types_.int_ptr },
 						false ),
 					llvm::Function::ExternalLinkage,
-					"malloc",
+					"__U_ust_memory_allocate_impl",
 					module_.get() );
 
-		coro_.free=
+		free_func_=
 			llvm::Function::Create(
 					llvm::FunctionType::get(
 						fundamental_llvm_types_.void_for_ret_,
 						{ ptr_type },
 						false ),
 					llvm::Function::ExternalLinkage,
-					"free",
+					"__U_ust_memory_free_impl",
 					module_.get() );
 	}
 
@@ -225,6 +226,21 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	{
 		if( !typeinfo_entry.second->type.GetLLVMType()->isSized() )
 			typeinfo_entry.second->type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
+	}
+
+	// Replace usage of temporary allocation functions with usage of library allocation functions.
+	// Do such, because we can't just declare internal functions with such names, prior to compiling file with such fubnctions declarations ("alloc.u").
+	// Without such approach functions, declared in library file, get suffix, like "ust_memory_allocate_impl.1".
+	{
+		if( const auto ust_memory_allocate_impl= module_->getFunction( "ust_memory_allocate_impl" ) )
+			malloc_func_->replaceAllUsesWith( ust_memory_allocate_impl );
+		else
+			malloc_func_->setName( "ust_memory_allocate_impl" );
+
+		if( const auto ust_memory_free_impl= module_->getFunction( "ust_memory_free_impl" ) )
+			free_func_->replaceAllUsesWith( ust_memory_free_impl );
+		else
+			free_func_->setName( "ust_memory_free_impl" );
 	}
 
 	// Reset debug info builder in order to finish deffered debug info construction.
@@ -913,7 +929,7 @@ size_t CodeBuilder::PrepareFunction(
 				REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
 
 			// It is too complicated to support virtual generators. It is simplier to just forbid such generators.
-			// But this is stil lpossible to return a generator value from virtual function.
+			// But this is still possible to return a generator value from virtual function.
 			if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
 				REPORT_ERROR( VirtualGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
 

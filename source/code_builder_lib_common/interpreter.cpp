@@ -822,12 +822,12 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 			break;
 		};
 	}
-	else if( function_name == "malloc" )
+	else if( function_name == "malloc" || function_name == "ust_memory_allocate_impl" || function_name == "__U_ust_memory_allocate_impl" )
 	{
 		ProcessMalloc( instruction );
 		return;
 	}
-	else if( function_name == "free" )
+	else if( function_name == "free" || function_name == "ust_memory_free_impl" || function_name == "__U_ust_memory_free_impl" )
 	{
 		ProcessFree( instruction );
 		return;

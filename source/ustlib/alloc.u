@@ -55,6 +55,7 @@ fn allocation_size_check( size_type size )
 } // namespace ust
 
 // External implementation functions.
+// These functions are also used by compiler itself.
 
 fn nomangle ust_memory_allocate_impl( size_type size ) unsafe : $(byte8);
 fn nomangle ust_memory_reallocate_impl( $(byte8) ptr, size_type new_size ) unsafe : $(byte8);

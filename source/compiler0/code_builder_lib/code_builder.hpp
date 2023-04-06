@@ -1038,6 +1038,10 @@ private:
 	llvm::Function* lifetime_start_debug_func_= nullptr;
 	llvm::Function* lifetime_end_debug_func_= nullptr;
 
+	// Allocate/deallocate heap memory in some places (for now in coroutines).
+	llvm::Function* malloc_func_= nullptr;
+	llvm::Function* free_func_= nullptr;
+
 	Type invalid_type_;
 	Type void_type_;
 	Type bool_type_;
@@ -1081,12 +1085,6 @@ private:
 	std::vector<GlobalThing> global_things_stack_;
 
 	std::optional<DebugInfoBuilder> debug_info_builder_;
-
-	struct
-	{
-		llvm::Function* malloc= nullptr;
-		llvm::Function* free= nullptr;
-	} coro_;
 
 	std::unordered_map<CoroutineTypeDescription, std::unique_ptr<Class>, CoroutineTypeDescriptionHasher> coroutine_classes_table_;
 };

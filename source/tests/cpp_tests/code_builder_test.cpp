@@ -2079,14 +2079,10 @@ U_TEST(HeapUsage_Test0)
 {
 	// Test basic usage of malloc/free. Interpreter should process such functions specially.
 
-	// Disabled, because it's not possible to create declaration for built-in function - it creates a copy with name like "malloc.1".
-	// TODO - find a way to declare prototype for built-in function.
-	DISABLE_TEST;
-
 	static const char c_program_text[]=
 	R"(
-		fn nomangle malloc(size_type s) unsafe : $(byte8);
-		fn nomangle free($(byte8) ptr) unsafe;
+		fn nomangle ust_memory_allocate_impl( size_type size ) unsafe : $(byte8);
+		fn nomangle ust_memory_free_impl( $(byte8) ptr ) unsafe;
 
 		fn Write( $(byte8) addr )
 		{
@@ -2108,11 +2104,11 @@ U_TEST(HeapUsage_Test0)
 		}
 		fn Free( $(byte8) addr )
 		{
-			unsafe( free(addr) );
+			unsafe( ust_memory_free_impl(addr) );
 		}
 		fn Foo()
 		{
-			auto addr= unsafe( malloc(3s) );
+			auto addr= unsafe( ust_memory_allocate_impl(3s) );
 			Write(addr);
 			Read(addr);
 			Free(addr);
