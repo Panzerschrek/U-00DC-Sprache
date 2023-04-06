@@ -667,6 +667,23 @@ def AccessingVariable_LinkedToGeneratorArgument_Test4():
 	assert( HaveError( errors_list, "ReferenceProtectionError", 10 ) )
 
 
+def AccessingVariable_LinkedToGeneratorArgument_Test5():
+	c_program_text= """
+		fn generator Gen( i32 &mut x, i32 &imut y ) {}
+		fn Foo()
+		{
+			var i32 mut x= 0, imut y= 0;
+			// Generator function with both mutable and immutable reference-params returns generator value with mutable inner reference kind.
+			// Because of that "y" immutable variable points to mutable inner reference node inside "gen", so, no immutable references can be created.
+			auto gen= Gen( x, y );
+			auto& y_ref= y;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 9 ) )
+
+
 def AccessingVariable_LinkedToGeneratorArgument_Test3():
 	c_program_text= """
 		fn generator SomeGen(i32 x) : i32;
