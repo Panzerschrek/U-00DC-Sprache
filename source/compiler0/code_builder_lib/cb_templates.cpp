@@ -832,6 +832,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 					given_class->coroutine_type_description->kind == template_param.kind &&
 					given_class->coroutine_type_description->return_value_type == template_param.return_value_type &&
 					given_class->coroutine_type_description->inner_reference_type == template_param.inner_reference_type &&
+					given_class->coroutine_type_description->non_sync == template_param.non_sync &&
 					MatchTemplateArg( template_, args_names_scope, given_class->coroutine_type_description->return_type, src_loc, *template_param.return_type );
 			}
 		}

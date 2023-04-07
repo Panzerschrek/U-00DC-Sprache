@@ -1253,7 +1253,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	if( func_variable.is_generator )
 	{
-		const CoroutineTypeDescription& coroutine_type_desctiption= *function_type.return_type.GetClassType()->coroutine_type_description;
+		const CoroutineTypeDescription& coroutine_type_description= *function_type.return_type.GetClassType()->coroutine_type_description;
 		for( const FunctionType::Param& arg : function_type.params )
 		{
 			// Generator is an object, that holds references to reference-args of generator function.
@@ -1265,11 +1265,11 @@ Type CodeBuilder::BuildFuncCode(
 
 			// Generator is not declared as non-sync, but param is non-sync. This is an error.
 			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
-			if( !coroutine_type_desctiption.non_sync && GetTypeNonSync( arg.type, parent_names_scope, params.front().src_loc_ ) )
+			if( !coroutine_type_description.non_sync && GetTypeNonSync( arg.type, parent_names_scope, params.front().src_loc_ ) )
 				REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc_ );
 		}
 
-		if( !coroutine_type_desctiption.non_sync && GetTypeNonSync( coroutine_type_desctiption.return_type, parent_names_scope, block.src_loc_ ) )
+		if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, parent_names_scope, block.src_loc_ ) )
 			REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), block.src_loc_ );
 	}
 

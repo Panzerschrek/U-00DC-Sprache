@@ -193,6 +193,9 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 	coroutine_type_description.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
 
+	if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type_name.src_loc_ ) )
+		REPORT_ERROR( GeneratorNonSyncRequired, names_scope.GetErrors(), generator_type_name.src_loc_ );
+
 	if( !generator_type_name.return_value_reference_tag.empty() )
 	{
 		bool found= false;

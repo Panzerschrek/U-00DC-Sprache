@@ -518,6 +518,20 @@ def GeneratorTypeName_AsTemplateSignatureArgument_Test2():
 	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 7 ) )
 
 
+def GeneratorTypeName_AsTemplateSignatureArgument_Test3():
+	c_program_text= """
+		template</ type T />
+		struct S</ generator non_sync : T />
+		{
+			type GenRet= T;
+		}
+		type Some= S</ generator : i32 />; // Deduction failed - expected "non_sync" generator.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 7 ) )
+
+
 def VoidTypeGenerator_Test0():
 	c_program_text= """
 		fn generator VoidGen() // Useless generator, but totally valid.

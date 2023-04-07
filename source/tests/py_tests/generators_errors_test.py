@@ -1136,5 +1136,16 @@ def GeneratorNonSyncRequired_Test4():
 		fn generator non_sync Bar(S s){}
 		fn generator non_sync Baz() : S {}
 		fn generator non_sync Lol() : S& {}
+		type Gen= generator non_sync(true) : S &mut;
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def GeneratorNonSyncRequired_Test5():
+	c_program_text= """
+		struct S non_sync {}
+		type Gen= generator : S; // "S" is "non_sync", so, "non_sync" is required for generator type.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "GeneratorNonSyncRequired", 3 ) )
