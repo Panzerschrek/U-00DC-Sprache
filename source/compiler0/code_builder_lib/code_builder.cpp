@@ -1413,7 +1413,7 @@ Type CodeBuilder::BuildFuncCode(
 	if( func_variable.is_generator )
 	{
 		// Create generator entry block after saving args to stack.
-		CreateGeneratorEntryBlock( function_context );
+		PrepareGeneratorBlocks( function_context );
 		// Generate also initial suspend.
 		GeneratorSuspend( function_names, function_context, block.src_loc_ );
 	}

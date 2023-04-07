@@ -1464,7 +1464,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( result_value_type == ValueType::Value )
 		{
 			// Create variable for value result of coroutine.
-
 			const VariableMutPtr variable=
 				std::make_shared<Variable>(
 					result_type,

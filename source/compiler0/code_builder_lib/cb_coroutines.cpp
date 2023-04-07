@@ -94,7 +94,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	coroutine_class->llvm_type=
 		llvm::StructType::create(
 			llvm_context_,
-			llvm::ArrayRef<llvm::Type*>{ handle_type },
+			{ handle_type },
 			mangler_->MangleType( coroutine_class.get() ) );
 	coroutine_class->is_complete= true;
 
@@ -102,23 +102,23 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	{
 		FunctionVariable destructor_variable= GenerateDestructorPrototype( coroutine_class.get() );
 		destructor_variable.have_body= true;
-		llvm::Function* const destructor_function= EnsureLLVMFunctionCreated( destructor_variable );
+		{
+			llvm::Function* const destructor_function= EnsureLLVMFunctionCreated( destructor_variable );
+			llvm::IRBuilder ir_builder( llvm::BasicBlock::Create( llvm_context_, "func_code", destructor_function ) );
+
+			llvm::Argument* const this_arg= destructor_function->getArg(0);
+			this_arg->setName( Keyword( Keywords::this_ ) );
+
+			ir_builder.CreateCall(
+				llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_destroy ),
+				{ ir_builder.CreateLoad( handle_type, this_arg, false, "coro_handle" )} );
+
+			ir_builder.CreateRetVoid();
+		}
 
 		OverloadedFunctionsSetPtr functions_set= std::make_shared<OverloadedFunctionsSet>();
 		functions_set->functions.push_back( std::move( destructor_variable ) );
 		coroutine_class->members->AddName( Keyword( Keywords::destructor_ ), std::move( functions_set ) );
-
-		llvm::IRBuilder<> ir_builder( llvm::BasicBlock::Create( llvm_context_, "func_code", destructor_function ) );
-
-		llvm::Argument* const this_arg= destructor_function->getArg(0);
-		this_arg->setName( Keyword( Keywords::this_ ) );
-		llvm::Value* const coro_handle= ir_builder.CreateLoad( handle_type, this_arg, false, "coro_handle" );
-
-		ir_builder.CreateCall(
-			llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_destroy ),
-			{ coro_handle} );
-
-		ir_builder.CreateRetVoid();
 	}
 
 	// Generate equality-comparison operator.
@@ -141,18 +141,19 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 		op_variable.is_this_call= false;
 		op_variable.have_body= true;
 
-		// Generate code.
-		llvm::Function* const op_llvm_function= EnsureLLVMFunctionCreated( op_variable );
-		llvm::IRBuilder<> ir_builder( llvm::BasicBlock::Create( llvm_context_, "func_code", op_llvm_function ) );
+		{ // Generate code.
+			llvm::Function* const op_llvm_function= EnsureLLVMFunctionCreated( op_variable );
+			llvm::IRBuilder ir_builder( llvm::BasicBlock::Create( llvm_context_, "func_code", op_llvm_function ) );
 
-		llvm::Argument* const l_arg= op_llvm_function->getArg(0);
-		llvm::Argument* const r_arg= op_llvm_function->getArg(1);
-		l_arg->setName( "l" );
-		r_arg->setName( "r" );
-		ir_builder.CreateRet(
-				ir_builder.CreateICmpEQ(
-					ir_builder.CreateLoad( handle_type, l_arg, false, "coro_handle_l" ),
-					ir_builder.CreateLoad( handle_type, r_arg, false, "coro_handle_r" ) ) );
+			llvm::Argument* const l_arg= op_llvm_function->getArg(0);
+			llvm::Argument* const r_arg= op_llvm_function->getArg(1);
+			l_arg->setName( "l" );
+			r_arg->setName( "r" );
+			ir_builder.CreateRet(
+					ir_builder.CreateICmpEQ(
+						ir_builder.CreateLoad( handle_type, l_arg, false, "coro_handle_l" ),
+						ir_builder.CreateLoad( handle_type, r_arg, false, "coro_handle_r" ) ) );
+		}
 
 		// Insert operator.
 		OverloadedFunctionsSetPtr operators= std::make_shared<OverloadedFunctionsSet>();
@@ -164,7 +165,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	return res_type;
 }
 
-void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
+void CodeBuilder::PrepareGeneratorBlocks( FunctionContext& function_context )
 {
 	llvm::PointerType* const pointer_type= llvm::PointerType::get( llvm_context_, 0 );
 
@@ -188,19 +189,12 @@ void CodeBuilder::CreateGeneratorEntryBlock( FunctionContext& function_context )
 
 	llvm::Value* const coro_id= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_id ),
-		{
-			llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, uint64_t(0) ) ),
-			promise,
-			null,
-			null,
-		},
+		{ llvm::ConstantInt::get( llvm_context_, llvm::APInt( 32u, uint64_t(0) ) ), promise, null, null, },
 		"coro_id" );
 
 	llvm::Value* const coro_need_to_alloc= function_context.llvm_ir_builder.CreateCall(
 		llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_alloc ),
-		{
-			coro_id,
-		},
+		{ coro_id },
 		"coro_need_to_alloc" );
 
 	llvm::BasicBlock* const coro_need_to_alloc_check_block= function_context.llvm_ir_builder.GetInsertBlock();
@@ -410,15 +404,13 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 
 			// Check correctness of returning reference.
 			for( const VariablePtr& var_node : function_context.variables_state.GetAllAccessibleVariableNodes( expression_result ) )
-			{
 				if( !IsReferenceAllowedForReturn( function_context, var_node ) )
 					REPORT_ERROR( ReturningUnallowedReference, names.GetErrors(), src_loc );
-			}
 
 			// TODO - Add link to return value in order to catch error, when reference to local variable is returned.
 
-			llvm::Value* const ret= CreateReferenceCast( expression_result->llvm_value, expression_result->type, yield_type, function_context );
-			CreateTypedReferenceStore( function_context, yield_type, ret, promise );
+			llvm::Value* const ref_casted= CreateReferenceCast( expression_result->llvm_value, expression_result->type, yield_type, function_context );
+			CreateTypedReferenceStore( function_context, yield_type, ref_casted, promise );
 		}
 
 		// Destroy temporaries of expression evaluation frame.
@@ -429,6 +421,7 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 	GeneratorSuspend( names, function_context, src_loc );
 }
 
+// Perform initial suspend or suspend in "yield".
 void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
 {
 	llvm::Value* const suspend_value= function_context.llvm_ir_builder.CreateCall(
@@ -436,8 +429,8 @@ void CodeBuilder::GeneratorSuspend( NamesScope& names_scope, FunctionContext& fu
 		{ llvm::ConstantTokenNone::get( llvm_context_ ), llvm::ConstantInt::getFalse( llvm_context_ ) },
 		"suspend_value" );
 
-	llvm::BasicBlock* const next_block= llvm::BasicBlock::Create( llvm_context_, "suspend_normal" );
-	llvm::BasicBlock* const destroy_block= llvm::BasicBlock::Create( llvm_context_, "suspend_destroy" );
+	const auto next_block= llvm::BasicBlock::Create( llvm_context_, "suspend_normal" );
+	const auto destroy_block= llvm::BasicBlock::Create( llvm_context_, "suspend_destroy" );
 
 	llvm::SwitchInst* const switch_instr= function_context.llvm_ir_builder.CreateSwitch( suspend_value, function_context.coro_suspend_bb, 2 );
 	switch_instr->addCase( llvm::ConstantInt::get( fundamental_llvm_types_.i8_, 0u, false ), next_block );
