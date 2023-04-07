@@ -630,6 +630,59 @@ def AccessingVariable_LinkedToGeneratorArgument_Test2():
 	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
+def AccessingGenerator_InsideIfCoroAdvance_Test0():
+	c_program_text= """
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			if_coro_advance( x : gen )
+			{
+				auto& ref= gen; // Error, temporary mutable reference to this generator exists, can't create new reference.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def AccessingGenerator_InsideIfCoroAdvance_Test1():
+	c_program_text= """
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			if_coro_advance( x : gen )
+			{
+				if_coro_advance( x : gen ) // Error - capturing mutable reference to generator second time.
+				{
+				}
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 8 ) )
+
+
+def AccessingGenerator_InsideIfCoroAdvance_Test2():
+	c_program_text= """
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			if_coro_advance( x : gen )
+			{
+				move(gen); // Error, moving generator variable, to which a reference exists.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "MovedVariableHaveReferences", 8 ) )
+
+
 def AccessingVariable_LinkedToGeneratorArgument_Test3():
 	c_program_text= """
 		struct S
