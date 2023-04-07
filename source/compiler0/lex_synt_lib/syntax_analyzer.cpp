@@ -1493,6 +1493,8 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 			generator_type.inner_reference_tag= std::make_unique<GeneratorType::InnerReferenceTag>( std::move(inner_reference_tag) );
 		}
 
+		generator_type.non_sync_tag= TryParseNonSyncTag();
+
 		ExpectLexem( Lexem::Type::Colon );
 		generator_type.return_type= ParseTypeName();
 

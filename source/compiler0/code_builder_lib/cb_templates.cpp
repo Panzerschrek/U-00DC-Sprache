@@ -525,6 +525,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 				? InnerReferenceType::Mut
 				: InnerReferenceType::Imut;
 
+	coroutine_param.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
+
 	if( !generator_type_name.return_value_reference_tag.empty() )
 	{
 		bool found= false;

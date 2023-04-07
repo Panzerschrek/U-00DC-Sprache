@@ -459,6 +459,27 @@ def GeneratorTypeName_Test7():
 	tests_lib.build_program( c_program_text )
 
 
+def GeneratorTypeName_Test8():
+	c_program_text= """
+		type Gen= generator non_sync : i32;
+		static_assert( non_sync</ Gen /> );
+	"""
+
+
+def GeneratorTypeName_Test9():
+	c_program_text= """
+		type Gen= generator'imut some_tag' non_sync : i32;
+		static_assert( non_sync</ Gen /> );
+	"""
+
+
+def GeneratorTypeName_Test10():
+	c_program_text= """
+		type Gen= generator non_sync(false) : i32;
+		static_assert( !non_sync</ Gen /> );
+	"""
+
+
 def GeneratorTypeName_AsTemplateSignatureArgument_Test0():
 	c_program_text= """
 		template</ type T />

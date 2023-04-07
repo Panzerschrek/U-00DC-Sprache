@@ -215,6 +215,10 @@ using ProgramElement= std::variant<
 
 using ProgramElements= std::vector<ProgramElement>;
 
+struct NonSyncTagNone{};
+struct NonSyncTagTrue{};
+using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, ExpressionPtr>;
+
 struct SyntaxElementBase
 {
 	explicit SyntaxElementBase( const SrcLoc& src_loc );
@@ -301,6 +305,7 @@ public:
 
 public:
 	std::optional<MutabilityModifier> inner_reference_mutability_modifier;
+	NonSyncTag non_sync_tag;
 	TypeName return_type;
 	std::unique_ptr<const InnerReferenceTag> inner_reference_tag; // Make array when multiple inner reference tags will be implemented.
 	std::string return_value_reference_tag; // Inner tag for values, reference tag for references.
@@ -795,10 +800,6 @@ struct Enum final : public SyntaxElementBase
 	ComplexName underlaying_type_name;
 	std::vector<Member> members;
 };
-
-struct NonSyncTagNone{};
-struct NonSyncTagTrue{};
-using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, ExpressionPtr>;
 
 enum class VirtualFunctionKind : uint8_t
 {
