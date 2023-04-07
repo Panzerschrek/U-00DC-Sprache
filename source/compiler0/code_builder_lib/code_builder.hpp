@@ -666,6 +666,8 @@ private:
 		FunctionContext& function_context,
 		const SrcLoc& src_loc );
 
+	bool EvaluateBoolConstantExpression( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression );
+
 	// Preevaluate expresion to know it's extened type.
 	// Call this only inside save/state restore calls.
 	FunctionType::Param PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );

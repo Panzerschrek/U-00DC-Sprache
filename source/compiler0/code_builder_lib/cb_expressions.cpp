@@ -3707,6 +3707,25 @@ VariablePtr CodeBuilder::ConvertVariable(
 	return result;
 }
 
+bool CodeBuilder::EvaluateBoolConstantExpression( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression )
+{
+	const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+	if( v->type != bool_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v->type );
+		return false;
+	}
+	if( v->constexpr_value == nullptr )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
+		return false;
+	}
+
+	// Do not need to destroy variables here, because this function is normally called only in constexr context.
+
+	return v->constexpr_value->isAllOnesValue();
+}
+
 FunctionType::Param CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context )
 {
 	if( function_context.args_preevaluation_cache.count(&expression) == 0 )

@@ -770,22 +770,9 @@ size_t CodeBuilder::PrepareFunction(
 		return ~0u;
 	}
 
-	if( std::get_if<Synt::EmptyVariant>( &func.condition_ ) == nullptr )
-	{
-		const VariablePtr expression= BuildExpressionCodeEnsureVariable( func.condition_, names_scope, *global_function_context_ );
-		if( expression->type == bool_type_ )
-		{
-			if( expression->constexpr_value != nullptr )
-			{
-				if( expression->constexpr_value->isZeroValue() )
-					return ~0u; // Function disabled.
-			}
-			else
-				REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ) );
-		}
-		else
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ), bool_type_, expression->type );
-	}
+	if( std::get_if<Synt::EmptyVariant>( &func.condition_ ) == nullptr &&
+		!EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition_ ) )
+		return ~0u;
 
 	FunctionVariable func_variable;
 

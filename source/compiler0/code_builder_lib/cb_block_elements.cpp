@@ -1326,19 +1326,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			const StackVariablesStorage temp_variables_storage( function_context );
 
-			const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( condition, names, function_context );
-			if( condition_expression->type != bool_type_ )
-			{
-				REPORT_ERROR( TypesMismatch, names.GetErrors(), condition_src_loc, bool_type_, condition_expression->type );
-				continue;
-			}
-			if( condition_expression->constexpr_value == nullptr )
-			{
-				REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), condition_src_loc );
-				continue;
-			}
-
-			if( condition_expression->constexpr_value->getUniqueInteger().getLimitedValue() != 0u )
+			if( EvaluateBoolConstantExpression( names, function_context, condition ) )
 				return BuildBlock( names, function_context, branch.block ); // Ok, this static if produdes block.
 
 			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
