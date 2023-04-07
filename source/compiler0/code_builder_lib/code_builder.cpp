@@ -898,7 +898,11 @@ size_t CodeBuilder::PrepareFunction(
 			FunctionType generator_function_type= function_type;
 
 			// Coroutine functions return value of coroutine type.
-			generator_function_type.return_type= GetGeneratorFunctionReturnType( *names_scope.GetRoot(), function_type );
+			generator_function_type.return_type=
+				GetGeneratorFunctionReturnType(
+				*names_scope.GetRoot(),
+				function_type,
+				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
 			generator_function_type.return_value_type= ValueType::Value;
 
 			// Generate for now own return references mapping.

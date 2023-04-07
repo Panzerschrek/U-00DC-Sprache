@@ -796,6 +796,10 @@ struct Enum final : public SyntaxElementBase
 	std::vector<Member> members;
 };
 
+struct NonSyncTagNone{};
+struct NonSyncTagTrue{};
+using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, ExpressionPtr>;
+
 enum class VirtualFunctionKind : uint8_t
 {
 	None, // Regular, non-virtual
@@ -830,6 +834,7 @@ struct Function final : public SyntaxElementBase
 	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
 	BodyKind body_kind= BodyKind::None;
+	NonSyncTag coroutine_non_sync_tag; // Non-empty for generators
 	Kind kind= Kind::Regular;
 	bool no_mangle_= false;
 	bool is_conversion_constructor_= false;
@@ -872,9 +877,6 @@ struct ClassVisibilityLabel final : public SyntaxElementBase
 	const ClassMemberVisibility visibility_;
 };
 
-struct NonSyncTagNone{};
-struct NonSyncTagTrue{};
-using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, ExpressionPtr>;
 
 struct Class final : public SyntaxElementBase
 {

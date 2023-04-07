@@ -1221,3 +1221,27 @@ def Generator_InnerReferenceTagDeduction_Test3():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def GeneratorNonSyncTag_Test0():
+	c_program_text= """
+		fn generator SyncGen() : i32;
+		static_assert( !non_sync</ typeof(SyncGen()) /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def GeneratorNonSyncTag_Test1():
+	c_program_text= """
+		fn generator non_sync NonSyncGen() : i32;
+		static_assert( non_sync</ typeof(NonSyncGen()) /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def GeneratorNonSyncTag_Test2():
+	c_program_text= """
+		fn generator non_sync(false) SyncGen() : i32;
+		static_assert( !non_sync</ typeof(SyncGen()) /> );
+	"""
+	tests_lib.build_program( c_program_text )

@@ -6,13 +6,17 @@
 namespace U
 {
 
-ClassPtr CodeBuilder::GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type )
+ClassPtr CodeBuilder::GetGeneratorFunctionReturnType(
+	NamesScope& root_namespace,
+	const FunctionType& generator_function_type,
+	const bool non_sync )
 {
 	CoroutineTypeDescription coroutine_type_description;
 	coroutine_type_description.kind= CoroutineKind::Generator;
 	coroutine_type_description.return_type= generator_function_type.return_type;
 	coroutine_type_description.return_value_type= generator_function_type.return_value_type;
 	coroutine_type_description.inner_reference_type= InnerReferenceType::None;
+	coroutine_type_description.non_sync= non_sync;
 	for( const FunctionType::Param& param : generator_function_type.params )
 	{
 		if( param.value_type == ValueType::Value )

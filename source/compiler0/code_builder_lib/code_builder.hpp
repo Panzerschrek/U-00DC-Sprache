@@ -168,6 +168,7 @@ private:
 
 	bool GetTypeNonSync( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
 	bool GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
+	bool ImmediateEvaluateNonSyncTag( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag );
 	void CheckClassNonSyncTagExpression( ClassPtr class_type );
 	void CheckClassNonSyncTagInheritance( ClassPtr class_type );
 
@@ -892,7 +893,7 @@ private:
 
 	// Coroutines
 
-	ClassPtr GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type );
+	ClassPtr GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type, bool non_sync );
 	std::set<FunctionType::ParamReference> GetGeneratorFunctionReturnReferences( const FunctionType& generator_function_type );
 
 	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
