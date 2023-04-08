@@ -310,7 +310,7 @@ private:
 
 	ClassKindAttribute TryParseClassKindAttribute();
 	std::vector<ComplexName> TryParseClassParentsList();
-	NonSyncTag TryParseClassNonSyncTag();
+	NonSyncTag TryParseNonSyncTag();
 	bool TryParseClassFieldsOrdered();
 
 	TypeAlias ParseTypeAlias();
@@ -1492,6 +1492,8 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 
 			generator_type.inner_reference_tag= std::make_unique<GeneratorType::InnerReferenceTag>( std::move(inner_reference_tag) );
 		}
+
+		generator_type.non_sync_tag= TryParseNonSyncTag();
 
 		ExpectLexem( Lexem::Type::Colon );
 		generator_type.return_type= ParseTypeName();
@@ -2729,7 +2731,7 @@ std::vector<ComplexName> SyntaxAnalyzer::TryParseClassParentsList()
 	return result;
 }
 
-NonSyncTag SyntaxAnalyzer::TryParseClassNonSyncTag()
+NonSyncTag SyntaxAnalyzer::TryParseNonSyncTag()
 {
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::non_sync_ )
 	{
@@ -2824,6 +2826,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	{
 		NextLexem();
 		result->kind= Function::Kind::Generator;
+
+		result->coroutine_non_sync_tag= TryParseNonSyncTag();
 	}
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::constexpr_ )
 	{
@@ -3161,7 +3165,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		class_kind_attribute= TryParseClassKindAttribute();
 		parents_list= TryParseClassParentsList();
 	}
-	NonSyncTag non_sync_tag= TryParseClassNonSyncTag();
+	NonSyncTag non_sync_tag= TryParseNonSyncTag();
 	const bool keep_fields_order= TryParseClassFieldsOrdered();
 
 	std::unique_ptr<Class> result= ParseClassBody();
@@ -3513,7 +3517,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 				class_kind_attribute= TryParseClassKindAttribute();
 				class_parents_list= TryParseClassParentsList();
 			}
-			NonSyncTag non_sync_tag= TryParseClassNonSyncTag();
+			NonSyncTag non_sync_tag= TryParseNonSyncTag();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
 
 			auto class_= ParseClassBody();

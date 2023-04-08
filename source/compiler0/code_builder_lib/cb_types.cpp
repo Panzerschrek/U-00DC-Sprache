@@ -169,8 +169,6 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorTypePtr& generator_type_name_ptr )
 {
-	(void)function_context;
-
 	const Synt::GeneratorType& generator_type_name= *generator_type_name_ptr;
 
 	CoroutineTypeDescription coroutine_type_description;
@@ -192,6 +190,11 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 			generator_type_name.inner_reference_tag->mutability_modifier == MutabilityModifier::Mutable
 				? InnerReferenceType::Mut
 				: InnerReferenceType::Imut;
+
+	coroutine_type_description.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
+
+	if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type_name.src_loc_ ) )
+		REPORT_ERROR( GeneratorNonSyncRequired, names_scope.GetErrors(), generator_type_name.src_loc_ );
 
 	if( !generator_type_name.return_value_reference_tag.empty() )
 	{

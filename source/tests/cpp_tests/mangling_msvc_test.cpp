@@ -922,6 +922,9 @@ U_TEST( GeneratorsMangling_Test0 )
 
 		type MutRefRetGen= generator'mut some_tag' : char8 &mut;
 		fn Lol( MutRefRetGen gen ) {}
+
+		type NonSyncGen = generator non_sync : u16;
+		fn Kek( NonSyncGen gen ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgramForMSVCManglingTest( c_program_text ) );
@@ -931,11 +934,13 @@ U_TEST( GeneratorsMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Bar@@YAXMU?$generator@HI$0A@@@I@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Baz@@YAXU?$generator@NI$00@@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?Lol@@YAXU?$generator@AEADI$01@@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?Kek@@YAXU?$generator@G_N$00I$0A@@@@Z" ) != nullptr );
 
 	// Generated generator type destructors.
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@HI$0A@@@YAXAEAU1@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@NI$00@@YAXAEAU1@@Z" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@AEADI$01@@YAXAEAU1@@Z" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "?destructor@?$generator@G_N$00I$0A@@@YAXAEAU1@@Z" ) != nullptr );
 }
 
 U_TEST( GeneratorsMangling_Test1 )

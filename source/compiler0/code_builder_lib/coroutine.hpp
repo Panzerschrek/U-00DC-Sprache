@@ -18,6 +18,7 @@ public:
 	ValueType return_value_type= ValueType::Value;
 
 	InnerReferenceType inner_reference_type= InnerReferenceType::None;
+	bool non_sync= false;
 
 public:
 	size_t Hash() const;

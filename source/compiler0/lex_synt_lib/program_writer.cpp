@@ -32,6 +32,7 @@ void ElementWrite( const ReferenceModifier& reference_modifier, std::ostream& st
 void ElementWrite( const MutabilityModifier& mutability_modifier, std::ostream& stream );
 void ElementWrite( const Function& function, std::ostream& stream );
 void ElementWrite( const Class& class_, std::ostream& stream );
+void ElementWrite( const NonSyncTag& non_sync_tag, std::ostream& stream );
 void ElementWrite( const Namespace& namespace_, std::ostream& stream );
 void ElementWrite( const VariablesDeclaration& variables_declaration, std::ostream& stream );
 void ElementWrite( const AutoVariableDeclaration& auto_variable_declaration, std::ostream& stream );
@@ -605,6 +606,11 @@ void ElementWrite( const Function& function, std::ostream& stream )
 		break;
 	};
 
+	if( function.kind == Function::Kind::Generator )
+		stream << Keyword( Keywords::generator_ ) << " ";
+
+	ElementWrite( function.coroutine_non_sync_tag, stream );
+
 	if( function.constexpr_ )
 		stream << Keyword( Keywords::constexpr_ ) << " ";
 	if( function.no_mangle_ )
@@ -693,16 +699,7 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 		}
 	}
 
-	if( std::get_if<NonSyncTagNone>( &class_.non_sync_tag_ ) != nullptr )
-	{}
-	else if( std::get_if<NonSyncTagTrue>( &class_.non_sync_tag_ ) != nullptr )
-		stream << Keyword( Keywords::non_sync_ ) << " ";
-	else if( const auto expression_ptr = std::get_if<std::unique_ptr<const Expression>>( &class_.non_sync_tag_ ) )
-	{
-		stream << Keyword( Keywords::non_sync_ ) << "( ";
-		ElementWrite( **expression_ptr, stream );
-		stream << " ) ";
-	}
+	ElementWrite( class_.non_sync_tag_, stream );
 
 	if( class_.keep_fields_order_ )
 		stream << Keyword( Keywords::ordered_ ) << " ";
@@ -710,6 +707,20 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 	stream << "\n{\n";
 	ElementWrite( class_.elements_, stream );
 	stream << "}\n";
+}
+
+void ElementWrite( const NonSyncTag& non_sync_tag, std::ostream& stream )
+{
+	if( std::get_if<NonSyncTagNone>( &non_sync_tag ) != nullptr )
+	{}
+	else if( std::get_if<NonSyncTagTrue>( &non_sync_tag ) != nullptr )
+		stream << Keyword( Keywords::non_sync_ ) << " ";
+	else if( const auto expression_ptr = std::get_if<std::unique_ptr<const Expression>>( &non_sync_tag ) )
+	{
+		stream << Keyword( Keywords::non_sync_ ) << "( ";
+		ElementWrite( **expression_ptr, stream );
+		stream << " ) ";
+	}
 }
 
 void ElementWrite( const Namespace& namespace_, std::ostream& stream )

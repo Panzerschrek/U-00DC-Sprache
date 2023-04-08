@@ -219,3 +219,4 @@ PROCESS_ERROR( NonDefaultCallingConventionForGenerator, "generator function can 
 PROCESS_ERROR( VirtualGenerator, "generator method can't be virtual." )
 PROCESS_ERROR( AutoReturnGenerator, "auto return is not supported for generator functions." )
 PROCESS_ERROR( GeneratorSpecialMethod, "Special method can't be generator." )
+PROCESS_ERROR( GeneratorNonSyncRequired, "Generator has non-sync arguments and/or return value - \"non_sync\" tag required for it." )

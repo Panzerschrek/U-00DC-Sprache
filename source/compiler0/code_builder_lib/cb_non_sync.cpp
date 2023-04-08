@@ -133,6 +133,13 @@ bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const
 			else{ U_ASSERT(false); } // Unhandled non_sync tag kind.
 		}
 
+		// Check coroutines non_sync flag.
+		if( class_type->coroutine_type_description != std::nullopt && class_type->coroutine_type_description->non_sync )
+		{
+			prev_types_stack.pop_back();
+			return true;
+		}
+
 		// Check "non_sync" tag existence for parents.
 
 		GlobalThingPrepareClassParentsList( class_type );
@@ -181,15 +188,24 @@ bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const
 	return false;
 }
 
+bool CodeBuilder::ImmediateEvaluateNonSyncTag( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag )
+{
+	if( std::get_if<Synt::NonSyncTagNone>( &non_sync_tag ) != nullptr )
+		return false;
+	if( std::get_if<Synt::NonSyncTagTrue>( &non_sync_tag ) != nullptr )
+		return true;
+	if( const auto expression_ptr= std::get_if<Synt::ExpressionPtr>( &non_sync_tag ) )
+		return EvaluateBoolConstantExpression( names, function_context, **expression_ptr );
+	U_ASSERT(false); // Unhandled non_sync tag kind.
+	return false;
+}
+
 void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 {
 	if( class_type->syntax_element != nullptr )
 	{
-		if( const auto expression_ptr= std::get_if<Synt::ExpressionPtr>( &class_type->syntax_element->non_sync_tag_ ) )
-		{
-			// Evaluate non_sync condition using initial class members parent scope.
-			EvaluateBoolConstantExpression( *class_type->members_initial->GetParent(), *global_function_context_, **expression_ptr );
-		}
+		// Evaluate non_sync condition using initial class members parent scope.
+		ImmediateEvaluateNonSyncTag(  *class_type->members_initial->GetParent(), *global_function_context_, class_type->syntax_element->non_sync_tag_ );
 	}
 }
 

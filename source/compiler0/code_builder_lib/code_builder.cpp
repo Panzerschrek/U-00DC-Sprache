@@ -898,7 +898,11 @@ size_t CodeBuilder::PrepareFunction(
 			FunctionType generator_function_type= function_type;
 
 			// Coroutine functions return value of coroutine type.
-			generator_function_type.return_type= GetGeneratorFunctionReturnType( *names_scope.GetRoot(), function_type );
+			generator_function_type.return_type=
+				GetGeneratorFunctionReturnType(
+				*names_scope.GetRoot(),
+				function_type,
+				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
 			generator_function_type.return_value_type= ValueType::Value;
 
 			// Generate for now own return references mapping.
@@ -1243,16 +1247,31 @@ Type CodeBuilder::BuildFuncCode(
 	{
 		if( !EnsureTypeComplete( arg.type ) )
 			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc_, arg.type );
-
-		// Generator is an object, that holds references to reference-args of generator function.
-		// It's forbidden to create types with references inside to types with other references inside.
-		// So, check if this rule is not violated for generators.
-		// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
-		if( func_variable.is_generator && arg.value_type != ValueType::Value && arg.type.GetInnerReferenceType() != InnerReferenceType::None )
-			REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc_, "some arg" ); // TODO - use separate error code.
 	}
 	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
+
+	if( func_variable.is_generator )
+	{
+		const CoroutineTypeDescription& coroutine_type_description= *function_type.return_type.GetClassType()->coroutine_type_description;
+		for( const FunctionType::Param& arg : function_type.params )
+		{
+			// Generator is an object, that holds references to reference-args of generator function.
+			// It's forbidden to create types with references inside to types with other references inside.
+			// So, check if this rule is not violated for generators.
+			// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
+			if( func_variable.is_generator && arg.value_type != ValueType::Value && arg.type.GetInnerReferenceType() != InnerReferenceType::None )
+				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc_, "some arg" ); // TODO - use separate error code.
+
+			// Generator is not declared as non-sync, but param is non-sync. This is an error.
+			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
+			if( !coroutine_type_description.non_sync && GetTypeNonSync( arg.type, parent_names_scope, params.front().src_loc_ ) )
+				REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc_ );
+		}
+
+		if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, parent_names_scope, block.src_loc_ ) )
+			REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), block.src_loc_ );
+	}
 
 	NamesScope function_names( "", &parent_names_scope );
 	FunctionContext function_context(

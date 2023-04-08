@@ -403,6 +403,15 @@ void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type
 		}
 	}
 
+	// Encode non-sync tag, if it exists.
+	if( coroutine_type_description.non_sync )
+	{
+		mangler_state.Push( "L" );
+		mangler_state.Push( EncodeFundamentalType( U_FundamentalType::bool_ ) );
+		mangler_state.Push( "1" );
+		mangler_state.Push( "E" );
+	}
+
 	// Encode inner reference kind as variable template parameter.
 	mangler_state.Push( "L" );
 	mangler_state.Push( EncodeFundamentalType( U_FundamentalType::u32_ ) );

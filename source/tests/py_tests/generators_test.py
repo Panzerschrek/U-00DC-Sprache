@@ -459,6 +459,27 @@ def GeneratorTypeName_Test7():
 	tests_lib.build_program( c_program_text )
 
 
+def GeneratorTypeName_Test8():
+	c_program_text= """
+		type Gen= generator non_sync : i32;
+		static_assert( non_sync</ Gen /> );
+	"""
+
+
+def GeneratorTypeName_Test9():
+	c_program_text= """
+		type Gen= generator'imut some_tag' non_sync : i32;
+		static_assert( non_sync</ Gen /> );
+	"""
+
+
+def GeneratorTypeName_Test10():
+	c_program_text= """
+		type Gen= generator non_sync(false) : i32;
+		static_assert( !non_sync</ Gen /> );
+	"""
+
+
 def GeneratorTypeName_AsTemplateSignatureArgument_Test0():
 	c_program_text= """
 		template</ type T />
@@ -491,6 +512,20 @@ def GeneratorTypeName_AsTemplateSignatureArgument_Test2():
 			type GenRet= T;
 		}
 		type Some= S</ generator : i32 />; // Deduction failed - expected generator, returning reference, given generator, returning value.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TemplateParametersDeductionFailed", 7 ) )
+
+
+def GeneratorTypeName_AsTemplateSignatureArgument_Test3():
+	c_program_text= """
+		template</ type T />
+		struct S</ generator non_sync : T />
+		{
+			type GenRet= T;
+		}
+		type Some= S</ generator : i32 />; // Deduction failed - expected "non_sync" generator.
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
@@ -1219,5 +1254,29 @@ def Generator_InnerReferenceTagDeduction_Test3():
 			auto gen= Gen(s);
 			static_assert( typeinfo</typeof(gen)/>.references_tags_count == 1s ); // Has references for generator with value-params, containing refrerences inside.
 		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def GeneratorNonSyncTag_Test0():
+	c_program_text= """
+		fn generator SyncGen() : i32;
+		static_assert( !non_sync</ typeof(SyncGen()) /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def GeneratorNonSyncTag_Test1():
+	c_program_text= """
+		fn generator non_sync NonSyncGen() : i32;
+		static_assert( non_sync</ typeof(NonSyncGen()) /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def GeneratorNonSyncTag_Test2():
+	c_program_text= """
+		fn generator non_sync(false) SyncGen() : i32;
+		static_assert( !non_sync</ typeof(SyncGen()) /> );
 	"""
 	tests_lib.build_program( c_program_text )
