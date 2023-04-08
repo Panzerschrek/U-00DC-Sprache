@@ -714,6 +714,14 @@ void ManglerMSVC::EncodeCoroutineClassName( ManglerState& mangler_state, const C
 		}
 		EncodeType( template_mangler_state, coroutine_type_description.return_type );
 
+		// non-sync tag.
+		if( coroutine_type_description.non_sync )
+		{
+			template_mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::bool_ ) );
+			template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+			EncodeNumber( template_mangler_state, llvm::APInt( 1u, uint64_t(1) ), false );
+		}
+
 		// Inner reference kind.
 		template_mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::u32_ ) );
 		template_mangler_state.PushElement( g_numeric_template_arg_prefix );

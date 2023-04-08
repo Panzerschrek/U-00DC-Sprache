@@ -836,6 +836,9 @@ U_TEST( GeneratorsMangling_Test0 )
 
 		type MutRefRetGen= generator'mut some_tag' : char8 &mut;
 		fn Lol( MutRefRetGen gen ) {}
+
+		type NonSyncGen = generator non_sync : [i32, 4];
+		fn Kek( NonSyncGen gen ) {}
 	)";
 
 	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
@@ -845,11 +848,13 @@ U_TEST( GeneratorsMangling_Test0 )
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Barf9generatorIiLj0EEj" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Baz9generatorIdLj1EE" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Lol9generatorIRcLj2EE" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_Z3Kek9generatorIA4_iLb1ELj0EE" ) != nullptr );
 
 	// Generated generator type destructors.
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIiLj0EE10destructorERS0_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIdLj1EE10destructorERS0_" ) != nullptr );
 	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIRcLj2EE10destructorERS1_" ) != nullptr );
+	U_TEST_ASSERT( engine->FindFunctionNamed( "_ZN9generatorIA4_iLb1ELj0EE10destructorERS1_" ) != nullptr );
 }
 
 U_TEST( VirtualTableMangling_Test0 )
