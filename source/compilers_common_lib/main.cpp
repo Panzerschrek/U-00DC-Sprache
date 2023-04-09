@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Analysis/CGSCCPassManager.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/AsmParser/Parser.h>
 #include <llvm/Bitcode/BitcodeReader.h>
@@ -9,10 +10,12 @@
 #include <llvm/InitializePasses.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/PassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/MC/SubtargetFeature.h>
 #include <llvm/MC/TargetRegistry.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/CodeGen.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/Host.h>
@@ -24,7 +27,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/Transforms/IPO.h>
 #include <llvm/Transforms/IPO/GlobalDCE.h>
-#include <llvm/Transforms/IPO/PassManagerBuilder.h>
+#include <llvm/Transforms/IPO/Internalize.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib_common/assert.hpp"
@@ -256,7 +259,13 @@ cl::opt<bool> tests_output(
 
 cl::opt<bool> print_llvm_asm(
 	"print-llvm-asm",
-	cl::desc("Print LLVM code."),
+	cl::desc("Print LLVM code (faster optimizations)."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+cl::opt<bool> print_llvm_asm_initial(
+	"print-llvm-asm-initial",
+	cl::desc("Print LLVM code (initial)."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -341,26 +350,19 @@ int Main( int argc, const char* argv[] )
 		return 0;
 
 	// Select optimization level.
-	uint32_t optimization_level= 0u;
-	uint32_t size_optimization_level= 0u;
+	llvm::OptimizationLevel optimization_level= llvm::OptimizationLevel::O0;
 		 if( Options::optimization_level == '0' )
-		optimization_level= 0u;
+		optimization_level= llvm::OptimizationLevel::O0;
 	else if( Options::optimization_level == '1' )
-		optimization_level= 1u;
+		optimization_level= llvm::OptimizationLevel::O1;
 	else if( Options::optimization_level == '2' )
-		optimization_level= 2u;
+		optimization_level= llvm::OptimizationLevel::O2;
 	else if( Options::optimization_level == '3' )
-		optimization_level= 3u;
+		optimization_level= llvm::OptimizationLevel::O3;
 	else if( Options::optimization_level == 's' )
-	{
-		size_optimization_level= 1u;
-		optimization_level= 2u;
-	}
+		optimization_level= llvm::OptimizationLevel::Os;
 	else if( Options::optimization_level == 'z' )
-	{
-		size_optimization_level= 2u;
-		optimization_level= 2u;
-	}
+	optimization_level= llvm::OptimizationLevel::Oz;
 	else
 	{
 		std::cerr << "Unknown optimization: " << Options::optimization_level << std::endl;
@@ -368,7 +370,7 @@ int Main( int argc, const char* argv[] )
 	}
 
 	// Build TBAA metadata only if we perform optimizations, based on this metadata.
-	const bool generate_tbaa_metadata= optimization_level > 0;
+	const bool generate_tbaa_metadata= optimization_level.getSpeedupLevel() > 0;
 
 	// LLVM stuff initialization.
 	llvm::InitializeAllTargets();
@@ -429,15 +431,15 @@ int Main( int argc, const char* argv[] )
 		llvm::TargetOptions target_options;
 
 		auto code_gen_optimization_level= llvm::CodeGenOpt::None;
-		if ( size_optimization_level > 0 )
+		if ( optimization_level.getSizeLevel() > 0 )
 			code_gen_optimization_level= llvm::CodeGenOpt::Default;
-		else if( optimization_level == 0 )
+		else if( optimization_level.getSpeedupLevel() == 0 )
 			code_gen_optimization_level= llvm::CodeGenOpt::None;
-		else if( optimization_level == 1 )
+		else if( optimization_level.getSpeedupLevel() == 1 )
 			code_gen_optimization_level= llvm::CodeGenOpt::Less;
-		else if( optimization_level == 2 )
+		else if( optimization_level.getSpeedupLevel() == 2 )
 			code_gen_optimization_level= llvm::CodeGenOpt::Default;
-		else if( optimization_level == 3 )
+		else if( optimization_level.getSpeedupLevel() == 3 )
 			code_gen_optimization_level= llvm::CodeGenOpt::Aggressive;
 
 		target_machine.reset(
@@ -726,65 +728,72 @@ int Main( int argc, const char* argv[] )
 		}
 	}
 
-	// Create file write passes.
-	// This file stream must live longer than pass manager.
+	// Dump llvm code before optimization passes.
+	if( Options::print_llvm_asm_initial )
+	{
+		llvm::raw_os_ostream stream(std::cout);
+		result_module->print( stream, nullptr );
+	}
+
+	// Create and run optimization passes.
+	{
+		llvm::PipelineTuningOptions tuning_options;
+		tuning_options.LoopUnrolling= optimization_level.getSpeedupLevel() > 0;
+		tuning_options.LoopVectorization= optimization_level.getSpeedupLevel() > 1 && optimization_level.getSizeLevel() < 2;
+		tuning_options.SLPVectorization= optimization_level.getSpeedupLevel() > 1 && optimization_level.getSizeLevel() < 2;
+
+		llvm::PassBuilder pass_builder( target_machine.get(), tuning_options );
+
+		// Register all the basic analyses with the managers.
+		llvm::LoopAnalysisManager loop_analysis_manager;
+		llvm::FunctionAnalysisManager function_analysis_manager;
+		llvm::CGSCCAnalysisManager cg_analysis_manager;
+		llvm::ModuleAnalysisManager module_analysis_manager;
+		pass_builder.registerModuleAnalyses(module_analysis_manager);
+		pass_builder.registerCGSCCAnalyses(cg_analysis_manager);
+		pass_builder.registerFunctionAnalyses(function_analysis_manager);
+		pass_builder.registerLoopAnalyses(loop_analysis_manager);
+		pass_builder.crossRegisterProxies(
+			loop_analysis_manager,
+			function_analysis_manager,
+			cg_analysis_manager,
+			module_analysis_manager);
+
+		// Add callbacks for early passes creation.
+		pass_builder.registerPipelineStartEPCallback(
+			[](llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel o )
+		{
+			// Remove unused functions, before run optimizations for them.
+			if( o.getSizeLevel() > 0 )
+				module_pass_manager.addPass( llvm::GlobalDCEPass() );
+
+			// Internalize (if needed).
+			if( Options::internalize )
+				module_pass_manager.addPass( llvm::InternalizePass( MustPreserveGlobalValue ) );
+		} );
+
+		// Create the pass manager.
+		llvm::ModulePassManager module_pass_manager=
+			optimization_level == llvm::OptimizationLevel::O0
+				? pass_builder.buildO0DefaultPipeline( optimization_level )
+				: pass_builder.buildPerModuleDefaultPipeline( optimization_level );
+
+		// Optimize the IR!
+		module_pass_manager.run( *result_module, module_analysis_manager );
+	}
+
+	// Dump llvm code after optimization passes.
+	if( Options::print_llvm_asm )
+	{
+		llvm::raw_os_ostream stream(std::cout);
+		result_module->print( stream, nullptr );
+	}
+
 	std::error_code file_error_code;
 	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
 
-	// Create pass manager for optimizations and output passes.
+	// Create pass manager for output passes.
 	llvm::legacy::PassManager pass_manager;
-
-	// Apply internalization (if needed) even if optimizations are disabled.
-	if( Options::internalize )
-		pass_manager.add( llvm::createInternalizePass( MustPreserveGlobalValue ) );
-
-	// Create optimization passes.
-	if( optimization_level > 0u || size_optimization_level > 0u )
-	{
-		llvm::legacy::FunctionPassManager function_pass_manager( result_module.get() );
-
-		// Setup target-dependent optimizations.
-		pass_manager.add( llvm::createTargetTransformInfoWrapperPass( target_machine->getTargetIRAnalysis() ) );
-
-		{
-			llvm::PassManagerBuilder pass_manager_builder;
-			pass_manager_builder.OptLevel = optimization_level;
-			pass_manager_builder.SizeLevel = size_optimization_level;
-
-			if( optimization_level == 0u )
-				pass_manager_builder.Inliner= nullptr;
-			else
-				pass_manager_builder.Inliner= llvm::createFunctionInliningPass( optimization_level, size_optimization_level, false );
-
-			// vectorization/unroll is same as in "opt"
-			pass_manager_builder.DisableUnrollLoops= optimization_level == 0;
-			pass_manager_builder.LoopVectorize= optimization_level > 1 && size_optimization_level < 2;
-			pass_manager_builder.SLPVectorize= optimization_level > 1 && size_optimization_level < 2;
-
-			// It's fine to merge functions in Ü because we have no guarantee for different addresses for diffrerent functions.
-			pass_manager_builder.MergeFunctions= true;
-
-			target_machine->adjustPassManager(pass_manager_builder);
-
-			if (llvm::TargetPassConfig* const target_pass_config= static_cast<llvm::LLVMTargetMachine &>(*target_machine).createPassConfig(pass_manager))
-				pass_manager.add(target_pass_config);
-
-			pass_manager_builder.populateFunctionPassManager(function_pass_manager);
-			pass_manager_builder.populateModulePassManager(pass_manager);
-		}
-
-		{ // Remove unused functions, before run optimizations for them.
-			llvm::ModuleAnalysisManager mm;
-			llvm::GlobalDCEPass pass;
-			pass.run(*result_module, mm);
-		}
-
-		// Run per-function optimizations.
-		function_pass_manager.doInitialization();
-		for( llvm::Function& func : *result_module )
-			function_pass_manager.run(func);
-		function_pass_manager.doFinalization();
-	}
 
 	switch( Options::file_type )
 	{
@@ -805,11 +814,11 @@ int Main( int argc, const char* argv[] )
 		break;
 
 	case Options::FileType::BC:
-		pass_manager.add( llvm::createBitcodeWriterPass(out_file_stream ) );
+		pass_manager.add( llvm::createBitcodeWriterPass( out_file_stream ) );
 		break;
 
 	case Options::FileType::LL:
-		// Handle this case later, because there is no LL code dumping pass.
+		result_module->print( out_file_stream, nullptr );
 		break;
 
 	case Options::FileType::Null:
@@ -817,7 +826,7 @@ int Main( int argc, const char* argv[] )
 		break;
 	}
 
-	// Run all passes.
+	// Run codegen/output passes.
 	pass_manager.run(*result_module);
 
 	// Check if output file is ok.
@@ -827,17 +836,6 @@ int Main( int argc, const char* argv[] )
 		std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
 		return 1;
 	}
-
-	// Dump llvm code after optimization passes.
-	if( Options::print_llvm_asm )
-	{
-		llvm::raw_os_ostream stream(std::cout);
-		result_module->print( stream, nullptr );
-	}
-
-	// Write LL file (if needed) after running all passes.
-	if( Options::file_type == Options::FileType::LL )
-		result_module->print( out_file_stream, nullptr );
 
 	// Left only unique paths in dependencies list.
 	DeduplicateDepsList(deps_list);
