@@ -1756,6 +1756,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return PrepareType( names_scope, function_context, function_type );
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::GeneratorType/>& generator_type ) : Value
+{
+	return PrepareType( names_scope, function_context, generator_type );
+}
+
 fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value
 {
 	var Type t= PrepareType( names_scope, function_context, type_name );

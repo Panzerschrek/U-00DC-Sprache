@@ -236,7 +236,8 @@ type Expression= ust::variant</ tup[
 	ust::box</ArrayType/>,
 	ust::box</TupleType/>,
 	ust::box</RawPointerType/>,
-	ust::box</FunctionType/>
+	ust::box</FunctionType/>,
+	ust::box</GeneratorType/>
 	] />;
 
 struct ArrayType
@@ -256,6 +257,25 @@ struct RawPointerType
 {
 	SrcLoc src_loc;
 	TypeName element_type;
+}
+
+struct GeneratorType
+{
+	struct InnerReferenceTag
+	{
+		ust::string8 name;
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	}
+
+	SrcLoc src_loc;
+
+	ust::optional</MutabilityModifier/> inner_reference_mutability_modifier;
+	NonSyncTag non_sync_tag;
+	TypeName return_type;
+	ust::box_nullable</InnerReferenceTag/> inner_reference_tag;
+	ust::string8 return_value_reference_tag;
+	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 }
 
 struct FunctionType
@@ -294,7 +314,8 @@ type TypeName= ust::variant</ tup[
 	ust::box</ArrayType/>,
 	ust::box</TupleType/>,
 	ust::box</RawPointerType/>,
-	ust::box</FunctionType/>
+	ust::box</FunctionType/>,
+	ust::box</GeneratorType/>
 	] />;
 
 struct SequenceInitializer
@@ -385,6 +406,12 @@ struct ReturnOperator
 	Expression expr;
 }
 
+struct YieldOperator
+{
+	SrcLoc src_loc;
+	Expression expr;
+}
+
 struct AssignmentOperator
 {
 	SrcLoc src_loc;
@@ -431,6 +458,16 @@ struct StaticIfOperator
 {
 	SrcLoc src_loc;
 	IfOperator if_operator;
+}
+
+struct IfCoroAdvanceOperator
+{
+	SrcLoc src_loc;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ust::string8 variable_name;
+	Expression expression;
+	ust::box</Block/> block;
 }
 
 struct WhileOperator
@@ -518,6 +555,7 @@ type BlockElement = ust::variant</ tup[
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	ReturnOperator,
+	YieldOperator,
 	AssignmentOperator,
 	AdditiveAssignmentOperator,
 	IncrementOperator,
@@ -525,6 +563,7 @@ type BlockElement = ust::variant</ tup[
 	Expression,
 	IfOperator,
 	StaticIfOperator,
+	IfCoroAdvanceOperator,
 	WhileOperator,
 	RangeForOperator,
 	CStyleForOperator,
@@ -541,9 +580,11 @@ type BlockElements= ust::vector</BlockElement/>;
 
 struct Function
 {
-	SrcLoc src_loc;
-	ust::vector</ ust::string8 /> name; // A, A::B, A::B::C::D, ::A, ::A::B
-	OverloadedOperator operator= OverloadedOperator::None;
+	enum Kind : u8
+	{
+		Regular,
+		Generator,
+	}
 
 	enum VirtualKind : u8
 	{
@@ -553,7 +594,6 @@ struct Function
 		VirtualFinal,
 		VirtualPure,
 	}
-	VirtualKind virtual_kind= VirtualKind::None;
 
 	enum BodyKind : u8
 	{
@@ -561,7 +601,15 @@ struct Function
 		BodyGenerationRequired,
 		BodyGenerationDisabled,
 	}
+
+	SrcLoc src_loc;
+	ust::vector</ ust::string8 /> name; // A, A::B, A::B::C::D, ::A, ::A::B
+	OverloadedOperator operator= OverloadedOperator::None;
+
+	Kind kind= Kind::Regular;
+	VirtualKind virtual_kind= VirtualKind::None;
 	BodyKind body_kind= BodyKind::Regular;
+	NonSyncTag coroutine_non_sync_tag; // Non-empty for generators
 
 	bool no_mangle= false;
 	bool constexpr_= false;
