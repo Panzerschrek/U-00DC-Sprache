@@ -1118,6 +1118,90 @@ def GeneratorsNonTrivialUsage_Test9():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def TemplateGenerator_Test0():
+	c_program_text= """
+		template</type T/>
+		fn generator GenNumbers(T max) : T
+		{
+			for( var T mut i(0); i < max; i += T(1) )
+			{
+				yield i;
+			}
+		}
+		template</type T/>
+		fn CheckGenNumbers( T max )
+		{
+			auto mut gen= GenNumbers( max ); // Use here template parameters deduction.
+			auto mut advanced= 0;
+			while( true )
+			{
+				if_coro_advance( x : gen )
+				{
+					halt if( x != T(advanced) );
+					++advanced;
+					continue;
+				}
+				break;
+			}
+			halt if( T(advanced) != max );
+		}
+		fn Foo()
+		{
+			CheckGenNumbers( 7 );
+			CheckGenNumbers( 11u );
+			CheckGenNumbers( 13.0f );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TemplateGenerator_Test0():
+	c_program_text= """
+		template</type T/>
+		fn generator SimpleGen() : T
+		{
+			yield T(7);
+			yield T(77);
+			yield T(777);
+		}
+		template</type T/>
+		fn CheckSimpleGen()
+		{
+			auto mut gen= SimpleGen</T/>(); // Specify template args directly.
+			auto mut advanced= 0;
+			if_coro_advance( x : gen )
+			{
+				halt if( x != T(7) );
+				++advanced;
+			}
+			if_coro_advance( x : gen )
+			{
+				halt if( x != T(77) );
+				++advanced;
+			}
+			if_coro_advance( x : gen )
+			{
+				halt if( x != T(777) );
+				++advanced;
+			}
+			if_coro_advance( x : gen )
+			{
+				halt;
+			}
+			halt if( advanced != 3 );
+		}
+		fn Foo()
+		{
+			CheckSimpleGen</i32/>();
+			CheckSimpleGen</f32/>();
+			CheckSimpleGen</u64/>();
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
 def Typeinfo_ForGenerators_Test0():
 	c_program_text= """
 		type IntGen= generator : i32;
