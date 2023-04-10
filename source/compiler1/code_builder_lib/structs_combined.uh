@@ -139,6 +139,9 @@ struct ClassType
 	}
 	ust::optional</BaseTemplate/> base_template;
 
+	// Non-empty if this is a coroutine type.
+	ust::optional</CoroutineTypeDescription/> coroutine_type_description;
+
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	bool is_complete= false;
@@ -272,7 +275,7 @@ public:
 	fn hash( ClassTypePtr& t ) : size_type;
 	fn hash( EnumTypePtr& t ) : size_type;
 
-private:
+public:
 	// TODO - move it into standard library.
 	fn hash_combine( size_type x, size_type y ) : size_type;
 }
@@ -468,6 +471,28 @@ struct TypeAlias
 	ust::optional</ Type /> t; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::TypeAlias /> syntax_element;
+}
+
+enum CoroutineKind : u8
+{
+	Generator,
+}
+
+struct CoroutineTypeDescription
+{
+	CoroutineKind kind;
+	Type return_type;
+	ValueType return_value_type;
+
+	InnerReferenceKind inner_reference_kind;
+	bool non_sync_;
+
+	type hasher= CoroutineTypeDescriptionHasher;
+}
+
+struct CoroutineTypeDescriptionHasher
+{
+	fn hash(CoroutineTypeDescription& d) : size_type;
 }
 
 //

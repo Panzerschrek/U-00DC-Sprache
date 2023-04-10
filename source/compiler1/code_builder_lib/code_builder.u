@@ -163,7 +163,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		}
 	}
 
-	// Geto coroutine intrisincs.
+	// Get coroutine intrisincs.
 	{
 		coro_.id= GetIntrinsic( "llvm.coro.id", ust::make_array</LLVMTypeRef/>() );
 		coro_.alloc= GetIntrinsic( "llvm.coro.alloc", ust::make_array</LLVMTypeRef/>() );
@@ -236,14 +236,19 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 
 	{ // Clear classes internals to break strong shared pointers loop and avoid memory leaks.
 		var NamesScopeMutPtr dummy_class_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
-		foreach( & class_type : class_table_ )
+		foreach( &class_type : class_table_ )
 		{
 			ClearClassInternals( class_type, dummy_class_names_scope );
 		}
 
-		foreach( & class_type_ptr : typeinfo_class_table_ )
+		foreach( &class_type_ptr : typeinfo_class_table_ )
 		{
 			ClearClassInternals( class_type_ptr, dummy_class_names_scope );
+		}
+
+		foreach( &class_type_pair : coroutine_classes_ )
+		{
+			ClearClassInternals( class_type_pair.value(), dummy_class_names_scope );
 		}
 	}
 

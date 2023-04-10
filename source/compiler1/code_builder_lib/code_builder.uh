@@ -810,6 +810,9 @@ private:
 		ust::array_view_imut</TypeTemplatePtr/> type_templates,
 		size_type signature_args_to_check ) : size_type;
 
+	// Coroutines
+	fn GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr;
+
 	// Methods generation
 
 	fn TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type );
@@ -1068,6 +1071,8 @@ private:
 		LLVMValueRef promise= LLVMValueRef::Null;
 	}
 	Coro coro_;
+
+	ust::unordered_map</ CoroutineTypeDescription, ClassTypePtr /> coroutine_classes_;
 }
 
 } // namespace U1

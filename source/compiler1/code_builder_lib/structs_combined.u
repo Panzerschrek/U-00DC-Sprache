@@ -833,6 +833,20 @@ fn TypeHasher::hash_combine( size_type x, size_type y ) : size_type
 }
 
 //
+// CoroutineTypeDescription
+//
+
+fn CoroutineTypeDescriptionHasher::hash(CoroutineTypeDescription& d) : size_type
+{
+	auto mut hash= size_type(d.kind);
+	hash= TypeHasher::hash_combine( hash, TypeHasher::hash(d.return_type) );
+	hash= TypeHasher::hash_combine( hash, size_type(d.return_value_type) );
+	hash= TypeHasher::hash_combine( hash, size_type(d.inner_reference_kind) );
+	hash= TypeHasher::hash_combine( hash, select(d.non_sync_ ? 1s : 0s) );
+	return hash;
+}
+
+//
 // ClassType
 //
 

@@ -1,0 +1,72 @@
+import "/keywords.uh"
+import "code_builder.uh"
+
+namespace U1
+{
+
+fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr
+{
+	if_var( &prev_class : coroutine_classes_.find( coroutine_type_description ) )
+	{
+		return prev_class;
+	}
+
+	var NamesScopeMutPtr class_members_ptr( NamesScope( KeywordToString( Keyword::generator_ ), root_namespace ) );
+	var ClassType mut class_type
+	{
+		.members= class_members_ptr,
+		.members_initial= class_members_ptr,
+		.is_complete= true,
+		.is_default_constructible= false,
+		.is_copy_constructible= false,
+		.is_copy_assignable= false,
+		.is_equality_comparable= false,
+		.have_explicit_noncopy_constructors= false,
+		// This class allocates heep memory and because of that can't be constexpr.
+		.can_be_constexpr= false,
+		.inner_reference_kind= coroutine_type_description.inner_reference_kind,
+		.parents_list_prepared= true,
+		.coroutine_type_description= coroutine_type_description,
+	};
+	var ClassTypePtr class_type_ptr( move(class_type) );
+
+	var ust::string8 class_name= mangler_.deref().MangleType( class_type_ptr );
+	var LLVMTypeRef llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, class_name.front() ) );
+	var LLVMTypeRef mut coroutine_handle_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
+	unsafe( LLVMStructSetBody( llvm_type, $<(coroutine_handle_type), 1u, LLVMBool::False ) );
+	with( &mut lock : class_type_ptr.lock_mut() )
+	{
+		lock.deref().llvm_type= llvm_type;
+	}
+
+	{ // Generate destructor.
+		TryGenerateDestructorPrototype( class_type_ptr );
+
+		auto class_members_lock= class_members_ptr.lock_imut();
+		auto& class_members= class_members_lock.deref();
+
+		// Destructors value should always exists and should always be NamesScopeFunctionsSet.
+		auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+		auto mut destructors_lock= destructors_ptr.try_lock_mut();
+		auto &mut destructors= destructors_lock.deref().functions_set;
+
+		var FunctionVariable &mut function_variable= destructors.functions.back();
+
+		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
+
+		var LLVMBuilderRef ir_builder= unsafe( LLVMCreateBuilderInContext( llvm_context_ ) );
+		unsafe( LLVMPositionBuilderAtEnd( ir_builder, LLVMAppendBasicBlockInContext( llvm_context_, llvm_function, "func_code\0"[0] ) ) );
+
+		var LLVMValueRef this_llvm_value= unsafe( LLVMGetParam( llvm_function, 0u ) );
+		var LLVMValueRef mut coro_handle= unsafe( LLVMBuildLoad2( ir_builder, coroutine_handle_type, this_llvm_value, g_null_string ) );
+		unsafe( LLVMBuildCall2( ir_builder, U1_GetFunctionType(coro_.destroy), coro_.destroy, $<(coro_handle), 1u, g_null_string ) );
+		unsafe( LLVMBuildRetVoid( ir_builder ) );
+
+		unsafe( LLVMDisposeBuilder( ir_builder ) );
+	}
+
+	coroutine_classes_.insert( coroutine_type_description, class_type_ptr );
+	return class_type_ptr;
+}
+
+} // namespace U1

@@ -149,8 +149,34 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::GeneratorType& generator_type ) : Type
 {
-	// TODO
-	return invalid_type_;
+	var CoroutineTypeDescription coroutine_type_description
+	{
+		.kind= CoroutineKind::Generator,
+		.return_type= PrepareType( names_scope, function_context, generator_type.return_type ),
+		.return_value_type= select(
+			generator_type.return_value_reference_modifier == Synt::ReferenceModifier::Reference
+				? select(
+					generator_type.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
+						? ValueType::ReferenceMut
+						: ValueType::ReferenceImut )
+				: ValueType::Value ),
+		.inner_reference_kind= InnerReferenceKind::None, // TODO - set it
+		.non_sync_= false, // TODO - set it
+	};
+
+	// TODO - check for tags errors
+	var NamesScopePtr mut root_names_scope= names_scope;
+	while(true)
+	{
+		auto parent= root_names_scope.lock_imut().deref().GetParent();
+		if( parent.empty() )
+		{
+			break;
+		}
+		root_names_scope= parent.try_to_non_nullable();
+	}
+
+	return GetCoroutineType( root_names_scope, coroutine_type_description );
 }
 
 fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType
