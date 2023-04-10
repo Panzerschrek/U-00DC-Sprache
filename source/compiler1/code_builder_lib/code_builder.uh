@@ -811,6 +811,7 @@ private:
 		size_type signature_args_to_check ) : size_type;
 
 	// Coroutines
+	fn GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_namespace, FunctionType& generator_function_type, bool non_sync_ )  : ClassTypePtr;
 	fn GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr;
 
 	// Methods generation

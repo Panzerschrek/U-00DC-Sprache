@@ -358,6 +358,7 @@ struct FunctionVariable
 	bool is_deleted= false;
 	bool no_mangle= false;
 	bool is_inherited= false;
+	bool is_generator= false;
 	u32 virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 
 	enum ConstexprKind : u8

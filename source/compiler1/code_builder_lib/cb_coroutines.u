@@ -4,6 +4,20 @@ import "code_builder.uh"
 namespace U1
 {
 
+fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_namespace, FunctionType& generator_function_type, bool non_sync_ )  : ClassTypePtr
+{
+	var CoroutineTypeDescription coroutine_type_description
+	{
+		.kind= CoroutineKind::Generator,
+		.return_type= generator_function_type.return_type,
+		.return_value_type= generator_function_type.return_value_type,
+		.non_sync_= non_sync_,
+		.inner_reference_kind= InnerReferenceKind::None, // TODO - set this.
+	};
+
+	return GetCoroutineType( root_namespace, coroutine_type_description );
+}
+
 fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr
 {
 	if_var( &prev_class : coroutine_classes_.find( coroutine_type_description ) )
@@ -59,6 +73,7 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 		auto &mut destructors= destructors_lock.deref().functions_set;
 
 		var FunctionVariable &mut function_variable= destructors.functions.back();
+		function_variable.is_generated= true;
 
 		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
 

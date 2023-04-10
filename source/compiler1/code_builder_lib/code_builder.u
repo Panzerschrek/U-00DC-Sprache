@@ -1000,6 +1000,14 @@ fn CodeBuilder::PrepareFunction(
 
 	var FunctionType mut function_type= PrepareFunctionType( names_scope_ptr, global_function_context, function_declaration.function_type, class_type );
 
+	var bool is_generator= function_declaration.kind == Synt::Function::Kind::Generator;
+	if( is_generator )
+	{
+		var Type mut generator_return_type= GetGeneratorFunctionReturnType( GetRootNamespace( names_scope_ptr ), function_type, false );
+		function_type.return_type= move(generator_return_type);
+		function_type.return_value_type= ValueType::Value;
+	}
+
 	var ust::string8 mut llvm_function_name;
 	if( function_declaration.no_mangle )
 	{
@@ -1018,6 +1026,7 @@ fn CodeBuilder::PrepareFunction(
 	{
 		.t= move(function_type),
 		.llvm_function( LazyLLVMFunction( move(llvm_function_name) ) ),
+		.is_generator= is_generator,
 	};
 	if( function_declaration.block.empty() )
 	{
@@ -1723,14 +1732,21 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
-			// Manually generate "return" for void-return functions.
-			if( !( func_variable.t.return_type == void_type_ && func_variable.t.return_value_type == ValueType::Value ) )
+			if( func_variable.is_generator )
 			{
-				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_src_loc )
-				return;
+				// TODO
 			}
+			else
+			{
+				// Manually generate "return" for void-return functions.
+				if( !( func_variable.t.return_type == void_type_ && func_variable.t.return_value_type == ValueType::Value ) )
+				{
+					REPORT_ERROR( NoReturnInFunctionReturningNonVoid, args_names_scope_ptr, block.end_src_loc )
+					return;
+				}
 
-			BuildEmptyReturn( args_names_scope_ptr, function_context, block.end_src_loc );
+				BuildEmptyReturn( args_names_scope_ptr, function_context, block.end_src_loc );
+			}
 		}
 
 		// Finsih function - add remaining instructions
@@ -2288,6 +2304,11 @@ fn CodeBuilder::EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_
 	if( function_variable.is_generated )
 	{
 		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+	}
+
+	if( function_variable.is_generator )
+	{
+		unsafe( AddFunctionAttribute( llvm_function, LLVMAttributeFunctionIndex, "presplitcoroutine" ) );
 	}
 
 	// Merge functions with identical code.
