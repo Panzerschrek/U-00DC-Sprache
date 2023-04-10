@@ -165,18 +165,9 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 	};
 
 	// TODO - check for tags errors
-	var NamesScopePtr mut root_names_scope= names_scope;
-	while(true)
-	{
-		auto parent= root_names_scope.lock_imut().deref().GetParent();
-		if( parent.empty() )
-		{
-			break;
-		}
-		root_names_scope= parent.try_to_non_nullable();
-	}
 
-	return GetCoroutineType( root_names_scope, coroutine_type_description );
+
+	return GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );
 }
 
 fn CodeBuilder::PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType

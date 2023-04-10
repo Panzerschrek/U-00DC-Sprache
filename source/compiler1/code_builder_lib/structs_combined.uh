@@ -818,4 +818,6 @@ private:
 	ErrorsContainerPtr errors_container_;
 }
 
+fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr;
+
 } // namespace U1

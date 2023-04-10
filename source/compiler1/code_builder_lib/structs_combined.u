@@ -1361,4 +1361,20 @@ fn NamesScope::CopyAccessRightsFrom( mut this, NamesScope& src )
 	access_rights_= src.access_rights_;
 }
 
+fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr
+{
+	var NamesScopePtr mut root_names_scope= names_scope;
+	while(true)
+	{
+		auto parent= root_names_scope.lock_imut().deref().GetParent();
+		if( parent.empty() )
+		{
+			break;
+		}
+		root_names_scope= parent.try_to_non_nullable();
+	}
+
+	return move(root_names_scope);
+}
+
 } // namespace U1

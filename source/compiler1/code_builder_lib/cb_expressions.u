@@ -415,18 +415,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeinfo& typeinfo_ ) : Value
 {
-	var NamesScopePtr mut root_names_scope= names_scope;
-	while(true)
-	{
-		auto parent= root_names_scope.lock_imut().deref().GetParent();
-		if( parent.empty() )
-		{
-			break;
-		}
-		root_names_scope= parent.try_to_non_nullable();
-	}
-
-	var Type t= PrepareType( names_scope, function_context, typeinfo_.type_name );
+	var NamesScopePtr root_names_scope= GetRootNamespace( names_scope );
+	var Type t= PrepareType( root_names_scope, function_context, typeinfo_.type_name );
 	if( !EnsureTypeComplete( t ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, typeinfo_.src_loc, t.ToString() )
