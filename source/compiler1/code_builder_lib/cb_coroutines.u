@@ -39,6 +39,14 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 		lock.deref().llvm_type= llvm_type;
 	}
 
+	with( &mut lock : class_members_ptr.lock_mut() )
+	{
+		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
+		lock.deref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
+		lock.deref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
+		lock.deref().AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
+	}
+
 	{ // Generate destructor.
 		TryGenerateDestructorPrototype( class_type_ptr );
 
