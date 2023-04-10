@@ -144,28 +144,22 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 
 	if( create_lifetimes_ )
 	{
-		auto& lifetime_start_name= "llvm.lifetime.start";
-		auto& lifetime_end_name= "llvm.lifetime.end";
-		unsafe
-		{
-			var u32 lifetime_start_id = LLVMLookupIntrinsicID( $<(cast_mut(lifetime_start_name)[0]), typeinfo</typeof(lifetime_start_name)/>.element_count );
-			var u32 lifetime_end_id = LLVMLookupIntrinsicID( $<(cast_mut(lifetime_end_name)[0]), typeinfo</typeof(lifetime_end_name)/>.element_count );
+		lifetime_function_arg_type_= unsafe( LLVMPointerType( fundamental_llvm_types_.u8_, 0u ) );
+		var [ LLVMTypeRef, 1 ] types[ lifetime_function_arg_type_ ];
+		lifetime_start_intrinsic_= GetIntrinsic( "llvm.lifetime.start", types );
+		lifetime_end_intrinsic_= GetIntrinsic( "llvm.lifetime.end", types );
 
-			lifetime_function_arg_type_= LLVMPointerType( fundamental_llvm_types_.u8_, 0u );
-			lifetime_start_intrinsic_= LLVMGetIntrinsicDeclaration( module_, lifetime_start_id, $<(lifetime_function_arg_type_), 1s );
-			lifetime_end_intrinsic_= LLVMGetIntrinsicDeclaration( module_, lifetime_end_id, $<(lifetime_function_arg_type_), 1s );
-		}
-	}
-	if( create_lifetimes_ && generate_lifetime_start_end_debug_calls_ )
-	{
-		unsafe
+		if( generate_lifetime_start_end_debug_calls_ )
 		{
-			var LLVMTypeRef mut arg_type= LLVMPointerType( fundamental_llvm_types_.u8_, 0u );
-			var LLVMTypeRef ret_type= fundamental_llvm_types_.void_for_ret_;
-			var LLVMTypeRef function_type= LLVMFunctionType( ret_type, $<(arg_type), 1u, LLVMBool::False );
+			unsafe
+			{
+				var LLVMTypeRef mut arg_type= lifetime_function_arg_type_;
+				var LLVMTypeRef ret_type= fundamental_llvm_types_.void_for_ret_;
+				var LLVMTypeRef function_type= LLVMFunctionType( ret_type, $<(arg_type), 1u, LLVMBool::False );
 
-			lifetime_start_debug_func_= LLVMAddFunction( module_, "__U_debug_lifetime_start\0"[0], function_type );
-			lifetime_end_debug_func_= LLVMAddFunction( module_, "__U_debug_lifetime_end\0"[0], function_type );
+				lifetime_start_debug_func_= LLVMAddFunction( module_, "__U_debug_lifetime_start\0"[0], function_type );
+				lifetime_end_debug_func_= LLVMAddFunction( module_, "__U_debug_lifetime_end\0"[0], function_type );
+			}
 		}
 	}
 
@@ -3096,6 +3090,16 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 			LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(lifetime_end_debug_func_), lifetime_end_debug_func_, $<(ptr_converted), 1u, g_null_string );
 		}
 	}
+}
+
+fn CodeBuilder::GetIntrinsic( this, ust::array_view_imut</char8/> name, ust::array_view_imut</LLVMTypeRef/> types ) : LLVMValueRef
+{
+	return unsafe(
+		LLVMGetIntrinsicDeclaration(
+			module_,
+			LLVMLookupIntrinsicID( name.data(), name.size() ),
+			types.data(),
+			types.size() ) );
 }
 
 fn CodeBuilder::SaveFunctionContextState( FunctionContext& function_context ) : FunctionContextState

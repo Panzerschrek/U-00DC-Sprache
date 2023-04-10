@@ -932,6 +932,8 @@ private:
 	fn CreateLifetimeStart( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 	fn CreateLifetimeEnd( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 
+	fn GetIntrinsic( this, ust::array_view_imut</char8/> name, ust::array_view_imut</LLVMTypeRef/> types ) : LLVMValueRef;
+
 	struct FunctionContextState
 	{
 		LLVMBasicBlockRef current_block;
