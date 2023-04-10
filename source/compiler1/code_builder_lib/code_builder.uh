@@ -1050,6 +1050,24 @@ private:
 	LLVMValueRef lifetime_start_debug_func_= LLVMValueRef::Null;
 	LLVMValueRef lifetime_end_debug_func_= LLVMValueRef::Null;
 	LLVMTypeRef lifetime_function_arg_type_= LLVMTypeRef::Null;
+
+	// Coroutines
+	struct Coro
+	{
+		LLVMValueRef id= LLVMValueRef::Null;
+		LLVMValueRef alloc= LLVMValueRef::Null;
+		LLVMValueRef free= LLVMValueRef::Null;
+		LLVMValueRef size= LLVMValueRef::Null;
+		LLVMValueRef begin= LLVMValueRef::Null;
+		LLVMValueRef end= LLVMValueRef::Null;
+		LLVMValueRef suspend= LLVMValueRef::Null;
+
+		LLVMValueRef resume= LLVMValueRef::Null;
+		LLVMValueRef destroy= LLVMValueRef::Null;
+		LLVMValueRef done= LLVMValueRef::Null;
+		LLVMValueRef promise= LLVMValueRef::Null;
+	}
+	Coro coro_;
 }
 
 } // namespace U1

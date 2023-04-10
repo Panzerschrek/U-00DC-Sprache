@@ -163,6 +163,23 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		}
 	}
 
+	// Geto coroutine intrisincs.
+	{
+		coro_.id= GetIntrinsic( "llvm.coro.id", ust::make_array</LLVMTypeRef/>() );
+		coro_.alloc= GetIntrinsic( "llvm.coro.alloc", ust::make_array</LLVMTypeRef/>() );
+		coro_.free= GetIntrinsic( "llvm.coro.free", ust::make_array</LLVMTypeRef/>() );
+		coro_.size= GetIntrinsic( "llvm.coro.size", ust::make_array( fundamental_llvm_types_.int_ptr ) );
+
+		coro_.begin= GetIntrinsic( "llvm.coro.begin", ust::make_array</LLVMTypeRef/>() );
+		coro_.end= GetIntrinsic( "llvm.coro.end", ust::make_array</LLVMTypeRef/>() );
+		coro_.suspend= GetIntrinsic( "llvm.coro.suspend", ust::make_array</LLVMTypeRef/>() );
+
+		coro_.resume= GetIntrinsic( "llvm.coro.resume", ust::make_array</LLVMTypeRef/>() );
+		coro_.destroy= GetIntrinsic( "llvm.coro.destroy", ust::make_array</LLVMTypeRef/>() );
+		coro_.done= GetIntrinsic( "llvm.coro.done", ust::make_array</LLVMTypeRef/>() );
+		coro_.promise= GetIntrinsic( "llvm.coro.promise", ust::make_array</LLVMTypeRef/>() );
+	}
+
 	debug_info_builder_.reset(
 		DebugInfoBuilder(
 			llvm_context_,
