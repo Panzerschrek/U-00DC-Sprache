@@ -1,0 +1,32 @@
+Dlä podderžki generatorov, a osobenno asinhronnyh funkçij i lämbd horošo by v jazyke imetj neskoljko vnutrennih ssylocnyh uzlov grafa kontrolä ssylok.
+Eto nado, v osobnnosti, ctoby vyzov asinhronnoj funkçii ne zahvatyval lišnih ssylok i vozvrascal (logiceski) toljko neobhodimyje ssylki.
+
+Dlä etogo planirujetsä každomu tipu imetj nabor ot nulä i boleje vnutrennih logiceskih ssylok, dlä kotoryh budut sozdavatjsä uzly grafa ssylok.
+Pri etom každaja logiceskaja ssylka (teg) možet bytj izmenäjemoj ili neizmenäjemoj.
+
+Pri objavlenii klassa programmist možet cerez speçialjnyj sintaksis objavitj, kakije ssylocnyje tegi byvajut v klasse i proassoçiirovatj s etimi tegami ssylocnyje polä a takže vnutrennije tegi polej-znacenij.
+
+Jesli tegi ne objavleny, oni mogut bytj sozdany nejavno.
+Pri etom nejavnoje sozdanije tegov ograniceno - rabotajet toljko pri nalicii odnogo ssylocnogo polä ili odnogo polä-znacenija so vnutrennimi ssylkami vnutri.
+V ostaljnyh slucajah tegi trebujetsä ukazyvatj.
+
+Massivy imejut tot že spisok tegov, cto i ih elementy.
+Spisok ssylocnyh tegov kortežej javläjetsä posledovateljnym objedinenijem spiskov tegov vseh elementov korteža.
+Syryje ukazateli ne imejut ssylocnyh tegov.
+Fundamentaljnyje tipy, ukazateli na funkçiju, perecislenija ne imejut vnutrennih ssylocnyh tegov.
+
+Zapresceno budet annotirovatj neizmenäjemuju ssylku izmenäjemym tegom i naoborot.
+
+Kod kontrolä ssylok ponadobitsä izmenitj sledujuscim obrazom:
+* Vnutrennije ssylocnyje uzly budut imetjsä i u ssylocnyh znacenij i budut ukazyvatj na vnutrennije uzly ishodnyh peremennyh, otkuda polucena ssylka.
+* Vnutrennije ssylocnyje uzly budut sozdavatjsä srazu i v polnom objome, ili že otloženno. Pri etom vid uzla (izmenäjemaja ili neizmenäjemaja ssylka) budet izvesten zaraneje po tipu sootvetsvtujuscego tega, a ne kak sejcas - pri pervom sväzyvanii ssylok.
+* Vnutrennij ssylocnyj uzel docernih uzlov (dlä polej struktur ili elementov kortežej) prosto budet kopijej "shared_ptr" uzla ishodnoj peremennoj. Eto neobhodimo, ctoby ne sozdavatj uzlov tam gde ne nado i ne vyzyvatj tem samym ošibki sozdanija izlišnih ssylok.
+
+
+V šablonnom kode kak-to nado rabotatj s tipami s neskoljkimi ssylocnymi tegami.
+Dlä etogo možno vvesti speçialjnuju annotaçiju dlä objavlenija spiska tegov s zaraneje neizvestnym razmerom.
+V annotaçii vozvrata ssylki pri etom etot spisok budet oboznacatj nabor vozvrascajemyh tegov.
+V annotaçii sväzyvanija ssylok vozmožno toljko sväzyyvanije spiska i odnogo tega ili sväzyvanije dvuh spiskov odinakovogo razmera i sostava.
+
+Takže dlä nekotorogo koda vozmožno ponadobitjsä nekij avtovyvod tegov dlä vozvrata i sväzyvanija.
+Vozmožno etot funkçional možno objedinitj s postrojenijem funkçij s "auto" vozvrascajemym znacenijem.
