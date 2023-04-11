@@ -1254,6 +1254,10 @@ Type CodeBuilder::BuildFuncCode(
 	if( func_variable.is_generator )
 	{
 		const CoroutineTypeDescription& coroutine_type_description= *function_type.return_type.GetClassType()->coroutine_type_description;
+
+		if( !EnsureTypeComplete( coroutine_type_description.return_type ) )
+			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc,  coroutine_type_description.return_type  );
+
 		for( const FunctionType::Param& arg : function_type.params )
 		{
 			// Generator is an object, that holds references to reference-args of generator function.

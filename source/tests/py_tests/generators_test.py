@@ -357,6 +357,46 @@ def GeneratorReturn_Test2():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def Yield_TypeConversion_Test0():
+	c_program_text= """
+		struct SukaBlat
+		{
+			i32 x;
+			f32 y= 0.0f;
+			fn conversion_constructor( i32 in_x ) ( x= in_x ) {}
+		}
+		fn generator SimpleGen() : SukaBlat
+		{
+			yield 765; // Call here conversion constructor.
+		}
+		fn Foo()
+		{
+			auto mut gen= SimpleGen();
+			auto mut advanced= 0;
+			if_coro_advance( s : gen )
+			{
+				halt if( s.x != 765 );
+				++advanced;
+			}
+			halt if( advanced == 0 );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def Yield_TypeConversion_Test1():
+	c_program_text= """
+		class A polymorph {}
+		class B : A {}
+		fn generator SimpleGen(B& b) : A&
+		{
+			yield b; // convert reference here
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def GeneratorTypeName_Test0():
 	c_program_text= """
 		fn generator SimpleGen() : u32 {}

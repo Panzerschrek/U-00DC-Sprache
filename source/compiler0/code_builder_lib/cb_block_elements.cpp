@@ -1419,6 +1419,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( not_done_after_resume_block );
 	function_context.llvm_ir_builder.SetInsertPoint( not_done_after_resume_block );
 
+	EnsureTypeComplete( coro_class_type->coroutine_type_description->return_type );
+
 	llvm::Type* const promise_llvm_type=
 		coro_class_type->coroutine_type_description->return_value_type == ValueType::Value
 			? coro_class_type->coroutine_type_description->return_type.GetLLVMType()

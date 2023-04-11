@@ -367,9 +367,9 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 			}
 			else if( expression_result->value_type == ValueType::Value ) // Move composite value.
 			{
-				function_context.variables_state.MoveNode( expression_result );
-
 				CopyBytes( promise, expression_result->llvm_value, yield_type, function_context );
+
+				function_context.variables_state.MoveNode( expression_result );
 
 				if( expression_result->location == Variable::Location::Pointer )
 					CreateLifetimeEnd( function_context, expression_result->llvm_value );
