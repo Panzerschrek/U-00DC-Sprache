@@ -250,7 +250,7 @@ void CodeBuilder::PrepareGeneratorBlocks( FunctionContext& function_context )
 	llvm::Value* const need_to_free=
 		function_context.llvm_ir_builder.CreateICmpNE(
 			mem_for_free,
-			llvm::ConstantPointerNull::get( llvm::PointerType::get( llvm_context_, 0 ) ),
+			null,
 			"coro_need_to_free" );
 
 	const auto block_need_to_free= llvm::BasicBlock::Create( llvm_context_, "need_to_free" );

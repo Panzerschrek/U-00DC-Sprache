@@ -898,7 +898,7 @@ private:
 
 	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
 
-	// This function should be called for generator funtion just after aruments preparation.
+	// This function should be called for generator function just after aruments preparation.
 	void PrepareGeneratorBlocks( FunctionContext& function_context );
 	void GeneratorYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
 	void GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
