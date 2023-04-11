@@ -814,6 +814,11 @@ private:
 	fn GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_namespace, FunctionType& generator_function_type, bool non_sync_ )  : ClassTypePtr;
 	fn GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr;
 
+	// This function should be called for generator function just after aruments preparation.
+	fn PrepareGeneratorBlocks( this, FunctionContext &mut function_context );
+	fn GeneratorSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+	fn GeneratorFinalSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+
 	// Methods generation
 
 	fn TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_type );
@@ -1036,6 +1041,9 @@ private:
 		string_literals_cache_;
 
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
+
+	LLVMValueRef malloc_function_= LLVMValueRef::Null;
+	LLVMValueRef free_function_= LLVMValueRef::Null;
 
 	// For globals loops detection.
 	GlobalThingsStackPtr global_things_stack_ptr_;

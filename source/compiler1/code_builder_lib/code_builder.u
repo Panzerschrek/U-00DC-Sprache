@@ -142,6 +142,23 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "noreturn" );
 	AddFunctionAttribute( halt_function_, LLVMAttributeFunctionIndex, "nounwind" );
 
+
+	unsafe // Prepare heap allocations functions
+	{
+		var LLVMTypeRef mut malloc_size_type= fundamental_llvm_types_.int_ptr;
+		var LLVMTypeRef mut malloc_result_type= unsafe( LLVMPointerType( fundamental_llvm_types_.u8_, 0u ) );
+
+		malloc_function_= LLVMAddFunction(
+			module_,
+			"malloc\0"[0],
+			LLVMFunctionType( malloc_result_type, $<(malloc_size_type), 1u, LLVMBool::False ) );
+
+		free_function_= LLVMAddFunction(
+			module_,
+			"free\0"[0],
+			LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, $<(malloc_result_type), 1u, LLVMBool::False ) );
+	}
+
 	if( create_lifetimes_ )
 	{
 		lifetime_function_arg_type_= unsafe( LLVMPointerType( fundamental_llvm_types_.u8_, 0u ) );
@@ -1679,6 +1696,14 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
+	if( func_variable.is_generator )
+	{
+		// Create generator entry block after saving args to stack.
+		PrepareGeneratorBlocks( function_context );
+		// Generate also initial suspend.
+		GeneratorSuspend( args_names_scope_ptr, function_context, body_syntax_element.src_loc );
+	}
+
 	{
 		auto& block= body_syntax_element.block.try_deref();
 
@@ -1734,7 +1759,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		{
 			if( func_variable.is_generator )
 			{
-				// TODO
+				GeneratorFinalSuspend( args_names_scope_ptr, function_context, block.end_src_loc );
 			}
 			else
 			{
