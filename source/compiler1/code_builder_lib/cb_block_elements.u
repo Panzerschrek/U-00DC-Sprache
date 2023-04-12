@@ -1030,7 +1030,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	[
 		coro_handle,
 		unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, u64(LLVMABIAlignmentOfType( data_layout_, promise_llvm_type )), LLVMBool::False ) ),
-		unsafe( LLVMConstInt( fundamental_llvm_types_.u32_, 0u64, LLVMBool::False ) ),
+		unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) ),
 	];
 	var LLVMValueRef promise= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.promise), coro_.promise, $<(promise_args[0]), 3u, "promise\0"[0] ) );
 
