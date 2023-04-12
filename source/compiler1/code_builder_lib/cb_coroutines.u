@@ -7,7 +7,7 @@ namespace U1
 
 fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_namespace, FunctionType& generator_function_type, bool non_sync_ )  : ClassTypePtr
 {
-	var CoroutineTypeDescription coroutine_type_description
+	var CoroutineTypeDescription mut coroutine_type_description
 	{
 		.kind= CoroutineKind::Generator,
 		.return_type= generator_function_type.return_type,
@@ -15,6 +15,40 @@ fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_na
 		.non_sync_= non_sync_,
 		.inner_reference_kind= InnerReferenceKind::None, // TODO - set this.
 	};
+
+	foreach( &param : generator_function_type.params )
+	{
+		if( param.value_type == ValueType::Value )
+		{
+			// Require type completeness for value params in order to know inner reference kind.
+			if( EnsureTypeComplete( param.t ) )
+			{
+				var InnerReferenceKind param_type_inner_reference_kind= param.t.GetInnerReferenceKind();
+				if( param_type_inner_reference_kind == InnerReferenceKind::Mut )
+				{
+					coroutine_type_description.inner_reference_kind= InnerReferenceKind::Mut;
+				}
+				else if( param_type_inner_reference_kind == InnerReferenceKind::Imut && coroutine_type_description.inner_reference_kind == InnerReferenceKind::None )
+				{
+					coroutine_type_description.inner_reference_kind= InnerReferenceKind::Imut;
+				}
+			}
+		}
+		else
+		{
+			// Assume this is a reference to type with no references inside.
+			// This is checked later - when building function code.
+			// Do this later in order to avoid full type building for reference params.
+			if( param.value_type == ValueType::ReferenceMut )
+			{
+				coroutine_type_description.inner_reference_kind= InnerReferenceKind::Mut;
+			}
+			else if( param.value_type == ValueType::ReferenceImut && coroutine_type_description.inner_reference_kind == InnerReferenceKind::None )
+			{
+				coroutine_type_description.inner_reference_kind= InnerReferenceKind::Imut;
+			}
+		}
+	}
 
 	return GetCoroutineType( root_namespace, coroutine_type_description );
 }
