@@ -415,15 +415,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeinfo& typeinfo_ ) : Value
 {
-	var NamesScopePtr root_names_scope= GetRootNamespace( names_scope );
-	var Type t= PrepareType( root_names_scope, function_context, typeinfo_.type_name );
+	var Type t= PrepareType( names_scope, function_context, typeinfo_.type_name );
 	if( !EnsureTypeComplete( t ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, typeinfo_.src_loc, t.ToString() )
 		return ErrorValue();
 	}
 
-	var VariablePtr mut result= BuildTypeinfo( t, root_names_scope );
+	var VariablePtr mut result= BuildTypeinfo( t, GetRootNamespace( names_scope ) );
 	function_context.references_graph.AddNodeIfNotExists( result );
 	return move(result);
 }
