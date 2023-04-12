@@ -1558,6 +1558,42 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, func_variable.t.return_type )
 	}
 
+	if( func_variable.is_generator )
+	{
+		// TODO - avoid taking copy
+		var CoroutineTypeDescription coroutine_type_description=
+			func_variable.t.return_type.GetClassType().try_deref().lock_imut().deref().coroutine_type_description.try_deref();
+
+		if( !EnsureTypeComplete( coroutine_type_description.return_type ) )
+		{
+			REPORT_ERROR( UsingIncompleteType, names_scope, body_syntax_element.src_loc, coroutine_type_description.return_type )
+		}
+
+		foreach( &param : func_variable.t.params )
+		{
+			// Generator is an object, that holds references to reference-args of generator function.
+			// It's forbidden to create types with references inside to types with other references inside.
+			// So, check if this rule is not violated for generators.
+			// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
+			if( param.value_type != ValueType::Value && param.t.GetInnerReferenceKind() != InnerReferenceKind::None )
+			{
+				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, names_scope, body_syntax_element.src_loc, "some arg" ) // TODO - use separate error code.
+			}
+
+			// Generator is not declared as non-sync, but param is non-sync. This is an error.
+			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
+			if( !coroutine_type_description.non_sync_ && GetTypeNonSync( param.t, names_scope, body_syntax_element.src_loc ) )
+			{
+				REPORT_ERROR( GeneratorNonSyncRequired, names_scope, body_syntax_element.src_loc )
+			}
+		}
+
+		if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, body_syntax_element.src_loc  ) )
+		{
+			REPORT_ERROR( GeneratorNonSyncRequired, names_scope, body_syntax_element.src_loc )
+		}
+	}
+
 	debug_info_builder_.try_deref().SetCurrentLocation( function_context, body_syntax_element.src_loc );
 
 	{

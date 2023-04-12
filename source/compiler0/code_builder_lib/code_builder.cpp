@@ -1264,7 +1264,7 @@ Type CodeBuilder::BuildFuncCode(
 			// It's forbidden to create types with references inside to types with other references inside.
 			// So, check if this rule is not violated for generators.
 			// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
-			if( func_variable.is_generator && arg.value_type != ValueType::Value && arg.type.GetInnerReferenceType() != InnerReferenceType::None )
+			if( arg.value_type != ValueType::Value && arg.type.GetInnerReferenceType() != InnerReferenceType::None )
 				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc_, "some arg" ); // TODO - use separate error code.
 
 			// Generator is not declared as non-sync, but param is non-sync. This is an error.
