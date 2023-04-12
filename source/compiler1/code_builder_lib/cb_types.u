@@ -149,7 +149,7 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::GeneratorType& generator_type ) : Type
 {
-	var CoroutineTypeDescription coroutine_type_description
+	var CoroutineTypeDescription mut coroutine_type_description
 	{
 		.kind= CoroutineKind::Generator,
 		.return_type= PrepareType( names_scope, function_context, generator_type.return_type ),
@@ -160,13 +160,39 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 						? ValueType::ReferenceMut
 						: ValueType::ReferenceImut )
 				: ValueType::Value ),
-		.inner_reference_kind= InnerReferenceKind::None, // TODO - set it
+		.inner_reference_kind= InnerReferenceKind::None, // Set later
 		.non_sync_= false, // TODO - set it
 	};
 
-	// TODO - check for tags errors
 
+	if( generator_type.inner_reference_tag.empty() )
+	{
+		coroutine_type_description.inner_reference_kind= InnerReferenceKind::None;
+	}
+	else
+	{
+		coroutine_type_description.inner_reference_kind=
+			select( generator_type.inner_reference_tag.try_deref().mutability_modifier == Synt::MutabilityModifier::Mutable
+				? InnerReferenceKind::Mut
+				: InnerReferenceKind::Imut );
+	}
 
+	if( !generator_type.return_value_reference_tag.empty() )
+	{
+		var bool mut found= false;
+		if( !generator_type.inner_reference_tag.empty() && generator_type.inner_reference_tag.try_deref().name == generator_type.return_value_reference_tag )
+		{
+			found= true;
+		}
+
+		if( !found )
+		{
+			REPORT_ERROR( NameNotFound, names_scope, generator_type.src_loc, generator_type.return_value_reference_tag )
+		}
+	}
+
+	// For now there is no reason to process reference tag.
+	// Assume, that if generator returns a reference, it points to single possible reference tag - inner reference tag.
 	return GetCoroutineType( GetRootNamespace( names_scope ), coroutine_type_description );
 }
 
