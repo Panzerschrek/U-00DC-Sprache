@@ -468,6 +468,65 @@ fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_ty
 	EncodeTemplateArgs( mangler_state, base_template.signature_args );
 }
 
+fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_type )
+{
+	var CoroutineTypeDescription& coroutine_type_description= class_type.coroutine_type_description.try_deref();
+
+	ADD_NODE( mangler_state )
+	{
+		ADD_NODE( mangler_state )
+		{
+			mangler_state.PushLengthPrefixed( class_type.members.lock_imut().deref().GetThisNamespaceName().range() );
+		}
+
+		// Encode coroutine type as template with several arguments.
+		mangler_state.Push( "I" );
+
+		if( coroutine_type_description.return_value_type == ValueType::Value )
+		{
+			EncodeTypeName( mangler_state, coroutine_type_description.return_type );
+		}
+		else
+		{
+			ADD_NODE( mangler_state )
+			{
+				mangler_state.Push( "R" );
+				if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
+				{
+					EncodeTypeName( mangler_state, coroutine_type_description.return_type );
+				}
+				else
+				{
+					ADD_NODE( mangler_state )
+					{
+						mangler_state.Push( "K" );
+						EncodeTypeName( mangler_state, coroutine_type_description.return_type );
+					}
+				}
+			}
+		}
+
+		// Encode non-sync tag, if it exists.
+		if( coroutine_type_description.non_sync_ )
+		{
+			mangler_state.Push( "L" );
+			mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::bool_ ) );
+			mangler_state.Push( "1" );
+			mangler_state.Push( "E" );
+		}
+
+		// Encode inner reference kind as variable template parameter.
+		mangler_state.Push( "L" );
+		mangler_state.Push( EncodeFundamentalTypeName( U_FundamentalType::u32_ ) );
+		mangler_state.PushDecimalNumber( u64(coroutine_type_description.inner_reference_kind) );
+		mangler_state.Push( "E" );
+
+		// Do not encode coroutine kind here, because coroutine class name contains kind.
+
+		mangler_state.Push( "E" );
+	}
+}
+
 fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 {
 	if_var( &fundamental_type : t.GetFundamentalType() )
@@ -545,6 +604,10 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 					EncodeTemplateClassName( mangler_state, class_type );
 				}
 			}
+		}
+		else if( !class_type.coroutine_type_description.empty() )
+		{
+			EncodeCoroutineClassName( mangler_state, class_type );
 		}
 		else
 		{
@@ -693,6 +756,14 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 			ADD_NODE( mangler_state )
 			{
 				EncodeTemplateClassName( mangler_state, class_ );
+			}
+			return;
+		}
+		if( !class_.coroutine_type_description.empty() )
+		{
+			ADD_NODE( mangler_state )
+			{
+				EncodeCoroutineClassName( mangler_state, class_ );
 			}
 			return;
 		}
