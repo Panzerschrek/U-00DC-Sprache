@@ -1023,6 +1023,28 @@ fn CodeBuilder::PrepareFunction(
 		var Type mut generator_return_type= GetGeneratorFunctionReturnType( GetRootNamespace( names_scope_ptr ), function_type, false );
 		function_type.return_type= move(generator_return_type);
 		function_type.return_value_type= ValueType::Value;
+
+		if_var( &type_name : function_declaration.function_type.return_type )
+		{
+			if_var( &complex_name : type_name.get</Synt::ComplexName/>() )
+			{
+				if_var( &name : complex_name.start.get</ust::string8/>() )
+				{
+					if( name == KeywordToString( Keyword::auto_ ) )
+					{
+						REPORT_ERROR( AutoReturnGenerator, names_scope_ptr,  function_declaration.src_loc )
+					}
+				}
+			}
+		}
+		if( function_declaration.virtual_kind != Synt::Function::VirtualKind::None )
+		{
+			REPORT_ERROR( VirtualGenerator, names_scope_ptr, function_declaration.src_loc )
+		}
+		if( function_type.calling_convention != LLVMCallConv::C )
+		{
+			REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope_ptr, function_declaration.src_loc )
+		}
 	}
 
 	var ust::string8 mut llvm_function_name;
@@ -1060,6 +1082,11 @@ fn CodeBuilder::PrepareFunction(
 
 	auto is_constructor= func_name == KeywordToString( Keyword::constructor_ );
 	auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
+
+	if( function_variable.is_generator && ( is_constructor || is_destructor ) )
+	{
+		REPORT_ERROR( GeneratorSpecialMethod, names_scope_ptr, function_declaration.src_loc )
+	}
 
 	function_variable.is_constructor= is_constructor;
 	{
@@ -1309,6 +1336,12 @@ fn CodeBuilder::PrepareFunction(
 		if( prev_function.no_mangle != function_variable.no_mangle )
 		{
 			REPORT_ERROR( NoMangleMismatch, names_scope_ptr, function_declaration.src_loc, func_name )
+			return false;
+		}
+
+		if( prev_function.is_generator != function_variable.is_generator )
+		{
+			REPORT_ERROR( GeneratorMismatch, names_scope_ptr, function_declaration.src_loc, func_name )
 			return false;
 		}
 
