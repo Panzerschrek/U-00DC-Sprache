@@ -1022,6 +1022,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var Type& result_type= coroutine_type_description.return_type;
 	var ValueType result_value_type= coroutine_type_description.return_value_type;
 
+	EnsureTypeComplete( result_type );
+
 	var LLVMTypeRef promise_llvm_type= select( result_value_type == ValueType::Value ? result_type.GetLLVMType() : pointer_type );
 
 	var [ LLVMValueRef, 3 ] mut promise_args
