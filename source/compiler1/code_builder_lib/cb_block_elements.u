@@ -452,7 +452,23 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	if( !return_operator.expr.get</Synt::EmptyVariant/>().empty() )
 	{
-		BuildEmptyReturn( names_scope, function_context, return_operator.src_loc );
+		if( function_context.coro_suspend_bb != LLVMBasicBlockRef::Null )
+		{
+			// For generators enter into final suspend state in case of manual "return".
+			GeneratorFinalSuspend( names_scope, function_context, return_operator.src_loc );
+		}
+		else
+		{
+			BuildEmptyReturn( names_scope, function_context, return_operator.src_loc );
+		}
+		return block_element_build_info;
+	}
+
+	if( function_context.coro_suspend_bb != LLVMBasicBlockRef::Null )
+	{
+		// For generators process "return" with value as combination "yield" and empty "return".
+		GeneratorYield( names_scope, function_context, return_operator.expr, return_operator.src_loc );
+		GeneratorFinalSuspend( names_scope, function_context, return_operator.src_loc );
 		return block_element_build_info;
 	}
 
@@ -621,6 +637,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::YieldOperator& yield_operator ) : BlockElementBuildInfo
 {
+	GeneratorYield( names_scope, function_context, yield_operator.expr, yield_operator.src_loc );
 	return BlockElementBuildInfo();
 }
 

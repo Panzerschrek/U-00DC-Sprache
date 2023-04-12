@@ -816,6 +816,7 @@ private:
 
 	// This function should be called for generator function just after aruments preparation.
 	fn PrepareGeneratorBlocks( this, FunctionContext &mut function_context );
+	fn GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
 	fn GeneratorSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 	fn GeneratorFinalSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 
