@@ -1020,7 +1020,10 @@ fn CodeBuilder::PrepareFunction(
 	var bool is_generator= function_declaration.kind == Synt::Function::Kind::Generator;
 	if( is_generator )
 	{
+		// Generate for now own return references mapping.
+		auto mut return_references= GetGeneratorFunctionReturnReferences( function_type );
 		var Type mut generator_return_type= GetGeneratorFunctionReturnType( GetRootNamespace( names_scope_ptr ), function_type, false );
+		function_type.return_references= move(return_references);
 		function_type.return_type= move(generator_return_type);
 		function_type.return_value_type= ValueType::Value;
 
@@ -1044,6 +1047,16 @@ fn CodeBuilder::PrepareFunction(
 		if( function_type.calling_convention != LLVMCallConv::C )
 		{
 			REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope_ptr, function_declaration.src_loc )
+		}
+		// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
+		if( !function_declaration.function_type.return_value_reference_tag.empty() )
+		{
+			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "Explicit return tags for generators." )
+		}
+		// Disable references pollution for generator. It is too complicated for now.
+		if( !function_declaration.function_type.references_pollution.empty() )
+		{
+			REPORT_ERROR( NotImplemented, names_scope_ptr, function_declaration.function_type.src_loc, "References pollution for generators." )
 		}
 	}
 

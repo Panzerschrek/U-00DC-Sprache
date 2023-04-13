@@ -812,6 +812,8 @@ private:
 
 	// Coroutines
 	fn GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_namespace, FunctionType& generator_function_type, bool non_sync_ )  : ClassTypePtr;
+	fn GetGeneratorFunctionReturnReferences( mut this, FunctionType& generator_function_type ) : ust::vector</FunctionType::ParamReference/>;
+
 	fn GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr;
 
 	// This function should be called for generator function just after aruments preparation.

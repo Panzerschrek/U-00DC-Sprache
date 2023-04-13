@@ -1,3 +1,4 @@
+import "/sort.u"
 import "/keywords.uh"
 import "code_builder.uh"
 import "error_reporting.uh"
@@ -51,6 +52,32 @@ fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_na
 	}
 
 	return GetCoroutineType( root_namespace, coroutine_type_description );
+}
+
+fn CodeBuilder::GetGeneratorFunctionReturnReferences( mut this, FunctionType& generator_function_type ) : ust::vector</FunctionType::ParamReference/>
+{
+	var ust::vector</FunctionType::ParamReference/> mut result;
+	auto mut i= 0u;
+	foreach( &param : generator_function_type.params )
+	{
+		if( param.value_type == ValueType::Value )
+		{
+			// Assume, that value can have a reference inside. If it has no reference inside - this is not a problem.
+			// TODO - maybe check real inner reference kind here?
+			var FunctionType::ParamReference param_reference{ .param_index= u8(i), .reference_index= 0u8 };
+			result.push_back( param_reference );
+		}
+		else
+		{
+			// Assume, that generator function returns a generator, which internal node points to all reference args.
+			var FunctionType::ParamReference param_reference{.param_index= u8(i), .reference_index= FunctionType::c_param_reference_number };
+			result.push_back( param_reference );
+		}
+		++i;
+	}
+
+	ust::sort(result.range());
+	return move(result);
 }
 
 fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr
