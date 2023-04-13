@@ -96,7 +96,7 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 		.is_default_constructible= false,
 		.is_copy_constructible= false,
 		.is_copy_assignable= false,
-		.is_equality_comparable= false,
+		.is_equality_comparable= true,
 		.have_explicit_noncopy_constructors= false,
 		// This class allocates heep memory and because of that can't be constexpr.
 		.can_be_constexpr= false,
@@ -149,6 +149,62 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 		unsafe( LLVMBuildRetVoid( ir_builder ) );
 
 		unsafe( LLVMDisposeBuilder( ir_builder ) );
+	}
+	{ // Generate == operator
+
+		// Prepare function type.
+		var FunctionType mut function_type
+		{
+			.return_type( bool_type_ ),
+			.return_value_type= ValueType::Value,
+		};
+		for( auto mut i= 0s; i < 2s; ++i )
+		{
+			var FunctionType::Param mut param
+			{
+				.t( class_type_ptr ),
+				.value_type= ValueType::ReferenceImut,
+			};
+			function_type.params.push_back( move(param) );
+		}
+
+		auto op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+
+		// Prepare function variable.
+		var FunctionVariable mut function_variable
+		{
+			.is_this_call= false,
+			.is_generated= true,
+			.llvm_function( LazyLLVMFunction(
+				mangler_.deref().MangleFunction(
+					class_members_ptr.lock_imut().deref(),
+					op_name,
+					function_type ) ) ),
+			.t= move(function_type),
+		};
+
+		{
+			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
+
+			var LLVMBuilderRef ir_builder= unsafe( LLVMCreateBuilderInContext( llvm_context_ ) );
+			unsafe( LLVMPositionBuilderAtEnd( ir_builder, LLVMAppendBasicBlockInContext( llvm_context_, llvm_function, "func_code\0"[0] ) ) );
+
+			var LLVMValueRef l_address= unsafe( LLVMGetParam( llvm_function, 0u ) );
+			var LLVMValueRef r_address= unsafe( LLVMGetParam( llvm_function, 1u ) );
+			var LLVMValueRef l_value= unsafe( LLVMBuildLoad2( ir_builder, coroutine_handle_type, l_address, g_null_string ) );
+			var LLVMValueRef r_value= unsafe( LLVMBuildLoad2( ir_builder, coroutine_handle_type, r_address, g_null_string ) );
+			var LLVMValueRef cmp= unsafe( LLVMBuildICmp( ir_builder, LLVMIntPredicate::EQ, l_value, r_value, g_null_string ) );
+			unsafe( LLVMBuildRet( ir_builder, cmp ) );
+
+			unsafe( LLVMDisposeBuilder( ir_builder ) );
+		}
+
+		with( &mut lock : class_members_ptr.lock_mut() )
+		{
+			var NamesScopeFunctionsSet mut functions_set{ .class_= class_type_ptr };
+			functions_set.functions_set.functions.push_back( move(function_variable) );
+			lock.deref().AddName( op_name, move(functions_set) );
+		}
 	}
 
 	coroutine_classes_.insert( coroutine_type_description, class_type_ptr );
