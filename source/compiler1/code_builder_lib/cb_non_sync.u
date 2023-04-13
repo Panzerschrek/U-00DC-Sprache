@@ -143,6 +143,15 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 			}
 		}
 
+		with( &class_ : class_type.lock_imut().deref() )
+		{
+			if( !class_.coroutine_type_description.empty() && class_.coroutine_type_description.try_deref().non_sync_ )
+			{
+				prev_types_stack.pop_back();
+				return true;
+			}
+		}
+
 		// Check "non_sync" tag existence for parents.
 		PrepareClassParentsList( class_type );
 
@@ -185,22 +194,32 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 	halt;
 }
 
+fn CodeBuilder::ImmediateEvaluateNonSyncTag( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncTag& non_sync_tag ) : bool
+{
+	if( !non_sync_tag.get</Synt::NonSyncTagNone/>().empty() )
+	{
+		return false;
+	}
+	if( !non_sync_tag.get</Synt::NonSyncTagTrue/>().empty() )
+	{
+		return true;
+	}
+	if_var( &expression_ptr : non_sync_tag.get</ust::shared_ptr_final</Synt::Expression/>/>() )
+	{
+		return EvaluateBoolConstantExpression( names_scope, function_context, expression_ptr.deref() );
+	}
+
+	halt; // Unhandled non-sync tag type
+}
+
 fn CodeBuilder::CheckClassNonSyncTagExpression( mut this, ClassTypePtr& class_type )
 {
 	auto syntax_element_ptr= class_type.lock_imut().deref().syntax_element;
 	if( !syntax_element_ptr.empty() )
 	{
-		var Synt::Class& syntax_element= syntax_element_ptr.try_deref();
-
-		if_var( &expression_ptr : syntax_element.non_sync_tag.get</ust::shared_ptr_final</Synt::Expression/>/>() )
-		{
-			var Synt::Expression& expression= expression_ptr.deref();
-
-			var NamesScopePtr class_parent_scope= class_type.lock_imut().deref().members_initial.lock_imut().deref().GetParent().try_to_non_nullable();
-
-			var FunctionContext mut function_context= CreateGlobalFunctionContext();
-			EvaluateBoolConstantExpression( class_parent_scope, function_context, expression );
-		}
+		var NamesScopePtr class_parent_scope= class_type.lock_imut().deref().members_initial.lock_imut().deref().GetParent().try_to_non_nullable();
+		var FunctionContext mut function_context= CreateGlobalFunctionContext();
+		ImmediateEvaluateNonSyncTag( class_parent_scope, function_context, syntax_element_ptr.try_deref().non_sync_tag );
 	}
 }
 

@@ -1010,7 +1010,8 @@ fn CodeBuilder::PrepareFunction(
 	{
 		// Generate for now own return references mapping.
 		auto mut return_references= GetGeneratorFunctionReturnReferences( function_type );
-		var Type mut generator_return_type= GetGeneratorFunctionReturnType( GetRootNamespace( names_scope_ptr ), function_type, false );
+		var bool non_sync_= ImmediateEvaluateNonSyncTag( names_scope_ptr, global_function_context, function_declaration.coroutine_non_sync_tag );
+		var Type mut generator_return_type= GetGeneratorFunctionReturnType( GetRootNamespace( names_scope_ptr ), function_type, non_sync_ );
 		function_type.return_references= move(return_references);
 		function_type.return_type= move(generator_return_type);
 		function_type.return_value_type= ValueType::Value;

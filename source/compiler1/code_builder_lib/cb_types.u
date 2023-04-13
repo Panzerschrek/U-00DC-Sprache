@@ -161,9 +161,13 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 						: ValueType::ReferenceImut )
 				: ValueType::Value ),
 		.inner_reference_kind= InnerReferenceKind::None, // Set later
-		.non_sync_= false, // TODO - set it
+		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type.non_sync_tag ),
 	};
 
+	if( !coroutine_type_description.non_sync_ && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type.src_loc  ) )
+	{
+		REPORT_ERROR( GeneratorNonSyncRequired, names_scope, generator_type.src_loc )
+	}
 
 	if( generator_type.inner_reference_tag.empty() )
 	{

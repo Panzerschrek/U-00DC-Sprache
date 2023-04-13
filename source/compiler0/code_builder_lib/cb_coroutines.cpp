@@ -55,6 +55,7 @@ std::set<FunctionType::ParamReference> CodeBuilder::GetGeneratorFunctionReturnRe
 		if( param.value_type == ValueType::Value )
 		{
 			// Assume, that value can have a reference inside. If it has no reference inside - this is not a problem.
+			// TODO - maybe check real inner reference kind here?
 			FunctionType::ParamReference param_reference{ uint8_t(i), uint8_t(0) };
 			result.insert( param_reference );
 		}
