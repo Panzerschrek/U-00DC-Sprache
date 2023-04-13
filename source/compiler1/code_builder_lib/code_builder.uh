@@ -476,6 +476,8 @@ private:
 		FunctionVariable& conversion_constructor_,
 		SrcLoc& src_loc ) : VariablePtr;
 
+	fn EvaluateBoolConstantExpression( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : bool;
+
 	// NonSync stuff
 
 	fn GetTypeNonSync( mut this, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool;

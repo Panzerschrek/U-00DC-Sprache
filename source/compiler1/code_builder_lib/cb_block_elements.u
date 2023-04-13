@@ -904,33 +904,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			// Last unconditional "else"
 			return BuildBlockElement( names_scope, function_context, branch.block );
 		}
-		else
+		else if( EvaluateBoolConstantExpression( names_scope, function_context, branch.condition ) )
 		{
-			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-			var VariableLite condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch.condition ).lock_imut().deref();
-			if( condition_expression.t != bool_type_ )
-			{
-				REPORT_ERROR( TypesMismatch,
-					names_scope,
-					Synt::GetSrcLoc( branch.condition ),
-					bool_type_,
-					condition_expression.t )
-				return BlockElementBuildInfo();
-			}
-			if( condition_expression.constexpr_value == LLVMValueRef::Null )
-			{
-				REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( branch.condition ) )
-				return BlockElementBuildInfo();
-			}
-
-			if( unsafe( LLVMConstIntGetZExtValue( condition_expression.constexpr_value ) ) != 0u64 )
-			{
-				return BuildBlockElement( names_scope, function_context, branch.block );
-			}
-
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.src_loc );
+			return BuildBlockElement( names_scope, function_context, branch.block );
 		}
 	}
 

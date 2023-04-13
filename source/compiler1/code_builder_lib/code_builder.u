@@ -997,21 +997,9 @@ fn CodeBuilder::PrepareFunction(
 	// enable_if
 	if_var( &expr : function_declaration.condition )
 	{
-		var VariableLite condition_variable= BuildExpressionCodeEnsureVariable( names_scope_ptr, global_function_context, expr ).lock_imut().deref();
-		if( condition_variable.t == bool_type_ )
+		if( !EvaluateBoolConstantExpression( names_scope_ptr, global_function_context, expr ) )
 		{
-			if( condition_variable.constexpr_value != LLVMValueRef::Null )
-			{
-				if( unsafe( LLVMConstIntGetZExtValue( condition_variable.constexpr_value ) ) == 0u64 ) { return true; /* Function disabled */ }
-			}
-			else
-			{
-				REPORT_ERROR( ExpectedConstantExpression, names_scope_ptr, Synt::GetSrcLoc( expr ) )
-			}
-		}
-		else
-		{
-			REPORT_ERROR( TypesMismatch, names_scope_ptr, Synt::GetSrcLoc( expr ), bool_type_, condition_variable.t )
+			return false; // Function disabled
 		}
 	}
 

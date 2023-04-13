@@ -134,24 +134,10 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 				}
 				if( !is_non_sync_expression )
 				{
-					with( &v : BuildExpressionCodeEnsureVariable( class_parent_scope, function_context, expression ).lock_imut().deref() )
+					if( EvaluateBoolConstantExpression( class_parent_scope, function_context, expression ) )
 					{
-						if( v.t != bool_type_ )
-						{
-							REPORT_ERROR( TypesMismatch, class_parent_scope, Synt::GetSrcLoc( expression ), bool_type_, v.t )
-						}
-						else if( v.constexpr_value == LLVMValueRef::Null )
-						{
-							REPORT_ERROR( ExpectedConstantExpression, class_parent_scope, Synt::GetSrcLoc( expression ) )
-						}
-						else
-						{
-							if( unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) != 0u64 )
-							{
-								prev_types_stack.pop_back();
-								return true;
-							}
-						}
+						prev_types_stack.pop_back();
+						return true;
 					}
 				}
 			}
@@ -213,18 +199,7 @@ fn CodeBuilder::CheckClassNonSyncTagExpression( mut this, ClassTypePtr& class_ty
 			var NamesScopePtr class_parent_scope= class_type.lock_imut().deref().members_initial.lock_imut().deref().GetParent().try_to_non_nullable();
 
 			var FunctionContext mut function_context= CreateGlobalFunctionContext();
-
-			with( &v : BuildExpressionCodeEnsureVariable( class_parent_scope, function_context, expression ).lock_imut().deref() )
-			{
-				if( v.t != bool_type_ )
-				{
-					REPORT_ERROR( TypesMismatch, class_parent_scope, Synt::GetSrcLoc( expression ), bool_type_, v.t )
-				}
-				if( v.constexpr_value == LLVMValueRef::Null )
-				{
-					REPORT_ERROR( ExpectedConstantExpression, class_parent_scope, Synt::GetSrcLoc( expression ) )
-				}
-			}
+			EvaluateBoolConstantExpression( class_parent_scope, function_context, expression );
 		}
 	}
 }

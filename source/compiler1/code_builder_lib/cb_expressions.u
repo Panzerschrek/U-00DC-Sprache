@@ -4069,4 +4069,23 @@ fn CodeBuilder::ConvertVariable(
 	return move(result_ptr);
 }
 
+fn CodeBuilder::EvaluateBoolConstantExpression( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : bool
+{
+	var VariableLite v= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
+	if( v.t != bool_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( expression ), bool_type_, v.t )
+		return false;
+	}
+	if( v.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( expression ) )
+		return false;
+	}
+
+	// Do not need to destroy variables here, because this function is normally called only in constexr context.
+
+	return unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) != 0u64;
+}
+
 } // namespace U1
