@@ -121,6 +121,7 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 		lock.deref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
 		lock.deref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
 		lock.deref().AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
+		lock.deref().SetClass( class_type_ptr );
 	}
 
 	{ // Generate destructor.

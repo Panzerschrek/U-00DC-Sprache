@@ -743,9 +743,7 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 
 fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_scope )
 {
-	var ust::string8& name= names_scope.GetThisNamespaceName();
-
-	// Process separately class templates.
+	// Process separately class templates and coroutine types.
 	auto class_ptr= names_scope.GetClass();
 	if( !class_ptr.empty() )
 	{
@@ -761,10 +759,7 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 		}
 		if( !class_.coroutine_type_description.empty() )
 		{
-			ADD_NODE( mangler_state )
-			{
-				EncodeCoroutineClassName( mangler_state, class_ );
-			}
+			EncodeCoroutineClassName( mangler_state, class_ );
 			return;
 		}
 	}
@@ -782,7 +777,7 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 			}
 		}
 
-		mangler_state.PushLengthPrefixed( name.range() );
+		mangler_state.PushLengthPrefixed( names_scope.GetThisNamespaceName().range() );
 	}
 }
 
