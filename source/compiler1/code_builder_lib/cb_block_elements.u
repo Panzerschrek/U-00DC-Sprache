@@ -904,9 +904,16 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			// Last unconditional "else"
 			return BuildBlockElement( names_scope, function_context, branch.block );
 		}
-		else if( EvaluateBoolConstantExpression( names_scope, function_context, branch.condition ) )
+		else
 		{
-			return BuildBlockElement( names_scope, function_context, branch.block );
+			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+			if( EvaluateBoolConstantExpression( names_scope, function_context, branch.condition ) )
+			{
+				return BuildBlockElement( names_scope, function_context, branch.block );
+			}
+
+			CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.src_loc );
 		}
 	}
 
