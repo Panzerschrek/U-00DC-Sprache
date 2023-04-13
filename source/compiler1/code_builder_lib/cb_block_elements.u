@@ -1018,6 +1018,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var LLVMValueRef promise= unsafe( LLVMBuildCall2( function_context.llvm_ir_builder, U1_GetFunctionType(coro_.promise), coro_.promise, $<(promise_args[0]), 3u, "promise\0"[0] ) );
 
 	{
+		if( !result_type.CanBeConstexpr() )
+		{
+			function_context.have_non_constexpr_operations_inside= true;
+		}
+
 		var VariablesFrameHolder coro_result_variables_storage(function_context);
 		auto& mut function_context= coro_result_variables_storage.GetFunctionContext();
 
@@ -1042,9 +1047,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				.llvm_value= promise,
 				.name= if_coro_advance_operator.variable_name,
 			};
-			// TODO - set llvm value name
-
-			// TODO - check constexpr.
+			unsafe( LLVMSetValueName2( promise, cast_mut(if_coro_advance_operator.variable_name).data(), if_coro_advance_operator.variable_name.size() ) );
 
 			debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, if_coro_advance_operator.variable_name, if_coro_advance_operator.src_loc );
 
