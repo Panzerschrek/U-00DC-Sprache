@@ -649,6 +649,16 @@ public:
 		ust::vector</Param/> params;
 	}
 
+	struct CoroutineTypeParam
+	{
+		CoroutineKind kind;
+		TemplateSignatureParam return_type;
+		ValueType return_value_type;
+
+		InnerReferenceKind inner_reference_kind;
+		bool non_sync_;
+	}
+
 	struct SpecializedTemplateParam
 	{
 		ust::shared_ptr_imut</ TypeTemplatesSet /> type_templates_set;
@@ -662,6 +672,7 @@ public:
 	fn conversion_constructor( TupleTypeParam mut tuple_type_param );
 	fn conversion_constructor( RawPointerTypeParam mut raw_pointer_type_param );
 	fn conversion_constructor( FunctionTypeParam mut function_type_param );
+	fn conversion_constructor( CoroutineTypeParam mut generator_type_param );
 	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
 
 	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam />'this';
@@ -671,6 +682,7 @@ public:
 	fn GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam />'this';
 	fn GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this';
 	fn GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this';
+	fn GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam />'this';
 	fn GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this';
 
 	op==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool;
@@ -684,6 +696,7 @@ private:
 		ust::box</ TupleTypeParam />,
 		ust::box</ RawPointerTypeParam />,
 		ust::box</ FunctionTypeParam />,
+		ust::box</ CoroutineTypeParam />,
 		ust::box</ SpecializedTemplateParam />
 		] />;
 

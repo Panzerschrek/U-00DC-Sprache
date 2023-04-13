@@ -567,6 +567,14 @@ private:
 		Synt::FunctionType& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
+	fn CreateTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</TemplateBase::Param/>& template_params,
+		Synt::GeneratorType& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+
 	fn CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, SrcLoc& src_loc ) : TemplateSignatureParam;
 
 	fn GenTemplateType(
@@ -697,6 +705,14 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::FunctionTypeParam& function_type_param,
+		TemplateArgFinished& given_arg,
+		SrcLoc& src_loc ) : bool;
+
+	fn MatchTemplateArgumentImpl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TemplateBase& template_,
+		TemplateSignatureParam::CoroutineTypeParam& coroutine_type_param,
 		TemplateArgFinished& given_arg,
 		SrcLoc& src_loc ) : bool;
 

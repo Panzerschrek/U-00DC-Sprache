@@ -1067,6 +1067,10 @@ fn TemplateSignatureParam::conversion_constructor( FunctionTypeParam mut functio
 	( something_( ust::make_box( move(function_type_param) ) ) )
 {}
 
+fn TemplateSignatureParam::conversion_constructor( CoroutineTypeParam mut coroutine_type_param )
+	( something_( ust::make_box( move(coroutine_type_param) ) ) )
+{}
+
 fn TemplateSignatureParam::conversion_constructor( SpecializedTemplateParam mut specialized_template_param )
 	( something_( ust::make_box( move(specialized_template_param) ) ) )
 {}
@@ -1126,6 +1130,16 @@ fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</
 	return ust::optional_ref_imut</ FunctionTypeParam />();
 }
 
+fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam />'this'
+{
+	if_var( &coroutine_type_param : something_.get</ ust::box</CoroutineTypeParam/> />() )
+	{
+		return ust::optional_ref_imut</ CoroutineTypeParam />(coroutine_type_param.deref());
+	}
+
+	return ust::optional_ref_imut</ CoroutineTypeParam />();
+}
+
 fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this'
 {
 	if_var( &specialized_template_param : something_.get</ ust::box</SpecializedTemplateParam/> />() )
@@ -1156,6 +1170,7 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 			ust::is_same_type</ LeftT, ust::box</TupleTypeParam/> />() ||
 			ust::is_same_type</ LeftT, ust::box</RawPointerTypeParam/> />() ||
 			ust::is_same_type</ LeftT, ust::box</FunctionTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::box</CoroutineTypeParam/> />() ||
 			ust::is_same_type</ LeftT, ust::box</SpecializedTemplateParam/> />() )
 		{
 			return l_t.deref() == r.something_.get</ LeftT />().try_deref().deref();

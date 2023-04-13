@@ -300,6 +300,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.deref(), template_params_usage_flags );
 	}
+	if_var( &generator_type : param.get</ ust::box</Synt::GeneratorType/> />() )
+	{
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, generator_type.deref(), template_params_usage_flags );
+	}
 
 	// Nothing special - process as regular expression
 	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
@@ -401,6 +405,10 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	if_var( &function_type : param.get</ ust::box</Synt::FunctionType/> />() )
 	{
 		return CreateTemplateSignatureParam( names_scope, function_context, template_params, function_type.deref(), template_params_usage_flags );
+	}
+	if_var( &generator_type : param.get</ ust::box</Synt::GeneratorType/> />() )
+	{
+		return CreateTemplateSignatureParam( names_scope, function_context, template_params, generator_type.deref(), template_params_usage_flags );
 	}
 
 	// Nothing special - process as regular type name.
@@ -554,6 +562,69 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	}
 
 	return move(function_type_param);
+}
+
+fn CodeBuilder::CreateTemplateSignatureParam(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::vector</TemplateBase::Param/>& template_params,
+	Synt::GeneratorType& signature_param,
+	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+{
+	var TemplateSignatureParam mut return_type=
+		CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type, template_params_usage_flags );
+	if( !return_type.GetTypeParam().empty() )
+	{
+		var TemplateSignatureParam::TypeParam mut t
+		{
+			.t= PrepareType( names_scope, function_context, signature_param )
+		};
+		return move(t);
+	}
+
+	var TemplateSignatureParam::CoroutineTypeParam mut coroutine_type_param
+	{
+		.kind= CoroutineKind::Generator,
+		.return_type= move(return_type),
+		.return_value_type= select(
+			signature_param.return_value_reference_modifier == Synt::ReferenceModifier::Reference
+				? select(
+					signature_param.return_value_mutability_modifier == Synt::MutabilityModifier::Mutable
+						? ValueType::ReferenceMut
+						: ValueType::ReferenceImut )
+				: ValueType::Value ),
+		.inner_reference_kind= InnerReferenceKind::None, // Set later
+		.non_sync_= ImmediateEvaluateNonSyncTag( names_scope, function_context, signature_param.non_sync_tag ),
+	};
+
+	if( signature_param.inner_reference_tag.empty() )
+	{
+		coroutine_type_param.inner_reference_kind= InnerReferenceKind::None;
+	}
+	else
+	{
+		coroutine_type_param.inner_reference_kind=
+			select( signature_param.inner_reference_tag.try_deref().mutability_modifier == Synt::MutabilityModifier::Mutable
+				? InnerReferenceKind::Mut
+				: InnerReferenceKind::Imut );
+	}
+
+	if( !signature_param.return_value_reference_tag.empty() )
+	{
+		var bool mut found= false;
+		if( !signature_param.inner_reference_tag.empty() && signature_param.inner_reference_tag.try_deref().name == signature_param.return_value_reference_tag )
+		{
+			found= true;
+		}
+
+		if( !found )
+		{
+			REPORT_ERROR( NameNotFound, names_scope, signature_param.src_loc, signature_param.return_value_reference_tag )
+		}
+	}
+
+	return move(coroutine_type_param);
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, SrcLoc& src_loc ) : TemplateSignatureParam
@@ -1242,6 +1313,10 @@ fn CodeBuilder::MatchTemplateArgument(
 	{
 		return MatchTemplateArgumentImpl( names_scope, template_, function_type_param, given_arg, src_loc );
 	}
+	if_var( &coroutine_type_param : param.GetCoroutineTypeParam() )
+	{
+		return MatchTemplateArgumentImpl( names_scope, template_, coroutine_type_param, given_arg, src_loc );
+	}
 	if_var( &specialized_template_param : param.GetSpecializedTemplateParam() )
 	{
 		return MatchTemplateArgumentImpl( names_scope, template_, specialized_template_param, given_arg, src_loc );
@@ -1528,6 +1603,36 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 			}
 
 			return true;
+		}
+	}
+
+	return false;
+}
+
+fn CodeBuilder::MatchTemplateArgumentImpl(
+	mut this,
+	NamesScopePtr& names_scope,
+	TemplateBase& template_,
+	TemplateSignatureParam::CoroutineTypeParam& coroutine_type_param,
+	TemplateArgFinished& given_arg,
+	SrcLoc& src_loc ) : bool
+{
+	if_var( &given_type : given_arg.get</Type/>() )
+	{
+		if_var( &class_type : given_type.GetClassType() )
+		{
+			with( &class_ : class_type.lock_imut().deref() )
+			{
+				if_var( &coroutine_type_description : class_.coroutine_type_description )
+				{
+					return
+						coroutine_type_description.kind == coroutine_type_param.kind &&
+						coroutine_type_description.return_value_type == coroutine_type_param.return_value_type &&
+						coroutine_type_description.inner_reference_kind == coroutine_type_param.inner_reference_kind &&
+						coroutine_type_description.non_sync_ == coroutine_type_param.non_sync_ &&
+						MatchTemplateArgument( names_scope, template_, coroutine_type_param.return_type, coroutine_type_description.return_type, src_loc );
+				}
+			}
 		}
 	}
 
