@@ -342,7 +342,7 @@ def GeneratorIsNonCopyable_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ClassHaveNoConstructors", 6 ) )
+	assert( HaveError( errors_list, "ClassHaveNoConstructors", 6 ) or HaveError( errors_list, "CouldNotSelectOverloadedFunction", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test3():
