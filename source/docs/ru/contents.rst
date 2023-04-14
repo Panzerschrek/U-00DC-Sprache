@@ -37,5 +37,7 @@
    non_sync_tag
    macros
    modules
+   coroutines
+   generators
    c_interaction
    unsafe_code_requirements
