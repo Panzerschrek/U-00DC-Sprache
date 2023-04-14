@@ -379,6 +379,8 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 			{
 				if( !expression_result->type.IsCopyConstructible() )
 					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, expression_result->type );
+				else if( yield_type.IsAbstract() )
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), src_loc, yield_type );
 				else
 				{
 					BuildCopyConstructorPart(

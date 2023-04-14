@@ -409,6 +409,10 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 					{
 						REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, yield_type )
 					}
+					else if( yield_type.IsAbstract() )
+					{
+						REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, src_loc, yield_type )
+					}
 					else
 					{
 						BuildCopyConstructorPart( names_scope, function_context, promise, expr.llvm_value, yield_type, src_loc );

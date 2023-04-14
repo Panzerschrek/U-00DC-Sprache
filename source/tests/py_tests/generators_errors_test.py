@@ -214,6 +214,38 @@ def Yield_ExpectedReferenceValue_Test0():
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 4 ) )
 
 
+def Yield_ForAbstractClass_Test0():
+	c_program_text= """
+		class A abstract
+		{
+			fn constructor( mut this, A& other )= default;
+		}
+		fn generator Foo(A& a) : A
+		{
+			yield a; // Trying to copy-construct abstract class.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+
+
+def Yield_ForAbstractClass_Test1():
+	c_program_text= """
+		class A interface
+		{
+			fn constructor( mut this, A& other )= default;
+		}
+		fn generator Foo(A& a) : A
+		{
+			yield a; // Trying to copy-construct interface.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+
+
 def IfCoroAdvanceForNonCoroutineValue_Test0():
 	c_program_text= """
 		fn Foo()
