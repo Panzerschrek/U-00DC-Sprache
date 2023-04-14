@@ -14,7 +14,7 @@ fn CodeBuilder::GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_na
 		.return_type= generator_function_type.return_type,
 		.return_value_type= generator_function_type.return_value_type,
 		.non_sync_= non_sync_,
-		.inner_reference_kind= InnerReferenceKind::None, // TODO - set this.
+		.inner_reference_kind= InnerReferenceKind::None,
 	};
 
 	foreach( &param : generator_function_type.params )

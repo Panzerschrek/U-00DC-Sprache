@@ -229,7 +229,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	}
 
 	// Replace usage of temporary allocation functions with usage of library allocation functions.
-	// Do such, because we can't just declare internal functions with such names, prior to compiling file with such fubnctions declarations ("alloc.u").
+	// Do such, because we can't just declare internal functions with such names, prior to compiling file with such functions declarations ("alloc.u").
 	// Without such approach functions, declared in library file, get suffix, like "ust_memory_allocate_impl.1".
 	{
 		if( const auto ust_memory_allocate_impl= module_->getFunction( "ust_memory_allocate_impl" ) )

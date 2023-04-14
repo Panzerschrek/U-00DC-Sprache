@@ -145,17 +145,19 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 
 	unsafe // Prepare heap allocations functions
 	{
+		// Use some temporary names for allocation functions.
+		// Do this in order to avoid collisions with user-defined names.
 		var LLVMTypeRef mut malloc_size_type= fundamental_llvm_types_.int_ptr;
 		var LLVMTypeRef mut malloc_result_type= unsafe( LLVMPointerType( fundamental_llvm_types_.u8_, 0u ) );
 
 		malloc_function_= LLVMAddFunction(
 			module_,
-			"malloc\0"[0],
+			"__U_ust_memory_allocate_impl\0"[0],
 			LLVMFunctionType( malloc_result_type, $<(malloc_size_type), 1u, LLVMBool::False ) );
 
 		free_function_= LLVMAddFunction(
 			module_,
-			"free\0"[0],
+			"__U_ust_memory_free_impl\0"[0],
 			LLVMFunctionType( fundamental_llvm_types_.void_for_ret_, $<(malloc_result_type), 1u, LLVMBool::False ) );
 	}
 
@@ -269,14 +271,42 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		}
 	}
 
+
+	// Reset debug info builder in order to finalize debug info.
+	debug_info_builder_.reset();
+
+	// Replace usage of temporary allocation functions with usage of library allocation functions.
+	// Do such, because we can't just declare internal functions with such names, prior to compiling file with such functions declarations ("alloc.u").
+	// Without such approach functions, declared in library file, get suffix, like "ust_memory_allocate_impl.1".
+	{
+		var LLVMValueRef ust_memory_allocate_impl= unsafe( LLVMGetNamedFunction( module_, "ust_memory_allocate_impl\0"[0] ) );
+		if( ust_memory_allocate_impl != LLVMValueRef::Null )
+		{
+			unsafe( LLVMReplaceAllUsesWith( malloc_function_, ust_memory_allocate_impl ) );
+		}
+		else
+		{
+			auto mut name= "ust_memory_allocate_impl";
+			unsafe( LLVMSetValueName2( malloc_function_, $<(name[0]), typeinfo</typeof(name)/>.element_count ) );
+		}
+
+		var LLVMValueRef ust_memory_free_impl= unsafe( LLVMGetNamedFunction( module_, "ust_memory_free_impl\0"[0] ) );
+		if( ust_memory_free_impl != LLVMValueRef::Null )
+		{
+			unsafe( LLVMReplaceAllUsesWith( free_function_, ust_memory_free_impl ) );
+		}
+		else
+		{
+			auto mut name= "ust_memory_free_impl";
+			unsafe( LLVMSetValueName2( free_function_, $<(name[0]), typeinfo</typeof(name)/>.element_count ) );
+		}
+	}
+
 	source_graph_nodes_build_results_.clear();
 	generated_template_things_.clear();
 	generated_template_things_sequence_.clear();
 	typeinfo_cache_.clear();
 	non_sync_expression_stack_.clear();
-
-	// Reset debug info builder in order to finalize debug info.
-	debug_info_builder_.reset();
 
 	var BuildResult mut res
 	{
