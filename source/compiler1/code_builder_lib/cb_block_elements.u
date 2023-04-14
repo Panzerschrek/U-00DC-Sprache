@@ -1060,6 +1060,27 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				lock.deref().llvm_value= promise;
 			}
+
+			if( result_type.GetInnerReferenceKind() != InnerReferenceKind::None )
+			{
+				auto accessible_innder_nodes= function_context.references_graph.GetAccessibleVariableNodesInnerReferences( coro_expr_lock );
+				if( !accessible_innder_nodes.empty() )
+				{
+					var bool mut inner_reference_is_mutable= false;
+					foreach( &accessible_inner_node : accessible_innder_nodes )
+					{
+						inner_reference_is_mutable|= accessible_inner_node.lock_imut().deref().value_type == ValueType::ReferenceMut;
+					}
+
+					var VariablePtr inner_node=
+						function_context.references_graph.CreateNodeInnerReference( variable_ptr, select( inner_reference_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ) );
+
+					foreach( &accessible_inner_node : accessible_innder_nodes )
+					{
+						function_context.references_graph.TryAddLink( accessible_inner_node, inner_node, names_scope, if_coro_advance_operator.src_loc );
+					}
+				}
+			}
 		}
 		else
 		{

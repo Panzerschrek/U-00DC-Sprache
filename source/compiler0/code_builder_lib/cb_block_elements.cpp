@@ -1470,12 +1470,27 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( !variable->type.CanBeConstexpr() )
 				function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
-			// TODO - setup references here (somehow).
-
 			variable_reference->llvm_value= variable->llvm_value;
 
 			coro_result_variables_storage.RegisterVariable( variable );
 			function_context.variables_state.AddLink( variable, variable_reference );
+
+			if( result_type.ReferencesTagsCount() > 0 )
+			{
+				const auto accessible_innder_nodes= function_context.variables_state.GetAccessibleVariableNodesInnerReferences( coro_expr_lock );
+				if( !accessible_innder_nodes.empty() )
+				{
+					bool inner_reference_is_mutable= false;
+					for( const VariablePtr& accessible_inner_node : accessible_innder_nodes )
+						inner_reference_is_mutable|= accessible_inner_node->value_type == ValueType::ReferenceMut;
+
+					const VariablePtr inner_node=
+						function_context.variables_state.CreateNodeInnerReference( variable, inner_reference_is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+
+					for( const VariablePtr& accessible_inner_node : accessible_innder_nodes )
+						function_context.variables_state.TryAddLink( accessible_inner_node, inner_node, names.GetErrors(), if_coro_advance.src_loc_ );
+				}
+			}
 
 			// TODO - maybe create additional reference node here in case of reference modifier for target variable?
 		}
