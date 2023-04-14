@@ -1501,6 +1501,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			{
 				// Create variable and copy into it reference result of coroutine.
 
+				if( result_type.IsAbstract() )
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), if_coro_advance.src_loc_, result_type );
+
 				const VariableMutPtr variable=
 					std::make_shared<Variable>(
 						result_type,

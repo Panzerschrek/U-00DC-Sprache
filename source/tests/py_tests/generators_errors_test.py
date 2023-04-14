@@ -529,6 +529,47 @@ def NameNotFound_ForGeneratorTypeTag_Test1():
 	assert( HaveError( errors_list, "NameNotFound", 2 ) )
 
 
+def IfCoroAdvance_UseAbstractType_Test0():
+	c_program_text= """
+		class A abstract
+		{
+			fn constructor(mut this, A& other)= default;
+		}
+		class B final : A
+		{
+			fn constructor(mut this, B& other)= default;
+		}
+		fn generator Gen(A& a) : A&;
+		fn Foo()
+		{
+			var B b;
+			auto mut gen= Gen(b);
+			if_coro_advance( a : gen ) // Bind here abstract reference to value. This is an error, because value is abstract.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 15 ) )
+
+
+def IfCoroAdvance_UseAbstractType_Test1():
+	c_program_text= """
+		class A interface
+		{
+			fn constructor(mut this, A& other)= default;
+		}
+		fn Foo( (generator'imut a' : A&) mut gen )
+		{
+			if_coro_advance( a : gen ) // Bind here abstract reference to value. This is an error, because value is abstract.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+
+
 def ReferencesPollution_ForGenerator_Test0():
 	c_program_text= """
 		struct S{ i32 & x; }
