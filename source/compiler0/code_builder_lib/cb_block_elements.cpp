@@ -1529,7 +1529,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				coro_result_variables_storage.RegisterVariable( variable );
 				function_context.variables_state.AddLink( variable, variable_reference );
 
-				// TODO - setup references here (somehow).
+				//No need to setup references here, because we can't return from generator reference to type with references inside.
 			}
 			else
 			{

@@ -630,14 +630,13 @@ def AccessingVariable_LinkedToGeneratorArgument_Test2():
 	assert( HaveError( errors_list, "ReferenceProtectionError", 7 ) )
 
 
-def AccessingVariable_LinkedToGeneratorArgument_Test2():
+def AccessingVariable_LinkedToGeneratorArgument_Test3():
 	c_program_text= """
 		struct S
 		{
 			i32 &mut x;
 			op=(mut this, S& other);
 		}
-		fn GetEmptyS() : S;
 		fn generator SomeGen(i32 &mut x) : S;
 		fn Foo()
 		{
@@ -649,12 +648,13 @@ def AccessingVariable_LinkedToGeneratorArgument_Test2():
 				// "res_s" contains internal reference to "x".
 				s= res_s; // Copy internal reference to "x" from "res_s" to "s".
 			}
-			auto &imut x_ref= x; // Error, "x" has a mutable reference inside "x".
+			auto &imut x_ref= x; // Error, "x" has a mutable reference inside "s".
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "ReferenceProtectionError", 19 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
+
 
 def AccessingGenerator_InsideIfCoroAdvance_Test0():
 	c_program_text= """
