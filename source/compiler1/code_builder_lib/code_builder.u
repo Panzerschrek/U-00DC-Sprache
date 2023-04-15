@@ -1706,13 +1706,24 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 						variable.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() ) );
 						CreateLifetimeStart( function_context, variable.llvm_value );
 
-						// Reinterretete composite type address as scalar type address and store value in it.=
+						// Reinterpretete composite type address as scalar type address and store value in it.=
 						unsafe( LLVMBuildStore( function_context.llvm_ir_builder, arg_value, variable.llvm_value ) );
 					}
 					else
 					{
 						// Large aggregate types are passed by reference.
-						variable.llvm_value= arg_value;
+						if( func_variable.is_generator )
+						{
+							// In generators we must save value args, passed by hidden reference, on local stack (this may be compiled as heap allocation).
+							// This is needed, because address, allocated by generator function initial call, does not live long enough.
+							variable.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() ) );
+							CreateLifetimeStart( function_context, variable.llvm_value );
+							CopyBytes( variable.llvm_value, arg_value, type_param.t, function_context );
+						}
+						else
+						{
+							variable.llvm_value= arg_value;
+						}
 					}
 				}
 				else
