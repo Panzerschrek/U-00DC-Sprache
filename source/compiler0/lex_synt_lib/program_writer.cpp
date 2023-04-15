@@ -144,6 +144,8 @@ void ElementWrite( const GeneratorType& generator_name, std::ostream& stream )
 		stream << "'";
 	}
 
+	ElementWrite( generator_name.non_sync_tag, stream );
+
 	stream << ":";
 	ElementWrite( generator_name.return_type, stream );
 
@@ -715,7 +717,7 @@ void ElementWrite( const NonSyncTag& non_sync_tag, std::ostream& stream )
 	{}
 	else if( std::get_if<NonSyncTagTrue>( &non_sync_tag ) != nullptr )
 		stream << Keyword( Keywords::non_sync_ ) << " ";
-	else if( const auto expression_ptr = std::get_if<std::unique_ptr<const Expression>>( &non_sync_tag ) )
+	else if( const auto expression_ptr = std::get_if<ExpressionPtr>( &non_sync_tag ) )
 	{
 		stream << Keyword( Keywords::non_sync_ ) << "( ";
 		ElementWrite( **expression_ptr, stream );
