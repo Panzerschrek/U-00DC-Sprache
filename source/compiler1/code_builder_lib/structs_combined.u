@@ -1318,6 +1318,57 @@ fn NamesScope::ToString( this ) : ust::string8
 			res+=")";
 			return move(res);
 		}
+		if_var( &coroutine_type_description : class_type.coroutine_type_description )
+		{
+			var ust::string8 mut res;
+			if( coroutine_type_description.kind == CoroutineKind::Generator )
+			{
+				res+= KeywordToString( Keyword::generator_ );
+			}
+			else { halt; }
+
+			if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::None )
+			{}
+			else if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::Imut )
+			{
+				res+= "'";
+				res+= KeywordToString( Keyword::imut_ );
+				res+= "'";
+			}
+			else if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::Mut )
+			{
+				res+= "'";
+				res+= KeywordToString( Keyword::mut_ );
+			}
+			else { halt; }
+
+			res+= " ";
+
+			if( coroutine_type_description.non_sync_ )
+			{
+				res+= KeywordToString( Keyword::non_sync_ );
+			}
+
+			res+= ": ";
+
+			res+= coroutine_type_description.return_type.ToString();
+
+			if( coroutine_type_description.return_value_type == ValueType::Value )
+			{}
+			else if( coroutine_type_description.return_value_type == ValueType::ReferenceImut )
+			{
+				res+= " &";
+				res+= KeywordToString( Keyword::imut_ );
+			}
+			else if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
+			{
+				res+= " &";
+				res+= KeywordToString( Keyword::mut_ );
+			}
+			else { halt; }
+
+			return move(res);
+		}
 	}
 
 	var ust::string8 mut res;
