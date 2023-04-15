@@ -66,12 +66,6 @@ bool FilterTest( const std::string& test_name )
 
 	static const std::unordered_set<std::string> c_test_to_disable
 	{
-		"CoroutineDestruction_Test0",
-		"CoroutineDestruction_Test1",
-		"CoroutineDestruction_Test2",
-		"CoroutineDestruction_Test3",
-		"CoroutineDestruction_Test4",
-		"CoroutineDestruction_Test5",
 	};
 
 	return c_test_to_disable.count( test_name_without_file_name ) == 0;

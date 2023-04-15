@@ -264,7 +264,6 @@ fn nomangle LLVMSetLinkage(LLVMValueRef Global, LLVMLinkage Linkage) unsafe;
 fn nomangle LLVMSetUnnamedAddress(LLVMValueRef Global, LLVMUnnamedAddr UnnamedAddr) unsafe;
 fn nomangle LLVMGetNamedFunction(LLVMModuleRef M, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
-
 // Global variable
 
 fn nomangle LLVMGetNamedGlobal(LLVMModuleRef M, NullTerminatedString& Name) unsafe : LLVMValueRef;
