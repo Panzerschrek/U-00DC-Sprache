@@ -645,6 +645,7 @@ int Main( int argc, const char* argv[] )
 		#include "bc_files_headers/alloc_64.h"
 		#include "bc_files_headers/alloc_dummy.h"
 		#include "bc_files_headers/atomic.h"
+		#include "bc_files_headers/coro.h"
 		#include "bc_files_headers/checked_math.h"
 		#include "bc_files_headers/halt_abort.h"
 		#include "bc_files_headers/halt_configurable.h"
@@ -680,6 +681,7 @@ int Main( int argc, const char* argv[] )
 		const llvm::StringRef asm_funcs_modules[]=
 		{
 			STRING_REF(atomic),
+			STRING_REF(coro),
 			STRING_REF(checked_math),
 			halt_module,
 			STRING_REF(math),
