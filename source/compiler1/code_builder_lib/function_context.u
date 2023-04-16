@@ -14,7 +14,7 @@ fn FunctionContext::constructor(
 {
 	unsafe
 	{
-		alloca_basic_block= LLVMAppendBasicBlockInContext( llvm_context, llvm_function, "allocations\0"[0] );
+		var LLVMBasicBlockRef alloca_basic_block= LLVMAppendBasicBlockInContext( llvm_context, llvm_function, "allocations\0"[0] );
 		alloca_ir_builder= LLVMCreateBuilderInContext( llvm_context );
 		LLVMPositionBuilderAtEnd( alloca_ir_builder, alloca_basic_block );
 

@@ -187,8 +187,8 @@ void CodeBuilder::PrepareGeneratorBlocks( FunctionContext& function_context )
 	// Yes, create "alloca" not in "alloca" block. It is safe to do such here.
 	llvm::Value* const promise= function_context.llvm_ir_builder.CreateAlloca( promise_type, nullptr, "coro_promise" );
 
-	U_ASSERT( function_context.s_ret_ == nullptr );
-	function_context.s_ret_= promise;
+	U_ASSERT( function_context.s_ret == nullptr );
+	function_context.s_ret= promise;
 
 	llvm::Value* const null= llvm::ConstantPointerNull::get( pointer_type );
 
@@ -324,7 +324,7 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 		return;
 	}
 
-	llvm::Value* const promise= function_context.s_ret_;
+	llvm::Value* const promise= function_context.s_ret;
 	U_ASSERT( promise != nullptr );
 
 	// Fill promise.

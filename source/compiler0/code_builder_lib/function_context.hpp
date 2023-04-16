@@ -39,6 +39,7 @@ struct LoopFrame final
 
 struct FunctionContext
 {
+public:
 	FunctionContext(
 		FunctionType function_type,
 		const std::optional<Type>& return_type,
@@ -47,31 +48,33 @@ struct FunctionContext
 
 	FunctionContext(const FunctionContext&)= delete;
 
-	FunctionType function_type;
+public:
+	const FunctionType function_type;
 	const std::optional<Type> return_type; // std::nullopt if type not known yet and must be deduced.
 	std::optional<Type> deduced_return_type; // for functions with "auto" return type.
+
+	llvm::Function* const function;
+
+	llvm::IRBuilder<> alloca_ir_builder; // Use this builder for "alloca" instructions.
+
+	llvm::BasicBlock* const function_basic_block; // Next block after all "alloca" instructions.
+	llvm::IRBuilder<> llvm_ir_builder; // Use this builder for all instructions, except "alloca"
 
 	// For reference checks.
 	// arg variable node + optional inner reference variable node.
 	ArgsVector< std::pair< VariablePtr, VariablePtr > > args_nodes;
 
-	VariablePtr this_= nullptr; // null for nonclass functions or static member functions.
-	llvm::Value* s_ret_= nullptr; // Value for assignment for "sret" functions. Also it is a promise for coroutines.
+	llvm::Value* s_ret= nullptr; // Value for assignment for "sret" functions. Also it is a promise for coroutines.
 
 	// Specific for coroutines data.
 	llvm::BasicBlock* coro_final_suspend_bb= nullptr; // Used to jump from "return" operator.
 	llvm::BasicBlock* coro_suspend_bb= nullptr; // Used as final destination for "yield" and "return".
 	llvm::BasicBlock* coro_cleanup_bb= nullptr; // Used as final destination after suspention destruction blocks.
 
+	VariablePtr this_; // null for non-class functions or static member functions.
 	std::unordered_set<std::string> uninitialized_this_fields;
 
-	llvm::Function* const function;
-
-	llvm::BasicBlock* const alloca_basic_block; // Block #0 in function. Contains all "alloca" instructions.
-	llvm::IRBuilder<> alloca_ir_builder; // Use this builder for "alloca" instructions.
-
-	llvm::BasicBlock* const function_basic_block; // Next block after all "alloca" instructions.
-	llvm::IRBuilder<> llvm_ir_builder; // Use this builder for all instructions, except "alloca"
+	llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 
 	std::vector<LoopFrame> loops_stack;
 
@@ -86,8 +89,6 @@ struct FunctionContext
 	// Cache result of arguments pre-evaluation for selection of overloaded functions and operators.
 	// This needed for reducing exponential expression evaluation complexity.
 	std::unordered_map< const Synt::Expression*, FunctionType::Param > args_preevaluation_cache;
-
-	llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 
 	llvm::DIScope* current_debug_info_scope= nullptr;
 

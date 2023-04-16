@@ -501,13 +501,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
 			{
-				U_ASSERT( function_context.s_ret_ == nullptr );
+				U_ASSERT( function_context.s_ret == nullptr );
 				ret= function_context.llvm_ir_builder.CreateLoad( single_scalar_type, expression_result->llvm_value );
 			}
 			else
 			{
-				U_ASSERT( function_context.s_ret_ != nullptr );
-				CopyBytes( function_context.s_ret_, expression_result->llvm_value, *function_context.return_type, function_context );
+				U_ASSERT( function_context.s_ret != nullptr );
+				CopyBytes( function_context.s_ret, expression_result->llvm_value, *function_context.return_type, function_context );
 			}
 
 			if( expression_result->location == Variable::Location::Pointer )
@@ -524,7 +524,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
 			{
-				U_ASSERT( function_context.s_ret_ == nullptr );
+				U_ASSERT( function_context.s_ret == nullptr );
 				// Call copy constructor on temp address, load then value from it.
 				llvm::Value* const temp= function_context.alloca_ir_builder.CreateAlloca( expression_result->type.GetLLVMType() );
 				CreateLifetimeStart( function_context, temp );
@@ -542,9 +542,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			else
 			{
 				// Call copy constructor on "s_ret".
-				U_ASSERT( function_context.s_ret_ != nullptr );
+				U_ASSERT( function_context.s_ret != nullptr );
 				BuildCopyConstructorPart(
-					function_context.s_ret_,
+					function_context.s_ret,
 					CreateReferenceCast( expression_result->llvm_value, expression_result->type, *function_context.return_type, function_context ),
 					*function_context.return_type,
 					function_context );

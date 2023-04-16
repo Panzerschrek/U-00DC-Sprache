@@ -1300,7 +1300,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( &llvm_arg == &*llvm_function->arg_begin() && FunctionTypeIsSRet( function_type ) )
 		{
 			llvm_arg.setName( "_return_value" );
-			function_context.s_ret_= &llvm_arg;
+			function_context.s_ret= &llvm_arg;
 			continue;
 		}
 

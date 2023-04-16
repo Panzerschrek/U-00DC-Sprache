@@ -25,8 +25,15 @@ public:
 		FunctionType mut in_function_type );
 	fn destructor();
 
-	LLVMValueRef imut llvm_function;
+public:
 	FunctionType function_type;
+
+	LLVMValueRef imut llvm_function;
+
+	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;
+
+	LLVMBasicBlockRef function_basic_block= LLVMBasicBlockRef::Null;
+	LLVMBuilderRef llvm_ir_builder= LLVMBuilderRef::Null;
 
 	// For reference checking. TODO - use single vector.
 	ust::vector</ VariableNullablePtr /> mut args_nodes; // Contains only variable nodes (not reference nodes).
@@ -45,12 +52,6 @@ public:
 
 	bool have_non_constexpr_operations_inside= false; // While building code, may set to "true".
 
-	LLVMBasicBlockRef alloca_basic_block= LLVMBasicBlockRef::Null;
-	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;
-
-	LLVMBasicBlockRef function_basic_block= LLVMBasicBlockRef::Null;
-	LLVMBuilderRef llvm_ir_builder= LLVMBuilderRef::Null;
-
 	LLVMBasicBlockRef destructor_end_block= LLVMBasicBlockRef::Null; // For destructors only - used for "Br" instead of "ret"
 
 	ust::vector</LoopFrame/> loops_stack;
@@ -58,14 +59,13 @@ public:
 
 	bool is_functionless_context= false; // True for global function context or for function context, used for args preevaluation or typeof operator.
 
+	type VariablesFrame= ust::vector</ VariablePtr />;
+	ust::vector</VariablesFrame/> variables_frames;
+	ReferencesGraph references_graph;
+
 	// Cache result of arguments pre-evaluation for selection of overloaded functions and operators.
 	// This needed for reducing exponential expression evaluation complexity.
 	ust::unordered_map</ ust::shared_ptr_final</Synt::Expression/>, VariableTypeExtended /> args_preevaluation_cache;
-
-	type VariablesFrame= ust::vector</ VariablePtr />;
-	ust::vector</VariablesFrame/> variables_frames;
-
-	ReferencesGraph references_graph;
 
 	LLVMMetadataRef current_debug_info_scope= LLVMMetadataRef::Null;
 }
