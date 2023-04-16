@@ -686,18 +686,25 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		const ClassPtr class_= field->class_;
 		U_ASSERT( class_ != nullptr && "Class is dead? WTF?" );
 
-		if( function_context.whole_this_is_unavailable &&
-			function_context.uninitialized_this_fields.find( field->syntax_element->name ) != function_context.uninitialized_this_fields.end() )
+		if( function_context.whole_this_is_unavailable )
 		{
-			REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
-			return ErrorValue();
-		}
-		if( function_context.whole_this_is_unavailable &&
-			class_ != function_context.this_->type.GetClassType() &&
-			!function_context.base_initialized )
-		{
-			REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.src_loc_, Keyword( Keywords::base_ ) );
-			return ErrorValue();
+			if( class_ == function_context.this_->type.GetClassType() )
+			{
+				if( field->index < function_context.initialized_this_fields.size() &&
+					!function_context.initialized_this_fields[ field->index ] )
+				{
+					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
+					return ErrorValue();
+				}
+			}
+			else
+			{
+				if(!function_context.base_initialized )
+				{
+					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.src_loc_, Keyword( Keywords::base_ ) );
+					return ErrorValue();
+				}
+			}
 		}
 
 		const std::string* field_name= nullptr;

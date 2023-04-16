@@ -386,11 +386,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		}
 		var ClassTypePtr base_class_non_null= base_class.try_to_non_nullable();
 
-		if( function_context.whole_this_is_unavailable &&
-			( function_context.uninitialized_this_fields.exists( KeywordToString( Keyword::base_ ) ) || base_class_non_null.lock_imut().deref().kind == ClassType::Kind::Abstract ) )
+		if( function_context.whole_this_is_unavailable )
 		{
-			REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.src_loc, KeywordToString( Keyword::base_ ) )
-			return ErrorValue();
+			auto base_field_index= 0s;
+			if( ( base_field_index < function_context.initialized_this_fields.size() && !function_context.initialized_this_fields[ base_field_index ] ) ||
+				base_class_non_null.lock_imut().deref().kind == ClassType::Kind::Abstract )
+			{
+				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.src_loc, KeywordToString( Keyword::base_ ) )
+				return ErrorValue();
+			}
 		}
 
 		var Variable mut base_

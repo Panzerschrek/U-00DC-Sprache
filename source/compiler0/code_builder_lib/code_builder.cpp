@@ -1433,8 +1433,6 @@ Type CodeBuilder::BuildFuncCode(
 		U_ASSERT( base_class != nullptr );
 		U_ASSERT( function_context.this_ != nullptr );
 
-		function_context.whole_this_is_unavailable= true;
-
 		if( constructor_initialization_list == nullptr )
 		{
 			// Create dummy initialization list for constructors without explicit initialization list.
@@ -1454,8 +1452,6 @@ Type CodeBuilder::BuildFuncCode(
 				function_names,
 				function_context,
 				*constructor_initialization_list );
-
-		function_context.whole_this_is_unavailable= false;
 	}
 
 	if( ( is_constructor || is_destructor ) && ( base_class->kind == Class::Kind::Abstract || base_class->kind == Class::Kind::Interface ) )

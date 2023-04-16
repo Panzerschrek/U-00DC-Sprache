@@ -448,10 +448,22 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 
 		if( function_context.whole_this_is_unavailable )
 		{
-			if( function_context.uninitialized_this_fields.exists( field_name ) ||
-				( field.source_class != this_ptr.lock_imut().deref().t && function_context.uninitialized_this_fields.exists( KeywordToString( Keyword::base_ ) ) ) )
+			if( field.source_class == this_ptr.lock_imut().deref().t )
 			{
-				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, src_loc, field_name )
+				if( size_type(field.index) < function_context.initialized_this_fields.size() &&
+					!function_context.initialized_this_fields[ size_type(field.index) ] )
+				{
+					REPORT_ERROR( FieldIsNotInitializedYet, names_scope, src_loc, field_name )
+				}
+			}
+			else
+			{
+				auto base_field_index= 0s;
+				if( base_field_index < function_context.initialized_this_fields.size() &&
+					!function_context.initialized_this_fields[ base_field_index ] )
+				{
+					REPORT_ERROR( FieldIsNotInitializedYet, names_scope, src_loc, field_name )
+				}
 			}
 		}
 
@@ -1824,8 +1836,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		auto is_destructor = func_name == KeywordToString( Keyword::destructor_  );
 		if( is_constructor )
 		{
-			function_context.whole_this_is_unavailable= true;
-
 			if( !body_syntax_element.constructor_initializer_list.empty() )
 			{
 				BuildConstructorInitialization(
@@ -1841,8 +1851,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 					function_context,
 					dummy_initializer );
 			}
-
-			function_context.whole_this_is_unavailable= false;
 		}
 		if( is_destructor )
 		{

@@ -47,7 +47,7 @@ public:
 	LLVMBasicBlockRef coro_cleanup_bb= LLVMBasicBlockRef::Null; // Used as final destination after suspention destruction blocks.
 
 	VariableNullablePtr this_;
-	ust::unordered_set</ust::string8/> uninitialized_this_fields;
+	ust::vector</bool/> initialized_this_fields; // Non-empty in constructors. element is true, if field is already initialized.
 	bool whole_this_is_unavailable= false;
 
 	bool have_non_constexpr_operations_inside= false; // While building code, may set to "true".

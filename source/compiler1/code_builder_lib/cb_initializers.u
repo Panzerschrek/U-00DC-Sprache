@@ -1320,7 +1320,6 @@ fn CodeBuilder::BuildConstructorInitialization(
 				continue;
 			}
 			base_initialized= true;
-			function_context.uninitialized_this_fields.insert( KeywordToString( Keyword::base_ ) );
 			continue;
 		}
 
@@ -1353,14 +1352,24 @@ fn CodeBuilder::BuildConstructorInitialization(
 		}
 
 		initialized_fields.insert( member_initializer.name );
-		function_context.uninitialized_this_fields.insert( member_initializer.name );
 	}
+
+	if( have_fields_errors )
+	{
+		return;
+	}
+
+	function_context.whole_this_is_unavailable= true;
+	function_context.initialized_this_fields.resize( size_type( unsafe( LLVMCountStructElementTypes( class_type.lock_imut().deref().llvm_type ) ) ), false );
+
+	auto base_field_index= 0s;
 
 	// Initialize fields, missing in initializer list.
 	if( !base_class.empty() && !base_initialized )
 	{
 		var VariablePtr base_variable_ptr= AccessClassBase( names_scope, function_context, this_ptr, constructor_initialization_list.src_loc );
 		BuildEmptyInitializer( names_scope, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), constructor_initialization_list.src_loc );
+		function_context.initialized_this_fields[ base_field_index ]= true;
 	}
 
 	// Use initial class members namespace for own fields initializers evaluation.
@@ -1402,11 +1411,8 @@ fn CodeBuilder::BuildConstructorInitialization(
 				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
 			}
 		}
-	}
 
-	if( have_fields_errors )
-	{
-		return;
+		function_context.initialized_this_fields[ class_field.index ]= true;
 	}
 
 	// Apply explicit initializers.
@@ -1417,7 +1423,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 			var VariablePtr base_variable_ptr= AccessClassBase( names_scope, function_context, this_ptr, constructor_initialization_list.src_loc );
 			BuildInitializer( names_scope, function_context, base_variable_ptr, member_initializer.initializer.deref() );
 
-			function_context.uninitialized_this_fields.drop( KeywordToString( Keyword::base_ ) );
+			function_context.initialized_this_fields[ base_field_index ]= true;
 			continue;
 		}
 
@@ -1437,8 +1443,11 @@ fn CodeBuilder::BuildConstructorInitialization(
 			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer.deref() );
 		}
 
-		function_context.uninitialized_this_fields.drop( member_initializer.name );
+		function_context.initialized_this_fields[ class_field.index ]= true;
 	}
+
+	function_context.whole_this_is_unavailable= false;
+	function_context.initialized_this_fields.clear();
 }
 
 fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type )

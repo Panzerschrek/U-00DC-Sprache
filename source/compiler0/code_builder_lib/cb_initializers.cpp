@@ -1018,13 +1018,15 @@ void CodeBuilder::BuildConstructorInitialization(
 		}
 
 		initialized_fields.insert( field_initializer.name );
-		function_context.uninitialized_this_fields.insert( field->syntax_element->name );
 	} // for fields initializers
 
 	if( have_fields_errors )
 		return;
 
 	const StackVariablesStorage temp_variables_storage( function_context );
+
+	function_context.whole_this_is_unavailable= true;
+	function_context.initialized_this_fields.resize( base_class.llvm_type->getNumElements(), false );
 
 	// Initialize fields, missing in initializer list.
 	for( const std::string& field_name : base_class.fields_order )
@@ -1054,6 +1056,8 @@ void CodeBuilder::BuildConstructorInitialization(
 			else
 				ApplyEmptyInitializer( field_name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
 		}
+
+		function_context.initialized_this_fields[ field.index ]= true;
 	}
 
 	// Initialize base (if it is not listed).
@@ -1098,8 +1102,11 @@ void CodeBuilder::BuildConstructorInitialization(
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
 		}
 
-		function_context.uninitialized_this_fields.erase( field->syntax_element->name );
+		function_context.initialized_this_fields[ field->index ]= true;
 	} // for fields initializers
+
+	function_context.whole_this_is_unavailable= false;
+	function_context.initialized_this_fields.clear();
 
 	CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
 	SetupVirtualTablePointers( this_->llvm_value, base_class, function_context );
