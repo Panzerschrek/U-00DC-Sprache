@@ -833,6 +833,20 @@ fn TypeHasher::hash_combine( size_type x, size_type y ) : size_type
 }
 
 //
+// CoroutineTypeDescription
+//
+
+fn CoroutineTypeDescriptionHasher::hash(CoroutineTypeDescription& d) : size_type
+{
+	auto mut hash= size_type(d.kind);
+	hash= TypeHasher::hash_combine( hash, TypeHasher::hash(d.return_type) );
+	hash= TypeHasher::hash_combine( hash, size_type(d.return_value_type) );
+	hash= TypeHasher::hash_combine( hash, size_type(d.inner_reference_kind) );
+	hash= TypeHasher::hash_combine( hash, select(d.non_sync_ ? 1s : 0s) );
+	return hash;
+}
+
+//
 // ClassType
 //
 
@@ -1053,6 +1067,10 @@ fn TemplateSignatureParam::conversion_constructor( FunctionTypeParam mut functio
 	( something_( ust::make_box( move(function_type_param) ) ) )
 {}
 
+fn TemplateSignatureParam::conversion_constructor( CoroutineTypeParam mut coroutine_type_param )
+	( something_( ust::make_box( move(coroutine_type_param) ) ) )
+{}
+
 fn TemplateSignatureParam::conversion_constructor( SpecializedTemplateParam mut specialized_template_param )
 	( something_( ust::make_box( move(specialized_template_param) ) ) )
 {}
@@ -1112,6 +1130,16 @@ fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</
 	return ust::optional_ref_imut</ FunctionTypeParam />();
 }
 
+fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam />'this'
+{
+	if_var( &coroutine_type_param : something_.get</ ust::box</CoroutineTypeParam/> />() )
+	{
+		return ust::optional_ref_imut</ CoroutineTypeParam />(coroutine_type_param.deref());
+	}
+
+	return ust::optional_ref_imut</ CoroutineTypeParam />();
+}
+
 fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this'
 {
 	if_var( &specialized_template_param : something_.get</ ust::box</SpecializedTemplateParam/> />() )
@@ -1142,6 +1170,7 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 			ust::is_same_type</ LeftT, ust::box</TupleTypeParam/> />() ||
 			ust::is_same_type</ LeftT, ust::box</RawPointerTypeParam/> />() ||
 			ust::is_same_type</ LeftT, ust::box</FunctionTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::box</CoroutineTypeParam/> />() ||
 			ust::is_same_type</ LeftT, ust::box</SpecializedTemplateParam/> />() )
 		{
 			return l_t.deref() == r.something_.get</ LeftT />().try_deref().deref();
@@ -1289,6 +1318,57 @@ fn NamesScope::ToString( this ) : ust::string8
 			res+=")";
 			return move(res);
 		}
+		if_var( &coroutine_type_description : class_type.coroutine_type_description )
+		{
+			var ust::string8 mut res;
+			if( coroutine_type_description.kind == CoroutineKind::Generator )
+			{
+				res+= KeywordToString( Keyword::generator_ );
+			}
+			else { halt; }
+
+			if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::None )
+			{}
+			else if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::Imut )
+			{
+				res+= "'";
+				res+= KeywordToString( Keyword::imut_ );
+				res+= "'";
+			}
+			else if( coroutine_type_description.inner_reference_kind == InnerReferenceKind::Mut )
+			{
+				res+= "'";
+				res+= KeywordToString( Keyword::mut_ );
+			}
+			else { halt; }
+
+			res+= " ";
+
+			if( coroutine_type_description.non_sync_ )
+			{
+				res+= KeywordToString( Keyword::non_sync_ );
+			}
+
+			res+= ": ";
+
+			res+= coroutine_type_description.return_type.ToString();
+
+			if( coroutine_type_description.return_value_type == ValueType::Value )
+			{}
+			else if( coroutine_type_description.return_value_type == ValueType::ReferenceImut )
+			{
+				res+= " &";
+				res+= KeywordToString( Keyword::imut_ );
+			}
+			else if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
+			{
+				res+= " &";
+				res+= KeywordToString( Keyword::mut_ );
+			}
+			else { halt; }
+
+			return move(res);
+		}
 	}
 
 	var ust::string8 mut res;
@@ -1345,6 +1425,22 @@ fn NamesScope::GetAccessFor( this, ClassTypePtr& class_type ) : Synt::ClassVisib
 fn NamesScope::CopyAccessRightsFrom( mut this, NamesScope& src )
 {
 	access_rights_= src.access_rights_;
+}
+
+fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr
+{
+	var NamesScopePtr mut root_names_scope= names_scope;
+	while(true)
+	{
+		auto parent= root_names_scope.lock_imut().deref().GetParent();
+		if( parent.empty() )
+		{
+			break;
+		}
+		root_names_scope= parent.try_to_non_nullable();
+	}
+
+	return move(root_names_scope);
 }
 
 } // namespace U1

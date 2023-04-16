@@ -5,6 +5,7 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
 #include "class.hpp"
+#include "coroutine.hpp"
 #include "enum.hpp"
 #include "template_types.hpp"
 #include "type.hpp"
@@ -464,6 +465,51 @@ std::string Type::ToString() const
 						result+= ", ";
 				}
 				result+= "/>";
+			}
+			else if( class_->coroutine_type_description != std::nullopt )
+			{
+				const CoroutineTypeDescription& coroutine_type_description= *class_->coroutine_type_description;
+				if( coroutine_type_description.kind == CoroutineKind::Generator )
+					result+= Keyword( Keywords::generator_ );
+				else U_ASSERT(false);
+
+				if( coroutine_type_description.inner_reference_type == InnerReferenceType::None )
+				{}
+				else if( coroutine_type_description.inner_reference_type == InnerReferenceType::Imut )
+				{
+					result+= "'";
+					result+= Keyword( Keywords::imut_ );
+					result+= "'";
+				}
+				else if( coroutine_type_description.inner_reference_type == InnerReferenceType::Mut )
+				{
+					result+= "'";
+					result+= Keyword( Keywords::mut_ );
+				}
+				else U_ASSERT(false);
+
+				result+= " ";
+
+				if( coroutine_type_description.non_sync )
+					result+= Keyword( Keywords::non_sync_ );
+
+				result+= ": ";
+
+				result+= coroutine_type_description.return_type.ToString();
+
+				if( coroutine_type_description.return_value_type == ValueType::Value )
+				{}
+				else if( coroutine_type_description.return_value_type == ValueType::ReferenceImut )
+				{
+					result+= " &";
+					result+= Keyword( Keywords::imut_ );
+				}
+				else if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
+				{
+					result+= " &";
+					result+= Keyword( Keywords::mut_ );
+				}
+				else U_ASSERT(false);
 			}
 			else
 				result+= class_->members->ToString();

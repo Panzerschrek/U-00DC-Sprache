@@ -841,7 +841,6 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 	auto mut destructors_lock= destructors_ptr.try_lock_mut();
 	auto &mut destructors= destructors_lock.deref().functions_set;
 
-	auto mut use_existing_destructor_variable= false;
 	if( !destructors.functions.back().is_generated ) // Should be nonempty - contain user-specified destructor of prepared prototype.
 	{
 		return; // user already specified destructor.

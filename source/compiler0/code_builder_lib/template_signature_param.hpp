@@ -2,6 +2,7 @@
 #include <memory>
 #include <variant>
 #include <vector>
+#include "coroutine.hpp"
 #include "value.hpp"
 
 
@@ -77,6 +78,18 @@ public:
 		bool operator==( const FunctionParam& other ) const;
 	};
 
+	struct CoroutineParam
+	{
+		CoroutineKind kind= CoroutineKind::Generator;
+		std::shared_ptr<const TemplateSignatureParam> return_type;
+		ValueType return_value_type= ValueType::Value;
+
+		InnerReferenceType inner_reference_type= InnerReferenceType::None;
+		bool non_sync= false;
+
+		bool operator==( const CoroutineParam& other ) const;
+	};
+
 	struct SpecializedTemplateParam
 	{
 		std::vector<TypeTemplatePtr> type_templates;
@@ -93,6 +106,7 @@ public:
 	TemplateSignatureParam( TupleParam tuple );
 	TemplateSignatureParam( RawPointerParam raw_pointer );
 	TemplateSignatureParam( FunctionParam function );
+	TemplateSignatureParam( CoroutineParam coroutine );
 	TemplateSignatureParam( SpecializedTemplateParam template_ );
 
 	bool IsType() const;
@@ -105,6 +119,7 @@ public:
 	const TupleParam* GetTuple() const;
 	const RawPointerParam* GetRawPointer() const;
 	const FunctionParam* GetFunction() const;
+	const CoroutineParam* GetCoroutine() const;
 	const SpecializedTemplateParam* GetTemplate() const;
 
 	template<class Func>
@@ -124,6 +139,7 @@ private:
 		TupleParam,
 		RawPointerParam,
 		FunctionParam,
+		CoroutineParam,
 		SpecializedTemplateParam> something_;
 };
 

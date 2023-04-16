@@ -113,6 +113,7 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionTypePtr& function_type_name_ptr );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorTypePtr& generator_type_name_ptr );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 
 	FunctionPointerType FunctionTypeToPointer( FunctionType function_type );
@@ -167,6 +168,7 @@ private:
 
 	bool GetTypeNonSync( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
 	bool GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
+	bool ImmediateEvaluateNonSyncTag( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag );
 	void CheckClassNonSyncTagExpression( ClassPtr class_type );
 	void CheckClassNonSyncTagInheritance( ClassPtr class_type );
 
@@ -245,6 +247,13 @@ private:
 		std::vector<bool>& template_parameters_usage_flags,
 		const Synt::RawPointerType& raw_pointer_type_name );
 
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+		std::vector<bool>& template_parameters_usage_flags,
+		const Synt::GeneratorTypePtr& generator_type_name_ptr );
+
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope );
 
 	// Resolve as deep, as can, but does not instantiate last component, if it is template.
@@ -308,6 +317,13 @@ private:
 		const TemplateArg& template_arg,
 		const SrcLoc& src_loc,
 		const TemplateSignatureParam::FunctionParam& template_param );
+
+	bool MatchTemplateArgImpl(
+		const TemplateBase& template_,
+		NamesScope& args_names_scope,
+		const TemplateArg& template_arg,
+		const SrcLoc& src_loc,
+		const TemplateSignatureParam::CoroutineParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
@@ -529,6 +545,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionTypePtr& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::GeneratorTypePtr& type_name );
 
 	VariablePtr AccessClassBase( const VariablePtr& variable, FunctionContext& function_context );
 	Value AccessClassField(
@@ -650,6 +667,8 @@ private:
 		FunctionContext& function_context,
 		const SrcLoc& src_loc );
 
+	bool EvaluateBoolConstantExpression( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression );
+
 	// Preevaluate expresion to know it's extened type.
 	// Call this only inside save/state restore calls.
 	FunctionType::Param PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
@@ -681,6 +700,7 @@ private:
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::VariablesDeclaration& variables_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::AutoVariableDeclaration& auto_variable_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::ReturnOperator& return_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::YieldOperator& yield_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::RangeForOperator& range_for_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::CStyleForOperator& c_style_for_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::WhileOperator& while_operator );
@@ -689,6 +709,7 @@ private:
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::WithOperator& with_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::IfOperator& if_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::StaticIfOperator& static_if_operator );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::IfCoroAdvanceOperator& if_coro_advance );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::SingleExpressionOperator& single_expression_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::AssignmentOperator& assignment_operator );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::AdditiveAssignmentOperator& additive_assignment_operator );
@@ -870,6 +891,19 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
+	// Coroutines
+
+	ClassPtr GetGeneratorFunctionReturnType( NamesScope& root_namespace, const FunctionType& generator_function_type, bool non_sync );
+	std::set<FunctionType::ParamReference> GetGeneratorFunctionReturnReferences( const FunctionType& generator_function_type );
+
+	ClassPtr GetCoroutineType( NamesScope& root_namespace, const CoroutineTypeDescription& coroutine_type_description );
+
+	// This function should be called for generator function just after aruments preparation.
+	void PrepareGeneratorBlocks( FunctionContext& function_context );
+	void GeneratorYield( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression, const SrcLoc& src_loc );
+	void GeneratorSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
+	void GeneratorFinalSuspend( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
+
 	// NamesScope fill
 
 	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
@@ -1008,6 +1042,10 @@ private:
 	llvm::Function* lifetime_start_debug_func_= nullptr;
 	llvm::Function* lifetime_end_debug_func_= nullptr;
 
+	// Allocate/deallocate heap memory in some places (for now in coroutines).
+	llvm::Function* malloc_func_= nullptr;
+	llvm::Function* free_func_= nullptr;
+
 	Type invalid_type_;
 	Type void_type_;
 	Type bool_type_;
@@ -1051,6 +1089,8 @@ private:
 	std::vector<GlobalThing> global_things_stack_;
 
 	std::optional<DebugInfoBuilder> debug_info_builder_;
+
+	std::unordered_map<CoroutineTypeDescription, std::unique_ptr<Class>, CoroutineTypeDescriptionHasher> coroutine_classes_table_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

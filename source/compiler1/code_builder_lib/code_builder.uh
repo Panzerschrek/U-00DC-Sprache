@@ -241,6 +241,8 @@ private:
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RawPointerType& raw_pointer_type ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type_ptr ) : Type;
 	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::GeneratorType/>& generator_type_ptr ) : Type;
+	fn PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::GeneratorType& generator_type ) : Type;
 	fn PrepareFunctionType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type, ust::shared_ptr_nullable_mut</ClassType/>& class_type ) : FunctionType;
 	fn GetLLVMFunctionType( mut this, FunctionType& function_type ) : LLVMTypeRef;
 
@@ -297,6 +299,7 @@ private:
 	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::AutoVariableDeclaration& auto_variable_declaration ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ReturnOperator& return_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::YieldOperator& yield_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AssignmentOperator& assignment_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::AdditiveAssignmentOperator& additive_assignment_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IncrementOperator& increment_operator ) : BlockElementBuildInfo;
@@ -304,6 +307,7 @@ private:
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticIfOperator& static_if_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo;
@@ -352,6 +356,7 @@ private:
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::TupleType/>& tuple_type ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::RawPointerType/>& raw_pointer_type ) : Value;
 	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value;
+	fn BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::GeneratorType/>& generator_type ) : Value;
 
 	fn DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value;
 
@@ -471,10 +476,13 @@ private:
 		FunctionVariable& conversion_constructor_,
 		SrcLoc& src_loc ) : VariablePtr;
 
+	fn EvaluateBoolConstantExpression( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : bool;
+
 	// NonSync stuff
 
 	fn GetTypeNonSync( mut this, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool;
 	fn GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_types_stack, Type& t, NamesScopePtr& names_scope, SrcLoc& src_loc ) : bool;
+	fn ImmediateEvaluateNonSyncTag( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncTag& non_sync_tag ) : bool;
 	fn CheckClassNonSyncTagExpression( mut this, ClassTypePtr& class_type );
 	fn CheckClassNonSyncTagInheritance( mut this, ClassTypePtr& class_type );
 
@@ -557,6 +565,14 @@ private:
 		FunctionContext &mut function_context,
 		ust::vector</TemplateBase::Param/>& template_params,
 		Synt::FunctionType& signature_param,
+		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+
+	fn CreateTemplateSignatureParam(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::vector</TemplateBase::Param/>& template_params,
+		Synt::GeneratorType& signature_param,
 		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, SrcLoc& src_loc ) : TemplateSignatureParam;
@@ -696,6 +712,14 @@ private:
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
+		TemplateSignatureParam::CoroutineTypeParam& coroutine_type_param,
+		TemplateArgFinished& given_arg,
+		SrcLoc& src_loc ) : bool;
+
+	fn MatchTemplateArgumentImpl(
+		mut this,
+		NamesScopePtr& names_scope,
+		TemplateBase& template_,
 		TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param,
 		TemplateArgFinished& given_arg,
 		SrcLoc& src_loc ) : bool;
@@ -804,6 +828,18 @@ private:
 		mut this,
 		ust::array_view_imut</TypeTemplatePtr/> type_templates,
 		size_type signature_args_to_check ) : size_type;
+
+	// Coroutines
+	fn GetGeneratorFunctionReturnType( mut this, NamesScopePtr& root_namespace, FunctionType& generator_function_type, bool non_sync_ )  : ClassTypePtr;
+	fn GetGeneratorFunctionReturnReferences( mut this, FunctionType& generator_function_type ) : ust::vector</FunctionType::ParamReference/>;
+
+	fn GetCoroutineType( mut this, NamesScopePtr& root_namespace, CoroutineTypeDescription& coroutine_type_description ) : ClassTypePtr;
+
+	// This function should be called for generator function just after aruments preparation.
+	fn PrepareGeneratorBlocks( this, FunctionContext &mut function_context );
+	fn GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc );
+	fn GeneratorSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+	fn GeneratorFinalSuspend( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 
 	// Methods generation
 
@@ -927,6 +963,8 @@ private:
 	fn CreateLifetimeStart( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 	fn CreateLifetimeEnd( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 
+	fn GetIntrinsic( this, ust::array_view_imut</char8/> name, ust::array_view_imut</LLVMTypeRef/> types ) : LLVMValueRef;
+
 	struct FunctionContextState
 	{
 		LLVMBasicBlockRef current_block;
@@ -1026,6 +1064,9 @@ private:
 
 	LLVMValueRef halt_function_= LLVMValueRef::Null;
 
+	LLVMValueRef malloc_function_= LLVMValueRef::Null;
+	LLVMValueRef free_function_= LLVMValueRef::Null;
+
 	// For globals loops detection.
 	GlobalThingsStackPtr global_things_stack_ptr_;
 
@@ -1043,6 +1084,26 @@ private:
 	LLVMValueRef lifetime_start_debug_func_= LLVMValueRef::Null;
 	LLVMValueRef lifetime_end_debug_func_= LLVMValueRef::Null;
 	LLVMTypeRef lifetime_function_arg_type_= LLVMTypeRef::Null;
+
+	// Coroutines
+	struct Coro
+	{
+		LLVMValueRef id= LLVMValueRef::Null;
+		LLVMValueRef alloc= LLVMValueRef::Null;
+		LLVMValueRef free= LLVMValueRef::Null;
+		LLVMValueRef size= LLVMValueRef::Null;
+		LLVMValueRef begin= LLVMValueRef::Null;
+		LLVMValueRef end= LLVMValueRef::Null;
+		LLVMValueRef suspend= LLVMValueRef::Null;
+
+		LLVMValueRef resume= LLVMValueRef::Null;
+		LLVMValueRef destroy= LLVMValueRef::Null;
+		LLVMValueRef done= LLVMValueRef::Null;
+		LLVMValueRef promise= LLVMValueRef::Null;
+	}
+	Coro coro_;
+
+	ust::unordered_map</ CoroutineTypeDescription, ClassTypePtr /> coroutine_classes_;
 }
 
 } // namespace U1

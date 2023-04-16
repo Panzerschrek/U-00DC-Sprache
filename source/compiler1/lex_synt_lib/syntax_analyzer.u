@@ -210,6 +210,7 @@ private:
 	fn ParseTupleType( mut this ) : TupleType;
 	fn ParseRawPointerType( mut this ) : RawPointerType;
 	fn ParseFunctionType( mut this ) : FunctionType;
+	fn ParseGeneratorType( mut this ) : GeneratorType;
 	fn ParseFunctionParam( mut this ) : FunctionType::Param;
 	fn ParseFunctionTypeEnding( mut this, FunctionType &mut function_type );
 	fn ParseInnerReferenceTag( mut this ) : ust::string8;
@@ -226,8 +227,10 @@ private:
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
+	fn ParseYieldOperator( mut this ) : YieldOperator;
 	fn ParseIfOperator( mut this ) : IfOperator;
 	fn ParseStaticIfOperator( mut this ) : StaticIfOperator;
+	fn ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperator;
 	fn ParseWhileOperator( mut this ) : WhileOperator;
 	fn ParseForOperator( mut this ) : BlockElement;
 	fn ParseRangeForOperator( mut this ) : RangeForOperator;
@@ -241,7 +244,7 @@ private:
 	fn ParseClass( mut this ) : Class;
 	fn ParseClassKindAttribute( mut this ) : Class::KindAttribute;
 	fn ParseClassParentsList( mut this ) : ust::vector</ComplexName/>;
-	fn ParseClassNonSyncTag( mut this ) : NonSyncTag;
+	fn TryParseNonSyncTag( mut this ) : NonSyncTag;
 	fn ParseClassOrderedFlag( mut this ) : bool;
 	fn ParseClassBody( mut this ) : ClassElements;
 	fn ParseClassBodyElements( mut this ) : ClassElements;
@@ -769,6 +772,10 @@ fn SyntaxAnalyzer::ParseExpressionComponentHelper( mut this ) : Expression
 	{
 		return ust::make_box( ParseFunctionType() );
 	}
+	else if( IsKeyword( it_.front(), Keyword::generator_ ) )
+	{
+		return ust::make_box( ParseGeneratorType() );
+	}
 	else if( IsKeyword( it_.front(), Keyword::typeinfo_ ) )
 	{
 		auto src_loc= it_.front().src_loc;
@@ -937,6 +944,10 @@ fn SyntaxAnalyzer::ParseTypeName( mut this ) : TypeName
 	{
 		return ust::make_box( ParseFunctionType() );
 	}
+	else if( IsKeyword( it_.front(), Keyword::generator_ ) )
+	{
+		return ust::make_box( ParseGeneratorType() );
+	}
 	else if( IsKeyword( it_.front(), Keyword::tup_ ) )
 	{
 		return ust::make_box( ParseTupleType() );
@@ -1076,6 +1087,90 @@ fn SyntaxAnalyzer::ParseFunctionType( mut this ) : FunctionType
 	ParseFunctionTypeEnding( function_type );
 
 	return move(function_type);
+}
+
+fn SyntaxAnalyzer::ParseGeneratorType( mut this ) : GeneratorType
+{
+	var GeneratorType mut generator_type{ .src_loc= it_.front().src_loc };
+
+	if( !IsKeyword( it_.front(), Keyword::generator_ ) )
+	{
+		PushErrorMessage();
+	}
+	NextLexem();
+
+	if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+	{
+		NextLexem();
+
+		var GeneratorType::InnerReferenceTag mut inner_reference_tag;
+
+		if( IsKeyword( it_.front(), Keyword::mut_ ) )
+		{
+			NextLexem();
+			inner_reference_tag.mutability_modifier= MutabilityModifier::Mutable;
+		}
+		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			NextLexem();
+			inner_reference_tag.mutability_modifier= MutabilityModifier::Immutable;
+		}
+
+		if( it_.front().lexem_type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+		}
+		inner_reference_tag.name= it_.front().text;
+		NextLexem();
+
+		ExpectLexem( Lexem::Type::Apostrophe );
+
+		generator_type.inner_reference_tag.reset( move(inner_reference_tag) );
+	}
+
+	generator_type.non_sync_tag= TryParseNonSyncTag();
+
+	ExpectLexem( Lexem::Type::Colon );
+
+	generator_type.return_type= ParseTypeName();
+
+	if( it_.front().lexem_type == Lexem::Type::And )
+	{
+		NextLexem();
+		generator_type.return_value_reference_modifier= ReferenceModifier::Reference;
+
+		if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+		{
+			NextLexem();
+
+			if( it_.front().lexem_type == Lexem::Type::Identifier )
+			{
+				generator_type.return_value_reference_tag= it_.front().text;
+				NextLexem();
+			}
+			else
+			{
+				PushErrorMessage();
+			}
+		}
+
+		if( IsKeyword( it_.front(), Keyword::mut_ ) )
+		{
+			generator_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
+			NextLexem();
+		}
+		else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+		{
+			generator_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
+			NextLexem();
+		}
+	}
+	else if( it_.front().lexem_type == Lexem::Type::Apostrophe )
+	{
+		generator_type.return_value_reference_tag= ParseInnerReferenceTag();
+	}
+
+	return move(generator_type);
 }
 
 fn SyntaxAnalyzer::ParseFunctionParam( mut this ) : FunctionType::Param
@@ -1291,6 +1386,12 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			res.virtual_kind= Function::VirtualKind::VirtualPure;
 			NextLexem();
 		}
+	}
+	if( IsKeyword( it_.front(), Keyword::generator_ ) )
+	{
+		NextLexem();
+		res.kind= Function::Kind::Generator;
+		res.coroutine_non_sync_tag= TryParseNonSyncTag();
 	}
 	if( IsKeyword( it_.front(), Keyword::constexpr_ ) )
 	{
@@ -1837,6 +1938,10 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		{
 			block_elements.push_back( ParseReturnOperator() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::yield_ ) )
+		{
+			block_elements.push_back( ParseYieldOperator() );
+		}
 		else if( IsKeyword( it_.front(), Keyword::if_ ) )
 		{
 			block_elements.push_back( ParseIfOperator() );
@@ -1844,6 +1949,10 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		else if( IsKeyword( it_.front(), Keyword::static_if_ ) )
 		{
 			block_elements.push_back( ParseStaticIfOperator() );
+		}
+		else if( IsKeyword( it_.front(), Keyword::if_coro_advance_ ) )
+		{
+			block_elements.push_back( ParseIfCoroAdvanceOperator() );
 		}
 		else if( IsKeyword( it_.front(), Keyword::while_ ) )
 		{
@@ -2076,6 +2185,21 @@ fn SyntaxAnalyzer::ParseReturnOperator( mut this ) : ReturnOperator
 	return move(res);
 }
 
+fn SyntaxAnalyzer::ParseYieldOperator( mut this ) : YieldOperator
+{
+	var YieldOperator mut res{ .src_loc= it_.front().src_loc };
+	NextLexem(); // yield
+
+	if( it_.front().lexem_type != Lexem::Type::Semicolon )
+	{
+		res.expr= ParseExpression();
+	}
+
+	ExpectSemicolon();
+
+	return move(res);
+}
+
 fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 {
 	auto start_src_loc= it_.front().src_loc;
@@ -2141,6 +2265,47 @@ fn SyntaxAnalyzer::ParseStaticIfOperator( mut this ) : StaticIfOperator
 		.if_operator= ParseIfOperator()
 	};
 	return move(static_if_operator);
+}
+
+fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperator
+{
+	var IfCoroAdvanceOperator mut if_coro_advance_operator{ .src_loc= it_.front().src_loc, .block(Block()) };
+	NextLexem();
+
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	if( it_.front().lexem_type == Lexem::Type::And )
+	{
+		if_coro_advance_operator.reference_modifier= ReferenceModifier::Reference;
+		NextLexem();
+	}
+	if( IsKeyword( it_.front(), Keyword::mut_ ) )
+	{
+		if_coro_advance_operator.mutability_modifier= MutabilityModifier::Mutable;
+		NextLexem();
+	}
+	else if( IsKeyword( it_.front(), Keyword::imut_ ) )
+	{
+		if_coro_advance_operator.mutability_modifier= MutabilityModifier::Immutable;
+		NextLexem();
+	}
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	if_coro_advance_operator.variable_name= it_.front().text;
+	NextLexem();
+
+	ExpectLexem( Lexem::Type::Colon );
+
+	if_coro_advance_operator.expression= ParseExpression();
+
+	ExpectLexem( Lexem::Type::BracketRight );
+
+	if_coro_advance_operator.block.deref()= ParseBlock();
+
+	return move(if_coro_advance_operator);
 }
 
 fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
@@ -2463,7 +2628,7 @@ fn SyntaxAnalyzer::ParseClass( mut this ) : Class
 		class_.kind_attribute= ParseClassKindAttribute();
 		class_.parents= ParseClassParentsList();
 	}
-	class_.non_sync_tag= ParseClassNonSyncTag();
+	class_.non_sync_tag= TryParseNonSyncTag();
 	class_.keep_fields_order= ParseClassOrderedFlag();
 
 	class_.class_elements= ParseClassBody();
@@ -2659,7 +2824,7 @@ fn SyntaxAnalyzer::ParseClassParentsList( mut this ) : ust::vector</ComplexName/
 	return move(parents_list);
 }
 
-fn SyntaxAnalyzer::ParseClassNonSyncTag( mut this ) : NonSyncTag
+fn SyntaxAnalyzer::TryParseNonSyncTag( mut this ) : NonSyncTag
 {
 	if( IsKeyword( it_.front(), Keyword::non_sync_ ) )
 	{
@@ -2931,7 +3096,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 			class_.kind_attribute= ParseClassKindAttribute();
 			class_.parents= ParseClassParentsList();
 		}
-		class_.non_sync_tag= ParseClassNonSyncTag();
+		class_.non_sync_tag= TryParseNonSyncTag();
 		class_.keep_fields_order= ParseClassOrderedFlag();
 
 		class_.class_elements= ParseClassBody();

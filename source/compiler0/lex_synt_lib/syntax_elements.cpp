@@ -38,6 +38,10 @@ RawPointerType::RawPointerType( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+GeneratorType::GeneratorType( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 ComplexName::ComplexName( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
@@ -179,6 +183,10 @@ ReturnOperator::ReturnOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+YieldOperator::YieldOperator( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 WhileOperator::WhileOperator( const SrcLoc& src_loc)
 	: SyntaxElementBase(src_loc)
 	, block_(src_loc)
@@ -214,6 +222,11 @@ IfOperator::IfOperator( const SrcLoc& start_src_loc )
 StaticIfOperator::StaticIfOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 	, if_operator_(src_loc)
+{}
+
+IfCoroAdvanceOperator::IfCoroAdvanceOperator( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+	, block(src_loc)
 {}
 
 SingleExpressionOperator::SingleExpressionOperator( const SrcLoc& src_loc )

@@ -1,0 +1,39 @@
+namespace ust
+{
+
+template</type T/>
+fn enable_if( coro_impl::is_coroutine</T/>() )
+coro_done( T& coroutine ) : bool
+{
+	return unsafe( ::coro_done_impl( cast_ref_unsafe</coro_impl::coro_struct/>(coroutine).handle ) );
+}
+
+namespace coro_impl
+{
+
+// If internal compiler representation of coroutine type is changed, this mush be changed too!
+struct coro_struct
+{
+	raw_coro_handle handle;
+}
+
+type raw_coro_handle= $(byte8);
+
+template</type T/> fn constexpr is_coroutine() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		return typeinfo</T/>.is_coroutine;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+} // namespace coro_impl
+
+} // namespace ust
+
+// External implementation functions. Do not use directly!
+fn nomangle coro_done_impl( ust::coro_impl::raw_coro_handle coro_handle ) unsafe : bool;

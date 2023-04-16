@@ -48,6 +48,7 @@ private:
 	fn EncodeFullName( this, ManglerStateMSVC &mut mangler_state, ust::array_view_imut</char8/> name, NamesScope& scope );
 	fn EncodeNamespacePostfix_r( this, ManglerStateMSVC &mut mangler_state, NamesScope& scope );
 	fn EncodeTemplateClassName( this, ManglerStateMSVC &mut mangler_state, ClassType& the_class );
+	fn EncodeCoroutineClassName( this, ManglerStateMSVC &mut mangler_state, ClassType& the_class );
 	fn EncodeNumber( this, ManglerStateMSVC &mut mangler_state, i64 num );
 	fn EncodeNumber( this, ManglerStateMSVC &mut mangler_state, u64 num );
 
@@ -277,6 +278,12 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 		else if( !class_type.base_template.empty() )
 		{
 			EncodeTemplateClassName( mangler_state, class_type );
+			// Finish list of name components.
+			mangler_state.PushElement( g_terminator );
+		}
+		else if( !class_type.coroutine_type_description.empty() )
+		{
+			EncodeCoroutineClassName( mangler_state, class_type );
 			// Finish list of name components.
 			mangler_state.PushElement( g_terminator );
 		}
@@ -555,6 +562,11 @@ fn ManglerMSVC::EncodeNamespacePostfix_r( this, ManglerStateMSVC &mut mangler_st
 			EncodeTemplateClassName( mangler_state, class_ );
 			return;
 		}
+		if( !class_.coroutine_type_description.empty() )
+		{
+			EncodeCoroutineClassName( mangler_state, class_ );
+			return;
+		}
 	}
 
 	mangler_state.EncodeName( scope.GetThisNamespaceName().range() );
@@ -579,6 +591,44 @@ fn ManglerMSVC::EncodeTemplateClassName( this, ManglerStateMSVC &mut mangler_sta
 	}
 
 	EncodeNamespacePostfix_r( mangler_state, type_template.parent_names_scope.lock().try_lock_imut().deref() );
+}
+
+fn ManglerMSVC::EncodeCoroutineClassName( this, ManglerStateMSVC &mut mangler_state, ClassType& the_class )
+{
+	var CoroutineTypeDescription& coroutine_type_description= the_class.coroutine_type_description.try_deref();
+
+	// Use separate backreferences table.
+	var ManglerStateMSVC mut template_mangler_state;
+
+	template_mangler_state.PushElement( g_template_prefix );
+	template_mangler_state.EncodeName( the_class.members.lock_imut().deref().GetThisNamespaceName().range() );
+
+	// Return value.
+	if( coroutine_type_description.return_value_type != ValueType::Value )
+	{
+		template_mangler_state.PushElement( g_reference_prefix );
+		template_mangler_state.PushElement( pointer_types_modifier_.range() );
+		template_mangler_state.PushElement( select( coroutine_type_description.return_value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix ) );
+	}
+	EncodeType( template_mangler_state, coroutine_type_description.return_type );
+
+	// non-sync tag.
+	if( coroutine_type_description.non_sync_ )
+	{
+		template_mangler_state.PushElement( GetFundamentalTypeNameMSVC( U_FundamentalType::bool_ ) );
+		template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+		EncodeNumber( template_mangler_state, 1u64 );
+	}
+
+	// Inner reference kind.
+	template_mangler_state.PushElement( GetFundamentalTypeNameMSVC( U_FundamentalType::u32_ ) );
+	template_mangler_state.PushElement( g_numeric_template_arg_prefix );
+	EncodeNumber( template_mangler_state, u64(coroutine_type_description.inner_reference_kind) );
+
+	// Finish list of template arguments.
+	template_mangler_state.PushElement( g_terminator );
+
+	mangler_state.EncodeNameNoTerminator( template_mangler_state.TakeRes().range() );
 }
 
 fn ManglerMSVC::EncodeNumber( this, ManglerStateMSVC &mut mangler_state, i64 num )

@@ -151,6 +151,32 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 				module_.get() );
 	}
 
+	// Prepare heap allocation functions.
+	{
+		// Use some temporary names for allocation functions.
+		// Do this in order to avoid collisions with user-defined names.
+		llvm::Type* const ptr_type= llvm::PointerType::get( llvm_context_, 0 );
+		malloc_func_=
+			llvm::Function::Create(
+					llvm::FunctionType::get(
+						ptr_type,
+						{ fundamental_llvm_types_.int_ptr },
+						false ),
+					llvm::Function::ExternalLinkage,
+					"__U_ust_memory_allocate_impl",
+					module_.get() );
+
+		free_func_=
+			llvm::Function::Create(
+					llvm::FunctionType::get(
+						fundamental_llvm_types_.void_for_ret_,
+						{ ptr_type },
+						false ),
+					llvm::Function::ExternalLinkage,
+					"__U_ust_memory_free_impl",
+					module_.get() );
+	}
+
 	FunctionType global_function_type;
 	global_function_type.return_type= void_type_;
 
@@ -202,6 +228,21 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 			typeinfo_entry.second->type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
+	// Replace usage of temporary allocation functions with usage of library allocation functions.
+	// Do such, because we can't just declare internal functions with such names, prior to compiling file with such functions declarations ("alloc.u").
+	// Without such approach functions, declared in library file, get suffix, like "ust_memory_allocate_impl.1".
+	{
+		if( const auto ust_memory_allocate_impl= module_->getFunction( "ust_memory_allocate_impl" ) )
+			malloc_func_->replaceAllUsesWith( ust_memory_allocate_impl );
+		else
+			malloc_func_->setName( "ust_memory_allocate_impl" );
+
+		if( const auto ust_memory_free_impl= module_->getFunction( "ust_memory_free_impl" ) )
+			free_func_->replaceAllUsesWith( ust_memory_free_impl );
+		else
+			free_func_->setName( "ust_memory_free_impl" );
+	}
+
 	// Reset debug info builder in order to finish deffered debug info construction.
 	debug_info_builder_= std::nullopt;
 
@@ -215,6 +256,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	non_sync_expression_stack_.clear();
 	generated_template_things_storage_.clear();
 	generated_template_things_sequence_.clear();
+	coroutine_classes_table_.clear();
 	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
 
 	BuildResult build_result;
@@ -728,24 +770,14 @@ size_t CodeBuilder::PrepareFunction(
 		return ~0u;
 	}
 
-	if( std::get_if<Synt::EmptyVariant>( &func.condition_ ) == nullptr )
-	{
-		const VariablePtr expression= BuildExpressionCodeEnsureVariable( func.condition_, names_scope, *global_function_context_ );
-		if( expression->type == bool_type_ )
-		{
-			if( expression->constexpr_value != nullptr )
-			{
-				if( expression->constexpr_value->isZeroValue() )
-					return ~0u; // Function disabled.
-			}
-			else
-				REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ) );
-		}
-		else
-			REPORT_ERROR( TypesMismatch, names_scope.GetErrors(), Synt::GetExpressionSrcLoc( func.condition_ ), bool_type_, expression->type );
-	}
+	if( std::get_if<Synt::EmptyVariant>( &func.condition_ ) == nullptr &&
+		!EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition_ ) )
+		return ~0u;
 
 	FunctionVariable func_variable;
+
+	func_variable.is_generator= func.kind == Synt::Function::Kind::Generator;
+
 	{ // Prepare function type
 		FunctionType function_type;
 
@@ -843,16 +875,61 @@ size_t CodeBuilder::PrepareFunction(
 			}
 		}
 
-		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type_, function_type );
-		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
-		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
-
 		function_type.calling_convention= GetLLVMCallingConvention( func.type_.calling_convention_, func.type_.src_loc_, names_scope.GetErrors() );
 		// Disable non-default calling conventions for this-call methods and operators because of problems with call of generated methods/operators.
 		// But it's fine to use custom calling convention for static methods.
 		if( function_type.calling_convention != llvm::CallingConv::C &&
 			( func_variable.is_this_call || func.overloaded_operator_ != OverloadedOperator::None ) )
 			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc_ );
+
+		if( func_variable.return_type_is_auto && func_variable.is_generator )
+		{
+			REPORT_ERROR( AutoReturnGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
+			func_variable.is_generator= false;
+		}
+		if( is_special_method && func_variable.is_generator )
+		{
+			REPORT_ERROR( GeneratorSpecialMethod, names_scope.GetErrors(), func.type_.src_loc_ );
+			func_variable.is_generator= false;
+		}
+
+		if( func_variable.is_generator )
+		{
+			FunctionType generator_function_type= function_type;
+
+			// Coroutine functions return value of coroutine type.
+			generator_function_type.return_type=
+				GetGeneratorFunctionReturnType(
+				*names_scope.GetRoot(),
+				function_type,
+				ImmediateEvaluateNonSyncTag( names_scope, *global_function_context_, func.coroutine_non_sync_tag ) );
+			generator_function_type.return_value_type= ValueType::Value;
+
+			// Generate for now own return references mapping.
+			generator_function_type.return_references= GetGeneratorFunctionReturnReferences( function_type );
+
+			// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
+			if( !func.type_.return_value_reference_tag_.empty() || !func.type_.return_value_inner_reference_tag_.empty() )
+				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type_.src_loc_, "Explicit return tags for generators." );
+
+			// Disable references pollution for generator. It is too complicated for now.
+			if( !func.type_.references_pollution_list_.empty() )
+				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type_.src_loc_, "References pollution for generators." );
+
+			if( function_type.calling_convention != llvm::CallingConv::C )
+				REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
+
+			// It is too complicated to support virtual generators. It is simplier to just forbid such generators.
+			// But this is still possible to return a generator value from virtual function.
+			if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+				REPORT_ERROR( VirtualGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
+
+			function_type= std::move(generator_function_type);
+		}
+
+		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type_, function_type );
+		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
+		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
 
 		func_variable.type= std::move(function_type);
 	} // end prepare function type
@@ -962,6 +1039,9 @@ size_t CodeBuilder::PrepareFunction(
 
 		if( prev_function->no_mangle != func_variable.no_mangle )
 			REPORT_ERROR( NoMangleMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
+
+		if( prev_function->is_generator != func_variable.is_generator )
+			REPORT_ERROR( GeneratorMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
 
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
 			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc_ );
@@ -1171,6 +1251,32 @@ Type CodeBuilder::BuildFuncCode(
 	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
 
+	if( func_variable.is_generator )
+	{
+		const CoroutineTypeDescription& coroutine_type_description= *function_type.return_type.GetClassType()->coroutine_type_description;
+
+		if( !EnsureTypeComplete( coroutine_type_description.return_type ) )
+			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc,  coroutine_type_description.return_type  );
+
+		for( const FunctionType::Param& arg : function_type.params )
+		{
+			// Generator is an object, that holds references to reference-args of generator function.
+			// It's forbidden to create types with references inside to types with other references inside.
+			// So, check if this rule is not violated for generators.
+			// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
+			if( arg.value_type != ValueType::Value && arg.type.GetInnerReferenceType() != InnerReferenceType::None )
+				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc_, "some arg" ); // TODO - use separate error code.
+
+			// Generator is not declared as non-sync, but param is non-sync. This is an error.
+			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
+			if( !coroutine_type_description.non_sync && GetTypeNonSync( arg.type, parent_names_scope, params.front().src_loc_ ) )
+				REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc_ );
+		}
+
+		if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, parent_names_scope, block.src_loc_ ) )
+			REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), block.src_loc_ );
+	}
+
 	NamesScope function_names( "", &parent_names_scope );
 	FunctionContext function_context(
 		function_type,
@@ -1178,7 +1284,6 @@ Type CodeBuilder::BuildFuncCode(
 		llvm_context_,
 		llvm_function );
 	const StackVariablesStorage args_storage( function_context );
-
 	function_context.args_nodes.resize( function_type.params.size() );
 
 	debug_info_builder_->SetCurrentLocation( func_variable.body_src_loc, function_context );
@@ -1241,7 +1346,16 @@ Type CodeBuilder::BuildFuncCode(
 				else
 				{
 					// Values of composite types are passed via pointer.
-					variable->llvm_value = &llvm_arg;
+					if( func_variable.is_generator )
+					{
+						// In generators we must save value args, passed by hidden reference, on local stack (this may be compiled as heap allocation).
+						// This is needed, because address, allocated by generator function initial call, does not live long enough.
+						variable->llvm_value= function_context.alloca_ir_builder.CreateAlloca( variable->type.GetLLVMType(), nullptr, arg_name );
+						CreateLifetimeStart( function_context, variable->llvm_value );
+						CopyBytes( variable->llvm_value, &llvm_arg, param.type, function_context );
+					}
+					else
+						variable->llvm_value = &llvm_arg;
 				}
 			}
 			else U_ASSERT(false);
@@ -1304,6 +1418,14 @@ Type CodeBuilder::BuildFuncCode(
 
 		llvm_arg.setName( "_arg_" + arg_name );
 		++arg_number;
+	}
+
+	if( func_variable.is_generator )
+	{
+		// Create generator entry block after saving args to stack.
+		PrepareGeneratorBlocks( function_context );
+		// Generate also initial suspend.
+		GeneratorSuspend( function_names, function_context, block.src_loc_ );
 	}
 
 	if( is_constructor )
@@ -1417,13 +1539,21 @@ Type CodeBuilder::BuildFuncCode(
 	// In other case, we have "return" in all branches and destructors call before each "return".
 	if( !block_build_info.have_terminal_instruction_inside )
 	{
-		// Manually generate "return" for void-return functions.
-		if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
+		if( func_variable.is_generator )
 		{
-			REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc_ );
-			return function_type.return_type;
+			// Add final suspention point for generators.
+			GeneratorFinalSuspend( function_names, function_context, block.end_src_loc_ );
 		}
-		BuildEmptyReturn( function_names, function_context, block.end_src_loc_ );
+		else
+		{
+			// Manually generate "return" for void-return functions.
+			if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
+			{
+				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc_ );
+				return function_type.return_type;
+			}
+			BuildEmptyReturn( function_names, function_context, block.end_src_loc_ );
+		}
 	}
 
 	if( is_destructor )
@@ -2065,6 +2195,9 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 		builder.addUWTableAttr(llvm::UWTableKind::Async);
 		llvm_function->addFnAttrs( builder );
 	}
+
+	if( function_variable.is_generator )
+		llvm_function->addFnAttr( llvm::Attribute::PresplitCoroutine );
 
 	// Prepare args attributes.
 

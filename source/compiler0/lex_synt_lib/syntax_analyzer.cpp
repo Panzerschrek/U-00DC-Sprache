@@ -290,6 +290,7 @@ private:
 	AutoVariableDeclaration ParseAutoVariableDeclaration();
 
 	ReturnOperator ParseReturnOperator();
+	YieldOperator ParseYieldOperator();
 	WhileOperator ParseWhileOperator();
 	BlockElement ParseForOperator();
 	RangeForOperator ParseRangeForOperator();
@@ -299,6 +300,7 @@ private:
 	WithOperator ParseWithOperator();
 	IfOperator ParseIfOperator();
 	StaticIfOperator ParseStaticIfOperator();
+	IfCoroAdvanceOperator ParseIfCoroAdvanceOperator();
 	StaticAssert ParseStaticAssert();
 	Enum ParseEnum();
 	BlockElement ParseHalt();
@@ -308,7 +310,7 @@ private:
 
 	ClassKindAttribute TryParseClassKindAttribute();
 	std::vector<ComplexName> TryParseClassParentsList();
-	NonSyncTag TryParseClassNonSyncTag();
+	NonSyncTag TryParseNonSyncTag();
 	bool TryParseClassFieldsOrdered();
 
 	TypeAlias ParseTypeAlias();
@@ -1172,7 +1174,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(expr);
 		}
-		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ )
+		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ || it_->text == Keywords::generator_ )
 			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
 		else
 		{
@@ -1270,7 +1272,7 @@ FunctionParam SyntaxAnalyzer::ParseFunctionArgument()
 void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 {
 	if( it_->type == Lexem::Type::Apostrophe )
-		result.referecnces_pollution_list_= ParseFunctionReferencesPollutionList();
+		result.references_pollution_list_= ParseFunctionReferencesPollutionList();
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ )
 	{
@@ -1458,6 +1460,80 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		ExpectLexem(Lexem::Type::BracketRight );
 
 		return std::move(raw_pointer_type);
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::generator_ )
+	{
+		GeneratorType generator_type( it_->src_loc );
+		NextLexem();
+
+		if( it_->type == Lexem::Type::Apostrophe )
+		{
+			NextLexem();
+
+			GeneratorType::InnerReferenceTag inner_reference_tag;
+
+			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+			{
+				NextLexem();
+				inner_reference_tag.mutability_modifier= MutabilityModifier::Mutable;
+			}
+			else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+			{
+				NextLexem();
+				inner_reference_tag.mutability_modifier= MutabilityModifier::Immutable;
+			}
+
+			if( it_->type != Lexem::Type::Identifier )
+				PushErrorMessage();
+			inner_reference_tag.name= it_->text;
+			NextLexem();
+
+			ExpectLexem( Lexem::Type::Apostrophe );
+
+			generator_type.inner_reference_tag= std::make_unique<GeneratorType::InnerReferenceTag>( std::move(inner_reference_tag) );
+		}
+
+		generator_type.non_sync_tag= TryParseNonSyncTag();
+
+		ExpectLexem( Lexem::Type::Colon );
+		generator_type.return_type= ParseTypeName();
+
+		if( it_->type == Lexem::Type::And )
+		{
+			NextLexem();
+			generator_type.return_value_reference_modifier= ReferenceModifier::Reference;
+
+			if( it_->type == Lexem::Type::Apostrophe )
+			{
+				NextLexem();
+
+				if( it_->type == Lexem::Type::Identifier )
+				{
+					generator_type.return_value_reference_tag= it_->text;
+					NextLexem();
+				}
+				else
+					PushErrorMessage();
+			}
+
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				if( it_->text == Keywords::mut_ )
+				{
+					generator_type.return_value_mutability_modifier= MutabilityModifier::Mutable;
+					NextLexem();
+				}
+				else if( it_->text == Keywords::imut_ )
+				{
+					generator_type.return_value_mutability_modifier= MutabilityModifier::Immutable;
+					NextLexem();
+				}
+			}
+		}
+		else if( it_->type == Lexem::Type::Apostrophe )
+			generator_type.return_value_reference_tag= ParseInnerReferenceTag();
+
+		return std::make_unique<GeneratorType>(std::move(generator_type));
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return ParseFunctionType();
@@ -1995,6 +2071,21 @@ ReturnOperator SyntaxAnalyzer::ParseReturnOperator()
 	return result;
 }
 
+YieldOperator SyntaxAnalyzer::ParseYieldOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::yield_ );
+
+	YieldOperator result( it_->src_loc );
+	NextLexem();
+
+	if( it_->type != Lexem::Type::Semicolon )
+		result.expression= ParseExpression();
+
+	ExpectSemicolon();
+
+	return result;
+}
+
 WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ );
@@ -2280,6 +2371,48 @@ StaticIfOperator SyntaxAnalyzer::ParseStaticIfOperator()
 	return result;
 }
 
+IfCoroAdvanceOperator SyntaxAnalyzer::ParseIfCoroAdvanceOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_coro_advance_ );
+	IfCoroAdvanceOperator result( it_->src_loc );
+	NextLexem();
+
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	if( it_->type == Lexem::Type::And )
+	{
+		result.reference_modifier= ReferenceModifier::Reference;
+		NextLexem();
+	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::mut_ )
+	{
+		result.mutability_modifier= MutabilityModifier::Mutable;
+		NextLexem();
+	}
+	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::imut_ )
+	{
+		result.mutability_modifier= MutabilityModifier::Immutable;
+		NextLexem();
+	}
+
+	if( it_->type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+		return result;
+	}
+	result.variable_name= it_->text;
+	NextLexem();
+
+	ExpectLexem( Lexem::Type::Colon );
+
+	result.expression= ParseExpression();
+
+	ExpectLexem( Lexem::Type::BracketRight );
+
+	result.block= ParseBlock();
+	return result;
+}
+
 StaticAssert SyntaxAnalyzer::ParseStaticAssert()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ );
@@ -2406,6 +2539,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseAutoVariableDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ )
 			elements.emplace_back( ParseReturnOperator() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::yield_ )
+			elements.emplace_back( ParseYieldOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ )
 			elements.emplace_back( ParseWhileOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ )
@@ -2420,6 +2555,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseIfOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ )
 			elements.emplace_back( ParseStaticIfOperator() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_coro_advance_ )
+			elements.emplace_back( ParseIfCoroAdvanceOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 			elements.emplace_back( ParseStaticAssert() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
@@ -2594,7 +2731,7 @@ std::vector<ComplexName> SyntaxAnalyzer::TryParseClassParentsList()
 	return result;
 }
 
-NonSyncTag SyntaxAnalyzer::TryParseClassNonSyncTag()
+NonSyncTag SyntaxAnalyzer::TryParseNonSyncTag()
 {
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::non_sync_ )
 	{
@@ -2685,6 +2822,13 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			}
 		}
 	}
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::generator_ )
+	{
+		NextLexem();
+		result->kind= Function::Kind::Generator;
+
+		result->coroutine_non_sync_tag= TryParseNonSyncTag();
+	}
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::constexpr_ )
 	{
 		NextLexem();
@@ -2695,6 +2839,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		NextLexem();
 		result->no_mangle_= true;
 	}
+	// TODO - parse "enalbe_if" prior to other modifiers?
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enable_if_ )
 	{
 		NextLexem();
@@ -3020,7 +3165,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		class_kind_attribute= TryParseClassKindAttribute();
 		parents_list= TryParseClassParentsList();
 	}
-	NonSyncTag non_sync_tag= TryParseClassNonSyncTag();
+	NonSyncTag non_sync_tag= TryParseNonSyncTag();
 	const bool keep_fields_order= TryParseClassFieldsOrdered();
 
 	std::unique_ptr<Class> result= ParseClassBody();
@@ -3372,7 +3517,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 				class_kind_attribute= TryParseClassKindAttribute();
 				class_parents_list= TryParseClassParentsList();
 			}
-			NonSyncTag non_sync_tag= TryParseClassNonSyncTag();
+			NonSyncTag non_sync_tag= TryParseNonSyncTag();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
 
 			auto class_= ParseClassBody();

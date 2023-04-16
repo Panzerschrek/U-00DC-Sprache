@@ -262,6 +262,7 @@ fn nomangle LLVMSetInstructionCallConv(LLVMValueRef Instr, LLVMCallConvID CC) un
 fn nomangle LLVMAddFunction(LLVMModuleRef M, NullTerminatedString& Name, LLVMTypeRef FunctionTy) unsafe : LLVMValueRef;
 fn nomangle LLVMSetLinkage(LLVMValueRef Global, LLVMLinkage Linkage) unsafe;
 fn nomangle LLVMSetUnnamedAddress(LLVMValueRef Global, LLVMUnnamedAddr UnnamedAddr) unsafe;
+fn nomangle LLVMGetNamedFunction(LLVMModuleRef M, NullTerminatedString& Name) unsafe : LLVMValueRef;
 
 // Global variable
 
@@ -329,6 +330,8 @@ fn nomangle LLVMGetAggregateElement(LLVMValueRef C, u32 Idx) : LLVMValueRef;
 
 fn nomangle LLVMBuildBr(LLVMBuilderRef Builder, LLVMBasicBlockRef Dest) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildCondBr(LLVMBuilderRef Builder, LLVMValueRef If, LLVMBasicBlockRef Then, LLVMBasicBlockRef Else) unsafe : LLVMValueRef;
+fn nomangle LLVMBuildSwitch(LLVMBuilderRef Builder, LLVMValueRef V, LLVMBasicBlockRef Else, u32 NumCases) unsafe : LLVMValueRef;
+fn nomangle LLVMAddCase(LLVMValueRef Switch, LLVMValueRef OnVal, LLVMBasicBlockRef Dest) unsafe;
 
 fn nomangle LLVMBuildRetVoid(LLVMBuilderRef Builder) unsafe : LLVMValueRef;
 fn nomangle LLVMBuildRet(LLVMBuilderRef Builder, LLVMValueRef V) unsafe : LLVMValueRef;

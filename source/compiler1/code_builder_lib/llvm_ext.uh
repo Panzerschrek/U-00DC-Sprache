@@ -3,6 +3,8 @@ import "llvm.uh"
 // This file contains some helper functions for LLVM structures manipulations, implementing, using C++.
 // If this file changed, "llvm_ext.cpp" must be changed too!
 
+fn nomangle U1_ConstantTokenNone( LLVMContextRef C ) unsafe : LLVMValueRef;
+
 fn nomangle U1_GetFunctionType(LLVMValueRef f) unsafe : LLVMTypeRef;
 
 fn nomangle U1_SetStructName(LLVMTypeRef t, NullTerminatedString& name) unsafe;

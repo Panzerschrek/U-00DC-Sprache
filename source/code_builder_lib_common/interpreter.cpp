@@ -17,8 +17,13 @@ namespace
 
 // TODO - add possibility to setup these values, using compiler options.
 constexpr size_t g_max_data_stack_size= 1024u * 1024u * 64u - 16u; // 64 Megabytes will be enough for stack.
-constexpr size_t g_constants_segment_offset= g_max_data_stack_size + 16u;
+
+constexpr size_t g_globals_segment_offset= g_max_data_stack_size + 16u;
 constexpr size_t g_max_globals_stack_size =1024u * 1024u * 64u; // 64 Megabytes will be enough for constants.
+
+constexpr size_t g_heap_segment_offset= g_globals_segment_offset + g_max_globals_stack_size + 16u;
+constexpr size_t g_max_heap_segment_size= 1024u * 1024u * 64u - 16u; // 64 Megabytes will be enough for heap.
+
 constexpr size_t g_max_call_stack_depth = 1024u;
 
 }
@@ -61,18 +66,18 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 
 				llvm::GenericValue val;
 				val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
-				instructions_map_[ &param ]= std::move(val);
+				current_function_frame_.instructions_map[ &param ]= std::move(val);
 			}
 			else
 			{
 				// Assume this is reference param.
 				llvm::GenericValue val;
 				val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
-				instructions_map_[ &param ]= std::move(val);
+				current_function_frame_.instructions_map[ &param ]= std::move(val);
 			}
 		}
 		else if( param.getType() == args[i]->getType() )
-			instructions_map_[ &param ]= GetVal( args[i] );
+			current_function_frame_.instructions_map[ &param ]= GetVal( args[i] );
 		else U_ASSERT(false);
 
 		++i;
@@ -100,10 +105,12 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 		errors_.push_back( "returning pointer in constexpr function" );
 	else U_ASSERT(false);
 
-	instructions_map_.clear();
+	current_function_frame_.instructions_map.clear();
 	stack_.clear();
-	external_constant_mapping_.clear();
 	globals_stack_.clear();
+	heap_.clear();
+	coroutines_data_.clear();
+	external_constant_mapping_.clear();
 
 	return result;
 }
@@ -121,7 +128,7 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 	for( const llvm::Argument& param : llvm_function->args() )
 	{
 		U_ASSERT( ! param.getType()->isPointerTy() );
-		instructions_map_[ &param ]= args[i];
+		current_function_frame_.instructions_map[ &param ]= args[i];
 
 		++i;
 	}
@@ -132,10 +139,10 @@ Interpreter::ResultGeneric Interpreter::EvaluateGeneric(
 	res.errors= std::move(errors_);
 	errors_= {};
 
-	instructions_map_.clear();
+	current_function_frame_.instructions_map.clear();
 	stack_.clear();
 
-	// Preserve globals and external constants here.
+	// Preserve globals, heap and external constants here.
 
 	return res;
 }
@@ -147,13 +154,7 @@ void Interpreter::RegisterCustomFunction( const llvm::StringRef name, const Cust
 
 void Interpreter::ReadExecutinEngineData( void* const dst, const uint64_t address, const size_t size ) const
 {
-	const size_t offset= size_t(address);
-	const std::byte* data_ptr= nullptr;
-	if( offset >= g_constants_segment_offset )
-		data_ptr= globals_stack_.data() + ( address - g_constants_segment_offset );
-	else
-		data_ptr= stack_.data() + address;
-
+	const std::byte* const data_ptr= const_cast<Interpreter*>(this)->GetMemoryForVirtualAddress( size_t(address ) );
 	std::memcpy( dst, data_ptr, size );
 }
 
@@ -170,12 +171,16 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		return llvm::GenericValue();
 	}
 
+	return CallFunctionImpl( &*llvm_function.getBasicBlockList().front().begin(), stack_depth );
+}
+
+llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instruction, const size_t stack_depth )
+{
 	const size_t prev_stack_size= stack_.size();
 
 	const llvm::BasicBlock* prev_basic_block= nullptr;
-	const llvm::BasicBlock* current_basic_block= &llvm_function.getBasicBlockList().front();
+	const llvm::BasicBlock* current_basic_block= instruction->getParent();
 
-	const llvm::Instruction* instruction= &*current_basic_block->begin();
 	while( errors_.empty() )
 	{
 		switch( instruction->getOpcode() )
@@ -212,6 +217,23 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 			instruction= &*current_basic_block->begin();
 			continue; // Continue loop without advancing instruction.
 
+		case llvm::Instruction::Switch:
+			{
+				prev_basic_block= current_basic_block;
+				const uint64_t index= GetVal(instruction->getOperand(0u)).IntVal.getLimitedValue();
+				current_basic_block= llvm::dyn_cast<llvm::BasicBlock>(instruction->getOperand(1u));
+				for( uint32_t i = 2; i < instruction->getNumOperands(); i+= 2 )
+				{
+					if( GetVal( instruction->getOperand(i) ).IntVal.getLimitedValue() == index )
+					{
+						current_basic_block= llvm::dyn_cast<llvm::BasicBlock>( instruction->getOperand( i + 1 ) );
+						break;
+					}
+				}
+				instruction= &*current_basic_block->begin();
+			}
+			continue; // Continue loop without advancing instruction.
+
 		case llvm::Instruction::PHI:
 			{
 				const auto phi_node= llvm::dyn_cast<llvm::PHINode>(instruction);
@@ -220,7 +242,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 				{
 					if( phi_node->getIncomingBlock(i) == prev_basic_block)
 					{
-						instructions_map_[instruction]= GetVal( phi_node->getIncomingValue(i) );
+						current_function_frame_.instructions_map[instruction]= GetVal( phi_node->getIncomingValue(i) );
 						break;
 					}
 					U_ASSERT( i + 1u != phi_node->getNumIncomingValues() );
@@ -241,7 +263,7 @@ llvm::GenericValue Interpreter::CallFunction( const llvm::Function& llvm_functio
 		case llvm::Instruction::Select:
 			{
 				const llvm::GenericValue bool_val= GetVal(instruction->getOperand(0u));
-				instructions_map_[instruction]= GetVal( instruction->getOperand( bool_val.IntVal.getBoolValue() ? 1u : 2u ) );
+				current_function_frame_.instructions_map[instruction]= GetVal( instruction->getOperand( bool_val.IntVal.getBoolValue() ? 1u : 2u ) );
 			}
 			break;
 
@@ -289,11 +311,11 @@ size_t Interpreter::MoveConstantToStack( const llvm::Constant& constant )
 	}
 	globals_stack_.resize( new_stack_size );
 
-	external_constant_mapping_[&constant]= stack_offset + g_constants_segment_offset;
+	external_constant_mapping_[&constant]= stack_offset + g_globals_segment_offset;
 
 	CopyConstantToStack( constant, stack_offset );
 
-	return stack_offset + g_constants_segment_offset;
+	return stack_offset + g_globals_segment_offset;
 }
 
 void Interpreter::CopyConstantToStack( const llvm::Constant& constant, const size_t stack_offset )
@@ -554,8 +576,8 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 	}
 	else
 	{
-		U_ASSERT( instructions_map_.find( val ) != instructions_map_.end() );
-		res= instructions_map_[val];
+		U_ASSERT( current_function_frame_.instructions_map.find( val ) != current_function_frame_.instructions_map.end() );
+		res= current_function_frame_.instructions_map[val];
 	}
 	return res;
 }
@@ -564,19 +586,48 @@ void Interpreter::ProcessAlloca( const llvm::Instruction* const instruction )
 {
 	const auto alloca_instruction= llvm::dyn_cast<llvm::AllocaInst>(instruction);
 	llvm::Type* const element_type= alloca_instruction->getAllocatedType();
+	const size_t element_size= size_t(data_layout_.getTypeAllocSize( element_type ));
 
-	const size_t stack_offset= stack_.size();
-	const size_t new_stack_size= stack_.size() + size_t(data_layout_.getTypeAllocSize( element_type ));
-	if( new_stack_size >= g_max_data_stack_size )
+	size_t address= 0u;
+	if( current_function_frame_.is_coroutine )
 	{
-		ReportDataStackOverflow();
-		return;
+		// Allocate from heap if this is a coroutine.
+		// This is needed, because we need stable addresses during coroutine resume.
+		address= heap_.size() + g_heap_segment_offset;
+		const size_t new_heap_size= heap_.size() + element_size;
+		if( new_heap_size >= g_max_heap_segment_size )
+		{
+			errors_.push_back( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached" );
+			return;
+		}
+		heap_.resize( new_heap_size );
 	}
-	stack_.resize( new_stack_size );
+	else
+	{
+		address= stack_.size();
+		const size_t new_stack_size= stack_.size() + element_size;
+		if( new_stack_size >= g_max_data_stack_size )
+		{
+			ReportDataStackOverflow();
+			return;
+		}
+		stack_.resize( new_stack_size );
+	}
 
 	llvm::GenericValue val;
-	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(stack_offset) );
-	instructions_map_[ instruction ]= val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(address) );
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+std::byte* Interpreter::GetMemoryForVirtualAddress( const size_t offset )
+{
+	// Map virtual memory addresses to one of existing segments.
+	// TODO - produce error if address is wrong.
+	if( offset >= g_heap_segment_offset )
+		return heap_.data() + ( offset - g_heap_segment_offset );
+	if( offset >= g_globals_segment_offset )
+		return globals_stack_.data() + ( offset - g_globals_segment_offset );
+	return stack_.data() + offset;
 }
 
 void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
@@ -584,13 +635,8 @@ void Interpreter::ProcessLoad( const llvm::Instruction* const instruction )
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(0u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	const std::byte* data_ptr= nullptr;
-	if( offset >= g_constants_segment_offset )
-		data_ptr= globals_stack_.data() + ( offset - g_constants_segment_offset );
-	else
-		data_ptr= stack_.data() + offset;
-
-	instructions_map_[ instruction ]= DoLoad( data_ptr, instruction->getType() );
+	const std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
+	current_function_frame_.instructions_map[ instruction ]= DoLoad( data_ptr, instruction->getType() );
 }
 
 llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const t )
@@ -648,11 +694,7 @@ void Interpreter::ProcessStore( const llvm::Instruction* const instruction )
 	const llvm::GenericValue address_val= GetVal( instruction->getOperand(1u) );
 
 	const size_t offset= size_t(address_val.IntVal.getLimitedValue());
-	std::byte* data_ptr= nullptr;
-	if( offset >= g_constants_segment_offset )
-		data_ptr= globals_stack_.data() + ( offset - g_constants_segment_offset );
-	else
-		data_ptr= stack_.data() + offset;
+	std::byte* const data_ptr= GetMemoryForVirtualAddress( offset );
 
 	const auto value_operand= instruction->getOperand(0u);
 	DoStore( data_ptr, GetVal( value_operand ), value_operand->getType() );
@@ -711,7 +753,7 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 
 void Interpreter::ProcessGEP( const llvm::Instruction* const instruction )
 {
-	instructions_map_[instruction]= BuildGEP( instruction );
+	current_function_frame_.instructions_map[instruction]= BuildGEP( instruction );
 }
 
 void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const size_t stack_depth )
@@ -729,19 +771,68 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 
 	U_ASSERT( function->arg_size() == instruction->getNumOperands() - 1u );
 
+	const llvm::StringRef function_name= function->getName();
+
 	if( function->isIntrinsic() )
 	{
-		if( function->getIntrinsicID() == llvm::Intrinsic::dbg_declare ||
-			function->getIntrinsicID() == llvm::Intrinsic::lifetime_start ||
-			function->getIntrinsicID() == llvm::Intrinsic::lifetime_end)
-			return;
-		if( function->getIntrinsicID() == llvm::Intrinsic::memcpy || function->getIntrinsicID() == llvm::Intrinsic::memmove )
+		switch( function->getIntrinsicID() )
 		{
+		case llvm::Intrinsic::dbg_declare:
+		case llvm::Intrinsic::lifetime_start:
+		case llvm::Intrinsic::lifetime_end:
+			return;
+		case llvm::Intrinsic::memcpy:
+		case llvm::Intrinsic::memmove:
 			ProcessMemmove( instruction );
 			return;
-		}
+		case llvm::Intrinsic::coro_id:
+			ProcessCoroId( instruction );
+			return;
+		case llvm::Intrinsic::coro_alloc:
+			ProcessCoroAlloc( instruction );
+			return;
+		case llvm::Intrinsic::coro_free:
+			ProcessCoroFree( instruction );
+			return;
+		case llvm::Intrinsic::coro_size:
+			ProcessCoroSize( instruction );
+			return;
+		case llvm::Intrinsic::coro_begin:
+			ProcessCoroBegin( instruction );
+			return;
+		case llvm::Intrinsic::coro_end:
+			ProcessCoroEnd( instruction );
+			return;
+		case llvm::Intrinsic::coro_suspend:
+			ProcessCoroSuspend( instruction );
+			return;
+		case llvm::Intrinsic::coro_resume:
+			ProcessCoroResume( instruction, stack_depth );
+			return;
+		case llvm::Intrinsic::coro_destroy:
+			ProcessCoroDestroy( instruction, stack_depth );
+			return;
+		case llvm::Intrinsic::coro_done:
+			ProcessCoroDone( instruction );
+			return;
+		case llvm::Intrinsic::coro_promise:
+			ProcessCoroPromise( instruction );
+			return;
+		default:
+			break;
+		};
 	}
-	else if( const auto func_it= custom_functions_.find( function->getName() ); func_it != custom_functions_.end() )
+	else if( function_name == "malloc" || function_name == "ust_memory_allocate_impl" || function_name == "__U_ust_memory_allocate_impl" )
+	{
+		ProcessMalloc( instruction );
+		return;
+	}
+	else if( function_name == "free" || function_name == "ust_memory_free_impl" || function_name == "__U_ust_memory_free_impl" )
+	{
+		ProcessFree( instruction );
+		return;
+	}
+	else if( const auto func_it= custom_functions_.find( function_name ); func_it != custom_functions_.end() )
 	{
 		const CustomFunction func= func_it->second;
 		llvm::SmallVector<llvm::GenericValue, 8> args;
@@ -749,27 +840,28 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 		for( size_t i= 0; i < function->arg_size(); ++i )
 			args.push_back( GetVal( instruction->getOperand(uint32_t(i)) ) );
 
-		instructions_map_[instruction]= func( function->getFunctionType(), args );
+		current_function_frame_.instructions_map[instruction]= func( function->getFunctionType(), args );
 		return;
 	}
 
-	InstructionsMap new_instructions_map;
+	CallFrame call_frame;
+	call_frame.is_coroutine= function->hasFnAttribute( llvm::Attribute::PresplitCoroutine );
 
 	const size_t prev_stack_size= stack_.size();
 
 	uint32_t i= 0u;
 	for( const llvm::Argument& arg : function->args() )
 	{
-		new_instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
+		call_frame.instructions_map[ &arg ]= GetVal( instruction->getOperand(i) );
 		++i;
 	}
 
-	instructions_map_.swap(new_instructions_map);
+	std::swap( call_frame, current_function_frame_ );
 	llvm::GenericValue result_val= CallFunction( *function, stack_depth + 1u );
-	instructions_map_.swap(new_instructions_map);
+	std::swap( call_frame, current_function_frame_ );
 
 	if( !function->getReturnType()->isVoidTy() )
-		instructions_map_[instruction]= result_val;
+		current_function_frame_.instructions_map[instruction]= result_val;
 
 	stack_.resize( prev_stack_size ); // Drop temporary byval arguments.
 }
@@ -780,16 +872,180 @@ void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
 	const size_t src_offset= size_t( GetVal( instruction->getOperand(1u) ).IntVal.getLimitedValue() );
 	const size_t size= size_t( GetVal( instruction->getOperand(2u) ).IntVal.getLimitedValue() );
 
-	std::byte* const dst_ptr=
-		( dst_offset >= g_constants_segment_offset )
-			? ( globals_stack_.data() + ( dst_offset - g_constants_segment_offset ) )
-			: ( stack_.data() + dst_offset );
-	const std::byte* const src_ptr=
-		( src_offset >= g_constants_segment_offset )
-			? ( globals_stack_.data() + ( src_offset - g_constants_segment_offset ) )
-			: ( stack_.data() + src_offset );
+	std::byte* const dst_ptr= GetMemoryForVirtualAddress( dst_offset );
+	const std::byte* const src_ptr= GetMemoryForVirtualAddress( src_offset );
 
 	std::memmove( dst_ptr, src_ptr, size );
+}
+
+void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
+{
+	const size_t size= size_t( GetVal( instruction->getOperand(0u) ).IntVal.getLimitedValue() );
+
+	const size_t offset= heap_.size();
+
+	const size_t new_size= offset + size;
+	if( new_size >= g_max_heap_segment_size )
+	{
+		errors_.push_back( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached" );
+		return;
+	}
+	heap_.resize( new_size );
+
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(offset + g_heap_segment_offset) );
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessFree( const llvm::CallInst* const instruction )
+{
+	(void) instruction;
+	// Now we manage heap as stack and can't properly free memory from it.
+}
+
+void Interpreter::ProcessCoroId( const llvm::CallInst* const instruction )
+{
+	const llvm::GenericValue alignment= GetVal( instruction->getOperand(0u) );
+	const llvm::GenericValue promise= GetVal( instruction->getOperand(1u) );
+	const llvm::GenericValue coroaddr= GetVal( instruction->getOperand(2u) );
+	const llvm::GenericValue fnaddrs= GetVal( instruction->getOperand(3u) );
+
+	(void)alignment;
+	(void)coroaddr;
+	(void)fnaddrs;
+
+	CoroutineData coroutine_data;
+	coroutine_data.promise= promise;
+
+	const auto coroutine_id= next_coroutine_id_;
+	++next_coroutine_id_;
+	coroutines_data_[coroutine_id]= std::move(coroutine_data);
+
+	current_function_frame_.coroutine_data= &coroutines_data_[coroutine_id];
+
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t( coroutine_id ) );
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessCoroAlloc( const llvm::CallInst* const instruction )
+{
+	// Do not allocate memory for coroutine - return false.
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( 1u, uint64_t(0u) );
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessCoroFree( const llvm::CallInst* const instruction )
+{
+	const llvm::GenericValue token= GetVal( instruction->getOperand(0u) );
+	const uint32_t coroutine_id= uint32_t(token.IntVal.getLimitedValue());
+	coroutines_data_.erase( coroutine_id );
+
+	// Return "false" in order to signal, that there is no need to call "free".
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(0u) );
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessCoroSize( const llvm::CallInst* const instruction )
+{
+	// Do not allocate memory for coroutine - return zero size.
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(0) );
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessCoroBegin( const llvm::CallInst* const instruction )
+{
+	const llvm::GenericValue token= GetVal( instruction->getOperand(0u) );
+	const llvm::GenericValue memory= GetVal( instruction->getOperand(1u) );
+
+	(void)memory;
+
+	// Reuse token also as coroutine handle.
+	current_function_frame_.instructions_map[ instruction ]= token;
+}
+
+void Interpreter::ProcessCoroEnd( const llvm::CallInst* const instruction )
+{
+	// Do nothing here
+	(void) instruction;
+}
+
+void Interpreter::ProcessCoroSuspend( const llvm::CallInst* const instruction )
+{
+	U_ASSERT( current_function_frame_.coroutine_data != nullptr );
+
+	// const llvm::GenericValue token_save= GetVal( instruction->getOperand(0u) );
+	const llvm::GenericValue is_final= GetVal( instruction->getOperand(1u) );
+
+	current_function_frame_.coroutine_data->instructions_map= current_function_frame_.instructions_map;
+	current_function_frame_.coroutine_data->suspend_instruction= instruction;
+	current_function_frame_.coroutine_data->done= is_final.IntVal.isAllOnes();
+
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( 8u, uint64_t(255) ); // return -1 as result for suspension.
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessCoroResume( const llvm::CallInst* const instruction, const size_t stack_depth )
+{
+	ResumeCoroutine( instruction, stack_depth, false );
+}
+
+void Interpreter::ProcessCoroDestroy( const llvm::CallInst* const instruction, const size_t stack_depth )
+{
+	ResumeCoroutine( instruction, stack_depth, true );
+}
+
+void Interpreter::ProcessCoroDone( const llvm::CallInst* const instruction )
+{
+	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
+	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
+	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
+
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( 1u, coroutine_data.done ? uint64_t(1) : uint64_t(0) );
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
+{
+	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
+	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
+	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
+
+	current_function_frame_.instructions_map[ instruction ]= coroutine_data.promise;
+}
+
+void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const size_t stack_depth, const bool destroy )
+{
+	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
+	const uint32_t coroutine_id= uint32_t(handle.IntVal.getLimitedValue());
+	CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
+
+	CallFrame call_frame;
+	call_frame.instructions_map= coroutine_data.instructions_map;
+	call_frame.coroutine_data= &coroutine_data;
+	call_frame.is_coroutine= true;
+
+	const size_t prev_stack_size= stack_.size();
+
+	std::swap( call_frame, current_function_frame_ );
+
+	{ // Set resuly of "suspend" instriction.
+		llvm::GenericValue val;
+		val.IntVal= llvm::APInt( 8u, destroy ? uint64_t(1) : uint64_t(0) );
+		current_function_frame_.instructions_map[ coroutine_data.suspend_instruction ]= val;
+	}
+	// Continue execution starting with next instruction.
+	CallFunctionImpl( coroutine_data.suspend_instruction->getNextNode(), stack_depth );
+
+	std::swap( call_frame, current_function_frame_ );
+
+	// Coroutine should not allocate anything on stack.
+	U_ASSERT( stack_.size() == prev_stack_size );
 }
 
 void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* const instruction )
@@ -950,7 +1206,7 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 		break;
 	}
 
-	instructions_map_[instruction]= val;
+	current_function_frame_.instructions_map[instruction]= val;
 }
 
 void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* const instruction )
@@ -1142,7 +1398,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 		break;
 	};
 
-	instructions_map_[instruction]= val;
+	current_function_frame_.instructions_map[instruction]= val;
 }
 
 void Interpreter::ReportDataStackOverflow()

@@ -123,16 +123,7 @@ bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const
 				else
 				{
 					// Process general non_sync expression. This approach can't resolve circular dependency.
-					const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
-					if( v->type != bool_type_ )
-					{
-						REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v->type );
-					}
-					else if( v->constexpr_value == nullptr )
-					{
-						REPORT_ERROR( ExpectedConstantExpression, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
-					}
-					else if( !v->constexpr_value->isZeroValue() )
+					if( EvaluateBoolConstantExpression( class_parent_scope, *global_function_context_, expression ) )
 					{
 						prev_types_stack.pop_back();
 						return true;
@@ -140,6 +131,13 @@ bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const
 				}
 			}
 			else{ U_ASSERT(false); } // Unhandled non_sync tag kind.
+		}
+
+		// Check coroutines non_sync flag.
+		if( class_type->coroutine_type_description != std::nullopt && class_type->coroutine_type_description->non_sync )
+		{
+			prev_types_stack.pop_back();
+			return true;
 		}
 
 		// Check "non_sync" tag existence for parents.
@@ -190,27 +188,24 @@ bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const
 	return false;
 }
 
+bool CodeBuilder::ImmediateEvaluateNonSyncTag( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag )
+{
+	if( std::get_if<Synt::NonSyncTagNone>( &non_sync_tag ) != nullptr )
+		return false;
+	if( std::get_if<Synt::NonSyncTagTrue>( &non_sync_tag ) != nullptr )
+		return true;
+	if( const auto expression_ptr= std::get_if<Synt::ExpressionPtr>( &non_sync_tag ) )
+		return EvaluateBoolConstantExpression( names, function_context, **expression_ptr );
+	U_ASSERT(false); // Unhandled non_sync tag kind.
+	return false;
+}
+
 void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 {
 	if( class_type->syntax_element != nullptr )
 	{
-		if( const auto expression_ptr= std::get_if<Synt::ExpressionPtr>( &class_type->syntax_element->non_sync_tag_ ) )
-		{
-			const Synt::Expression& expression= **expression_ptr;
-
-			// Evaluate non_sync condition using initial class members parent scope.
-			NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
-
-			const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, class_parent_scope, *global_function_context_ );
-			if( v->type != bool_type_ )
-			{
-				REPORT_ERROR( TypesMismatch, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v->type );
-			}
-			if( v->constexpr_value == nullptr )
-			{
-				REPORT_ERROR( ExpectedConstantExpression, class_parent_scope.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
-			}
-		}
+		// Evaluate non_sync condition using initial class members parent scope.
+		ImmediateEvaluateNonSyncTag(  *class_type->members_initial->GetParent(), *global_function_context_, class_type->syntax_element->non_sync_tag_ );
 	}
 }
 

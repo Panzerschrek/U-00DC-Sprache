@@ -210,3 +210,13 @@ PROCESS_ERROR( ValueIsNotReference, "Value is not a reference. Expected mutable 
 PROCESS_ERROR( ValueIsNotPointer, "Value of type \"{0}\" is not a pointer." )
 PROCESS_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, "Raw pointer to reference conversion outside unsafe block." )
 PROCESS_ERROR( DifferenceBetweenRawPointersWithZeroElementSize, "Can not calculate difference between pointers of type \"{0}\" with zero element size." )
+
+// Generators
+PROCESS_ERROR( YieldOutsideGenerator, "Yield operator is allowed only inside generator functions." )
+PROCESS_ERROR( IfCoroAdvanceForNonCoroutineValue, "if_coro_advance used for non-coroutine value of type \"{0}\"." )
+PROCESS_ERROR( GeneratorMismatch, "\"generator\" specifiers mismatch for function \"{0}\"." )
+PROCESS_ERROR( NonDefaultCallingConventionForGenerator, "generator function can have only default calling convention." )
+PROCESS_ERROR( VirtualGenerator, "generator method can't be virtual." )
+PROCESS_ERROR( AutoReturnGenerator, "auto return is not supported for generator functions." )
+PROCESS_ERROR( GeneratorSpecialMethod, "Special method can't be generator." )
+PROCESS_ERROR( GeneratorNonSyncRequired, "Generator has non-sync arguments and/or return value - \"non_sync\" tag required for it." )

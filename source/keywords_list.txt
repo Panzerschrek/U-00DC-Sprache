@@ -3,12 +3,14 @@ op
 var
 auto
 return
+yield
 while
 break
 continue
 if
 static_if
 enable_if
+if_coro_advance
 else
 move
 take
@@ -27,6 +29,7 @@ call_conv
 virtual
 override
 pure
+generator
 namespace
 public
 private

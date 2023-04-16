@@ -139,6 +139,9 @@ struct ClassType
 	}
 	ust::optional</BaseTemplate/> base_template;
 
+	// Non-empty if this is a coroutine type.
+	ust::optional</CoroutineTypeDescription/> coroutine_type_description;
+
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	bool is_complete= false;
@@ -272,7 +275,7 @@ public:
 	fn hash( ClassTypePtr& t ) : size_type;
 	fn hash( EnumTypePtr& t ) : size_type;
 
-private:
+public:
 	// TODO - move it into standard library.
 	fn hash_combine( size_type x, size_type y ) : size_type;
 }
@@ -355,6 +358,7 @@ struct FunctionVariable
 	bool is_deleted= false;
 	bool no_mangle= false;
 	bool is_inherited= false;
+	bool is_generator= false;
 	u32 virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 
 	enum ConstexprKind : u8
@@ -468,6 +472,28 @@ struct TypeAlias
 	ust::optional</ Type /> t; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::TypeAlias /> syntax_element;
+}
+
+enum CoroutineKind : u8
+{
+	Generator,
+}
+
+struct CoroutineTypeDescription
+{
+	CoroutineKind kind;
+	Type return_type;
+	ValueType return_value_type;
+
+	InnerReferenceKind inner_reference_kind;
+	bool non_sync_;
+
+	type hasher= CoroutineTypeDescriptionHasher;
+}
+
+struct CoroutineTypeDescriptionHasher
+{
+	fn hash(CoroutineTypeDescription& d) : size_type;
 }
 
 //
@@ -623,6 +649,16 @@ public:
 		ust::vector</Param/> params;
 	}
 
+	struct CoroutineTypeParam
+	{
+		CoroutineKind kind;
+		TemplateSignatureParam return_type;
+		ValueType return_value_type;
+
+		InnerReferenceKind inner_reference_kind;
+		bool non_sync_;
+	}
+
 	struct SpecializedTemplateParam
 	{
 		ust::shared_ptr_imut</ TypeTemplatesSet /> type_templates_set;
@@ -636,6 +672,7 @@ public:
 	fn conversion_constructor( TupleTypeParam mut tuple_type_param );
 	fn conversion_constructor( RawPointerTypeParam mut raw_pointer_type_param );
 	fn conversion_constructor( FunctionTypeParam mut function_type_param );
+	fn conversion_constructor( CoroutineTypeParam mut generator_type_param );
 	fn conversion_constructor( SpecializedTemplateParam mut specialized_template_param );
 
 	fn GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam />'this';
@@ -645,6 +682,7 @@ public:
 	fn GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam />'this';
 	fn GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this';
 	fn GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this';
+	fn GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam />'this';
 	fn GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this';
 
 	op==(TemplateSignatureParam& l, TemplateSignatureParam& r) : bool;
@@ -658,6 +696,7 @@ private:
 		ust::box</ TupleTypeParam />,
 		ust::box</ RawPointerTypeParam />,
 		ust::box</ FunctionTypeParam />,
+		ust::box</ CoroutineTypeParam />,
 		ust::box</ SpecializedTemplateParam />
 		] />;
 
@@ -792,5 +831,7 @@ private:
 	ust::unordered_map</ClassTypePtr, Synt::ClassVisibility/> access_rights_;
 	ErrorsContainerPtr errors_container_;
 }
+
+fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr;
 
 } // namespace U1

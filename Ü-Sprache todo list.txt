@@ -14,14 +14,14 @@ General:
 *) More float types ( 16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
 *) Lambdas.
-*) Coroutines.
+*) Async functions.
 *) Continious initializer for arrays
 *) More advanced macros - more context, elements, string manipulations
 *) Some code customization mechanism (like preprocessor directives and ifdef/endif in C++).
 *) debug_assert
 
 References:
-*) Tags for struct/class references
+*) Multiple inner reference tags for some types
 *) Separate reference checking for array elements while accessing via constexpr index
 
 Templates:

@@ -335,6 +335,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *raw_pointer_type_name );
 	else if( const auto function_pointer_type_name_ptr= std::get_if<Synt::FunctionTypePtr>(&template_parameter) )
 		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *function_pointer_type_name_ptr );
+	else if( const auto generator_type_name_ptr= std::get_if<Synt::GeneratorTypePtr>(&template_parameter) )
+		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *generator_type_name_ptr );
 
 	return ValueToTemplateParam( BuildExpressionCode( template_parameter, names_scope, function_context ), names_scope );
 }
@@ -480,6 +482,62 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, raw_pointer_type_name ) };
 
 	return raw_pointer_param;
+}
+
+TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
+	std::vector<bool>& template_parameters_usage_flags,
+	const Synt::GeneratorTypePtr& generator_type_name_ptr )
+{
+	const Synt::GeneratorType& generator_type_name= *generator_type_name_ptr;
+
+	TemplateSignatureParam::CoroutineParam coroutine_param;
+
+	coroutine_param.return_type=
+		std::make_unique<TemplateSignatureParam>(
+			CreateTemplateSignatureParameter(
+				names_scope,
+				function_context,
+				template_parameters,
+				template_parameters_usage_flags,
+				generator_type_name.return_type ) );
+
+	if( coroutine_param.return_type->IsType() )
+		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, generator_type_name_ptr ) };
+
+	coroutine_param.kind= CoroutineKind::Generator;
+
+	if( generator_type_name.return_value_reference_modifier == ReferenceModifier::Reference )
+		coroutine_param.return_value_type=
+			generator_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable
+				? ValueType::ReferenceMut
+				: ValueType::ReferenceImut;
+	else
+		coroutine_param.return_value_type= ValueType::Value;
+
+	if( generator_type_name.inner_reference_tag == nullptr )
+		coroutine_param.inner_reference_type= InnerReferenceType::None;
+	else
+		coroutine_param.inner_reference_type=
+			generator_type_name.inner_reference_tag->mutability_modifier == MutabilityModifier::Mutable
+				? InnerReferenceType::Mut
+				: InnerReferenceType::Imut;
+
+	coroutine_param.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
+
+	if( !generator_type_name.return_value_reference_tag.empty() )
+	{
+		bool found= false;
+		if( generator_type_name.inner_reference_tag != nullptr && generator_type_name.inner_reference_tag->name == generator_type_name.return_value_reference_tag )
+			found= true;
+
+		if( !found )
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc_, generator_type_name.return_value_reference_tag );
+	}
+
+	return coroutine_param;
 }
 
 TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, NamesScope& names_scope )
@@ -754,6 +812,31 @@ bool CodeBuilder::MatchTemplateArgImpl(
 		}
 	}
 
+	return false;
+}
+
+bool CodeBuilder::MatchTemplateArgImpl(
+	const TemplateBase& template_,
+	NamesScope& args_names_scope,
+	const TemplateArg& template_arg,
+	const SrcLoc& src_loc,
+	const TemplateSignatureParam::CoroutineParam& template_param )
+{
+	if( const auto given_type= std::get_if<Type>( &template_arg ) )
+	{
+		if( const auto given_class= given_type->GetClassType() )
+		{
+			if( given_class->coroutine_type_description != std::nullopt )
+			{
+				return
+					given_class->coroutine_type_description->kind == template_param.kind &&
+					given_class->coroutine_type_description->return_value_type == template_param.return_value_type &&
+					given_class->coroutine_type_description->inner_reference_type == template_param.inner_reference_type &&
+					given_class->coroutine_type_description->non_sync == template_param.non_sync &&
+					MatchTemplateArg( template_, args_names_scope, given_class->coroutine_type_description->return_type, src_loc, *template_param.return_type );
+			}
+		}
+	}
 	return false;
 }
 

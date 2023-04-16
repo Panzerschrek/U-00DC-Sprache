@@ -415,17 +415,6 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeinfo& typeinfo_ ) : Value
 {
-	var NamesScopePtr mut root_names_scope= names_scope;
-	while(true)
-	{
-		auto parent= root_names_scope.lock_imut().deref().GetParent();
-		if( parent.empty() )
-		{
-			break;
-		}
-		root_names_scope= parent.try_to_non_nullable();
-	}
-
 	var Type t= PrepareType( names_scope, function_context, typeinfo_.type_name );
 	if( !EnsureTypeComplete( t ) )
 	{
@@ -433,7 +422,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	var VariablePtr mut result= BuildTypeinfo( t, root_names_scope );
+	var VariablePtr mut result= BuildTypeinfo( t, GetRootNamespace( names_scope ) );
 	function_context.references_graph.AddNodeIfNotExists( result );
 	return move(result);
 }
@@ -1754,6 +1743,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::FunctionType/>& function_type ) : Value
 {
 	return PrepareType( names_scope, function_context, function_type );
+}
+
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::GeneratorType/>& generator_type ) : Value
+{
+	return PrepareType( names_scope, function_context, generator_type );
 }
 
 fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value
@@ -4073,6 +4067,25 @@ fn CodeBuilder::ConvertVariable(
 
 	RegisterTemporaryVariable( function_context, result_ptr );
 	return move(result_ptr);
+}
+
+fn CodeBuilder::EvaluateBoolConstantExpression( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : bool
+{
+	var VariableLite v= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
+	if( v.t != bool_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names_scope, Synt::GetSrcLoc( expression ), bool_type_, v.t )
+		return false;
+	}
+	if( v.constexpr_value == LLVMValueRef::Null )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( expression ) )
+		return false;
+	}
+
+	// Do not need to destroy variables here, because this function is normally called only in constexr context.
+
+	return unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) != 0u64;
 }
 
 } // namespace U1

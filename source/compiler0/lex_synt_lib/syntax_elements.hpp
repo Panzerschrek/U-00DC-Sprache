@@ -24,6 +24,7 @@ struct TypeofTypeName;
 struct FunctionType;
 struct TupleType;
 struct RawPointerType;
+struct GeneratorType;
 
 struct UnaryPlus;
 struct UnaryMinus;
@@ -62,6 +63,7 @@ struct Block;
 struct VariablesDeclaration;
 struct AutoVariableDeclaration;
 struct ReturnOperator;
+struct YieldOperator;
 struct WhileOperator;
 struct RangeForOperator;
 struct CStyleForOperator;
@@ -70,6 +72,7 @@ struct ContinueOperator;
 struct WithOperator;
 struct IfOperator;
 struct StaticIfOperator;
+struct IfCoroAdvanceOperator;
 struct SingleExpressionOperator;
 struct AssignmentOperator;
 struct AdditiveAssignmentOperator;
@@ -91,6 +94,7 @@ struct FunctionTemplate;
 struct Namespace;
 
 using FunctionTypePtr= std::unique_ptr<const FunctionType>;
+using GeneratorTypePtr= std::unique_ptr<const GeneratorType>;
 using BlockPtr= std::unique_ptr<const Block>;
 using ClassPtr= std::unique_ptr<const Class>;
 using FunctionPtr= std::unique_ptr<const Function>;
@@ -102,7 +106,8 @@ using TypeName= std::variant<
 	ComplexName,
 	FunctionTypePtr,
 	TupleType,
-	RawPointerType >;
+	RawPointerType,
+	GeneratorTypePtr >;
 
 using TypeNamePtr= std::unique_ptr<const TypeName>;
 
@@ -140,7 +145,8 @@ using Expression= std::variant<
 	ArrayTypeName,
 	FunctionTypePtr,
 	TupleType,
-	RawPointerType
+	RawPointerType,
+	GeneratorTypePtr
 	>;
 
 using ExpressionPtr= std::unique_ptr<const Expression>;
@@ -159,6 +165,7 @@ using BlockElement= std::variant<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	ReturnOperator,
+	YieldOperator,
 	WhileOperator,
 	RangeForOperator,
 	CStyleForOperator,
@@ -167,6 +174,7 @@ using BlockElement= std::variant<
 	WithOperator,
 	IfOperator,
 	StaticIfOperator,
+	IfCoroAdvanceOperator,
 	SingleExpressionOperator,
 	AssignmentOperator,
 	AdditiveAssignmentOperator,
@@ -206,6 +214,10 @@ using ProgramElement= std::variant<
 	NamespacePtr >;
 
 using ProgramElements= std::vector<ProgramElement>;
+
+struct NonSyncTagNone{};
+struct NonSyncTagTrue{};
+using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, ExpressionPtr>;
 
 struct SyntaxElementBase
 {
@@ -280,6 +292,27 @@ struct RawPointerType final : public SyntaxElementBase
 	TypeNamePtr element_type;
 };
 
+struct GeneratorType final : public SyntaxElementBase
+{
+public:
+	GeneratorType( const SrcLoc& src_loc );
+
+	struct InnerReferenceTag
+	{
+		std::string name;
+		MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	};
+
+public:
+	std::optional<MutabilityModifier> inner_reference_mutability_modifier;
+	NonSyncTag non_sync_tag;
+	TypeName return_type;
+	std::unique_ptr<const InnerReferenceTag> inner_reference_tag; // Make array when multiple inner reference tags will be implemented.
+	std::string return_value_reference_tag; // Inner tag for values, reference tag for references.
+	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
+};
+
 using FunctionReferencesPollution= std::pair< std::string, std::string >;
 using FunctionReferencesPollutionList= std::vector<FunctionReferencesPollution>;
 
@@ -293,7 +326,7 @@ struct FunctionType final : public SyntaxElementBase
 	std::optional<std::string> calling_convention_;
 	TypeNamePtr return_type_;
 	std::string return_value_reference_tag_;
-	FunctionReferencesPollutionList referecnces_pollution_list_;
+	FunctionReferencesPollutionList references_pollution_list_;
 	FunctionParams params_;
 	std::string return_value_inner_reference_tag_;
 
@@ -582,6 +615,13 @@ struct ReturnOperator final : public SyntaxElementBase
 	Expression expression_;
 };
 
+struct YieldOperator final : public SyntaxElementBase
+{
+	YieldOperator( const SrcLoc& src_loc );
+
+	Expression expression;
+};
+
 struct WhileOperator final : public SyntaxElementBase
 {
 	WhileOperator( const SrcLoc& src_loc );
@@ -666,6 +706,17 @@ struct StaticIfOperator final : public SyntaxElementBase
 	StaticIfOperator( const SrcLoc& src_loc );
 
 	IfOperator if_operator_;
+};
+
+struct IfCoroAdvanceOperator final : public SyntaxElementBase
+{
+	IfCoroAdvanceOperator( const SrcLoc& src_loc );
+
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	std::string variable_name;
+	Expression expression;
+	Block block;
 };
 
 struct SingleExpressionOperator final : public SyntaxElementBase
@@ -770,6 +821,12 @@ struct Function final : public SyntaxElementBase
 		BodyGenerationDisabled,
 	};
 
+	enum class Kind : uint8_t
+	{
+		Regular,
+		Generator,
+	};
+
 	std::vector<std::string> name_; // A, A::B, A::B::C::D, ::A, ::A::B
 	Expression condition_;
 	FunctionType type_;
@@ -778,6 +835,8 @@ struct Function final : public SyntaxElementBase
 	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
 	BodyKind body_kind= BodyKind::None;
+	NonSyncTag coroutine_non_sync_tag; // Non-empty for generators
+	Kind kind= Kind::Regular;
 	bool no_mangle_= false;
 	bool is_conversion_constructor_= false;
 	bool constexpr_= false;
@@ -819,9 +878,6 @@ struct ClassVisibilityLabel final : public SyntaxElementBase
 	const ClassMemberVisibility visibility_;
 };
 
-struct NonSyncTagNone{};
-struct NonSyncTagTrue{};
-using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, ExpressionPtr>;
 
 struct Class final : public SyntaxElementBase
 {

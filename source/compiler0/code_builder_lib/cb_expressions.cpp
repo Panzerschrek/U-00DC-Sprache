@@ -1616,6 +1616,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
 }
 
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::GeneratorTypePtr& type_name )
+{
+	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name->src_loc_ );
+}
+
+
 VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionContext& function_context )
 {
 	const Class* const variabe_type_class= variable->type.GetClassType();
@@ -3696,6 +3705,25 @@ VariablePtr CodeBuilder::ConvertVariable(
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
+}
+
+bool CodeBuilder::EvaluateBoolConstantExpression( NamesScope& names, FunctionContext& function_context, const Synt::Expression& expression )
+{
+	const VariablePtr v= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+	if( v->type != bool_type_ )
+	{
+		REPORT_ERROR( TypesMismatch, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ), bool_type_, v->type );
+		return false;
+	}
+	if( v->constexpr_value == nullptr )
+	{
+		REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
+		return false;
+	}
+
+	// Do not need to destroy variables here, because this function is normally called only in constexr context.
+
+	return v->constexpr_value->isAllOnesValue();
 }
 
 FunctionType::Param CodeBuilder::PreEvaluateArg( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context )

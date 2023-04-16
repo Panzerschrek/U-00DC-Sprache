@@ -8,6 +8,11 @@
 #include "../../code_builder_lib_common/return_value_optimization.hpp"
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+extern "C" LLVMValueRef U1_ConstantTokenNone( const LLVMContextRef C )
+{
+	return llvm::wrap( llvm::ConstantTokenNone::get( *llvm::unwrap(C) ) );
+}
+
 extern "C" LLVMTypeRef U1_GetFunctionType(const LLVMValueRef f)
 {
 	return llvm::wrap(llvm::dyn_cast<llvm::Function>(llvm::unwrap(f))->getFunctionType());

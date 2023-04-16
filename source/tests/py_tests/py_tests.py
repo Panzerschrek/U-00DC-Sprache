@@ -42,6 +42,8 @@ def main():
 		"function_pointers_test",
 		"function_templates_errors_test",
 		"function_templates_test",
+		"generators_errors_test",
+		"generators_test",
 		"global_mutable_variables_test",
 		"implicit_casts_test",
 		"in_class_fields_initializers_test",

@@ -58,6 +58,16 @@ bool TemplateSignatureParam::FunctionParam::operator==( const FunctionParam& oth
 		this->calling_convention == other.calling_convention;
 }
 
+bool TemplateSignatureParam::CoroutineParam::operator==( const CoroutineParam& other ) const
+{
+	return
+		this->kind == other.kind &&
+		*this->return_type == *other.return_type &&
+		this->return_value_type == other.return_value_type &&
+		this->inner_reference_type == other.inner_reference_type &&
+		this->non_sync == other.non_sync;
+}
+
 bool TemplateSignatureParam::SpecializedTemplateParam::operator==( const SpecializedTemplateParam& other ) const
 {
 	return
@@ -98,6 +108,11 @@ TemplateSignatureParam::TemplateSignatureParam( TupleParam tuple )
 TemplateSignatureParam::TemplateSignatureParam( FunctionParam function )
 {
 	something_= std::move(function);
+}
+
+TemplateSignatureParam::TemplateSignatureParam( CoroutineParam coroutine )
+{
+	something_= std::move(coroutine);
 }
 
 TemplateSignatureParam::TemplateSignatureParam( SpecializedTemplateParam template_ )
@@ -153,6 +168,11 @@ const TemplateSignatureParam::RawPointerParam* TemplateSignatureParam::GetRawPoi
 const TemplateSignatureParam::FunctionParam* TemplateSignatureParam::GetFunction() const
 {
 	return std::get_if<FunctionParam>( &something_ );
+}
+
+const TemplateSignatureParam::CoroutineParam* TemplateSignatureParam::GetCoroutine() const
+{
+	return std::get_if<CoroutineParam>( &something_ );
 }
 
 const TemplateSignatureParam::SpecializedTemplateParam* TemplateSignatureParam::GetTemplate() const
