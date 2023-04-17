@@ -515,3 +515,17 @@ def TemporariesSaved_In_WithOperator_Test1():
 	tests_lib.build_program( c_program_text )
 	call_result= tests_lib.run_function( "_Z3Foov" )
 	assert( call_result == 66123 )
+
+
+def WithOperator_ForAbstractValue_Test0():
+	c_program_text= """
+		class A abstract {}
+		fn GetA() : A&;
+		fn Foo()
+		{
+			with( a : GetA() ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 6 ) )

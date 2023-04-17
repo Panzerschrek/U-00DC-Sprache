@@ -521,6 +521,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				function_context.variables_state.RemoveNode( return_value_node );
 				return block_info;
 			}
+			if( expression_result->type.IsAbstract() )
+			{
+				REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), return_operator.src_loc_, expression_result->type );
+				function_context.variables_state.RemoveNode( return_value_node );
+				return block_info;
+			}
 
 			if( const auto single_scalar_type= GetSingleScalarType( expression_result->type.GetLLVMType() ) )
 			{
@@ -705,6 +711,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				if( !element_type.IsCopyConstructible() )
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), range_for_operator.src_loc_, element_type );
+					function_context.variables_state.RemoveNode( variable_reference );
+					function_context.variables_state.RemoveNode( variable );
+					continue;
+				}
+				if( element_type.IsAbstract() )
+				{
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), range_for_operator.src_loc_, element_type );
 					function_context.variables_state.RemoveNode( variable_reference );
 					function_context.variables_state.RemoveNode( variable );
 					continue;

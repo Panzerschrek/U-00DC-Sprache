@@ -555,6 +555,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names_scope, return_operator.src_loc, ret_type )
 				}
+				else if( ret_type.IsAbstract() )
+				{
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, return_operator.src_loc, ret_type )
+				}
 				else if( single_scalar_type == LLVMTypeRef::Null )
 				{
 					// Copy into "s_ret".
@@ -1378,6 +1382,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				if( !sequence_expression.t.IsCopyConstructible() )
 				{
 					REPORT_ERROR( OperationNotSupportedForThisType, names_scope, range_for_operator.src_loc, variable.t )
+				}
+				else if( sequence_expression.t.IsAbstract() )
+				{
+					REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, range_for_operator.src_loc, sequence_expression.t )
 				}
 				else
 				{

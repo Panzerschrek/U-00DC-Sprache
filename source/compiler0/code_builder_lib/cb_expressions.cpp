@@ -895,12 +895,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					{
 						// Copy.
 						if( !result->type.IsCopyConstructible() )
-						{
 							REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), ternary_operator.src_loc_, result->type );
-							return ErrorValue();
-						}
-
-						if( !function_context.is_functionless_context )
+						else if( result->type.IsAbstract() )
+							REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), ternary_operator.src_loc_, result->type );
+						else if( !function_context.is_functionless_context )
 							BuildCopyConstructorPart( result->llvm_value, branch_result->llvm_value, result->type, function_context );
 					}
 				}

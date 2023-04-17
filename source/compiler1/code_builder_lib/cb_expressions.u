@@ -932,7 +932,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					}
 					else
 					{
-						if( !function_context.is_functionless_context )
+						if( !t.IsCopyConstructible() )
+						{
+							REPORT_ERROR( OperationNotSupportedForThisType, names_scope, ternary_operator.src_loc, t )
+						}
+						else if( t.IsAbstract() )
+						{
+							REPORT_ERROR( ConstructingAbstractClassOrInterface, names_scope, ternary_operator.src_loc, t )
+						}
+						else if( !function_context.is_functionless_context )
 						{
 							BuildCopyConstructorPart( names_scope, function_context, llvm_value, branch_result.llvm_value, t, ternary_operator.src_loc );
 						}

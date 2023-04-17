@@ -513,6 +513,38 @@ def ConstructingAbstractClassOrInterface_Test16():
 	assert( errors_list[0].src_loc.line == 16 )
 
 
+def ConstructingAbstractClassOrInterface_Test17():
+	c_program_text= """
+		class A abstract
+		{
+			fn constructor(mut this, A& other)= default;
+		}
+		fn Foo( tup[ A ]& t )
+		{
+			for( el : t ) {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+
+
+def ConstructingAbstractClassOrInterface_Test18():
+	c_program_text= """
+		class A abstract
+		{
+			fn constructor(mut this, A& other)= default;
+		}
+		fn Foo( A& a ) : A
+		{
+			return a; // Trying to copy-constructg abstract class.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConstructingAbstractClassOrInterface", 8 ) )
+
+
 def MoveAssignForNonFinalPolymorphClass_Test0():
 	c_program_text= """
 	class A polymorph {}
