@@ -347,7 +347,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		{
 			if( !variable->type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, variable->type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, variable->type );
 				return nullptr;
 			}
 
@@ -875,7 +875,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		{
 			if( !variable->type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, block_names.GetErrors(), src_loc, variable->type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, block_names.GetErrors(), src_loc, variable->type );
 				return nullptr;
 			}
 

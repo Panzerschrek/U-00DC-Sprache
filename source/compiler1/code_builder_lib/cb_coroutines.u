@@ -407,7 +407,7 @@ fn CodeBuilder::GeneratorYield( mut this, NamesScopePtr& names_scope, FunctionCo
 					// Copy.
 					if( !yield_type.IsCopyConstructible() )
 					{
-						REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, yield_type )
+						REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, yield_type )
 					}
 					else if( yield_type.IsAbstract() )
 					{

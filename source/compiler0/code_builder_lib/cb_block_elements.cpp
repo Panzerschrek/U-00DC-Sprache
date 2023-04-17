@@ -341,7 +341,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			if( !variable->type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), auto_variable_declaration.src_loc_, variable->type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), auto_variable_declaration.src_loc_, variable->type );
 				function_context.variables_state.RemoveNode(variable);
 				return BlockBuildInfo();
 			}
@@ -517,7 +517,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			if( !expression_result->type.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), return_operator.src_loc_, expression_result->type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), return_operator.src_loc_, expression_result->type );
 				function_context.variables_state.RemoveNode( return_value_node );
 				return block_info;
 			}
@@ -710,7 +710,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				}
 				if( !element_type.IsCopyConstructible() )
 				{
-					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), range_for_operator.src_loc_, element_type );
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), range_for_operator.src_loc_, element_type );
 					function_context.variables_state.RemoveNode( variable_reference );
 					function_context.variables_state.RemoveNode( variable );
 					continue;
@@ -1167,7 +1167,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		else
 		{
 			if( !variable->type.IsCopyConstructible() )
-				REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), with_operator.src_loc_, variable->type );
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), with_operator.src_loc_, variable->type );
 			else
 				BuildCopyConstructorPart(
 					variable->llvm_value, expr->llvm_value,
@@ -1533,7 +1533,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					function_context.have_non_constexpr_operations_inside= true; // Declaring variable with non-constexpr type in constexpr function not allowed.
 
 				if( !result_type.IsCopyConstructible() )
-					REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), if_coro_advance.src_loc_, result_type );
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), if_coro_advance.src_loc_, result_type );
 				else
 					BuildCopyConstructorPart(
 						variable->llvm_value, coroutine_reference_result,

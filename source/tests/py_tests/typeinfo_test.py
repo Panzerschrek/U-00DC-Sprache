@@ -952,7 +952,7 @@ def TypeinfoForTypeinfo_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) >= 5 )
 	assert( HaveError( errors_list, "ExpectedInitializer", 6 ) )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 8 ) )
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 9 ) )
 	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 10 ) )

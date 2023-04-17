@@ -27,7 +27,7 @@ fn nomangle main() : i32
 
 	{ // Try to copy noncopyable container. It is noncopyable because of noncopyable value.
 		var ust::unordered_map</i32, C/> m;
-		auto m_copy= m; //##expect_error OperationNotSupportedForThisType
+		auto m_copy= m; //##expect_error CopyConstructValueOfNoncopyableType
 	}
 	{ // Range has reference to map.
 		var ust::unordered_map</i32, i32/> mut m;

@@ -406,7 +406,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			// Copy.
 			if( !expr.t.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, auto_variable_declaration.src_loc, expr.t )
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, auto_variable_declaration.src_loc, expr.t )
 				function_context.references_graph.RemoveNode( variable_reference );
 				return BlockElementBuildInfo();
 			}
@@ -553,7 +553,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				// Copy
 				if( !ret_type.IsCopyConstructible() )
 				{
-					REPORT_ERROR( OperationNotSupportedForThisType, names_scope, return_operator.src_loc, ret_type )
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, return_operator.src_loc, ret_type )
 				}
 				else if( ret_type.IsAbstract() )
 				{
@@ -1119,7 +1119,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 				if( !result_type.IsCopyConstructible() )
 				{
-					REPORT_ERROR( OperationNotSupportedForThisType, names_scope, if_coro_advance_operator.src_loc, result_type )
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, if_coro_advance_operator.src_loc, result_type )
 				}
 				else
 				{
@@ -1381,7 +1381,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 				if( !sequence_expression.t.IsCopyConstructible() )
 				{
-					REPORT_ERROR( OperationNotSupportedForThisType, names_scope, range_for_operator.src_loc, variable.t )
+					REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, range_for_operator.src_loc, variable.t )
 				}
 				else if( sequence_expression.t.IsAbstract() )
 				{
@@ -1793,7 +1793,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			// Copy.
 			if( !expr.t.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, with_operator.src_loc, expr.t )
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, with_operator.src_loc, expr.t )
 			}
 			else if( expr.location == Variable::Location::Pointer )
 			{

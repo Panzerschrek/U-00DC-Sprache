@@ -934,7 +934,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 					{
 						if( !t.IsCopyConstructible() )
 						{
-							REPORT_ERROR( OperationNotSupportedForThisType, names_scope, ternary_operator.src_loc, t )
+							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, ternary_operator.src_loc, t )
 						}
 						else if( t.IsAbstract() )
 						{

@@ -1970,7 +1970,7 @@ fn CodeBuilder::TryCallCopyConstructor(
 	// TODO - maybe combine this with "BuildCopyConstructorPart" method?
 	if( !class_type.lock_imut().deref().is_copy_constructible )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, Type(class_type) )
+		REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, Type(class_type) )
 		return;
 	}
 

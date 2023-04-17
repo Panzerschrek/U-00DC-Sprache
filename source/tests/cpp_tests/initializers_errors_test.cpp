@@ -764,7 +764,7 @@ U_TEST(TuplesInitializersErrors_Test6)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CopyConstructValueOfNoncopyableType );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 
@@ -807,7 +807,7 @@ U_TEST(TuplesInitializersErrors_Test8)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::OperationNotSupportedForThisType );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::CopyConstructValueOfNoncopyableType );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 9u );
 }
 

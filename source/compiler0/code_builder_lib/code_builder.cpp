@@ -511,8 +511,7 @@ void CodeBuilder::TryCallCopyConstructor(
 
 	if( !class_.is_copy_constructible )
 	{
-		// TODO - print more reliable message.
-		REPORT_ERROR( OperationNotSupportedForThisType, errors_container, src_loc, class_type );
+		REPORT_ERROR( CopyConstructValueOfNoncopyableType, errors_container, src_loc, class_type );
 		return;
 	}
 

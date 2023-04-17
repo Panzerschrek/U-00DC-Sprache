@@ -68,7 +68,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			// Copy.
 			if( !variable.t.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, variable.t )
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, variable.t )
 				return LLVMValueRef::Null;
 			}
 
@@ -915,7 +915,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			// Copy.
 			if( !variable.t.IsCopyConstructible() )
 			{
-				REPORT_ERROR( OperationNotSupportedForThisType, names_scope, src_loc, variable.t )
+				REPORT_ERROR( CopyConstructValueOfNoncopyableType, names_scope, src_loc, variable.t )
 				return LLVMValueRef::Null;
 			}
 

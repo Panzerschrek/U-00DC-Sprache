@@ -895,7 +895,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					{
 						// Copy.
 						if( !result->type.IsCopyConstructible() )
-							REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), ternary_operator.src_loc_, result->type );
+							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), ternary_operator.src_loc_, result->type );
 						else if( result->type.IsAbstract() )
 							REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), ternary_operator.src_loc_, result->type );
 						else if( !function_context.is_functionless_context )
@@ -3309,8 +3309,7 @@ Value CodeBuilder::DoCallFunction(
 					if( !param.type.IsCopyConstructible() )
 					{
 						// Can not call function with value parameter, because for value parameter needs copy, but parameter type is not copyable.
-						// TODO - print more reliable message.
-						REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, param.type );
+						REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), src_loc, param.type );
 						continue;
 					}
 					// Allow value params of abstract types (it is useful in templates) but disallow call of such functions.

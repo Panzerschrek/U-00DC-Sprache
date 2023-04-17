@@ -26,7 +26,7 @@ fn nomangle main() : i32
 	}
 	{ // box is not copyable.
 		var ust::box</ i32 /> b(0);
-		var ust::box</ i32 /> b_copy= b; //##expect_error OperationNotSupportedForThisType
+		var ust::box</ i32 /> b_copy= b; //##expect_error CopyConstructValueOfNoncopyableType
 	}
 	{ // box saves mutability.
 		var ust::box</ i32 /> imut b(0);

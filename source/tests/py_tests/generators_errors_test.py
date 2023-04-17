@@ -171,7 +171,7 @@ def Yield_ForNonCopyableValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 10 ) )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 10 ) )
 
 
 def Yield_ForNonCopyableValue_Test1():
@@ -346,7 +346,7 @@ def GeneratorIsNonCopyable_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test1():
@@ -360,7 +360,7 @@ def GeneratorIsNonCopyable_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test2():
@@ -389,7 +389,7 @@ def GeneratorIsNonCopyable_Test3():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
 
 
 def GeneratorIsNonCopyable_Test4():
@@ -403,7 +403,7 @@ def GeneratorIsNonCopyable_Test4():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test5():
@@ -432,7 +432,7 @@ def GeneratorIsNonCopyable_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 6 ) )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 6 ) )
 
 
 def GeneratorIsNonCopyable_Test7():
@@ -447,7 +447,7 @@ def GeneratorIsNonCopyable_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 7 ) )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 7 ) )
 
 
 def GeneratorIsNonCopyable_Test8():
@@ -539,7 +539,7 @@ def IfCoroAdvance_ForNonCopyableValue_Test0():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( HaveError( errors_list, "OperationNotSupportedForThisType", 11 ) )
+	assert( HaveError( errors_list, "CopyConstructValueOfNoncopyableType", 11 ) )
 
 
 def NameNotFound_ForGeneratorTypeTag_Test0():

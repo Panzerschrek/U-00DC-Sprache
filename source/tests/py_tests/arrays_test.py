@@ -87,7 +87,7 @@ def ArraysAreCopyConstructible_Test5():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].error_code == "CopyConstructValueOfNoncopyableType" )
 	assert( errors_list[0].src_loc.line == 6 )
 
 
@@ -102,7 +102,7 @@ def ArraysAreCopyConstructible_Test6():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].error_code == "CopyConstructValueOfNoncopyableType" )
 	assert( errors_list[0].src_loc.line == 6 )
 
 
@@ -117,7 +117,7 @@ def ArraysAreCopyConstructible_Test7():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].error_code == "CopyConstructValueOfNoncopyableType" )
 	assert( errors_list[0].src_loc.line == 6 )
 
 
@@ -170,7 +170,7 @@ def ArrayAsValueArgument_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].error_code == "CopyConstructValueOfNoncopyableType" )
 	assert( errors_list[0].src_loc.line == 7 )
 
 
@@ -227,7 +227,7 @@ def ArrayAsReturnValue_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "OperationNotSupportedForThisType" )
+	assert( errors_list[0].error_code == "CopyConstructValueOfNoncopyableType" )
 	assert( errors_list[0].src_loc.line == 6 )
 
 

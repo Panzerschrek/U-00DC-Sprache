@@ -14,6 +14,7 @@ PROCESS_ERROR( UnknownNumericConstantType, "Unknown numeric constant type - \"{0
 PROCESS_ERROR( UnknownStringLiteralSuffix, "Unknown string literal suffix - \"{0}\"." )
 PROCESS_ERROR( InvalidSizeForCharLiteral, "Invalid char literal - \"{0}\", expected literal with exactly one symbol." )
 PROCESS_ERROR( OperationNotSupportedForThisType, "Operation is not supported for type \"{0}\"." )
+PROCESS_ERROR( CopyConstructValueOfNoncopyableType, "Copy-construction value of non-copyable type \"{0}\"." )
 PROCESS_ERROR( TypesMismatch, "Unexpected type, expected \"{0}\", got \"{1}\"." )
 PROCESS_ERROR( NoMatchBinaryOperatorForGivenTypes, "No match operator \"{2}\" for types \"{1}\" and \"{0}\"" )
 PROCESS_ERROR( NotImplemented, "Sorry, {0} not implemented." )
