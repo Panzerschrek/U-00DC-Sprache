@@ -1198,8 +1198,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope variable_names_scope( "", &names );
 	variable_names_scope.AddName( with_operator.variable_name_, Value( variable_reference, with_operator.src_loc_ ) );
 
-	// Build block. This creates new variables frame and prevents destruction of initializer expression and/or created variable.
-	const BlockBuildInfo block_build_info= BuildBlock( variable_names_scope, function_context, with_operator.block_ );
+	// Build block. Do not create names scope, reuce names scope of "with" variable.
+	const BlockBuildInfo block_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block_.elements_ );
 
 	if( !block_build_info.have_terminal_instruction_inside )
 	{

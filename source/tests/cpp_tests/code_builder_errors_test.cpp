@@ -351,6 +351,44 @@ U_TEST( Redefinition7 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( Redefinition8 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			with( some_var : 444 )
+			{
+				var i32 z= 0;
+				auto some_var= 0; // Redefine "with" operator variable.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 7u ) );
+}
+
+U_TEST( Redefinition9 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			with( some_var : 444 )
+			{
+				{
+					auto some_var= 0; // Ok - redefine "with" operator variable in inner block.
+				}
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST(UnknownNumericConstantTypeTest0)
 {
 	// unknown name
