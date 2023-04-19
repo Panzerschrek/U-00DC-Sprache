@@ -1925,22 +1925,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	else if( block.safety_ == Synt::Block::Safety::None ) {}
 	else U_ASSERT(false);
 
-	BlockBuildInfo block_build_info;
-	size_t block_element_index= 0u;
-	for( const Synt::BlockElement& block_element : block.elements_ )
-	{
-		++block_element_index;
-
-		const BlockBuildInfo info= BuildBlockElement( block_names, function_context, block_element );
-		if( info.have_terminal_instruction_inside )
-		{
-			block_build_info.have_terminal_instruction_inside= true;
-			break;
-		}
-	}
-
-	if( block_element_index < block.elements_.size() )
-		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( block.elements_[ block_element_index ] ) );
+	const BlockBuildInfo block_build_info= BuildBlockElements( block_names, function_context, block.elements_ );
 
 	debug_info_builder_->SetCurrentLocation( block.end_src_loc_, function_context );
 
@@ -1949,10 +1934,33 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	if( !block_build_info.have_terminal_instruction_inside )
 		CallDestructors( block_variables_storage, block_names, function_context, block.end_src_loc_ );
 
-	// Restire unsafe flag.
+	// Restore unsafe flag.
 	function_context.is_in_unsafe_block= prev_unsafe;
 
 	debug_info_builder_->EndBlock( function_context );
+
+	return block_build_info;
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
+	NamesScope& names, FunctionContext& function_context, const Synt::BlockElements& block_elements )
+{
+	BlockBuildInfo block_build_info;
+	size_t block_element_index= 0u;
+	for( const Synt::BlockElement& block_element : block_elements )
+	{
+		++block_element_index;
+
+		const BlockBuildInfo info= BuildBlockElement( names, function_context, block_element );
+		if( info.have_terminal_instruction_inside )
+		{
+			block_build_info.have_terminal_instruction_inside= true;
+			break;
+		}
+	}
+
+	if( block_element_index < block_elements.size() )
+		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( block_elements[ block_element_index ] ) );
 
 	return block_build_info;
 }

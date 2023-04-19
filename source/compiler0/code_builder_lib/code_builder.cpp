@@ -1462,7 +1462,8 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.destructor_end_block= llvm::BasicBlock::Create( llvm_context_ );
 	}
 
-	const BlockBuildInfo block_build_info= BuildBlock( function_names, function_context, block );
+	// Do not create separate namespace for function root block, reuse namespace of args.
+	const BlockBuildInfo block_build_info= BuildBlockElements( function_names, function_context, block.elements_ );
 	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
 	// If we build func code only for return type deducing - we can return. Function code will be generated later.

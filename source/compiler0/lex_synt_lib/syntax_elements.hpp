@@ -186,6 +186,8 @@ using BlockElement= std::variant<
 	HaltIf
 >;
 
+using BlockElements= std::vector<BlockElement>;
+
 using ClassElement= std::variant<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
@@ -577,7 +579,7 @@ struct Block final : public SyntaxElementBase
 	};
 
 	SrcLoc end_src_loc_;
-	std::vector<BlockElement> elements_;
+	BlockElements elements_;
 	Safety safety_= Safety::None;
 };
 

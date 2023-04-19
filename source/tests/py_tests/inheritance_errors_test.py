@@ -501,7 +501,7 @@ def ConstructingAbstractClassOrInterface_Test16():
 		fn virtual override Foo(this){}
 	}
 
-	fn Bar(bool b)
+	fn Bar()
 	{
 		var B mut b;
 		take(cast_ref</A/>(b)); // Error, calling default constructor of abstract class "A" in "take" operator.
@@ -549,7 +549,7 @@ def MoveAssignForNonFinalPolymorphClass_Test0():
 	c_program_text= """
 	class A polymorph {}
 	class B final : A {}
-	fn Bar(bool b)
+	fn Bar()
 	{
 		var B mut b;
 		cast_ref</A/>(b)= A(); // Error - move-assign value to reference of non-final polymorph class.
@@ -565,7 +565,7 @@ def MoveAssignForNonFinalPolymorphClass_Tes1():
 	c_program_text= """
 	class A abstract {}
 	class B final : A {}
-	fn Bar(bool b)
+	fn Bar()
 	{
 		var B mut b;
 		b= B(); // Ok - move-assign for final polymorph class.
@@ -577,7 +577,7 @@ def MoveAssignForNonFinalPolymorphClass_Tes1():
 def MoveAssignForNonFinalPolymorphClass_Test2():
 	c_program_text= """
 	class A polymorph {}
-	fn Bar(bool b)
+	fn Bar()
 	{
 		var A mut a;
 		a= A(); // Error - move-assign value to reference of non-final polymorph class.
@@ -592,7 +592,7 @@ def MoveAssignForNonFinalPolymorphClass_Test2():
 def TakeForNonFinalPolymorphClass_Test0():
 	c_program_text= """
 	class A polymorph {}
-	fn Bar(bool b)
+	fn Bar()
 	{
 		var A mut a;
 		take(a); // Error - taking polymorh non-final class.
@@ -608,7 +608,7 @@ def TakeForNonFinalPolymorphClass_Test1():
 	c_program_text= """
 	class A polymorph {}
 	class B : A {}
-	fn Bar(bool b)
+	fn Bar()
 	{
 		var B mut b;
 		take(b); // Error - taking polymorh non-final class (which is derived from some base class).
@@ -624,7 +624,7 @@ def TakeForNonFinalPolymorphClass_Test2():
 	c_program_text= """
 	class A polymorph {}
 	class B final : A {}
-	fn Bar(bool b)
+	fn Bar()
 	{
 		var B mut b;
 		take(b); // Ok - taking final polymorph class.

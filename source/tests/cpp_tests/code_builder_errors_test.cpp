@@ -253,8 +253,7 @@ U_TEST(Redefinition1)
 		}
 	)";
 
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( build_result.errors.empty() );
+	BuildProgram( c_program_text );
 }
 
 U_TEST(Redefinition3)
@@ -319,6 +318,37 @@ U_TEST( Redefinition5 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
+}
+
+U_TEST( Redefinition6 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x )
+		{
+			var i32 x= 0; // Redefine argument in root function block.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 4u ) );
+}
+
+U_TEST( Redefinition7 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x )
+		{
+			{
+				var i32 x= 0; // Ok - redefine argument in inner block.
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
 }
 
 U_TEST(UnknownNumericConstantTypeTest0)
