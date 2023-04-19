@@ -1569,7 +1569,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		NamesScope variable_names_scope( "", &names );
 		variable_names_scope.AddName( if_coro_advance.variable_name, Value( variable_reference, if_coro_advance.src_loc_ ) );
 
-		const BlockBuildInfo block_build_info= BuildBlock( variable_names_scope, function_context, if_coro_advance.block );
+		// Reuse variable names scope for block.
+		const BlockBuildInfo block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance.block.elements_ );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
 			// Destroy all temporaries.

@@ -389,6 +389,47 @@ U_TEST( Redefinition9 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( Redefinition10 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			if_coro_advance( x : gen )
+			{
+				auto x= 0; // Redefine "if_coro_advance" operator variable.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 8u ) );
+}
+
+U_TEST( Redefinition11 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			if_coro_advance( x : gen )
+			{
+				{
+					auto x= 0; // Ok - redefine "if_coro_advance" operator variable in inner block.
+				}
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST(UnknownNumericConstantTypeTest0)
 {
 	// unknown name
