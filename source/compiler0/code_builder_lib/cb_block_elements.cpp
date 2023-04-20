@@ -755,7 +755,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size() - 1u; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 			// TODO - create template errors context.
-			const BlockBuildInfo inner_block_build_info= BuildBlock( loop_names, function_context, range_for_operator.block_ );
+			// Build block without creating inner namespace - reuse namespace of tuple-for variable.
+			const BlockBuildInfo inner_block_build_info= BuildBlockElements( loop_names, function_context, range_for_operator.block_.elements_ );
 			if( !inner_block_build_info.have_terminal_instruction_inside )
 			{
 				CallDestructors( element_pass_variables_storage, names, function_context, range_for_operator.src_loc_ );

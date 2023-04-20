@@ -430,6 +430,43 @@ U_TEST( Redefinition11 )
 	BuildProgram( c_program_text );
 }
 
+U_TEST( Redefinition12 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( tup[f32, i32]& t )
+		{
+			for( v : t )
+			{
+				auto v= 0; // Redefinition of tuple-for variable.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 6u ) );
+}
+
+U_TEST( Redefinition13 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( tup[f32, i32]& t )
+		{
+			for( v : t )
+			{
+				{
+					auto v= 0; // Ok - redefinition of tuple-for variable inside block.
+				}
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
 U_TEST(UnknownNumericConstantTypeTest0)
 {
 	// unknown name
