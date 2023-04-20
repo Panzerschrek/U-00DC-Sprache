@@ -6,18 +6,29 @@ import "/string_conversions.u"
 namespace U1
 {
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElements( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::array_view_imut</Synt::BlockElement/>& elements ) : BlockElementBuildInfo
 {
-	// Empty variant - legal element kind for C style "for" operator variables declaration part.
-	return BlockElementBuildInfo();
+	var BlockElementBuildInfo mut block_element_build_info;
+	foreach( &block_element :elements )
+	{
+		if( block_element_build_info.have_terminal_instruction_inside )
+		{
+			REPORT_ERROR( UnreachableCode, names_scope, Synt::GetSrcLoc(block_element) )
+		}
+
+		debug_info_builder_.try_deref().SetCurrentLocation( function_context, Synt::GetSrcLoc(block_element) );
+
+		variant_visit( &el : block_element )
+		{
+			auto info = BuildBlockElement( names_scope, function_context, el );
+			block_element_build_info.have_terminal_instruction_inside |= info.have_terminal_instruction_inside;
+		}
+	}
+
+	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr ) : BlockElementBuildInfo
-{
-	return BuildBlockElement( names_scope, function_context, block_ptr.deref() );
-}
-
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::Block& block ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::Block& block ) : BlockElementBuildInfo
 {
 	var NamesScopeMutPtr block_names_scope( NamesScope( "", names_scope ) );
 
@@ -39,22 +50,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	auto prev_debug_info_block= debug_info_builder_.try_deref().StartBlock( function_context, block.src_loc );
 
-	var BlockElementBuildInfo mut block_element_build_info;
-	foreach( &block_element : block.elements )
-	{
-		if( block_element_build_info.have_terminal_instruction_inside )
-		{
-			REPORT_ERROR( UnreachableCode, block_names_scope, Synt::GetSrcLoc(block_element) )
-		}
-
-		debug_info_builder_.try_deref().SetCurrentLocation( function_context, Synt::GetSrcLoc(block_element) );
-
-		variant_visit( &el : block_element )
-		{
-			auto info = BuildBlockElement( block_names_scope, function_context, el );
-			block_element_build_info.have_terminal_instruction_inside |= info.have_terminal_instruction_inside;
-		}
-	}
+	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( block_names_scope, function_context, block.elements.range() );
 
 	if( !block_element_build_info.have_terminal_instruction_inside )
 	{
@@ -66,6 +62,17 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	function_context.is_in_unsafe_block= prev_safety;
 
 	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo
+{
+	// Empty variant - legal element kind for C style "for" operator variables declaration part.
+	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr ) : BlockElementBuildInfo
+{
+	return BuildBlock( names_scope, function_context, block_ptr.deref() );
 }
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo
@@ -859,7 +866,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		auto mut references_graph_before_this_branch= function_context.references_graph;
 
-		auto info= BuildBlockElement( names_scope, function_context, branch.block );
+		auto info= BuildBlock( names_scope, function_context, branch.block.deref() );
 		if( !info.have_terminal_instruction_inside )
 		{
 			branches_references_graphs.push_back( take(function_context.references_graph) );
@@ -1169,7 +1176,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			lock.deref().AddName( if_coro_advance_operator.variable_name, move(variable_reference) );
 		}
 
-		var BlockElementBuildInfo block_build_info= BuildBlockElement( variable_names_scope, function_context, if_coro_advance_operator.block );
+		// Reuse names scope of the bariable for the block.
+		var BlockElementBuildInfo block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance_operator.block.deref().elements.range() );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
 			CallDestructorsForTopVariablesFrame( variable_names_scope, function_context, if_coro_advance_operator.src_loc );
@@ -1244,7 +1252,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, while_block );
 	}
 
-	auto info= BuildBlockElement( names_scope, function_context, while_operator.block );
+	auto info= BuildBlock( names_scope, function_context, while_operator.block.deref() );
 	if( !info.have_terminal_instruction_inside )
 	{
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, test_block ) );
@@ -1431,7 +1439,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			};
 			function_context.loops_stack.push_back(loop_frame);
 
-			auto block_build_info= BuildBlockElement( names_scope, function_context, range_for_operator.block.deref() );
+			// Reuse names scope of tuple element variable for the block.
+			auto block_build_info= BuildBlockElements( names_scope, function_context, range_for_operator.block.deref().elements.range() );
 
 			if( !block_build_info.have_terminal_instruction_inside )
 			{
@@ -1594,7 +1603,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& in_names_scope, Func
 		LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block );
 	}
 
-	auto info= BuildBlockElement( names_scope, function_context, c_style_for_operator.block );
+	auto info= BuildBlock( names_scope, function_context, c_style_for_operator.block.deref() );
 	if( !info.have_terminal_instruction_inside )
 	{
 		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_iteration_block ) );
@@ -1833,8 +1842,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		lock.deref().AddName( with_operator.variable_name, move(variable_reference) ).empty();
 	}
 
-	// Build block. This creates new variables frame and prevents destruction of initializer expression and/or created variable.
-	var BlockElementBuildInfo block_element_build_info= BuildBlockElement( varaible_names_scope, function_context, with_operator.block.deref() );
+	// Build block. Reuse scope of with variable for this block.
+	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( varaible_names_scope, function_context, with_operator.block.deref().elements.range() );
 
 	if( !block_element_build_info.have_terminal_instruction_inside )
 	{

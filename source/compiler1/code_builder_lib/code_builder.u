@@ -1874,7 +1874,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			}
 		}
 
-		auto block_build_info= BuildBlockElement( args_names_scope_ptr, function_context, block );
+		// Reuse names scope of args for root function block.
+		auto block_build_info= BuildBlockElements( args_names_scope_ptr, function_context, block.elements.range() );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
 			if( func_variable.is_generator )
