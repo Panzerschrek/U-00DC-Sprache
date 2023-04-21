@@ -755,7 +755,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size() - 1u; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 			// TODO - create template errors context.
-			const BlockBuildInfo inner_block_build_info= BuildBlock( loop_names, function_context, range_for_operator.block_ );
+			// Build block without creating inner namespace - reuse namespace of tuple-for variable.
+			const BlockBuildInfo inner_block_build_info= BuildBlockElements( loop_names, function_context, range_for_operator.block_.elements_ );
 			if( !inner_block_build_info.have_terminal_instruction_inside )
 			{
 				CallDestructors( element_pass_variables_storage, names, function_context, range_for_operator.src_loc_ );
@@ -1198,8 +1199,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope variable_names_scope( "", &names );
 	variable_names_scope.AddName( with_operator.variable_name_, Value( variable_reference, with_operator.src_loc_ ) );
 
-	// Build block. This creates new variables frame and prevents destruction of initializer expression and/or created variable.
-	const BlockBuildInfo block_build_info= BuildBlock( variable_names_scope, function_context, with_operator.block_ );
+	// Build block. Do not create names scope, reuce names scope of "with" variable.
+	const BlockBuildInfo block_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block_.elements_ );
 
 	if( !block_build_info.have_terminal_instruction_inside )
 	{
@@ -1569,7 +1570,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		NamesScope variable_names_scope( "", &names );
 		variable_names_scope.AddName( if_coro_advance.variable_name, Value( variable_reference, if_coro_advance.src_loc_ ) );
 
-		const BlockBuildInfo block_build_info= BuildBlock( variable_names_scope, function_context, if_coro_advance.block );
+		// Reuse variable names scope for block.
+		const BlockBuildInfo block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance.block.elements_ );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
 			// Destroy all temporaries.
@@ -1925,22 +1927,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	else if( block.safety_ == Synt::Block::Safety::None ) {}
 	else U_ASSERT(false);
 
-	BlockBuildInfo block_build_info;
-	size_t block_element_index= 0u;
-	for( const Synt::BlockElement& block_element : block.elements_ )
-	{
-		++block_element_index;
-
-		const BlockBuildInfo info= BuildBlockElement( block_names, function_context, block_element );
-		if( info.have_terminal_instruction_inside )
-		{
-			block_build_info.have_terminal_instruction_inside= true;
-			break;
-		}
-	}
-
-	if( block_element_index < block.elements_.size() )
-		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( block.elements_[ block_element_index ] ) );
+	const BlockBuildInfo block_build_info= BuildBlockElements( block_names, function_context, block.elements_ );
 
 	debug_info_builder_->SetCurrentLocation( block.end_src_loc_, function_context );
 
@@ -1949,10 +1936,33 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	if( !block_build_info.have_terminal_instruction_inside )
 		CallDestructors( block_variables_storage, block_names, function_context, block.end_src_loc_ );
 
-	// Restire unsafe flag.
+	// Restore unsafe flag.
 	function_context.is_in_unsafe_block= prev_unsafe;
 
 	debug_info_builder_->EndBlock( function_context );
+
+	return block_build_info;
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
+	NamesScope& names, FunctionContext& function_context, const Synt::BlockElements& block_elements )
+{
+	BlockBuildInfo block_build_info;
+	size_t block_element_index= 0u;
+	for( const Synt::BlockElement& block_element : block_elements )
+	{
+		++block_element_index;
+
+		const BlockBuildInfo info= BuildBlockElement( names, function_context, block_element );
+		if( info.have_terminal_instruction_inside )
+		{
+			block_build_info.have_terminal_instruction_inside= true;
+			break;
+		}
+	}
+
+	if( block_element_index < block_elements.size() )
+		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( block_elements[ block_element_index ] ) );
 
 	return block_build_info;
 }

@@ -253,8 +253,7 @@ U_TEST(Redefinition1)
 		}
 	)";
 
-	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( build_result.errors.empty() );
+	BuildProgram( c_program_text );
 }
 
 U_TEST(Redefinition3)
@@ -319,6 +318,240 @@ U_TEST( Redefinition5 )
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::Redefinition );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
+}
+
+U_TEST( Redefinition6 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x )
+		{
+			var i32 x= 0; // Redefine argument in root function block.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 4u ) );
+}
+
+U_TEST( Redefinition7 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x )
+		{
+			{
+				var i32 x= 0; // Ok - redefine argument in inner block.
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( Redefinition8 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			with( some_var : 444 )
+			{
+				var i32 z= 0;
+				auto some_var= 0; // Redefine "with" operator variable.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 7u ) );
+}
+
+U_TEST( Redefinition9 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			with( some_var : 444 )
+			{
+				{
+					auto some_var= 0; // Ok - redefine "with" operator variable in inner block.
+				}
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( Redefinition10 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			if_coro_advance( x : gen )
+			{
+				auto x= 0; // Redefine "if_coro_advance" operator variable.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 8u ) );
+}
+
+U_TEST( Redefinition11 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			if_coro_advance( x : gen )
+			{
+				{
+					auto x= 0; // Ok - redefine "if_coro_advance" operator variable in inner block.
+				}
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( Redefinition12 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( tup[f32, i32]& t )
+		{
+			for( v : t )
+			{
+				auto v= 0; // Redefinition of tuple-for variable.
+			}
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::Redefinition, 6u ) );
+}
+
+U_TEST( Redefinition13 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( tup[f32, i32]& t )
+		{
+			for( v : t )
+			{
+				{
+					auto v= 0; // Ok - redefinition of tuple-for variable inside block.
+				}
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( Redefinition14 )
+{
+	// Branches of "if" use separate name scopes.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( bool cond )
+		{
+			var i32 x= 0;
+			if( cond )
+			{
+				auto x= 0.25f;
+			}
+			else
+			{
+				var [ bool, 4 ] x= zero_init;
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( Redefinition15 )
+{
+	// Branches of "static_if" use separate name scopes.
+	static const char c_program_text[]=
+	R"(
+		template</bool cond/> fn Cond()
+		{
+			var i32 x= 0;
+			static_if( cond )
+			{
+				auto x= 0.25f;
+			}
+			else
+			{
+				var [ bool, 4 ] x= zero_init;
+			}
+		}
+		fn Foo()
+		{
+			Cond</false/>();
+			Cond</true/>();
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( Redefinition16 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Bar() : bool;
+		fn Foo()
+		{
+			var i32 x= 0;
+			while(Bar())
+			{
+				var bool x= false; // Ok, "while" creates separate names scope.
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
+}
+
+U_TEST( Redefinition17 )
+{
+	// C-style for operator creates two name scopes - one for own variables and one for internal block.
+	// Second scope is needed in order to destruct properly all variables, created in iteration block and avoid
+	// names from it to be visible in iteration part.
+	static const char c_program_text[]=
+	R"(
+		fn Foo()
+		{
+			auto mut i= 0;
+			for( var size_type mut s(0); s < 10s; ++s )
+			{
+				auto s= 0.12345f;
+			}
+		}
+	)";
+
+	BuildProgram( c_program_text );
 }
 
 U_TEST(UnknownNumericConstantTypeTest0)

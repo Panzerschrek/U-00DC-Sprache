@@ -138,8 +138,8 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::FunctionType& function_type ) : Type
 {
-	var FunctionType mut function_type= PrepareFunctionType( names_scope, function_context, function_type, ust::shared_ptr_nullable_mut</ClassType/>() );
-	return FunctionTypeToPointer( move(function_type) );
+	var FunctionType mut res= PrepareFunctionType( names_scope, function_context, function_type, ust::shared_ptr_nullable_mut</ClassType/>() );
+	return FunctionTypeToPointer( move(res) );
 }
 
 fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::GeneratorType/>& generator_type_ptr ) : Type

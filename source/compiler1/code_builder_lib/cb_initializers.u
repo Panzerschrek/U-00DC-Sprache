@@ -1285,10 +1285,10 @@ fn CodeBuilder::InitializeReferenceField( mut this, NamesScopePtr& names_scope, 
 fn CodeBuilder::BuildConstructorInitialization(
 	mut this,
 	NamesScopePtr& names_scope,
-	FunctionContext &mut function_context,
+	FunctionContext &mut in_function_context,
 	Synt::StructNamedInitializer& constructor_initialization_list )
 {
-	var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
 	// Function context should contain "this" with class type

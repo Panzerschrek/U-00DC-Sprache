@@ -634,10 +634,10 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 		{
 			if_var( & inner_namespace_value : names_scope_ptr.lock_imut().deref().GetThisScopeValue( namespace_.deref().name ) )
 			{
-				auto inner_namespace_value= inner_namespace_value.Get</NamesScope/>();
-				if( !inner_namespace_value.empty() )
+				auto inner_namespace= inner_namespace_value.Get</NamesScope/>();
+				if( !inner_namespace.empty() )
 				{
-					NamesScopeFillOutOfLineElements( inner_namespace_value.try_to_non_nullable(), namespace_.deref().elements );
+					NamesScopeFillOutOfLineElements( inner_namespace.try_to_non_nullable(), namespace_.deref().elements );
 				}
 			}
 		}

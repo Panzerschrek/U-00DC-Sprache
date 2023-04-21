@@ -721,6 +721,8 @@ private:
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::HaltIf& halt_if );
 
 	BlockBuildInfo BuildBlock( NamesScope& names, FunctionContext& function_context, const Synt::Block& block );
+	// Build elements, withut creating separate names scope.
+	BlockBuildInfo BuildBlockElements( NamesScope& names, FunctionContext& function_context, const Synt::BlockElements& block_elements );
 
 	void BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc );
 
