@@ -5,7 +5,7 @@
 	{
 		if( !??e_result.empty() )
 		{
-			with( ?r<? & ?> ?m<? mut ?> ?var_name : ??e_result.try_deref() )
+			with( ?r<? & ?> ?m<? mut ?> ?var_name : unsafe( ??e_result.deref_unchecked() ) )
 			?b
 		}
 	}
@@ -31,14 +31,11 @@
 		}
 		else
 		{
-			unsafe
+			for( auto mut ??r= ??e_result.range(); !??r.empty(); unsafe( ??r.drop_front_unchecked() ) )
 			{
-				for( auto mut ??r= ??e_result.range(); !??r.empty(); ??r.drop_front_unchecked() )
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : unsafe( ??r.front_unchecked() ) )
 				{
-					with( ?r<? & ?> ?m<? mut ?> ?var_name : ??r.front_unchecked() )
-					{
-						safe{ ?b }
-					}
+					?b
 				}
 			}
 		}
