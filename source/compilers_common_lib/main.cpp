@@ -763,12 +763,8 @@ int Main( int argc, const char* argv[] )
 
 		// Add callbacks for early passes creation.
 		pass_builder.registerPipelineStartEPCallback(
-			[](llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel o )
+			[](llvm::ModulePassManager& module_pass_manager, const llvm::OptimizationLevel )
 		{
-			// Remove unused functions, before run optimizations for them.
-			if( o.getSizeLevel() > 0 )
-				module_pass_manager.addPass( llvm::GlobalDCEPass() );
-
 			// Internalize (if needed).
 			if( Options::internalize )
 				module_pass_manager.addPass( llvm::InternalizePass( MustPreserveGlobalValue ) );
