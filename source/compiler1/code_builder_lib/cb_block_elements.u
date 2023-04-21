@@ -1176,7 +1176,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			lock.deref().AddName( if_coro_advance_operator.variable_name, move(variable_reference) );
 		}
 
-		// Reuse names scope of the bariable for the block.
+		// Reuse names scope of the variable for the block.
 		var BlockElementBuildInfo block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance_operator.block.deref().elements.range() );
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
