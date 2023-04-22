@@ -291,6 +291,7 @@ private:
 
 	ReturnOperator ParseReturnOperator();
 	YieldOperator ParseYieldOperator();
+	std::optional<Label> TryParseLabel();
 	WhileOperator ParseWhileOperator();
 	BlockElement ParseForOperator();
 	RangeForOperator ParseRangeForOperator();
@@ -2086,6 +2087,28 @@ YieldOperator SyntaxAnalyzer::ParseYieldOperator()
 	return result;
 }
 
+std::optional<Label> SyntaxAnalyzer::TryParseLabel()
+{
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::label_ )
+	{
+		Label label( it_->src_loc );
+
+		NextLexem();
+		if( it_->type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+			return std::move(label);
+		}
+
+		label.name= it_->text;
+		NextLexem();
+
+		return std::move(label);
+	}
+
+	return std::nullopt;
+}
+
 WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ );
@@ -2093,8 +2116,9 @@ WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 	NextLexem();
 
 	result.condition_= ParseExpressionInBrackets();
+	result.label_= TryParseLabel();
 
-	result.block_= ParseBlock();
+	result.block_= std::make_unique<Block>( ParseBlock() );
 	return result;
 }
 
@@ -2153,7 +2177,9 @@ RangeForOperator SyntaxAnalyzer::ParseRangeForOperator()
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
-	result.block_= ParseBlock();
+	result.label_= TryParseLabel();
+
+	result.block_= std::make_unique<Block>( ParseBlock() );
 	return result;
 }
 
@@ -2255,7 +2281,9 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
-	result.block_= ParseBlock();
+	result.label_= TryParseLabel();
+
+	result.block_= std::make_unique<Block>( ParseBlock() );
 
 	return result;
 }

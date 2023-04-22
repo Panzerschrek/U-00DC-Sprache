@@ -624,12 +624,20 @@ struct YieldOperator final : public SyntaxElementBase
 	Expression expression;
 };
 
+struct Label final : public SyntaxElementBase
+{
+	Label( const SrcLoc& src_loc );
+
+	std::string name;
+};
+
 struct WhileOperator final : public SyntaxElementBase
 {
 	WhileOperator( const SrcLoc& src_loc );
 
 	Expression condition_;
-	Block block_;
+	std::optional<Label> label_;
+	BlockPtr block_;
 };
 
 struct RangeForOperator final : public SyntaxElementBase
@@ -640,7 +648,8 @@ struct RangeForOperator final : public SyntaxElementBase
 	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
 	std::string loop_variable_name_;
 	Expression sequence_;
-	Block block_;
+	std::optional<Label> label_;
+	BlockPtr block_;
 };
 
 struct CStyleForOperator final : public SyntaxElementBase
@@ -664,7 +673,8 @@ struct CStyleForOperator final : public SyntaxElementBase
 			DecrementOperator > >
 	iteration_part_elements_;
 
-	Block block_;
+	std::optional<Label> label_;
+	BlockPtr block_;
 };
 
 struct BreakOperator final : public SyntaxElementBase
