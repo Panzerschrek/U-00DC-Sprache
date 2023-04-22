@@ -276,7 +276,7 @@ void CodeBuilder::DestroyUnusedTemporaryVariables( FunctionContext& function_con
 }
 
 ReferencesGraph CodeBuilder::MergeVariablesStateAfterIf(
-	const std::vector<ReferencesGraph>& bracnhes_variables_state,
+	const llvm::ArrayRef<ReferencesGraph>& bracnhes_variables_state,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {

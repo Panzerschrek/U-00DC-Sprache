@@ -846,7 +846,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	llvm::Constant* branches_constexpr_values[2] { nullptr, nullptr };
 	llvm::BasicBlock* branches_end_basic_blocks[2]{ nullptr, nullptr };
 	ReferencesGraph variables_state_before= function_context.variables_state;
-	std::vector<ReferencesGraph> branches_variables_state(2u);
+	ReferencesGraph branches_variables_state[2];
 	for( size_t i= 0u; i < 2u; ++i )
 	{
 		function_context.variables_state= variables_state_before;

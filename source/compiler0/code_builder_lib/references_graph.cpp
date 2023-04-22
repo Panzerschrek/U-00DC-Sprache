@@ -262,7 +262,7 @@ void ReferencesGraph::GetAccessibleVariableNodesInnerReferences_r(
 		GetAccessibleVariableNodesInnerReferences_r( parent, visited_nodes_set, result_set );
 }
 
-ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const std::vector<ReferencesGraph>& branches_variables_state, const SrcLoc& src_loc )
+ReferencesGraph::MergeResult ReferencesGraph::MergeVariablesStateAfterIf( const llvm::ArrayRef<ReferencesGraph>& branches_variables_state, const SrcLoc& src_loc )
 {
 	ReferencesGraph result;
 	std::vector<CodeBuilderError> errors;
