@@ -749,9 +749,13 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
 			llvm::BasicBlock* const next_basic_block=
 				is_last_iteration ? finish_basic_block : llvm::BasicBlock::Create( llvm_context_ );
-			function_context.loops_stack.emplace_back();
-			function_context.loops_stack.back().block_for_continue= next_basic_block;
-			function_context.loops_stack.back().block_for_break= finish_basic_block;
+
+			AddLoopFrame(
+				names,
+				function_context,
+				finish_basic_block,
+				next_basic_block,
+				range_for_operator.label_ );
 			function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size() - 1u; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 			// TODO - create template errors context.
@@ -883,10 +887,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	ReferencesGraph variables_state_after_test_block= function_context.variables_state;
 
 	// Loop block code.
-	function_context.loops_stack.emplace_back();
-	function_context.loops_stack.back().block_for_break= block_after_loop;
-	function_context.loops_stack.back().block_for_continue= loop_iteration_block;
-	function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size();
+	AddLoopFrame( names, function_context, block_after_loop, loop_iteration_block, c_style_for_operator.label_ );
 
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
@@ -978,10 +979,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	// While block code.
 
-	function_context.loops_stack.emplace_back();
-	function_context.loops_stack.back().block_for_break= block_after_while;
-	function_context.loops_stack.back().block_for_continue= test_block;
-	function_context.loops_stack.back().stack_variables_stack_size= function_context.stack_variables_stack.size();
+	AddLoopFrame( names, function_context, block_after_while, test_block, while_operator.label_ );
 
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
@@ -1028,11 +1026,31 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		REPORT_ERROR( BreakOutsideLoop, names.GetErrors(), break_operator.src_loc_ );
 		return block_info;
 	}
-	U_ASSERT( function_context.loops_stack.back().block_for_break != nullptr );
+
+	LoopFrame* loop_frame= nullptr;
+	if( break_operator.label_ != std::nullopt )
+	{
+		for( LoopFrame& check_loop_frame : function_context.loops_stack )
+			if( check_loop_frame.name == break_operator.label_->name )
+			{
+				loop_frame= &check_loop_frame;
+				break;
+			}
+
+		if( loop_frame == nullptr )
+		{
+			REPORT_ERROR( NameNotFound, names.GetErrors(), break_operator.label_->src_loc_, break_operator.label_->name );
+			return block_info;
+		}
+	}
+	else
+		loop_frame= &function_context.loops_stack.back();
+
+	U_ASSERT( loop_frame->block_for_break != nullptr );
 
 	CallDestructorsForLoopInnerVariables( names, function_context, break_operator.src_loc_ );
-	function_context.loops_stack.back().break_variables_states.push_back( function_context.variables_state );
-	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_break );
+	loop_frame->break_variables_states.push_back( function_context.variables_state );
+	function_context.llvm_ir_builder.CreateBr( loop_frame->block_for_break );
 
 	return block_info;
 }
@@ -1050,11 +1068,31 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		REPORT_ERROR( ContinueOutsideLoop, names.GetErrors(), continue_operator.src_loc_ );
 		return block_info;
 	}
-	U_ASSERT( function_context.loops_stack.back().block_for_continue != nullptr );
+
+	LoopFrame* loop_frame= nullptr;
+	if( continue_operator.label_ != std::nullopt )
+	{
+		for( LoopFrame& check_loop_frame : function_context.loops_stack )
+			if( check_loop_frame.name == continue_operator.label_->name )
+			{
+				loop_frame= &check_loop_frame;
+				break;
+			}
+
+		if( loop_frame == nullptr )
+		{
+			REPORT_ERROR( NameNotFound, names.GetErrors(), continue_operator.label_->src_loc_, continue_operator.label_->name );
+			return block_info;
+		}
+	}
+	else
+		loop_frame= &function_context.loops_stack.back();
+
+	U_ASSERT( loop_frame->block_for_continue != nullptr );
 
 	CallDestructorsForLoopInnerVariables( names, function_context, continue_operator.src_loc_ );
-	function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
-	function_context.llvm_ir_builder.CreateBr( function_context.loops_stack.back().block_for_continue );
+	loop_frame->continue_variables_states.push_back( function_context.variables_state );
+	function_context.llvm_ir_builder.CreateBr( loop_frame->block_for_continue );
 
 	return block_info;
 }
@@ -1991,6 +2029,31 @@ void CodeBuilder::BuildEmptyReturn( NamesScope& names, FunctionContext& function
 		// In explicit destructor, break to block with destructor calls for class members.
 		function_context.llvm_ir_builder.CreateBr( function_context.destructor_end_block );
 	}
+}
+
+void CodeBuilder::AddLoopFrame(
+	NamesScope& names,
+	FunctionContext& function_context,
+	llvm::BasicBlock* const break_block,
+	llvm::BasicBlock* const continue_block,
+	const std::optional<Synt::Label>& label )
+{
+	LoopFrame loop_frame;
+	loop_frame.block_for_break= break_block;
+	loop_frame.block_for_continue= continue_block;
+	loop_frame.stack_variables_stack_size= function_context.stack_variables_stack.size();
+
+	if( label != std::nullopt )
+	{
+		const std::string& label_name= label->name;
+		for( const LoopFrame& prev_frame : function_context.loops_stack )
+			if( prev_frame.name == label_name )
+				REPORT_ERROR( Redefinition, names.GetErrors(), label->src_loc_, label_name );
+
+		loop_frame.name= label_name;
+	}
+
+	function_context.loops_stack.push_back( std::move(loop_frame) );
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(

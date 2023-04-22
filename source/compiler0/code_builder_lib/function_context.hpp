@@ -32,6 +32,8 @@ struct LoopFrame final
 	// Number of stack variable storages at stack before loop block creation.
 	size_t stack_variables_stack_size= 0u;
 
+	std::string name; // Contains label or is empty for non-labeled loops.
+
 	// Populated during loop body building.
 	std::vector<ReferencesGraph> break_variables_states;
 	std::vector<ReferencesGraph> continue_variables_states;

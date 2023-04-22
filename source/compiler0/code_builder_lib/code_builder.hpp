@@ -726,6 +726,13 @@ private:
 
 	void BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc );
 
+	void AddLoopFrame(
+		NamesScope& names,
+		FunctionContext& function_context,
+		llvm::BasicBlock* break_block,
+		llvm::BasicBlock* continue_block,
+		const std::optional<Synt::Label>& label );
+
 	// ++ and -- operations
 	void BuildDeltaOneOperatorCode(
 		const Synt::Expression& expression,
