@@ -677,7 +677,7 @@ void CodeBuilder::CallDestructor(
 	else U_ASSERT(false);
 }
 
-void CodeBuilder::CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc )
+void CodeBuilder::CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, const size_t stack_variables_stack_size, const SrcLoc& src_loc )
 {
 	U_ASSERT( !function_context.loops_stack.empty() );
 
@@ -686,7 +686,7 @@ void CodeBuilder::CallDestructorsForLoopInnerVariables( NamesScope& names_scope,
 	for(
 		auto it= function_context.stack_variables_stack.rbegin();
 		it != function_context.stack_variables_stack.rend() &&
-		undestructed_stack_size > function_context.loops_stack.back().stack_variables_stack_size;
+		undestructed_stack_size > stack_variables_stack_size;
 		++it, --undestructed_stack_size )
 	{
 		CallDestructorsImpl( **it, function_context, names_scope.GetErrors(), src_loc );

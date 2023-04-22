@@ -1066,7 +1066,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	U_ASSERT( loop_frame->block_for_break != nullptr );
 
-	CallDestructorsForLoopInnerVariables( names, function_context, break_operator.src_loc_ );
+	CallDestructorsForLoopInnerVariables( names, function_context, loop_frame->stack_variables_stack_size, break_operator.src_loc_ );
 	loop_frame->break_variables_states.push_back( function_context.variables_state );
 	function_context.llvm_ir_builder.CreateBr( loop_frame->block_for_break );
 
@@ -1108,7 +1108,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	U_ASSERT( loop_frame->block_for_continue != nullptr );
 
-	CallDestructorsForLoopInnerVariables( names, function_context, continue_operator.src_loc_ );
+	CallDestructorsForLoopInnerVariables( names, function_context, loop_frame->stack_variables_stack_size, continue_operator.src_loc_ );
 	loop_frame->continue_variables_states.push_back( function_context.variables_state );
 	function_context.llvm_ir_builder.CreateBr( loop_frame->block_for_continue );
 
