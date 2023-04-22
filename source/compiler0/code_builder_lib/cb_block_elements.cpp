@@ -1388,6 +1388,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.variables_state.TryAddLink( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc_ );
 	variables_storage.RegisterVariable( coro_expr_lock );
 
+	llvm::SmallVector<ReferencesGraph, 2> branches_variable_states;
+	branches_variable_states.push_back( function_context.variables_state );
+
 	llvm::Value* const coro_handle=
 		function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), coro_expr->llvm_value, false, "coro_handle" );
 
@@ -1577,12 +1580,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Destroy all temporaries.
 			CallDestructors( coro_result_variables_storage, variable_names_scope, function_context, if_coro_advance.src_loc_ );
 			function_context.llvm_ir_builder.CreateBr( end_block );
+			branches_variable_states.push_back( function_context.variables_state );
 		}
 	}
 
 	// End block.
 	function_context.function->getBasicBlockList().push_back( end_block );
 	function_context.llvm_ir_builder.SetInsertPoint( end_block );
+
+	function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names.GetErrors(), if_coro_advance.block.end_src_loc_ );
 
 	CallDestructors( variables_storage, names, function_context, if_coro_advance.src_loc_ );
 

@@ -1248,3 +1248,44 @@ def GeneratorNonSyncRequired_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "GeneratorNonSyncRequired", 3 ) )
+
+
+def IfCoroAdvance_VariablesStateMerge_Test0():
+	c_program_text= """
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto mut gen= SomeGen();
+			if_coro_advance( v : gen )
+			{
+				move(x);
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConditionalMove", 10 ) )
+
+
+
+def IfCoroAdvance_VariablesStateMerge_Test1():
+	c_program_text= """
+		fn generator SomeGen() : i32;
+		struct S{ i32& x; }
+		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		fn Foo()
+		{
+			var i32 x= 0, mut y= 0;
+			var S mut s{ .x= x };
+			auto mut gen= SomeGen();
+			if_coro_advance( v : gen )
+			{
+				DoPollution( s, y );
+			}
+			++y; // Error, "y" has reference inside "s"
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 14 ) )

@@ -978,6 +978,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	function_context.references_graph.TryAddLink( coro_expr_ptr, coro_expr_lock, names_scope, if_coro_advance_operator.src_loc );
 	RegisterTopFrameVariable( function_context, coro_expr_lock );
 
+	var ust::vector</ReferencesGraph/> mut references_graphs_for_merge;
+	references_graphs_for_merge.push_back( function_context.references_graph );
+
 	var LLVMTypeRef pointer_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
 
 	var LLVMValueRef mut coro_handle= unsafe( LLVMBuildLoad2( function_context.llvm_ir_builder, pointer_type, coro_expr.llvm_value, "coro_handle\0"[0] ) );
@@ -1182,11 +1185,14 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		{
 			CallDestructorsForTopVariablesFrame( variable_names_scope, function_context, if_coro_advance_operator.src_loc );
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, end_block ) );
+			references_graphs_for_merge.push_back( function_context.references_graph );
 		}
 	}
 
 	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, end_block ) );
 	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, end_block ) );
+
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, if_coro_advance_operator.block.deref().end_src_loc );
 
 	CallDestructorsForTopVariablesFrame( names_scope, function_context, if_coro_advance_operator.src_loc );
 	return BlockElementBuildInfo();
