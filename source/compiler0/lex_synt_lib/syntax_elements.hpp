@@ -680,11 +680,15 @@ struct CStyleForOperator final : public SyntaxElementBase
 struct BreakOperator final : public SyntaxElementBase
 {
 	explicit BreakOperator( const SrcLoc& src_loc );
+
+	std::optional<Label> label_;
 };
 
 struct ContinueOperator final : public SyntaxElementBase
 {
 	explicit ContinueOperator( const SrcLoc& src_loc );
+
+	std::optional<Label> label_;
 };
 
 struct WithOperator final : public SyntaxElementBase

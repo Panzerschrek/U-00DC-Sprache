@@ -2294,6 +2294,8 @@ BreakOperator SyntaxAnalyzer::ParseBreakOperator()
 	BreakOperator result( it_->src_loc );
 	NextLexem();
 
+	result.label_= TryParseLabel();
+
 	ExpectSemicolon();
 
 	return result;
@@ -2304,6 +2306,8 @@ ContinueOperator SyntaxAnalyzer::ParseContinueOperator()
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::continue_ );
 	ContinueOperator result( it_->src_loc );
 	NextLexem();
+
+	result.label_= TryParseLabel();
 
 	ExpectSemicolon();
 
