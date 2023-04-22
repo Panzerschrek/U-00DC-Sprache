@@ -1,4 +1,4 @@
-message( "Build compiler ${NEXT_COMPILER_GENERATION}")
+message( STATUS "Build compiler ${NEXT_COMPILER_GENERATION}")
 
 option( U_COMPILER1_LTO "Use LTO for Compiler1" NO )
 

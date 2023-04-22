@@ -1,5 +1,5 @@
 if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
-	message( "Build DepFileTest" )
+	message( STATUS "Build DepFileTest" )
 
 	file( RELATIVE_PATH project_subpath ${CMAKE_BINARY_DIR} ${CMAKE_CURRENT_BINARY_DIR} )
 
@@ -24,5 +24,5 @@ if( ${CMAKE_GENERATOR} STREQUAL "Ninja" )
 	add_dependencies( DepFileTest${CURRENT_COMPILER_GENERATION} Compiler${CURRENT_COMPILER_GENERATION} )
 
 else()
-	message( "DepFileTest test disabled because it is not supported by current cmake generator" )
+	message( STATUS "DepFileTest test disabled because it is not supported by current cmake generator" )
 endif()
