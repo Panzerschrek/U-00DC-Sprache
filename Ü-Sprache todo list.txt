@@ -6,7 +6,7 @@ General:
 *) Anonymous (module-local) symbols - functions, classes, variables.
 *) build-in "for" for array types.
 *) switch-case
-*) break/continue to outer loop.
+*) break from scope block
 *) Use smallest possible underlaying type for enums (mostly "u8").
 *) "Disassembly operator" - declare variables with initializer as members of value of structure type.
 *) Function to function pointer assignment
