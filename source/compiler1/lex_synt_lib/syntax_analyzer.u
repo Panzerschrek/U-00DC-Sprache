@@ -231,6 +231,7 @@ private:
 	fn ParseIfOperator( mut this ) : IfOperator;
 	fn ParseStaticIfOperator( mut this ) : StaticIfOperator;
 	fn ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperator;
+	fn TryParseLabel( mut this ) : ust::optional</Label/>;
 	fn ParseWhileOperator( mut this ) : WhileOperator;
 	fn ParseForOperator( mut this ) : BlockElement;
 	fn ParseRangeForOperator( mut this ) : RangeForOperator;
@@ -2308,6 +2309,26 @@ fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperato
 	return move(if_coro_advance_operator);
 }
 
+fn SyntaxAnalyzer::TryParseLabel( mut this ) : ust::optional</Label/>
+{
+	if( IsKeyword( it_.front(), Keyword::label_ ) )
+	{
+		var Label mut label_{ .src_loc= it_.front().src_loc };
+		NextLexem();
+
+		if( it_.front().lexem_type != Lexem::Type::Identifier )
+		{
+			PushErrorMessage();
+		}
+		label_.name= it_.front().text;
+		NextLexem();
+
+		return move(label_);
+	}
+
+	return ust::optional</Label/>();
+}
+
 fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
 {
 	auto start_src_loc= it_.front().src_loc;
@@ -2317,6 +2338,7 @@ fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
 	{
 		.src_loc= start_src_loc,
 		.condition= ParseExpressionInBrackets(),
+		.label_= TryParseLabel(),
 		.block( ParseBlock() )
 	};
 	return move(while_operator);
@@ -2371,6 +2393,8 @@ fn SyntaxAnalyzer::ParseRangeForOperator( mut this ) : RangeForOperator
 	for_operator.sequence= ParseExpression();
 
 	ExpectLexem( Lexem::Type::BracketRight );
+
+	for_operator.label_= TryParseLabel();
 
 	for_operator.block.deref()= ParseBlock();
 
@@ -2482,6 +2506,8 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
+	for_operator.label_= TryParseLabel();
+
 	for_operator.block.deref()= ParseBlock();
 
 	return move(for_operator);
@@ -2492,6 +2518,8 @@ fn SyntaxAnalyzer::ParseBreakOperator( mut this ) : BreakOperator
 	var BreakOperator mut break_operator{ .src_loc= it_.front().src_loc };
 	NextLexem();
 
+	break_operator.label_= TryParseLabel();
+
 	ExpectSemicolon();
 
 	return move(break_operator);
@@ -2501,6 +2529,8 @@ fn SyntaxAnalyzer::ParseContinueOperator( mut this ) : ContinueOperator
 {
 	var ContinueOperator mut continue_operator{ .src_loc= it_.front().src_loc };
 	NextLexem();
+
+	continue_operator.label_= TryParseLabel();
 
 	ExpectSemicolon();
 
