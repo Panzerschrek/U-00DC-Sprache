@@ -750,12 +750,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			llvm::BasicBlock* const next_basic_block=
 				is_last_iteration ? finish_basic_block : llvm::BasicBlock::Create( llvm_context_ );
 
-			if( range_for_operator.label_ != std::nullopt )
-			{
-				finish_basic_block->setName( range_for_operator.label_->name + "_break" );
-				next_basic_block->setName( range_for_operator.label_->name + "_continue" );
-			}
-
 			AddLoopFrame(
 				names,
 				function_context,
@@ -859,12 +853,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	llvm::BasicBlock* const loop_iteration_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const block_after_loop= llvm::BasicBlock::Create( llvm_context_ );
 
-	if( c_style_for_operator.label_ != std::nullopt )
-	{
-		block_after_loop->setName( c_style_for_operator.label_->name + "_break" );
-		loop_iteration_block->setName( c_style_for_operator.label_->name + "_continue" );
-	}
-
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
 	// Test block.
@@ -960,12 +948,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	llvm::BasicBlock* const test_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const while_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const block_after_while= llvm::BasicBlock::Create( llvm_context_ );
-
-	if( while_operator.label_ != std::nullopt )
-	{
-		block_after_while->setName( while_operator.label_->name + "_break" );
-		test_block->setName( while_operator.label_->name + "_continue" );
-	}
 
 	// Break to test block. We must push terminal instruction at and of current block.
 	function_context.llvm_ir_builder.CreateBr( test_block );
@@ -2073,6 +2055,9 @@ void CodeBuilder::AddLoopFrame(
 				REPORT_ERROR( Redefinition, names.GetErrors(), label->src_loc_, label_name );
 
 		loop_frame.name= label_name;
+
+		break_block->setName( label_name + "_break" );
+		continue_block->setName( label_name + "_continue" );
 	}
 
 	function_context.loops_stack.push_back( std::move(loop_frame) );
