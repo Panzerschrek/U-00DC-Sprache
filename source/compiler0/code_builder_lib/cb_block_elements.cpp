@@ -939,7 +939,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block_->end_src_loc_ );
 	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 
-	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.src_loc_ );
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.block_->end_src_loc_ );
 
 	// Block after loop.
 	function_context.function->getBasicBlockList().push_back( block_after_loop );
