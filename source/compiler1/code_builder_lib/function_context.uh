@@ -11,6 +11,8 @@ struct LoopFrame
 	// Number of variables frames at stack before loop block creation.
 	size_type variable_frames_stack_size;
 
+	ust::string8 name; // Contains label or is empty for non-labeled loops.
+
 	// Populated during loop body building.
 	ust::vector</ReferencesGraph/> break_references_graphs;
 	ust::vector</ReferencesGraph/> continue_references_graphs;

@@ -2026,9 +2026,9 @@ fn CodeBuilder::CallDestructorsForAllVariablesFrames( mut this, NamesScopePtr& n
 	}
 }
 
-fn CodeBuilder::CallDestructorsForLoopInnerVariables( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc )
+fn CodeBuilder::CallDestructorsForLoopInnerVariables( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variable_frames_stack_size, SrcLoc& src_loc )
 {
-	for( var size_type mut i= function_context.variables_frames.size(), i_end= function_context.loops_stack.back().variable_frames_stack_size; i > i_end; --i )
+	for( var size_type mut i= function_context.variables_frames.size(); i > variable_frames_stack_size; --i )
 	{
 		CallDestructorsForVariablesFrame( names_scope, function_context, i - 1s, src_loc );
 	}

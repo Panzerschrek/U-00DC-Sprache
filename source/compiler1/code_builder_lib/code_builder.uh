@@ -314,14 +314,22 @@ private:
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::CStyleForOperator& c_style_for_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BreakOperator& break_operator ) : BlockElementBuildInfo;
-	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::TypeAlias& type_alias ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo;
 
 	fn BuildEmptyReturn( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+
+	fn AddLoopFrame(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		LLVMBasicBlockRef break_block,
+		LLVMBasicBlockRef continue_block,
+		ust::optional</Synt::Label/>& label_ );
 
 	fn BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta );
 
@@ -872,7 +880,7 @@ private:
 	fn CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc );
 	fn CallDestructorsForTopVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 	fn CallDestructorsForAllVariablesFrames( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
-	fn CallDestructorsForLoopInnerVariables( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
+	fn CallDestructorsForLoopInnerVariables( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variable_frames_stack_size, SrcLoc& src_loc );
 
 	fn DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, SrcLoc& src_loc );
 
