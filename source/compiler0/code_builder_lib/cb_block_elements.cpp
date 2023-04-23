@@ -2064,6 +2064,10 @@ void CodeBuilder::AddLoopFrame(
 	if( label != std::nullopt )
 	{
 		const std::string& label_name= label->name;
+
+		if( IsKeyword( label_name ) )
+			REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), label->src_loc_ );
+
 		for( const LoopFrame& prev_frame : function_context.loops_stack )
 			if( prev_frame.name == label_name )
 				REPORT_ERROR( Redefinition, names.GetErrors(), label->src_loc_, label_name );

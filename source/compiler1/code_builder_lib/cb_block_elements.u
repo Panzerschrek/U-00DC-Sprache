@@ -2058,6 +2058,11 @@ fn CodeBuilder::AddLoopFrame(
 
 	if_var( &l : label_ )
 	{
+		if( IsKeyword( l.name ) )
+		{
+			REPORT_ERROR( UsingKeywordAsName, names_scope, l.src_loc )
+		}
+
 		foreach( &prev_frame : function_context.loops_stack )
 		{
 			if( prev_frame.name == l.name )
