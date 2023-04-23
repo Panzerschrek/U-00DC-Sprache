@@ -663,19 +663,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	auto mut found_in_variables= false;
-	foreach( & frame : function_context.variables_frames )
+	foreach( & frame : function_context.variables_frames ) label variable_frames_loop
 	{
 		foreach( &frame_variable : frame )
 		{
 			if( frame_variable == variable_for_move )
 			{
 				found_in_variables= true;
-				break;
+				break label variable_frames_loop;
 			}
-		}
-		if( found_in_variables )
-		{
-			break;
 		}
 	}
 
