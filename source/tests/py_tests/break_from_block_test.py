@@ -179,6 +179,36 @@ def BreakFromBlock_Test5():
 	tests_lib.run_function( "_Z3Foov" )
 
 
+def BreakFromBlock_Test6():
+	c_program_text= """
+		fn Foo( bool c0, bool c1 ) : i32
+		{
+			var i32 mut i= 0;
+			{
+				if( c0 )
+				{
+					if( c1 )
+					{
+						i= 66;
+						// Break and skip the rest of the block.
+						// Doing this we can emulate multiple-condition "if" with single "else" branch.
+						break label some;
+					}
+				}
+
+				// Alternative code for cases where at least one of conditions is false.
+				i = 44;
+			} label some
+			return i;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Foobb", False, False ) == 44 )
+	assert( tests_lib.run_function( "_Z3Foobb", False, True ) == 44 )
+	assert( tests_lib.run_function( "_Z3Foobb", True, False ) == 44 )
+	assert( tests_lib.run_function( "_Z3Foobb", True, True ) == 66 )
+
+
 def BreakOutiseLoop_FroBlock_Test0():
 	c_program_text= """
 		fn Foo()
@@ -247,3 +277,50 @@ def ContinueForBlock_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ContinueForBlock", 5 ) )
+
+
+def UnreachableCode_ForBreakFromBlock_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			{
+				break label some;
+				auto x= 0;
+			} label some
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnreachableCode", 6 ) )
+
+
+def UnreachableCode_ForBreakFromBlock_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			{
+				{
+					break label outer_block;
+				} label inner_block
+				auto x= 0;
+			} label outer_block
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnreachableCode", 8 ) )
+
+
+def UnreachableCode_ForBreakFromBlock_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			{
+				return;
+			} label some
+			return; // This "return" is unreachable, since previos block cotnains terminal operator.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnreachableCode", 7 ) )
