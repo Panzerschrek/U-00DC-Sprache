@@ -72,7 +72,53 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
 	}
 
+	var LLVMBasicBlockRef mut break_block= LLVMBasicBlockRef::Null;
+	if_var( &l : scope_block.label_ )
+	{
+		break_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+		AddLoopFrame( names_scope, function_context, break_block, LLVMBasicBlockRef::Null, scope_block.label_ );
+	}
+
 	var BlockElementBuildInfo mut block_element_build_info= BuildBlock( names_scope, function_context, scope_block.block );
+
+	if( break_block != LLVMBasicBlockRef::Null )
+	{
+		var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
+		var bool has_any_break= !references_graphs_for_merge.empty();
+
+		if( !block_element_build_info.have_terminal_instruction_inside )
+		{
+			references_graphs_for_merge.push_back( function_context.references_graph );
+		}
+
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, scope_block.block.end_src_loc );
+
+		function_context.loops_stack.pop_back();
+
+		if( !block_element_build_info.have_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, break_block ) );
+		}
+
+		if( has_any_break )
+		{
+			// Even if this block ends with "return", but contains any "break" inside - it is not terminal.
+			block_element_build_info.have_terminal_instruction_inside= false;
+		}
+
+		if( !block_element_build_info.have_terminal_instruction_inside )
+		{
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, break_block ) );
+			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, break_block ) );
+		}
+		else
+		{
+			// Block contains no "break" and ends with "return" or "break" to outer loop/block.
+			// In such case we do not needs break block.
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, break_block ) );
+			unsafe( LLVMDeleteBasicBlock( break_block ) );
+		}
+	}
 
 	function_context.is_in_unsafe_block= prev_safety;
 
@@ -1647,15 +1693,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 {
 	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
 
-	if( function_context.loops_stack.empty() )
-	{
-		REPORT_ERROR( BreakOutsideLoop, names_scope, break_operator.src_loc )
-		return block_element_build_info;
-	}
-
 	var size_type frame_index= FetchLoopFrame( names_scope, function_context, break_operator.label_ );
 	if( frame_index >= function_context.loops_stack.size() )
 	{
+		REPORT_ERROR( BreakOutsideLoop, names_scope, break_operator.src_loc )
 		return block_element_build_info;
 	}
 
@@ -1673,15 +1714,16 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 {
 	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
 
-	if( function_context.loops_stack.empty() )
+	var size_type frame_index= FetchLoopFrame( names_scope, function_context, continue_operator.label_ );
+	if( frame_index >= function_context.loops_stack.size() )
 	{
 		REPORT_ERROR( ContinueOutsideLoop, names_scope, continue_operator.src_loc )
 		return block_element_build_info;
 	}
-
-	var size_type frame_index= FetchLoopFrame( names_scope, function_context, continue_operator.label_ );
-	if( frame_index >= function_context.loops_stack.size() )
+	if( function_context.loops_stack[frame_index].block_for_continue == LLVMBasicBlockRef::Null )
 	{
+		// This is non-loop frame.
+		REPORT_ERROR( ContinueForBlock, names_scope, continue_operator.src_loc )
 		return block_element_build_info;
 	}
 
@@ -2053,6 +2095,11 @@ fn CodeBuilder::FetchLoopFrame(
 	FunctionContext &mut function_context,
 	ust::optional</Synt::Label/>& label_ ) : size_type
 {
+	if( function_context.loops_stack.empty() )
+	{
+		return ~0s;
+	}
+
 	var size_type mut frame_index(~0);
 	if_var( &l : label_ )
 	{
@@ -2073,7 +2120,23 @@ fn CodeBuilder::FetchLoopFrame(
 		return frame_index;
 	}
 
-	return function_context.loops_stack.size() - 1s;
+	// In case of "break" or "continue" without label skip non-loop frames (block frames, where only "break" is available).
+	var size_type mut index= function_context.loops_stack.size() - 1s;
+	while( true )
+	{
+		var bool is_loop_frame= function_context.loops_stack[index].block_for_continue != LLVMBasicBlockRef::Null;
+		if( is_loop_frame )
+		{
+			return index;
+		}
+
+		if( index == 0s )
+		{
+			break;
+		}
+		--index;
+	}
+	return ~0s;
 }
 
 fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta )
