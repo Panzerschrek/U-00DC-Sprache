@@ -1027,24 +1027,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return block_info;
 	}
 
-	LoopFrame* loop_frame= nullptr;
-	if( break_operator.label_ != std::nullopt )
-	{
-		for( LoopFrame& check_loop_frame : function_context.loops_stack )
-			if( check_loop_frame.name == break_operator.label_->name )
-			{
-				loop_frame= &check_loop_frame;
-				break;
-			}
-
-		if( loop_frame == nullptr )
-		{
-			REPORT_ERROR( NameNotFound, names.GetErrors(), break_operator.label_->src_loc_, break_operator.label_->name );
-			return block_info;
-		}
-	}
-	else
-		loop_frame= &function_context.loops_stack.back();
+	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, break_operator.label_ );
+	if( loop_frame == nullptr )
+		return block_info;
 
 	U_ASSERT( loop_frame->block_for_break != nullptr );
 
@@ -1069,24 +1054,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return block_info;
 	}
 
-	LoopFrame* loop_frame= nullptr;
-	if( continue_operator.label_ != std::nullopt )
-	{
-		for( LoopFrame& check_loop_frame : function_context.loops_stack )
-			if( check_loop_frame.name == continue_operator.label_->name )
-			{
-				loop_frame= &check_loop_frame;
-				break;
-			}
-
-		if( loop_frame == nullptr )
-		{
-			REPORT_ERROR( NameNotFound, names.GetErrors(), continue_operator.label_->src_loc_, continue_operator.label_->name );
-			return block_info;
-		}
-	}
-	else
-		loop_frame= &function_context.loops_stack.back();
+	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, continue_operator.label_ );
+	if( loop_frame == nullptr )
+		return block_info;
 
 	U_ASSERT( loop_frame->block_for_continue != nullptr );
 
@@ -2061,6 +2031,27 @@ void CodeBuilder::AddLoopFrame(
 	}
 
 	function_context.loops_stack.push_back( std::move(loop_frame) );
+}
+
+LoopFrame* CodeBuilder::FetchLoopFrame( NamesScope& names, FunctionContext& function_context, const std::optional<Synt::Label>& label )
+{
+	if( label != std::nullopt )
+	{
+		LoopFrame* loop_frame= nullptr;
+		for( LoopFrame& check_loop_frame : function_context.loops_stack )
+			if( check_loop_frame.name == label->name )
+			{
+				loop_frame= &check_loop_frame;
+				break;
+			}
+
+		if( loop_frame == nullptr )
+			REPORT_ERROR( NameNotFound, names.GetErrors(), label->src_loc_, label->name );
+
+		return loop_frame;
+	}
+	else
+		return &function_context.loops_stack.back();
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(

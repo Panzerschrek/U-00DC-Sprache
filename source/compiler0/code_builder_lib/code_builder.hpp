@@ -733,6 +733,9 @@ private:
 		llvm::BasicBlock* continue_block,
 		const std::optional<Synt::Label>& label );
 
+	// Returns nullptr if not found.
+	LoopFrame* FetchLoopFrame( NamesScope& names, FunctionContext& function_context, const std::optional<Synt::Label>& label );
+
 	// ++ and -- operations
 	void BuildDeltaOneOperatorCode(
 		const Synt::Expression& expression,

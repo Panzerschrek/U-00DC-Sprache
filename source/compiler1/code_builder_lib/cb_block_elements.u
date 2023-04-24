@@ -1649,27 +1649,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		return block_element_build_info;
 	}
 
-	var size_type mut frame_index(~0);
-	if_var( &l : break_operator.label_ )
+	var size_type frame_index= FetchLoopFrame( names_scope, function_context, break_operator.label_ );
+	if( frame_index >= function_context.loops_stack.size() )
 	{
-		for( auto mut i= 0s; i < function_context.loops_stack.size(); ++i )
-		{
-			if( function_context.loops_stack[i].name == l.name )
-			{
-				frame_index= i;
-				break;
-			}
-		}
-
-		if( frame_index >= function_context.loops_stack.size() )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, l.src_loc, l.name )
-			return block_element_build_info;
-		}
-	}
-	if( break_operator.label_.empty() )
-	{
-		frame_index= function_context.loops_stack.size() - 1s;
+		return block_element_build_info;
 	}
 
 	var size_type variable_frames_stack_size= function_context.loops_stack[frame_index].variable_frames_stack_size;
@@ -1692,27 +1675,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		return block_element_build_info;
 	}
 
-	var size_type mut frame_index(~0);
-	if_var( &l : continue_operator.label_ )
+	var size_type frame_index= FetchLoopFrame( names_scope, function_context, continue_operator.label_ );
+	if( frame_index >= function_context.loops_stack.size() )
 	{
-		for( auto mut i= 0s; i < function_context.loops_stack.size(); ++i )
-		{
-			if( function_context.loops_stack[i].name == l.name )
-			{
-				frame_index= i;
-				break;
-			}
-		}
-
-		if( frame_index >= function_context.loops_stack.size() )
-		{
-			REPORT_ERROR( NameNotFound, names_scope, l.src_loc, l.name )
-			return block_element_build_info;
-		}
-	}
-	if( continue_operator.label_.empty() )
-	{
-		frame_index= function_context.loops_stack.size() - 1s;
+		return block_element_build_info;
 	}
 
 	var size_type variable_frames_stack_size= function_context.loops_stack[frame_index].variable_frames_stack_size;
@@ -2075,6 +2041,35 @@ fn CodeBuilder::AddLoopFrame(
 	}
 
 	function_context.loops_stack.push_back( move(loop_frame) );
+}
+
+fn CodeBuilder::FetchLoopFrame(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::optional</Synt::Label/>& label_ ) : size_type
+{
+	var size_type mut frame_index(~0);
+	if_var( &l : label_ )
+	{
+		for( auto mut i= 0s; i < function_context.loops_stack.size(); ++i )
+		{
+			if( function_context.loops_stack[i].name == l.name )
+			{
+				frame_index= i;
+				break;
+			}
+		}
+
+		if( frame_index >= function_context.loops_stack.size() )
+		{
+			REPORT_ERROR( NameNotFound, names_scope, l.src_loc, l.name )
+		}
+
+		return frame_index;
+	}
+
+	return function_context.loops_stack.size() - 1s;
 }
 
 fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta )

@@ -331,6 +331,13 @@ private:
 		LLVMBasicBlockRef continue_block,
 		ust::optional</Synt::Label/>& label_ );
 
+	// Returns index or ~0 if not found.
+	fn FetchLoopFrame(
+		mut this,
+		NamesScopePtr& names_scope,
+		FunctionContext &mut function_context,
+		ust::optional</Synt::Label/>& label_ ) : size_type;
+
 	fn BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta );
 
 	fn BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr;
