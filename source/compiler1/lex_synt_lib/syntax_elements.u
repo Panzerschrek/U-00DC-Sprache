@@ -73,7 +73,7 @@ fn GetSrcLoc( BlockElement& block_element ) : SrcLoc
 		{
 			return GetSrcLoc(el);
 		}
-		else if( ust::is_same_type</ ElementT, ust::box</Block/> />() )
+		else if( ust::is_same_type</ ElementT, ust::box</ScopeBlock/> />() )
 		{
 			return el.deref().src_loc;
 		}

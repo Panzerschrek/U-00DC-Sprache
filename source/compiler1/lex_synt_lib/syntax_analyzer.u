@@ -1911,21 +1911,20 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 	{
 		if( it_.front().lexem_type == Lexem::Type::BraceLeft )
 		{
-			block_elements.push_back( ust::make_box(ParseBlock()) );
+			var ScopeBlock mut scope_block{ .src_loc= it_.front().src_loc, .block= ParseBlock(), .label_= TryParseLabel() };
+			block_elements.push_back( ust::make_box(move(scope_block)) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::safe_  ) && it_[1s].lexem_type == Lexem::Type::BraceLeft  )
 		{
 			NextLexem();
-			auto mut inner_block= ParseBlock();
-			inner_block.safety= Block::Safety::Safe;
-			block_elements.push_back( ust::make_box(move(inner_block)) );
+			var ScopeBlock mut scope_block{ .src_loc= it_.front().src_loc, .block= ParseBlock(), .safety= ScopeBlock::Safety::Safe, .label_= TryParseLabel() };
+			block_elements.push_back( ust::make_box(move(scope_block)) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::unsafe_ ) && it_[1s].lexem_type == Lexem::Type::BraceLeft )
 		{
 			NextLexem();
-			auto mut inner_block= ParseBlock();
-			inner_block.safety= Block::Safety::Unsafe;
-			block_elements.push_back( ust::make_box(move(inner_block)) );
+			var ScopeBlock mut scope_block{ .src_loc= it_.front().src_loc, .block= ParseBlock(), .safety= ScopeBlock::Safety::Unsafe, .label_= TryParseLabel() };
+			block_elements.push_back( ust::make_box(move(scope_block)) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::var_ ) )
 		{

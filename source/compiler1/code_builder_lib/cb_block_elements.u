@@ -35,19 +35,6 @@ fn CodeBuilder::BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContex
 	var VariablesFrameHolder variables_frame_hodler(in_function_context);
 	auto& mut function_context= variables_frame_hodler.GetFunctionContext();
 
-	auto prev_safety= function_context.is_in_unsafe_block;
-
-	if( block.safety == Synt::Block::Safety::None ) {}// Keep old safety
-	else if( block.safety == Synt::Block::Safety::Safe )
-	{
-		function_context.is_in_unsafe_block= false;
-	}
-	else if( block.safety == Synt::Block::Safety::Unsafe )
-	{
-		function_context.is_in_unsafe_block=  true;
-		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
-	}
-
 	auto prev_debug_info_block= debug_info_builder_.try_deref().StartBlock( function_context, block.src_loc );
 
 	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( block_names_scope, function_context, block.elements.range() );
@@ -59,8 +46,6 @@ fn CodeBuilder::BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContex
 
 	debug_info_builder_.try_deref().EndBlock( function_context, prev_debug_info_block );
 
-	function_context.is_in_unsafe_block= prev_safety;
-
 	return block_element_build_info;
 }
 
@@ -70,9 +55,28 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::Block/>& block_ptr ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ScopeBlock/>& scope_block_ptr ) : BlockElementBuildInfo
 {
-	return BuildBlock( names_scope, function_context, block_ptr.deref() );
+	var Synt::ScopeBlock& scope_block= scope_block_ptr.deref();
+
+	auto prev_safety= function_context.is_in_unsafe_block;
+
+	if( scope_block.safety == Synt::ScopeBlock::Safety::None ) {}// Keep old safety
+	else if( scope_block.safety == Synt::ScopeBlock::Safety::Safe )
+	{
+		function_context.is_in_unsafe_block= false;
+	}
+	else if( scope_block.safety == Synt::ScopeBlock::Safety::Unsafe )
+	{
+		function_context.is_in_unsafe_block=  true;
+		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+	}
+
+	var BlockElementBuildInfo mut block_element_build_info= BuildBlock( names_scope, function_context, scope_block.block );
+
+	function_context.is_in_unsafe_block= prev_safety;
+
+	return block_element_build_info;
 }
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::VariablesDeclaration& variables_declaration ) : BlockElementBuildInfo
@@ -916,7 +920,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		if( !branch.condition.get</Synt::EmptyVariant/>().empty() )
 		{
 			// Last unconditional "else"
-			return BuildBlockElement( names_scope, function_context, branch.block );
+			return BuildBlock( names_scope, function_context, branch.block.deref() );
 		}
 		else
 		{
@@ -924,7 +928,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 			if( EvaluateBoolConstantExpression( names_scope, function_context, branch.condition ) )
 			{
-				return BuildBlockElement( names_scope, function_context, branch.block );
+				return BuildBlock( names_scope, function_context, branch.block.deref() );
 			}
 
 			CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.src_loc );
