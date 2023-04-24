@@ -84,7 +84,7 @@ def BreakFromBlock_Test1():
 				auto mut breaked= false;
 				for( auto mut i= 0; i < 100; ++i ) label outer_loop
 				{
-					while(true) label inner_loop
+					while(true)
 					{
 						{
 							if( i == 13 )
@@ -94,7 +94,7 @@ def BreakFromBlock_Test1():
 							}
 							else
 							{
-								break label inner_loop;
+								break; // Break from loop, not from labeled block.
 							}
 						} label inner_block
 					}
@@ -131,3 +131,119 @@ def BreakFromBlock_Test3():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def BreakFromBlock_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut iterations= 0s;
+			for( auto mut i= 0; i < 10; ++i )
+			{
+				++iterations;
+				{
+					if( i == 3 )
+					{
+						break; // break outside loop, not outside labeled block.
+					}
+				} label some
+				halt if( i >= 3 );
+			}
+			halt if( iterations != 4s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def BreakFromBlock_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut iterations= 0s;
+			for( auto mut i= 0; i < 10; ++i )
+			{
+				++iterations;
+				{
+					if( i == 3 )
+					{
+						continue; // continue to loop, not to labeled block.
+					}
+				} label some
+				halt if( i == 3 );
+			}
+			halt if( iterations != 10s );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def BreakOutiseLoop_FroBlock_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			{
+				break; // break without any frame
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "BreakOutsideLoop", 5 ) )
+
+
+def BreakOutiseLoop_FroBlock_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			{
+				break; // break without label is processed as break outside loop, not block. And here there is no any loop.
+			} label some
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "BreakOutsideLoop", 5 ) )
+
+
+def ContinueOutiseLoop_FroBlock_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			{
+				continue;
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ContinueOutsideLoop", 5 ) )
+
+
+def ContinueOutiseLoop_FroBlock_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			{
+				continue; // "continue" works only for loops, not blocks.
+			} label some
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ContinueOutsideLoop", 5 ) )
+
+
+def ContinueForBlock_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			{
+				continue label some; // Can't continue to block label.
+			} label some
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ContinueForBlock", 5 ) )

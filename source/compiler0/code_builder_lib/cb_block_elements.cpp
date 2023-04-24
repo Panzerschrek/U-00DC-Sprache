@@ -1079,15 +1079,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
 
-	if( function_context.loops_stack.empty() )
+	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, break_operator.label_ );
+	if( loop_frame == nullptr )
 	{
 		REPORT_ERROR( BreakOutsideLoop, names.GetErrors(), break_operator.src_loc_ );
 		return block_info;
 	}
-
-	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, break_operator.label_ );
-	if( loop_frame == nullptr )
-		return block_info;
 
 	U_ASSERT( loop_frame->block_for_break != nullptr );
 
@@ -1106,17 +1103,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
 
-	if( function_context.loops_stack.empty() )
+	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, continue_operator.label_ );
+	if( loop_frame == nullptr )
 	{
 		REPORT_ERROR( ContinueOutsideLoop, names.GetErrors(), continue_operator.src_loc_ );
 		return block_info;
 	}
 
-	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, continue_operator.label_ );
-	if( loop_frame == nullptr )
+	if( loop_frame->block_for_continue == nullptr )
+	{
+		// This is non-loop frame.
+		REPORT_ERROR( ContinueForBlock, names.GetErrors(), continue_operator.src_loc_ );
 		return block_info;
-
-	U_ASSERT( loop_frame->block_for_continue != nullptr );
+	}
 
 	CallDestructorsForLoopInnerVariables( names, function_context, loop_frame->stack_variables_stack_size, continue_operator.src_loc_ );
 	loop_frame->continue_variables_states.push_back( function_context.variables_state );
@@ -2097,7 +2096,16 @@ LoopFrame* CodeBuilder::FetchLoopFrame( NamesScope& names, FunctionContext& func
 		return loop_frame;
 	}
 	else
-		return &function_context.loops_stack.back();
+	{
+		// In case of "break" or "continue" without label skip non-loop frames (block frames, where only "break" is available).
+		for( auto it= function_context.loops_stack.rbegin(); it != function_context.loops_stack.rend(); ++it )
+		{
+			const bool is_loop_frame= it->block_for_continue != nullptr;
+			if( is_loop_frame )
+				return &*it;
+		}
+		return nullptr;
+	}
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(
