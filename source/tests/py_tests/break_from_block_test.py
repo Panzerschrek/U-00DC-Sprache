@@ -324,3 +324,133 @@ def UnreachableCode_ForBreakFromBlock_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnreachableCode", 7 ) )
+
+
+def BreakFromBlock_VariablesStateMerge_Test0():
+	c_program_text= """
+		fn Foo(bool cond )
+		{
+			var i32 mut x= 0;
+			{
+				if( cond )
+				{
+					move(x);
+					break label some;
+				}
+			} label some
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConditionalMove", 11 ) )
+
+
+def BreakFromBlock_VariablesStateMerge_Test1():
+	c_program_text= """
+		fn Foo(bool cond )
+		{
+			var i32 mut x= 0;
+			{
+				if( cond )
+				{
+					break label some;
+				}
+				move(x);
+			} label some
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConditionalMove", 11 ) )
+
+
+def BreakFromBlock_VariablesStateMerge_Test2():
+	c_program_text= """
+		fn Foo(bool cond )
+		{
+			var i32 mut x= 0;
+			{
+				if( cond )
+				{
+					move(x);
+					break label some;
+				}
+				// "x" in this branch is not moved yet.
+				++x;
+				move(x);
+			} label some // Ok - move "x" in all branches.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def BreakFromBlock_VariablesStateMerge_Test3():
+	c_program_text= """
+		fn Foo(bool cond )
+		{
+			var i32 mut x= 0;
+			{
+				if( cond )
+				{
+					move(x);
+					break label some;
+				}
+				// "x" in this branch is not moved yet.
+				++x;
+				move(x);
+				return;
+			} label some // Ok - move "x" in all branches. Branch with "return" is ignored.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def BreakFromBlock_VariablesStateMerge_Test4():
+	c_program_text= """
+		fn Foo(bool cond )
+		{
+			var i32 mut x= 0;
+			{
+				if( cond )
+				{
+					move(x);
+					break label some;
+				}
+				++x; // Ok - can access "x", it is still not moved.
+				move(x);
+			} label some // "x" is moved after this block.
+			++x; // Error, "x" is moved.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HaveError( errors_list, "AccessingMovedVariable", 11 ) )
+	assert( HaveError( errors_list, "AccessingMovedVariable", 14 ) )
+
+
+def BreakFromBlock_VariablesStateMerge_Test5():
+	c_program_text= """
+		struct S{ i32& x; }
+		fn DoPollution( S &mut s'a', i32 &'b x ) ' a <- b ';
+		fn Foo()
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+			{
+				{
+					if( Bar() )
+					{
+						DoPollution( s, y );
+						break label outer;
+					}
+				} label inner
+				++y; // Here there is still no reference to "y" inside "s".
+			} label outer
+			++y; // Error - "y" has reference inside "s"
+		}
+		fn Bar() : bool;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( not HaveError( errors_list, "ReferenceProtectionError", 16 ) )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 18 ) )
