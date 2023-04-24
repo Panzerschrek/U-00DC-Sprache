@@ -60,6 +60,7 @@ struct ZeroInitializer;
 struct UninitializedInitializer;
 
 struct Block;
+struct ScopeBlock;
 struct VariablesDeclaration;
 struct AutoVariableDeclaration;
 struct ReturnOperator;
@@ -161,7 +162,7 @@ using Initializer= std::variant<
 	UninitializedInitializer >;
 
 using BlockElement= std::variant<
-	Block,
+	ScopeBlock,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	ReturnOperator,
@@ -567,9 +568,19 @@ struct StructNamedInitializer::MemberInitializer
 	Initializer initializer;
 };
 
-struct Block final : public SyntaxElementBase
+// Just block - as it used as part of other syntax elements.
+struct Block : public SyntaxElementBase
 {
 	Block( const SrcLoc& start_src_loc );
+
+	SrcLoc end_src_loc_;
+	BlockElements elements_;
+};
+
+// Block inside scope - with additional properties.
+struct ScopeBlock final : public Block
+{
+	ScopeBlock( Block block );
 
 	enum class Safety : uint8_t
 	{
@@ -578,8 +589,6 @@ struct Block final : public SyntaxElementBase
 		Unsafe,
 	};
 
-	SrcLoc end_src_loc_;
-	BlockElements elements_;
 	Safety safety_= Safety::None;
 };
 

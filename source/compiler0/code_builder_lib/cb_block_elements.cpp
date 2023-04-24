@@ -33,9 +33,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::Block& block )
+	const Synt::ScopeBlock& block )
 {
-	return BuildBlock( names, function_context, block );
+	// Save unsafe flag.
+	const bool prev_unsafe= function_context.is_in_unsafe_block;
+	if( block.safety_ == Synt::ScopeBlock::Safety::Unsafe )
+	{
+		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+		function_context.is_in_unsafe_block= true;
+	}
+	else if( block.safety_ == Synt::ScopeBlock::Safety::Safe )
+		function_context.is_in_unsafe_block= false;
+	else if( block.safety_ == Synt::ScopeBlock::Safety::None ) {}
+	else U_ASSERT(false);
+
+	BlockBuildInfo result= BuildBlock( names, function_context, block );
+
+	// Restore unsafe flag.
+	function_context.is_in_unsafe_block= prev_unsafe;
+
+	return result;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
@@ -1929,18 +1946,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	NamesScope block_names( "", &names );
 	const StackVariablesStorage block_variables_storage( function_context );
 
-	// Save unsafe flag.
-	const bool prev_unsafe= function_context.is_in_unsafe_block;
-	if( block.safety_ == Synt::Block::Safety::Unsafe )
-	{
-		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
-		function_context.is_in_unsafe_block= true;
-	}
-	else if( block.safety_ == Synt::Block::Safety::Safe )
-		function_context.is_in_unsafe_block= false;
-	else if( block.safety_ == Synt::Block::Safety::None ) {}
-	else U_ASSERT(false);
-
 	const BlockBuildInfo block_build_info= BuildBlockElements( block_names, function_context, block.elements_ );
 
 	debug_info_builder_->SetCurrentLocation( block.end_src_loc_, function_context );
@@ -1949,9 +1954,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	// we didn`t need call destructors, it must be called in this operators.
 	if( !block_build_info.have_terminal_instruction_inside )
 		CallDestructors( block_variables_storage, block_names, function_context, block.end_src_loc_ );
-
-	// Restore unsafe flag.
-	function_context.is_in_unsafe_block= prev_unsafe;
 
 	debug_info_builder_->EndBlock( function_context );
 

@@ -2599,16 +2599,16 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{
 			NextLexem();
-			Block block= ParseBlock();
-			block.safety_= Block::Safety::Safe;
+			ScopeBlock block= ParseBlock();
+			block.safety_= ScopeBlock::Safety::Safe;
 			elements.emplace_back( std::move( block ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ &&
 				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{
 			NextLexem();
-			Block block= ParseBlock();
-			block.safety_= Block::Safety::Unsafe;
+			ScopeBlock block= ParseBlock();
+			block.safety_= ScopeBlock::Safety::Unsafe;
 			elements.emplace_back( std::move( block ) );
 		}
 		else if( it_->type == Lexem::Type::Increment )

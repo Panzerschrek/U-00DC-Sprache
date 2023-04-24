@@ -171,6 +171,10 @@ Block::Block( const SrcLoc& start_src_loc )
 	: SyntaxElementBase(start_src_loc)
 {}
 
+ScopeBlock::ScopeBlock( Block block )
+	: Block( std::move(block) )
+{}
+
 VariablesDeclaration::VariablesDeclaration( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
