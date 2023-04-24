@@ -812,9 +812,8 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 
 	for( auto mut arg_n= 0s; arg_n < signature_args_to_check; ++arg_n )
 	{
-		foreach( &candidate_l : type_templates )
+		foreach( &candidate_l : type_templates ) label templates_search
 		{
-			auto mut is_best_template_for_current_arg= true;
 			foreach( &candidate_r : type_templates )
 			{
 				auto comp= CompareTemplateSpecialization(
@@ -822,14 +821,8 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 					candidate_r.deref().signature_params[arg_n] );
 				if( comp == ConversionsCompareResult::Incomparable || comp == ConversionsCompareResult::RightIsBetter )
 				{
-					is_best_template_for_current_arg= false;
-					break;
+					continue label templates_search;
 				}
-			}
-
-			if( !is_best_template_for_current_arg )
-			{
-				continue;
 			}
 
 			for( auto mut index_r= 0s; index_r < type_templates.size(); ++index_r )

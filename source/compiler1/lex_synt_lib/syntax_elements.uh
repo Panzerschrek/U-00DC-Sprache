@@ -470,10 +470,17 @@ struct IfCoroAdvanceOperator
 	ust::box</Block/> block;
 }
 
+struct Label
+{
+	SrcLoc src_loc;
+	ust::string8 name;
+}
+
 struct WhileOperator
 {
 	SrcLoc src_loc;
 	Expression condition;
+	ust::optional</Label/> label_;
 	ust::box</Block/> block;
 }
 
@@ -484,6 +491,7 @@ struct RangeForOperator
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ust::string8 loop_variable_name;
 	Expression sequence;
+	ust::optional</Label/> label_;
 	ust::box</Block/> block;
 }
 
@@ -510,17 +518,20 @@ struct CStyleForOperator
 		] /> />
 	iteration_part_elements;
 
+	ust::optional</Label/> label_;
 	ust::box</Block/> block;
 }
 
 struct BreakOperator
 {
 	SrcLoc src_loc;
+	ust::optional</Label/> label_;
 }
 
 struct ContinueOperator
 {
 	SrcLoc src_loc;
+	ust::optional</Label/> label_;
 }
 
 struct WithOperator

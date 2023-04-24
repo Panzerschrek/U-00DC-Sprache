@@ -4,6 +4,7 @@ var
 auto
 return
 yield
+label
 while
 break
 continue

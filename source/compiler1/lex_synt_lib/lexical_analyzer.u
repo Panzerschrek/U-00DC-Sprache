@@ -647,7 +647,7 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 		}
 		else
 		{
-			foreach( &lexem_size_group : c_fixed_lexems_table )
+			foreach( &lexem_size_group : c_fixed_lexems_table ) label size_groups_loop
 			{
 				auto s= typeinfo</ typeof(lexem_size_group) />.element_type.elements_list[0s].type.element_count;
 				if( s > it.size() )
@@ -656,7 +656,6 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 				}
 				auto check_range= it.subrange( 0s, s );
 
-				auto mut found= false;
 				foreach( &l : lexem_size_group )
 				{
 					if( check_range == l[0] )
@@ -664,13 +663,8 @@ fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnal
 						lexem.text= l[0];
 						lexem.lexem_type= l[1];
 						it= it.subrange( s, it.size() );
-						found= true;
-						break;
+						break label size_groups_loop;
 					}
-				}
-				if(found)
-				{
-					break;
 				}
 			}
 		}

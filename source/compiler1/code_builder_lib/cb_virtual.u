@@ -106,24 +106,17 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		auto parent_lock= parent_ptr.lock_imut();
 		var ClassType& parent= parent_lock.deref();
 
-		for( auto mut j= 0s; j < parent.virtual_table.size(); ++j )
+		for( auto mut j= 0s; j < parent.virtual_table.size(); ++j ) label parent_virual_table_search
 		{
 			var ClassType::VirtualTableEntry& parent_virtual_table_entry= parent.virtual_table[j];
 
-			var bool mut already_exists_in_vtable= false;
 			foreach( &virtual_table_entry : class_type.virtual_table )
 			{
 				if( virtual_table_entry.name == parent_virtual_table_entry.name &&
 					virtual_table_entry.function_variable.VirtuallyEquals( parent_virtual_table_entry.function_variable ) )
 				{
-					already_exists_in_vtable= true;
-					break;
+					continue label parent_virual_table_search;
 				}
-			}
-
-			if( already_exists_in_vtable )
-			{
-				continue;
 			}
 
 			var ClassType::VirtualTableEntry mut entry_copy= parent_virtual_table_entry;

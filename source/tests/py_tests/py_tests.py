@@ -59,6 +59,7 @@ def main():
 		"non_sync_tag_test",
 		"numeric_constants_test",
 		"order_independent_name_resolving_test",
+		"outer_loop_break_continue_test",
 		"overloading_resolution_test",
 		"public_private_protected_test",
 		"raw_pointers_errors_test",

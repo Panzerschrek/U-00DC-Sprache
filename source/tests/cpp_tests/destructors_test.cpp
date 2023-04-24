@@ -2917,6 +2917,164 @@ U_TEST(IfCoroAdvance_Destruction_Test3)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 998, 222343, 787, 222343 } ) );
 }
 
+U_TEST(BreakContinueToOuterLoop_Destructor_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn Foo()
+		{
+			for( auto mut i= 0; i < 3; ++i ) label outer
+			{
+				var S s_outer( 3 + i * 100 );
+				for( auto mut j= 0; j < 100; ++j )
+				{
+					var S s_inner( 7 + j * 13 );
+					if( j >= 1 )
+					{
+						continue label outer; // Destroy here both s_inner and s_outer
+					}
+				}
+				var S s_unreachable( 666 );
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 7, 20, 3,  7, 20, 103,  7, 20, 203, } ) );
+}
+
+U_TEST(BreakContinueToOuterLoop_Destructor_Test1)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn Foo()
+		{
+			for( auto mut i= 0; i < 3; ++i ) label outer
+			{
+				var S s_outer( 5 + i * 1000 );
+				for( auto mut j= 0; j < 100; ++j )
+				{
+					var S s_inner( 8 + j * 13 );
+					if( j >= 1 )
+					{
+						break label outer; // Destroy here both s_inner and s_outer
+					}
+				}
+				var S s_unreachable( 666 );
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 8, 21, 5, } ) );
+}
+
+U_TEST(BreakContinueToOuterLoop_Destructor_Test2)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn Foo()
+		{
+			var tup[f32, i32, u32] t[ 0.0f, 1, 2u ];
+			for( el : t ) label outer
+			{
+				var S outer_s( 75 + i32(el) );
+				for( auto mut i= 0; i < 100; ++i )
+				{
+					var S inner_s( i + 100 * i32(el) );
+					if( i == 2 )
+					{
+						continue label outer;  // Destroy here both "inner_s" and "outer_s"
+					}
+				}
+				var S s_unreachable( 666 );
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 0, 1, 2, 75,  100, 101, 102, 76,  200, 201, 202, 77 } ) );
+}
+
+U_TEST(BreakContinueToOuterLoop_Destructor_Test3)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn Foo()
+		{
+			var tup[f32, i32, u32] t[ 16.0f, 1, 2u ];
+			for( el : t ) label outer
+			{
+				var S outer_s( 13 + i32(el) );
+				for( auto mut i= 0; i < 100; ++i )
+				{
+					var S inner_s( i + 100 * i32(el) );
+					if( i == 2 )
+					{
+						break label outer; // Destroy here both "inner_s" and "outer_s"
+					}
+				}
+				halt;
+			}
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	engine->runFunction( function, llvm::ArrayRef<llvm::GenericValue>() );
+
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 1600, 1601, 1602, 29 } ) );
+}
+
 } // namespace
 
 } // namespace U

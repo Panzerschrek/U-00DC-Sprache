@@ -479,7 +479,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
-	void CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
+	void CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, size_t stack_variables_stack_size, const SrcLoc& src_loc );
 	void CallDestructorsBeforeReturn( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 	void CallMembersDestructors( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
@@ -725,6 +725,16 @@ private:
 	BlockBuildInfo BuildBlockElements( NamesScope& names, FunctionContext& function_context, const Synt::BlockElements& block_elements );
 
 	void BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc );
+
+	void AddLoopFrame(
+		NamesScope& names,
+		FunctionContext& function_context,
+		llvm::BasicBlock* break_block,
+		llvm::BasicBlock* continue_block,
+		const std::optional<Synt::Label>& label );
+
+	// Returns nullptr if not found.
+	LoopFrame* FetchLoopFrame( NamesScope& names, FunctionContext& function_context, const std::optional<Synt::Label>& label );
 
 	// ++ and -- operations
 	void BuildDeltaOneOperatorCode(

@@ -1243,14 +1243,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	// While block code.
-
-	var LoopFrame loop_frame
-	{
-		.block_for_break= block_after_while,
-		.block_for_continue= test_block,
-		.variable_frames_stack_size= function_context.variables_frames.size(),
-	};
-	function_context.loops_stack.push_back(loop_frame);
+	AddLoopFrame( names_scope, function_context, block_after_while, test_block, while_operator.label_ );
 
 	unsafe
 	{
@@ -1437,13 +1430,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				next_basic_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 			}
 
-			var LoopFrame loop_frame
-			{
-				.block_for_break= finish_basic_block,
-				.block_for_continue= next_basic_block,
-				.variable_frames_stack_size= function_context.variables_frames.size() - 1s, // Extra 1 for loop variable destruction in 'break' or 'continue'.
-			};
-			function_context.loops_stack.push_back(loop_frame);
+			AddLoopFrame( names_scope, function_context, finish_basic_block, next_basic_block, range_for_operator.label_ );
+			function_context.loops_stack.back().variable_frames_stack_size= function_context.variables_frames.size() - 1s; // Extra 1 for loop variable destruction in 'break' or 'continue'.
 
 			// Reuse names scope of tuple element variable for the block.
 			auto block_build_info= BuildBlockElements( names_scope, function_context, range_for_operator.block.deref().elements.range() );
@@ -1595,13 +1583,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& in_names_scope, Func
 	auto mut references_graph_after_test_block= function_context.references_graph;
 
 	// Loop block code.
-	var LoopFrame loop_frame
-	{
-		.block_for_break= block_after_loop,
-		.block_for_continue= loop_iteration_block,
-		.variable_frames_stack_size= function_context.variables_frames.size(),
-	};
-	function_context.loops_stack.push_back(loop_frame);
+	AddLoopFrame( names_scope, function_context, block_after_loop, loop_iteration_block, c_style_for_operator.label_ );
 
 	unsafe
 	{
@@ -1667,10 +1649,44 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		return block_element_build_info;
 	}
 
-	CallDestructorsForLoopInnerVariables( names_scope, function_context, break_operator.src_loc );
-	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_break ) );
+	var size_type frame_index= FetchLoopFrame( names_scope, function_context, break_operator.label_ );
+	if( frame_index >= function_context.loops_stack.size() )
+	{
+		return block_element_build_info;
+	}
 
-	function_context.loops_stack.back().break_references_graphs.push_back( function_context.references_graph );
+	var size_type variable_frames_stack_size= function_context.loops_stack[frame_index].variable_frames_stack_size;
+	CallDestructorsForLoopInnerVariables( names_scope, function_context, variable_frames_stack_size, break_operator.src_loc );
+
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack[frame_index].block_for_break ) );
+
+	function_context.loops_stack[frame_index].break_references_graphs.push_back( function_context.references_graph );
+
+	return block_element_build_info;
+}
+
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo
+{
+	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
+
+	if( function_context.loops_stack.empty() )
+	{
+		REPORT_ERROR( ContinueOutsideLoop, names_scope, continue_operator.src_loc )
+		return block_element_build_info;
+	}
+
+	var size_type frame_index= FetchLoopFrame( names_scope, function_context, continue_operator.label_ );
+	if( frame_index >= function_context.loops_stack.size() )
+	{
+		return block_element_build_info;
+	}
+
+	var size_type variable_frames_stack_size= function_context.loops_stack[frame_index].variable_frames_stack_size;
+	CallDestructorsForLoopInnerVariables( names_scope, function_context, variable_frames_stack_size, continue_operator.src_loc );
+
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack[frame_index].block_for_continue ) );
+
+	function_context.loops_stack[frame_index].continue_references_graphs.push_back( function_context.references_graph );
 
 	return block_element_build_info;
 }
@@ -1860,24 +1876,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return block_element_build_info;
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo
-{
-	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
-
-	if( function_context.loops_stack.empty() )
-	{
-		REPORT_ERROR( ContinueOutsideLoop, names_scope, continue_operator.src_loc )
-		return block_element_build_info;
-	}
-
-	CallDestructorsForLoopInnerVariables( names_scope, function_context, continue_operator.src_loc );
-	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, function_context.loops_stack.back().block_for_continue ) );
-
-	function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
-
-	return block_element_build_info;
-}
-
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo
 {
 	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
@@ -2007,6 +2005,71 @@ fn CodeBuilder::BuildEmptyReturn( mut this, NamesScopePtr& names_scope, Function
 	{
 		unsafe( LLVMBuildRetVoid( function_context.llvm_ir_builder ) );
 	}
+}
+
+fn CodeBuilder::AddLoopFrame(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	LLVMBasicBlockRef break_block,
+	LLVMBasicBlockRef continue_block,
+	ust::optional</Synt::Label/>& label_ )
+{
+	var LoopFrame mut loop_frame
+	{
+		.block_for_break= break_block,
+		.block_for_continue= continue_block,
+		.variable_frames_stack_size= function_context.variables_frames.size(),
+	};
+
+	if_var( &l : label_ )
+	{
+		if( IsKeyword( l.name ) )
+		{
+			REPORT_ERROR( UsingKeywordAsName, names_scope, l.src_loc )
+		}
+
+		foreach( &prev_frame : function_context.loops_stack )
+		{
+			if( prev_frame.name == l.name )
+			{
+				REPORT_ERROR( Redefinition, names_scope, l.src_loc, l.name )
+			}
+		}
+
+		loop_frame.name= l.name;
+	}
+
+	function_context.loops_stack.push_back( move(loop_frame) );
+}
+
+fn CodeBuilder::FetchLoopFrame(
+	mut this,
+	NamesScopePtr& names_scope,
+	FunctionContext &mut function_context,
+	ust::optional</Synt::Label/>& label_ ) : size_type
+{
+	var size_type mut frame_index(~0);
+	if_var( &l : label_ )
+	{
+		for( auto mut i= 0s; i < function_context.loops_stack.size(); ++i )
+		{
+			if( function_context.loops_stack[i].name == l.name )
+			{
+				frame_index= i;
+				break;
+			}
+		}
+
+		if( frame_index >= function_context.loops_stack.size() )
+		{
+			REPORT_ERROR( NameNotFound, names_scope, l.src_loc, l.name )
+		}
+
+		return frame_index;
+	}
+
+	return function_context.loops_stack.size() - 1s;
 }
 
 fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::Expression& expression, SrcLoc& src_loc, i32 delta )

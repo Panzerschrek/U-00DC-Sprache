@@ -187,19 +187,20 @@ YieldOperator::YieldOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+Label::Label( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 WhileOperator::WhileOperator( const SrcLoc& src_loc)
 	: SyntaxElementBase(src_loc)
-	, block_(src_loc)
 {}
 
 RangeForOperator::RangeForOperator( const SrcLoc& src_loc)
 	: SyntaxElementBase(src_loc)
-	, block_(src_loc)
 {}
 
 CStyleForOperator::CStyleForOperator( const SrcLoc& src_loc)
 	: SyntaxElementBase(src_loc)
-	, block_(src_loc)
 {}
 
 BreakOperator::BreakOperator( const SrcLoc& src_loc )

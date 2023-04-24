@@ -376,22 +376,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	auto class_members_initial= class_type.members_initial;
 
 	// Apply default initializer for fields, missing in struct named initializer.
-	foreach( &field_pair : class_type.fields_order )
+	foreach( &field_pair : class_type.fields_order ) label fields_search
 	{
 		var ust::string8& field_name= field_pair[0];
 
-		auto mut found= false;
 		foreach( &member_initializer : struct_named_initializer.members_initializers )
 		{
 			if( member_initializer.name == field_name )
 			{
-				found= true;
-				break;
+				continue label fields_search;
 			}
-		}
-		if( found )
-		{
-			continue;
 		}
 
 		auto field_lock= field_pair[1].lock_imut();
