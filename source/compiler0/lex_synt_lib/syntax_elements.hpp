@@ -568,6 +568,13 @@ struct StructNamedInitializer::MemberInitializer
 	Initializer initializer;
 };
 
+struct Label final : public SyntaxElementBase
+{
+	Label( const SrcLoc& src_loc );
+
+	std::string name;
+};
+
 // Just block - as it used as part of other syntax elements.
 struct Block : public SyntaxElementBase
 {
@@ -590,6 +597,8 @@ struct ScopeBlock final : public Block
 	};
 
 	Safety safety_= Safety::None;
+
+	std::optional<Label> label;
 };
 
 struct VariablesDeclaration final : public SyntaxElementBase
@@ -631,13 +640,6 @@ struct YieldOperator final : public SyntaxElementBase
 	YieldOperator( const SrcLoc& src_loc );
 
 	Expression expression;
-};
-
-struct Label final : public SyntaxElementBase
-{
-	Label( const SrcLoc& src_loc );
-
-	std::string name;
 };
 
 struct WhileOperator final : public SyntaxElementBase
