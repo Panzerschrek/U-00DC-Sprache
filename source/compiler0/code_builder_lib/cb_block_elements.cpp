@@ -47,12 +47,53 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	else if( block.safety_ == Synt::ScopeBlock::Safety::None ) {}
 	else U_ASSERT(false);
 
-	BlockBuildInfo result= BuildBlock( names, function_context, block );
+	llvm::BasicBlock* break_block= nullptr;
+	if( block.label != std::nullopt )
+	{
+		break_block= llvm::BasicBlock::Create( llvm_context_ );
+		AddLoopFrame( names, function_context, break_block, nullptr, block.label );
+	}
+
+	BlockBuildInfo block_build_info= BuildBlock( names, function_context, block );
+
+	if( break_block != nullptr )
+	{
+		std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
+		const bool has_any_break= !variables_state_for_merge.empty();
+
+		if( !block_build_info.have_terminal_instruction_inside )
+			variables_state_for_merge.push_back( function_context.variables_state );
+
+		function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), block.end_src_loc_ );
+
+		function_context.loops_stack.pop_back();
+
+		if( !block_build_info.have_terminal_instruction_inside )
+			function_context.llvm_ir_builder.CreateBr( break_block );
+
+		if( has_any_break )
+		{
+			// Even if this block ends with "return", but contains any "break" inside - it is not terminal.
+			block_build_info.have_terminal_instruction_inside= false;
+		}
+
+		if( !block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.function->getBasicBlockList().push_back( break_block );
+			function_context.llvm_ir_builder.SetInsertPoint( break_block );
+		}
+		else
+		{
+			// Block contains no "break" and ends with "return" or "break" to outer loop/block.
+			// In such case we do not needs break block.
+			delete break_block;
+		}
+	}
 
 	// Restore unsafe flag.
 	function_context.is_in_unsafe_block= prev_unsafe;
 
-	return result;
+	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
@@ -2028,8 +2069,11 @@ void CodeBuilder::AddLoopFrame(
 
 		loop_frame.name= label_name;
 
-		break_block->setName( label_name + "_break" );
-		continue_block->setName( label_name + "_continue" );
+		if( break_block != nullptr )
+			break_block->setName( label_name + "_break" );
+
+		if( continue_block != nullptr )
+			continue_block->setName( label_name + "_continue" );
 	}
 
 	function_context.loops_stack.push_back( std::move(loop_frame) );
