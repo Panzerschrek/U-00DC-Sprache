@@ -84,8 +84,6 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	if( break_block != LLVMBasicBlockRef::Null )
 	{
 		var ust::vector</ReferencesGraph/> mut references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
-		var bool has_any_break= !references_graphs_for_merge.empty();
-
 		if( !block_element_build_info.have_terminal_instruction_inside )
 		{
 			references_graphs_for_merge.push_back( function_context.references_graph );
@@ -100,11 +98,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, break_block ) );
 		}
 
-		if( has_any_break )
-		{
-			// Even if this block ends with "return", but contains any "break" inside - it is not terminal.
-			block_element_build_info.have_terminal_instruction_inside= false;
-		}
+		block_element_build_info.have_terminal_instruction_inside= references_graphs_for_merge.empty();
 
 		if( !block_element_build_info.have_terminal_instruction_inside )
 		{

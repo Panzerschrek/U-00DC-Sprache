@@ -59,8 +59,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( break_block != nullptr )
 	{
 		std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
-		const bool has_any_break= !variables_state_for_merge.empty();
-
 		if( !block_build_info.have_terminal_instruction_inside )
 			variables_state_for_merge.push_back( function_context.variables_state );
 
@@ -71,11 +69,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( !block_build_info.have_terminal_instruction_inside )
 			function_context.llvm_ir_builder.CreateBr( break_block );
 
-		if( has_any_break )
-		{
-			// Even if this block ends with "return", but contains any "break" inside - it is not terminal.
-			block_build_info.have_terminal_instruction_inside= false;
-		}
+		block_build_info.have_terminal_instruction_inside= variables_state_for_merge.empty();
 
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
