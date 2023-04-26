@@ -3,7 +3,7 @@ import "/random_access_range.u"
 namespace U1
 {
 
-enum BinaryOperatorType : u8
+enum BinaryOperatorType
 {
 	Add,
 	Sub,
@@ -30,7 +30,7 @@ enum BinaryOperatorType : u8
 	LazyLogicalOr,
 }
 
-enum OverloadedOperator : u8
+enum OverloadedOperator
 {
 	None,
 

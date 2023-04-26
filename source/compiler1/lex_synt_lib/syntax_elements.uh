@@ -15,7 +15,7 @@ namespace U1
 namespace Synt
 {
 
-enum MutabilityModifier : u8
+enum MutabilityModifier
 {
 	None,
 	Mutable,
@@ -23,7 +23,7 @@ enum MutabilityModifier : u8
 	Constexpr,
 }
 
-enum ReferenceModifier : u8
+enum ReferenceModifier
 {
 	None,
 	Reference,
@@ -377,7 +377,7 @@ struct ScopeBlock
 
 	Block block;
 
-	enum Safety : u8 { None, Safe, Unsafe }
+	enum Safety { None, Safe, Unsafe }
 	Safety safety= Safety::None;
 
 	ust::optional</Label/> label_;
@@ -599,13 +599,13 @@ type BlockElements= ust::vector</BlockElement/>;
 
 struct Function
 {
-	enum Kind : u8
+	enum Kind
 	{
 		Regular,
 		Generator,
 	}
 
-	enum VirtualKind : u8
+	enum VirtualKind
 	{
 		None, // Regular, non-virtual
 		DeclareVirtual,
@@ -614,7 +614,7 @@ struct Function
 		VirtualPure,
 	}
 
-	enum BodyKind : u8
+	enum BodyKind
 	{
 		Regular,
 		BodyGenerationRequired,
@@ -658,7 +658,7 @@ struct ClassField
 	Initializer initializer;
 }
 
-enum ClassVisibility : u8
+enum ClassVisibility
 {
 	// Must be ordered from less access to more access.
 	Public,
@@ -694,7 +694,7 @@ type NonSyncTag= ust::variant</tup[NonSyncTagNone, NonSyncTagTrue, ust::shared_p
 
 struct Class
 {
-	enum KindAttribute : u8
+	enum KindAttribute
 	{
 		Struct,
 		Class,
