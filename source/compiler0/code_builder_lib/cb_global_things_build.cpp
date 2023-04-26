@@ -934,12 +934,18 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 
 	DETECT_GLOBALS_LOOP( enum_, enum_->members.GetThisNamespaceName(), enum_->syntax_element->src_loc_ );
 
-	// Default underlaying type is 32bit. TODO - maybe do it platform-dependent?
-	enum_->underlaying_type= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
-
 	const Synt::Enum& enum_decl= *enum_->syntax_element;
 	NamesScope& names_scope= *enum_->members.GetParent();
 
+	// Default underlaying type is mostyl u8, but can be large for enums with a lot of values.
+	if( enum_decl.members.size() <= (1 << 8) )
+		enum_->underlaying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
+	else if( enum_decl.members.size() <= (1 << 16) )
+		enum_->underlaying_type= FundamentalType( U_FundamentalType::u16_, fundamental_llvm_types_.u16_ );
+	else
+		enum_->underlaying_type= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
+
+	// Process custom underlaying type.
 	if( !( std::get_if<Synt::EmptyVariant>( &enum_decl.underlaying_type_name.start_value ) != nullptr && enum_decl.underlaying_type_name.tail == nullptr ) )
 	{
 		const Value type_value= ResolveValue( names_scope, *global_function_context_, enum_decl.underlaying_type_name );

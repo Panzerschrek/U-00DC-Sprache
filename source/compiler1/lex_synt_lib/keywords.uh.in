@@ -3,7 +3,7 @@ import "/string.u"
 namespace U1
 {
 
-enum Keyword : u8
+enum Keyword
 {
 @KEYWORDS_LIST@
 }

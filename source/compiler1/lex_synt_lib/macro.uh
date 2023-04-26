@@ -12,7 +12,7 @@ namespace Synt
 
 struct Macro
 {
-	enum Context : u8
+	enum Context
 	{
 		Expression,
 		Block,
@@ -20,7 +20,7 @@ struct Macro
 		Namespace,
 	}
 
-	enum MatchElementKind : u8
+	enum MatchElementKind
 	{
 		Lexem,
 		Identifier,
@@ -31,14 +31,14 @@ struct Macro
 		Repeated,
 	}
 
-	enum ResultElementKind : u8
+	enum ResultElementKind
 	{
 		Lexem,
 		VariableElement, // Identifier, typename, expression, block
 		VariableElementWithMacroBlock, // Optional, loop
 	}
 
-	enum BlockCheckLexemKind : u8
+	enum BlockCheckLexemKind
 	{
 		LexemAfterBlockEnd, // Detect optional/loop end, using lexem after optional/loop as terminator.
 		LexemAtBlockStart, // Detect optional/loop, using lexem in beginning of optional/loop.

@@ -15,7 +15,7 @@ struct NumberLexemData
 
 struct Lexem
 {
-	enum Type : u8
+	enum Type
 	{
 		None,
 

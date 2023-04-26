@@ -23,7 +23,7 @@ namespace U1
 // Type
 //
 
-enum InnerReferenceKind : u8
+enum InnerReferenceKind
 {
 	None, // Type have no inner references
 	Imut, // Type have immutable inner ereference
@@ -155,7 +155,7 @@ struct ClassType
 
 	InnerReferenceKind inner_reference_kind= InnerReferenceKind::None;
 
-	enum Kind : u8
+	enum Kind
 	{
 		Struct,
 		NonPolymorph,
@@ -284,7 +284,7 @@ public:
 // Value
 //
 
-enum ValueType : u8
+enum ValueType
 {
 	Value,
 	ReferenceMut,
@@ -293,7 +293,7 @@ enum ValueType : u8
 
 struct Variable
 {
-	enum Location : u8
+	enum Location
 	{
 		Pointer,
 		LLVMRegister,
@@ -361,7 +361,7 @@ struct FunctionVariable
 	bool is_generator= false;
 	u32 virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 
-	enum ConstexprKind : u8
+	enum ConstexprKind
 	{
 		NonConstexpr,
 		ConstexprIncomplete,  // Can be used in body of constexpr functions, but result of call can not be constexpr.
@@ -474,7 +474,7 @@ struct TypeAlias
 	ust::shared_ptr_final</ Synt::TypeAlias /> syntax_element;
 }
 
-enum CoroutineKind : u8
+enum CoroutineKind
 {
 	Generator,
 }
