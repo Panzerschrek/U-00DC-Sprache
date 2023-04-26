@@ -33,9 +33,61 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::Block& block )
+	const Synt::ScopeBlock& block )
 {
-	return BuildBlock( names, function_context, block );
+	// Save unsafe flag.
+	const bool prev_unsafe= function_context.is_in_unsafe_block;
+	if( block.safety_ == Synt::ScopeBlock::Safety::Unsafe )
+	{
+		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
+		function_context.is_in_unsafe_block= true;
+	}
+	else if( block.safety_ == Synt::ScopeBlock::Safety::Safe )
+		function_context.is_in_unsafe_block= false;
+	else if( block.safety_ == Synt::ScopeBlock::Safety::None ) {}
+	else U_ASSERT(false);
+
+	llvm::BasicBlock* break_block= nullptr;
+	if( block.label != std::nullopt )
+	{
+		break_block= llvm::BasicBlock::Create( llvm_context_ );
+		AddLoopFrame( names, function_context, break_block, nullptr, block.label );
+	}
+
+	BlockBuildInfo block_build_info= BuildBlock( names, function_context, block );
+
+	if( break_block != nullptr )
+	{
+		std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
+		if( !block_build_info.have_terminal_instruction_inside )
+			variables_state_for_merge.push_back( function_context.variables_state );
+
+		function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), block.end_src_loc_ );
+
+		function_context.loops_stack.pop_back();
+
+		if( !block_build_info.have_terminal_instruction_inside )
+			function_context.llvm_ir_builder.CreateBr( break_block );
+
+		block_build_info.have_terminal_instruction_inside= variables_state_for_merge.empty();
+
+		if( !block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.function->getBasicBlockList().push_back( break_block );
+			function_context.llvm_ir_builder.SetInsertPoint( break_block );
+		}
+		else
+		{
+			// Block contains no "break" and ends with "return" or "break" to outer loop/block.
+			// In such case we do not needs break block.
+			delete break_block;
+		}
+	}
+
+	// Restore unsafe flag.
+	function_context.is_in_unsafe_block= prev_unsafe;
+
+	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
@@ -1021,15 +1073,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
 
-	if( function_context.loops_stack.empty() )
+	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, break_operator.label_ );
+	if( loop_frame == nullptr )
 	{
 		REPORT_ERROR( BreakOutsideLoop, names.GetErrors(), break_operator.src_loc_ );
 		return block_info;
 	}
-
-	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, break_operator.label_ );
-	if( loop_frame == nullptr )
-		return block_info;
 
 	U_ASSERT( loop_frame->block_for_break != nullptr );
 
@@ -1048,17 +1097,19 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	BlockBuildInfo block_info;
 	block_info.have_terminal_instruction_inside= true;
 
-	if( function_context.loops_stack.empty() )
+	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, continue_operator.label_ );
+	if( loop_frame == nullptr )
 	{
 		REPORT_ERROR( ContinueOutsideLoop, names.GetErrors(), continue_operator.src_loc_ );
 		return block_info;
 	}
 
-	LoopFrame* const loop_frame= FetchLoopFrame( names, function_context, continue_operator.label_ );
-	if( loop_frame == nullptr )
+	if( loop_frame->block_for_continue == nullptr )
+	{
+		// This is non-loop frame.
+		REPORT_ERROR( ContinueForBlock, names.GetErrors(), continue_operator.src_loc_ );
 		return block_info;
-
-	U_ASSERT( loop_frame->block_for_continue != nullptr );
+	}
 
 	CallDestructorsForLoopInnerVariables( names, function_context, loop_frame->stack_variables_stack_size, continue_operator.src_loc_ );
 	loop_frame->continue_variables_states.push_back( function_context.variables_state );
@@ -1929,18 +1980,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	NamesScope block_names( "", &names );
 	const StackVariablesStorage block_variables_storage( function_context );
 
-	// Save unsafe flag.
-	const bool prev_unsafe= function_context.is_in_unsafe_block;
-	if( block.safety_ == Synt::Block::Safety::Unsafe )
-	{
-		function_context.have_non_constexpr_operations_inside= true; // Unsafe operations can not be used in constexpr functions.
-		function_context.is_in_unsafe_block= true;
-	}
-	else if( block.safety_ == Synt::Block::Safety::Safe )
-		function_context.is_in_unsafe_block= false;
-	else if( block.safety_ == Synt::Block::Safety::None ) {}
-	else U_ASSERT(false);
-
 	const BlockBuildInfo block_build_info= BuildBlockElements( block_names, function_context, block.elements_ );
 
 	debug_info_builder_->SetCurrentLocation( block.end_src_loc_, function_context );
@@ -1949,9 +1988,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 	// we didn`t need call destructors, it must be called in this operators.
 	if( !block_build_info.have_terminal_instruction_inside )
 		CallDestructors( block_variables_storage, block_names, function_context, block.end_src_loc_ );
-
-	// Restore unsafe flag.
-	function_context.is_in_unsafe_block= prev_unsafe;
 
 	debug_info_builder_->EndBlock( function_context );
 
@@ -2026,8 +2062,11 @@ void CodeBuilder::AddLoopFrame(
 
 		loop_frame.name= label_name;
 
-		break_block->setName( label_name + "_break" );
-		continue_block->setName( label_name + "_continue" );
+		if( break_block != nullptr )
+			break_block->setName( label_name + "_break" );
+
+		if( continue_block != nullptr )
+			continue_block->setName( label_name + "_continue" );
 	}
 
 	function_context.loops_stack.push_back( std::move(loop_frame) );
@@ -2051,7 +2090,16 @@ LoopFrame* CodeBuilder::FetchLoopFrame( NamesScope& names, FunctionContext& func
 		return loop_frame;
 	}
 	else
-		return &function_context.loops_stack.back();
+	{
+		// In case of "break" or "continue" without label skip non-loop frames (block frames, where only "break" is available).
+		for( auto it= function_context.loops_stack.rbegin(); it != function_context.loops_stack.rend(); ++it )
+		{
+			const bool is_loop_frame= it->block_for_continue != nullptr;
+			if( is_loop_frame )
+				return &*it;
+		}
+		return nullptr;
+	}
 }
 
 void CodeBuilder::BuildDeltaOneOperatorCode(

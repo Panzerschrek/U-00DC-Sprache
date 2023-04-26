@@ -2560,7 +2560,11 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::BraceLeft )
-			elements.emplace_back( ParseBlock() );
+		{
+			ScopeBlock block= ParseBlock();
+			block.label= TryParseLabel();
+			elements.push_back( std::move(block) );
+		}
 
 		else if( it_->type == Lexem::Type::BraceRight )
 			break;
@@ -2599,16 +2603,18 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{
 			NextLexem();
-			Block block= ParseBlock();
-			block.safety_= Block::Safety::Safe;
+			ScopeBlock block= ParseBlock();
+			block.safety_= ScopeBlock::Safety::Safe;
+			block.label= TryParseLabel();
 			elements.emplace_back( std::move( block ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ &&
 				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{
 			NextLexem();
-			Block block= ParseBlock();
-			block.safety_= Block::Safety::Unsafe;
+			ScopeBlock block= ParseBlock();
+			block.safety_= ScopeBlock::Safety::Unsafe;
+			block.label= TryParseLabel();
 			elements.emplace_back( std::move( block ) );
 		}
 		else if( it_->type == Lexem::Type::Increment )

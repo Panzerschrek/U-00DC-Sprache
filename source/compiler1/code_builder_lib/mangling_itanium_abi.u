@@ -424,23 +424,26 @@ fn EncodeFunctionParams( ManglerState& mut mangler_state, ust::vector</FunctionT
 {
 	foreach( &param : params )
 	{
-		if( param.value_type == ValueType::Value &&
-			!param.t.GetFundamentalType().empty() &&
-			param.t.GetFundamentalType().try_deref().fundamental_type == U_FundamentalType::void_ )
+		if( param.value_type == ValueType::Value )
 		{
-			// We need to distinguish between function with no params (with "v" for params) and function with single "void" param.
-			// So, mark real "void: params with "const".
-			// Normaly we do not use "konst" prefix for value params, so, "void" type is single exception.
-			ADD_NODE( mangler_state )
+			if_var( &fundamental_type : param.t.GetFundamentalType() )
 			{
-				mangler_state.Push( "K" );
-				EncodeTypeName( mangler_state, param.t );
+				if( fundamental_type.fundamental_type == U_FundamentalType::void_ )
+				{
+					// We need to distinguish between function with no params (with "v" for params) and function with single "void" param.
+					// So, mark real "void: params with "const".
+					// Normaly we do not use "konst" prefix for value params, so, "void" type is single exception.
+					ADD_NODE( mangler_state )
+					{
+						mangler_state.Push( "K" );
+						EncodeTypeName( mangler_state, param.t );
+						continue;
+					}
+				}
 			}
 		}
-		else
-		{
-			EncodeFunctionParam( mangler_state, param );
-		}
+
+		EncodeFunctionParam( mangler_state, param );
 	}
 
 	if( params.empty() )

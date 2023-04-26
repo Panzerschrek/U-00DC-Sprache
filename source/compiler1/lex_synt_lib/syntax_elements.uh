@@ -366,13 +366,21 @@ type Initializer= ust::variant</ tup [
 
 struct Block
 {
-	enum Safety : u8 { None, Safe, Unsafe }
-
-	Safety safety= Safety::None;
-
 	SrcLoc src_loc;
 	SrcLoc end_src_loc;
 	BlockElements elements;
+}
+
+struct ScopeBlock
+{
+	SrcLoc src_loc;
+
+	Block block;
+
+	enum Safety : u8 { None, Safe, Unsafe }
+	Safety safety= Safety::None;
+
+	ust::optional</Label/> label_;
 }
 
 struct VariablesDeclaration
@@ -562,7 +570,7 @@ struct HaltIf
 }
 
 type BlockElement = ust::variant</ tup[
-	ust::box</Block/>,
+	ust::box</ScopeBlock/>,
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	ReturnOperator,
