@@ -409,19 +409,19 @@ def TypeinfoEnumElementsList_Order_Test0():
 
 		auto& ti= typeinfo</E/>;
 
-		static_assert( ti.elements_list[0].value == u32(E::a) );
+		static_assert( ti.elements_list[0].value == u8(E::a) );
 		static_assert( ti.elements_list[0].name[0] == "a"c8 );
 
-		static_assert( ti.elements_list[1].value == u32(E::ar) );
+		static_assert( ti.elements_list[1].value == u8(E::ar) );
 		static_assert( ti.elements_list[1].name[0] == "a"c8 );
 
-		static_assert( ti.elements_list[2].value == u32(E::b) );
+		static_assert( ti.elements_list[2].value == u8(E::b) );
 		static_assert( ti.elements_list[2].name[0] == "b"c8 );
 
-		static_assert( ti.elements_list[3].value == u32(E::fff) );
+		static_assert( ti.elements_list[3].value == u8(E::fff) );
 		static_assert( ti.elements_list[3].name[0] == "f"c8 );
 
-		static_assert( ti.elements_list[4].value == u32(E::qwerty) );
+		static_assert( ti.elements_list[4].value == u8(E::qwerty) );
 		static_assert( ti.elements_list[4].name[0] == "q"c8 );
 	"""
 	tests_lib.build_program( c_program_text )
