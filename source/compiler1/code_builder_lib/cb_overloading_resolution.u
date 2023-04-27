@@ -406,7 +406,7 @@ fn CodeBuilder::GetFunctionWithSameType( FunctionsSet &'x mut functions_set, Fun
 		}
 	}
 
-	return ust::optional_ref_mut</ FunctionVariable />();
+	return ust::null_optional_ref;
 }
 
 fn CodeBuilder::ApplyOverloadedFunction(

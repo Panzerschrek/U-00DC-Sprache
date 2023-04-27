@@ -206,11 +206,11 @@ public:
 	{
 		if( has_value_ )
 		{
-			unsafe{  return ust::optional_ref_imut</T/>( deref_unchecked() );  }
+			unsafe{  return optional_ref_imut</T/>( deref_unchecked() );  }
 		}
 		else
 		{
-			return optional_ref_imut</T/>();
+			return null_optional_ref;
 		}
 	}
 

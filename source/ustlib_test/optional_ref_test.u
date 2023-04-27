@@ -10,6 +10,10 @@ fn nomangle main() : i32
 		var IntRefImut ref;
 		halt if( ! ref.empty() );
 	}
+	{ // Conversion-construction from null_optional_ref
+		var IntRefImut ref= ust::null_optional_ref;
+		halt if( ! ref.empty() );
+	}
 	{ // 'optional_ref' constructible from reference.
 		auto x= 44;
 		var IntRefImut ref( x );
@@ -30,6 +34,13 @@ fn nomangle main() : i32
 		var IntRefImut mut ref( x );
 		halt if( ref.empty() );
 		ref.reset();
+		halt if( !ref.empty() );
+	}
+	{ // 'reset' for 'optional_ref' via null_optional_ref assignment.
+		auto x= -56;
+		var IntRefImut mut ref( x );
+		halt if( ref.empty() );
+		ref= ust::null_optional_ref;
 		halt if( !ref.empty() );
 	}
 	{ // 'reset' with value for 'optional_ref'.
@@ -56,7 +67,16 @@ fn nomangle main() : i32
 		halt if( ref.empty() );
 		halt if( ref.try_deref() != y );
 	}
+	{ // == agains null_optional_ref
+		var i32 x = 0;
+		var IntRefImut empty_ref, non_empty_ref(x);
 
+		halt if( empty_ref != ust::null_optional_ref );
+		halt if( ust::null_optional_ref != empty_ref );
+
+		halt if( non_empty_ref == ust::null_optional_ref );
+		halt if( ust::null_optional_ref == non_empty_ref );
+	}
 
 	return 0;
 }

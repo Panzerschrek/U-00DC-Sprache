@@ -164,7 +164,7 @@ public:
 			}
 		}
 
-		return optional_ref</ value_type, true  />();
+		return null_optional_ref;
 	}
 
 	op[](  mut this, key_type& key ) : value_type &'this  mut

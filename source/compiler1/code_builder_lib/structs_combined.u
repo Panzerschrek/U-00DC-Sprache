@@ -368,7 +368,7 @@ fn Type::GetArrayType( imut this ) : ust::optional_ref_imut</ArrayType />'this'
 		return ust::optional_ref_imut</ArrayType/>( b.deref() );
 	}
 
-	return ust::optional_ref_imut</ArrayType />();
+	return ust::null_optional_ref;
 }
 
 fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this'
@@ -378,7 +378,7 @@ fn Type::GetTupleType( imut this ) : ust::optional_ref_imut</TupleType />'this'
 		return ust::optional_ref_imut</TupleType/>( b.deref() );
 	}
 
-	return ust::optional_ref_imut</TupleType />();
+	return ust::null_optional_ref;
 }
 
 fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType />'this'
@@ -388,7 +388,7 @@ fn Type::GetRawPointerType( imut this ) : ust::optional_ref_imut</RawPointerType
 		return ust::optional_ref_imut</RawPointerType/>( b.deref() );
 	}
 
-	return ust::optional_ref_imut</RawPointerType />();
+	return ust::null_optional_ref;
 }
 
 fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionPointerType />'this'
@@ -398,7 +398,7 @@ fn Type::GetFunctionPointerType( imut this ) : ust::optional_ref_imut</FunctionP
 		return ust::optional_ref_imut</FunctionPointerType/>( b.deref() );
 	}
 
-	return ust::optional_ref_imut</FunctionPointerType />();
+	return ust::null_optional_ref;
 }
 
 fn Type::GetClassType( imut this ) : ust::optional_ref_imut</ClassTypePtr />'this'
@@ -1097,7 +1097,7 @@ fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ Ar
 		return ust::optional_ref_imut</ ArrayTypeParam />(array_type_param.deref());
 	}
 
-	return ust::optional_ref_imut</ ArrayTypeParam />();
+	return ust::null_optional_ref;
 }
 
 fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam />'this'
@@ -1107,7 +1107,7 @@ fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ Tu
 		return ust::optional_ref_imut</ TupleTypeParam />(tuple_type_param.deref());
 	}
 
-	return ust::optional_ref_imut</ TupleTypeParam />();
+	return ust::null_optional_ref;
 }
 
 fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this'
@@ -1117,7 +1117,7 @@ fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut
 		return ust::optional_ref_imut</ RawPointerTypeParam />(raw_pointer_type_param.deref());
 	}
 
-	return ust::optional_ref_imut</ RawPointerTypeParam />();
+	return ust::null_optional_ref;
 }
 
 fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this'
@@ -1127,7 +1127,7 @@ fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</
 		return ust::optional_ref_imut</ FunctionTypeParam />(function_type_param.deref());
 	}
 
-	return ust::optional_ref_imut</ FunctionTypeParam />();
+	return ust::null_optional_ref;
 }
 
 fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam />'this'
@@ -1137,7 +1137,7 @@ fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut<
 		return ust::optional_ref_imut</ CoroutineTypeParam />(coroutine_type_param.deref());
 	}
 
-	return ust::optional_ref_imut</ CoroutineTypeParam />();
+	return ust::null_optional_ref;
 }
 
 fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this'
@@ -1147,7 +1147,7 @@ fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref
 		return ust::optional_ref_imut</ SpecializedTemplateParam />(specialized_template_param.deref());
 	}
 
-	return ust::optional_ref_imut</ SpecializedTemplateParam />();
+	return ust::null_optional_ref;
 }
 
 op TemplateSignatureParam::VariableParam::==(VariableParam& l, VariableParam& r) : bool
@@ -1222,7 +1222,7 @@ fn NamesScope::AddName( mut this, ust::string8 mut name, NamesScopeValue mut val
 {
 	if( !names_map_.find(name).empty() )
 	{
-		return ust::optional_ref_mut</ NamesScopeValue />();
+		return ust::null_optional_ref;
 	}
 
 	return ust::optional_ref_mut</ NamesScopeValue />( names_map_.insert(move(name), move(value) ) );

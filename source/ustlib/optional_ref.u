@@ -3,6 +3,9 @@ import "container_utils.u"
 namespace ust
 {
 
+struct null_optional_ref_type{}
+var null_optional_ref_type constexpr null_optional_ref{};
+
 // Optional reference.
 template</ type T, bool is_mutable />
 class optional_ref
@@ -15,6 +18,10 @@ public:
 
 	// Default constructor - set to zero
 	fn constructor()= default;
+
+	// Use this conversion constructor in order to use simple "ust::null_optional_ref" to pass/return empty optional_ref, without specifying exact optional_ref type.
+	fn conversion_constructor( null_optional_ref_type n )
+	{}
 
 	// Construct from reference
 	fn enable_if( is_mutable )
@@ -47,6 +54,11 @@ public:
 		{
 			reset();
 		}
+	}
+
+	op=( mut this, null_optional_ref_type n )
+	{
+		reset();
 	}
 
 	fn empty( this ) : bool
@@ -97,15 +109,27 @@ public:
 		unsafe{  ptr_= $<( cast_mut(ref) );  }
 	}
 
+	// Compare with null optional_ref. Result is true if optional_ref is empty.
+
+	op==( this_type& l, null_optional_ref_type n ) : bool
+	{
+		return l.empty();
+	}
+
+	op==( null_optional_ref_type n, this_type& r ) : bool
+	{
+		return r.empty();
+	}
+
 private:
 	ReferenceContainerTag</ T, is_mutable /> container_tag_;
 	$(T) ptr_= zero_init;
 }
 
 template</ type T />
-type optional_ref_mut = ust::optional_ref</T, true />;
+type optional_ref_mut = optional_ref</T, true />;
 
 template</ type T />
-type optional_ref_imut= ust::optional_ref</T, false/>;
+type optional_ref_imut= optional_ref</T, false/>;
 
 } // namespace ust
