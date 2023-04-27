@@ -1,9 +1,9 @@
 #include <texteditor/texteditorconstants.h>
 #include <texteditor/textdocumentlayout.h>
 
-#include "../lex_synt_lib/assert.hpp"
-#include "../lex_synt_lib/lexical_analyzer.hpp"
-#include "../lex_synt_lib/keywords.hpp"
+#include "../lex_synt_lib_common/assert.hpp"
+#include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
+#include "keywords.hpp"
 
 #include "syntax_highlighter.hpp"
 
@@ -57,8 +57,8 @@ SyntaxHighlighter::SyntaxHighlighter()
 void SyntaxHighlighter::highlightBlock( const QString& text )
 {
 	const std::string text_utf8= text.toStdString();
-	LexicalAnalysisResult lex_result= LexicalAnalysis( text_utf8.data(), text_utf8.size(), true );
-	if( !lex_result.error_messages.empty() )
+	LexicalAnalysisResult lex_result= LexicalAnalysis( text_utf8, true );
+	if( !lex_result.errors.empty() )
 	{
 		setFormat( 0, text.size(), formatForCategory( int(Formats::LexicalError) ) );
 		return;
@@ -74,18 +74,18 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 	{
 		const Lexem& lexem= lex_result.lexems[i];
 
-		FilePos next_file_pos;
+		SrcLoc next_src_loc;
 		if( i + 1u < lex_result.lexems.size() )
 		{
-			next_file_pos= lex_result.lexems[i+1u].file_pos;
+			next_src_loc= lex_result.lexems[i+1u].src_loc;
 		}
 		else
 		{
-			next_file_pos= FilePos( 0u, text.size(), text.size() );
+			next_src_loc= SrcLoc( 0u, text.size(), text.size() );
 		}
 		// TODO - what if we have more, then one line?
-		const int current_linear_pos= lexem.file_pos.GetColumn();
-		const int next_linear_pos= next_file_pos.GetColumn();
+		const int current_linear_pos= lexem.src_loc.GetColumn();
+		const int next_linear_pos= next_src_loc.GetColumn();
 
 		// Setup highlighting.
 		Formats format;

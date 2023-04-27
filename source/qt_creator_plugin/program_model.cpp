@@ -1,8 +1,8 @@
-#include "../lex_synt_lib/assert.hpp"
-#include "../lex_synt_lib/keywords.hpp"
-#include "../lex_synt_lib/lexical_analyzer.hpp"
-#include "../lex_synt_lib/program_string.hpp"
-#include "../lex_synt_lib/syntax_analyzer.hpp"
+#include "../lex_synt_lib_common/assert.hpp"
+#include "keywords.hpp"
+#include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
+#include "../compiler0/lex_synt_lib/program_string.hpp"
+#include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 
 #include "program_model.hpp"
 
@@ -31,11 +31,6 @@ std::string Stringify( const Synt::BinaryOperator& binary_operator )
 	return Stringify( *binary_operator.left_ ) + " " + BinaryOperatorToString(binary_operator.operator_type_) + " " + Stringify( *binary_operator.right_ );
 }
 
-std::string Stringify( const Synt::NamedOperand& named_operand )
-{
-	return Stringify( named_operand.name_ );
-}
-
 std::string Stringify( const Synt::TernaryOperator& ternary_operator )
 {
 	if( ternary_operator.condition == nullptr || ternary_operator.true_branch == nullptr || ternary_operator.false_branch == nullptr )
@@ -56,18 +51,6 @@ std::string Stringify( const Synt::StringLiteral& string_literal )
 std::string Stringify( const Synt::BooleanConstant& boolean_constant )
 {
 	return boolean_constant.value_ ? Keyword( Keywords::true_ ) : Keyword( Keywords::false_ );
-}
-
-std::string Stringify( const Synt::BracketExpression& bracket_expression )
-{
-	if( bracket_expression.expression_ == nullptr )
-		return std::string();
-	return "(" + Stringify( *bracket_expression.expression_ ) + ")";
-}
-
-std::string Stringify( const Synt::TypeNameInExpression& type_name_in_expression )
-{
-	return Stringify( type_name_in_expression.type_name );
 }
 
 std::string Stringify( const Synt::MoveOperator& move_operator )
@@ -117,21 +100,21 @@ std::string Stringify( const Synt::TypeInfo& typeinfo_ )
 
 std::string Stringify( const Synt::IndexationOperator& indexation_operator )
 {
-	return "[" + Stringify( indexation_operator.index_ ) + "]";
+	return "[" + Stringify( *indexation_operator.index_ ) + "]";
 }
 
 std::string Stringify( const Synt::MemberAccessOperator& member_access_operator )
 {
 	std::string result;
 	result+= "." + member_access_operator.member_name_;
-	if( member_access_operator.have_template_parameters )
+	if( member_access_operator.template_parameters != std::nullopt )
 	{
 		result+= "</";
-		for( const Synt::Expression& template_param : member_access_operator.template_parameters )
+		for( const Synt::Expression& template_param : *member_access_operator.template_parameters )
 		{
 			result+= Stringify(template_param);
 
-			if( &template_param != &member_access_operator.template_parameters.back() )
+			if( &template_param != &member_access_operator.template_parameters->back() )
 				result+= ", ";
 		}
 		result+= "/>";
@@ -408,11 +391,11 @@ std::string Stringify( const Synt::Function& function )
 	result+= "(";
 
 	// args
-	for( const Synt::FunctionArgument& arg : function.type_.arguments_ )
+	for( const Synt::FunctionParam& param : function.type_.params_ )
 	{
-		if( arg.name_ == Keywords::this_ )
+		if( param.name_ == Keywords::this_ )
 		{
-			switch( arg.mutability_modifier_ )
+			switch( param.mutability_modifier_ )
 			{
 			case Synt::MutabilityModifier::None: break;
 			case Synt::MutabilityModifier::Mutable  : result+= Keyword( Keywords::mut_       ); result+= " "; break;
@@ -422,9 +405,9 @@ std::string Stringify( const Synt::Function& function )
 			result+= Keyword( Keywords::this_ );
 		}
 		else
-			result+= Stringify( arg );
+			result+= Stringify( param );
 
-		if( &arg != &function.type_.arguments_.back() )
+		if( &param != &function.type_.arguments_.back() )
 			result+= ", ";
 	}
 
@@ -434,7 +417,7 @@ std::string Stringify( const Synt::Function& function )
 	return result;
 }
 
-std::string Stringify( const Synt::TypeTemplateBase& type_template )
+std::string Stringify( const Synt::TypeTemplate& type_template )
 {
 	std::string result= type_template.name_;
 
@@ -469,11 +452,11 @@ std::string Stringify( const Synt::FunctionTemplate& function_template )
 
 	result+= Keyword( Keywords::template_ );
 	result+= "</";
-	for( const Synt::TypeTemplateBase::Arg& arg : function_template.args_ )
+	for( const Synt::TemplateBase::Param& param : function_template.params_ )
 	{
-		if( arg.name != nullptr )
-			result+= Stringify( *arg.name );
-		if( &arg != &function_template.args_.back() )
+		if( param.name != nullptr )
+			result+= Stringify( *param.name );
+		if( &param != &function_template.args_.back() )
 			result+= ", ";
 	}
 	result+= "/>";
@@ -560,7 +543,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Enum
 		element.name= QString::fromStdString( member.name );
 		element.kind= ProgramModel::ElementKind::EnumElement;
 		element.number_in_parent= result.size();
-		element.file_pos= member.file_pos;
+		element.src_loc= member.src_loc;
 		result.push_back(element);
 	}
 
@@ -581,7 +564,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 			element.kind= ProgramModel::ElementKind::ClassField;
 			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
-			element.file_pos= class_field_.file_pos_;
+			element.src_loc= class_field_.src_loc_;
 			result.push_back(element);
 		}
 
@@ -595,7 +578,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 			element.kind= ProgramModel::ElementKind::Function;
 			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
-			element.file_pos= func->file_pos_;
+			element.src_loc= func->src_loc_;
 			result.push_back(element);
 		}
 		void operator()( const Synt::FunctionTemplate& func_template )
@@ -605,14 +588,14 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 			element.kind= ProgramModel::ElementKind::FunctionTemplate;
 			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
-			element.file_pos= func_template.file_pos_;
+			element.src_loc= func_template.src_loc_;
 			result.push_back(element);
 		}
 		void operator()( const Synt::ClassVisibilityLabel& visibility_label )
 		{
 			current_visibility= visibility_label.visibility_;
 		}
-		void operator()( const Synt::ClassTemplate& class_template )
+		void operator()( const Synt::TypeTemplate& class_template )
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= QString::fromStdString( Stringify( class_template ) );
@@ -620,18 +603,18 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 			element.visibility= current_visibility;
 			element.childs= BuildProgramModel_r( class_template.class_->elements_ );
 			element.number_in_parent= result.size();
-			element.file_pos= class_template.file_pos_;
+			element.src_loc= class_template.src_loc_;
 			result.push_back(element);
-		}
-		void operator()( const Synt::TypedefTemplate& typedef_template )
-		{
+
+			/*
 			ProgramModel::ProgramTreeNode element;
 			element.name= QString::fromStdString( Stringify( typedef_template ) );
 			element.kind= ProgramModel::ElementKind::TypedefTemplate;
 			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
-			element.file_pos= typedef_template.file_pos_;
+			element.src_loc= typedef_template.src_loc_;
 			result.push_back(element);
+			*/
 		}
 		void operator()( const Synt::Enum& enum_ )
 		{
@@ -640,19 +623,19 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 			element.kind= ProgramModel::ElementKind::Enum;
 			element.childs= BuildProgramModel_r( enum_ );
 			element.number_in_parent= result.size();
-			element.file_pos= enum_.file_pos_;
+			element.src_loc= enum_.src_loc_;
 			result.push_back(element);
 		}
 		void operator()( const Synt::StaticAssert&  )
 		{
 		}
-		void operator()( const Synt::Typedef& typedef_ )
+		void operator()( const Synt::TypeAlias& typedef_ )
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= QString::fromStdString( typedef_.name );
 			element.kind= ProgramModel::ElementKind::Typedef;
 			element.number_in_parent= result.size();
-			element.file_pos= typedef_.file_pos_;
+			element.src_loc= typedef_.src_loc_;
 			result.push_back(element);
 		}
 		void operator()( const Synt::VariablesDeclaration& variables_declaration )
@@ -665,7 +648,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 				element.kind= ProgramModel::ElementKind::Variable;
 				element.visibility= current_visibility;
 				element.number_in_parent= result.size();
-				element.file_pos= variable.file_pos;
+				element.src_loc= variable.src_loc;
 				result.push_back(element);
 			}
 		}
@@ -676,7 +659,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 			element.kind= ProgramModel::ElementKind::Variable;
 			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
-			element.file_pos= auto_variable_declaration.file_pos_;
+			element.src_loc= auto_variable_declaration.src_loc_;
 			result.push_back(element);
 		}
 		void operator()( const Synt::ClassPtr& class_ )
@@ -689,7 +672,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 			element.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? ProgramModel::ElementKind::Struct : ProgramModel::ElementKind::Class;
 			element.childs= BuildProgramModel_r( class_->elements_ );
 			element.number_in_parent= result.size();
-			element.file_pos= class_->file_pos_;
+			element.src_loc= class_->src_loc_;
 			result.push_back(element);
 		}
 	};
@@ -713,7 +696,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Prog
 			element.name= QString::fromStdString( Stringify( class_field_ ) );
 			element.kind= ProgramModel::ElementKind::ClassField;
 			element.number_in_parent= result.size();
-			element.file_pos= class_field_.file_pos_;
+			element.src_loc= class_field_.src_loc_;
 			result.push_back(element);
 		}
 
@@ -726,7 +709,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Prog
 			element.name= QString::fromStdString( Stringify( *func ).data() );
 			element.kind= ProgramModel::ElementKind::Function;
 			element.number_in_parent= result.size();
-			element.file_pos= func->file_pos_;
+			element.src_loc= func->src_loc_;
 			result.push_back(element);
 		}
 		void operator()( const Synt::FunctionTemplate& func_template )
@@ -735,27 +718,26 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Prog
 			element.name= QString::fromStdString( Stringify( func_template ) );
 			element.kind= ProgramModel::ElementKind::FunctionTemplate;
 			element.number_in_parent= result.size();
-			element.file_pos= func_template.file_pos_;
+			element.src_loc= func_template.src_loc_;
 			result.push_back(element);
 		}
-		void operator()( const Synt::ClassTemplate& class_template )
+		void operator()( const Synt::TypeTemplate& class_template )
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= QString::fromStdString( Stringify( class_template ) );
 			element.kind= ProgramModel::ElementKind::ClassTemplate;
 			element.childs= BuildProgramModel_r( class_template.class_->elements_ );
 			element.number_in_parent= result.size();
-			element.file_pos= class_template.file_pos_;
+			element.src_loc= class_template.src_loc_;
 			result.push_back(element);
-		}
-		void operator()( const Synt::TypedefTemplate& typedef_template )
-		{
+			/*
 			ProgramModel::ProgramTreeNode element;
 			element.name= QString::fromStdString( Stringify( typedef_template ) );
 			element.kind= ProgramModel::ElementKind::TypedefTemplate;
 			element.number_in_parent= result.size();
-			element.file_pos= typedef_template.file_pos_;
+			element.src_loc= typedef_template.src_loc_;
 			result.push_back(element);
+			*/
 		}
 		void operator()( const Synt::Enum& enum_ )
 		{
@@ -764,19 +746,19 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Prog
 			element.kind= ProgramModel::ElementKind::Enum;
 			element.childs= BuildProgramModel_r( enum_ );
 			element.number_in_parent= result.size();
-			element.file_pos= enum_.file_pos_;
+			element.src_loc= enum_.src_loc_;
 			result.push_back(element);
 		}
 		void operator()( const Synt::StaticAssert&  )
 		{
 		}
-		void operator()( const Synt::Typedef& typedef_ )
+		void operator()( const Synt::TypeAlias& typedef_ )
 		{
 			ProgramModel::ProgramTreeNode element;
 			element.name= QString::fromStdString( typedef_.name );
 			element.kind= ProgramModel::ElementKind::Typedef;
 			element.number_in_parent= result.size();
-			element.file_pos= typedef_.file_pos_;
+			element.src_loc= typedef_.src_loc_;
 			result.push_back(element);
 		}
 		void operator()( const Synt::VariablesDeclaration& variables_declaration )
@@ -788,7 +770,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Prog
 				element.name= QString::fromStdString( Stringify( variable, type_name ) );
 				element.kind= ProgramModel::ElementKind::Variable;
 				element.number_in_parent= result.size();
-				element.file_pos= variable.file_pos;
+				element.src_loc= variable.src_loc;
 				result.push_back(element);
 			}
 		}
@@ -798,7 +780,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Prog
 			element.name= QString::fromStdString( Stringify( auto_variable_declaration ) );
 			element.kind= ProgramModel::ElementKind::Variable;
 			element.number_in_parent= result.size();
-			element.file_pos= auto_variable_declaration.file_pos_;
+			element.src_loc= auto_variable_declaration.src_loc_;
 			result.push_back(element);
 		}
 		void operator()( const Synt::ClassPtr& class_ )
@@ -811,7 +793,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Prog
 			element.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? ProgramModel::ElementKind::Struct : ProgramModel::ElementKind::Class;
 			element.childs= BuildProgramModel_r( class_->elements_ );
 			element.number_in_parent= result.size();
-			element.file_pos= class_->file_pos_;
+			element.src_loc= class_->src_loc_;
 			result.push_back(element);
 		}
 		void operator()( const Synt::NamespacePtr& namespace_ )
@@ -825,7 +807,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Prog
 			element.kind= ProgramModel::ElementKind::Namespace;
 			element.childs= BuildProgramModel_r( namespace_->elements_ );
 			element.number_in_parent= result.size();
-			element.file_pos= namespace_->file_pos_;
+			element.src_loc= namespace_->src_loc_;
 			result.push_back(element);
 		}
 
@@ -851,7 +833,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModelMacros( const Synt::
 			ProgramModel::ProgramTreeNode node;
 			node.kind= ProgramModel::ElementKind::Macro;
 			node.name= QString::fromStdString( name_macro_pair.second.name );
-			node.file_pos= name_macro_pair.second.file_pos;
+			node.src_loc= name_macro_pair.second.src_loc;
 			result.push_back(node);
 		}
 	}
@@ -861,7 +843,7 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModelMacros( const Synt::
 		result.end(),
 		[](const ProgramModel::ProgramTreeNode& l, const ProgramModel::ProgramTreeNode& r ) -> bool
 		{
-			return l.file_pos < r.file_pos;
+			return l.src_loc < r.src_loc;
 		});
 
 	return result;
@@ -879,22 +861,22 @@ void SetupParents( ProgramModel::ProgramTreeNode& tree )
 	}
 }
 
-const ProgramModel::ProgramTreeNode* GetNode_r( const std::vector<ProgramModel::ProgramTreeNode>& nodes, const FilePos& file_pos )
+const ProgramModel::ProgramTreeNode* GetNode_r( const std::vector<ProgramModel::ProgramTreeNode>& nodes, const SrcLoc& src_loc )
 {
 	// TODO - optimize, make O(log(n)), instead of O(n).
 	for( size_t i= 0u; i < nodes.size(); ++i )
 	{
 		const ProgramModel::ProgramTreeNode& node= nodes[i];
 
-		FilePos next_file_pos;
+		SrcLoc next_src_loc;
 		if( i + 1u < nodes.size() )
-			next_file_pos= nodes[i+1u].file_pos;
+			next_src_loc= nodes[i+1u].src_loc;
 		else
-			next_file_pos= FilePos( 0u, FilePos::c_max_line, FilePos::c_max_column );
+			next_src_loc= SrcLoc( 0u, SrcLoc::c_max_line, SrcLoc::c_max_column );
 
-		if( node.file_pos <= file_pos && file_pos < next_file_pos )
+		if( node.src_loc <= src_loc && src_loc < next_src_loc )
 		{
-			const ProgramModel::ProgramTreeNode* const child_node= GetNode_r( node.childs, file_pos );
+			const ProgramModel::ProgramTreeNode* const child_node= GetNode_r( node.childs, src_loc );
 			if( child_node != nullptr )
 				return child_node;
 			return &node;
@@ -906,22 +888,22 @@ const ProgramModel::ProgramTreeNode* GetNode_r( const std::vector<ProgramModel::
 
 } // namespace
 
-const ProgramModel::ProgramTreeNode* ProgramModel::GetNodeForFilePos( const FilePos& file_pos ) const
+const ProgramModel::ProgramTreeNode* ProgramModel::GetNodeForSrcLoc( const SrcLoc& src_loc ) const
 {
-	return GetNode_r( program_elements, file_pos );
+	return GetNode_r( program_elements, src_loc );
 }
 
 ProgramModelPtr BuildProgramModel( const QString& program_text )
 {
 	const U::LexicalAnalysisResult lex_result= U::LexicalAnalysis( program_text.toStdString() );
-	if( !lex_result.error_messages.empty() )
+	if( !lex_result.errors.empty() )
 		return nullptr;
 
 	const Synt::SyntaxAnalysisResult synt_result=
 		Synt::SyntaxAnalysis(
 			lex_result.lexems,
 			Synt::MacrosByContextMap(),
-			std::make_shared<Synt::MacroExpansionContexts>() );
+			std::make_shared<Synt::MacroExpansionContexts>(), "" );
 	// Do NOT abort on errors, because in process of source code editing may occurs some errors.
 
 	const auto result= std::make_shared<ProgramModel>();

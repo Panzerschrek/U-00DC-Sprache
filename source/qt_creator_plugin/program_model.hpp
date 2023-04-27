@@ -3,9 +3,9 @@
 
 #include <QString>
 
-#include "../lex_synt_lib/program_string.hpp"
-#include "../lex_synt_lib/lexical_analyzer.hpp"
-#include "../lex_synt_lib/syntax_elements.hpp"
+#include "../compiler0/lex_synt_lib/program_string.hpp"
+#include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
+#include "../compiler0/lex_synt_lib/syntax_elements.hpp"
 
 namespace U
 {
@@ -47,7 +47,7 @@ public:
 
 		ProgramTreeNode* parent= nullptr;
 		size_t number_in_parent= 0;
-		FilePos file_pos;
+		SrcLoc src_loc;
 	};
 
 public:
@@ -55,7 +55,7 @@ public:
 	std::vector<ProgramTreeNode> program_elements;
 
 public:
-	const ProgramModel::ProgramTreeNode* GetNodeForFilePos( const FilePos& file_pos ) const;
+	const ProgramModel::ProgramTreeNode* GetNodeForSrcLoc( const SrcLoc& src_loc ) const;
 };
 
 using ProgramModelPtr= std::shared_ptr<ProgramModel>;

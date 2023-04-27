@@ -103,7 +103,7 @@ void EditorWidget::OnItemActivated()
 	Core::EditorManager::addCurrentPositionToNavigationHistory();
 
 	setFocus();
-	gotoLine( node_ptr->file_pos.GetLine(), node_ptr->file_pos.GetColumn() );
+	gotoLine( node_ptr->src_loc.GetLine(), node_ptr->src_loc.GetColumn() );
 
 	block_cursor_sync_= false;
 }
@@ -119,9 +119,9 @@ void EditorWidget::OnCursorPositionChanged()
 	int line= 0, column= 0;
 	convertPosition( position(), &line, &column );
 
-	FilePos file_pos( 0u, line, column );
+	;
 
-	if( const auto node= program_model_->GetNodeForFilePos( file_pos ) )
+	if( const auto node= program_model_->GetNodeForSrcLoc( SrcLoc( 0u, line, column ) ) )
 	{
 		combo_box_.setRootModelIndex( combo_box_model_.parent( combo_box_model_.IndexForNode( node ) ) );
 		combo_box_.setCurrentIndex( int(node->number_in_parent) );

@@ -18,11 +18,13 @@ isEmpty( QT_CREATOR_BINARY_ROOT ) {
 
 SOURCES+= \
 	*.cpp \
-	../lex_synt_lib/*.cpp \
+	../compiler0/lex_synt_lib/*.cpp \
 
 HEADERS+= \
 	*.hpp \
-	../lex_synt_lib/*.hpp \
+	../compiler0/lex_synt_lib/*.hpp \
+
+INCLUDEPATH += gen/
 
 ## uncomment to build plugin into user config directory
 ## <localappdata>/plugins/<ideversion>
