@@ -47,6 +47,10 @@ fn nomangle main() : i32
 		var ust::optional</u32/> opt;
 		halt if( !opt.empty() );
 	}
+	{ // Optional, constructed via "null_optional".
+		var ust::optional</u32/> opt= ust::null_optional;
+		halt if( !opt.empty() );
+	}
 	{ // optional can be constructed from value.
 		var ust::optional</i32/> opt( 524 );
 		halt if( opt.empty() );
@@ -96,6 +100,12 @@ fn nomangle main() : i32
 		opt.reset( 1991u );
 		halt if( opt.empty() );
 		halt if( opt.try_deref() != 1991u );
+	}
+	{ // Asigning "null_optional" resets optional value.
+		var ust::optional</f32/> mut e( 2.5f );
+		halt if( e.empty() );
+		e= ust::null_optional;
+		halt if( !e.empty() );
 	}
 	{ // Destructor calls destructor of stored value.
 		var i32 mut x= 0;
@@ -191,6 +201,14 @@ fn nomangle main() : i32
 		halt if( three == two_opt );
 		halt if( one == empty_opt );
 		halt if( two == empty_copy_opt );
+
+		// optional == null_optional
+		halt if( empty_opt != ust::null_optional );
+		halt if( one_opt == ust::null_optional );
+
+		// null_optional == optional
+		halt if( ust::null_optional != empty_opt );
+		halt if( ust::null_optional == one_opt );
 	}
 
 	return 0;

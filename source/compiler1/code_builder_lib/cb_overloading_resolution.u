@@ -583,7 +583,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 		{
 			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
 		}
-		return ust::optional</FunctionVariable/>();
+		return ust::null_optional;
 	}
 
 	var ust::vector</bool/> mut best_functions;
@@ -752,7 +752,7 @@ fn CodeBuilder::GetOverloadedOperator(
 		}
 	}
 
-	return ust::optional</FunctionVariable/>();
+	return ust::null_optional;
 }
 
 fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
@@ -760,11 +760,11 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	if( !EnsureTypeComplete( dst ) )
 	{
 		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, dst )
-		return ust::optional</FunctionVariable/>();
+		return ust::null_optional;
 	}
 	if( dst.GetClassType().empty() )
 	{
-		return ust::optional</FunctionVariable/>();
+		return ust::null_optional;
 	}
 
 	auto dst_class= dst.GetClassType().try_deref();
@@ -789,7 +789,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 	{
 		return move(function_selected);
 	}
-	return ust::optional</FunctionVariable/>();
+	return ust::null_optional;
 }
 
 fn CodeBuilder::SelectMoreSpecializedTemplate(

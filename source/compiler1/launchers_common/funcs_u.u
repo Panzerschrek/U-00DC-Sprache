@@ -495,7 +495,7 @@ public:
 				return entry.file_content;
 			}
 		}
-		return ust::optional</ust::string8/>();
+		return ust::null_optional;
 	}
 
 private:
@@ -550,7 +550,7 @@ public:
 				return move(result);
 			}
 		}
-		return ust::optional</ust::string8/>();
+		return ust::null_optional;
 	}
 
 private:

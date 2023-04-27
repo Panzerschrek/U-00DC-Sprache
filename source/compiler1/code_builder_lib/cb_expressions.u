@@ -2915,7 +2915,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 		if( overloaded_operator.is_deleted )
 		{
 			REPORT_ERROR( AccessingDeletedMethod, names_scope, src_loc )
-			return ust::optional</Value/>();
+			return ust::null_optional;
 		}
 
 		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
@@ -2937,7 +2937,7 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			src_loc );
 	}
 
-	return ust::optional</Value/>();
+	return ust::null_optional;
 }
 
 fn CodeBuilder::CallBinaryOperatorForArrayOrTuple(
@@ -3115,7 +3115,7 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 	var VariableLite variable= variable_ptr.lock_imut().deref();
 	if( variable.t.GetClassType().empty() )
 	{
-		return ust::optional</Value/>();
+		return ust::null_optional;
 	}
 
 	var [ VariableTypeExtended, 1 ] args[ { .t(variable.t), .value_type= variable.value_type } ];
@@ -3140,7 +3140,7 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 			src_loc );
 	}
 
-	return ust::optional</Value/>();
+	return ust::null_optional;
 }
 
 fn CodeBuilder::TryCallOverloadedPostfixOperator(
@@ -3202,7 +3202,7 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 			src_loc );
 	}
 
-	return ust::optional</Value/>();
+	return ust::null_optional;
 }
 
 fn CodeBuilder::CallFunctionsSet(

@@ -682,7 +682,7 @@ fn CodeBuilder::GenTemplateType(
 	if( candidate_type_templates.empty() )
 	{
 		REPORT_ERROR( TemplateParametersDeductionFailed, args_names_scope, template_instantiation_src_loc )
-		return ust::optional</Type/>();
+		return ust::null_optional;
 	}
 	if( candidate_type_templates.size() == 1s )
 	{
@@ -699,7 +699,7 @@ fn CodeBuilder::GenTemplateType(
 	if( index == ~0s )
 	{
 		REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, args_names_scope, template_instantiation_src_loc )
-		return ust::optional</Type/>();
+		return ust::null_optional;
 	}
 
 	return FinishTypeTemplateGeneration( candidate_type_templates[index], args_names_scope, template_instantiation_src_loc );
@@ -720,7 +720,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	{
 		if( template_args.size() != syntax_element.params.size() )
 		{
-			return ust::optional</TemplateTypeArgsEvaluationResult/>();
+			return ust::null_optional;
 		}
 	}
 	else
@@ -728,7 +728,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 		if( template_args.size() < type_template.first_default_param ||
 			template_args.size() > type_template.signature_params.size() )
 		{
-			return ust::optional</TemplateTypeArgsEvaluationResult/>();
+			return ust::null_optional;
 		}
 	}
 
@@ -810,7 +810,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 
 	if( !all_ok )
 	{
-		return ust::optional</TemplateTypeArgsEvaluationResult/>();
+		return ust::null_optional;
 	}
 
 	var TemplateTypeArgsEvaluationResult mut result
@@ -868,7 +868,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 		auto class_type= NamesScopeAddClass( args_names_scope, class_syntax_element );
 		if( class_type.empty() )
 		{
-			return ust::optional</Type/>();
+			return ust::null_optional;
 		}
 
 		{
@@ -950,7 +950,7 @@ fn CodeBuilder::GenTemplateFunction(
 	}
 	if( args.size() != function_syntax_element.function_type.params.size() )
 	{
-		return ust::optional</FunctionVariable/>();
+		return ust::null_optional;
 	}
 
 	var NamesScopePtr names_scope= function_template.parent_names_scope.lock().try_to_non_nullable(); // Parent namespace of type template
@@ -970,7 +970,7 @@ fn CodeBuilder::GenTemplateFunction(
 			( function_param.reference_modifier == Synt::ReferenceModifier::Reference || is_this );
 		if( param_is_mutable_reference && arg.value_type != ValueType::ReferenceMut )
 		{
-			return ust::optional</FunctionVariable/>();
+			return ust::null_optional;
 		}
 
 		auto& param= function_template.signature_params[i];
@@ -1006,7 +1006,7 @@ fn CodeBuilder::GenTemplateFunction(
 
 	if( !all_ok )
 	{
-		return ust::optional</FunctionVariable/>();
+		return ust::null_optional;
 	}
 
 	return FinishTemplateFunctionGeneration( function_template_ptr, result_names_scope, instantiation_point_names_scope, src_loc );
@@ -1069,7 +1069,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 			}
 
 			REPORT_ERROR( TemplateParametersDeductionFailed, result_names_scope, src_loc )
-			return ust::optional</FunctionVariable/>();
+			return ust::null_optional;
 		}
 	}
 
@@ -1092,7 +1092,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 			return functions_set.functions_set.functions.front();
 		}
 
-		return ust::optional</FunctionVariable/>();
+		return ust::null_optional;
 	}
 	AddNewTemplateThing( template_key, result_names_scope );
 
@@ -1110,7 +1110,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 	if( result_functions_set_ptr.try_lock_imut().deref().functions_set.functions.size() != 1s )
 	{
-		return ust::optional</FunctionVariable/>();
+		return ust::null_optional;
 	}
 
 	// Set base template and mangled name.
@@ -1188,7 +1188,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 
 	if( have_some_errors )
 	{
-		return ust::optional</NamesScopeValue/>();
+		return ust::null_optional;
 	}
 
 	var ust::string8 mut cache_key= "_parametrized_";
@@ -1261,7 +1261,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	if( result_functions_set.functions_set.parametrized_function_templates.empty() )
 	{
 		REPORT_ERROR( TemplateFunctionGenerationFailed, args_names_scope, src_loc, ust::string8("TODO - name") )
-		return ust::optional</NamesScopeValue/>();
+		return ust::null_optional;
 	}
 
 	var NamesScopeValue mut names_scope_value( move(result_functions_set) );

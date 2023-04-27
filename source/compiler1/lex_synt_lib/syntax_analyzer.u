@@ -97,7 +97,7 @@ fn LexemToBinaryOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
 	if( lexem.lexem_type == Lexem::Type::Conjunction ){ return BinaryOperatorType::LazyLogicalAnd; }
 	if( lexem.lexem_type == Lexem::Type::Disjunction ){ return BinaryOperatorType::LazyLogicalOr ; }
 
-	return ust::optional</BinaryOperatorType/>();
+	return ust::null_optional;
 }
 
 fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
@@ -115,7 +115,7 @@ fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperator
 	if( t == Lexem::Type::AssignShiftLeft  ){ return BinaryOperatorType::ShiftLeft ; }
 	if( t == Lexem::Type::AssignShiftRight ){ return BinaryOperatorType::ShiftRight; }
 
-	return ust::optional</BinaryOperatorType/>();
+	return ust::null_optional;
 }
 
 struct BinaryOperatorsChainComponent
@@ -2325,7 +2325,7 @@ fn SyntaxAnalyzer::TryParseLabel( mut this ) : ust::optional</Label/>
 		return move(label_);
 	}
 
-	return ust::optional</Label/>();
+	return ust::null_optional;
 }
 
 fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
@@ -3862,7 +3862,7 @@ fn SyntaxAnalyzer::FetchMacroVariable( MacroVariablesMapsStack& macro_variables_
 		}
 	}
 
-	return ust::optional</ParsedMacroElement/>();
+	return ust::null_optional;
 }
 
 fn SyntaxAnalyzer::ExpectSemicolon( mut this )

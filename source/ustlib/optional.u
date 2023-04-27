@@ -6,6 +6,9 @@ import "hash.u"
 namespace ust
 {
 
+struct null_optional_type{}
+var null_optional_type constexpr null_optional{};
+
 template</ type T />
 class optional
 {
@@ -15,7 +18,12 @@ public:
 
 public:
 	fn constructor()
-	( storage_= zero_init, has_value_= false  ) // TODO - initialize with unsafe
+	( storage_= zero_init, has_value_= false ) // TODO - initialize with unsafe
+	{}
+
+	// Use this conversion constructor in order to use simple "ust::null_optional" to pass/return empty optional, without specifying exact optional type.
+	fn conversion_constructor( null_optional_type n )
+	( storage_= zero_init, has_value_= false ) // TODO - initialize with unsafe
 	{}
 	
 	// Construct with value.
@@ -121,6 +129,11 @@ public:
 		}
 	}
 
+	op=( mut this, null_optional_type n )
+	{
+		reset();
+	}
+
 	fn empty(this) : bool
 	{
 		return !has_value_;
@@ -212,6 +225,18 @@ public:
 			memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>(deref_unchecked()), typeinfo</T/>.size_of );
 			return move(t);
 		}
+	}
+
+	// Compare with null optional. Result is true if optional is empty.
+
+	op==( this_type& l, null_optional_type n ) : bool
+	{
+		return l.empty();
+	}
+
+	op==( null_optional_type n, this_type& r ) : bool
+	{
+		return r.empty();
 	}
 
 	// Equality compare operator for equality comparable type.
