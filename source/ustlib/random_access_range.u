@@ -41,6 +41,7 @@ public:
 		}
 	}
 
+	// Construct from raw parts.
 	fn constructor( $(T) begin, size_type size ) unsafe
 		( begin_(begin), size_(size) )
 	{}
@@ -231,5 +232,20 @@ template</ type T />
 type random_access_range_imut= random_access_range</ T, false />;
 template</ type T />
 type array_view_imut= random_access_range</ T, false />;
+
+// Use free functions instead of consrtuctors in order to create array view for single element explicitly.
+// Doing such we can avoid common mistakes.
+
+template</type T/>
+fn single_element_array_view( T &'a mut el ) : array_view_mut</T/>'a'
+{
+	return unsafe( array_view_mut</T/>( $<(el), 1s ) );
+}
+
+template</type T/>
+fn single_element_array_view( T &'a imut el ) : array_view_imut</T/>'a'
+{
+	return unsafe( array_view_imut</T/>( $<(cast_mut(el)), 1s ) );
+}
 
 } // namespace ust

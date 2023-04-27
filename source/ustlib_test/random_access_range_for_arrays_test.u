@@ -158,5 +158,24 @@ fn nomangle main() : i32
 		halt if( v4 == r6 );
 		halt if( r5 == v3 );
 	}
+
+	// Create range for single element.
+	{
+		var i32 mut x= 0;
+		{
+			var IntRangeMut range= ust::single_element_array_view( x );
+			halt if( range.size() != 1s );
+			range[0s]= 66;
+		}
+		halt if ( x != 66 );
+	}
+	{
+		var i32 x= 778;
+		var IntRangeImut range= ust::single_element_array_view( x );
+		halt if( range.size() != 1s );
+		halt if( range[0s] != 778 );
+
+	}
+
 	return 0;
 }

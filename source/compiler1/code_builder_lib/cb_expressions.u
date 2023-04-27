@@ -1208,7 +1208,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	if( !variable.t.GetClassType().empty() )
 	{
 		// Try to call overloaded [] operator for class.
-		if_var( &mut res : TryCallOverloadedPostfixOperator( names_scope, function_context, OverloadedOperator::Indexing, variable_ptr, ust::make_array(indexation_operator.index), indexation_operator.src_loc ) )
+		if_var( &mut res : TryCallOverloadedPostfixOperator( names_scope, function_context, OverloadedOperator::Indexing, variable_ptr, ust::single_element_array_view(indexation_operator.index), indexation_operator.src_loc ) )
 		{
 			return take(res);
 		}
