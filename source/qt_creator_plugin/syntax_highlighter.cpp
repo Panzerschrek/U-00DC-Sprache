@@ -38,6 +38,7 @@ SyntaxHighlighter::SyntaxHighlighter()
 		TextEditor::C_PREPROCESSOR,
 		TextEditor::C_KEYWORD,
 		TextEditor::C_BINDING,
+		TextEditor::C_ENUMERATION,
 		TextEditor::C_NUMBER,
 		TextEditor::C_STRING,
 		TextEditor::C_COMMENT,
@@ -47,7 +48,7 @@ SyntaxHighlighter::SyntaxHighlighter()
 	});
 
 	setTextFormatCategories(
-		9,
+		10,
 		[&](int category) -> TextEditor::TextStyle
 		{
 			return TextEditor::TextStyle(categories[category]);
@@ -101,7 +102,26 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 
 		case Lexem::Type::Identifier:
 			if( IsKeyword( lexem.text ) )
-				format= lexem.text == Keywords::unsafe_ ? Formats::UnsafeKeyword : Formats::Keyword;
+			{
+				if( lexem.text == Keywords::unsafe_ ||
+					lexem.text == Keywords::cast_mut_ ||
+					lexem.text== Keywords::cast_ref_unsafe_ ||
+					lexem.text== Keywords::uninitialized_ )
+					format= Formats::UnsafeConstruction;
+			else if(lexem.text == Keywords::i8_   || lexem.text == Keywords::u8_   || lexem.text == Keywords::byte8_   ||
+					lexem.text == Keywords::i16_  || lexem.text == Keywords::u16_  || lexem.text == Keywords::byte16_  ||
+					lexem.text == Keywords::i32_  || lexem.text == Keywords::u32_  || lexem.text == Keywords::byte32_  ||
+					lexem.text == Keywords::i64_  || lexem.text == Keywords::u64_  || lexem.text == Keywords::byte64_  ||
+					lexem.text == Keywords::i128_ || lexem.text == Keywords::u128_ || lexem.text == Keywords::byte128_ ||
+					lexem.text == Keywords::size_type_ ||
+					lexem.text == Keywords::void_ ||
+					lexem.text == Keywords::bool_ ||
+					lexem.text == Keywords::char8_ || lexem.text == Keywords::char16_ || lexem.text == Keywords::char32_ ||
+					lexem.text == Keywords::f32_ || lexem.text == Keywords::f64_ )
+					format= Formats::FundamentalType;
+				else
+					format= Formats::Keyword;
+			}
 			else
 				format= Formats::Identifier;
 			break;
