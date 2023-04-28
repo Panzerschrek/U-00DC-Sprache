@@ -30,6 +30,15 @@ HEADERS+= \
 INCLUDEPATH += $$SPRACHE_LEX_GEN_DIR
 INCLUDEPATH += ../compiler0/lex_synt_lib/
 
+# Avoid common mistakes
+QMAKE_CXXFLAGS += -Wall -Wextra -Werror
+# Hide unused symbols
+QMAKE_CXXFLAGS += -fvisibility=hidden -fvisibility-inlines-hidden
+# Avoid undefined symbols in shared libraries.
+QMAKE_CXXFLAGS += -Wl,--no-undefined
+# Clear garbage.
+QMAKE_CXXFLAGS_RELEASE += -s -Wl,--gc-sections
+
 ## uncomment to build plugin into user config directory
 ## <localappdata>/plugins/<ideversion>
 ##    where <localappdata> is e.g.
