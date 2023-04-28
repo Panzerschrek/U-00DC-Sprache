@@ -29,8 +29,8 @@ public:
 		ClassField,
 		Variable,
 		ClassTemplate,
-		Typedef,
-		TypedefTemplate,
+		TypeAloas,
+		TypeAliasTemplate,
 		FunctionTemplate,
 	};
 
@@ -43,7 +43,7 @@ public:
 		Visibility visibility= Visibility::Public;
 
 		// Elements in order of original file.
-		std::vector<ProgramTreeNode> childs;
+		std::vector<ProgramTreeNode> children;
 
 		ProgramTreeNode* parent= nullptr;
 		size_t number_in_parent= 0;
