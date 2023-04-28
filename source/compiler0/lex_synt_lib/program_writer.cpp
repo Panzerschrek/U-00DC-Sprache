@@ -780,14 +780,13 @@ void ElementWrite( const StaticAssert& static_assert_, std::ostream& stream )
 void ElementWrite( const Enum& enum_, std::ostream& stream )
 {
 	stream << Keyword( Keywords::enum_ ) << " " << enum_.name;
-	/*
-	if( !enum_.underlaying_type_name.components.empty() )
+
+	if( !( std::get_if<Synt::EmptyVariant>( &enum_.underlaying_type_name.start_value ) != nullptr && enum_.underlaying_type_name.tail == nullptr ) )
 	{
 		stream << " : ";
 		ElementWrite( enum_.underlaying_type_name, stream );
 	}
-	*/
-	// TODO
+
 	stream << "\n{\n";
 	for( const Enum::Member& enum_member : enum_.members )
 		stream << "\t" << enum_member.name << ",\n";

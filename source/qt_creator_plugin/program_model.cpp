@@ -17,13 +17,6 @@ namespace QtCreatorPlugin
 namespace
 {
 
-std::string Stringify( const Synt::Expression& expression )
-{
-	std::stringstream ss;
-	Synt::WriteExpression( expression, ss );
-	return ss.str();
-}
-
 std::string Stringify( const Synt::TypeName& type_name )
 {
 	std::stringstream ss;
@@ -38,132 +31,130 @@ std::string Stringify( const Synt::Function& function )
 	return ss.str();
 }
 
+void WriteTemplateParams( const std::vector<Synt::TypeTemplate::Param>& params, std::ostream& stream )
+{
+	for( const Synt::TypeTemplate::Param& param : params )
+	{
+		if( param.param_type != std::nullopt )
+			Synt::WriteProgramElement( *param.param_type, stream );
+		else
+			stream << Keyword( Keywords::type_ );
+
+		stream << " " << param.name;
+		if( &param != &params.back() )
+			stream << ", ";
+	}
+}
+
 std::string Stringify( const Synt::TypeTemplate& type_template )
 {
-	std::string result= type_template.name_;
+	std::stringstream ss;
+	ss << type_template.name_;
 
-	result+= "</";
+	ss << "</";
 	if( type_template.is_short_form_ )
-	{
-		for( const Synt::TypeTemplate::Param& param : type_template.params_ )
-		{
-			if( param.param_type != std::nullopt )
-			{
-				//result+= Stringify( *param.param_type );
-			}
-			else
-			{
-				result+= Keyword( Keywords::type_ );
-			}
-			result+= param.name;
-			if( &param != &type_template.params_.back() )
-				result+= ", ";
-		}
-	}
+		WriteTemplateParams( type_template.params_, ss );
 	else
 	{
 		for( const Synt::TypeTemplate::SignatureParam& param : type_template.signature_params_ )
 		{
-			result+= Stringify( param.name );
+			Synt::WriteExpression( param.name, ss );
 			if( std::get_if<Synt::EmptyVariant>(&param.default_value) != nullptr )
 			{
-				result+= "= ";
-				result+= Stringify( param.default_value );
+				ss << "= ";
+				Synt::WriteExpression( param.default_value, ss );
 			}
 			if( &param != &type_template.signature_params_.back() )
-				result+= ", ";
+				ss << ", ";
 		}
 	}
-	result+= "/>";
+	ss << "/>";
 
-	return result;
+	return ss.str();
 }
 
 std::string Stringify( const Synt::FunctionTemplate& function_template )
 {
-	std::string result;
+	std::stringstream ss;
 
-	result+= Keyword( Keywords::template_ );
-	result+= "</";
-	for( const Synt::TemplateBase::Param& param : function_template.params_ )
-	{
-		if( !param.name.empty() )
-			result+= param.name;
-		if( &param != &function_template.params_.back() )
-			result+= ", ";
-	}
-	result+= "/>";
+	ss << Keyword( Keywords::template_ );
+	ss << "</";
+	WriteTemplateParams( function_template.params_, ss );
+	ss << "/>";
 
-	result+= " ";
+	ss << " ";
 	if( function_template.function_ != nullptr )
-		result+= Stringify( *function_template.function_ );
-	return result;
+		Synt::WriteFunctionDeclaration( *function_template.function_, ss );
+
+	return ss.str();
 }
 
 std::string Stringify( const Synt::ClassField& class_field )
 {
-	std::string result= class_field.name;
-	result+= ": " + Stringify( class_field.type ) + " ";
+	std::stringstream ss;
+	ss << class_field.name << ": ";
+	Synt::WriteTypeName( class_field.type, ss );
+	ss << " ";
 
 	switch( class_field.reference_modifier )
 	{
 	case Synt::ReferenceModifier::None: break;
-	case Synt::ReferenceModifier::Reference: result+= "&"; break;
+	case Synt::ReferenceModifier::Reference: ss << "&"; break;
 	}
 
 	switch( class_field.mutability_modifier )
 	{
 	case Synt::MutabilityModifier::None: break;
-	case Synt::MutabilityModifier::Mutable  : result+= Keyword( Keywords::mut_       ); break;
-	case Synt::MutabilityModifier::Immutable: result+= Keyword( Keywords::imut_      ); break;
-	case Synt::MutabilityModifier::Constexpr: result+= Keyword( Keywords::constexpr_ );break;
+	case Synt::MutabilityModifier::Mutable  : ss << Keyword( Keywords::mut_       ); break;
+	case Synt::MutabilityModifier::Immutable: ss << Keyword( Keywords::imut_      ); break;
+	case Synt::MutabilityModifier::Constexpr: ss << Keyword( Keywords::constexpr_ );break;
 	}
 
-	return result;
+	return ss.str();
 }
 
 std::string Stringify( const Synt::VariablesDeclaration::VariableEntry& varaible, const std::string& type )
 {
-	std::string result= varaible.name;
-	result+= ": " + type + " ";
+	std::stringstream ss;
+	ss << varaible.name << ": " << type << " ";
 
 	switch( varaible.reference_modifier )
 	{
 	case Synt::ReferenceModifier::None: break;
-	case Synt::ReferenceModifier::Reference: result+= "&"; break;
+	case Synt::ReferenceModifier::Reference: ss << "&"; break;
 	}
 
 	switch( varaible.mutability_modifier )
 	{
 	case Synt::MutabilityModifier::None: break;
-	case Synt::MutabilityModifier::Mutable  : result+= Keyword( Keywords::mut_       ); break;
-	case Synt::MutabilityModifier::Immutable: result+= Keyword( Keywords::imut_      ); break;
-	case Synt::MutabilityModifier::Constexpr: result+= Keyword( Keywords::constexpr_ );break;
+	case Synt::MutabilityModifier::Mutable  : ss << Keyword( Keywords::mut_       ); break;
+	case Synt::MutabilityModifier::Immutable: ss << Keyword( Keywords::imut_      ); break;
+	case Synt::MutabilityModifier::Constexpr: ss << Keyword( Keywords::constexpr_ );break;
 	}
 
-	return result;
+	return ss.str();
 }
 
 std::string Stringify( const Synt::AutoVariableDeclaration& varaible )
 {
-	std::string result= varaible.name;
-	result+= ": " + Keyword( Keywords::auto_ ) + " ";
+	std::stringstream ss;
+	ss << varaible.name << ": " << Keyword( Keywords::auto_ ) << " ";
 
 	switch( varaible.reference_modifier )
 	{
 	case Synt::ReferenceModifier::None: break;
-	case Synt::ReferenceModifier::Reference: result+= "&"; break;
+	case Synt::ReferenceModifier::Reference: ss << "&"; break;
 	}
 
 	switch( varaible.mutability_modifier )
 	{
 	case Synt::MutabilityModifier::None: break;
-	case Synt::MutabilityModifier::Mutable  : result+= Keyword( Keywords::mut_       ); break;
-	case Synt::MutabilityModifier::Immutable: result+= Keyword( Keywords::imut_      ); break;
-	case Synt::MutabilityModifier::Constexpr: result+= Keyword( Keywords::constexpr_ );break;
+	case Synt::MutabilityModifier::Mutable  : ss << Keyword( Keywords::mut_       ); break;
+	case Synt::MutabilityModifier::Immutable: ss << Keyword( Keywords::imut_      ); break;
+	case Synt::MutabilityModifier::Constexpr: ss << Keyword( Keywords::constexpr_ );break;
 	}
 
-	return result;
+	return ss.str();
 }
 
 std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Enum& enum_ )
@@ -183,130 +174,147 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Enum
 	return result;
 }
 
-std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ClassElements& elements )
+std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ClassElements& elements );
+std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ProgramElements& elements );
+
+struct Visitor final
 {
-	struct Visitor final
+	std::vector<ProgramModel::ProgramTreeNode> result;
+	ProgramModel::Visibility current_visibility= ProgramModel::Visibility::Public;
+
+	void operator()( const Synt::ClassField& class_field_ )
 	{
-		std::vector<ProgramModel::ProgramTreeNode> result;
-		ProgramModel::Visibility current_visibility= ProgramModel::Visibility::Public;
+		ProgramModel::ProgramTreeNode element;
+		element.name= QString::fromStdString( Stringify( class_field_ ) );
+		element.kind= ProgramModel::ElementKind::ClassField;
+		element.visibility= current_visibility;
+		element.number_in_parent= result.size();
+		element.src_loc= class_field_.src_loc_;
+		result.push_back(element);
+	}
 
-		void operator()( const Synt::ClassField& class_field_ )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( Stringify( class_field_ ) );
-			element.kind= ProgramModel::ElementKind::ClassField;
-			element.visibility= current_visibility;
-			element.number_in_parent= result.size();
-			element.src_loc= class_field_.src_loc_;
-			result.push_back(element);
-		}
+	void operator()( const Synt::FunctionPtr& func )
+	{
+		if( func == nullptr )
+			return;
 
-		void operator()( const Synt::FunctionPtr& func )
-		{
-			if( func == nullptr )
-				return;
+		ProgramModel::ProgramTreeNode element;
+		element.name= QString::fromStdString( Stringify( *func ) );
+		element.kind= ProgramModel::ElementKind::Function;
+		element.visibility= current_visibility;
+		element.number_in_parent= result.size();
+		element.src_loc= func->src_loc_;
+		result.push_back(element);
+	}
+	void operator()( const Synt::FunctionTemplate& func_template )
+	{
+		ProgramModel::ProgramTreeNode element;
+		element.name= QString::fromStdString( Stringify( func_template ) );
+		element.kind= ProgramModel::ElementKind::FunctionTemplate;
+		element.visibility= current_visibility;
+		element.number_in_parent= result.size();
+		element.src_loc= func_template.src_loc_;
+		result.push_back(element);
+	}
+	void operator()( const Synt::ClassVisibilityLabel& visibility_label )
+	{
+		current_visibility= visibility_label.visibility_;
+	}
+	void operator()( const Synt::TypeTemplate& type_template )
+	{
+		ProgramModel::ProgramTreeNode element;
+		element.name= QString::fromStdString( Stringify( type_template ) );
 
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( Stringify( *func ) );
-			element.kind= ProgramModel::ElementKind::Function;
-			element.visibility= current_visibility;
-			element.number_in_parent= result.size();
-			element.src_loc= func->src_loc_;
-			result.push_back(element);
+		if( const auto class_= std::get_if<Synt::ClassPtr>( &type_template.something_ ) )
+		{
+			element.kind= ProgramModel::ElementKind::ClassTemplate;
+			element.children= BuildProgramModel_r( (*class_)->elements_ );
 		}
-		void operator()( const Synt::FunctionTemplate& func_template )
+		if( std::get_if<std::unique_ptr<const Synt::TypeAlias>>( &type_template.something_ ) != nullptr )
+		{
+			element.kind= ProgramModel::ElementKind::TypeAliasTemplate;
+		}
+		element.number_in_parent= result.size();
+		element.src_loc= type_template.src_loc_;
+		result.push_back(element);
+	}
+	void operator()( const Synt::Enum& enum_ )
+	{
+		ProgramModel::ProgramTreeNode element;
+		element.name= QString::fromStdString( enum_.name );
+		element.kind= ProgramModel::ElementKind::Enum;
+		element.children= BuildProgramModel_r( enum_ );
+		element.number_in_parent= result.size();
+		element.src_loc= enum_.src_loc_;
+		result.push_back(element);
+	}
+	void operator()( const Synt::StaticAssert&  )
+	{
+	}
+	void operator()( const Synt::TypeAlias& typedef_ )
+	{
+		ProgramModel::ProgramTreeNode element;
+		element.name= QString::fromStdString( typedef_.name );
+		element.kind= ProgramModel::ElementKind::TypeAloas;
+		element.number_in_parent= result.size();
+		element.src_loc= typedef_.src_loc_;
+		result.push_back(element);
+	}
+	void operator()( const Synt::VariablesDeclaration& variables_declaration )
+	{
+		const std::string type_name= Stringify( variables_declaration.type );
+		for( const auto& variable : variables_declaration.variables )
 		{
 			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( Stringify( func_template ) );
-			element.kind= ProgramModel::ElementKind::FunctionTemplate;
-			element.visibility= current_visibility;
-			element.number_in_parent= result.size();
-			element.src_loc= func_template.src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::ClassVisibilityLabel& visibility_label )
-		{
-			current_visibility= visibility_label.visibility_;
-		}
-		void operator()( const Synt::TypeTemplate& type_template )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( Stringify( type_template ) );
-
-			if( const auto class_= std::get_if<Synt::ClassPtr>( &type_template.something_ ) )
-			{
-				element.kind= ProgramModel::ElementKind::ClassTemplate;
-				element.children= BuildProgramModel_r( (*class_)->elements_ );
-			}
-			if( std::get_if<std::unique_ptr<const Synt::TypeAlias>>( &type_template.something_ ) != nullptr )
-			{
-				element.kind= ProgramModel::ElementKind::TypeAliasTemplate;
-			}
-			element.number_in_parent= result.size();
-			element.src_loc= type_template.src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::Enum& enum_ )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( enum_.name );
-			element.kind= ProgramModel::ElementKind::Enum;
-			element.children= BuildProgramModel_r( enum_ );
-			element.number_in_parent= result.size();
-			element.src_loc= enum_.src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::StaticAssert&  )
-		{
-		}
-		void operator()( const Synt::TypeAlias& typedef_ )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( typedef_.name );
-			element.kind= ProgramModel::ElementKind::TypeAloas;
-			element.number_in_parent= result.size();
-			element.src_loc= typedef_.src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::VariablesDeclaration& variables_declaration )
-		{
-			const std::string type_name= Stringify( variables_declaration.type );
-			for( const auto& variable : variables_declaration.variables )
-			{
-				ProgramModel::ProgramTreeNode element;
-				element.name= QString::fromStdString( Stringify( variable, type_name ) );
-				element.kind= ProgramModel::ElementKind::Variable;
-				element.visibility= current_visibility;
-				element.number_in_parent= result.size();
-				element.src_loc= variable.src_loc;
-				result.push_back(element);
-			}
-		}
-		void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( Stringify( auto_variable_declaration ) );
+			element.name= QString::fromStdString( Stringify( variable, type_name ) );
 			element.kind= ProgramModel::ElementKind::Variable;
 			element.visibility= current_visibility;
 			element.number_in_parent= result.size();
-			element.src_loc= auto_variable_declaration.src_loc_;
+			element.src_loc= variable.src_loc;
 			result.push_back(element);
 		}
-		void operator()( const Synt::ClassPtr& class_ )
-		{
-			if( class_ == nullptr )
-				return;
+	}
+	void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
+	{
+		ProgramModel::ProgramTreeNode element;
+		element.name= QString::fromStdString( Stringify( auto_variable_declaration ) );
+		element.kind= ProgramModel::ElementKind::Variable;
+		element.visibility= current_visibility;
+		element.number_in_parent= result.size();
+		element.src_loc= auto_variable_declaration.src_loc_;
+		result.push_back(element);
+	}
+	void operator()( const Synt::ClassPtr& class_ )
+	{
+		if( class_ == nullptr )
+			return;
 
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( class_->name_ );
-			element.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? ProgramModel::ElementKind::Struct : ProgramModel::ElementKind::Class;
-			element.children= BuildProgramModel_r( class_->elements_ );
-			element.number_in_parent= result.size();
-			element.src_loc= class_->src_loc_;
-			result.push_back(element);
-		}
-	};
+		ProgramModel::ProgramTreeNode element;
+		element.name= QString::fromStdString( class_->name_ );
+		element.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? ProgramModel::ElementKind::Struct : ProgramModel::ElementKind::Class;
+		element.children= BuildProgramModel_r( class_->elements_ );
+		element.number_in_parent= result.size();
+		element.src_loc= class_->src_loc_;
+		result.push_back(element);
+	}
+	void operator()( const Synt::NamespacePtr& namespace_ )
+	{
+		if( namespace_ == nullptr )
+			return;
 
+		// TODO - what if there are multiple declarations of same namespace in single source file?
+		ProgramModel::ProgramTreeNode element;
+		element.name= QString::fromStdString( namespace_->name_ );
+		element.kind= ProgramModel::ElementKind::Namespace;
+		element.children= BuildProgramModel_r( namespace_->elements_ );
+		element.number_in_parent= result.size();
+		element.src_loc= namespace_->src_loc_;
+		result.push_back(element);
+	}
+};
+
+std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ClassElements& elements )
+{
 	Visitor visitor;
 	for( const Synt::ClassElement& class_element : elements )
 		std::visit( visitor, class_element );
@@ -316,133 +324,6 @@ std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::Clas
 
 std::vector<ProgramModel::ProgramTreeNode> BuildProgramModel_r( const Synt::ProgramElements& elements )
 {
-	struct Visitor final
-	{
-		std::vector<ProgramModel::ProgramTreeNode> result;
-
-		void operator()( const Synt::ClassField& class_field_ )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( Stringify( class_field_ ) );
-			element.kind= ProgramModel::ElementKind::ClassField;
-			element.number_in_parent= result.size();
-			element.src_loc= class_field_.src_loc_;
-			result.push_back(element);
-		}
-
-		void operator()( const Synt::FunctionPtr& func )
-		{
-			if( func == nullptr )
-				return;
-
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( Stringify( *func ).data() );
-			element.kind= ProgramModel::ElementKind::Function;
-			element.number_in_parent= result.size();
-			element.src_loc= func->src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::FunctionTemplate& func_template )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( Stringify( func_template ) );
-			element.kind= ProgramModel::ElementKind::FunctionTemplate;
-			element.number_in_parent= result.size();
-			element.src_loc= func_template.src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::TypeTemplate& type_template )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( Stringify( type_template ) );
-
-			if( const auto class_= std::get_if<Synt::ClassPtr>( &type_template.something_ ) )
-			{
-				element.kind= ProgramModel::ElementKind::ClassTemplate;
-				element.children= BuildProgramModel_r( (*class_)->elements_ );
-			}
-			if( std::get_if<std::unique_ptr<const Synt::TypeAlias>>( &type_template.something_ ) != nullptr )
-			{
-				element.kind= ProgramModel::ElementKind::TypeAliasTemplate;
-			}
-			element.number_in_parent= result.size();
-			element.src_loc= type_template.src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::Enum& enum_ )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( enum_.name );
-			element.kind= ProgramModel::ElementKind::Enum;
-			element.children= BuildProgramModel_r( enum_ );
-			element.number_in_parent= result.size();
-			element.src_loc= enum_.src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::StaticAssert&  )
-		{
-		}
-		void operator()( const Synt::TypeAlias& typedef_ )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( typedef_.name );
-			element.kind= ProgramModel::ElementKind::TypeAloas;
-			element.number_in_parent= result.size();
-			element.src_loc= typedef_.src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::VariablesDeclaration& variables_declaration )
-		{
-			const std::string type_name= Stringify( variables_declaration.type );
-			for( const auto& variable : variables_declaration.variables )
-			{
-				ProgramModel::ProgramTreeNode element;
-				element.name= QString::fromStdString( Stringify( variable, type_name ) );
-				element.kind= ProgramModel::ElementKind::Variable;
-				element.number_in_parent= result.size();
-				element.src_loc= variable.src_loc;
-				result.push_back(element);
-			}
-		}
-		void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
-		{
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( Stringify( auto_variable_declaration ) );
-			element.kind= ProgramModel::ElementKind::Variable;
-			element.number_in_parent= result.size();
-			element.src_loc= auto_variable_declaration.src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::ClassPtr& class_ )
-		{
-			if( class_ == nullptr )
-				return;
-
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( class_->name_ );
-			element.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? ProgramModel::ElementKind::Struct : ProgramModel::ElementKind::Class;
-			element.children= BuildProgramModel_r( class_->elements_ );
-			element.number_in_parent= result.size();
-			element.src_loc= class_->src_loc_;
-			result.push_back(element);
-		}
-		void operator()( const Synt::NamespacePtr& namespace_ )
-		{
-			if( namespace_ == nullptr )
-				return;
-
-			// TODO - what if there are multiple declarations of same namespace in single source file?
-			ProgramModel::ProgramTreeNode element;
-			element.name= QString::fromStdString( namespace_->name_ );
-			element.kind= ProgramModel::ElementKind::Namespace;
-			element.children= BuildProgramModel_r( namespace_->elements_ );
-			element.number_in_parent= result.size();
-			element.src_loc= namespace_->src_loc_;
-			result.push_back(element);
-		}
-
-	};
-
 	Visitor visitor;
 	for( const Synt::ProgramElement& program_element : elements )
 		std::visit( visitor, program_element );
