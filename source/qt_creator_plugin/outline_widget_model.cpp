@@ -26,8 +26,8 @@ static CPlusPlus::Icons::IconType GetIconType( const ProgramModel::ProgramTreeNo
 
 		case ProgramModel::ElementKind::Class:
 		case ProgramModel::ElementKind::ClassTemplate:
-		case ProgramModel::ElementKind::Typedef:
-		case ProgramModel::ElementKind::TypedefTemplate:
+		case ProgramModel::ElementKind::TypeAloas:
+		case ProgramModel::ElementKind::TypeAliasTemplate:
 			return CPlusPlus::Icons::ClassIconType;
 
 		case ProgramModel::ElementKind::Enum:
@@ -89,7 +89,7 @@ QModelIndex OutlineWidgetModel::index( const int row, const int column, const QM
 	else
 	{
 		const Node* const parent_ptr= reinterpret_cast<const Node*>(parent.internalPointer());
-		return createIndex( row, 0, const_cast<Node*>(&parent_ptr->childs[row]) );
+		return createIndex( row, 0, const_cast<Node*>(&parent_ptr->children[row]) );
 	}
 }
 
@@ -111,7 +111,7 @@ int OutlineWidgetModel::rowCount( const QModelIndex& parent ) const
 		return program_model_ == nullptr ? 0 : int(program_model_->program_elements.size());
 
 	const Node* const element_ptr= reinterpret_cast<const Node*>(parent.internalPointer());
-	return int(element_ptr->childs.size());
+	return int(element_ptr->children.size());
 }
 
 int OutlineWidgetModel::columnCount( const QModelIndex& parent ) const

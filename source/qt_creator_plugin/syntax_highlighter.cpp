@@ -1,9 +1,9 @@
 #include <texteditor/texteditorconstants.h>
 #include <texteditor/textdocumentlayout.h>
 
-#include "../lex_synt_lib/assert.hpp"
-#include "../lex_synt_lib/lexical_analyzer.hpp"
-#include "../lex_synt_lib/keywords.hpp"
+#include "../lex_synt_lib_common/assert.hpp"
+#include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
+#include "keywords.hpp"
 
 #include "syntax_highlighter.hpp"
 
@@ -38,6 +38,7 @@ SyntaxHighlighter::SyntaxHighlighter()
 		TextEditor::C_PREPROCESSOR,
 		TextEditor::C_KEYWORD,
 		TextEditor::C_BINDING,
+		TextEditor::C_ENUMERATION,
 		TextEditor::C_NUMBER,
 		TextEditor::C_STRING,
 		TextEditor::C_COMMENT,
@@ -47,7 +48,7 @@ SyntaxHighlighter::SyntaxHighlighter()
 	});
 
 	setTextFormatCategories(
-		9,
+		10,
 		[&](int category) -> TextEditor::TextStyle
 		{
 			return TextEditor::TextStyle(categories[category]);
@@ -57,8 +58,8 @@ SyntaxHighlighter::SyntaxHighlighter()
 void SyntaxHighlighter::highlightBlock( const QString& text )
 {
 	const std::string text_utf8= text.toStdString();
-	LexicalAnalysisResult lex_result= LexicalAnalysis( text_utf8.data(), text_utf8.size(), true );
-	if( !lex_result.error_messages.empty() )
+	LexicalAnalysisResult lex_result= LexicalAnalysis( text_utf8, true );
+	if( !lex_result.errors.empty() )
 	{
 		setFormat( 0, text.size(), formatForCategory( int(Formats::LexicalError) ) );
 		return;
@@ -74,18 +75,18 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 	{
 		const Lexem& lexem= lex_result.lexems[i];
 
-		FilePos next_file_pos;
+		SrcLoc next_src_loc;
 		if( i + 1u < lex_result.lexems.size() )
 		{
-			next_file_pos= lex_result.lexems[i+1u].file_pos;
+			next_src_loc= lex_result.lexems[i+1u].src_loc;
 		}
 		else
 		{
-			next_file_pos= FilePos( 0u, text.size(), text.size() );
+			next_src_loc= SrcLoc( 0u, text.size(), text.size() );
 		}
 		// TODO - what if we have more, then one line?
-		const int current_linear_pos= lexem.file_pos.GetColumn();
-		const int next_linear_pos= next_file_pos.GetColumn();
+		const int current_linear_pos= lexem.src_loc.GetColumn();
+		const int next_linear_pos= next_src_loc.GetColumn();
 
 		// Setup highlighting.
 		Formats format;
@@ -101,7 +102,26 @@ void SyntaxHighlighter::highlightBlock( const QString& text )
 
 		case Lexem::Type::Identifier:
 			if( IsKeyword( lexem.text ) )
-				format= lexem.text == Keywords::unsafe_ ? Formats::UnsafeKeyword : Formats::Keyword;
+			{
+				if( lexem.text == Keywords::unsafe_ ||
+					lexem.text == Keywords::cast_mut_ ||
+					lexem.text== Keywords::cast_ref_unsafe_ ||
+					lexem.text== Keywords::uninitialized_ )
+					format= Formats::UnsafeConstruction;
+			else if(lexem.text == Keywords::i8_   || lexem.text == Keywords::u8_   || lexem.text == Keywords::byte8_   ||
+					lexem.text == Keywords::i16_  || lexem.text == Keywords::u16_  || lexem.text == Keywords::byte16_  ||
+					lexem.text == Keywords::i32_  || lexem.text == Keywords::u32_  || lexem.text == Keywords::byte32_  ||
+					lexem.text == Keywords::i64_  || lexem.text == Keywords::u64_  || lexem.text == Keywords::byte64_  ||
+					lexem.text == Keywords::i128_ || lexem.text == Keywords::u128_ || lexem.text == Keywords::byte128_ ||
+					lexem.text == Keywords::size_type_ ||
+					lexem.text == Keywords::void_ ||
+					lexem.text == Keywords::bool_ ||
+					lexem.text == Keywords::char8_ || lexem.text == Keywords::char16_ || lexem.text == Keywords::char32_ ||
+					lexem.text == Keywords::f32_ || lexem.text == Keywords::f64_ )
+					format= Formats::FundamentalType;
+				else
+					format= Formats::Keyword;
+			}
 			else
 				format= Formats::Identifier;
 			break;

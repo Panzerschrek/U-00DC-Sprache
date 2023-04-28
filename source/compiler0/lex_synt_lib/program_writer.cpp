@@ -24,7 +24,7 @@ void ElementWrite( const GeneratorType& generator_type_name, std::ostream& strea
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream );
 void ElementWriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream );
 void ElementWrite( const FunctionType& function_type_name, std::ostream& stream );
-void ElementWrite( const FunctionParam& arg, std::ostream& stream );
+void ElementWrite( const FunctionParam& param, std::ostream& stream );
 void ElementWrite( const TypeName& type_name, std::ostream& stream );
 void ElementWrite( const Expression& expression, std::ostream& stream );
 void ElementWrite( const Initializer& initializer, std::ostream& stream );
@@ -208,28 +208,28 @@ void ElementWrite( const FunctionType& function_type_name, std::ostream& stream 
 	stream << " )";
 }
 
-void ElementWrite( const FunctionParam& arg, std::ostream& stream )
+void ElementWrite( const FunctionParam& param, std::ostream& stream )
 {
-	ElementWrite( arg.type_, stream );
-	ElementWrite( arg.reference_modifier_, stream );
+	ElementWrite( param.type_, stream );
+	ElementWrite( param.reference_modifier_, stream );
 
-	if( !arg.reference_tag_.empty() )
+	if( !param.reference_tag_.empty() )
 	{
 		stream << "'";
-		stream << arg.reference_tag_;
+		stream << param.reference_tag_;
 	}
 
 	stream << " ";
-	ElementWrite( arg.mutability_modifier_, stream );
+	ElementWrite( param.mutability_modifier_, stream );
 
-	if( arg.mutability_modifier_ != MutabilityModifier::None )
+	if( param.mutability_modifier_ != MutabilityModifier::None )
 		stream << " ";
-	stream << arg.name_;
+	stream << param.name_;
 
-	if( !arg.inner_arg_reference_tag_.empty() )
+	if( !param.inner_arg_reference_tag_.empty() )
 	{
 		stream << "'";
-		stream << arg.inner_arg_reference_tag_;
+		stream << param.inner_arg_reference_tag_;
 		stream << "'";
 	}
 }
@@ -780,14 +780,13 @@ void ElementWrite( const StaticAssert& static_assert_, std::ostream& stream )
 void ElementWrite( const Enum& enum_, std::ostream& stream )
 {
 	stream << Keyword( Keywords::enum_ ) << " " << enum_.name;
-	/*
-	if( !enum_.underlaying_type_name.components.empty() )
+
+	if( !( std::get_if<Synt::EmptyVariant>( &enum_.underlaying_type_name.start_value ) != nullptr && enum_.underlaying_type_name.tail == nullptr ) )
 	{
 		stream << " : ";
 		ElementWrite( enum_.underlaying_type_name, stream );
 	}
-	*/
-	// TODO
+
 	stream << "\n{\n";
 	for( const Enum::Member& enum_member : enum_.members )
 		stream << "\t" << enum_member.name << ",\n";
@@ -864,14 +863,29 @@ void ElementWrite( const ProgramElements& elements, std::ostream& stream )
 
 } // namespace
 
+void WriteProgram( const ProgramElements& program_elements, std::ostream& stream )
+{
+	ElementWrite( program_elements, stream );
+}
+
 void WriteProgramElement( const ComplexName& complex_name, std::ostream& stream )
 {
 	ElementWrite( complex_name, stream );
 }
 
-void WriteProgram( const ProgramElements& program_elements, std::ostream& stream )
+void WriteExpression( const Synt::Expression& expression, std::ostream& stream )
 {
-	ElementWrite( program_elements, stream );
+	ElementWrite( expression, stream );
+}
+
+void WriteTypeName( const Synt::TypeName& type_name, std::ostream& stream )
+{
+	ElementWrite( type_name, stream );
+}
+
+void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& stream )
+{
+	ElementWrite( function, stream );
 }
 
 } // namespace Synt

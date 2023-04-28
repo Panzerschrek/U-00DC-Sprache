@@ -18,11 +18,26 @@ isEmpty( QT_CREATOR_BINARY_ROOT ) {
 
 SOURCES+= \
 	*.cpp \
-	../lex_synt_lib/*.cpp \
+	../lex_synt_lib_common/*.cpp \
+	../compiler0/lex_synt_lib/*.cpp \
+	$$SPRACHE_LEX_GEN_DIR/*.cpp \
 
 HEADERS+= \
 	*.hpp \
-	../lex_synt_lib/*.hpp \
+	../lex_synt_lib_common/*.hpp \
+	../compiler0/lex_synt_lib/*.hpp \
+
+INCLUDEPATH += $$SPRACHE_LEX_GEN_DIR
+INCLUDEPATH += ../compiler0/lex_synt_lib/
+
+# Avoid common mistakes
+QMAKE_CXXFLAGS += -Wall -Wextra -Werror
+# Hide unused symbols
+QMAKE_CXXFLAGS += -fvisibility=hidden -fvisibility-inlines-hidden
+# Avoid undefined symbols in shared libraries.
+QMAKE_CXXFLAGS += -Wl,--no-undefined
+# Clear garbage.
+QMAKE_CXXFLAGS_RELEASE += -s -Wl,--gc-sections
 
 ## uncomment to build plugin into user config directory
 ## <localappdata>/plugins/<ideversion>
