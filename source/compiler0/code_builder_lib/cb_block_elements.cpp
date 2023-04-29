@@ -1676,6 +1676,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			branches_variable_states.push_back( function_context.variables_state );
 		}
 
+		// Else block.
 		function_context.function->getBasicBlockList().push_back( alternative_block );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 

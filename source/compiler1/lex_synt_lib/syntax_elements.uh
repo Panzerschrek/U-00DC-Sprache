@@ -474,6 +474,7 @@ struct IfCoroAdvanceOperator
 	Expression expression;
 	ust::box</Block/> block;
 	IfAlternativeNullablePtr alternative;
+	SrcLoc end_src_loc;
 }
 
 struct Label

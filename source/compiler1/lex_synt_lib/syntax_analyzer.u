@@ -338,12 +338,14 @@ private:
 	// Utilities.
 	fn ExpectSemicolon( mut this );
 	fn ExpectLexem( mut this, Lexem::Type t );
+	fn GetPrevSrcLoc( this ) : SrcLoc;
 	fn NotEndOfFile( this ) : bool;
 	fn NextLexem( mut this );
 	fn PushErrorMessage( mut this );
 	fn PushMacroErrorMessage( mut this, SrcLoc& src_loc, ust::string8 mut text );
 
 private:
+	ust::array_view_imut</Lexem/> it_initial_;
 	ust::array_view_imut</Lexem/> it_;
 	ust::array_view_imut</Lexem/> last_error_it_;
 	size_type last_error_repeats_= 0s;
@@ -361,6 +363,7 @@ fn SyntaxAnalyzer::constructor(
 	MacroExpansionContextsPtr mut macro_expansion_contexts,
 	ust::string8 mut macro_unique_identifiers_base_name ) ' a <- b '
 	(
+		it_initial_= lexems.range(),
 		it_= lexems.range(),
 		last_error_it_= it_,
 		macros_(move(macros)),
@@ -2245,7 +2248,7 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 		.condition= ParseExpressionInBrackets(),
 		.block(ParseBlock()),
 		.alternative= ParseIfAlternative(),
-		.end_src_loc= it_.front().src_loc,
+		.end_src_loc= GetPrevSrcLoc(),
 	};
 
 	return move(if_operator);
@@ -2266,7 +2269,7 @@ fn SyntaxAnalyzer::ParseStaticIfOperator( mut this ) : StaticIfOperator
 		.condition= ParseExpressionInBrackets(),
 		.block(ParseBlock()),
 		.alternative= ParseIfAlternative(),
-		.end_src_loc= it_.front().src_loc,
+		.end_src_loc= GetPrevSrcLoc(),
 	};
 
 	return move(static_if_operator);
@@ -2310,6 +2313,7 @@ fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperato
 
 	if_coro_advance_operator.block.deref()= ParseBlock();
 	if_coro_advance_operator.alternative= ParseIfAlternative();
+	if_coro_advance_operator.end_src_loc= GetPrevSrcLoc();
 
 	return move(if_coro_advance_operator);
 }
@@ -3886,6 +3890,12 @@ fn SyntaxAnalyzer::ExpectLexem( mut this, Lexem::Type t )
 	{
 		PushErrorMessage();
 	}
+}
+
+fn SyntaxAnalyzer::GetPrevSrcLoc( this ) : SrcLoc
+{
+	auto index= it_initial_.size() - it_.size();
+	return it_initial_[ index - 1s ].src_loc;
 }
 
 fn SyntaxAnalyzer::NotEndOfFile( this ) : bool
