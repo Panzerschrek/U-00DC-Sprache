@@ -519,8 +519,8 @@ private:
 		// Typical allocator allocates memory with block size=16 or more.
 		// For first allocation we can allocate more, than one element for elements, smaller, then 16/2.
 
-		static_if( c_element_size_ == size_type(0) ) { return ~size_type(0); } // Max for zero-sized elements.
-		else if  ( c_element_size_ >= size_type(16) ) { return size_type(1); }
+		static_if     ( c_element_size_ == size_type(0) ) { return ~size_type(0); } // Max for zero-sized elements.
+		else static_if( c_element_size_ >= size_type(16) ) { return size_type(1); }
 		else { return size_type(16) / c_element_size_; }
 	}
 

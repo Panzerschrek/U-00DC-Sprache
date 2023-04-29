@@ -15,7 +15,7 @@ fn GetSrcLoc( Initializer& initializer ) : SrcLoc
 		{
 			return SrcLoc();
 		}
-		else if( ust::is_same_type</ ElementT, Expression />() )
+		else static_if( ust::is_same_type</ ElementT, Expression />() )
 		{
 			return GetSrcLoc(el);
 		}
@@ -36,23 +36,23 @@ fn GetSrcLoc( Expression& expression ) : SrcLoc
 		{
 			return SrcLoc();
 		}
-		else if( ust::is_same_type</ ElementT, ust::box</ArrayType/> />() )
+		else static_if( ust::is_same_type</ ElementT, ust::box</ArrayType/> />() )
 		{
 			return el.deref().src_loc;
 		}
-		else if( ust::is_same_type</ ElementT, ust::box</FunctionType/> />() )
+		else static_if( ust::is_same_type</ ElementT, ust::box</FunctionType/> />() )
 		{
 			return el.deref().src_loc;
 		}
-		else if( ust::is_same_type</ ElementT, ust::box</TupleType/> />() )
+		else static_if( ust::is_same_type</ ElementT, ust::box</TupleType/> />() )
 		{
 			return el.deref().src_loc;
 		}
-		else if( ust::is_same_type</ ElementT, ust::box</RawPointerType/> />() )
+		else static_if( ust::is_same_type</ ElementT, ust::box</RawPointerType/> />() )
 		{
 			return el.deref().src_loc;
 		}
-		else if( ust::is_same_type</ ElementT, ust::box</GeneratorType/> />() )
+		else static_if( ust::is_same_type</ ElementT, ust::box</GeneratorType/> />() )
 		{
 			return el.deref().src_loc;
 		}
@@ -73,7 +73,7 @@ fn GetSrcLoc( BlockElement& block_element ) : SrcLoc
 		{
 			return GetSrcLoc(el);
 		}
-		else if( ust::is_same_type</ ElementT, ust::box</ScopeBlock/> />() )
+		else static_if( ust::is_same_type</ ElementT, ust::box</ScopeBlock/> />() )
 		{
 			return el.deref().src_loc;
 		}

@@ -24,7 +24,7 @@
 				safe{ ?b }
 			}
 		}
-		else if( typeinfo</ typeof(??e_result) />.is_tuple )
+		else static_if( typeinfo</ typeof(??e_result) />.is_tuple )
 		{
 			for( ?r<? & ?> ?m<? mut ?> ?var_name : ??e_result ) ?l<? label ?l ?>
 			?b

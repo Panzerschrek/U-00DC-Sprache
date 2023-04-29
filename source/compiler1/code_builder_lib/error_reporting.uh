@@ -50,19 +50,19 @@ fn PreprocessErrorArg( T& x ) : ust::string8
 	{
 		return x;
 	}
-	else if( ust::is_same_type</T, Type/>() )
+	else static_if( ust::is_same_type</T, Type/>() )
 	{
 		return x.ToString();
 	}
-	else if( typeinfo</T/>.is_array )
+	else static_if( typeinfo</T/>.is_array )
 	{
 		return ust::string8(x);
 	}
-	else if( ust::is_same_type</ T, ust::array_view_imut</char8/> />() )
+	else static_if( ust::is_same_type</ T, ust::array_view_imut</char8/> />() )
 	{
 		return ust::string8(x);
 	}
-	else if( ust::is_same_type</ T, Synt::ComplexName />() )
+	else static_if( ust::is_same_type</ T, Synt::ComplexName />() )
 	{
 		return ComplexNameToString(x);
 	}

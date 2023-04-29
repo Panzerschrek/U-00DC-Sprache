@@ -301,15 +301,15 @@ private:
 		{
 			result = syntax_analyzer.ParseExpression();
 		}
-		else if( ust::is_same_type</T, BlockElements/>() )
+		else static_if( ust::is_same_type</T, BlockElements/>() )
 		{
 			result = syntax_analyzer.ParseBlockElements();
 		}
-		else if( ust::is_same_type</T, ClassElements/>() )
+		else static_if( ust::is_same_type</T, ClassElements/>() )
 		{
 			result = syntax_analyzer.ParseClassBodyElements();
 		}
-		else if( ust::is_same_type</T, NamespaceElements/>() )
+		else static_if( ust::is_same_type</T, NamespaceElements/>() )
 		{
 			result = syntax_analyzer.ParseNamespaceBody( Lexem::Type::EndOfFile );
 		}
