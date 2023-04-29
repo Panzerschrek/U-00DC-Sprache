@@ -309,6 +309,8 @@ private:
 	std::vector<BlockElement> ParseBlockElements();
 	Block ParseBlock();
 
+	IfAlternativePtr ParseIfAlternative();
+
 	ClassKindAttribute TryParseClassKindAttribute();
 	std::vector<ComplexName> TryParseClassParentsList();
 	NonSyncTag TryParseNonSyncTag();
@@ -2358,39 +2360,15 @@ WithOperator SyntaxAnalyzer::ParseWithOperator()
 
 IfOperator SyntaxAnalyzer::ParseIfOperator()
 {
-	U_ASSERT( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::if_  || it_->text == Keywords::static_if_ ) );
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ );
 	IfOperator result( it_->src_loc );
 	NextLexem();
 
-	auto& branches= result.branches_;
-	branches.emplace_back( IfOperator::Branch{ ParseExpressionInBrackets(), ParseBlock() } );
+	result.condition= ParseExpressionInBrackets();
+	result.block= ParseBlock();
+	result.alternative= ParseIfAlternative();
+	result.end_src_loc= std::prev( it_ )->src_loc;
 
-	while( NotEndOfFile() )
-	{
-		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::else_ )
-		{
-			NextLexem();
-
-			// Optional if.
-			Expression condition;
-			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
-			{
-				NextLexem();
-
-				condition= ParseExpressionInBrackets();
-			}
-			// Block - common for "else" and "else if".
-
-			branches.emplace_back( IfOperator::Branch{ std::move(condition), ParseBlock() } );
-
-			if( std::get_if<EmptyVariant>( &branches.back().condition ) != nullptr )
-				break;
-		}
-		else
-			break;
-	}
-
-	result.end_src_loc_= std::prev( it_ )->src_loc;
 	return result;
 }
 
@@ -2399,7 +2377,12 @@ StaticIfOperator SyntaxAnalyzer::ParseStaticIfOperator()
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ );
 
 	StaticIfOperator result( it_->src_loc  );
-	result.if_operator_= ParseIfOperator();
+	NextLexem();
+
+	result.condition= ParseExpressionInBrackets();
+	result.block= ParseBlock();
+	result.alternative= ParseIfAlternative();
+
 	return result;
 }
 
@@ -2722,6 +2705,25 @@ Block SyntaxAnalyzer::ParseBlock()
 	ExpectLexem( Lexem::Type::BraceRight );
 
 	return block;
+}
+
+IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
+{
+	if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::else_ ) )
+		return nullptr;
+	NextLexem();
+
+	if( it_->type == Lexem::Type::BraceLeft )
+		return std::make_unique<IfAlternative>( ParseBlock() );
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
+		return std::make_unique<IfAlternative>( ParseIfOperator() );
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ )
+		return std::make_unique<IfAlternative>( ParseStaticIfOperator() );
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_coro_advance_ )
+		return std::make_unique<IfAlternative>( ParseIfCoroAdvanceOperator() );
+
+	PushErrorMessage();
+	return nullptr;
 }
 
 ClassKindAttribute SyntaxAnalyzer::TryParseClassKindAttribute()

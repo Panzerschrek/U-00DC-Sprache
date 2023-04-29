@@ -189,6 +189,15 @@ using BlockElement= std::variant<
 
 using BlockElements= std::vector<BlockElement>;
 
+using IfAlternative= std::variant<
+	Block,
+	IfOperator,
+	StaticIfOperator,
+	IfCoroAdvanceOperator
+	>;
+
+using IfAlternativePtr= std::unique_ptr<const IfAlternative>;
+
 using ClassElement= std::variant<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
@@ -715,24 +724,21 @@ struct WithOperator final : public SyntaxElementBase
 
 struct IfOperator final : public SyntaxElementBase
 {
-	struct Branch
-	{
-		// Condition - nullptr for last if.
-		Expression condition;
-		Block block;
-	};
-
 	IfOperator( const SrcLoc& start_src_loc );
 
-	std::vector<Branch> branches_; // else if()
-	SrcLoc end_src_loc_;
+	Expression condition;
+	Block block;
+	IfAlternativePtr alternative; // non-null if "else" branch exists.
+	SrcLoc end_src_loc;
 };
 
 struct StaticIfOperator final : public SyntaxElementBase
 {
 	StaticIfOperator( const SrcLoc& src_loc );
 
-	IfOperator if_operator_;
+	Expression condition;
+	Block block;
+	IfAlternativePtr alternative; // non-null if "else" branch exists.
 };
 
 struct IfCoroAdvanceOperator final : public SyntaxElementBase

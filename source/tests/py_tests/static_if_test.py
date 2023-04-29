@@ -27,7 +27,7 @@ def StaticIfDeclaration_Test2():
 		fn Foo()
 		{
 			static_if( true ) {}
-			else if( true ) {}
+			else static_if( true ) {}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -38,7 +38,7 @@ def StaticIfDeclaration_Test3():
 		fn Foo()
 		{
 			static_if( true ) {}
-			else if( true ) {}
+			else static_if( true ) {}
 			else {}
 		}
 	"""
@@ -67,7 +67,7 @@ def FalseBranchesSkipped_Test1():
 			{
 				var UnknownType invalid_variable= zero_init;
 			}
-			else if( true ) {}
+			else static_if( true ) {}
 			else
 			{
 				call_to_undefined_function( 5, unknown_variable );
