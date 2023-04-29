@@ -133,6 +133,8 @@
       } label block_end
    }
 
+Существуют также ``unsafe`` блоки.
+См. :ref:`unsafe-blocks`.
 
 ***************
 *Оператор with*
