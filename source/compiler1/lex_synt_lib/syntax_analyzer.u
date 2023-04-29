@@ -224,6 +224,7 @@ private:
 
 	fn ParseBlock( mut this ) : Block;
 	fn ParseBlockElements( mut this ) : BlockElements;
+	fn ParseIfAlternative( mut this ) : IfAlternativeNullablePtr;
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
 	fn ParseReturnOperator( mut this ) : ReturnOperator;
@@ -2060,6 +2061,35 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 	return move(block_elements);
 }
 
+fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
+{
+	if( !IsKeyword( it_.front(), Keyword::else_ ) )
+	{
+		return IfAlternativeNullablePtr();
+	}
+	NextLexem();
+
+	if( IsKeyword( it_.front(), Keyword::if_ ) )
+	{
+		return IfAlternativeNullablePtr( ParseIfOperator() );
+	}
+	if( IsKeyword( it_.front(), Keyword::static_if_ ) )
+	{
+		return IfAlternativeNullablePtr( ParseStaticIfOperator() );
+	}
+	if( IsKeyword( it_.front(), Keyword::if_coro_advance_ ) )
+	{
+		return IfAlternativeNullablePtr( ParseIfCoroAdvanceOperator() );
+	}
+	if( it_.front().lexem_type == Lexem::Type::BraceLeft )
+	{
+		return IfAlternativeNullablePtr( ParseBlock() );
+	}
+
+	PushErrorMessage();
+	return IfAlternativeNullablePtr();
+}
+
 fn SyntaxAnalyzer::ParseVariablesDeclaration( mut this ) : VariablesDeclaration
 {
 	var VariablesDeclaration mut variables_declaration{ .src_loc= it_.front().src_loc };
@@ -2202,52 +2232,21 @@ fn SyntaxAnalyzer::ParseYieldOperator( mut this ) : YieldOperator
 
 fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 {
+	if( !IsKeyword( it_.front(), Keyword::if_ ) )
+	{
+		PushErrorMessage();
+	}
 	auto start_src_loc= it_.front().src_loc;
-	NextLexem(); // "if" or "static_if"
+	NextLexem();
 
-	var IfOperator mut if_operator{ .src_loc= start_src_loc };
-
-	var IfOperator::Branch mut first_branch
+	var IfOperator mut if_operator
 	{
 		.src_loc= start_src_loc,
 		.condition= ParseExpressionInBrackets(),
-		.block( ParseBlock() )
+		.block(ParseBlock()),
+		.alternative= ParseIfAlternative(),
+		.end_src_loc= it_.front().src_loc,
 	};
-	if_operator.end_src_loc= first_branch.block.deref().end_src_loc;
-	if_operator.branches.push_back( move(first_branch) );
-
-	while( NotEndOfFile() )
-	{
-		auto else_src_loc= it_.front().src_loc;
-		if( !IsKeyword( it_.front(), Keyword::else_ ) )
-		{
-			break;
-		}
-		NextLexem();
-
-		// Optional if.
-		var Expression mut condition;
-		if( IsKeyword( it_.front(), Keyword::if_ ) )
-		{
-			NextLexem();
-			condition= ParseExpressionInBrackets();
-		}
-		// Block - common for "else" and "else if".
-
-		var IfOperator::Branch mut branch
-		{
-			.src_loc= else_src_loc,
-			.condition= move(condition),
-			.block( ParseBlock() )
-		};
-		if_operator.end_src_loc= branch.block.deref().end_src_loc;
-		if_operator.branches.push_back( move(branch) );
-
-		if( !if_operator.branches.back().condition.get</EmptyVariant/>().empty() )
-		{
-			break;
-		}
-	}
 
 	return move(if_operator);
 }
@@ -2258,12 +2257,18 @@ fn SyntaxAnalyzer::ParseStaticIfOperator( mut this ) : StaticIfOperator
 	{
 		PushErrorMessage();
 	}
+	auto start_src_loc= it_.front().src_loc;
+	NextLexem();
 
 	var StaticIfOperator mut static_if_operator
 	{
-		.src_loc= it_.front().src_loc,
-		.if_operator= ParseIfOperator()
+		.src_loc= start_src_loc,
+		.condition= ParseExpressionInBrackets(),
+		.block(ParseBlock()),
+		.alternative= ParseIfAlternative(),
+		.end_src_loc= it_.front().src_loc,
 	};
+
 	return move(static_if_operator);
 }
 
@@ -2304,6 +2309,7 @@ fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperato
 	ExpectLexem( Lexem::Type::BracketRight );
 
 	if_coro_advance_operator.block.deref()= ParseBlock();
+	if_coro_advance_operator.alternative= ParseIfAlternative();
 
 	return move(if_coro_advance_operator);
 }

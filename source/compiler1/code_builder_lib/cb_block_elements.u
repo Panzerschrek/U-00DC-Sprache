@@ -49,10 +49,24 @@ fn CodeBuilder::BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContex
 	return block_element_build_info;
 }
 
+fn CodeBuilder::BuildIfAlternative( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfAlternative& if_alternative ) : BlockElementBuildInfo
+{
+	variant_visit( &el : if_alternative )
+	{
+		return BuildBlockElement( names_scope, function_context, el );
+	}
+	halt;
+}
+
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo
 {
 	// Empty variant - legal element kind for C style "for" operator variables declaration part.
 	return BlockElementBuildInfo();
+}
+
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Block& block ) : BlockElementBuildInfo
+{
+	return BuildBlock( names_scope, function_context, block );
 }
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::box</Synt::ScopeBlock/>& scope_block_ptr ) : BlockElementBuildInfo
@@ -832,122 +846,102 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo
 {
-	var LLVMBasicBlockRef mut block_after_if= zero_init, mut next_condition_block= zero_init;
+	var LLVMBasicBlockRef if_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	var LLVMBasicBlockRef alternative_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 
-	unsafe
+	var ReferencesGraph mut references_graph_before_branching;
 	{
-		block_after_if= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
-		next_condition_block= LLVMCreateBasicBlockInContext( llvm_context_, g_null_string );
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-		// Break to first condition. We must push terminal instruction at end of current block.
-		LLVMBuildBr( function_context.llvm_ir_builder, next_condition_block );
-	}
-
-	var BlockElementBuildInfo mut block_element_build_info{ .have_terminal_instruction_inside= true };
-
-	var ust::vector</ReferencesGraph/> mut branches_references_graphs;
-
-	for( auto mut i= 0s; i < if_operator.branches.size(); ++i )
-	{
-		auto& branch= if_operator.branches[i];
-
-		var LLVMBasicBlockRef mut body_block= zero_init, current_condition_block= next_condition_block;
-		body_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
-
-		if( i + 1s < if_operator.branches.size() )
+		var VariableLite condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, if_operator.condition ).lock_imut().deref();
+		if( condition_expression.t != bool_type_ )
 		{
-			next_condition_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+			REPORT_ERROR( TypesMismatch,
+				names_scope,
+				Synt::GetSrcLoc( if_operator.condition ),
+				bool_type_,
+				condition_expression.t )
+
+			CallDestructorsForTopVariablesFrame( names_scope, function_context, if_operator.src_loc );
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, if_block ) );
 		}
 		else
 		{
-			next_condition_block= block_after_if;
+			auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
+			CallDestructorsForTopVariablesFrame( names_scope, function_context, if_operator.src_loc );
+
+			unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, if_block, alternative_block ) );
 		}
 
-		// Build condition block.
-		unsafe
-		{
-			LLVMAppendExistingBasicBlock( function_context.llvm_function, current_condition_block );
-			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, current_condition_block );
-		}
-
-		if( !branch.condition.get</Synt::EmptyVariant/>().empty() )
-		{
-			// Make empty condition block - move to it unconditional break to body.
-			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, body_block ) );
-		}
-		else
-		{
-			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-
-			var VariableLite condition_expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, branch.condition ).lock_imut().deref();
-			if( condition_expression.t != bool_type_ )
-			{
-				REPORT_ERROR( TypesMismatch,
-					names_scope,
-					Synt::GetSrcLoc( branch.condition ),
-					bool_type_,
-					condition_expression.t )
-
-				CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.src_loc );
-				unsafe( LLVMBuildBr( function_context.llvm_ir_builder, body_block ) );
-			}
-			else
-			{
-				auto condition_in_register= CreateMoveToLLVMRegisterInstruction( condition_expression, function_context );
-				CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.src_loc );
-
-				unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, condition_in_register, body_block, next_condition_block ) );
-			}
-		}
-
-		// Make body block code.
-		unsafe
-		{
-			LLVMAppendExistingBasicBlock( function_context.llvm_function, body_block );
-			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, body_block );
-		}
-
-		auto mut references_graph_before_this_branch= function_context.references_graph;
-
-		auto info= BuildBlock( names_scope, function_context, branch.block.deref() );
-		if( !info.have_terminal_instruction_inside )
-		{
-			branches_references_graphs.push_back( take(function_context.references_graph) );
-			block_element_build_info.have_terminal_instruction_inside= false;
-			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
-		}
-
-		function_context.references_graph= move(references_graph_before_this_branch);
+		references_graph_before_branching= function_context.references_graph;
 	}
 
-	if( if_operator.branches.back().condition.get</Synt::EmptyVariant/>().empty() )
+	// If block.
+	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, if_block ) );
+	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, if_block ) );
+	var BlockElementBuildInfo if_block_build_info= BuildBlock( names_scope, function_context, if_operator.block.deref() );
+
+	var ust::vector</ReferencesGraph/> mut references_graphs;
+
+	var BlockElementBuildInfo mut block_element_build_info;
+
+	if( if_operator.alternative.empty() )
 	{
+		if( !if_block_build_info.have_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, alternative_block ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		references_graphs.push_back( move(references_graph_before_branching) );
+
 		block_element_build_info.have_terminal_instruction_inside= false;
-		branches_references_graphs.push_back( function_context.references_graph );
-	}
 
-	if( block_element_build_info.have_terminal_instruction_inside )
-	{
-		// Normally we should "delete block_after_if", but llvm-c interface have no such method.
-		unsafe
-		{
-			LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if );
-			LLVMDeleteBasicBlock( block_after_if );
-		}
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
 	}
 	else
 	{
-		unsafe
+		var LLVMBasicBlockRef block_after_if= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+		if( !if_block_build_info.have_terminal_instruction_inside )
 		{
-			LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if );
-			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_if );
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		// Else block.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, alternative_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, alternative_block ) );
+
+		function_context.references_graph= move(references_graph_before_branching);
+		var BlockElementBuildInfo alternative_block_build_info= BuildIfAlternative( names_scope, function_context, if_operator.alternative.try_deref() );
+
+		if( !alternative_block_build_info.have_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_if ) );
+			references_graphs.push_back( function_context.references_graph );
+		}
+
+		block_element_build_info.have_terminal_instruction_inside=
+			if_block_build_info.have_terminal_instruction_inside && alternative_block_build_info.have_terminal_instruction_inside;
+
+		if( !block_element_build_info.have_terminal_instruction_inside )
+		{
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
+			unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_if ) );
+		}
+		else
+		{
+			unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_if ) );
+			unsafe( LLVMDeleteBasicBlock( block_after_if ) );
 		}
 	}
 
-	if( !branches_references_graphs.empty() )
+	if( !references_graphs.empty() )
 	{
-		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( branches_references_graphs.range(), names_scope, if_operator.end_src_loc );
+		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs.range(), names_scope, if_operator.end_src_loc );
 	}
 
 	return block_element_build_info;
@@ -955,24 +949,20 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticIfOperator& static_if_operator ) : BlockElementBuildInfo
 {
-	foreach( &branch : static_if_operator.if_operator.branches )
 	{
-		if( !branch.condition.get</Synt::EmptyVariant/>().empty() )
+		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
+		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
+		if( EvaluateBoolConstantExpression( names_scope, function_context, static_if_operator.condition ) )
 		{
-			// Last unconditional "else"
-			return BuildBlock( names_scope, function_context, branch.block.deref() );
+			return BuildBlock( names_scope, function_context, static_if_operator.block.deref() );
 		}
-		else
-		{
-			var VariablesFrameHolder temp_variables_frame_hodler(function_context);
-			auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
-			if( EvaluateBoolConstantExpression( names_scope, function_context, branch.condition ) )
-			{
-				return BuildBlock( names_scope, function_context, branch.block.deref() );
-			}
 
-			CallDestructorsForTopVariablesFrame( names_scope, function_context, branch.src_loc );
-		}
+		CallDestructorsForTopVariablesFrame( names_scope, function_context, static_if_operator.end_src_loc );
+	}
+
+	if_var( &alternative : static_if_operator.alternative )
+	{
+		return BuildIfAlternative( names_scope, function_context, alternative );
 	}
 
 	return BlockElementBuildInfo();

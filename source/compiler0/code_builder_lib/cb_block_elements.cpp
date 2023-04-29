@@ -1331,7 +1331,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		variables_state_before_branching= function_context.variables_state;
 	}
 
-	// If  block.
+	// If block.
 	function_context.function->getBasicBlockList().push_back( if_block );
 	function_context.llvm_ir_builder.SetInsertPoint( if_block );
 	const BlockBuildInfo if_block_build_info= BuildBlock( names, function_context, if_operator.block );
@@ -1365,6 +1365,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			branches_variable_states.push_back( function_context.variables_state );
 		}
 
+		// Else block.
 		function_context.function->getBasicBlockList().push_back( alternative_block );
 		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
 
