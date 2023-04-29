@@ -156,3 +156,21 @@ def IfAlternatives_Test4():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def IfAlternatives_Test5():
+	# Append "if_coro_advance if" to "static_if"
+	c_program_text= """
+		fn Foo()
+		{
+			static_if( true )
+			{
+			}
+			else if_coro_advance( x : unknown_coro )
+			{
+				call_unknown_function();
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )

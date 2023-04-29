@@ -1268,7 +1268,6 @@ def IfCoroAdvance_VariablesStateMerge_Test0():
 	assert( HaveError( errors_list, "ConditionalMove", 10 ) )
 
 
-
 def IfCoroAdvance_VariablesStateMerge_Test1():
 	c_program_text= """
 		fn generator SomeGen() : i32;
@@ -1289,3 +1288,64 @@ def IfCoroAdvance_VariablesStateMerge_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ReferenceProtectionError", 14 ) )
+
+
+def IfCoroAdvance_VariablesStateMerge_Test2():
+	c_program_text= """
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto mut gen= SomeGen();
+			if_coro_advance( v : gen )
+			{
+			}
+			else
+			{
+				move(x);
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConditionalMove", 13 ) )
+
+
+def IfCoroAdvance_VariablesStateMerge_Test3():
+	c_program_text= """
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			auto mut gen= SomeGen();
+			if_coro_advance( v : gen )
+			{
+				move(x);
+			}
+			else
+			{
+				move(x);
+			} // Ok, move "x" in all branches
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def IfCoroAdvance_VariablesStateMerge_Test4():
+	c_program_text= """
+		fn generator SomeGen() : i32;
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			if_coro_advance( v : gen )
+			{
+			}
+			else
+			{
+				// generator lock doesn't exist in this branch. So, we can do anything with generator variable here.
+				move(gen);
+				return;
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
