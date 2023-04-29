@@ -2425,6 +2425,9 @@ IfCoroAdvanceOperator SyntaxAnalyzer::ParseIfCoroAdvanceOperator()
 	ExpectLexem( Lexem::Type::BracketRight );
 
 	result.block= ParseBlock();
+	result.alternative= ParseIfAlternative();
+	result.end_src_loc= std::prev( it_ )->src_loc;
+
 	return result;
 }
 

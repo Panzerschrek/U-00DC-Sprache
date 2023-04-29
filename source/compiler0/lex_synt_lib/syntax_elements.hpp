@@ -750,6 +750,8 @@ struct IfCoroAdvanceOperator final : public SyntaxElementBase
 	std::string variable_name;
 	Expression expression;
 	Block block;
+	IfAlternativePtr alternative;
+	SrcLoc end_src_loc;
 };
 
 struct SingleExpressionOperator final : public SyntaxElementBase
