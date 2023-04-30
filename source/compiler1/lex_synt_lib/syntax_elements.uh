@@ -451,7 +451,7 @@ struct IfOperator
 {
 	SrcLoc src_loc;
 	Expression condition;
-	ust::box_nullable</Block/> block;
+	ust::box</Block/> block;
 	IfAlternativeNullablePtr alternative;
 	SrcLoc end_src_loc;
 }
@@ -460,7 +460,7 @@ struct StaticIfOperator
 {
 	SrcLoc src_loc;
 	Expression condition;
-	ust::box_nullable</Block/> block;
+	ust::box</Block/> block;
 	IfAlternativeNullablePtr alternative;
 	SrcLoc end_src_loc;
 }
@@ -472,7 +472,7 @@ struct IfCoroAdvanceOperator
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ust::string8 variable_name;
 	Expression expression;
-	ust::box_nullable</Block/> block;
+	ust::box</Block/> block;
 	IfAlternativeNullablePtr alternative;
 	SrcLoc end_src_loc;
 }

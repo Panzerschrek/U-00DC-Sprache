@@ -2111,17 +2111,17 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 						return IfAlternativeNullablePtr();
 					}
 				}
-				if_var( &mut if_operator :  block_element.get</IfOperator/>() )
+				if( !block_element.get</IfOperator/>().empty() )
 				{
-					return IfAlternativeNullablePtr( take(if_operator) );
+					return IfAlternativeNullablePtr( ust::variant_try_move</IfOperator/>( move(block_element) ) );
 				}
-				if_var( &mut static_if_operator :  block_element.get</StaticIfOperator/>() )
+				if( !block_element.get</StaticIfOperator/>().empty() )
 				{
-					return IfAlternativeNullablePtr( take(static_if_operator) );
+					return IfAlternativeNullablePtr( ust::variant_try_move</StaticIfOperator/>( move(block_element) ) );
 				}
-				if_var( &mut if_coro_advance_operator :  block_element.get</IfCoroAdvanceOperator/>() )
+				if( !block_element.get</IfCoroAdvanceOperator/>().empty() )
 				{
-					return IfAlternativeNullablePtr( take(if_coro_advance_operator) );
+					return IfAlternativeNullablePtr( ust::variant_try_move</IfCoroAdvanceOperator/>( move(block_element) ) );
 				}
 
 				var LexSyntError mut error( it_.front().src_loc, "Syntax error - unexpected element kind for \"if\" alternative." );
@@ -2359,7 +2359,7 @@ fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperato
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
-	if_coro_advance_operator.block.reset( ParseBlock() );
+	if_coro_advance_operator.block.deref()= ParseBlock();
 	if_coro_advance_operator.alternative= ParseIfAlternative();
 	if_coro_advance_operator.end_src_loc= GetPrevSrcLoc();
 

@@ -880,7 +880,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	// If block.
 	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, if_block ) );
 	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, if_block ) );
-	var BlockElementBuildInfo if_block_build_info= BuildBlock( names_scope, function_context, if_operator.block.try_deref() );
+	var BlockElementBuildInfo if_block_build_info= BuildBlock( names_scope, function_context, if_operator.block.deref() );
 
 	var ust::vector</ReferencesGraph/> mut references_graphs;
 
@@ -954,7 +954,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 		if( EvaluateBoolConstantExpression( names_scope, function_context, static_if_operator.condition ) )
 		{
-			return BuildBlock( names_scope, function_context, static_if_operator.block.try_deref() );
+			return BuildBlock( names_scope, function_context, static_if_operator.block.deref() );
 		}
 
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, static_if_operator.end_src_loc );
@@ -1214,7 +1214,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 
 		// Reuse names scope of the variable for the block.
-		if_block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance_operator.block.try_deref().elements.range() );
+		if_block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance_operator.block.deref().elements.range() );
 		if( !if_block_build_info.have_terminal_instruction_inside )
 		{
 			// Destroy coro result variable.
