@@ -730,7 +730,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 		{
 			src_type= fundamental_type;
 		}
-		if_var( &enum_type : src_var.t.GetEnumType() )
+		else if_var( &enum_type : src_var.t.GetEnumType() )
 		{
 			src_type= enum_type.lock_imut().deref().underlaying_type;
 		}

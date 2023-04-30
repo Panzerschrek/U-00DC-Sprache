@@ -1289,7 +1289,7 @@ fn NamesScope::ToString( this ) : ust::string8
 					{
 						res+= t.ToString();
 					}
-					if_var( &v_ptr : arg.get</VariablePtr/>() )
+					else if_var( &v_ptr : arg.get</VariablePtr/>() )
 					{
 						auto lock= v_ptr.lock_imut();
 						auto& v= lock.deref();

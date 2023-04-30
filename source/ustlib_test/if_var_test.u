@@ -15,6 +15,7 @@ fn nomangle main() : i32
 			has_value= true;
 			halt if( value != 66 );
 		}
+		else { halt; }
 		halt if( !has_value );
 	}
 	{
@@ -88,6 +89,7 @@ fn nomangle main() : i32
 			halt if( value != -14 );
 			value= 741; // Must modify content of box
 		}
+		else { halt; }
 		halt if( !has_value );
 		halt if( opt.try_deref() != 741 );
 	}

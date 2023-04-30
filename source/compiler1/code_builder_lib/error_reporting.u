@@ -66,7 +66,7 @@ fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8
 	var ust::string8 mut result;
 	if_var( &empty_start : complex_name.start.get</Synt::EmptyVariant/>() )
 	{}
-	if_var( &name : complex_name.start.get</ust::string8/>() )
+	else if_var( &name : complex_name.start.get</ust::string8/>() )
 	{
 		result+= name;
 	}
@@ -78,8 +78,7 @@ fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8
 			result+= "::";
 			result+= name;
 		}
-
-		if_var( &template_args : tail_component.get</ ust::box</Synt::TemplateArgs/> />() )
+		else if_var( &template_args : tail_component.get</ ust::box</Synt::TemplateArgs/> />() )
 		{
 			result+= "</";
 			result+= "..."; // TODO - print real args

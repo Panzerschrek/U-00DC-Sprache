@@ -535,9 +535,8 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 	if_var( &fundamental_type : t.GetFundamentalType() )
 	{
 		mangler_state.Push( EncodeFundamentalTypeName( fundamental_type.fundamental_type ) );
-		return;
 	}
-	if_var( &array_type : t.GetArrayType() )
+	else if_var( &array_type : t.GetArrayType() )
 	{
 		ADD_NODE( mangler_state )
 		{
@@ -546,9 +545,8 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 			mangler_state.Push( "_" );
 			EncodeTypeName( mangler_state, array_type.element_type );
 		}
-		return;
 	}
-	if_var( &tuple_type : t.GetTupleType() )
+	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		ADD_NODE( mangler_state )
 		{
@@ -564,9 +562,8 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 			}
 			mangler_state.Push( "E" );
 		}
-		return;
 	}
-	if_var( &class_type_ptr : t.GetClassType() )
+	else if_var( &class_type_ptr : t.GetClassType() )
 	{
 		auto class_lock= class_type_ptr.lock_imut();
 		auto& class_type= class_lock.deref();
@@ -616,37 +613,32 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 		{
 			EncodeNestedName( mangler_state, class_members_ref.GetThisNamespaceName(), class_members_ref.GetParent().try_lock_imut().deref() );
 		}
-		return;
 	}
-	if_var( &enum_type : t.GetEnumType() )
+	else if_var( &enum_type : t.GetEnumType() )
 	{
 		auto enum_members= enum_type.lock_imut().deref().names_scope;
 		auto enum_members_lock= enum_members.lock_imut();
 		auto& enum_members_ref= enum_members_lock.deref();
 
 		EncodeNestedName( mangler_state, enum_members_ref.GetThisNamespaceName(), enum_members_ref.GetParent().try_lock_imut().deref() );
-		return;
 	}
-	if_var( &raw_poiter_type : t.GetRawPointerType() )
+	else if_var( &raw_poiter_type : t.GetRawPointerType() )
 	{
 		ADD_NODE( mangler_state )
 		{
 			mangler_state.Push( "P" );
 			EncodeTypeName( mangler_state, raw_poiter_type.element_type );
 		}
-		return;
 	}
-	if_var( &function_pointer_type : t.GetFunctionPointerType() )
+	else if_var( &function_pointer_type : t.GetFunctionPointerType() )
 	{
 		ADD_NODE( mangler_state )
 		{
 			mangler_state.Push( "P" );
 			EncodeFunctionTypeName( mangler_state, function_pointer_type.function_type );
 		}
-		return;
 	}
-
-	halt;
+	else { halt; }
 }
 
 fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& function_type )
@@ -794,7 +786,7 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 		{
 			EncodeTypeName( mangler_state, t );
 		}
-		if_var( &v_ptr : arg.get</VariablePtr/>() )
+		else if_var( &v_ptr : arg.get</VariablePtr/>() )
 		{
 			auto lock= v_ptr.lock_imut();
 			auto& v= lock.deref();
@@ -807,7 +799,7 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 			{
 				is_signed= IsSignedInteger( fundamental_type.fundamental_type );
 			}
-			if_var( enum_type : v.t.GetEnumType() )
+			else if_var( enum_type : v.t.GetEnumType() )
 			{
 				is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlaying_type.fundamental_type );
 			}

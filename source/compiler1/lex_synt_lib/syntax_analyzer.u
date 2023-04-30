@@ -611,9 +611,11 @@ fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression
 			binary_operators_chain.back().operator= binary_operator;
 			binary_operators_chain.back().src_loc= it_.front().src_loc;
 			NextLexem();
-			continue;
 		}
-		break;
+		else
+		{
+			break;
+		}
 	}
 
 	return FoldBinaryOperatorsChain( binary_operators_chain.range() );

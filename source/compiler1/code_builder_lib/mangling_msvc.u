@@ -190,9 +190,8 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 	if_var( &fundamental_type : t.GetFundamentalType() )
 	{
 		mangler_state.PushElement( GetFundamentalTypeNameMSVC( fundamental_type.fundamental_type ) );
-		return;
 	}
-	if_var( &array_type : t.GetArrayType() )
+	else if_var( &array_type : t.GetArrayType() )
 	{
 		// Process nested arrays.
 		var ust::vector</u64/> mut dimensions;
@@ -217,10 +216,8 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 			EncodeNumber( mangler_state, dimension_size );
 		}
 		EncodeType( mangler_state, element_type );
-
-		return;
 	}
-	if_var( &tuple_type : t.GetTupleType() )
+	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		// Encode tuples, like type templates.
 		var TemplateArgsFinished mut template_args;
@@ -243,10 +240,8 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 		}
 		// Finish class name.
 		mangler_state.PushElement( g_terminator );
-
-		return;
 	}
-	if_var( &class_type_ptr : t.GetClassType() )
+	else if_var( &class_type_ptr : t.GetClassType() )
 	{
 		auto class_lock= class_type_ptr.lock_imut();
 		auto& class_type= class_lock.deref();
@@ -291,9 +286,8 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 		{
 			EncodeFullName( mangler_state, class_members_ref.GetThisNamespaceName().range(), class_members_ref.GetParent().try_lock_imut().deref() );
 		}
-		return;
 	}
-	if_var( &enum_type : t.GetEnumType() )
+	else if_var( &enum_type : t.GetEnumType() )
 	{
 		mangler_state.PushElement( "W" );
 		mangler_state.PushElement( "4" ); // Underlaying type. Modern MSVC uses "4" for all enums independent on underlaying type.
@@ -302,25 +296,21 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 		auto enum_members_lock= enum_members.lock_imut();
 		auto& enum_members_ref= enum_members_lock.deref();
 		EncodeFullName( mangler_state, enum_members_ref.GetThisNamespaceName().range(), enum_members_ref.GetParent().try_lock_imut().deref() );
-		return;
 	}
-	if_var( &raw_poiter_type : t.GetRawPointerType() )
+	else if_var( &raw_poiter_type : t.GetRawPointerType() )
 	{
 		mangler_state.PushElement( g_pointer_prefix );
 		mangler_state.PushElement( pointer_types_modifier_.range() );
 		mangler_state.PushElement( g_mut_prefix );
 		EncodeType( mangler_state, raw_poiter_type.element_type );
-		return;
 	}
-	if_var( &function_pointer_type : t.GetFunctionPointerType() )
+	else if_var( &function_pointer_type : t.GetFunctionPointerType() )
 	{
 		mangler_state.PushElement( g_pointer_prefix );
 		mangler_state.PushElement( "6" );
 		EncodeFunctionType( mangler_state, function_pointer_type.function_type, true );
-		return;
 	}
-
-	halt;
+	else { halt; }
 }
 
 fn ManglerMSVC::EncodeFunctionType( this, ManglerStateMSVC &mut mangler_state, FunctionType& function_type, bool encode_full_type )
@@ -495,7 +485,7 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerStateMSVC &mut mangler_state, T
 
 			EncodeType( mangler_state, t );
 		}
-		if_var( &v_ptr : template_arg.get</VariablePtr/>() )
+		else if_var( &v_ptr : template_arg.get</VariablePtr/>() )
 		{
 			auto lock= v_ptr.lock_imut();
 			auto& v= lock.deref();
@@ -517,7 +507,7 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerStateMSVC &mut mangler_state, T
 			{
 				is_signed= IsSignedInteger( fundamental_type.fundamental_type );
 			}
-			if_var( enum_type : v.t.GetEnumType() )
+			else if_var( enum_type : v.t.GetEnumType() )
 			{
 				is_signed= IsSignedInteger( enum_type.lock_imut().deref().underlaying_type.fundamental_type );
 			}

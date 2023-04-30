@@ -684,7 +684,7 @@ fn CodeBuilder::ResolveValue(
 				{
 					class_= class_type;
 				}
-				if_var( &enum_type : lock.deref().GetEnumType() )
+				else if_var( &enum_type : lock.deref().GetEnumType() )
 				{
 					enum_= enum_type;
 				}
@@ -699,7 +699,7 @@ fn CodeBuilder::ResolveValue(
 					{
 						class_= class_type;
 					}
-					if_var( &enum_type : t.GetEnumType() )
+					else if_var( &enum_type : t.GetEnumType() )
 					{
 						enum_= enum_type;
 					}
@@ -713,7 +713,7 @@ fn CodeBuilder::ResolveValue(
 					{
 						class_= class_type;
 					}
-					if_var( &enum_type : t.GetEnumType() )
+					else if_var( &enum_type : t.GetEnumType() )
 					{
 						enum_= enum_type;
 					}
@@ -3117,7 +3117,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 					: LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, l, r, g_null_string ) );
 		}
 	}
-	if_var( &array_type : t.GetArrayType() )
+	else if_var( &array_type : t.GetArrayType() )
 	{
 		unsafe
 		{
@@ -3134,7 +3134,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 			return res;
 		}
 	}
-	if_var( &tuple_type : t.GetTupleType() )
+	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		unsafe
 		{
@@ -3151,7 +3151,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 			return res;
 		}
 	}
-	if_var( &class_type : t.GetClassType() )
+	else if_var( &class_type : t.GetClassType() )
 	{
 		if( !class_type.lock_imut().deref().is_equality_comparable )
 		{
@@ -3198,8 +3198,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 
 		halt; // Operator not found - wtf?
 	}
-
-	halt; // Unhandled type kind
+	else { halt; }
 }
 
 fn CodeBuilder::CreateLifetimeStart( this,  FunctionContext &mut function_context, LLVMValueRef llvm_value )
