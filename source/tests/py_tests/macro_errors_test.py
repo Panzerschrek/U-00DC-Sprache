@@ -272,3 +272,93 @@ def MacroErrorsTest_MacroUniqueIdentifierForbiddentInResultBlockSequenceSeparato
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].text.find( "unexpected lexem" ) != -1 )
 	assert( errors_list[0].text.find( "nooo" ) != -1 )
+
+
+def MacroErrorsTest_SingleElementRequiredForIfAlternative_Test0():
+	c_program_text= """
+		?macro <? ELSE_END:block ?> -> <? {} {} ?>
+
+		fn Foo( bool cond )
+		{
+			if( cond ) {}
+			else ELSE_END
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( "expected exactly one element " ) != -1 )
+
+
+def MacroErrorsTest_SingleElementRequiredForIfAlternative_Test1():
+	c_program_text= """
+		?macro <? ELSE_END:block ?> -> <? if(true){} var i32 x= 0; ?>
+
+		fn Foo( bool cond )
+		{
+			if( cond ) {}
+			else ELSE_END
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( "expected exactly one element" ) != -1 )
+
+
+def MacroErrorsTest_UnexpectedElementForIfAlternative_Test0():
+	c_program_text= """
+		?macro <? RETURN_END:block ?> -> <? return; ?>
+
+		fn Foo( bool cond )
+		{
+			if( cond ) {}
+			else RETURN_END
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( " unexpected element kind" ) != -1 )
+
+
+def MacroErrorsTest_UnexpectedElementForIfAlternative_Test1():
+	c_program_text= """
+		?macro <? DEF_ZERO:block ?> -> <? var i32 x= 0; ?>
+
+		fn Foo( bool cond )
+		{
+			if( cond ) {}
+			else DEF_ZERO
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( " unexpected element kind" ) != -1 )
+
+
+def MacroErrorsTest_WrongBlockForIfAlternative_Test0():
+	c_program_text= """
+		?macro <? END_BLOCK:block ?> -> <? unsafe{} ?>
+
+		fn Foo( bool cond )
+		{
+			if( cond ) {}
+			else END_BLOCK
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( " expected block without safety modifiers and labels" ) != -1 )
+
+
+def MacroErrorsTest_WrongBlockForIfAlternative_Test1():
+	c_program_text= """
+		?macro <? END_BLOCK:block ?> -> <? {} label some_label ?>
+
+		fn Foo( bool cond )
+		{
+			if( cond ) {}
+			else END_BLOCK
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_syntax_errors(c_program_text) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].text.find( " expected block without safety modifiers and labels" ) != -1 )

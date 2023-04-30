@@ -2089,6 +2089,54 @@ fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 		return IfAlternativeNullablePtr( ParseBlock() );
 	}
 
+	if( it_.front().lexem_type == Lexem::Type::Identifier )
+	{
+		if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Block ) )
+		{
+			var BlockElements mut expanded_block_elements= ExpandMacro</BlockElements/>( macro );
+			if( expanded_block_elements.size() == 1s )
+			{
+				var BlockElement mut block_element= expanded_block_elements.pop_back();
+				if_var( &mut scope_block_ptr : block_element.get</ust::box</ScopeBlock/>/>() )
+				{
+					var ScopeBlock &mut scope_block= scope_block_ptr.deref();
+					if( scope_block.safety == ScopeBlock::Safety::None && scope_block.label_.empty() )
+					{
+						return IfAlternativeNullablePtr( take( scope_block.block ) );
+					}
+					else
+					{
+						var LexSyntError mut error( it_.front().src_loc, "Syntax error - expected block without safety modifiers and labels for \"if\" alternative." );
+						errors_.push_back( move(error) );
+						return IfAlternativeNullablePtr();
+					}
+				}
+				if_var( &mut if_operator :  block_element.get</IfOperator/>() )
+				{
+					return IfAlternativeNullablePtr( take(if_operator) );
+				}
+				if_var( &mut static_if_operator :  block_element.get</StaticIfOperator/>() )
+				{
+					return IfAlternativeNullablePtr( take(static_if_operator) );
+				}
+				if_var( &mut if_coro_advance_operator :  block_element.get</IfCoroAdvanceOperator/>() )
+				{
+					return IfAlternativeNullablePtr( take(if_coro_advance_operator) );
+				}
+
+				var LexSyntError mut error( it_.front().src_loc, "Syntax error - unexpected element kind for \"if\" alternative." );
+				errors_.push_back( move(error) );
+				return IfAlternativeNullablePtr();
+			}
+			else
+			{
+				var LexSyntError mut error( it_.front().src_loc, "Syntax error - expected exactly one element in expansion of macro for \"if\" alternative." );
+				errors_.push_back( move(error) );
+				return IfAlternativeNullablePtr();
+			}
+		}
+	}
+
 	PushErrorMessage();
 	return IfAlternativeNullablePtr();
 }
@@ -2311,7 +2359,7 @@ fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperato
 
 	ExpectLexem( Lexem::Type::BracketRight );
 
-	if_coro_advance_operator.block.deref()= ParseBlock();
+	if_coro_advance_operator.block.reset( ParseBlock() );
 	if_coro_advance_operator.alternative= ParseIfAlternative();
 	if_coro_advance_operator.end_src_loc= GetPrevSrcLoc();
 

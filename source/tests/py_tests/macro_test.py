@@ -392,6 +392,32 @@ def StartBlockLexemAsRepeatedIndicator_Test1():
 	tests_lib.build_program( c_program_text )
 
 
+def MacroForIfAlternative_Test0():
+	c_program_text= """
+		?macro <? EMPTY_BLOCK:block ?> -> <? {} ?>
+
+		fn Foo( bool cond )
+		{
+			if( cond ) {}
+			else EMPTY_BLOCK
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MacroForIfAlternative_Test1():
+	c_program_text= """
+		?macro <? TRUE_IF:block ?> -> <? if( true ) {} else { halt; } ?>
+
+		fn Foo( bool cond )
+		{
+			if( cond ) {}
+			else TRUE_IF
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def UniqueMacroLexem_Test0():
 	c_program_text= """
 	?macro <? forN:block ( ?n:expr ) ?b:block ?>

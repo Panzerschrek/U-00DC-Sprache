@@ -2725,6 +2725,55 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_coro_advance_ )
 		return std::make_unique<IfAlternative>( ParseIfCoroAdvanceOperator() );
 
+	// Accept macros, producing single element of if-laternative kind, as if-alternative.
+	if( it_->type == Lexem::Type::Identifier )
+	{
+		if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
+		{
+			std::vector<BlockElement> macro_elements= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements );
+			if( macro_elements.size() == 1 )
+			{
+				BlockElement& element= macro_elements.front();
+				if( const auto block= std::get_if<ScopeBlock>( &element ) )
+				{
+					if( block->safety_ == ScopeBlock::Safety::None && block->label == std::nullopt )
+					{
+						// Accept only pure blocks without safety modifiers and labels.
+						return std::make_unique<IfAlternative>( std::move(*block) );
+					}
+					else
+					{
+						LexSyntError error_message;
+						error_message.src_loc= it_->src_loc;
+						error_message.text= "Syntax error - expected block without safety modifiers and labels for \"if\" alternative.";
+						error_messages_.push_back( std::move(error_message) );
+						return nullptr;
+					}
+				}
+				if( const auto if_operator= std::get_if<IfOperator>( &element ) )
+					return std::make_unique<IfAlternative>( std::move(*if_operator) );
+				if( const auto static_if_operator= std::get_if<StaticIfOperator>( &element ) )
+					return std::make_unique<IfAlternative>( std::move(*static_if_operator) );
+				if( const auto if_coro_advance_operator= std::get_if<IfCoroAdvanceOperator>( &element ) )
+					return std::make_unique<IfAlternative>( std::move(*if_coro_advance_operator) );
+
+				LexSyntError error_message;
+				error_message.src_loc= it_->src_loc;
+				error_message.text= "Syntax error - unexpected element kind for \"if\" alternative.";
+				error_messages_.push_back( std::move(error_message) );
+				return nullptr;
+			}
+			else
+			{
+				LexSyntError error_message;
+				error_message.src_loc= it_->src_loc;
+				error_message.text= "Syntax error - expected exactly one element in expansion of macro for \"if\" alternative.";
+				error_messages_.push_back( std::move(error_message) );
+				return nullptr;
+			}
+		}
+	}
+
 	PushErrorMessage();
 	return nullptr;
 }
