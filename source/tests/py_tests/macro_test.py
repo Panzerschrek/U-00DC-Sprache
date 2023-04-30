@@ -120,6 +120,25 @@ def MacroExpansion_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def MacroExpansion_Test6():
+	# if_alternative element
+	c_program_text= """
+	?macro <? MY_IF:block ?else_branch:opt<? else ?alt:if_alternative  ?> ?> ->
+	<?
+		if( false ) {}
+		?else_branch<? ?alt ?>
+	?>
+
+	fn Foo()
+	{
+		MY_IF
+		MY_IF else if( true ) {}
+		MY_IF else static_if( false ) {}
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ExpandMacroWhileExpandingMacro_Test0():
 	c_program_text= """
 	?macro <? FiveTimes:block ?b:block ?>  ->  <? ?b ?b ?b ?b ?b ?>

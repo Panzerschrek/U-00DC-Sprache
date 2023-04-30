@@ -224,6 +224,7 @@ private:
 
 	fn ParseBlock( mut this ) : Block;
 	fn ParseBlockElements( mut this ) : BlockElements;
+	fn TryParseIfAlternative( mut this ) : IfAlternativeNullablePtr;
 	fn ParseIfAlternative( mut this ) : IfAlternativeNullablePtr;
 	fn ParseVariablesDeclaration( mut this ) : VariablesDeclaration;
 	fn ParseAutoVariableDeclaration( mut this ) : AutoVariableDeclaration;
@@ -2064,14 +2065,19 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 	return move(block_elements);
 }
 
+fn SyntaxAnalyzer::TryParseIfAlternative( mut this ) : IfAlternativeNullablePtr
+{
+	if( IsKeyword( it_.front(), Keyword::else_ ) )
+	{
+		NextLexem();
+		return ParseIfAlternative();
+	}
+
+	return IfAlternativeNullablePtr();
+}
+
 fn SyntaxAnalyzer::ParseIfAlternative( mut this ) : IfAlternativeNullablePtr
 {
-	if( !IsKeyword( it_.front(), Keyword::else_ ) )
-	{
-		return IfAlternativeNullablePtr();
-	}
-	NextLexem();
-
 	if( IsKeyword( it_.front(), Keyword::if_ ) )
 	{
 		return IfAlternativeNullablePtr( ParseIfOperator() );
@@ -2295,7 +2301,7 @@ fn SyntaxAnalyzer::ParseIfOperator( mut this ) : IfOperator
 		.src_loc= start_src_loc,
 		.condition= ParseExpressionInBrackets(),
 		.block(ParseBlock()),
-		.alternative= ParseIfAlternative(),
+		.alternative= TryParseIfAlternative(),
 		.end_src_loc= GetPrevSrcLoc(),
 	};
 
@@ -2316,7 +2322,7 @@ fn SyntaxAnalyzer::ParseStaticIfOperator( mut this ) : StaticIfOperator
 		.src_loc= start_src_loc,
 		.condition= ParseExpressionInBrackets(),
 		.block(ParseBlock()),
-		.alternative= ParseIfAlternative(),
+		.alternative= TryParseIfAlternative(),
 		.end_src_loc= GetPrevSrcLoc(),
 	};
 
@@ -2360,7 +2366,7 @@ fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperato
 	ExpectLexem( Lexem::Type::BracketRight );
 
 	if_coro_advance_operator.block.deref()= ParseBlock();
-	if_coro_advance_operator.alternative= ParseIfAlternative();
+	if_coro_advance_operator.alternative= TryParseIfAlternative();
 	if_coro_advance_operator.end_src_loc= GetPrevSrcLoc();
 
 	return move(if_coro_advance_operator);
@@ -3381,6 +3387,7 @@ fn SyntaxAnalyzer::ParseMacroMatchBlock( mut this ) : Macro::MatchElements
 			else if( element_type == "ty"    ) { match_element.kind= Macro::MatchElementKind::Typename; }
 			else if( element_type == "expr"  ) { match_element.kind= Macro::MatchElementKind::Expression; }
 			else if( element_type == "block" ) { match_element.kind= Macro::MatchElementKind::Block; }
+			else if( element_type == "if_alternative" ) { match_element.kind= Macro::MatchElementKind::IfAlternative; }
 			else if( element_type == "opt"   )
 			{
 				ExpectLexem( Lexem::Type::MacroBracketLeft );
@@ -3691,6 +3698,10 @@ fn SyntaxAnalyzer::MatchMacroBlock( mut this, Macro::MatchElements& match_elemen
 		else if( match_element.kind == Macro::MatchElementKind::Block )
 		{
 			ParseBlock();
+		}
+		else if( match_element.kind == Macro::MatchElementKind::IfAlternative )
+		{
+			ParseIfAlternative();
 		}
 		else if( match_element.kind == Macro::MatchElementKind::Optional )
 		{

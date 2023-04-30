@@ -309,6 +309,7 @@ private:
 	std::vector<BlockElement> ParseBlockElements();
 	Block ParseBlock();
 
+	IfAlternativePtr TryParseIfAlternative();
 	IfAlternativePtr ParseIfAlternative();
 
 	ClassKindAttribute TryParseClassKindAttribute();
@@ -573,6 +574,8 @@ Macro::MatchElements SyntaxAnalyzer::ParseMacroMatchBlock()
 				element.kind= Macro::MatchElementKind::Expression;
 			else if( element_type_str == "block" )
 				element.kind= Macro::MatchElementKind::Block;
+			else if( element_type_str == "if_alternative" )
+				element.kind= Macro::MatchElementKind::IfAlternative;
 			else if( element_type_str == "opt" )
 				element.kind= Macro::MatchElementKind::Optional;
 			else if( element_type_str == "rep" )
@@ -2366,7 +2369,7 @@ IfOperator SyntaxAnalyzer::ParseIfOperator()
 
 	result.condition= ParseExpressionInBrackets();
 	result.block= ParseBlock();
-	result.alternative= ParseIfAlternative();
+	result.alternative= TryParseIfAlternative();
 	result.end_src_loc= std::prev( it_ )->src_loc;
 
 	return result;
@@ -2381,7 +2384,7 @@ StaticIfOperator SyntaxAnalyzer::ParseStaticIfOperator()
 
 	result.condition= ParseExpressionInBrackets();
 	result.block= ParseBlock();
-	result.alternative= ParseIfAlternative();
+	result.alternative= TryParseIfAlternative();
 
 	return result;
 }
@@ -2425,7 +2428,7 @@ IfCoroAdvanceOperator SyntaxAnalyzer::ParseIfCoroAdvanceOperator()
 	ExpectLexem( Lexem::Type::BracketRight );
 
 	result.block= ParseBlock();
-	result.alternative= ParseIfAlternative();
+	result.alternative= TryParseIfAlternative();
 	result.end_src_loc= std::prev( it_ )->src_loc;
 
 	return result;
@@ -2710,12 +2713,19 @@ Block SyntaxAnalyzer::ParseBlock()
 	return block;
 }
 
+IfAlternativePtr SyntaxAnalyzer::TryParseIfAlternative()
+{
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::else_ )
+	{
+		NextLexem();
+		return ParseIfAlternative();
+	}
+
+	return nullptr;
+}
+
 IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 {
-	if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::else_ ) )
-		return nullptr;
-	NextLexem();
-
 	if( it_->type == Lexem::Type::BraceLeft )
 		return std::make_unique<IfAlternative>( ParseBlock() );
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
@@ -3777,6 +3787,10 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 
 		case Macro::MatchElementKind::Block:
 			ParseBlock();
+			break;
+
+		case Macro::MatchElementKind::IfAlternative:
+			ParseIfAlternative();
 			break;
 
 		case Macro::MatchElementKind::Optional:

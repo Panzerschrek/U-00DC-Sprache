@@ -28,6 +28,7 @@ struct Macro
 		Typename,
 		Expression,
 		Block,
+		IfAlternative,
 		Optional,
 		Repeated,
 	};
