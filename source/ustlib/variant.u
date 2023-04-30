@@ -228,12 +228,55 @@ public:
 		return false;
 	}
 
+public: // Methods for internal usage.
+
+	// After this call destructor should not be called.
+	// Halts, if variant doesn't contain value of specified type.
+	template</ type T />
+	fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	try_move_impl( mut this ) unsafe : T
+	{
+		auto mut cur_index= 0s;
+		for( & element : typeinfo</Y/>.elements_list )
+		{
+			static_if( is_same_type</ typeof(element.type)::src_type, T />() )
+			{
+				if( cur_index == size_type(index_) )
+				{
+					unsafe
+					{
+						var T mut result= uninitialized;
+						memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>( result ), cast_ref_unsafe</byte8/>( storage_ ), typeinfo</T/>.size_of );
+						return move(result);
+					}
+				}
+			}
+			else
+			{
+				++cur_index;
+			}
+		}
+		halt; // Variant contains other type.
+	}
+
 private:
 	aligned_storage</
 		variant_impl::get_max_tuple_element_size</Y/>(),
 		variant_impl::get_max_tuple_element_alignment</Y/>()
 		/> storage_;
 	u8 index_;
+}
+
+// Try to move value out of variant. Halts, if variant doesn't contain value of specified type.
+// This is free function, because variant value needs to be destroyed after this call.
+// It is recommended to move variant value while valling this function.
+template</ type T, type Y />
+fn enable_if( variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+variant_try_move( variant</Y/> mut v ) : T
+{
+	var T mut res= unsafe( v.try_move_impl</T/>() );
+	unsafe( move_into_nowhere( move(v) ) );
+	return move(res);
 }
 
 namespace variant_impl
