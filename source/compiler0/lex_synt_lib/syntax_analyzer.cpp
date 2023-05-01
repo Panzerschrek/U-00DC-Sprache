@@ -2735,7 +2735,7 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_coro_advance_ )
 		return std::make_unique<IfAlternative>( ParseIfCoroAdvanceOperator() );
 
-	// Accept macros, producing single element of if-laternative kind, as if-alternative.
+	// Accept macros, producing single element of if-alternative kind, as if-alternative.
 	if( it_->type == Lexem::Type::Identifier )
 	{
 		if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )

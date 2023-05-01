@@ -1298,9 +1298,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::IfOperator& if_operator )
 {
-	BlockBuildInfo if_operator_blocks_build_info;
-	if_operator_blocks_build_info.have_terminal_instruction_inside= true;
-
 	llvm::BasicBlock* const if_block= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* const alternative_block= llvm::BasicBlock::Create( llvm_context_ );
 
