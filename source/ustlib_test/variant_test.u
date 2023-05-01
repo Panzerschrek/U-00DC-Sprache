@@ -1,5 +1,6 @@
 //##success_test
 import "../ustlib/variant.u"
+import "../ustlib/box.u"
 import "../ustlib/string.u"
 
 class S
@@ -244,6 +245,15 @@ fn nomangle main() : i32
 		halt if( 5.0f == v1 );
 		halt if( ust::string8() == v5 );
 		halt if( 33 == v11 );
+	}
+	{ // variant_try_move helper
+
+		var ust::variant</ tup[ ust::box</i32/>, f32 ] /> mut v( 0.25f );
+		halt if( v.get</f32/>().empty() );
+
+		var f32 x= ust::variant_try_move</f32/>( move(v) );
+		halt if( x != 0.25f );
+
 	}
 	return 0;
 }

@@ -15,6 +15,21 @@
 namespace U
 {
 
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfAlternative(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::IfAlternative& if_alterntative )
+{
+	return
+		std::visit(
+			[&]( const auto& t )
+			{
+				debug_info_builder_->SetCurrentLocation( t.src_loc_, function_context );
+				return BuildBlockElementImpl( names, function_context, t );
+			},
+			if_alterntative );
+}
+
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -28,6 +43,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
 				return BuildBlockElementImpl( names, function_context, t );
 			},
 			block_element );
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::Block& block )
+{
+	return BuildBlock( names, function_context, block );
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
@@ -1275,112 +1298,98 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::IfOperator& if_operator )
 {
-	U_ASSERT( !if_operator.branches_.empty() );
+	llvm::BasicBlock* const if_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const alternative_block= llvm::BasicBlock::Create( llvm_context_ );
 
-	BlockBuildInfo if_operator_blocks_build_info;
-	if_operator_blocks_build_info.have_terminal_instruction_inside= true;
+	ReferencesGraph variables_state_before_branching= function_context.variables_state;
 
-	// TODO - optimize this method. Make less basic blocks.
-	//
-
-	llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
-
-	llvm::BasicBlock* next_condition_block= llvm::BasicBlock::Create( llvm_context_ );
-	// Break to first condition. We must push terminal instruction at end of current block.
-	function_context.llvm_ir_builder.CreateBr( next_condition_block );
-
-	ReferencesGraph variables_state_before_if= function_context.variables_state;
-	std::vector<ReferencesGraph> bracnhes_variables_state;
-
-	for( uint32_t i= 0u; i < if_operator.branches_.size(); i++ )
 	{
-		const Synt::IfOperator::Branch& branch= if_operator.branches_[i];
-
-		llvm::BasicBlock* const body_block= llvm::BasicBlock::Create( llvm_context_ );
-		llvm::BasicBlock* const current_condition_block= next_condition_block;
-
-		if( i + 1u < if_operator.branches_.size() )
-			next_condition_block= llvm::BasicBlock::Create( llvm_context_ );
-		else
-			next_condition_block= block_after_if;
-
-		// Build condition block.
-		function_context.function->getBasicBlockList().push_back( current_condition_block );
-		function_context.llvm_ir_builder.SetInsertPoint( current_condition_block );
-
-		if( std::get_if<Synt::EmptyVariant>(&branch.condition) != nullptr )
+		const StackVariablesStorage temp_variables_storage( function_context );
+		const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( if_operator.condition, names, function_context );
+		if( condition_expression->type != bool_type_ )
 		{
-			U_ASSERT( i + 1u == if_operator.branches_.size() );
+			REPORT_ERROR( TypesMismatch,
+				names.GetErrors(),
+				Synt::GetExpressionSrcLoc( if_operator.condition ),
+				bool_type_,
+				condition_expression->type );
 
-			// Make empty condition block - move to it unconditional break to body.
-			function_context.llvm_ir_builder.CreateBr( body_block );
+			// Create instruction even in case of error, because we needs to store basic blocs somewhere.
+			function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), if_block, alternative_block );
 		}
 		else
 		{
-			const StackVariablesStorage temp_variables_storage( function_context );
-			const VariablePtr condition_expression= BuildExpressionCodeEnsureVariable( branch.condition, names, function_context );
-			if( condition_expression->type != bool_type_ )
-			{
-				REPORT_ERROR( TypesMismatch,
-					names.GetErrors(),
-					Synt::GetExpressionSrcLoc( branch.condition ),
-					bool_type_,
-					condition_expression->type );
+			llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
+			CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( if_operator.condition ) );
 
-				// Create instruction even in case of error, because we needs to store basic blocs somewhere.
-				function_context.llvm_ir_builder.CreateCondBr( llvm::UndefValue::get( fundamental_llvm_types_.bool_ ), body_block, next_condition_block );
-			}
-			else
-			{
-				llvm::Value* const condition_in_register= CreateMoveToLLVMRegisterInstruction( *condition_expression, function_context );
-				CallDestructors( temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch.condition ) );
-
-				function_context.llvm_ir_builder.CreateCondBr( condition_in_register, body_block, next_condition_block );
-			}
+			function_context.llvm_ir_builder.CreateCondBr( condition_in_register, if_block, alternative_block );
 		}
 
-		// Make body block code.
-		function_context.function->getBasicBlockList().push_back( body_block );
-		function_context.llvm_ir_builder.SetInsertPoint( body_block );
+		variables_state_before_branching= function_context.variables_state;
+	}
 
-		ReferencesGraph variables_state_before_this_branch= function_context.variables_state;
+	// If block.
+	function_context.function->getBasicBlockList().push_back( if_block );
+	function_context.llvm_ir_builder.SetInsertPoint( if_block );
+	const BlockBuildInfo if_block_build_info= BuildBlock( names, function_context, if_operator.block );
 
-		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, branch.block );
+	llvm::SmallVector<ReferencesGraph, 2> branches_variable_states;
+
+	BlockBuildInfo block_build_info;
+
+	if( if_operator.alternative == nullptr )
+	{
+		if( !if_block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.llvm_ir_builder.CreateBr( alternative_block );
+			branches_variable_states.push_back( function_context.variables_state );
+		}
+
+		branches_variable_states.push_back( std::move( variables_state_before_branching ) );
+
+		block_build_info.have_terminal_instruction_inside= false;
+
+		function_context.function->getBasicBlockList().push_back( alternative_block );
+		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
+	}
+	else
+	{
+		llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_ );
+
+		if( !if_block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.llvm_ir_builder.CreateBr( block_after_if );
+			branches_variable_states.push_back( function_context.variables_state );
+		}
+
+		// Else block.
+		function_context.function->getBasicBlockList().push_back( alternative_block );
+		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
+
+		function_context.variables_state= std::move( variables_state_before_branching );
+		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names, function_context, *if_operator.alternative );
+
+		if( !alternative_block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.llvm_ir_builder.CreateBr( block_after_if );
+			branches_variable_states.push_back( function_context.variables_state );
+		}
+
+		block_build_info.have_terminal_instruction_inside=
+			if_block_build_info.have_terminal_instruction_inside && alternative_block_build_info.have_terminal_instruction_inside;
 
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
-			// Create break instruction, only if block does not contains terminal instructions.
-			if_operator_blocks_build_info.have_terminal_instruction_inside= false;
-			function_context.llvm_ir_builder.CreateBr( block_after_if );
-			bracnhes_variables_state.push_back( function_context.variables_state );
+			function_context.function->getBasicBlockList().push_back( block_after_if );
+			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
 		}
-
-		function_context.variables_state= variables_state_before_this_branch;
+		else
+			delete block_after_if;
 	}
 
-	U_ASSERT( next_condition_block == block_after_if );
+	function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names.GetErrors(), if_operator.end_src_loc );
 
-	if( std::get_if<Synt::EmptyVariant>( &if_operator.branches_.back().condition ) == nullptr ) // Have no unconditional "else" at end.
-	{
-		bracnhes_variables_state.push_back( function_context.variables_state );
-		if_operator_blocks_build_info.have_terminal_instruction_inside= false;
-	}
-
-	if( !bracnhes_variables_state.empty() )
-		function_context.variables_state= MergeVariablesStateAfterIf( bracnhes_variables_state, names.GetErrors(), if_operator.end_src_loc_ );
-	else
-		function_context.variables_state= std::move(variables_state_before_if);
-
-	// Block after if code.
-	if( if_operator_blocks_build_info.have_terminal_instruction_inside )
-		delete block_after_if;
-	else
-	{
-		function_context.function->getBasicBlockList().push_back( block_after_if );
-		function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
-	}
-
-	return if_operator_blocks_build_info;
+	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
@@ -1388,28 +1397,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::StaticIfOperator& static_if_operator )
 {
-	const auto& branches= static_if_operator.if_operator_.branches_;
-	for( uint32_t i= 0u; i < branches.size(); i++ )
 	{
-		const auto& branch= branches[i];
-		if( std::get_if<Synt::EmptyVariant>(&branch.condition) == nullptr )
-		{
-			const Synt::Expression& condition= branch.condition;
-			const SrcLoc condition_src_loc= Synt::GetExpressionSrcLoc( condition );
+		const StackVariablesStorage temp_variables_storage( function_context );
+		if( EvaluateBoolConstantExpression( names, function_context, static_if_operator.condition ) )
+			return BuildBlock( names, function_context, static_if_operator.block ); // Ok, this static if produdes block.
 
-			const StackVariablesStorage temp_variables_storage( function_context );
-
-			if( EvaluateBoolConstantExpression( names, function_context, condition ) )
-				return BuildBlock( names, function_context, branch.block ); // Ok, this static if produdes block.
-
-			CallDestructors( temp_variables_storage, names, function_context, condition_src_loc );
-		}
-		else
-		{
-			U_ASSERT( i == branches.size() - 1u );
-			return BuildBlock( names, function_context, branch.block );
-		}
+		CallDestructors( temp_variables_storage, names, function_context, static_if_operator.src_loc_ );
 	}
+
+	if( static_if_operator.alternative != nullptr )
+		return BuildIfAlternative( names, function_context, *static_if_operator.alternative );
 
 	return BlockBuildInfo();
 }
@@ -1447,8 +1444,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.variables_state.TryAddLink( coro_expr, coro_expr_lock, names.GetErrors(), if_coro_advance.src_loc_ );
 	variables_storage.RegisterVariable( coro_expr_lock );
 
-	llvm::SmallVector<ReferencesGraph, 2> branches_variable_states;
-	branches_variable_states.push_back( function_context.variables_state );
+	ReferencesGraph variables_state_before_branching= function_context.variables_state;
 
 	llvm::Value* const coro_handle=
 		function_context.llvm_ir_builder.CreateLoad( llvm::PointerType::get( llvm_context_, 0 ), coro_expr->llvm_value, false, "coro_handle" );
@@ -1470,10 +1466,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{ coro_handle },
 		"coro_done" );
 
-	const auto end_block= llvm::BasicBlock::Create( llvm_context_, "after_if_coro_advance" );
+	const auto alternative_block= llvm::BasicBlock::Create( llvm_context_, "after_if_coro_advance" );
 
 	const auto not_done_block= llvm::BasicBlock::Create( llvm_context_, "coro_not_done" );
-	function_context.llvm_ir_builder.CreateCondBr( done, end_block, not_done_block );
+	function_context.llvm_ir_builder.CreateCondBr( done, alternative_block, not_done_block );
 
 	// Not done block.
 	function_context.function->getBasicBlockList().push_back( not_done_block );
@@ -1489,7 +1485,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		"coro_done_after_resume" );
 
 	const auto not_done_after_resume_block= llvm::BasicBlock::Create( llvm_context_, "not_done_after_resume" );
-	function_context.llvm_ir_builder.CreateCondBr( done_after_resume, end_block, not_done_after_resume_block );
+	function_context.llvm_ir_builder.CreateCondBr( done_after_resume, alternative_block, not_done_after_resume_block );
 
 	// Not done after resume block.
 	function_context.function->getBasicBlockList().push_back( not_done_after_resume_block );
@@ -1512,6 +1508,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			},
 			"promise" );
 
+	BlockBuildInfo if_block_build_info;
 	{
 		StackVariablesStorage coro_result_variables_storage( function_context );
 
@@ -1633,25 +1630,81 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		variable_names_scope.AddName( if_coro_advance.variable_name, Value( variable_reference, if_coro_advance.src_loc_ ) );
 
 		// Reuse variable names scope for block.
-		const BlockBuildInfo block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance.block.elements_ );
-		if( !block_build_info.have_terminal_instruction_inside )
+		if_block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance.block.elements_ );
+		if( !if_block_build_info.have_terminal_instruction_inside )
 		{
-			// Destroy all temporaries.
+			// Destroy coro result variable.
 			CallDestructors( coro_result_variables_storage, variable_names_scope, function_context, if_coro_advance.src_loc_ );
-			function_context.llvm_ir_builder.CreateBr( end_block );
-			branches_variable_states.push_back( function_context.variables_state );
 		}
 	}
 
-	// End block.
-	function_context.function->getBasicBlockList().push_back( end_block );
-	function_context.llvm_ir_builder.SetInsertPoint( end_block );
+	llvm::SmallVector<ReferencesGraph, 2> branches_variable_states;
 
-	function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names.GetErrors(), if_coro_advance.block.end_src_loc_ );
+	BlockBuildInfo block_build_info;
 
-	CallDestructors( variables_storage, names, function_context, if_coro_advance.src_loc_ );
+	if( if_coro_advance.alternative == nullptr )
+	{
+		if( !if_block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.llvm_ir_builder.CreateBr( alternative_block );
+			branches_variable_states.push_back( function_context.variables_state );
+		}
+		branches_variable_states.push_back( std::move( variables_state_before_branching ) );
 
-	return BlockBuildInfo();
+		block_build_info.have_terminal_instruction_inside= false;
+
+		function_context.function->getBasicBlockList().push_back( alternative_block );
+		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
+
+		// Destroy temporarie in coroutine expression.
+		CallDestructors( variables_storage, names, function_context, if_coro_advance.end_src_loc );
+	}
+	else
+	{
+		alternative_block->setName( "if_coro_advance_else" );
+		llvm::BasicBlock* const block_after_if= llvm::BasicBlock::Create( llvm_context_, "after_if_coro_advance" );
+
+		if( !if_block_build_info.have_terminal_instruction_inside )
+		{
+			// Destroy temporarie in coroutine expression.
+			CallDestructors( variables_storage, names, function_context, if_coro_advance.end_src_loc );
+
+			function_context.llvm_ir_builder.CreateBr( block_after_if );
+			branches_variable_states.push_back( function_context.variables_state );
+		}
+
+		// Else block.
+		function_context.function->getBasicBlockList().push_back( alternative_block );
+		function_context.llvm_ir_builder.SetInsertPoint( alternative_block );
+
+		function_context.variables_state= std::move( variables_state_before_branching );
+
+		// Destroy temporarie in coroutine expression.
+		CallDestructors( variables_storage, names, function_context, if_coro_advance.end_src_loc );
+
+		const BlockBuildInfo alternative_block_build_info= BuildIfAlternative( names, function_context, *if_coro_advance.alternative );
+
+		if( !alternative_block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.llvm_ir_builder.CreateBr( block_after_if );
+			branches_variable_states.push_back( function_context.variables_state );
+		}
+
+		block_build_info.have_terminal_instruction_inside=
+			if_block_build_info.have_terminal_instruction_inside && alternative_block_build_info.have_terminal_instruction_inside;
+
+		if( !block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.function->getBasicBlockList().push_back( block_after_if );
+			function_context.llvm_ir_builder.SetInsertPoint( block_after_if );
+		}
+		else
+			delete block_after_if;
+	}
+
+	function_context.variables_state= MergeVariablesStateAfterIf( branches_variable_states, names.GetErrors(), if_coro_advance.end_src_loc );
+
+	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(

@@ -66,7 +66,7 @@
    {
        return 0; // Скомпилируется или эта ветвь
    }
-   else if( typeinfo</size_type/>.size_of == 4s )
+   else static_if( typeinfo</size_type/>.size_of == 4s )
    {
        return 1; // Или эта
    }
@@ -76,6 +76,63 @@
        static_assert(false); // но компиляция упадёт на этом ассерте
        halt;
    }
+
+************************
+*Комбинирование условий*
+************************
+
+Условные операторы различных видов - ``if``, ``static_if`` а также :ref:`if-coro-advance` можно комбинировать друг с другом любым образом.
+После ``else`` любого из этих операторов может следовать любой другой из этих операторов.
+Фактически добавление любого из условных операторов после ``else`` аналогично добавлению блока после ``else``, содержащего внутри этот оператор.
+
+К примеру, такой код:
+
+.. code-block:: u_spr
+
+   static_if( static_condition )
+   {
+       Action0();
+   }
+   else if( dynamic_condition )
+   {
+       Action1();
+   }
+   else if_coro_advance( x : some_gen )
+   {
+       Action2(x);
+   }
+   else
+   {
+       Action3(x);
+   }
+
+Эквивалентен такому коду:
+
+.. code-block:: u_spr
+
+   static_if( static_condition )
+   {
+       Action0();
+   }
+   else
+   {
+       if( dynamic_condition )
+       {
+           Action1()
+       }
+       else
+       {
+           if_coro_advance( x : some_gen )
+           {
+               Action2(x);
+           }
+           else
+           {
+               Action3(x);
+           }
+       }
+   }
+
 
 ************
 *Цикл while*

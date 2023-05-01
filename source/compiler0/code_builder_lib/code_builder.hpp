@@ -695,7 +695,9 @@ private:
 	TypeinfoPartVariable BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
 
 	// Block elements
-	BlockBuildInfo BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::BlockElement& blocK_element );
+	BlockBuildInfo BuildIfAlternative( NamesScope& names, FunctionContext& function_context, const Synt::IfAlternative& if_alterntative );
+	BlockBuildInfo BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::BlockElement& block_element );
+	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::Block& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::ScopeBlock& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::VariablesDeclaration& variables_declaration );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::AutoVariableDeclaration& auto_variable_declaration );

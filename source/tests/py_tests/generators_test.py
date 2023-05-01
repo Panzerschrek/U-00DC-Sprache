@@ -10,20 +10,16 @@ def SimpleGenerator_Test0():
 		fn Foo()
 		{
 			auto mut gen= SimpleGen();
-			auto mut advanced= false;
 			if_coro_advance( x : gen )
 			{
-				advanced= true;
 				halt if( x != 42 );
 			}
-			halt if( !advanced );
+			else { halt; }
 
-			advanced= false;
 			if_coro_advance( x : gen )
 			{
-				advanced= true;
+				halt;
 			}
-			halt if( advanced );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -41,36 +37,28 @@ def SimpleGenerator_Test1():
 		fn Foo()
 		{
 			auto mut gen= SimpleGen();
-			auto mut advanced= false;
 			if_coro_advance( x : gen )
 			{
-				advanced= true;
 				halt if( x != 24 );
 			}
-			halt if( !advanced );
+			else{ halt; }
 
-			advanced= false;
 			if_coro_advance( x : gen )
 			{
-				advanced= true;
 				halt if( x != 13 );
 			}
-			halt if( !advanced );
+			else{ halt; }
 
-			advanced= false;
 			if_coro_advance( x : gen )
 			{
-				advanced= true;
 				halt if( x != -678 );
 			}
-			halt if( !advanced );
+			else{ halt; }
 
-			advanced= false;
 			if_coro_advance( x : gen )
 			{
-				advanced= true;
+				halt;
 			}
-			halt if( advanced );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -96,9 +84,8 @@ def SimpleGenerator_Test2():
 				{
 					halt if( x != num_advanced * num_advanced );
 					++num_advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( num_advanced != 12u );
 		}
@@ -145,9 +132,8 @@ def SimpleGenerator_Test4():
 					halt if( s.x != num_advanced );
 					halt if( s.x2 != u64(num_advanced) * u64(num_advanced) );
 					++num_advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( num_advanced != 16u );
 		}
@@ -175,9 +161,8 @@ def SimpleGenerator_Test5():
 				{
 					halt if( x != 100000u / (num_advanced + 1u) );
 					++num_advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( num_advanced != x );
 		}
@@ -216,9 +201,8 @@ def SimpleGenerator_Test6():
 				{
 					halt if( val != (num_advanced / size[0]) * (num_advanced % size[0]) );
 					++num_advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( num_advanced != size[0] * size[1] );
 		}
@@ -590,9 +574,8 @@ def VoidTypeGenerator_Test0():
 				{
 					halt if( x != void() );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 3 );
 		}
@@ -620,9 +603,8 @@ def VoidTypeGenerator_Test1():
 				{
 					halt if( x != void() );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 4 );
 		}
@@ -652,9 +634,8 @@ def GeneratorMethod_Test0():
 				{
 					halt if( x != (advanced + 1) * 7 );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 3 );
 		}
@@ -688,9 +669,8 @@ def GeneratorMethod_Test1():
 				{
 					halt if( x != 42 + 1 + advanced );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 4 );
 		}
@@ -725,9 +705,8 @@ def GeneratorMethod_Test2():
 				{
 					halt if( x != 17 + 3 * advanced );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 10 );
 		}
@@ -762,9 +741,8 @@ def GeneratorMethod_Test3():
 				{
 					halt if( x != 777 + (1 + advanced) * 10 );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 4 );
 		}
@@ -797,9 +775,8 @@ def GeneratorsNonTrivialUsage_Test0():
 				{
 					halt if( x != advanced * advanced );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 5 );
 		}
@@ -837,9 +814,8 @@ def GeneratorsNonTrivialUsage_Test1():
 				{
 					halt if( x != advanced * advanced * advanced );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 5 );
 		}
@@ -866,9 +842,8 @@ def GeneratorsNonTrivialUsage_Test2():
 				{
 					halt if( x != -advanced );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 4 );
 		}
@@ -945,9 +920,8 @@ def GeneratorsNonTrivialUsage_Test4():
 				if_coro_advance( x : gen )
 				{
 					yield x * x;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 		}
 		fn generator GenSquareNumbersPairs( u32 max ) : u32
@@ -959,9 +933,8 @@ def GeneratorsNonTrivialUsage_Test4():
 				{
 					yield x * 2u + 0u;
 					yield x * 2u + 1u;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 		}
 		fn Foo()
@@ -974,9 +947,8 @@ def GeneratorsNonTrivialUsage_Test4():
 				{
 					halt if( x != (advanced / 2u) * (advanced / 2u) * 2u + advanced % 2u );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 17u * 2u );
 		}
@@ -1008,13 +980,11 @@ def GeneratorsNonTrivialUsage_Test5():
 						if_coro_advance( x : width_gen )
 						{
 							yield x + y * width;
-							continue;
 						}
-						break;
+						else { break; }
 					}
-					continue;
 				}
-				break;
+				else { break; }
 			}
 		}
 		fn Foo()
@@ -1027,9 +997,8 @@ def GeneratorsNonTrivialUsage_Test5():
 				{
 					halt if( x != advanced );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 5u * 9u );
 		}
@@ -1071,9 +1040,8 @@ def GeneratorsNonTrivialUsage_Test6():
 				{
 					halt if( x != advanced );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 1u << 5u );
 		}
@@ -1108,16 +1076,14 @@ def GeneratorsNonTrivialUsage_Test7():
 						{
 							halt if( x != inner_advanced );
 							++inner_advanced;
-							continue;
 						}
-						break;
+						else { break; }
 					}
 					halt if( inner_advanced != advanced );
 
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( advanced != 6u );
 		}
@@ -1179,9 +1145,8 @@ def TemplateGenerator_Test0():
 				{
 					halt if( x != T(advanced) );
 					++advanced;
-					continue;
 				}
-				break;
+				else { break; }
 			}
 			halt if( T(advanced) != max );
 		}

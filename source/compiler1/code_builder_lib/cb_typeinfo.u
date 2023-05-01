@@ -323,21 +323,21 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		ADD_BOOL_FIELD( "is_bool"            , fundamental_type.fundamental_type == U_FundamentalType::bool_ )
 		ADD_BOOL_FIELD( "is_void"            , fundamental_type.fundamental_type == U_FundamentalType::void_ )
 	}
-	if_var( &array_type : t.GetArrayType() )
+	else if_var( &array_type : t.GetArrayType() )
 	{
 		ADD_TYPEINFO_FIELD( "element_type", array_type.element_type )
 		ADD_SIZE_FIELD( "element_count", array_type.element_count )
 	}
-	if_var( &tuple_type : t.GetTupleType() )
+	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		ADD_SIZE_FIELD( "element_count", tuple_type.element_types.size() )
 		ADD_LIST_FIELD( "elements_list", BuildTypeinfoTupleElementsList( root_namespace, tuple_type ) )
 	}
-	if_var( &pointer_type : t.GetRawPointerType() )
+	else if_var( &pointer_type : t.GetRawPointerType() )
 	{
 		ADD_TYPEINFO_FIELD( "element_type", pointer_type.element_type )
 	}
-	if_var( &function_pointer_type : t.GetFunctionPointerType() )
+	else if_var( &function_pointer_type : t.GetFunctionPointerType() )
 	{
 		var FunctionType& function_type= function_pointer_type.function_type;
 		ADD_TYPEINFO_FIELD( "return_type", function_type.return_type )
@@ -347,7 +347,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		ADD_BOOL_FIELD( "unsafe"                   , function_type.is_unsafe )
 		// SPRACHE_TODO - add also reference pollution.
 	}
-	if_var( &class_ptr : t.GetClassType() )
+	else if_var( &class_ptr : t.GetClassType() )
 	{
 		auto lock= class_ptr.lock_imut();
 		var ClassType& class_= lock.deref();
@@ -429,7 +429,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		}
 
 	}
-	if_var( &enum_ptr : t.GetEnumType() )
+	else if_var( &enum_ptr : t.GetEnumType() )
 	{
 		auto lock= enum_ptr.lock_imut();
 		var Enum& enum_= lock.deref();
@@ -438,6 +438,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		ADD_TYPEINFO_FIELD( "underlaying_type", enum_.underlaying_type )
 		ADD_LIST_FIELD( "elements_list", BuildTypeinfoEnumElementsList( root_namespace, enum_ptr ) )
 	}
+	else { halt; }
 
 	FinishTypeinfoClass( typeinfo_class, fields_llvm_types );
 

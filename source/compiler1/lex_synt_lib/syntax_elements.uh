@@ -449,23 +449,20 @@ struct DecrementOperator
 
 struct IfOperator
 {
-	struct Branch
-	{
-		SrcLoc src_loc;
-		// Condition - EmptyVariant for last if.
-		Expression condition;
-		ust::box</Block/> block;
-	}
-
 	SrcLoc src_loc;
+	Expression condition;
+	ust::box</Block/> block;
+	IfAlternativeNullablePtr alternative;
 	SrcLoc end_src_loc;
-	ust::vector</Branch/> branches;
 }
 
 struct StaticIfOperator
 {
 	SrcLoc src_loc;
-	IfOperator if_operator;
+	Expression condition;
+	ust::box</Block/> block;
+	IfAlternativeNullablePtr alternative;
+	SrcLoc end_src_loc;
 }
 
 struct IfCoroAdvanceOperator
@@ -476,6 +473,8 @@ struct IfCoroAdvanceOperator
 	ust::string8 variable_name;
 	Expression expression;
 	ust::box</Block/> block;
+	IfAlternativeNullablePtr alternative;
+	SrcLoc end_src_loc;
 }
 
 struct Label
@@ -596,6 +595,16 @@ type BlockElement = ust::variant</ tup[
 	] />;
 
 type BlockElements= ust::vector</BlockElement/>;
+
+type IfAlternative=
+	ust::variant</ tup[
+		Block,
+		IfOperator,
+		StaticIfOperator,
+		IfCoroAdvanceOperator
+	] />;
+
+type IfAlternativeNullablePtr= ust::box_nullable</IfAlternative/>;
 
 struct Function
 {

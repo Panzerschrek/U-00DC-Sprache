@@ -222,11 +222,12 @@ WithOperator::WithOperator( const SrcLoc& src_loc )
 
 IfOperator::IfOperator( const SrcLoc& start_src_loc )
 	: SyntaxElementBase(start_src_loc)
+	, block( start_src_loc )
 {}
 
 StaticIfOperator::StaticIfOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
-	, if_operator_(src_loc)
+	, block( src_loc )
 {}
 
 IfCoroAdvanceOperator::IfCoroAdvanceOperator( const SrcLoc& src_loc )

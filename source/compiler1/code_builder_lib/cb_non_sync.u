@@ -120,11 +120,8 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 
 				var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
-				auto mut is_non_sync_expression= false;
 				if_var( &non_sync_expression : expression.get</Synt::NonSyncExpression/>() )
 				{
-					is_non_sync_expression= true;
-
 					var Type dependent_type= PrepareType( class_parent_scope, function_context, non_sync_expression.type_name );
 					if( GetTypeNonSyncImpl( prev_types_stack, dependent_type, names_scope, src_loc ) )
 					{
@@ -132,7 +129,7 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 						return true;
 					}
 				}
-				if( !is_non_sync_expression )
+				else
 				{
 					if( EvaluateBoolConstantExpression( class_parent_scope, function_context, expression ) )
 					{

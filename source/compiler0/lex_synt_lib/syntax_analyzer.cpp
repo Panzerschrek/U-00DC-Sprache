@@ -309,6 +309,9 @@ private:
 	std::vector<BlockElement> ParseBlockElements();
 	Block ParseBlock();
 
+	IfAlternativePtr TryParseIfAlternative();
+	IfAlternativePtr ParseIfAlternative();
+
 	ClassKindAttribute TryParseClassKindAttribute();
 	std::vector<ComplexName> TryParseClassParentsList();
 	NonSyncTag TryParseNonSyncTag();
@@ -571,6 +574,8 @@ Macro::MatchElements SyntaxAnalyzer::ParseMacroMatchBlock()
 				element.kind= Macro::MatchElementKind::Expression;
 			else if( element_type_str == "block" )
 				element.kind= Macro::MatchElementKind::Block;
+			else if( element_type_str == "if_alternative" )
+				element.kind= Macro::MatchElementKind::IfAlternative;
 			else if( element_type_str == "opt" )
 				element.kind= Macro::MatchElementKind::Optional;
 			else if( element_type_str == "rep" )
@@ -2358,39 +2363,15 @@ WithOperator SyntaxAnalyzer::ParseWithOperator()
 
 IfOperator SyntaxAnalyzer::ParseIfOperator()
 {
-	U_ASSERT( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::if_  || it_->text == Keywords::static_if_ ) );
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ );
 	IfOperator result( it_->src_loc );
 	NextLexem();
 
-	auto& branches= result.branches_;
-	branches.emplace_back( IfOperator::Branch{ ParseExpressionInBrackets(), ParseBlock() } );
+	result.condition= ParseExpressionInBrackets();
+	result.block= ParseBlock();
+	result.alternative= TryParseIfAlternative();
+	result.end_src_loc= std::prev( it_ )->src_loc;
 
-	while( NotEndOfFile() )
-	{
-		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::else_ )
-		{
-			NextLexem();
-
-			// Optional if.
-			Expression condition;
-			if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
-			{
-				NextLexem();
-
-				condition= ParseExpressionInBrackets();
-			}
-			// Block - common for "else" and "else if".
-
-			branches.emplace_back( IfOperator::Branch{ std::move(condition), ParseBlock() } );
-
-			if( std::get_if<EmptyVariant>( &branches.back().condition ) != nullptr )
-				break;
-		}
-		else
-			break;
-	}
-
-	result.end_src_loc_= std::prev( it_ )->src_loc;
 	return result;
 }
 
@@ -2399,7 +2380,12 @@ StaticIfOperator SyntaxAnalyzer::ParseStaticIfOperator()
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ );
 
 	StaticIfOperator result( it_->src_loc  );
-	result.if_operator_= ParseIfOperator();
+	NextLexem();
+
+	result.condition= ParseExpressionInBrackets();
+	result.block= ParseBlock();
+	result.alternative= TryParseIfAlternative();
+
 	return result;
 }
 
@@ -2442,6 +2428,9 @@ IfCoroAdvanceOperator SyntaxAnalyzer::ParseIfCoroAdvanceOperator()
 	ExpectLexem( Lexem::Type::BracketRight );
 
 	result.block= ParseBlock();
+	result.alternative= TryParseIfAlternative();
+	result.end_src_loc= std::prev( it_ )->src_loc;
+
 	return result;
 }
 
@@ -2722,6 +2711,81 @@ Block SyntaxAnalyzer::ParseBlock()
 	ExpectLexem( Lexem::Type::BraceRight );
 
 	return block;
+}
+
+IfAlternativePtr SyntaxAnalyzer::TryParseIfAlternative()
+{
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::else_ )
+	{
+		NextLexem();
+		return ParseIfAlternative();
+	}
+
+	return nullptr;
+}
+
+IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
+{
+	if( it_->type == Lexem::Type::BraceLeft )
+		return std::make_unique<IfAlternative>( ParseBlock() );
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
+		return std::make_unique<IfAlternative>( ParseIfOperator() );
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ )
+		return std::make_unique<IfAlternative>( ParseStaticIfOperator() );
+	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_coro_advance_ )
+		return std::make_unique<IfAlternative>( ParseIfCoroAdvanceOperator() );
+
+	// Accept macros, producing single element of if-alternative kind, as if-alternative.
+	if( it_->type == Lexem::Type::Identifier )
+	{
+		if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
+		{
+			std::vector<BlockElement> macro_elements= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements );
+			if( macro_elements.size() == 1 )
+			{
+				BlockElement& element= macro_elements.front();
+				if( const auto block= std::get_if<ScopeBlock>( &element ) )
+				{
+					if( block->safety_ == ScopeBlock::Safety::None && block->label == std::nullopt )
+					{
+						// Accept only pure blocks without safety modifiers and labels.
+						return std::make_unique<IfAlternative>( std::move(*block) );
+					}
+					else
+					{
+						LexSyntError error_message;
+						error_message.src_loc= it_->src_loc;
+						error_message.text= "Syntax error - expected block without safety modifiers and labels for \"if\" alternative.";
+						error_messages_.push_back( std::move(error_message) );
+						return nullptr;
+					}
+				}
+				if( const auto if_operator= std::get_if<IfOperator>( &element ) )
+					return std::make_unique<IfAlternative>( std::move(*if_operator) );
+				if( const auto static_if_operator= std::get_if<StaticIfOperator>( &element ) )
+					return std::make_unique<IfAlternative>( std::move(*static_if_operator) );
+				if( const auto if_coro_advance_operator= std::get_if<IfCoroAdvanceOperator>( &element ) )
+					return std::make_unique<IfAlternative>( std::move(*if_coro_advance_operator) );
+
+				LexSyntError error_message;
+				error_message.src_loc= it_->src_loc;
+				error_message.text= "Syntax error - unexpected element kind for \"if\" alternative.";
+				error_messages_.push_back( std::move(error_message) );
+				return nullptr;
+			}
+			else
+			{
+				LexSyntError error_message;
+				error_message.src_loc= it_->src_loc;
+				error_message.text= "Syntax error - expected exactly one element in expansion of macro for \"if\" alternative.";
+				error_messages_.push_back( std::move(error_message) );
+				return nullptr;
+			}
+		}
+	}
+
+	PushErrorMessage();
+	return nullptr;
 }
 
 ClassKindAttribute SyntaxAnalyzer::TryParseClassKindAttribute()
@@ -3723,6 +3787,10 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 
 		case Macro::MatchElementKind::Block:
 			ParseBlock();
+			break;
+
+		case Macro::MatchElementKind::IfAlternative:
+			ParseIfAlternative();
 			break;
 
 		case Macro::MatchElementKind::Optional:

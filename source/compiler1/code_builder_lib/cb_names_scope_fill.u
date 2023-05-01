@@ -26,7 +26,7 @@ fn CodeBuilder::NamesScopeFillClass( mut this, NamesScopeMutPtr& names_scope_ptr
 					current_visibility= el.visibility;
 				}
 			}
-			else if( ust::is_same_type</ ElementT, ust::shared_ptr_final</Synt::ClassField/> />() )
+			else static_if( ust::is_same_type</ ElementT, ust::shared_ptr_final</Synt::ClassField/> />() )
 			{
 				NamesScopeFill( names_scope_ptr, el, class_type, current_visibility, field_index );
 				++field_index;

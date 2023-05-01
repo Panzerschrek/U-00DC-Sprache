@@ -1,12 +1,22 @@
-?macro <? if_var:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
+?macro <? if_var:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?alternative:opt<? else ?a:if_alternative ?> ?>
 ->
 <?
-	with( & ?m<? mut ?> ??e_result : ?e )
+	// Expand this macro into block in order to use it as "if alternative".
 	{
-		if( !??e_result.empty() )
+		with( & ?m<? mut ?> ??e_result : ?e )
 		{
-			with( ?r<? & ?> ?m<? mut ?> ?var_name : unsafe( ??e_result.deref_unchecked() ) )
-			?b
+			if( !??e_result.empty() )
+			{
+				with( ?r<? & ?> ?m<? mut ?> ?var_name : unsafe( ??e_result.deref_unchecked() ) )
+				?b
+			}
+			?alternative
+			<?
+				// Unfortunately it is the only proper way to process if_var alternative - here, inside "with", when lock for ?e still exists.
+				// There is no possibility to process alternative after "with", using "break label", for example,
+				// because user-specified block before "break" can be terminal and "break" here will cause unreachable code error.
+				else ?a
+			?>
 		}
 	}
 ?>
@@ -21,10 +31,10 @@
 			for( var size_type mut ??i(0u); ??i < typeinfo</ typeof(??e_result) />.element_count; ++ ??i ) ?l<? label ?l ?>
 			{
 				auto ?r<? & ?> ?m<? mut ?> ?var_name= ??e_result[??i];
-				safe{ ?b }
+				?b
 			}
 		}
-		else if( typeinfo</ typeof(??e_result) />.is_tuple )
+		else static_if( typeinfo</ typeof(??e_result) />.is_tuple )
 		{
 			for( ?r<? & ?> ?m<? mut ?> ?var_name : ??e_result ) ?l<? label ?l ?>
 			?b

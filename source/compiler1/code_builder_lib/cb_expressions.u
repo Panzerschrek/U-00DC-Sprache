@@ -1321,7 +1321,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		}
 		REPORT_ERROR( TypesMismatch, names_scope, indexation_operator.src_loc, ust::string8("any unsigned integer"), index.t )
 	}
-	if_var( &tuple_type : variable.t.GetTupleType() )
+	else if_var( &tuple_type : variable.t.GetTupleType() )
 	{
 		var ust::optional</VariableLite/> mut index_opt;
 		{ // Create new stack frame to prevent deletion of variable during index calculation.

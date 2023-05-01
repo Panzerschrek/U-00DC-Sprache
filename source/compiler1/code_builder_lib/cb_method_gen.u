@@ -902,9 +902,8 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 			auto mut value= CreateTypedLoad( function_context, t, src );
 			CreateTypedStore( function_context, t, value, dst );
 		}
-		return;
 	}
-	if_var( &array_type : t.GetArrayType() )
+	else if_var( &array_type : t.GetArrayType() )
 	{
 		CB_GENERATE_LOOP(
 			function_context,
@@ -915,9 +914,8 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 				BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
 			}
 		)
-		return;
 	}
-	if_var( &tuple_type : t.GetTupleType() )
+	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
@@ -925,10 +923,8 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 			auto src_element_value= CreateTupleElementGEP( function_context, tuple_type, src, u32(i) );
 			BuildCopyConstructorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], src_loc );
 		}
-
-		return;
 	}
-	if_var( &class_type : t.GetClassType() )
+	else if_var( &class_type : t.GetClassType() )
 	{
 		if( !class_type.lock_imut().deref().is_copy_constructible )
 		{
@@ -956,10 +952,11 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 				break;
 			}
 		}
-		return;
 	}
-
-	halt; // Unhandled type kind
+	else
+	{
+		halt; // Unhandled type kind
+	}
 }
 
 fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef dst, LLVMValueRef src, Type& t, SrcLoc& src_loc )
@@ -976,9 +973,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 			auto mut value= CreateTypedLoad( function_context, t, src );
 			CreateTypedStore( function_context, t, value, dst );
 		}
-		return;
 	}
-	if_var( &array_type : t.GetArrayType() )
+	else if_var( &array_type : t.GetArrayType() )
 	{
 		CB_GENERATE_LOOP(
 			function_context,
@@ -989,9 +985,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 				BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, array_type.element_type, src_loc );
 			}
 		)
-		return;
 	}
-	if_var( &tuple_type : t.GetTupleType() )
+	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
@@ -999,10 +994,8 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 			auto src_element_value= CreateTupleElementGEP( function_context, tuple_type, src, u32(i) );
 			BuildCopyAssignmentOperatorPart( names_scope, function_context, dst_element_value, src_element_value, tuple_type.element_types[i], src_loc );
 		}
-
-		return;
 	}
-	if_var( &class_type : t.GetClassType() )
+	else if_var( &class_type : t.GetClassType() )
 	{
 		if( !class_type.lock_imut().deref().is_copy_assignable )
 		{
@@ -1030,10 +1023,11 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 				break;
 			}
 		}
-		return;
 	}
-
-	halt; // Unhandled type kind
+	else
+	{
+		halt; // Unhandled type kind
+	}
 }
 
 fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef l_address, LLVMValueRef r_address, Type& t, LLVMBasicBlockRef false_basic_block, SrcLoc& src_loc )
@@ -1075,9 +1069,8 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 			LLVMAppendExistingBasicBlock( function_context.llvm_function, next_bb );
 			LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_bb );
 		}
-		return;
 	}
-	if_var( &array_type : t.GetArrayType() )
+	else if_var( &array_type : t.GetArrayType() )
 	{
 		CB_GENERATE_LOOP(
 			function_context,
@@ -1088,9 +1081,8 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 				BuildEqualityCompareOperatorPart( names_scope, function_context, l, r, array_type.element_type, false_basic_block, src_loc );
 			}
 		)
-		return;
 	}
-	if_var( &tuple_type : t.GetTupleType() )
+	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
@@ -1098,10 +1090,8 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 			var LLVMValueRef r= CreateTupleElementGEP( function_context, tuple_type, r_address, u32(i) );
 			BuildEqualityCompareOperatorPart( names_scope, function_context, l, r, tuple_type.element_types[i], false_basic_block, src_loc );
 		}
-
-		return;
 	}
-	if_var( &class_type : t.GetClassType() )
+	else if_var( &class_type : t.GetClassType() )
 	{
 		if( !class_type.lock_imut().deref().is_equality_comparable )
 		{
@@ -1142,8 +1132,10 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 
 		halt; // Operator not found - wtf?
 	}
-
-	halt; // Unhandled type kind
+	else
+	{
+		halt; // Unhandled type kind
+	}
 }
 
 fn CodeBuilder::BuildDestructorPart( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, LLVMValueRef value, Type& t, SrcLoc& src_loc )
@@ -1159,7 +1151,7 @@ fn CodeBuilder::BuildDestructorPart( mut this, NamesScopePtr& names_scope, Funct
 			}
 		)
 	}
-	if_var( &tuple_type : t.GetTupleType() )
+	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 		{
@@ -1167,7 +1159,7 @@ fn CodeBuilder::BuildDestructorPart( mut this, NamesScopePtr& names_scope, Funct
 			BuildDestructorPart( names_scope, function_context, element_value, tuple_type.element_types[i], src_loc );
 		}
 	}
-	if_var( &class_type : t.GetClassType() )
+	else if_var( &class_type : t.GetClassType() )
 	{
 		// Destructors value should always exists and should always be NamesScopeFunctionsSet.
 		auto destructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();

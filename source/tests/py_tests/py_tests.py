@@ -46,6 +46,7 @@ def main():
 		"generators_errors_test",
 		"generators_test",
 		"global_mutable_variables_test",
+		"if_alternatives_test",
 		"implicit_casts_test",
 		"in_class_fields_initializers_test",
 		"in_class_fields_initializers_errors_test",

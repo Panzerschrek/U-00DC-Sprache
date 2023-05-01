@@ -16,7 +16,7 @@ fn CodeBuilder::NamesScopeMerge(
 		{
 			auto dst_lock= dst_ptr.lock_imut();
 			auto& dst= dst_lock.deref();
-			if_var ( &dst_value : dst.GetThisScopeValue( el.key() ) )
+			if_var( &dst_value : dst.GetThisScopeValue( el.key() ) )
 			{
 				NamesScopeMergeValues( dst_value, el.value(), el.key(), dst_ptr, src_classes_members_namespaces_table );
 				continue;
@@ -438,7 +438,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 				{
 					min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.src_loc );
 				}
-				if_var( &syntax_element : function.body_syntax_element )
+				else if_var( &syntax_element : function.body_syntax_element )
 				{
 					min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.src_loc );
 				}

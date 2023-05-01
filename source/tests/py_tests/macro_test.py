@@ -120,6 +120,25 @@ def MacroExpansion_Test5():
 	tests_lib.build_program( c_program_text )
 
 
+def MacroExpansion_Test6():
+	# if_alternative element
+	c_program_text= """
+	?macro <? MY_IF:block ?else_branch:opt<? else ?alt:if_alternative  ?> ?> ->
+	<?
+		if( false ) {}
+		?else_branch<? ?alt ?>
+	?>
+
+	fn Foo()
+	{
+		MY_IF
+		MY_IF else if( true ) {}
+		MY_IF else static_if( false ) {}
+	}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
 def ExpandMacroWhileExpandingMacro_Test0():
 	c_program_text= """
 	?macro <? FiveTimes:block ?b:block ?>  ->  <? ?b ?b ?b ?b ?b ?>
@@ -388,6 +407,32 @@ def StartBlockLexemAsRepeatedIndicator_Test1():
 	static_assert( SEQ( 11 ) == 11 );
 	static_assert( SEQ( MUL 5 94 ) == 5 * 94 );
 	static_assert( SEQ( MUL -1 + 2, MUL 89, MUL 74 66 ) == ( -1 +2 ) * 89 * 74 * 66 );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MacroForIfAlternative_Test0():
+	c_program_text= """
+		?macro <? EMPTY_BLOCK:block ?> -> <? {} ?>
+
+		fn Foo( bool cond )
+		{
+			if( cond ) {}
+			else EMPTY_BLOCK
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def MacroForIfAlternative_Test1():
+	c_program_text= """
+		?macro <? TRUE_IF:block ?> -> <? if( true ) {} else { halt; } ?>
+
+		fn Foo( bool cond )
+		{
+			if( cond ) {}
+			else TRUE_IF
+		}
 	"""
 	tests_lib.build_program( c_program_text )
 
