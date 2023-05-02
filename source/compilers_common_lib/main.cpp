@@ -238,6 +238,20 @@ cl::opt<llvm::CodeModel::Model> code_model(
 		clEnumValN( llvm::CodeModel::Large, "large", "Large code model") ),
 	cl::cat(options_category));
 
+const auto mangling_scheme_auto= ManglingScheme(-1);
+
+cl::opt<ManglingScheme> mangling_scheme(
+	"mangling-scheme",
+	cl::init(mangling_scheme_auto),
+	cl::desc("Override mangling scheme."),
+	cl::values(
+		clEnumValN( mangling_scheme_auto, "auto", "Choose mangling scheme based on target triple." ),
+		clEnumValN( ManglingScheme::ItaniumABI, "itanium-abi", "Itanium ABI mangling scheme." ),
+		clEnumValN( ManglingScheme::MSVC, "msvc", "MSVC mangling scheme (exact scheme is determined by target pointer size).." ),
+		clEnumValN( ManglingScheme::MSVC32, "msvc32", "MSVC 32-bit mangling scheme." ),
+		clEnumValN( ManglingScheme::MSVC64, "msvc64", "MSVC 64-bit mangling scheme." ) ),
+	cl::cat(options_category) );
+
 cl::opt<std::string> dep_file_name(
 	"MF",
 	cl::desc("Output dependency file"),
@@ -463,6 +477,11 @@ int Main( int argc, const char* argv[] )
 	const bool is_msvc= target_machine->getTargetTriple().getEnvironment() == llvm::Triple::MSVC;
 	const auto errors_format= is_msvc ? ErrorsFormat::MSVC : ErrorsFormat::GCC;
 
+	const ManglingScheme mangling_scheme=
+		Options::mangling_scheme == Options::mangling_scheme_auto
+		? (is_msvc ? ManglingScheme::MSVC : ManglingScheme::ItaniumABI)
+		: Options::mangling_scheme;
+
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
 	std::vector<IVfs::Path> deps_list;
@@ -487,7 +506,7 @@ int Main( int argc, const char* argv[] )
 					target_triple,
 					Options::generate_debug_info,
 					generate_tbaa_metadata,
-					is_msvc ? ManglingScheme::MSVC : ManglingScheme::ItaniumABI );
+					mangling_scheme );
 
 			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
 
