@@ -376,7 +376,7 @@ int Main( int argc, const char* argv[] )
 	else if( Options::optimization_level == 's' )
 		optimization_level= llvm::OptimizationLevel::Os;
 	else if( Options::optimization_level == 'z' )
-	optimization_level= llvm::OptimizationLevel::Oz;
+		optimization_level= llvm::OptimizationLevel::Oz;
 	else
 	{
 		std::cerr << "Unknown optimization: " << Options::optimization_level << std::endl;
