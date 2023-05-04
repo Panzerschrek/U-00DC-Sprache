@@ -209,6 +209,8 @@ if( U_BUILD_COMPILER )
 	target_link_libraries( Compiler${NEXT_COMPILER_GENERATION} CompilersCommonLib SpracheVersion CodeBuilderLib${NEXT_COMPILER_GENERATION} )
 
 	target_compile_definitions( Compiler${NEXT_COMPILER_GENERATION} PRIVATE "-DU_COMPILER_GENERATION=${NEXT_COMPILER_GENERATION}" )
+
+	install( TARGETS Compiler${NEXT_COMPILER_GENERATION} )
 endif()
 
 #
