@@ -9,5 +9,5 @@ jobs:
     - uses: actions/checkout@v1
     - name: build project
       run: |
-        sudo apt-get install ninja-build sphinx-doc
+        sudo apt-get install ninja-build sphinx-doc p7zip
         ./ci/build_release_llvm_bin.sh
