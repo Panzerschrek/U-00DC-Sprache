@@ -238,7 +238,7 @@ cl::opt<llvm::CodeModel::Model> code_model(
 		clEnumValN( llvm::CodeModel::Large, "large", "Large code model") ),
 	cl::cat(options_category));
 
-const auto mangling_scheme_auto= ManglingScheme(-1);
+const auto mangling_scheme_auto= ManglingScheme(100);
 
 cl::opt<ManglingScheme> mangling_scheme(
 	"mangling-scheme",
