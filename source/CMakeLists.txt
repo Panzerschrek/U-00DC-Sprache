@@ -35,7 +35,7 @@ endif()
 if( DEFINED LLVM_SRC_DIR )
 	message( STATUS "Build LLVM from sources" )
 
-	add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm )
+	add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm EXCLUDE_FROM_ALL )
 
 	include_directories( ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include )
 
@@ -204,13 +204,16 @@ if( U_BUILD_COMPILER )
 	endforeach()
 
 	# Show in editor also ustlib and ustlib tests files
-	file( GLOB_RECURSE USTLIB_SOURCES "ustlib/*.u" "ustlib/src/*.ll" )
+	file( GLOB_RECURSE USTLIB_SOURCES "ustlib/*.u" )
+	file( GLOB_RECURSE USTLIB_SOURCES_LL "ustlib/src/*.ll" )
 	file( GLOB_RECURSE USTLIB_TEST_SOURCES "ustlib_test/*.u" )
 
 	file( GLOB COMPILERS_COMMON_LIB_SOURCES "compilers_common_lib/*" )
-	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_TEST_SOURCES} )
+	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_SOURCES_LL} ${USTLIB_TEST_SOURCES} )
 	target_link_libraries( CompilersCommonLib ${LLVM_LIBS_FOR_COMPILER} )
 	target_include_directories( CompilersCommonLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
+
+	install( FILES ${USTLIB_SOURCES} DESTINATION "ustlib" )
 
 else()
 	message( STATUS "Skip compiler" )

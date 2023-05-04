@@ -50,6 +50,9 @@ if( U_BUILD_COMPILER )
 
 	add_executable( Compiler ${COMPILER_SOURCES} )
 	target_link_libraries( Compiler CodeBuilderLib CodeBuilderLib CompilersCommonLib )
+
+	install( TARGETS Compiler )
+
 endif()
 
 #
