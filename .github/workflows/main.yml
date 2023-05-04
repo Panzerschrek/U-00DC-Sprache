@@ -11,7 +11,7 @@ jobs:
       run: |
         sudo apt-get install ninja-build sphinx-doc python3-sphinx p7zip
         ./ci/build_release_llvm_bin.sh
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: compiler artifacts
         path: install/Ü_compiler.7z
