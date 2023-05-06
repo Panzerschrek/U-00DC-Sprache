@@ -6,7 +6,6 @@ General:
 *) Anonymous (module-local) symbols - functions, classes, variables.
 *) build-in "for" for array types.
 *) switch-case
-*) Use smallest possible underlaying type for enums (mostly "u8").
 *) "Disassembly operator" - declare variables with initializer as members of value of structure type.
 *) Function to function pointer assignment
 *) Functions references info in "typeinfo".
@@ -49,7 +48,6 @@ Compiler:
 	or it would be better to pass it in memory.
 *) Faster calling convention for non-cross-language functions.
 *) Fix possible UB in float->int conversion.
-*) Add possibility to use proper "LTO" - build "llvm::PassManager" for LTO/PerLinkLTO configurations.
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
 *) Prevent execution of constexpr functions with errors
@@ -62,9 +60,7 @@ QtCreator plugin:
 *) Syntax errors highlighting
 *) Symbol table construction for document
 *) "go to defenition" possibility
-*) Indentation in editor
 *) More advanced program model updating
-*) Language server
 
 *) Plugins for other IDEs
 *) Language server?
@@ -76,5 +72,4 @@ CPP Header converter:
 *) fix "typedef enum { A, B, C } X;"
 
 Documentation:
-*) Describe unsafe code requirements.
 *) More, then one language
