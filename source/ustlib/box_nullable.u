@@ -23,23 +23,16 @@ public:
 
 	// Construct with value.
 	fn constructor( mut this, T mut val )
+		( ptr_= $<( unsafe( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) ) ) )
 	{
-		unsafe
-		{
-			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
-			move_into_uninitialized( $>(ptr_), move(val) );
-		}
+		unsafe( move_into_uninitialized( $>(ptr_), move(val) ) );
 	}
 
 	// Construct with value, taken from box.
 	fn conversion_constructor( mut this, box</T/> mut val )
+		( ptr_= unsafe( val.get_ptr() ) )
 	{
-		unsafe
-		{
-			static_assert( typeinfo</ box</T/> />.size_of == typeinfo</ $(T) />.size_of );
-			memory_copy_aligned( typeinfo</ box</T/> />.align_of, cast_ref_unsafe</byte8/>(ptr_),  cast_ref_unsafe</byte8/>(val), typeinfo</ box</T/> />.size_of );
-			move_into_nowhere( move(val) );
-		}
+		unsafe( move_into_nowhere( move(val) ) );
 	}
 	
 	// Construct with value, taken from nullable box of compatible type.
@@ -103,6 +96,11 @@ public:
 	fn deref_unchecked( imut this ) unsafe : T &imut
 	{
 		return unsafe( $>(ptr_) );
+	}
+
+	fn get_ptr( this ) unsafe : $(T)
+	{
+		return ptr_;
 	}
 
 	fn empty( this )  : bool

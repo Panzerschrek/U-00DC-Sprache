@@ -142,23 +142,23 @@ public:
 	fn try_deref( mut this ) : T &mut
 	{
 		halt if( empty() );
-		unsafe{  return deref_unchecked();  }
+		return unsafe( deref_unchecked() );
 	}
 
 	fn try_deref( imut this ) : T &imut
 	{
 		halt if( empty() );
-		unsafe{  return deref_unchecked();  }
+		return unsafe( deref_unchecked() );
 	}
 
 	fn deref_unchecked( mut this ) unsafe : T &mut
 	{
-		unsafe{  return cast_ref_unsafe</T/>(storage_);  }
+		return unsafe( cast_ref_unsafe</T/>(storage_) );
 	}
 
 	fn deref_unchecked( imut this ) unsafe : T &imut
 	{
-		unsafe{  return cast_ref_unsafe</T/>(storage_);  }
+		return unsafe( cast_ref_unsafe</T/>(storage_) );
 	}
 
 	fn reset(mut this)
@@ -192,7 +192,7 @@ public:
 	{
 		if( has_value_ )
 		{
-			unsafe{  return optional_ref_mut</T/>( deref_unchecked() );  }
+			return optional_ref_mut</T/>( unsafe( deref_unchecked() ) );
 		}
 		else
 		{
@@ -206,7 +206,7 @@ public:
 	{
 		if( has_value_ )
 		{
-			unsafe{  return optional_ref_imut</T/>( deref_unchecked() );  }
+			return optional_ref_imut</T/>( unsafe( deref_unchecked() ) );
 		}
 		else
 		{
@@ -254,12 +254,7 @@ public:
 			return true; // Two empty optionals are equal.
 		}
 
-		unsafe
-		{
-			auto& l_ref= l.deref_unchecked();
-			auto& r_ref= r.deref_unchecked();
-			safe{  return l_ref == r_ref;  }
-		}
+		return unsafe( l.deref_unchecked() ) == unsafe( r.deref_unchecked() );
 	}
 
 	// Imnplement also == for value and optional to avoid costly implicit value to optional conversion

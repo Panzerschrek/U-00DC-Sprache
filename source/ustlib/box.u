@@ -10,7 +10,7 @@ namespace ust
 template</ type T />
 class box non_sync( non_sync</T/> )
 {
-	// Forbid box_nullable for structs with references inside.
+	// Forbid box for structs with references inside.
 	static_assert( typeinfo</T/>.references_tags_count == 0s );
 
 public:
@@ -20,23 +20,17 @@ public:
 	fn constructor()= delete;
 
 	fn constructor( mut this, T mut val )
+		( ptr_= $<( unsafe( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) ) ) )
 	{
-		unsafe
-		{
-			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( typeinfo</T/>.size_of ) ) );
-			move_into_uninitialized( $>(ptr_), move(val) );
-		}
+		unsafe( move_into_uninitialized( $>(ptr_), move(val) ) );
 	}
 
 	template</ type U />
 	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, box</U/> mut val )
+		( ptr_= $<( cast_ref</T/>(val.deref()) ) )
 	{
-		unsafe
-		{
-			ptr_= $<( cast_ref</T/>(val.deref()) );
-			move_into_nowhere( move(val) );
-		}
+		unsafe( move_into_nowhere( move(val) ) );
 	}
 
 	// box is NOT copyable, because copying required memory allocation. Copying must be done manually.
@@ -70,8 +64,13 @@ public:
 		return unsafe( $>(ptr_) );
 	}
 
+	fn get_ptr( this ) unsafe : $(T)
+	{
+		return ptr_;
+	}
+
 private:
-	$(T) ptr_= zero_init;
+	$(T) ptr_;
 }
 
 struct box_hasher

@@ -17,24 +17,27 @@ public:
 	op=( mut this, this_type &imut other )= default;
 
 	// Default constructor - set to zero
-	fn constructor()= default;
+	fn constructor()
+		( ptr_= zero_init )
+	{}
 
 	// Use this conversion constructor in order to use simple "ust::null_optional_ref" to pass/return empty optional_ref, without specifying exact optional_ref type.
 	fn conversion_constructor( null_optional_ref_type n )
+		( ptr_= zero_init )
 	{}
 
 	// Construct from reference
 	fn enable_if( is_mutable )
 	constructor( mut this'x', T &'y  mut ref ) ' x <- y '
+		( ptr_= $<(ref) )
 	{
-		unsafe{  ptr_= $<(ref);  }
 	}
 
 	// Construct 'imut' reference from 'mut' reference.
 	fn enable_if( !is_mutable )
 	constructor( mut this'x', T &'y imut ref ) ' x <- y '
+		( ptr_= $<( unsafe( cast_mut(ref) ) ) )
 	{
-		unsafe{  ptr_= $<( cast_mut(ref) );  }
 	}
 
 	// Construct form raw pointer. Pointer should be valid or should be null.
@@ -46,14 +49,7 @@ public:
 	op enable_if( !is_mutable )
 	=( mut this'x', optional_ref</ T, true />& other'y' ) ' x <- y'
 	{
-		if( !other.empty() )
-		{
-			unsafe{ reset( other.deref_unchecked() ); }
-		}
-		else
-		{
-			reset();
-		}
+		this.ptr_= unsafe( other.get_ptr() );
 	}
 
 	op=( mut this, null_optional_ref_type n )
@@ -70,26 +66,32 @@ public:
 	try_deref( this'x' ) : T &'x mut
 	{
 		halt if(empty());
-		unsafe{ return deref_unchecked(); }
+		return unsafe( deref_unchecked() );
 	}
 
 	fn enable_if( !is_mutable )
 	try_deref( this'x' ) : T &'x imut
 	{
 		halt if(empty());
-		unsafe{ return deref_unchecked(); }
+		return unsafe( deref_unchecked() );
 	}
 
 	fn enable_if( is_mutable )
 	deref_unchecked( this'x' ) unsafe : T &'x mut
 	{
-		unsafe{  return $>(ptr_);  }
+		return unsafe( $>(ptr_) );
 	}
 
 	fn enable_if( !is_mutable )
 	deref_unchecked( this'x' ) unsafe : T &'x imut
 	{
-		unsafe{  return $>(ptr_);  }
+		return unsafe( $>(ptr_) );
+	}
+
+	// Get raw pointer. Returns null if empty.
+	fn get_ptr( this ) unsafe : $(T)
+	{
+		return ptr_;
 	}
 
 	fn reset( mut this )
@@ -106,7 +108,7 @@ public:
 	fn enable_if( !is_mutable )
 	reset( mut this'x', T &'y imut ref ) ' x <- y '
 	{
-		unsafe{  ptr_= $<( cast_mut(ref) );  }
+		ptr_= $<( unsafe( cast_mut(ref) ) );
 	}
 
 	// Compare with null optional_ref. Result is true if optional_ref is empty.
@@ -123,7 +125,7 @@ public:
 
 private:
 	ReferenceContainerTag</ T, is_mutable /> container_tag_;
-	$(T) ptr_= zero_init;
+	$(T) ptr_;
 }
 
 template</ type T />
