@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <lld/Common/Driver.h>
 #include <llvm/Analysis/CGSCCPassManager.h>
 #include <llvm/Analysis/TargetTransformInfo.h>
 #include <llvm/AsmParser/Parser.h>
@@ -269,6 +270,12 @@ cl::opt< LTOMode > lto_mode(
 		clEnumValN( LTOMode::None, "none", "Do not apply LTO (default)." ),
 		clEnumValN( LTOMode::PreLink, "prelink", "Run Pre-link LTO pipeline. Usable for initial modules for later LTO link stage." ),
 		clEnumValN( LTOMode::Link, "link", "Run link LTO pipeline. Input llvm modules should be optimized with link stage before this." ) ),
+	cl::cat(options_category) );
+
+cl::opt<bool> link(
+	"link",
+	cl::desc("Run LLD."),
+	cl::init(false),
 	cl::cat(options_category) );
 
 } // namespace Options
@@ -704,52 +711,61 @@ int Main( int argc, const char* argv[] )
 		result_module->print( stream, nullptr );
 	}
 
-	std::error_code file_error_code;
-	llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
-
-	// Create pass manager for output passes.
-	llvm::legacy::PassManager pass_manager;
-
-	switch( file_type )
+	if( Options::link )
 	{
-	case FileType::Obj:
-		if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::CGFT_ObjectFile ) )
-		{
-			std::cerr << "Error, creating file emit pass." << std::endl;
-			return 1;
-		}
-		break;
-
-	case FileType::Asm:
-		if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::CGFT_AssemblyFile ) )
-		{
-			std::cerr << "Error, creating file emit pass." << std::endl;
-			return 1;
-		}
-		break;
-
-	case FileType::BC:
-		pass_manager.add( llvm::createBitcodeWriterPass( out_file_stream ) );
-		break;
-
-	case FileType::LL:
-		result_module->print( out_file_stream, nullptr );
-		break;
-
-	case FileType::Null:
-		// Do nothing.
-		break;
+		llvm::raw_os_ostream cout(std::cout);
+		llvm::raw_os_ostream cerr(std::cerr);
+		lld::elf::link( llvm::ArrayRef<const char*>(argv, size_t(argc)), cout, cerr, true, false );
 	}
-
-	// Run codegen/output passes.
-	pass_manager.run(*result_module);
-
-	// Check if output file is ok.
-	out_file_stream.flush();
-	if( !Options::output_file_name.empty() && out_file_stream.has_error() )
+	else
 	{
-		std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
-		return 1;
+		std::error_code file_error_code;
+		llvm::raw_fd_ostream out_file_stream( Options::output_file_name, file_error_code );
+
+		// Create pass manager for output passes.
+		llvm::legacy::PassManager pass_manager;
+
+		switch( file_type )
+		{
+		case FileType::Obj:
+			if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::CGFT_ObjectFile ) )
+			{
+				std::cerr << "Error, creating file emit pass." << std::endl;
+				return 1;
+			}
+			break;
+
+		case FileType::Asm:
+			if( target_machine->addPassesToEmitFile( pass_manager, out_file_stream, nullptr, llvm::CGFT_AssemblyFile ) )
+			{
+				std::cerr << "Error, creating file emit pass." << std::endl;
+				return 1;
+			}
+			break;
+
+		case FileType::BC:
+			pass_manager.add( llvm::createBitcodeWriterPass( out_file_stream ) );
+			break;
+
+		case FileType::LL:
+			result_module->print( out_file_stream, nullptr );
+			break;
+
+		case FileType::Null:
+			// Do nothing.
+			break;
+		}
+
+		// Run codegen/output passes.
+		pass_manager.run(*result_module);
+
+		// Check if output file is ok.
+		out_file_stream.flush();
+		if( !Options::output_file_name.empty() && out_file_stream.has_error() )
+		{
+			std::cerr << "Error while writing output file \"" << Options::output_file_name << "\": " << file_error_code.message() << std::endl;
+			return 1;
+		}
 	}
 
 	// Left only unique paths in dependencies list.
