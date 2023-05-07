@@ -26,7 +26,7 @@ static CPlusPlus::Icons::IconType GetIconType( const ProgramModel::ProgramTreeNo
 
 		case ProgramModel::ElementKind::Class:
 		case ProgramModel::ElementKind::ClassTemplate:
-		case ProgramModel::ElementKind::TypeAloas:
+		case ProgramModel::ElementKind::TypeAlias:
 		case ProgramModel::ElementKind::TypeAliasTemplate:
 			return CPlusPlus::Icons::ClassIconType;
 

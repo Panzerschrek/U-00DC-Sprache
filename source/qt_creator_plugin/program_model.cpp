@@ -255,7 +255,7 @@ struct Visitor final
 	{
 		ProgramModel::ProgramTreeNode element;
 		element.name= QString::fromStdString( typedef_.name );
-		element.kind= ProgramModel::ElementKind::TypeAloas;
+		element.kind= ProgramModel::ElementKind::TypeAlias;
 		element.number_in_parent= result.size();
 		element.src_loc= typedef_.src_loc_;
 		result.push_back(element);

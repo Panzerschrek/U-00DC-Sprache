@@ -29,7 +29,7 @@ public:
 		ClassField,
 		Variable,
 		ClassTemplate,
-		TypeAloas,
+		TypeAlias,
 		TypeAliasTemplate,
 		FunctionTemplate,
 	};
