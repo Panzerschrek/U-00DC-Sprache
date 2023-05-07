@@ -1,7 +1,6 @@
 #include <coreplugin/coreconstants.h>
 #include <extensionsystem/pluginmanager.h>
 #include <coreplugin/editormanager/editormanager.h>
-#include "indenter.hpp"
 #include "editor_widget.hpp"
 #include "syntax_highlighter.hpp"
 
@@ -38,7 +37,6 @@ EditorDocument::EditorDocument()
 	setId(g_editor_id);
 
 	setSyntaxHighlighter( new SyntaxHighlighter );
-	setIndenter( new Indenter );
 }
 
 EditorFactory::EditorFactory()
