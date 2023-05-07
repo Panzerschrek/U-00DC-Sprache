@@ -57,15 +57,18 @@ elseif( DEFINED LLVM_LIB_DIR )
 
 	set( CMAKE_PREFIX_PATH
 		${CMAKE_PREFIX_PATH}
+		${LLVM_LIB_DIR}/cmake/lld
 		${LLVM_LIB_DIR}/cmake/llvm
 		${LLVM_LIB_DIR}/cmake/clang )
 
 	set( CMAKE_MODULE_PATH
 		${CMAKE_MODULE_PATH}
+		${LLVM_LIB_DIR}/cmake/lld
 		${LLVM_LIB_DIR}/cmake/llvm
 		${LLVM_LIB_DIR}/cmake/clang )
 
 	find_package( LLVM REQUIRED )
+	find_package( LLD )
 	find_package( Clang ) # Optional
 	find_package( Sphinx ) # Optional
 
@@ -239,6 +242,10 @@ if( U_BUILD_COMPILER )
 	file( GLOB COMPILERS_COMMON_LIB_SOURCES "compilers_common_lib/*" )
 	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} )
 	target_link_libraries( CompilersCommonLib CompilersSupportLib ${LLVM_LIBS_FOR_COMPILER} )
+
+	if( TARGET lldELF )
+		target_link_libraries( CompilersCommonLib lldELF )
+	endif()
 
 else()
 	message( STATUS "Skip compiler" )
