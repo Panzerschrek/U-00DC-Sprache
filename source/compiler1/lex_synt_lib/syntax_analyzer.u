@@ -235,6 +235,7 @@ private:
 	fn ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperator;
 	fn TryParseLabel( mut this ) : ust::optional</Label/>;
 	fn ParseWhileOperator( mut this ) : WhileOperator;
+	fn ParseLoopOperator( mut this ) : LoopOperator;
 	fn ParseForOperator( mut this ) : BlockElement;
 	fn ParseRangeForOperator( mut this ) : RangeForOperator;
 	fn ParseCStyleForOperator( mut this ) : CStyleForOperator;
@@ -1965,6 +1966,10 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		{
 			block_elements.push_back( ParseWhileOperator() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::loop_ ) )
+		{
+			block_elements.push_back( ParseLoopOperator() );
+		}
 		else if( IsKeyword( it_.front(), Keyword::for_ ) )
 		{
 			block_elements.push_back( ParseForOperator() );
@@ -2407,6 +2412,20 @@ fn SyntaxAnalyzer::ParseWhileOperator( mut this ) : WhileOperator
 		.block( ParseBlock() )
 	};
 	return move(while_operator);
+}
+
+fn SyntaxAnalyzer::ParseLoopOperator( mut this ) : LoopOperator
+{
+	auto start_src_loc= it_.front().src_loc;
+	NextLexem(); // loop
+
+	var LoopOperator mut loop_operator
+	{
+		.src_loc= start_src_loc,
+		.label_= TryParseLabel(),
+		.block( ParseBlock() )
+	};
+	return move(loop_operator);
 }
 
 fn SyntaxAnalyzer::ParseForOperator( mut this ) : BlockElement
