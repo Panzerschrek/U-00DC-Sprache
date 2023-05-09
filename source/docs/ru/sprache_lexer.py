@@ -30,6 +30,7 @@ class SpracheLexer(RegexLexer):
 			(r'yield(?![a-zA-Z_0-9])', token.Keyword),
 			(r'label(?![a-zA-Z_0-9])', token.Keyword),
 			(r'while(?![a-zA-Z_0-9])', token.Keyword),
+			(r'loop(?![a-zA-Z_0-9])', token.Keyword),
 			(r'break(?![a-zA-Z_0-9])', token.Keyword),
 			(r'continue(?![a-zA-Z_0-9])', token.Keyword),
 			(r'if(?![a-zA-Z_0-9])', token.Keyword),

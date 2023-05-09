@@ -84,6 +84,7 @@ def main():
 		"type_conversions_test",
 		"typeinfo_test",
 		"typeof_test",
+		"unconditional_loop_test",
 		"uninitialized_initializer_test",
 		"unsafe_expression_test",
 		"unsafe_test",
