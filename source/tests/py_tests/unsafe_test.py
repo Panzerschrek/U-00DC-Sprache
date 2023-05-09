@@ -206,7 +206,7 @@ def UnsafeFunctionCallInsideUnsafeBlock_Test4():
 		{
 			unsafe
 			{
-				while(true)
+				loop
 				{
 					Bar(); // Ok, we are inside unsafe block
 					break;

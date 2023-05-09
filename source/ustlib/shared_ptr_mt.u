@@ -381,7 +381,7 @@ public:
 			atomic_inc( $>(counter_).use_count_total );
 
 			var u32 mut count= atomic_read( $>(counter_).use_count_strong );
-			while(true)
+			loop
 			{
 				if( count == 0u )
 				{

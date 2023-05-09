@@ -79,7 +79,7 @@ public:
 			auto initial_key_hash_wrapped= key_hash & capacity_mask;
 			auto mut key_hash_wrapped= initial_key_hash_wrapped;
 			auto mut insert_index= ~0s;
-			while( true )
+			loop
 			{
 				auto cell_content= $>(table_ + key_hash_wrapped).cell_content;
 				auto next_key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & capacity_mask;
@@ -114,7 +114,6 @@ public:
 				key_hash_wrapped= next_key_hash_wrapped;
 				// We must finish loop, bacause capacity_ >= size_.
 			}
-			halt;
 		}
 	}
 
@@ -244,7 +243,7 @@ private:
 						// Insert value into new table.
 						auto key_hash= hash( old_value.key_storage );
 						auto mut key_hash_wrapped= key_hash & new_capacity_mask;
-						while( true )
+						loop
 						{
 							auto &mut new_value= $>(new_table + key_hash_wrapped);
 							if( new_value.cell_content == TableValue::CellContent::Empty )
@@ -279,7 +278,7 @@ private:
 			auto key_hash= hash(key);
 			auto mut key_hash_wrapped= key_hash & capacity_mask;
 			auto key_hash_wrapped_finish= key_hash_wrapped;
-			while( true )
+			loop
 			{
 				auto &mut table_value= $>(table_ + key_hash_wrapped);
 				if( table_value.cell_content == TableValue::CellContent::Empty ) { break; }

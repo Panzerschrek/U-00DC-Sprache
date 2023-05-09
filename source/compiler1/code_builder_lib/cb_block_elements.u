@@ -2224,7 +2224,7 @@ fn CodeBuilder::FetchLoopFrame(
 
 	// In case of "break" or "continue" without label skip non-loop frames (block frames, where only "break" is available).
 	var size_type mut index= function_context.loops_stack.size() - 1s;
-	while( true )
+	loop
 	{
 		var bool is_loop_frame= function_context.loops_stack[index].block_for_continue != LLVMBasicBlockRef::Null;
 		if( is_loop_frame )

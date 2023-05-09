@@ -1430,7 +1430,7 @@ fn NamesScope::CopyAccessRightsFrom( mut this, NamesScope& src )
 fn GetRootNamespace( NamesScopePtr& names_scope ) : NamesScopePtr
 {
 	var NamesScopePtr mut root_names_scope= names_scope;
-	while(true)
+	loop
 	{
 		auto parent= root_names_scope.lock_imut().deref().GetParent();
 		if( parent.empty() )

@@ -578,7 +578,7 @@ fn CodeBuilder::ResolveValue(
 	var ust::optional</NamesScopeValue/> mut start_value;
 	if( !complex_name.start.get</Synt::EmptyVariant/>().empty() ) // ::
 	{
-		while( true )
+		loop
 		{
 			auto parent= current_scope.lock_imut().deref().GetParent();
 			if( parent.empty() )
@@ -612,7 +612,7 @@ fn CodeBuilder::ResolveValue(
 	else
 	{
 		var ust::string8& start_name= complex_name.start.get</ust::string8/>().try_deref();
-		while( true )
+		loop
 		{
 			auto class_= current_scope.lock_imut().deref().GetClass();
 			if( !class_.empty() )
@@ -2038,7 +2038,7 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_
 {
 	// Try to move unused nodes (variables and references) until we can't move anything.
 	// Multiple iterations needed to process complex references chains.
-	while(true)
+	loop
 	{
 		auto mut any_node_moved= false;
 		// TODO - maybe iterate in reverse order?
