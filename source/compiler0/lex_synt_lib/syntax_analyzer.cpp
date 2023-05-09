@@ -2130,7 +2130,7 @@ WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 
 LoopOperator SyntaxAnalyzer::ParseLoopOperator()
 {
-	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ );
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::loop_ );
 	LoopOperator result( it_->src_loc );
 	NextLexem();
 
