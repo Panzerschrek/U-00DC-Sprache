@@ -2453,7 +2453,20 @@ StaticAssert SyntaxAnalyzer::ParseStaticAssert()
 	StaticAssert result( it_->src_loc );
 	NextLexem();
 
-	result.expression= ParseExpressionInBrackets();
+	ExpectLexem( Lexem::Type::BracketLeft );
+
+	result.expression= ParseExpression();
+
+	if( it_->type == Lexem::Type::Comma )
+	{
+		NextLexem();
+		if( it_->type != Lexem::Type::String )
+			PushErrorMessage();
+		result.message= it_->text;
+		NextLexem();
+	}
+
+	ExpectLexem( Lexem::Type::BracketRight );
 
 	if( it_->type == Lexem::Type::Semicolon )
 		NextLexem();

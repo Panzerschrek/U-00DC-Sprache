@@ -334,3 +334,14 @@ def Comments_Test2():
 	}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def StaticAssertMessage_Test0():
+	c_program_text= """
+		static_assert( false, "Lorem ipsum" );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( errors_list[0].error_code == "StaticAssertionFailed" )
+	assert( errors_list[0].src_loc.line == 2 )
+	assert( errors_list[0].text.find( "Lorem ipsum" ) != -1 )
