@@ -197,16 +197,18 @@ fn ManglerMSVC::EncodeType( this, ManglerStateMSVC &mut mangler_state, Type& t )
 		var ust::vector</u64/> mut dimensions;
 
 		var Type mut element_type= t;
-		while( true )
+		loop
 		{
 			if_var( element_type_as_array_type : element_type.GetArrayType() )
 			{
 				dimensions.push_back( element_type_as_array_type.element_count );
 				auto mut t= element_type_as_array_type.element_type;
 				element_type= move(t);
-				continue;
 			}
-			break;
+			else
+			{
+				break;
+			}
 		}
 
 		mangler_state.PushElement( "Y" );

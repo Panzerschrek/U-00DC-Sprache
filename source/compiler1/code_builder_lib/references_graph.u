@@ -245,7 +245,7 @@ fn ReferencesGraph::GetNodeInputLinks( this, VariablePtr& node ) : NodesSet
 	var NodesSet mut result;
 
 	var VariablePtr mut current_node= node;
-	while(true)
+	loop
 	{
 		foreach( &link : links_ )
 		{

@@ -78,7 +78,7 @@ def SimpleGenerator_Test2():
 		{
 			auto mut gen= SimpleGen();
 			auto mut num_advanced= 0u;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -125,7 +125,7 @@ def SimpleGenerator_Test4():
 		{
 			auto mut gen= StructGen();
 			auto mut num_advanced= 0u;
-			while( true )
+			loop
 			{
 				if_coro_advance( s : gen )
 				{
@@ -155,7 +155,7 @@ def SimpleGenerator_Test5():
 		{
 			auto mut gen= SimpleGen(x);
 			auto mut num_advanced= 0u;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -195,7 +195,7 @@ def SimpleGenerator_Test6():
 		{
 			auto mut gen= SquareGen( size );
 			auto mut num_advanced= 0u;
-			while( true )
+			loop
 			{
 				if_coro_advance( val : gen )
 				{
@@ -568,7 +568,7 @@ def VoidTypeGenerator_Test0():
 		{
 			auto mut gen= VoidGen();
 			auto mut advanced= 0;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -597,7 +597,7 @@ def VoidTypeGenerator_Test1():
 		{
 			auto mut gen= VoidGen();
 			auto mut advanced= 0;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -628,7 +628,7 @@ def GeneratorMethod_Test0():
 		{
 			auto mut gen= S::SimpleGen();
 			auto mut advanced= 0;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -663,7 +663,7 @@ def GeneratorMethod_Test1():
 			auto mut gen= s.SimpleGen();
 			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // generator holds reference to "this".
 			auto mut advanced= 0;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -699,7 +699,7 @@ def GeneratorMethod_Test2():
 			auto mut gen= s.SimpleGen(3);
 			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // generator holds reference to "this".
 			auto mut advanced= 0;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -735,7 +735,7 @@ def GeneratorMethod_Test3():
 			auto mut gen= s.SimpleGen();
 			static_assert( typeinfo</ typeof(gen) />.references_tags_count == 1s ); // generator holds reference to "this".
 			auto mut advanced= 0;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -769,7 +769,7 @@ def GeneratorsNonTrivialUsage_Test0():
 		{
 			auto mut gen= MakeGen();
 			auto mut advanced= 0;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -808,7 +808,7 @@ def GeneratorsNonTrivialUsage_Test1():
 		{
 			auto mut gen= MakeGen(); // Obtain generator object, that was already advanced by one step.
 			auto mut advanced= 1;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -836,7 +836,7 @@ def GeneratorsNonTrivialUsage_Test2():
 		fn ProcessGen( (generator : i32) mut gen )
 		{
 			auto mut advanced= 0;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -873,7 +873,7 @@ def GeneratorsNonTrivialUsage_Test3():
 			// Use simultaniously two generator objects.
 			var[ (generator : i32), 2 ] mut gens[ SimpleGen(1), SimpleGen(2) ];
 			var [i32, 2] mut advanced[ 0, 0 ];
-			while(true)
+			loop
 			{
 				auto mut num_current_advanced= 0;
 				if_coro_advance( x : gens[0] )
@@ -915,7 +915,7 @@ def GeneratorsNonTrivialUsage_Test4():
 		fn generator GenSquareNumbers( u32 max ) : u32
 		{
 			auto mut gen= GenNumbers( max );
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -927,7 +927,7 @@ def GeneratorsNonTrivialUsage_Test4():
 		fn generator GenSquareNumbersPairs( u32 max ) : u32
 		{
 			auto mut gen= GenSquareNumbers( max );
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -941,7 +941,7 @@ def GeneratorsNonTrivialUsage_Test4():
 		{
 			auto mut gen= GenSquareNumbersPairs( 17u );
 			auto mut advanced= 0u;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -970,12 +970,12 @@ def GeneratorsNonTrivialUsage_Test5():
 		fn generator GenNumbersGrid( u32 width, u32 height ) : u32
 		{
 			auto mut height_gen= GenNumbers( height );
-			while( true )
+			loop
 			{
 				if_coro_advance( y : height_gen )
 				{
 					auto mut width_gen= GenNumbers( width );
-					while( true )
+					loop
 					{
 						if_coro_advance( x : width_gen )
 						{
@@ -991,7 +991,7 @@ def GeneratorsNonTrivialUsage_Test5():
 		{
 			auto mut gen= GenNumbersGrid( 5u, 9u );
 			auto mut advanced= 0u;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -1019,7 +1019,7 @@ def GeneratorsNonTrivialUsage_Test6():
 			}
 
 			auto mut gen= GenSequenceUpToPow2( power - 1u );
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -1034,7 +1034,7 @@ def GeneratorsNonTrivialUsage_Test6():
 		{
 			auto mut gen= GenSequenceUpToPow2( 5u );
 			auto mut advanced= 0u;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{
@@ -1065,12 +1065,12 @@ def GeneratorsNonTrivialUsage_Test7():
 		{
 			auto mut gen= GenSequences( 6u );
 			auto mut advanced= 0u;
-			while( true )
+			loop
 			{
 				if_coro_advance( mut inner_gen : gen )
 				{
 					auto mut inner_advanced= 0u;
-					while(true)
+					loop
 					{
 						if_coro_advance( x : inner_gen )
 						{
@@ -1139,7 +1139,7 @@ def TemplateGenerator_Test0():
 		{
 			auto mut gen= GenNumbers( max ); // Use here template parameters deduction.
 			auto mut advanced= 0;
-			while( true )
+			loop
 			{
 				if_coro_advance( x : gen )
 				{

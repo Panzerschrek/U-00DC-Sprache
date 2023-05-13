@@ -1380,6 +1380,59 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LoopOperator& loop_operator ) : BlockElementBuildInfo
+{
+	auto references_graph_before_loop= function_context.references_graph;
+
+	var LLVMBasicBlockRef loop_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	var LLVMBasicBlockRef block_after_loop= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+	// Break to loop block. We must push terminal instruction at and of current block.
+	unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) );
+
+	// Loop block code.
+	AddLoopFrame( names_scope, function_context, block_after_loop, loop_block, loop_operator.label_ );
+
+	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, loop_block ) );
+	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, loop_block ) );
+
+	auto loop_info= BuildBlock( names_scope, function_context, loop_operator.block.deref() );
+	if( !loop_info.have_terminal_instruction_inside )
+	{
+		unsafe( LLVMBuildBr( function_context.llvm_ir_builder, loop_block ) );
+		function_context.loops_stack.back().continue_references_graphs.push_back( function_context.references_graph );
+	}
+
+	// Disallow outer variables state change in "continue" branches.
+	foreach( &state_after : function_context.loops_stack.back().continue_references_graphs )
+	{
+		CheckReferencesGraphAfterLoop( references_graph_before_loop, state_after, names_scope, loop_operator.block.deref().end_src_loc );
+	}
+
+	// Result graph state is combination of graph state of all branches terminated with "break".
+	var ust::vector</ReferencesGraph/> references_graphs_for_merge= take( function_context.loops_stack.back().break_references_graphs );
+	function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( references_graphs_for_merge.range(), names_scope, loop_operator.block.deref().end_src_loc );
+
+	function_context.loops_stack.pop_back();
+
+	// This loop is terminal, if it contains no "break" inside - only "break" to outer labels or "return".
+	// Any code, that follows infinite loop without "break" inside is unreachable.
+	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= references_graphs_for_merge.empty() };
+	if( !block_element_build_info.have_terminal_instruction_inside )
+	{
+		// Block after loop code.
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_loop ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_loop ) );
+	}
+	else
+	{
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_loop ) );
+		unsafe( LLVMDeleteBasicBlock( block_after_loop ) );
+	}
+
+	return block_element_build_info;
+}
+
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut in_function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo
 {
 	var BlockElementBuildInfo mut block_element_build_info;
@@ -2171,7 +2224,7 @@ fn CodeBuilder::FetchLoopFrame(
 
 	// In case of "break" or "continue" without label skip non-loop frames (block frames, where only "break" is available).
 	var size_type mut index= function_context.loops_stack.size() - 1s;
-	while( true )
+	loop
 	{
 		var bool is_loop_frame= function_context.loops_stack[index].block_for_continue != LLVMBasicBlockRef::Null;
 		if( is_loop_frame )

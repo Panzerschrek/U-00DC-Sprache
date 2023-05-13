@@ -537,7 +537,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 			if( name_components.front().empty() )
 			{
 				// Global name - search in root namespace.
-				while( true )
+				loop
 				{
 					auto parent= current_scope.try_lock_imut().deref().GetParent();
 					if( parent.empty() )

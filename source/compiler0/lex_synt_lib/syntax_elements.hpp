@@ -66,6 +66,7 @@ struct AutoVariableDeclaration;
 struct ReturnOperator;
 struct YieldOperator;
 struct WhileOperator;
+struct LoopOperator;
 struct RangeForOperator;
 struct CStyleForOperator;
 struct BreakOperator;
@@ -168,6 +169,7 @@ using BlockElement= std::variant<
 	ReturnOperator,
 	YieldOperator,
 	WhileOperator,
+	LoopOperator,
 	RangeForOperator,
 	CStyleForOperator,
 	BreakOperator,
@@ -656,6 +658,14 @@ struct WhileOperator final : public SyntaxElementBase
 	WhileOperator( const SrcLoc& src_loc );
 
 	Expression condition_;
+	std::optional<Label> label_;
+	BlockPtr block_;
+};
+
+struct LoopOperator final : public SyntaxElementBase
+{
+	LoopOperator( const SrcLoc& src_loc );
+
 	std::optional<Label> label_;
 	BlockPtr block_;
 };

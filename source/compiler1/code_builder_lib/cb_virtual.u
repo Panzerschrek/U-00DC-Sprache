@@ -777,7 +777,7 @@ fn CodeBuilder::TryFetchVirtualFunction(
 	{
 		// Fetch "this" pointer offset. It is located in deepest first virtual table (actual offset should always be zero).
 		auto mut root_class= class_type_ptr;
-		while( true )
+		loop
 		{
 			auto next_root_class= root_class.lock_imut().deref().base_class;
 			if( next_root_class.empty() )

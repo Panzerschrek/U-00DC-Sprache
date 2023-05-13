@@ -1091,6 +1091,62 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::LoopOperator& loop_operator )
+{
+	ReferencesGraph variables_state_before_loop= function_context.variables_state;
+
+	llvm::BasicBlock* const loop_block= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_loop= llvm::BasicBlock::Create( llvm_context_ );
+
+	// Break to loop block. We must push terminal instruction at and of current block.
+	function_context.llvm_ir_builder.CreateBr( loop_block );
+
+	AddLoopFrame( names, function_context, block_after_loop, loop_block, loop_operator.label_ );
+
+	function_context.function->getBasicBlockList().push_back( loop_block );
+	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
+
+	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, *loop_operator.block_ );
+	if( !loop_body_block_info.have_terminal_instruction_inside )
+	{
+		function_context.llvm_ir_builder.CreateBr( loop_block );
+		function_context.loops_stack.back().continue_variables_states.push_back( function_context.variables_state );
+	}
+
+	// Disallow outer variables state change in "continue" branches.
+	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
+	{
+		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, loop_operator.block_->end_src_loc_ );
+		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
+	}
+
+	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
+
+	function_context.loops_stack.pop_back();
+
+	// Result variables state is combination of variables state of all branches terminated with "break".
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), loop_operator.block_->end_src_loc_ );
+
+	// This loop is terminal, if it contains no "break" inside - only "break" to outer labels or "return".
+	// Any code, that follows infinite loop without "break" inside is unreachable.
+	BlockBuildInfo block_build_info;
+	block_build_info.have_terminal_instruction_inside= variables_state_for_merge.empty();
+
+	if( !block_build_info.have_terminal_instruction_inside )
+	{
+		// Block after loop code.
+		function_context.function->getBasicBlockList().push_back( block_after_loop );
+		function_context.llvm_ir_builder.SetInsertPoint( block_after_loop );
+	}
+	else
+		delete block_after_loop;
+
+	return block_build_info;
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::BreakOperator& break_operator )
 {
 	BlockBuildInfo block_info;

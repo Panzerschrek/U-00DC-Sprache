@@ -491,6 +491,13 @@ struct WhileOperator
 	ust::box</Block/> block;
 }
 
+struct LoopOperator
+{
+	SrcLoc src_loc;
+	ust::optional</Label/> label_;
+	ust::box</Block/> block;
+}
+
 struct RangeForOperator
 {
 	SrcLoc src_loc;
@@ -583,6 +590,7 @@ type BlockElement = ust::variant</ tup[
 	StaticIfOperator,
 	IfCoroAdvanceOperator,
 	WhileOperator,
+	LoopOperator,
 	RangeForOperator,
 	CStyleForOperator,
 	BreakOperator,

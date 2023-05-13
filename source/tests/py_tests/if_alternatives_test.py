@@ -106,7 +106,7 @@ def IfAlternatives_Test3():
 		{
 			auto mut gen= SomeGen();
 			auto mut advanced= 0;
-			while(true)
+			loop
 			{
 				if_coro_advance( x : gen )
 				{

@@ -293,6 +293,7 @@ private:
 	YieldOperator ParseYieldOperator();
 	std::optional<Label> TryParseLabel();
 	WhileOperator ParseWhileOperator();
+	LoopOperator ParseLoopOperator();
 	BlockElement ParseForOperator();
 	RangeForOperator ParseRangeForOperator();
 	CStyleForOperator ParseCStyleForOperator();
@@ -2127,6 +2128,18 @@ WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 	return result;
 }
 
+LoopOperator SyntaxAnalyzer::ParseLoopOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::loop_ );
+	LoopOperator result( it_->src_loc );
+	NextLexem();
+
+	result.label_= TryParseLabel();
+	result.block_= std::make_unique<Block>( ParseBlock() );
+
+	return result;
+}
+
 BlockElement SyntaxAnalyzer::ParseForOperator()
 {
 	if( it_end_ - it_ >= 3 )
@@ -2568,6 +2581,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseYieldOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ )
 			elements.emplace_back( ParseWhileOperator() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::loop_ )
+			elements.emplace_back( ParseLoopOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ )
 			elements.emplace_back( ParseForOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::break_ )

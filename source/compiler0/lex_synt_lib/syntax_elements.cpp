@@ -199,6 +199,10 @@ WhileOperator::WhileOperator( const SrcLoc& src_loc)
 	: SyntaxElementBase(src_loc)
 {}
 
+LoopOperator::LoopOperator( const SrcLoc& src_loc)
+	: SyntaxElementBase(src_loc)
+{}
+
 RangeForOperator::RangeForOperator( const SrcLoc& src_loc)
 	: SyntaxElementBase(src_loc)
 {}
