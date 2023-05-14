@@ -32,3 +32,14 @@ static_assert
    {
        static_assert( 8u % 3u == 2u ); // В функции
    }
+
+Также существует ``static_assert`` с сообщением, которое указывается через запятую после выражения-условия.
+В случае ложности условия компилятор выведет это сообщение как ошибку.
+
+.. code-block:: u_spr
+
+   static_assert( false, "es tut mir leid" );
+
+Компилятор выдаст ошибку примерно следующего содержания::
+
+   error: Static assertion failed: Es tut mir leid.
