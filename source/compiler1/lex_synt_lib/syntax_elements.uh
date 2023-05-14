@@ -562,6 +562,7 @@ struct StaticAssert
 {
 	SrcLoc src_loc;
 	Expression expression;
+	ust::optional</ust::string8/> message;
 }
 
 struct Halt

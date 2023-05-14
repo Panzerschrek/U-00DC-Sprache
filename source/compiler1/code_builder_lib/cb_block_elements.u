@@ -2042,7 +2042,16 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			{
 				if( unsafe( LLVMConstIntGetZExtValue( condition_variable.constexpr_value ) ) == 0u64 )
 				{
-					REPORT_ERROR( StaticAssertionFailed, names_scope, static_assert_.src_loc )
+					var CodeBuilderError mut error{ .code= CodeBuilderErrorCode::StaticAssertionFailed, .src_loc= static_assert_.src_loc };
+					if_var( &message : static_assert_.message )
+					{
+						error.text= "Static assertion failed: " + message + ".";
+					}
+					else
+					{
+						error.text= "Static assertion failed.";
+					}
+					PutErrorIntoContainer( names_scope, move(error) );
 				}
 			}
 			else
