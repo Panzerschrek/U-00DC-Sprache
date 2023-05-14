@@ -312,7 +312,7 @@ fn nomangle main() : i32
 		}
 	}
 	{ // Constructor with size for default-constructible elements.
-		var CVec mut v( 100s) );
+		var CVec mut v( 100s );
 
 		halt if( v.size() != 100s );
 
