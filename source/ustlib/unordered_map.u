@@ -17,9 +17,8 @@ public:
 	type this_type= unordered_map</ key_type, value_type />;
 	type hasher= default_hasher;
 
-	// Key type should be copyable.
-	static_assert( typeinfo</K/>.is_copy_constructible );
-	static_assert( typeinfo</K/>.is_copy_assignable );
+	static_assert( typeinfo</K/>.is_copy_constructible, "key type should be copyable" );
+	static_assert( typeinfo</K/>.is_copy_assignable, "key type should be copyable" );
 
 public:
 	// Default constructor.

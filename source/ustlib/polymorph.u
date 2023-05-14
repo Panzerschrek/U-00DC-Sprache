@@ -152,7 +152,7 @@ fn polymorph_cast_impl( From &'x mut from ) : optional_ref</ To, true />'x'
 	}
 	else
 	{
-		static_assert(false); // polymorph_cast works only for polymorph classes.
+		static_assert( false, "polymorph_cast for non-polymorph type" );
 		halt;
 	}
 }

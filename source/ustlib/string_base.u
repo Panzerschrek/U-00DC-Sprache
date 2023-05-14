@@ -9,7 +9,7 @@ namespace ust
 template</ type char_type />
 class string_base
 {
-	static_assert( typeinfo</ char_type />.is_char );
+	static_assert( typeinfo</ char_type />.is_char, "this containers supports only char types" );
 
 public:
 	type this_type= string_base</char_type/>;
