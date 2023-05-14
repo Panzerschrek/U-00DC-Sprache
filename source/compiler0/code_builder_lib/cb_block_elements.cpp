@@ -1999,7 +1999,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( !variable->constexpr_value->isOneValue() )
 	{
-		REPORT_ERROR( StaticAssertionFailed, names.GetErrors(), static_assert_.src_loc_ );
+		CodeBuilderError error;
+		error.code= CodeBuilderErrorCode::StaticAssertionFailed;
+		error.src_loc= static_assert_.src_loc_;
+		error.text= static_assert_.message == std::nullopt
+				? "Static assertion failed."
+				: ("Static assertion failed: " + *static_assert_.message + "." );
+
+		names.GetErrors().push_back( std::move(error) );
 	}
 
 	return block_info;

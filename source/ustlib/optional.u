@@ -187,7 +187,7 @@ public:
 	}
 
 	fn
-	enable_if( typeinfo</T/>.references_tags_count == size_type(0) )
+	enable_if( typeinfo</T/>.references_tags_count == 0s )
 	as_ref( mut this ) : optional_ref_mut</T/>'this'
 	{
 		if( has_value_ )
@@ -201,7 +201,7 @@ public:
 	}
 
 	fn
-	enable_if( typeinfo</T/>.references_tags_count == size_type(0) )
+	enable_if( typeinfo</T/>.references_tags_count == 0s )
 	as_ref( imut this ) : optional_ref_imut</T/>'this'
 	{
 		if( has_value_ )
@@ -297,7 +297,7 @@ struct optional_hasher
 		{
 			return default_hasher::hash(value);
 		}
-		return size_type(0);
+		return 0s;
 	}
 }
 

@@ -27,8 +27,8 @@ fn constexpr hash( byte128 x ) : size_type { return hash(u128(x)); }
 
 fn constexpr hash( bool x ) : size_type
 {
-	if( x ) { return size_type(1); }
-	return size_type(0);
+	if( x ) { return 1s; }
+	return 0s;
 }
 
 // Use bitcast for floating point values hashing.

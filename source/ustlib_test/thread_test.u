@@ -62,7 +62,7 @@ fn nomangle main() : i32
 		var IntShared ptr(0);
 		var size_type mut i(0);
 		var ust::vector</ ust::thread</ Incrementer, void /> /> mut threads;
-		while( i < size_type(64) )
+		while( i < 64s )
 		{
 			var Incrementer incrementer{ .ptr= ptr };
 			threads.push_back( ust::make_thread_void(incrementer) );

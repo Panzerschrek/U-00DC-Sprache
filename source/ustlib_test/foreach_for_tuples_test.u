@@ -16,7 +16,7 @@ fn nomangle main() : i32
 			x*= typeof(x)(-2);
 			++iterations;
 		}
-		halt if( iterations != size_type(3) );
+		halt if( iterations != 3s );
 		halt if( t[0u] != -108u );
 		halt if( t[1u] != 130.0f );
 		halt if( t[2u] != -1790 );
@@ -25,7 +25,7 @@ fn nomangle main() : i32
 		var tup[] t[];
 		var size_type mut iterations(0);
 		foreach( x : t ) { ++iterations; }
-		halt if( iterations != size_type(0) );
+		halt if( iterations != 0s );
 	}
 
 	{ // "break" in tuples for
@@ -37,7 +37,7 @@ fn nomangle main() : i32
 			++iterations;
 			if( x < typeof(x)(0) ) { break; }
 		}
-		halt if( iterations != size_type(2) );
+		halt if( iterations != 2s );
 		halt if( t[0u] != 54u * 3u );
 		halt if( t[1u] != -2564.0f * 3.0f );
 		halt if( t[2u] != 142 );
@@ -51,7 +51,7 @@ fn nomangle main() : i32
 			x*= typeof(x)(5);
 			++iterations;
 		}
-		halt if( iterations != size_type(2) );
+		halt if( iterations != 2s );
 		halt if( t[0] != 17.0f );
 		halt if( t[1] != 280 );
 		halt if( t[2] != 445i64 );

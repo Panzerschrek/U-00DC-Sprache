@@ -11,9 +11,8 @@ public:
 	type key_type= T;
 	type value_type= T;
 
-	// Set type should be copyable.
-	static_assert( typeinfo</T/>.is_copy_constructible );
-	static_assert( typeinfo</T/>.is_copy_assignable );
+	static_assert( typeinfo</T/>.is_copy_constructible , "set type should be copyable" );
+	static_assert( typeinfo</T/>.is_copy_assignable , "set type should be copyable" );
 
 public:
 	// Default constructor.

@@ -9,7 +9,7 @@ namespace ust
 template</ type char_type />
 class string_base
 {
-	static_assert( typeinfo</ char_type />.is_char );
+	static_assert( typeinfo</ char_type />.is_char, "this containers supports only char types" );
 
 public:
 	type this_type= string_base</char_type/>;
@@ -40,7 +40,7 @@ public:
 	fn conversion_constructor( [ char_type, array_size ]& array )
 		( size_(array_size) )
 	{
-		if( array_size == size_type(0) ){ return; }
+		if( array_size == 0s ){ return; }
 
 		unsafe
 		{
@@ -56,7 +56,7 @@ public:
 	fn conversion_constructor( range_imut range )
 		( size_(range.size()) )
 	{
-		if( size_ == size_type(0) ){ return; }
+		if( size_ == 0s ){ return; }
 
 		unsafe
 		{
@@ -72,7 +72,7 @@ public:
 	fn constructor( size_type count, char_type value )
 		( size_(count) )
 	{
-		if( count == size_type(0) ){ return; }
+		if( count == 0s ){ return; }
 
 		unsafe
 		{
@@ -129,7 +129,7 @@ public:
 
 	fn empty( this ) : bool
 	{
-		return size_ == size_type(0);
+		return size_ == 0s;
 	}
 
 	fn capacity( this ) : size_type
@@ -408,7 +408,7 @@ public:
 
 	fn clear( mut this )
 	{
-		size_= size_type(0);
+		size_= 0s;
 	}
 
 	fn shrink_to_fit( mut this )
@@ -418,7 +418,7 @@ public:
 			capacity_= size_;
 			unsafe
 			{
-				if( capacity_ == size_type(0) )
+				if( capacity_ == 0s )
 				{
 					memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
 					ptr_= nullptr</char_type/>();
@@ -519,9 +519,9 @@ private:
 		// Typical allocator allocates memory with block size=16 or more.
 		// For first allocation we can allocate more, than one element for elements, smaller, then 16/2.
 
-		static_if     ( c_element_size_ == size_type(0) ) { return ~size_type(0); } // Max for zero-sized elements.
-		else static_if( c_element_size_ >= size_type(16) ) { return size_type(1); }
-		else { return size_type(16) / c_element_size_; }
+		static_if     ( c_element_size_ ==  0s ) { return ~0s; } // Max for zero-sized elements.
+		else static_if( c_element_size_ >= 16s ) { return  1s; }
+		else { return 16s / c_element_size_; }
 	}
 
 	auto c_size_type_is_u32_= typeinfo</ size_type />.size_of == typeinfo</ u32 />.size_of;
@@ -536,7 +536,7 @@ private:
 			{
 				return;
 			}
-			else if( capacity_ == size_type(0) )
+			else if( capacity_ == 0s )
 			{
 				capacity_= max( get_first_allocation_size(), new_size );
 				// Multiplication overflow check is needed here.
@@ -567,7 +567,7 @@ fn hash( string_base</char_type/>& str ) : size_type
 	var size_type mut r(0);
 	foreach( c : str )
 	{
-		r= r * size_type(33) + size_type(c);
+		r= r * 33s + size_type(c);
 	}
 	return r;
 }

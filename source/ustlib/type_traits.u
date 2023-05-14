@@ -118,7 +118,7 @@ fn constexpr is_tuple_typeinfo_type() : bool
 template</ type T, type FnT, size_type name_size />
 fn constexpr class_have_method( [ char8, name_size ]& name ) : bool
 {
-	static_assert( typeinfo</FnT/>.is_function_pointer );
+	static_assert( typeinfo</FnT/>.is_function_pointer, "expected function type" );
 	static_if( typeinfo</T/>.is_class )
 	{
 		for( &list_element : typeinfo</T/>.functions_list )

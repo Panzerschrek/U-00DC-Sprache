@@ -11,12 +11,11 @@ namespace ust
 template</ type T, bool is_nullable, bool is_mutable />
 class shared_ptr_mt_base
 {
-	// Forbid shared pointers for structs with references inside.
-	static_assert( typeinfo</T/>.references_tags_count == size_type(0) );
+	static_assert( typeinfo</T/>.references_tags_count == 0s, "this container doesn't support types with references inside" );
 
 	// It's have no sence to use multithreaded shared pointer for types, with singlethreaded shared pointers inside.
 	// Use singlethreaded shared pointer instead.
-	static_assert( !non_sync</T/> );
+	static_assert( !non_sync</T/>, "using non_sync types inside multithreaded shared pointers is not allowed" );
 
 	type hasher= shared_ptr_mt_base_hasher;
 

@@ -47,7 +47,7 @@ fn call_destructor( T&mut t ) unsafe
 template</ type T />
 fn call_default_constructor( T&mut t ) unsafe
 {
-	static_assert( typeinfo</T/>.is_default_constructible );
+	static_assert( typeinfo</T/>.is_default_constructible, "expected default-constructible type" );
 
 	static_if( typeinfo</T/>.is_class )
 	{

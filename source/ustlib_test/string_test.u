@@ -54,7 +54,7 @@ fn nomangle main() : i32
 	}
 	{ // String is fill-constructible.
 
-		var ust::string8 s( size_type(7), "a"[0u] );
+		var ust::string8 s( 7s, "a"[0u] );
 		halt if( s.empty() );
 		halt if( s != "aaaaaaa" );
 	}
@@ -85,33 +85,33 @@ fn nomangle main() : i32
 	{ // push_back/ pop_back
 		var ust::string8 mut s;
 
-		halt if( s != "" ); halt if( s.size() != size_type(0) );
+		halt if( s != "" ); halt if( s.size() != 0s );
 		s.push_back( "Q"[0u] );
-		halt if( s != "Q" ); halt if( s.size() != size_type(1) );
+		halt if( s != "Q" ); halt if( s.size() != 1s );
 		s.push_back( "u"[0u] );
-		halt if( s != "Qu" ); halt if( s.size() != size_type(2) );
-		s.push_back( size_type(3), "e"[0u] );
-		halt if( s != "Queee" ); halt if( s.size() != size_type(5) );
+		halt if( s != "Qu" ); halt if( s.size() != 2s );
+		s.push_back( 3s, "e"[0u] );
+		halt if( s != "Queee" ); halt if( s.size() != 5s );
 		halt if( s.pop_back() != "e"[0u] );
-		halt if( s != "Quee" ); halt if( s.size() != size_type(4) );
+		halt if( s != "Quee" ); halt if( s.size() != 4s );
 		s.drop_back();
-		halt if( s != "Que" ); halt if( s.size() != size_type(3) );
-		s.push_back( size_type(7), "!"[0u] );
-		halt if( s != "Que!!!!!!!" ); halt if( s.size() != size_type(10) );
-		s.drop_back(size_type(9));
-		halt if( s != "Q" ); halt if( s.size() != size_type(1) );
+		halt if( s != "Que" ); halt if( s.size() != 3s );
+		s.push_back( 7s, "!"[0u] );
+		halt if( s != "Que!!!!!!!" ); halt if( s.size() != 10s );
+		s.drop_back( 9s );
+		halt if( s != "Q" ); halt if( s.size() != 1s );
 		s.drop_back();
-		halt if( s != "" ); halt if( s.size() != size_type(0) );
+		halt if( s != "" ); halt if( s.size() != 0s );
 	}
 	{ // resize
 		var ust::string16 mut s;
 		halt if( s != ""u16 );
 
-		s.resize( size_type(4), ","u16[0u] );
+		s.resize( 4s, ","u16[0u] );
 		halt if( s != ",,,,"u16 );
-		s.resize( size_type(6), "r"u16[0u] );
+		s.resize( 6s, "r"u16[0u] );
 		halt if( s != ",,,,rr"u16 );
-		s.resize( size_type(1), " "u16[0u] );
+		s.resize( 1s, " "u16[0u] );
 		halt if( s != ","u16 );
 	}
 	{ // swap
@@ -260,13 +260,13 @@ fn nomangle main() : i32
 	}
 	{ // substr.
 		var ust::string8 s( "abcdef012345" );
-		auto l= s.substr( size_type(0), size_type(6) );
+		auto l= s.substr( 0s, 6s );
 		halt if( l != "abcdef" );
-		halt if( s.substr( size_type(6), size_type(12) ) != "012345" );
-		halt if( l.substr( size_type(1), size_type(4) ) != s.substr( size_type(1), size_type(4) ) );
-		halt if( s.substr( size_type(2), size_type(10) ) != "cdef0123" );
-		halt if( s.substr( size_type(7), s.size() ) != "12345" );
-		halt if( !s.substr( size_type(8), size_type(8) ).empty() );
+		halt if( s.substr( 6s, 12s ) != "012345" );
+		halt if( l.substr( 1s, 4s ) != s.substr( 1s, 4s ) );
+		halt if( s.substr( 2s, 10s ) != "cdef0123" );
+		halt if( s.substr( 7s, s.size() ) != "12345" );
+		halt if( !s.substr( 8s, 8s ).empty() );
 	}
 	return 0;
 }

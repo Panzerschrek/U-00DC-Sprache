@@ -23,22 +23,22 @@ fn nomangle main() : i32
 	{ // Can construct imut range from imut array.
 		var [ i32, 5 ] arr= zero_init;
 		var IntRangeImut range(arr);
-		halt if( range.size() != size_type(5) );
+		halt if( range.size() != 5s );
 	}
 	{ // Can construct imut range from mut array.
 		var [ i32, 5 ] mut arr= zero_init;
 		var IntRangeImut range(arr);
-		halt if( range.size() != size_type(5) );
+		halt if( range.size() != 5s );
 	}
 	{ // Can implicitly convert array to range.
 		var [ i32, 16 ] arr= zero_init;
 		auto size= GetIntRangeSize( arr );
-		halt if( size != size_type(16) );
+		halt if( size != 16s );
 	}
 	{ // Can implicitly convert mut array to range.
 		var [ i32, 16 ] mut arr= zero_init;
 		auto size= GetIntRangeSize( arr );
-		halt if( size != size_type(16) );
+		halt if( size != 16s );
 	}
 	{ // Can convert mut range to imut range.
 		var [ i32, 16 ] mut arr= zero_init;
@@ -49,9 +49,9 @@ fn nomangle main() : i32
 		var [ i32, 8 ] mut arr= zero_init;
 		var IntRangeMut  range_mut (arr);
 		auto size= GetIntRangeSize( range_mut );
-		halt if( size != size_type(8) );
+		halt if( size != 8s );
 	}
-	halt if( GetCharRangeSize( "wtf?" ) != size_type(4) ); // Can implicitly convert string literal to range
+	halt if( GetCharRangeSize( "wtf?" ) != 4s ); // Can implicitly convert string literal to range
 	{ // Can modify array content, using range.
 		var [ i32, 5 ] mut arr= zero_init;
 		IntRangeMut(arr).back()= 42;
@@ -60,15 +60,15 @@ fn nomangle main() : i32
 	{ // Subrange.
 		var [ i32, 5 ] arr= zero_init;
 		var IntRangeImut range(arr);
-		halt if( range.size() != size_type(5) );
-		halt if( range.subrange( size_type(1), size_type(5) ).size() != size_type(4) );
-		halt if( range.subrange( size_type(2), size_type(3) ).size() != size_type(1) );
-		halt if( range.subrange( size_type(0), size_type(0) ).size() != size_type(0) );
+		halt if( range.size() != 5s );
+		halt if( range.subrange( 1s, 5s ).size() != 4s );
+		halt if( range.subrange( 2s, 3s ).size() != 1s );
+		halt if( range.subrange( 0s, 0s ).size() != 0s );
 	}
 	{ // Can modify array content, using subrange range.
 		var [ i32, 4 ] mut arr= zero_init;
 		{
-			auto range= IntRangeMut(arr).subrange( size_type(1), size_type(3) );
+			auto range= IntRangeMut(arr).subrange( 1s, 3s );
 			range.front()= 45;
 			range.back()= 66;
 		}

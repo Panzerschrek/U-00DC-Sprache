@@ -29,11 +29,11 @@ template</ type Y />
 class variant non_sync( non_sync</Y/> )
 {
 public:
-	static_assert( typeinfo</Y/>.is_tuple );
-	static_assert( typeinfo</Y/>.element_count > 0s );
-	static_assert( variant_impl::all_tuple_elements_are_unique</Y/>() );
+	static_assert( typeinfo</Y/>.is_tuple, "this container accepts types list in form of tuple" );
+	static_assert( typeinfo</Y/>.element_count > 0s, "expected non-empty tuple" );
+	static_assert( variant_impl::all_tuple_elements_are_unique</Y/>(), "duplicated element types" );
 	// Cant' use type with references inside since we use "optional_ref" to access variants.
-	static_assert( typeinfo</Y/>.references_tags_count == 0s );
+	static_assert( typeinfo</Y/>.references_tags_count == 0s, "this container doesn't support types with references inside" );
 
 	type this_type= variant</ Y />;
 	type elements_tuple= Y;

@@ -45,29 +45,29 @@ fn nomangle main() : i32
 	}
 	{
 		// Can not fill vector with default values, because element type is not default-constructible.
-		var ust::vector</S/> vec( size_type(64) ); //##expect_error CouldNotSelectOverloadedFunction
+		var ust::vector</S/> vec( 64s ); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	{
 		// Can not fill vector with values, because element type is not copy-constructible.
 		var C c;
-		var ust::vector</S/> vec( size_type(4), c ); //##expect_error CouldNotSelectOverloadedFunction
+		var ust::vector</S/> vec( 4s, c ); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	{
 		// Can not fill vector with values, because element type is not copy-constructible.
 		var C c;
 		var ust::vector</S/> vec;
-		vec.resize( size_type(4), c ); //##expect_error CouldNotSelectOverloadedFunction
+		vec.resize( 4s, c ); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	{
 		// Can not fill vector with values, because element type is not default-constructible.
 		var ust::vector</i32/> vec;
-		vec.resize( size_type(4) ); //##expect_error CouldNotSelectOverloadedFunction
+		vec.resize( 4s ); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	{
 		// Can not push back multiple values, because element type is not copyable.
 		var C c;
 		var ust::vector</C/> vec;
-		vec.push_back( size_type(10), c ); //##expect_error CouldNotSelectOverloadedFunction
+		vec.push_back( 10s, c ); //##expect_error CouldNotSelectOverloadedFunction
 	}
 	{ // Operator == doesn't exists for non-equality-comparable types
 		var ust::vector</C/> a, b;

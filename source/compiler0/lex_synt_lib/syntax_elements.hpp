@@ -807,6 +807,7 @@ struct StaticAssert final : public SyntaxElementBase
 	explicit StaticAssert( const SrcLoc& src_loc );
 
 	Expression expression;
+	std::optional<std::string> message;
 };
 
 struct Halt final : public SyntaxElementBase
