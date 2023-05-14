@@ -162,7 +162,7 @@ struct box_nullable_hasher
 		{
 			return default_hasher::hash(value);
 		}
-		return size_type(0);
+		return 0s;
 	}
 }
 

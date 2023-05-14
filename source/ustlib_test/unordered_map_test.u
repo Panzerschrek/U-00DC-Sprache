@@ -32,7 +32,7 @@ fn nomangle main() : i32
 		halt if( ! m.empty() );
 
 		m.insert( 55, -7 );
-		halt if( m.size() != size_type(1) );
+		halt if( m.size() != 1s );
 
 		{
 			auto find_result= m.find( 66 );
@@ -197,7 +197,7 @@ fn nomangle main() : i32
 		halt if( !m.empty() );
 
 		m.insert( 5, 32 );
-		halt if( m.size() != size_type(1) );
+		halt if( m.size() != 1s );
 	}
 	{ // noncopyable value
 

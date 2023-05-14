@@ -38,8 +38,8 @@ fn nomangle main() : i32
 	static_assert( typeinfo</ ust::optional</f64/> />.align_of >= typeinfo</f64/>.align_of );
 	
 	// Optional required additional size, but no more, then type alignment.
-	static_assert( typeinfo</ ust::optional</u8/> />.size_of == size_type(2) ); // bool + u8
-	static_assert( typeinfo</ ust::optional</u32/> />.size_of <= size_type(2) * typeinfo</u32/>.size_of );
+	static_assert( typeinfo</ ust::optional</u8/> />.size_of == 2s ); // bool + u8
+	static_assert( typeinfo</ ust::optional</u32/> />.size_of <= 2s * typeinfo</u32/>.size_of );
 	static_assert( typeinfo</ ust::optional</ U32Vec16 /> />.size_of <= typeinfo</ U32Vec16 />.size_of + typeinfo</u32/>.align_of );
 	static_assert( typeinfo</ ust::optional</ U8Vec99 /> />.size_of <= typeinfo</ U8Vec99 />.size_of + typeinfo</u8/>.align_of );
 	

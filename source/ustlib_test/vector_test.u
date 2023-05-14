@@ -47,27 +47,27 @@ fn nomangle main() : i32
 		var CVec c;
 
 		halt if( !i.empty() );
-		halt if(  i.size() != size_type(0) );
+		halt if(  i.size() != 0s );
 		halt if( !a.empty() );
-		halt if(  a.size() != size_type(0) );
+		halt if(  a.size() != 0s );
 		halt if( !b.empty() );
-		halt if(  b.size() != size_type(0) );
+		halt if(  b.size() != 0s );
 		halt if( !c.empty() );
-		halt if(  c.size() != size_type(0) );
+		halt if(  c.size() != 0s );
 	}
 	{ // "push_back"/"drop_back" changes size.
 		var I32Vec mut i;
 
-		i.push_back(5);  halt if( i.size() != size_type(1) );
-		i.push_back(0);  halt if( i.size() != size_type(2) );
-		i.push_back(2);  halt if( i.size() != size_type(3) );
-		i.drop_back();   halt if( i.size() != size_type(2) );
-		i.push_back(7);  halt if( i.size() != size_type(3) );
-		i.push_back(8);  halt if( i.size() != size_type(4) );
-		i.drop_back();   halt if( i.size() != size_type(3) );
-		i.drop_back();   halt if( i.size() != size_type(2) );
-		i.drop_back();   halt if( i.size() != size_type(1) );
-		i.drop_back();   halt if( i.size() != size_type(0) );
+		i.push_back(5);  halt if( i.size() != 1s );
+		i.push_back(0);  halt if( i.size() != 2s );
+		i.push_back(2);  halt if( i.size() != 3s );
+		i.drop_back();   halt if( i.size() != 2s );
+		i.push_back(7);  halt if( i.size() != 3s );
+		i.push_back(8);  halt if( i.size() != 4s );
+		i.drop_back();   halt if( i.size() != 3s );
+		i.drop_back();   halt if( i.size() != 2s );
+		i.drop_back();   halt if( i.size() != 1s );
+		i.drop_back();   halt if( i.size() != 0s );
 	}
 	{ // "drop_back" calls destructor.
 		var i32 mut x= 0;
@@ -220,7 +220,7 @@ fn nomangle main() : i32
 
 		var I32Vec i_copy(i);
 
-		halt if( i_copy.size() != size_type(3) );
+		halt if( i_copy.size() != 3s );
 		halt if( i_copy[0u] != 0 );
 		halt if( i_copy[1u] != 1 );
 		halt if( i_copy[2u] != 2 );
@@ -261,7 +261,7 @@ fn nomangle main() : i32
 
 		i= j;
 
-		halt if( j.size() != size_type(5) );
+		halt if( j.size() != 5s );
 		halt if( i[0u] != 10 );
 		halt if( i[1u] != 11 );
 		halt if( i[2u] != 12 );
@@ -282,7 +282,7 @@ fn nomangle main() : i32
 
 		j= i;
 
-		halt if( j.size() != size_type(3) );
+		halt if( j.size() != 3s );
 		halt if( j[0u] != 0 );
 		halt if( j[1u] != 1 );
 		halt if( j[2u] != 2 );
@@ -300,9 +300,9 @@ fn nomangle main() : i32
 		}
 	}
 	{ // Fill constructor.
-		var I32Vec mut v( size_type(50), 22 );
+		var I32Vec mut v( 50s, 22 );
 
-		halt if( v.size() != size_type(50) );
+		halt if( v.size() != 50s );
 
 		var size_type mut i(0);
 		while( i < v.size() )
@@ -312,9 +312,9 @@ fn nomangle main() : i32
 		}
 	}
 	{ // Constructor with size for default-constructible elements.
-		var CVec mut v( size_type(100) );
+		var CVec mut v( 100s) );
 
-		halt if( v.size() != size_type(100) );
+		halt if( v.size() != 100s );
 
 		var size_type mut i(0);
 		while( i < v.size() )
@@ -326,43 +326,43 @@ fn nomangle main() : i32
 	{ // Can push back multiple values and drop multiple values.
 		var I32Vec mut v;
 
-		v.push_back( size_type(3), 0 );
-		v.push_back( size_type(2), 1 );
+		v.push_back( 3s, 0 );
+		v.push_back( 2s, 1 );
 
-		halt if( v.size() != size_type(5) );
+		halt if( v.size() != 5s );
 		halt if( v[0u] != 0 );
 		halt if( v[1u] != 0 );
 		halt if( v[2u] != 0 );
 		halt if( v[3u] != 1 );
 		halt if( v[4u] != 1 );
 
-		v.drop_back( size_type(0) );
-		halt if( v.size() != size_type(5) );
+		v.drop_back( 0s );
+		halt if( v.size() != 5s );
 
-		v.drop_back( size_type(4) );
-		halt if( v.size() != size_type(1) );
+		v.drop_back( 4s );
+		halt if( v.size() != 1s );
 
-		v.drop_back( size_type(1) );
-		halt if( v.size() != size_type(0) );
+		v.drop_back( 1s );
+		halt if( v.size() != 0s );
 	}
 	{ // Can resize with new value.
 		var I32Vec mut v;
-		v.resize( size_type(4), 333 );
+		v.resize( 4s, 333 );
 
-		halt if( v.size() != size_type(4) );
+		halt if( v.size() != 4s );
 		halt if( v[0u] != 333 );
 		halt if( v[1u] != 333 );
 		halt if( v[2u] != 333 );
 		halt if( v[3u] != 333 );
 
-		v.resize( size_type(0), 0 );
+		v.resize( 0s, 0 );
 		halt if( !v.empty() );
 	}
 	{ // Can resize with default value.
 		var CVec mut v;
-		v.resize( size_type( 365 ) );
+		v.resize( 365s );
 
-		halt if( v.size() != size_type(365) );
+		halt if( v.size() != 365s );
 
 		var size_type mut i(0);
 		while( i < v.size() )

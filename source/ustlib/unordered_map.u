@@ -64,7 +64,7 @@ public:
 
 	fn empty( this ) : bool
 	{
-		return size_ == size_type(0);
+		return size_ == 0s;
 	}
 
 	fn insert( mut this, key_type& key, value_type mut value ) : value_type &'this mut
@@ -72,8 +72,8 @@ public:
 		// Size overflow is inpossible here - previous container size can't be greater than half of address space.
 		unsafe
 		{
-			rehash( size_ + size_type(1) );
-			auto capacity_mask= capacity_ - size_type(1);
+			rehash( size_ + 1s );
+			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= hash(key);
 			auto initial_key_hash_wrapped= key_hash & capacity_mask;
 			auto mut key_hash_wrapped= initial_key_hash_wrapped;
@@ -81,7 +81,7 @@ public:
 			loop
 			{
 				auto cell_content= $>(table_ + key_hash_wrapped).cell_content;
-				auto next_key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & capacity_mask;
+				auto next_key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
 				if( cell_content == TableValue::CellContent::Empty || next_key_hash_wrapped == initial_key_hash_wrapped )
 				{
 					++size_;
@@ -191,7 +191,7 @@ public:
 				}
 			}
 		}
-		size_= size_type(0);
+		size_= 0s;
 	}
 
 	fn range( imut this ) : unordered_map_range</false/>'this'
@@ -209,7 +209,7 @@ private:
 	{
 		if( expected_size <= size_ ) { return; }
 
-		auto mut new_capacity= max( capacity_, size_type(2) );
+		auto mut new_capacity= max( capacity_, 2s );
 		while( !( ( expected_size << 1u ) <= new_capacity ) ) { new_capacity<<= 1u; }
 		while( !( ( expected_size << 2u ) >  new_capacity ) ) { new_capacity>>= 1u; }
 
@@ -217,7 +217,7 @@ private:
 
 		unsafe // reallocate table and rehash.
 		{
-			auto new_capacity_mask= new_capacity - size_type(1);
+			auto new_capacity_mask= new_capacity - 1s;
 
 			// it's impossible to add more than one key into hash map in one call.
 			// Because of that it's impossible to get sizeof * capacity multiplication overflow here.
@@ -252,7 +252,7 @@ private:
 								memory_copy_aligned( typeinfo</ value_type />.align_of, cast_ref_unsafe</byte8/>( new_value.value_storage ), cast_ref_unsafe</byte8/>( old_value.value_storage ), typeinfo</ value_type />.size_of );
 								break; // We must find value, bacause new_capacity >= size_
 							}
-							key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & new_capacity_mask;
+							key_hash_wrapped= ( key_hash_wrapped + 1s ) & new_capacity_mask;
 						}
 					}
 					else{ halt; }
@@ -273,7 +273,7 @@ private:
 
 		unsafe
 		{
-			auto capacity_mask= capacity_ - size_type(1);
+			auto capacity_mask= capacity_ - 1s;
 			auto key_hash= hash(key);
 			auto mut key_hash_wrapped= key_hash & capacity_mask;
 			auto key_hash_wrapped_finish= key_hash_wrapped;
@@ -290,7 +290,7 @@ private:
 					}
 				}
 
-				key_hash_wrapped= ( key_hash_wrapped + size_type(1) ) & capacity_mask;
+				key_hash_wrapped= ( key_hash_wrapped + 1s ) & capacity_mask;
 				if( key_hash_wrapped == key_hash_wrapped_finish ){ break; } // Value not found in whole table.
 			}
 		}
@@ -359,7 +359,7 @@ public:
 
 		fn empty( this ) : bool
 		{
-			return size_ == size_type(0);
+			return size_ == 0s;
 		}
 
 		fn drop_front( mut this )
@@ -408,7 +408,7 @@ public:
 		{
 			unsafe
 			{
-				while( capacity_ > size_type(0) && $>(table_).cell_content != TableValue::CellContent::HaveValue )
+				while( capacity_ > 0s && $>(table_).cell_content != TableValue::CellContent::HaveValue )
 				{
 					++table_;
 					--capacity_;

@@ -20,7 +20,7 @@ fn nomangle main() : i32
 		var VecType mut vec;
 		var size_type mut iterations(0);
 		foreach( x : vec ){ ++iterations; }
-		halt if( iterations > size_type(0) );
+		halt if( iterations > 0s );
 	}
 	{
 		var VecType mut vec;
@@ -46,12 +46,12 @@ fn nomangle main() : i32
 		vec.push_back( 55 );
 		vec.push_back( 66 );
 		vec.push_back( 77 );
-		halt if( vec.range().size() != size_type(3) );
+		halt if( vec.range().size() != 3s );
 		halt if( vec.range().empty() );
 	}
 	{
 		var VecType vec;
-		halt if( vec.range().size() != size_type(0) );
+		halt if( vec.range().size() != 0s );
 		halt if( !vec.range().empty() );
 	}
 	{
@@ -60,15 +60,15 @@ fn nomangle main() : i32
 		vec.push_back( 15 );
 		vec.push_back( 16 );
 		auto mut range= cast_imut(vec).range();
-		halt if( range.size() != size_type(3) );
+		halt if( range.size() != 3s );
 		unsafe
 		{
 			range.drop_front();
-			halt if( range.size() != size_type(2) );
-			halt if( vec.size() != size_type(3) );
+			halt if( range.size() != 2s );
+			halt if( vec.size() != 3s );
 			range.drop_back();
-			halt if( range.size() != size_type(1) );
-			halt if( vec.size() != size_type(3) );
+			halt if( range.size() != 1s );
+			halt if( vec.size() != 3s );
 		}
 	}
 	{
@@ -89,7 +89,7 @@ fn nomangle main() : i32
 		vec.push_back( 33 );
 		auto range= vec.range();
 		auto mut res= 1;
-		foreach( x : range.subrange( size_type(1), size_type(3) ) ) { res*= x; }
+		foreach( x : range.subrange( 1s, 3s ) ) { res*= x; }
 		halt if( res != 55 * 11 );
 	}
 	{

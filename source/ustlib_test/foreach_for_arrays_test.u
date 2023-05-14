@@ -16,7 +16,7 @@ fn nomangle main() : i32
 			x*= -2;
 			++iterations;
 		}
-		halt if( iterations != size_type(3) );
+		halt if( iterations != 3s );
 		halt if( arr[0u] != 108 );
 		halt if( arr[1u] != -130 );
 		halt if( arr[2u] != -1790 );
@@ -25,7 +25,7 @@ fn nomangle main() : i32
 		var [ i32, 0 ] arr[];
 		var size_type mut iterations(0);
 		foreach( x : arr ) { ++iterations; }
-		halt if( iterations != size_type(0) );
+		halt if( iterations != 0s );
 	}
 	{
 		// "continue" should work properly.
