@@ -1018,13 +1018,13 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			NextLexem();
 			return std::move(boolean_constant);
 		}
-		else if( it_->text == Keywords::false_ )
+		if( it_->text == Keywords::false_ )
 		{
 			BooleanConstant boolean_constant( it_->src_loc, false );
 			NextLexem();
 			return std::move(boolean_constant);
 		}
-		else if( it_->text == Keywords::move_ )
+		if( it_->text == Keywords::move_ )
 		{
 			MoveOperator move_operator( it_->src_loc );
 			NextLexem();
@@ -1043,7 +1043,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(move_operator);
 		}
-		else if( it_->text == Keywords::take_ )
+		if( it_->text == Keywords::take_ )
 		{
 			TakeOperator take_operator( it_->src_loc );
 			NextLexem();
@@ -1052,7 +1052,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(take_operator);
 		}
-		else if( it_->text == Keywords::select_ )
+		if( it_->text == Keywords::select_ )
 		{
 			TernaryOperator ternary_operator( it_->src_loc );
 			NextLexem();
@@ -1073,7 +1073,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(ternary_operator);
 		}
-		else if( it_->text == Keywords::cast_ref_ )
+		if( it_->text == Keywords::cast_ref_ )
 		{
 			CastRef cast( it_->src_loc );
 			NextLexem();
@@ -1082,7 +1082,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(cast);
 		}
-		else if( it_->text == Keywords::cast_ref_unsafe_ )
+		if( it_->text == Keywords::cast_ref_unsafe_ )
 		{
 			CastRefUnsafe cast( it_->src_loc );
 			NextLexem();
@@ -1091,7 +1091,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(cast);
 		}
-		else if( it_->text == Keywords::cast_imut_ )
+		if( it_->text == Keywords::cast_imut_ )
 		{
 			CastImut cast( it_->src_loc );
 			NextLexem();
@@ -1099,7 +1099,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(cast);
 		}
-		else if( it_->text == Keywords::cast_mut_ )
+		if( it_->text == Keywords::cast_mut_ )
 		{
 			CastMut cast( it_->src_loc );
 			NextLexem();
@@ -1107,7 +1107,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(cast);
 		}
-		else if( it_->text == Keywords::typeinfo_ )
+		if( it_->text == Keywords::typeinfo_ )
 		{
 			TypeInfo typeinfo_(it_->src_loc );
 			NextLexem();
@@ -1115,7 +1115,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(typeinfo_);
 		}
-		else if( it_->text == Keywords::non_sync_ )
+		if( it_->text == Keywords::non_sync_ )
 		{
 			NonSyncExpression non_sync_expression(it_->src_loc );
 			NextLexem();
@@ -1123,7 +1123,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(non_sync_expression);
 		}
-		else if( it_->text == Keywords::safe_ )
+		if( it_->text == Keywords::safe_ )
 		{
 			SafeExpression expr( it_->src_loc );
 			NextLexem();
@@ -1131,7 +1131,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(expr);
 		}
-		else if( it_->text == Keywords::unsafe_ )
+		if( it_->text == Keywords::unsafe_ )
 		{
 			UnsafeExpression expr( it_->src_loc );
 			NextLexem();
@@ -1139,21 +1139,18 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(expr);
 		}
-		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ || it_->text == Keywords::generator_ )
+		if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ || it_->text == Keywords::generator_ )
 			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
-		else
+		if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
 		{
-			if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
-			{
-				Expression macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
-				if( std::get_if<EmptyVariant>( &macro_expression ) != nullptr )
-					return EmptyVariant();
+			Expression macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
+			if( std::get_if<EmptyVariant>( &macro_expression ) != nullptr )
+				return EmptyVariant();
 
-				return macro_expression;
-			}
-
-			return ParseComplexName();
+			return macro_expression;
 		}
+
+		return ParseComplexName();
 
 	default:
 		PushErrorMessage();
