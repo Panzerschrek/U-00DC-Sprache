@@ -60,43 +60,47 @@ const std::vector<ExpectedLexem> g_template_arguments_list_control_lexems
 	ExpectedLexem(Lexem::Type::Comma), ExpectedLexem(Lexem::Type::TemplateBracketRight),
 };
 
+// See https://en.cppreference.com/w/cpp/language/operator_precedence.
+// Use C++ priorities.
 static const std::vector< std::pair< Lexem::Type, BinaryOperatorType> > g_operators_by_priority_table[]
 {
-	{ // 0
+	{
 		{ Lexem::Type::Disjunction, BinaryOperatorType::LazyLogicalOr },
 	},
-	{ // 1
+	{
 		{ Lexem::Type::Conjunction, BinaryOperatorType::LazyLogicalAnd },
 	},
-	{ // 2
-		{ Lexem::Type::Xor, BinaryOperatorType::Xor },
-	},
-	{ // 3
+	{
 		{ Lexem::Type::Or, BinaryOperatorType::Or },
 	},
-	{ // 4
+	{
+		{ Lexem::Type::Xor, BinaryOperatorType::Xor },
+	},
+	{
 		{ Lexem::Type::And, BinaryOperatorType::And },
 	},
-	{ // 5
+	{
 		{ Lexem::Type::CompareEqual, BinaryOperatorType::Equal },
 		{ Lexem::Type::CompareNotEqual, BinaryOperatorType::NotEqual },
+	},
+	{
 		{ Lexem::Type::CompareLess, BinaryOperatorType::Less },
 		{ Lexem::Type::CompareLessOrEqual, BinaryOperatorType::LessEqual },
 		{ Lexem::Type::CompareGreater, BinaryOperatorType::Greater },
 		{ Lexem::Type::CompareGreaterOrEqual, BinaryOperatorType::GreaterEqual },
 	},
-	{ // 6
+	{
 		{ Lexem::Type::CompareOrder, BinaryOperatorType::CompareOrder },
 	},
-	{ // 7
+	{
 		{ Lexem::Type::ShiftLeft, BinaryOperatorType::ShiftLeft },
 		{ Lexem::Type::ShiftRight, BinaryOperatorType::ShiftRight },
 	},
-	{ // 8
+	{
 		{ Lexem::Type::Plus, BinaryOperatorType::Add },
 		{ Lexem::Type::Minus, BinaryOperatorType::Sub },
 	},
-	{ // 9
+	{
 		{ Lexem::Type::Star, BinaryOperatorType::Mul },
 		{ Lexem::Type::Slash, BinaryOperatorType::Div },
 		{ Lexem::Type::Percent, BinaryOperatorType::Rem },

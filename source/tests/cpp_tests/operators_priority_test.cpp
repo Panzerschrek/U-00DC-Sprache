@@ -576,6 +576,98 @@ U_TEST( OperatorsPriorityTest14 )
 	DoTest( c_program_text, expected, args );
 }
 
+U_TEST( OperatorsPriorityTest15 )
+{
+	// Bitwise operators priority must be same, as in C++.
+
+	static const char c_program_text[]= " fn Foo( i32 a, i32 b, i32 c, i32 d ) : i32 { return a & b ^ c | d; } ";
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wbitwise-op-parentheses"
+#endif
+
+	const auto expected=
+	[]( const std::vector<int>& args ) -> int
+	{
+		U_TEST_ASSERT( args.size() == 4u );
+
+		return args[0] & args[1] ^ args[2] | args[3];
+	};
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+	const std::vector< std::vector<int> > args
+	{
+		{ 00, 00, 00, 00 },
+		{ 00, 00, 00, 11 },
+		{ 00, 00, 11, 00 },
+		{ 00, 00, 11, 11 },
+		{ 00, 11, 00, 00 },
+		{ 00, 11, 00, 11 },
+		{ 00, 11, 11, 00 },
+		{ 00, 11, 11, 11 },
+		{ 11, 00, 00, 00 },
+		{ 11, 00, 00, 11 },
+		{ 11, 00, 11, 00 },
+		{ 11, 00, 11, 11 },
+		{ 11, 11, 00, 00 },
+		{ 11, 11, 00, 11 },
+		{ 11, 11, 11, 00 },
+		{ 11, 11, 11, 11 },
+	};
+
+	DoTest( c_program_text, expected, args );
+}
+
+U_TEST( OperatorsPriorityTest16 )
+{
+	// Bitwise operators priority must be same, as in C++.
+
+	static const char c_program_text[]= " fn Foo( i32 a, i32 b, i32 c, i32 d ) : i32 { return a | b ^ c & d; } ";
+
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wbitwise-op-parentheses"
+#endif
+
+	const auto expected=
+	[]( const std::vector<int>& args ) -> int
+	{
+		U_TEST_ASSERT( args.size() == 4u );
+
+		return args[0] | args[1] ^ args[2] & args[3];
+	};
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
+	const std::vector< std::vector<int> > args
+	{
+		{ 00, 00, 00, 00 },
+		{ 00, 00, 00, 11 },
+		{ 00, 00, 11, 00 },
+		{ 00, 00, 11, 11 },
+		{ 00, 11, 00, 00 },
+		{ 00, 11, 00, 11 },
+		{ 00, 11, 11, 00 },
+		{ 00, 11, 11, 11 },
+		{ 11, 00, 00, 00 },
+		{ 11, 00, 00, 11 },
+		{ 11, 00, 11, 00 },
+		{ 11, 00, 11, 11 },
+		{ 11, 11, 00, 00 },
+		{ 11, 11, 00, 11 },
+		{ 11, 11, 11, 00 },
+		{ 11, 11, 11, 11 },
+	};
+
+	DoTest( c_program_text, expected, args );
+}
+
 } // namespace
 
 } // namespace U

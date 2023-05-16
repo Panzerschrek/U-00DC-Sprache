@@ -17,37 +17,43 @@ fn IsKeyword( Lexem& l, Keyword k ) : bool
 
 template</size_type size/> type LexemWithBinaryOperatorPriorityGroup= [ tup[ Lexem::Type, BinaryOperatorType ], size ];
 
+// See https://en.cppreference.com/w/cpp/language/operator_precedence.
+// Use C++ priorities.
 var tup[
 	LexemWithBinaryOperatorPriorityGroup</1s/>,
 	LexemWithBinaryOperatorPriorityGroup</1s/>,
 	LexemWithBinaryOperatorPriorityGroup</1s/>,
 	LexemWithBinaryOperatorPriorityGroup</1s/>,
 	LexemWithBinaryOperatorPriorityGroup</1s/>,
-	LexemWithBinaryOperatorPriorityGroup</6s/>,
+	LexemWithBinaryOperatorPriorityGroup</2s/>,
+	LexemWithBinaryOperatorPriorityGroup</4s/>,
 	LexemWithBinaryOperatorPriorityGroup</1s/>,
 	LexemWithBinaryOperatorPriorityGroup</2s/>,
 	LexemWithBinaryOperatorPriorityGroup</2s/>,
 	LexemWithBinaryOperatorPriorityGroup</3s/>
 	] g_operators_by_priority_table
 [
-	[ // 0
+	[
 		[ Lexem::Type::Disjunction, BinaryOperatorType::LazyLogicalOr ],
 	],
-	[ // 1
+	[
 		[ Lexem::Type::Conjunction, BinaryOperatorType::LazyLogicalAnd ],
 	],
-	[ // 2
-		[ Lexem::Type::Xor, BinaryOperatorType::Xor ],
-	],
-	[ // 3
+	[
 		[ Lexem::Type::Or, BinaryOperatorType::Or ],
 	],
-	[ // 4
+	[
+		[ Lexem::Type::Xor, BinaryOperatorType::Xor ],
+	],
+
+	[
 		[ Lexem::Type::And, BinaryOperatorType::And ],
 	],
-	[ // 5
+	[
 		[ Lexem::Type::CompareEqual, BinaryOperatorType::Equal ],
 		[ Lexem::Type::CompareNotEqual, BinaryOperatorType::NotEqual ],
+	],
+	[
 		[ Lexem::Type::CompareLess, BinaryOperatorType::Less ],
 		[ Lexem::Type::CompareLessOrEqual, BinaryOperatorType::LessEqual ],
 		[ Lexem::Type::CompareGreater, BinaryOperatorType::Greater ],
