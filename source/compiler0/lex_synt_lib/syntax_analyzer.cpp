@@ -818,7 +818,7 @@ Expression SyntaxAnalyzer::ParseExpression()
 
 template<size_t priority> Expression SyntaxAnalyzer::TryParseBinaryOperator()
 {
-	// Parse chain of binary operators with same priority and combine chain components together (last is first).
+	// Parse chain of binary operators with same priority and combine chain components together (last is root).
 	// Use binary operators with greater priority as chain components.
 
 	constexpr size_t max_priority= std::size(g_operators_by_priority_table);

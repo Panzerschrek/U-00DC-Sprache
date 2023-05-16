@@ -135,7 +135,7 @@ private:
 
 	template</size_type priority/> fn TryParseBinaryOperator( mut this ) : Expression
 	{
-		// Parse chain of binary operators with same priority and combine chain components together (last is first).
+		// Parse chain of binary operators with same priority and combine chain components together (last is root).
 		// Use binary operators with greater priority as chain components.
 
 		static_if( priority >= typeinfo</typeof(g_operators_by_priority_table)/>.element_count )
@@ -144,8 +144,9 @@ private:
 		}
 		else
 		{
-			var Expression mut expr= SyntaxAnalyzer::TryParseBinaryOperator</priority + 1s/>();
-			while( NotEndOfFile() )
+			auto constexpr next_priority= priority + 1s;
+			var Expression mut expr= SyntaxAnalyzer::TryParseBinaryOperator</next_priority/>();
+			while( NotEndOfFile() ) label operators_chain
 			{
 				auto mut binary_op_parsed= false;
 				auto lexem_type= it_.front().lexem_type;
@@ -160,20 +161,16 @@ private:
 						{
 							.src_loc= src_loc,
 							.l( take(expr) ),
-							.r( SyntaxAnalyzer::TryParseBinaryOperator</priority + 1s/>() ),
-							.operator= op_pair[1]
+							.r( SyntaxAnalyzer::TryParseBinaryOperator</next_priority/>() ),
+							.operator( op_pair[1] ),
 						};
 
 						expr= move(binary_operator);
-						binary_op_parsed= true;
-						break;
+						continue label operators_chain; // Continue operators chain.
 					}
 				}
 
-				if( !binary_op_parsed )
-				{
-					break;
-				}
+				break; // No more binary operators with current priority.
 			}
 
 			return move(expr);
