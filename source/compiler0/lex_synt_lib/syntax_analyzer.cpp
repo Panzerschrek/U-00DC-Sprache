@@ -60,115 +60,52 @@ const std::vector<ExpectedLexem> g_template_arguments_list_control_lexems
 	ExpectedLexem(Lexem::Type::Comma), ExpectedLexem(Lexem::Type::TemplateBracketRight),
 };
 
-int GetBinaryOperatorPriority( const BinaryOperatorType binary_operator )
+// See https://en.cppreference.com/w/cpp/language/operator_precedence.
+// Use C++ priorities.
+static const std::vector< std::pair< Lexem::Type, BinaryOperatorType> > g_operators_by_priority_table[]
 {
-	// If this changed, same code in "syntax_analyzer.u" must be changed too!
-
-	#define PRIORITY ( - __LINE__ )
-
-	switch( binary_operator )
 	{
-	case BinaryOperatorType::Div:
-	case BinaryOperatorType::Mul:
-	case BinaryOperatorType::Rem:
-		return PRIORITY;
-	case BinaryOperatorType::Add:
-	case BinaryOperatorType::Sub:
-		return PRIORITY;
-	case BinaryOperatorType::ShiftLeft :
-	case BinaryOperatorType::ShiftRight:
-		return PRIORITY;
-	case BinaryOperatorType::CompareOrder:
-		return PRIORITY;
-	case BinaryOperatorType::Equal:
-	case BinaryOperatorType::NotEqual:
-	case BinaryOperatorType::Less:
-	case BinaryOperatorType::LessEqual:
-	case BinaryOperatorType::Greater:
-	case BinaryOperatorType::GreaterEqual:
-		return PRIORITY;
-	case BinaryOperatorType::And: return PRIORITY;
-	case BinaryOperatorType::Or: return PRIORITY;
-	case BinaryOperatorType::Xor: return PRIORITY;
-	case BinaryOperatorType::LazyLogicalAnd: return PRIORITY;
-	case BinaryOperatorType::LazyLogicalOr: return PRIORITY;
-	};
-
-	U_ASSERT(false);
-	return PRIORITY;
-
-	#undef PRIORITY
-}
-
-std::optional<BinaryOperatorType> LexemToBinaryOperator( const Lexem& lexem )
-{
-	switch( lexem.type )
+		{ Lexem::Type::Disjunction, BinaryOperatorType::LazyLogicalOr },
+	},
 	{
-		case Lexem::Type::Plus: return BinaryOperatorType::Add;
-		case Lexem::Type::Minus: return BinaryOperatorType::Sub;
-		case Lexem::Type::Star: return BinaryOperatorType::Mul;
-		case Lexem::Type::Slash: return BinaryOperatorType::Div;
-		case Lexem::Type::Percent: return BinaryOperatorType::Rem;
-
-		case Lexem::Type::CompareEqual: return BinaryOperatorType::Equal;
-		case Lexem::Type::CompareNotEqual: return BinaryOperatorType::NotEqual;
-		case Lexem::Type::CompareLess: return BinaryOperatorType::Less;
-		case Lexem::Type::CompareLessOrEqual: return BinaryOperatorType::LessEqual;
-		case Lexem::Type::CompareGreater: return BinaryOperatorType::Greater;
-		case Lexem::Type::CompareGreaterOrEqual: return BinaryOperatorType::GreaterEqual;
-		case Lexem::Type::CompareOrder: return BinaryOperatorType::CompareOrder;
-
-		case Lexem::Type::And: return BinaryOperatorType::And;
-		case Lexem::Type::Or: return BinaryOperatorType::Or;
-		case Lexem::Type::Xor: return BinaryOperatorType::Xor;
-
-		case Lexem::Type::ShiftLeft : return BinaryOperatorType::ShiftLeft ;
-		case Lexem::Type::ShiftRight: return BinaryOperatorType::ShiftRight;
-
-		case Lexem::Type::Conjunction: return BinaryOperatorType::LazyLogicalAnd;
-		case Lexem::Type::Disjunction: return BinaryOperatorType::LazyLogicalOr;
-
-		default:
-			return std::nullopt;
-	};
-}
-
-struct BinaryOperatorsChainComponent
-{
-	Expression expression;
-	BinaryOperatorType op= BinaryOperatorType::Add; // Value of last component is ignored
-	SrcLoc src_loc;
+		{ Lexem::Type::Conjunction, BinaryOperatorType::LazyLogicalAnd },
+	},
+	{
+		{ Lexem::Type::Or, BinaryOperatorType::Or },
+	},
+	{
+		{ Lexem::Type::Xor, BinaryOperatorType::Xor },
+	},
+	{
+		{ Lexem::Type::And, BinaryOperatorType::And },
+	},
+	{
+		{ Lexem::Type::CompareEqual, BinaryOperatorType::Equal },
+		{ Lexem::Type::CompareNotEqual, BinaryOperatorType::NotEqual },
+	},
+	{
+		{ Lexem::Type::CompareLess, BinaryOperatorType::Less },
+		{ Lexem::Type::CompareLessOrEqual, BinaryOperatorType::LessEqual },
+		{ Lexem::Type::CompareGreater, BinaryOperatorType::Greater },
+		{ Lexem::Type::CompareGreaterOrEqual, BinaryOperatorType::GreaterEqual },
+	},
+	{
+		{ Lexem::Type::CompareOrder, BinaryOperatorType::CompareOrder },
+	},
+	{
+		{ Lexem::Type::ShiftLeft, BinaryOperatorType::ShiftLeft },
+		{ Lexem::Type::ShiftRight, BinaryOperatorType::ShiftRight },
+	},
+	{
+		{ Lexem::Type::Plus, BinaryOperatorType::Add },
+		{ Lexem::Type::Minus, BinaryOperatorType::Sub },
+	},
+	{
+		{ Lexem::Type::Star, BinaryOperatorType::Mul },
+		{ Lexem::Type::Slash, BinaryOperatorType::Div },
+		{ Lexem::Type::Percent, BinaryOperatorType::Rem },
+	},
 };
-
-using BinaryOperatorsChain= std::vector<BinaryOperatorsChainComponent>;
-
-Expression FoldBinaryOperatorsChain( BinaryOperatorsChainComponent* const chain, const size_t size )
-{
-	// Should be non-empty.
-	if( size == 1 )
-		return std::move(chain[0].expression);
-
-	// Split binary operators chain using most-right operator with minimal priority. Than recursively process parts.
-	size_t split_op_pos= ~0u;
-	int min_priority= 9999;
-	for( size_t i= 0; i < size - 1u; ++i )
-	{
-		auto cur_priority= GetBinaryOperatorPriority( chain[i].op );
-		if( cur_priority <= min_priority )
-		{
-			min_priority= cur_priority;
-			split_op_pos= i;
-		}
-	}
-	const size_t split_pos_next= split_op_pos + 1;
-
-	BinaryOperator o( chain[ split_op_pos ].src_loc );
-	o.operator_type_= chain[ split_op_pos ].op;
-	o.left_ = std::make_unique<Expression>( FoldBinaryOperatorsChain( chain, split_pos_next ) );
-	o.right_= std::make_unique<Expression>( FoldBinaryOperatorsChain( chain + split_pos_next, size - split_pos_next ) );
-
-	return std::move(o);
-}
 
 bool IsAdditiveAssignmentOperator( const Lexem& lexem )
 {
@@ -260,10 +197,12 @@ private:
 	NumericConstant ParseNumericConstant();
 
 	Expression ParseExpression();
+	template<size_t priority> Expression TryParseBinaryOperator();
+
 	Expression ParseExpressionInBrackets();
-	Expression ParseExpressionComponent();
-	Expression TryParseExpressionComponentPostfixOperator( Expression expr );
-	Expression ParseExpressionComponentHelper();
+	Expression ParseBinaryOperatorComponent();
+	Expression TryParseBinaryOperatorComponentPostfixOperator( Expression expr );
+	Expression ParseBinaryOperatorComponentCore();
 
 	TypeName ParseTypeNameInTemplateBrackets();
 
@@ -878,27 +817,46 @@ NumericConstant SyntaxAnalyzer::ParseNumericConstant()
 
 Expression SyntaxAnalyzer::ParseExpression()
 {
-	BinaryOperatorsChain chain;
+	return TryParseBinaryOperator<0>();
+}
 
+template<size_t priority> Expression SyntaxAnalyzer::TryParseBinaryOperator()
+{
+	// Parse chain of binary operators with same priority and combine chain components together (last is root).
+	// Use binary operators with greater priority as chain components.
+
+	constexpr size_t max_priority= std::size(g_operators_by_priority_table);
+	constexpr size_t next_priority= priority >= max_priority ? priority : priority + 1;
+
+	if( priority >= max_priority )
+		return ParseBinaryOperatorComponent();
+
+	Expression expr= TryParseBinaryOperator<next_priority>();
 	while( NotEndOfFile() )
 	{
-		chain.emplace_back();
-		chain.back().expression= ParseExpressionComponent();
-
-		if( const auto op= LexemToBinaryOperator( *it_ ) )
+		bool binary_op_parsed= false;
+		for( const auto& op_pair : g_operators_by_priority_table[priority] )
 		{
-			chain.back().op= *op;
-			chain.back().src_loc= it_->src_loc;
-			NextLexem();
+			if( it_->type == op_pair.first )
+			{
+				BinaryOperator binary_operator( it_->src_loc );
+				NextLexem();
+
+				binary_operator.left_= std::make_unique<Expression>( std::move(expr) );
+				binary_operator.operator_type_= op_pair.second;
+				binary_operator.right_= std::make_unique<Expression>( TryParseBinaryOperator<next_priority>() );
+
+				expr= std::move(binary_operator);
+				binary_op_parsed= true;
+				break;
+			}
 		}
-		else
+
+		if( !binary_op_parsed )
 			break;
 	}
 
-	if(chain.empty())
-		return Expression();
-
-	return FoldBinaryOperatorsChain( chain.data(), chain.size() );
+	return expr;
 }
 
 Expression SyntaxAnalyzer::ParseExpressionInBrackets()
@@ -909,12 +867,12 @@ Expression SyntaxAnalyzer::ParseExpressionInBrackets()
 	return expr;
 }
 
-Expression SyntaxAnalyzer::ParseExpressionComponent()
+Expression SyntaxAnalyzer::ParseBinaryOperatorComponent()
 {
-	return TryParseExpressionComponentPostfixOperator(ParseExpressionComponentHelper());
+	return TryParseBinaryOperatorComponentPostfixOperator(ParseBinaryOperatorComponentCore());
 }
 
-Expression SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( Expression expr )
+Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expression expr )
 {
 	switch( it_->type )
 	{
@@ -928,7 +886,7 @@ Expression SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( Expressio
 
 			ExpectLexem( Lexem::Type::SquareBracketRight );
 
-			return TryParseExpressionComponentPostfixOperator(std::move(indexation_opearator));
+			return TryParseBinaryOperatorComponentPostfixOperator(std::move(indexation_opearator));
 		}
 
 	case Lexem::Type::BracketLeft:
@@ -938,7 +896,7 @@ Expression SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( Expressio
 			call_operator.expression_= std::make_unique<Expression>(std::move(expr));
 			call_operator.arguments_= ParseCall();
 
-			return TryParseExpressionComponentPostfixOperator(std::move(call_operator));
+			return TryParseBinaryOperatorComponentPostfixOperator(std::move(call_operator));
 		}
 
 	case Lexem::Type::Dot:
@@ -960,7 +918,7 @@ Expression SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( Expressio
 			if( it_->type == Lexem::Type::TemplateBracketLeft )
 				member_access_operator.template_parameters= ParseTemplateParameters();
 
-			return TryParseExpressionComponentPostfixOperator(std::move(member_access_operator));
+			return TryParseBinaryOperatorComponentPostfixOperator(std::move(member_access_operator));
 		}
 
 	default:
@@ -968,7 +926,7 @@ Expression SyntaxAnalyzer::TryParseExpressionComponentPostfixOperator( Expressio
 	};
 }
 
-Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
+Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 {
 	switch( it_->type )
 	{
@@ -977,7 +935,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			UnaryPlus unary_plus( it_->src_loc );
 			NextLexem();
 
-			unary_plus.expression_= std::make_unique<Expression>(ParseExpressionComponent());
+			unary_plus.expression_= std::make_unique<Expression>(ParseBinaryOperatorComponent());
 			return std::move(unary_plus);
 		}
 	case Lexem::Type::Minus:
@@ -985,7 +943,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			UnaryMinus unary_minus( it_->src_loc );
 			NextLexem();
 
-			unary_minus.expression_= std::make_unique<Expression>(ParseExpressionComponent());
+			unary_minus.expression_= std::make_unique<Expression>(ParseBinaryOperatorComponent());
 			return std::move(unary_minus);
 		}
 	case Lexem::Type::Not:
@@ -993,7 +951,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			LogicalNot logical_not( it_->src_loc );
 			NextLexem();
 
-			logical_not.expression_= std::make_unique<Expression>(ParseExpressionComponent());
+			logical_not.expression_= std::make_unique<Expression>(ParseBinaryOperatorComponent());
 			return std::move(logical_not);
 		}
 	case Lexem::Type::Tilda:
@@ -1001,7 +959,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			BitwiseNot bitwise_not( it_->src_loc );
 			NextLexem();
 
-			bitwise_not.expression_= std::make_unique<Expression>(ParseExpressionComponent());
+			bitwise_not.expression_= std::make_unique<Expression>(ParseBinaryOperatorComponent());
 			return std::move(bitwise_not);
 		}
 	case Lexem::Type::Scope:
@@ -1060,13 +1018,13 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 			NextLexem();
 			return std::move(boolean_constant);
 		}
-		else if( it_->text == Keywords::false_ )
+		if( it_->text == Keywords::false_ )
 		{
 			BooleanConstant boolean_constant( it_->src_loc, false );
 			NextLexem();
 			return std::move(boolean_constant);
 		}
-		else if( it_->text == Keywords::move_ )
+		if( it_->text == Keywords::move_ )
 		{
 			MoveOperator move_operator( it_->src_loc );
 			NextLexem();
@@ -1085,7 +1043,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(move_operator);
 		}
-		else if( it_->text == Keywords::take_ )
+		if( it_->text == Keywords::take_ )
 		{
 			TakeOperator take_operator( it_->src_loc );
 			NextLexem();
@@ -1094,7 +1052,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(take_operator);
 		}
-		else if( it_->text == Keywords::select_ )
+		if( it_->text == Keywords::select_ )
 		{
 			TernaryOperator ternary_operator( it_->src_loc );
 			NextLexem();
@@ -1115,7 +1073,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(ternary_operator);
 		}
-		else if( it_->text == Keywords::cast_ref_ )
+		if( it_->text == Keywords::cast_ref_ )
 		{
 			CastRef cast( it_->src_loc );
 			NextLexem();
@@ -1124,7 +1082,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(cast);
 		}
-		else if( it_->text == Keywords::cast_ref_unsafe_ )
+		if( it_->text == Keywords::cast_ref_unsafe_ )
 		{
 			CastRefUnsafe cast( it_->src_loc );
 			NextLexem();
@@ -1133,7 +1091,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(cast);
 		}
-		else if( it_->text == Keywords::cast_imut_ )
+		if( it_->text == Keywords::cast_imut_ )
 		{
 			CastImut cast( it_->src_loc );
 			NextLexem();
@@ -1141,7 +1099,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(cast);
 		}
-		else if( it_->text == Keywords::cast_mut_ )
+		if( it_->text == Keywords::cast_mut_ )
 		{
 			CastMut cast( it_->src_loc );
 			NextLexem();
@@ -1149,7 +1107,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(cast);
 		}
-		else if( it_->text == Keywords::typeinfo_ )
+		if( it_->text == Keywords::typeinfo_ )
 		{
 			TypeInfo typeinfo_(it_->src_loc );
 			NextLexem();
@@ -1157,7 +1115,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(typeinfo_);
 		}
-		else if( it_->text == Keywords::non_sync_ )
+		if( it_->text == Keywords::non_sync_ )
 		{
 			NonSyncExpression non_sync_expression(it_->src_loc );
 			NextLexem();
@@ -1165,7 +1123,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(non_sync_expression);
 		}
-		else if( it_->text == Keywords::safe_ )
+		if( it_->text == Keywords::safe_ )
 		{
 			SafeExpression expr( it_->src_loc );
 			NextLexem();
@@ -1173,7 +1131,7 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(expr);
 		}
-		else if( it_->text == Keywords::unsafe_ )
+		if( it_->text == Keywords::unsafe_ )
 		{
 			UnsafeExpression expr( it_->src_loc );
 			NextLexem();
@@ -1181,21 +1139,18 @@ Expression SyntaxAnalyzer::ParseExpressionComponentHelper()
 
 			return std::move(expr);
 		}
-		else if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ || it_->text == Keywords::generator_ )
+		if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ || it_->text == Keywords::generator_ )
 			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
-		else
+		if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
 		{
-			if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
-			{
-				Expression macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
-				if( std::get_if<EmptyVariant>( &macro_expression ) != nullptr )
-					return EmptyVariant();
+			Expression macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
+			if( std::get_if<EmptyVariant>( &macro_expression ) != nullptr )
+				return EmptyVariant();
 
-				return macro_expression;
-			}
-
-			return ParseComplexName();
+			return macro_expression;
 		}
+
+		return ParseComplexName();
 
 	default:
 		PushErrorMessage();
