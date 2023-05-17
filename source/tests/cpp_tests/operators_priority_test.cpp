@@ -584,7 +584,7 @@ U_TEST( OperatorsPriorityTest15 )
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wbitwise-op-parentheses"
+#pragma GCC diagnostic ignored "-Wparentheses"
 #endif
 
 	const auto expected=
@@ -630,7 +630,7 @@ U_TEST( OperatorsPriorityTest16 )
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wbitwise-op-parentheses"
+#pragma GCC diagnostic ignored "-Wparentheses"
 #endif
 
 	const auto expected=
