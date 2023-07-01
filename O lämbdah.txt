@@ -1,0 +1,30 @@
+Lämbdy - eto funkçionaljnyje objekty, objavläjemyje neposredstvenno v meste ispoljzovanija (v konktekste vyraženija) i ne imejuscije posemu imeni.
+
+Lämbdy mogut zahvatyvatj okružajuscije peremennyje - po znaceniju ili po ssylke.
+Lämbda, zahvativšaja ssylku, logiceski hranit jejo v sebe, podobno strukture so ssylkoj vnutri.
+
+Objekt, sozdavajemyj vyraženijem-lämbdoj - eto objekt tipa klassa, soderžascij metod ().
+Klass etot unikaljnyj dlä každoj lämbdy.
+Vnutri objekta hranätsä zahvacennyje peremennyje, vozmožno kak ssylki.
+
+Sposob zahvata peremennyh nužno umetj kontrolirovatj - ukazyvatj javno kakije peremennyje i kakim obrazom nado zahvatitj.
+Dlä prostoty možno dobavitj sposob ukazatj "zahvatitj vsö po kopii" i "zahvatitj vsö po izmenäjemoj/neizmenäjemoj ssylke".
+V etom slucaje zahvatätsä ukazannym sposobom vse peremennyje, kotoryje vnutri lämbdy ispoljzujutsä (no toljko oni).
+
+Vozmožno stoit dobavitj vozmožnostj pereimenovatj zahvacennuju peremennuju.
+
+Dolžen suscestvovatj sposob ukazatj tip operatora () lämbdy - vklücaja argumenty, vozvrascajemoje znacenije, "unsafe" flag, ssylocnyje notaçii i t. d.
+Dolžen suscestvovatj sposob sdelatj lämbdu šablonnoj.
+
+Ne vpolne ponätno, kak obrascatjsä s "this".
+Vrode by "this" dolžen v metode () lämbdy ukazyvatj na objekt lämbdy.
+No togda ne ponätno, kak obrascatjsä k "this" iz okružajuscego konteksta.
+Vozmožno, stoit vnesti otdeljnoje klücevoje slovo dlä dostupa k "this" lämbdy, vrode "lambda_this".
+
+Takže stoit predusmotretj sposob peredaci "lambda_this" - po izmenäjemoj ili neizmenäjemoj ssylke.
+
+Objavlenije lämbdy dolžno po vozmožnosti bytj kak možno boleje lakonicnym.
+Stoit predusmotretj podhodäscije umolcateljnyje znacenija jejo svojstv.
+Vozmožno daže ukazanije tipov argumentov i vozvrascajemogo znacenija stoit sdelatj neobäzateljnym - s ih avtovyvodom.
+
+Svojstvo "non_sync" lämbdy opredeläjetsä takovym svojstvom zahvacennyh peremennyh.
