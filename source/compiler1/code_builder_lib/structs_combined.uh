@@ -103,7 +103,8 @@ struct FunctionType
 	// Sorted.
 	ust::vector</ReferencePollution/> references_pollution;
 
-	op==( FunctionType& l, FunctionType& r ) : bool;
+	// Can use default == operator, since this struct contains no LLVM type.
+	op==( FunctionType& l, FunctionType& r ) : bool = default;
 
 	fn PointerCanBeConvertedTo( this, FunctionType& dst ) : bool;
 	fn ReturnsCompositeValue( this ) : bool;

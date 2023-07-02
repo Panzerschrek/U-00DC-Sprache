@@ -285,18 +285,6 @@ fn FunctionType::ReturnsCompositeValue( this ) : bool
 		( !return_type.GetClassType().empty() || !return_type.GetArrayType().empty() || !return_type.GetTupleType().empty() );
 }
 
-op FunctionType::==( FunctionType& l, FunctionType& r ) : bool
-{
-	return
-		l.params == r.params &&
-		l.return_references == r.return_references &&
-		l.references_pollution == r.references_pollution &&
-		l.return_type == r.return_type &&
-		l.return_value_type == r.return_value_type &&
-		l.is_unsafe == r.is_unsafe &&
-		l.calling_convention == r.calling_convention;
-}
-
 fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) : ust::string8
 {
 	var ust::string8 mut result;
