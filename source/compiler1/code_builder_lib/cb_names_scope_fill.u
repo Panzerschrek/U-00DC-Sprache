@@ -449,7 +449,8 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::Namespace/>& namespace_ )
 {
-	if_var( prev_name : names_scope_ptr.lock_imut().deref().GetThisScopeValue( namespace_.deref().name ) )
+	var ust::string8 name= namespace_.deref().name;
+	if_var( prev_name : names_scope_ptr.lock_imut().deref().GetThisScopeValue( name ) )
 	{
 		auto prev_namespace= prev_name.Get</NamesScope/>();
 		if( !prev_namespace.empty() )
@@ -459,16 +460,21 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		}
 		else
 		{
-			REPORT_ERROR( Redefinition, names_scope_ptr, namespace_.deref().src_loc, namespace_.deref().name )
+			REPORT_ERROR( Redefinition, names_scope_ptr, namespace_.deref().src_loc, name )
 		}
 		return;
 	}
 
-	var NamesScopeValue mut names_scope_value( NamesScope( namespace_.deref().name, names_scope_ptr ) );
+	if( IsKeyword( name ) )
+	{
+		REPORT_ERROR( UsingKeywordAsName, names_scope_ptr, namespace_.deref().src_loc, name )
+	}
+
+	var NamesScopeValue mut names_scope_value( NamesScope( name, names_scope_ptr ) );
 	NamesScopeFill( names_scope_value.Get</NamesScope/>().try_to_non_nullable(), namespace_.deref().elements );
 
 	auto mut lock= names_scope_ptr.lock_mut();
-	lock.deref().AddName( namespace_.deref().name, move(names_scope_value) );
+	lock.deref().AddName( name, move(names_scope_value) );
 }
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::ClassField/>& class_field, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility, u32 field_index )
