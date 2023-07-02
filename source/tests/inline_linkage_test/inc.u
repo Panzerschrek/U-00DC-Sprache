@@ -9,10 +9,13 @@ fn FunFromA();
 fn FunFromB();
 fn FunFromC();
 
-// Must be inlined on each module, but visible in extern modules, that does not includes this file.
+// Must be inlined in each module, but not visible in extern modules, that does not include this file.
 fn InlineFromInc()
 {
 }
 
 // Should get single definition of this variable.
 var i32 mut global_x= 123;
+
+fn GetGlobalAddressA() : $(i32);
+fn GetGlobalAddressB() : $(i32);
