@@ -95,21 +95,6 @@ fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperator
 	return ust::null_optional;
 }
 
-template</type T/>
-fn VectorAppend( ust::vector</T/> &mut dst, ust::vector</T/> mut src )
-{
-	// HACK! We can not move from beginning of the vector. So, inverse vector and move elements from back.
-	for( auto mut i= 0s; i < src.size() / 2s; ++i )
-	{
-		auto j= src.size() - i - 1s;
-		src.swap( i, j );
-	}
-	while( !src.empty() )
-	{
-		dst.push_back( src.pop_back() );
-	}
-}
-
 class SyntaxAnalyzer
 {
 public:
@@ -296,7 +281,7 @@ private:
 		}
 		else{ static_assert(false); }
 
-		VectorAppend( errors_, take(syntax_analyzer.errors_) );
+		errors_.append( syntax_analyzer.errors_ );
 		return move(result);
 	}
 
@@ -451,7 +436,7 @@ fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : Names
 				if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Namespace ) )
 				{
 					var NamespaceElements mut expanded_namespace_elements= ExpandMacro</NamespaceElements/>( macro );
-					VectorAppend( namespace_elements, move(expanded_namespace_elements) );
+					namespace_elements.append( expanded_namespace_elements );
 					continue;
 				}
 			}
@@ -1980,7 +1965,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 				if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Block ) )
 				{
 					var BlockElements mut expanded_block_elements= ExpandMacro</BlockElements/>( macro );
-					VectorAppend( block_elements, move(expanded_block_elements) );
+					block_elements.append( expanded_block_elements );
 					continue;
 				}
 			}
@@ -2809,7 +2794,7 @@ fn SyntaxAnalyzer::ParseClassBodyElements( mut this ) : ClassElements
 				if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Class ) )
 				{
 					var ClassElements mut expanded_class_elements= ExpandMacro</ClassElements/>( macro );
-					VectorAppend( class_elements, move(expanded_class_elements) );
+					class_elements.append( expanded_class_elements );
 					continue;
 				}
 			}
@@ -3890,7 +3875,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 						macro_unique_identifiers_base_name,
 						expansion_src_loc );
 
-				VectorAppend( lexems_expanded, move(internal_lexems_expanded) );
+				lexems_expanded.append( internal_lexems_expanded );
 
 				macro_variables_maps_stack.drop_back();
 

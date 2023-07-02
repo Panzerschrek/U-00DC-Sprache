@@ -371,6 +371,31 @@ fn nomangle main() : i32
 			++i;
 		}
 	}
+	{ // Append
+		var I32Vec mut v0, mut v1;
+		v0.push_back( 14 );
+		v0.push_back( 25 );
+		v0.push_back( 36 );
+		halt if( v0.size() != 3s );
+
+		v1.push_back( 47 );
+		v1.push_back( 58 );
+		v1.push_back( 69 );
+		v1.push_back( 710 );
+		halt if( v1.size() != 4s );
+
+		v0.append(v1);
+		halt if( v0.size() != 7s );
+		halt if( v1.size() != 0s );
+
+		halt if( v0[0s] != 14 );
+		halt if( v0[1s] != 25 );
+		halt if( v0[2s] != 36 );
+		halt if( v0[3s] != 47 );
+		halt if( v0[4s] != 58 );
+		halt if( v0[5s] != 69 );
+		halt if( v0[6s] != 710 );
+	}
 	{ // ==
 		static_assert( typeinfo</I32Vec/>.is_equality_comparable );
 		var I32Vec mut v0, mut v1, mut v2, mut v3, mut v4, mut v5, mut v6;

@@ -256,6 +256,28 @@ public:
 
 	// modificators
 
+	// Append contents of other vector to this, leave "other" vector empty
+	fn append( mut this, this_type &mut other )
+	{
+		auto new_size= add_overflow_check_halt( size_, other.size_ );
+
+		unsafe( ensure_capacity( new_size ) );
+
+		// Just copy memory from other vector to end of this vector.
+		unsafe( memory_copy_aligned(
+			c_element_alignment_,
+			cast_ref_unsafe</byte8/>( $>( ptr_ + size_ ) ),
+			cast_ref_unsafe</byte8/>( $>( other.ptr_ ) ),
+			c_element_size_ * other.size_ ) );
+
+		// Increase size of this vector, zero size of other vector.
+		// Do not touch storage of other vector.
+		size_= new_size;
+		other.size_= 0s;
+
+		// Do not need to call any destructors here, since values are just moved from one container into another.
+	}
+
 	fn swap( mut this, size_type i0, size_type i1 )
 	{
 		halt if( i0 >= size_ );
