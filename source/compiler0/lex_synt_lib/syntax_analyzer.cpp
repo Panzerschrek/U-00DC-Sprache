@@ -107,28 +107,7 @@ static const std::vector< std::pair< Lexem::Type, BinaryOperatorType> > g_operat
 	},
 };
 
-bool IsAdditiveAssignmentOperator( const Lexem& lexem )
-{
-	switch(lexem.type)
-	{
-		case Lexem::Type::AssignAdd:
-		case Lexem::Type::AssignSub:
-		case Lexem::Type::AssignMul:
-		case Lexem::Type::AssignDiv:
-		case Lexem::Type::AssignAnd:
-		case Lexem::Type::AssignRem:
-		case Lexem::Type::AssignOr :
-		case Lexem::Type::AssignXor:
-		case Lexem::Type::AssignShiftLeft :
-		case Lexem::Type::AssignShiftRight:
-			return true;
-		default: break;
-	};
-
-	return false;
-}
-
-BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
+std::optional<BinaryOperatorType> GetAdditiveAssignmentOperator( const Lexem& lexem )
 {
 	switch(lexem.type)
 	{
@@ -144,8 +123,7 @@ BinaryOperatorType GetAdditiveAssignmentOperator( const Lexem& lexem )
 		case Lexem::Type::AssignShiftRight: return BinaryOperatorType::ShiftRight;
 
 		default:
-		U_ASSERT(false);
-		return BinaryOperatorType::Add;
+			return std::nullopt;
 	};
 }
 
@@ -2218,10 +2196,10 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 
 				result.iteration_part_elements_.push_back( std::move(assignment_operator) );
 			}
-			else if( IsAdditiveAssignmentOperator( *it_ ) )
+			else if( const auto additive_operation= GetAdditiveAssignmentOperator( *it_ ) )
 			{
 				AdditiveAssignmentOperator additive_assignment_operator( it_->src_loc );
-				additive_assignment_operator.additive_operation_= GetAdditiveAssignmentOperator( *it_ );
+				additive_assignment_operator.additive_operation_= *additive_operation;
 				NextLexem();
 				additive_assignment_operator.l_value_= std::move(expression_l);
 				additive_assignment_operator.r_value_= ParseExpression();
@@ -2642,11 +2620,11 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 
 				elements.emplace_back( std::move(assignment_operator) );
 			}
-			else if( IsAdditiveAssignmentOperator( *it_ ) )
+			else if( const auto additive_operation= GetAdditiveAssignmentOperator( *it_ ) )
 			{
 				AdditiveAssignmentOperator op( it_->src_loc );
 
-				op.additive_operation_= GetAdditiveAssignmentOperator( *it_ );
+				op.additive_operation_= *additive_operation;
 				NextLexem();
 
 				op.l_value_= std::move(l_expression);

@@ -59,18 +59,18 @@ var tup[
 		[ Lexem::Type::CompareGreater, BinaryOperatorType::Greater ],
 		[ Lexem::Type::CompareGreaterOrEqual, BinaryOperatorType::GreaterEqual ],
 	],
-	[ // 6
+	[
 		[ Lexem::Type::CompareOrder, BinaryOperatorType::CompareOrder ],
 	],
-	[ // 7
+	[
 		[ Lexem::Type::ShiftLeft, BinaryOperatorType::ShiftLeft ],
 		[ Lexem::Type::ShiftRight, BinaryOperatorType::ShiftRight ],
 	],
-	[ // 8
+	[
 		[ Lexem::Type::Plus, BinaryOperatorType::Add ],
 		[ Lexem::Type::Minus, BinaryOperatorType::Sub ],
 	],
-	[ // 9
+	[
 		[ Lexem::Type::Star, BinaryOperatorType::Mul ],
 		[ Lexem::Type::Slash, BinaryOperatorType::Div ],
 		[ Lexem::Type::Percent, BinaryOperatorType::Rem ],
@@ -93,13 +93,6 @@ fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperator
 	if( t == Lexem::Type::AssignShiftRight ){ return BinaryOperatorType::ShiftRight; }
 
 	return ust::null_optional;
-}
-
-struct BinaryOperatorsChainComponent
-{
-	Expression expression;
-	BinaryOperatorType operator= zero_init; // Value of last component is ignored
-	SrcLoc src_loc;
 }
 
 template</type T/>
@@ -1994,15 +1987,14 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 
 			auto mut expr= ParseExpression();
 
-			auto additive_assignment_operator_type= GetAdditiveAssignmentOperator( it_.front() );
-			if( !additive_assignment_operator_type.empty() )
+			if_var( additive_assignment_operator_type : GetAdditiveAssignmentOperator( it_.front() ) )
 			{
 				auto src_loc= it_.front().src_loc;
 				NextLexem();
 				var AdditiveAssignmentOperator mut additive_assignment_operator
 				{
 					.src_loc= src_loc,
-					.operator= additive_assignment_operator_type.try_deref(),
+					.operator= additive_assignment_operator_type,
 					.l(move(expr)),
 					.r(ParseExpression()),
 				};
@@ -2504,15 +2496,14 @@ fn SyntaxAnalyzer::ParseCStyleForOperator( mut this ) : CStyleForOperator
 		{
 			var Expression mut expression_l= ParseExpression();
 
-			auto additive_assignment_operator_type= GetAdditiveAssignmentOperator( it_.front() );
-			if( !additive_assignment_operator_type.empty() )
+			if_var( additive_assignment_operator_type : GetAdditiveAssignmentOperator( it_.front() ) )
 			{
 				auto src_loc= it_.front().src_loc;
 				NextLexem();
 				var AdditiveAssignmentOperator mut additive_assignment_operator
 				{
 					.src_loc= src_loc,
-					.operator= additive_assignment_operator_type.try_deref(),
+					.operator= additive_assignment_operator_type,
 					.l(move(expression_l)),
 					.r(ParseExpression()),
 				};
