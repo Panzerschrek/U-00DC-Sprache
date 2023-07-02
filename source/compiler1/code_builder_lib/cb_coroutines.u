@@ -110,12 +110,12 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 	var LLVMTypeRef llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, class_name.front() ) );
 	var LLVMTypeRef mut coroutine_handle_type= unsafe( LLVMPointerTypeInContext( llvm_context_, 0u ) );
 	unsafe( LLVMStructSetBody( llvm_type, $<(coroutine_handle_type), 1u, LLVMBool::False ) );
-	with( &mut lock : class_type_ptr.lock_mut() )
+	with( mut lock : class_type_ptr.lock_mut() )
 	{
 		lock.deref().llvm_type= llvm_type;
 	}
 
-	with( &mut lock : class_members_ptr.lock_mut() )
+	with( mut lock : class_members_ptr.lock_mut() )
 	{
 		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
 		lock.deref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
@@ -199,7 +199,7 @@ fn CodeBuilder::GetCoroutineType( mut this, NamesScopePtr& root_namespace, Corou
 			unsafe( LLVMDisposeBuilder( ir_builder ) );
 		}
 
-		with( &mut lock : class_members_ptr.lock_mut() )
+		with( mut lock : class_members_ptr.lock_mut() )
 		{
 			var NamesScopeFunctionsSet mut functions_set{ .class_= class_type_ptr };
 			functions_set.functions_set.functions.push_back( move(function_variable) );

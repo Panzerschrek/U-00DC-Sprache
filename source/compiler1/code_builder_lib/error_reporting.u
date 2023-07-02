@@ -56,9 +56,10 @@ fn ReportErrorImpl( CodeBuilderErrorCode code, SrcLoc& src_loc, ust::array_view_
 
 fn PutErrorIntoContainer( NamesScopePtr& names_scope, CodeBuilderError mut error )
 {
-	auto container_ptr= names_scope.lock_imut().deref().GetErrors();
-	auto mut lock= container_ptr.try_lock_mut();
-	lock.deref().push_back( move( error ) );
+	with( mut lock: names_scope.lock_imut().deref().GetErrors().try_lock_mut() )
+	{
+		lock.deref().push_back( move( error ) );
+	}
 }
 
 fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8

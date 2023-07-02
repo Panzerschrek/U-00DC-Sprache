@@ -468,9 +468,8 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 
 	var ClassTypePtr mut class_type_ptr( move(class_type) );
 
+	with( mut lock : class_members.lock_mut() )
 	{
-		auto mut lock= class_members.lock_mut();
-
 		// Create functions set for constructors/destructors/assignment operators.
 		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
 		lock.deref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
@@ -482,8 +481,8 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 	}
 
 	auto name_mangled= mangler_.deref().MangleType( class_type_ptr );
+	with( mut lock : class_type_ptr.lock_mut() )
 	{
-		auto mut lock= class_type_ptr.lock_mut();
 		lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, name_mangled.front() ) );
 	}
 
@@ -494,9 +493,9 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 
 fn CodeBuilder::FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types )
 {
+	with( mut lock : typeinfo_class.lock_mut() )
 	{
-		auto mut class_lock= typeinfo_class.lock_mut();
-		var ClassType &mut class_= class_lock.deref();
+		var ClassType &mut class_= lock.deref();
 
 		unsafe( LLVMStructSetBody( class_.llvm_type, cast_mut(fields_llvm_types).data(), u32(fields_llvm_types.size()), LLVMBool::False ) );
 

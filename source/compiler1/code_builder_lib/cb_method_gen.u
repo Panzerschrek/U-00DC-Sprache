@@ -82,9 +82,9 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	}
 
 	// All ok - set default constructible flag.
+	with( mut lock : class_type.lock_mut() )
 	{
-		auto mut class_lock= class_type.lock_mut();
-		class_lock.deref().is_default_constructible= true;
+		lock.deref().is_default_constructible= true;
 	}
 
 	if( constructor_index == ~0s )
@@ -279,9 +279,9 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	}
 
 	// All ok - set copy constructible flag.
+	with( mut lock : class_type.lock_mut() )
 	{
-		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.deref();
+		auto &mut class_= lock.deref();
 
 		if( class_.kind != ClassType::Kind::Struct && constructor_index == ~0s )
 		{
@@ -648,9 +648,9 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 	}
 
 	// All ok - set equiality comparable flag.
+	with( mut lock : class_type.lock_mut() )
 	{
-		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.deref();
+		auto &mut class_= lock.deref();
 
 		if( operator_index == ~0s )
 		{

@@ -352,8 +352,8 @@ fn SyntaxAnalyzer::DoAnalyzis( mut this ) : SyntaxAnalysisResult
 	res.program_elements= ParseNamespaceBody( Lexem::Type::EndOfFile );
 	res.errors= take(errors_);
 
+	with( mut lock: macros_.lock_mut() )
 	{
-		auto mut lock= macros_.lock_mut();
 		res.macros= take(lock.deref());
 	}
 

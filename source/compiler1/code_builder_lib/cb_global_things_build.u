@@ -213,8 +213,8 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	}
 
 	// Update functions set after prepareation process.
+	with( mut lock : functions_set_ptr.lock_mut() )
 	{
-		auto mut lock= functions_set_ptr.lock_mut();
 		lock.deref()= functions_set;
 	}
 
@@ -233,8 +233,8 @@ fn CodeBuilder::BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust
 	}
 
 	// Update functions set again after body build process.
+	with( mut lock : functions_set_ptr.lock_mut() )
 	{
-		auto mut lock= functions_set_ptr.lock_mut();
 		lock.deref()= move(functions_set);
 	}
 }
@@ -365,10 +365,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		class_.base_class= move(base_class);
 	}
 
-	{ // Pre-mark class as polymorph, because it's needed for functions checks. Exact kind of class we will known later.
-		auto mut lock= class_type.lock_mut();
+	// Pre-mark class as polymorph, because it's needed for functions checks. Exact kind of class we will known later.
+	with( mut lock : class_type.lock_mut() )
+	{
 		auto &mut class_= lock.deref();
-
 
 		if( syntax_element.kind_attribute == Synt::Class::KindAttribute::Polymorph ||
 			syntax_element.kind_attribute == Synt::Class::KindAttribute::Interface ||
@@ -455,9 +455,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	{
 		fields_llvm_types.push_back( unsafe( LLVMPointerType( fundamental_llvm_types_.int_ptr, 0u ) ) );// set exact type later.
 	}
+
+	with( mut lock : class_type.lock_mut() )
 	{
 		// Make base class first field. Add parent classes fields.
-		auto mut lock= class_type.lock_mut();
 		auto &mut class_= lock.deref();
 
 		auto base_class= class_.base_class;
@@ -611,9 +612,10 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	// Generate destructor prototype before perparing virtual table to mark it as virtual and setup virtual table index.
 	TryGenerateDestructorPrototype( class_type );
 
-	{ // Setup inner reference kind. Do this before methods generation and virtual table preparation.
-		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.deref();
+	// Setup inner reference kind. Do this before methods generation and virtual table preparation.
+	with( mut lock : class_type.lock_mut() )
+	{
+		auto &mut class_= lock.deref();
 
 		var InnerReferenceKind mut class_inner_reference_kind= InnerReferenceKind::None;
 
@@ -661,9 +663,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		}
 	}
 
+	with( mut lock : class_type.lock_mut() )
 	{
-		auto mut class_lock= class_type.lock_mut();
-		var ClassType &mut class_= class_lock.deref();
+		var ClassType &mut class_= lock.deref();
 
 		unsafe
 		{
@@ -676,8 +678,8 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 
 	// Setup class kind.
+	with( mut lock : class_type.lock_mut() )
 	{
-		auto mut lock= class_type.lock_mut();
 		auto &mut class_= lock.deref();
 
 		auto mut class_contains_pure_virtual_functions= false;
@@ -758,9 +760,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 		else{ halt; }
 	}
 
+	with( mut lock : class_type.lock_mut() )
 	{ // Setup "constexpr" property. Do this before methods generation.
-		auto mut class_lock= class_type.lock_mut();
-		auto &mut class_= class_lock.deref();
+		auto &mut class_= lock.deref();
 
 		class_.can_be_constexpr= class_.kind == ClassType::Kind::Struct;
 
@@ -819,9 +821,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	TryGenerateEqualityCompareOperator( class_type );
 	TryGenerateDestructor( class_type );
 
+	with( mut lock : class_type.lock_mut() )
 	{
-		auto mut class_lock= class_type.lock_mut();
-		var ClassType &mut class_= class_lock.deref();
+		var ClassType &mut class_= lock.deref();
 
 		// Search for explicit noncopy constructors.
 		if_var( constructors : class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ) )
@@ -1011,9 +1013,9 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 
 	// Finally, make class complete.
+	with( mut lock : class_type.lock_mut() )
 	{
-		auto mut class_lock= class_type.lock_mut();
-		class_lock.deref().is_complete= true;
+		lock.deref().is_complete= true;
 	}
 
 	CheckClassFieldsInitializers( class_type );
@@ -1221,7 +1223,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 			? AddGlobalMutableVariable( name_mangled, t.GetLLVMType() )
 			: AddGlobalConstantVariable( name_mangled, t.GetLLVMType(), LLVMValueRef::Null ) );
 
-		with( &mut lock : variable_ptr.lock_mut() )
+		with( mut lock : variable_ptr.lock_mut() )
 		{
 			lock.deref().llvm_value= llvm_value;
 		}
@@ -1308,7 +1310,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 				return;
 			}
 
-			with( &mut lock : variable_ptr.lock_mut() )
+			with( mut lock : variable_ptr.lock_mut() )
 			{
 				lock.deref().llvm_value= expression_result.llvm_value;
 			}

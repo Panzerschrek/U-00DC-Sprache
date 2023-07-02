@@ -325,9 +325,9 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 {
 	var NamesScopeMutPtr mut global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
 
+	with( mut lock : global_names_scope.lock_mut() )
 	{
-		auto mut l= global_names_scope.lock_mut();
-		auto &mut n= l.deref();
+		auto &mut n= lock.deref();
 
 		n.SetErrors( root_errors_container_ );
 		FillGlobalNamesScope( n );
@@ -1673,8 +1673,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 
 	debug_info_builder_.try_deref().SetCurrentLocation( function_context, body_syntax_element.src_loc );
 
+	with( mut args_names_scope_lock : args_names_scope_ptr.lock_mut() )
 	{
-		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
 		auto &mut args_names_scope= args_names_scope_lock.deref();
 
 		var bool is_s_ret= FunctionTypeIsSRet( func_variable.t );
@@ -2189,16 +2189,18 @@ fn CodeBuilder::CheckReferencesPollutionBeforeReturn( this, NamesScopePtr& names
 
 fn CodeBuilder::MergeReferencesGraphsAfterConditionalBranches( ust::array_view_imut</ReferencesGraph/> branches, NamesScopePtr names_scope, SrcLoc& src_loc ) : ReferencesGraph
 {
-	auto errors_container= names_scope.lock_imut().deref().GetErrors();
-	auto mut lock= errors_container.try_lock_mut();
-	return ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( branches, lock.deref(), src_loc );
+	with( mut lock : names_scope.lock_imut().deref().GetErrors().try_lock_mut() )
+	{
+		return ReferencesGraph::MergeReferencesGraphsAfterConditionalBranches( branches, lock.deref(), src_loc );
+	}
 }
 
 fn CodeBuilder::CheckReferencesGraphAfterLoop( ReferencesGraph& state_before, ReferencesGraph& state_after, NamesScopePtr names_scope, SrcLoc& src_loc )
 {
-	auto errors_container= names_scope.lock_imut().deref().GetErrors();
-	auto mut lock= errors_container.try_lock_mut();
-	ReferencesGraph::CheckReferencesGraphAfterLoop( state_before, state_after, lock.deref(), src_loc );
+	with( mut lock : names_scope.lock_imut().deref().GetErrors().try_lock_mut() )
+	{
+		ReferencesGraph::CheckReferencesGraphAfterLoop( state_before, state_after, lock.deref(), src_loc );
+	}
 }
 
 fn CodeBuilder::SetupReferencesInCopyOrMove(
@@ -3179,18 +3181,18 @@ fn CodeBuilder::ConstexprCompareEqual(
 				return res.constant;
 			}
 
-			auto errors_container_ptr= names_scope.lock_imut().deref().GetErrors();
-			auto mut lock= errors_container_ptr.try_lock_mut();
-			auto &mut errors_container= lock.deref();
-			foreach( &err : res.errors )
+			with( mut lock : names_scope.lock_imut().deref().GetErrors().try_lock_mut() )
 			{
-				var CodeBuilderError mut out_error
+				foreach( &err : res.errors )
 				{
-					.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
-					.src_loc= src_loc,
-					.text= err,
-				};
-				errors_container.push_back( move(out_error) );
+					var CodeBuilderError mut out_error
+					{
+						.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+						.src_loc= src_loc,
+						.text= err,
+					};
+					lock.deref().push_back( move(out_error) );
+				}
 			}
 
 			return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) );

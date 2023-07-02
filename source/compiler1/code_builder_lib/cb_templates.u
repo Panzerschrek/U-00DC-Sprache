@@ -54,6 +54,7 @@ fn CreateTemplateErrorsContext(
 		result.args_description+= " ]";
 	}
 
+	with( mut lock : instantiation_point_names_scope_ptr.lock_imut().deref().GetErrors().try_lock_mut() )
 	{
 		var CodeBuilderError mut template_context_error
 		{
@@ -62,14 +63,12 @@ fn CreateTemplateErrorsContext(
 			.errors_context( move(result) ),
 		};
 
-		auto parent_errors_container= instantiation_point_names_scope_ptr.lock_imut().deref().GetErrors();
-		auto mut errors_container_lock= parent_errors_container.try_lock_mut();
-		errors_container_lock.deref().push_back( move(template_context_error) );
+		lock.deref().push_back( move(template_context_error) );
 	}
+
+	with( mut lock : args_names_scope_ptr.lock_mut() )
 	{
-		auto mut args_names_scope_lock= args_names_scope_ptr.lock_mut();
-		var NamesScope &mut args_names_scope= args_names_scope_lock.deref();
-		args_names_scope.SetErrors( errors_container );
+		lock.deref().SetErrors( errors_container );
 	}
 }
 
@@ -738,12 +737,12 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	var NamesScopePtr names_scope= type_template.parent_names_scope.lock().try_to_non_nullable(); // Parent namespace of type template
 	var NamesScopeMutPtr result_names_scope( NamesScope( NamesScope::c_template_args_namespace_name, names_scope ) ); // Where we place template arguments
 
+	with( mut lock : result_names_scope.lock_mut() )
 	{
-		auto mut result_names_scope_lock= result_names_scope.lock_mut();
 		for( auto mut i= 0s; i < type_template.params.size(); ++i )
 		{
 			var TemplateArg mut template_arg{ .index= u32(i) };
-			result_names_scope_lock.deref().AddName( type_template.params[i].name, move(template_arg) );
+			lock.deref().AddName( type_template.params[i].name, move(template_arg) );
 		}
 	}
 
@@ -875,6 +874,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 			return ust::null_optional;
 		}
 
+		with( mut lock : class_type.try_lock_mut() )
 		{
 			var ClassType::BaseTemplate mut base_template
 			{
@@ -882,7 +882,6 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 				.signature_args= template_args_evaluation_result.signature_args,
 			};
 
-			auto mut lock= class_type.try_lock_mut();
 			lock.deref().base_template= move(base_template);
 		}
 
@@ -902,9 +901,9 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 		}
 
 		// Cache result.
+		with( mut lock : args_names_scope.lock_mut() )
 		{
-			auto mut names_scope_lock= args_names_scope.lock_mut();
-			names_scope_lock.deref().AddName( template_class_name, t );
+			lock.deref().AddName( template_class_name, t );
 		}
 
 		AddNewTemplateThing( template_key, args_names_scope );
@@ -1132,8 +1131,8 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		lock.deref().name_mangled= name_mangled;
 	}
 
+	with( mut lock : result_functions_set_ptr.try_lock_mut() )
 	{
-		auto mut lock= result_functions_set_ptr.try_lock_mut();
 		lock.deref().functions_set.functions.front()= function_variable;
 	}
 
@@ -1145,8 +1144,8 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 		BuildFuncCode( result_names_scope, function_variable );
 	}
 
+	with( mut lock : result_functions_set_ptr.try_lock_mut() )
 	{
-		auto mut lock= result_functions_set_ptr.try_lock_mut();
 		lock.deref().functions_set.functions.front()= function_variable;
 	}
 
@@ -1225,12 +1224,12 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 				"",
 				function_template.parent_names_scope.lock().try_to_non_nullable() ) );
 
+		with( mut lock : result_names_scope.lock_mut() )
 		{
-			auto mut result_names_scope_lock= result_names_scope.lock_mut();
 			for( auto mut i= 0s; i < function_template.params.size(); ++i )
 			{
 				var TemplateArg mut template_arg{ .index= u32(i) };
-				result_names_scope_lock.deref().AddName( function_template.params[i].name, move(template_arg) );
+				lock.deref().AddName( function_template.params[i].name, move(template_arg) );
 			}
 		}
 
@@ -1272,8 +1271,8 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 
 	// Cache result.
 	var NamesScopeMutPtr result_names_scope( NamesScope( "", functions_set.function_templates.front().deref().parent_names_scope.lock() ) );
+	with( mut lock : result_names_scope.lock_mut() )
 	{
-		auto mut lock= result_names_scope.lock_mut();
 		lock.deref().AddName( names_scope_value_key, names_scope_value );
 	}
 	AddNewTemplateThing( move(cache_key), result_names_scope );

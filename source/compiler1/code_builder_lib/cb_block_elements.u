@@ -230,7 +230,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 				function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
 			}
 
-			with( &mut lock : variable_reference.lock_mut() )
+			with( mut lock : variable_reference.lock_mut() )
 			{
 				lock.deref().llvm_value= llvm_value;
 			}
@@ -293,7 +293,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 			function_context.references_graph.TryAddLink( expression_result_ptr, variable_reference, names_scope, variable_declaration.src_loc );
 
-			with( &mut lock : variable_reference.lock_mut() )
+			with( mut lock : variable_reference.lock_mut() )
 			{
 				lock.deref().llvm_value= CreateReferenceCast( expression_result.llvm_value, expression_result.t, t, function_context );
 			}
@@ -311,7 +311,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		if( !is_mutable )
 		{
 			// Set constexpr value only for immutable variables.
-			with( &mut lock : variable_reference.lock_mut() )
+			with( mut lock : variable_reference.lock_mut() )
 			{
 				lock.deref().constexpr_value= constexpr_value;
 			}
@@ -321,7 +321,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		RegisterFrameVariable( function_context, variable_reference, 1s );
 
 		var bool mut insert_not_ok= false;
-		with( &mut lock : names_scope.lock_mut() )
+		with( mut lock : names_scope.lock_mut() )
 		{
 			insert_not_ok= lock.deref().AddName( variable_declaration.name, move(variable_reference) ).empty();
 		}
@@ -385,7 +385,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 		function_context.references_graph.TryAddLink( expr_ptr, variable_reference, names_scope, auto_variable_declaration.src_loc );
 
-		with( &mut lock : variable_reference.lock_mut() )
+		with( mut lock : variable_reference.lock_mut() )
 		{
 			lock.deref().llvm_value= expr.llvm_value;
 		}
@@ -481,7 +481,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			}
 		}
 
-		with( &mut lock : variable_reference.lock_mut() )
+		with( mut lock : variable_reference.lock_mut() )
 		{
 			lock.deref().llvm_value= llvm_value;
 		}
@@ -497,8 +497,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	}
 
 	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope.lock_mut() )
 	{
-		auto mut lock= names_scope.lock_mut();
 		insert_not_ok= lock.deref().AddName( auto_variable_declaration.name, move(variable_reference) ).empty();
 	}
 	if( insert_not_ok )
@@ -1107,7 +1107,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			function_context.references_graph.AddLink( variable_ptr, variable_reference );
 			RegisterTopFrameVariable( function_context, variable_ptr );
 
-			with( &mut lock : variable_reference.lock_mut() )
+			with( mut lock : variable_reference.lock_mut() )
 			{
 				lock.deref().llvm_value= promise;
 			}
@@ -1173,7 +1173,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					BuildCopyConstructorPart( names_scope, function_context, llvm_value, coroutine_reference_result, result_type, if_coro_advance_operator.src_loc );
 				}
 
-				with( &mut lock : variable_reference.lock_mut() )
+				with( mut lock : variable_reference.lock_mut() )
 				{
 					lock.deref().llvm_value= llvm_value;
 				}
@@ -1189,7 +1189,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					REPORT_ERROR( BindingConstReferenceToNonconstReference, names_scope, if_coro_advance_operator.src_loc )
 				}
 
-				with( &mut lock : variable_reference.lock_mut() )
+				with( mut lock : variable_reference.lock_mut() )
 				{
 					lock.deref().llvm_value= coroutine_reference_result;
 				}
@@ -1208,7 +1208,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		RegisterTopFrameVariable( function_context, variable_reference );
 		var NamesScopeMutPtr variable_names_scope( NamesScope( "", names_scope ) );
-		with( &mut lock : variable_names_scope.lock_mut() )
+		with( mut lock : variable_names_scope.lock_mut() )
 		{
 			lock.deref().AddName( if_coro_advance_operator.variable_name, move(variable_reference) );
 		}
@@ -1513,7 +1513,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					return BlockElementBuildInfo();
 				}
 
-				with( &mut lock: variable_reference.lock_mut() )
+				with( mut lock : variable_reference.lock_mut() )
 				{
 					lock.deref().llvm_value= src_element_llvm_value;
 				}
@@ -1536,7 +1536,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 				CreateLifetimeStart( function_context, variable.llvm_value );
 				debug_info_builder_.try_deref().CreateVariableInfo( function_context, variable, variable_name, range_for_operator.src_loc );
 
-				with( &mut lock: variable_reference.lock_mut() )
+				with( mut lock : variable_reference.lock_mut() )
 				{
 					lock.deref().llvm_value= variable.llvm_value;
 				}
@@ -1566,8 +1566,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			// Register variable for destruction and reference checking.
 			RegisterTopFrameVariable( function_context, variable_reference );
 
+			with( mut lock : names_scope.lock_mut() )
 			{
-				auto mut lock= names_scope.lock_mut();
 				lock.deref().AddName( range_for_operator.loop_variable_name, move(variable_reference) ).empty();
 			}
 
@@ -1987,7 +1987,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 		}
 
-		with( &mut lock: variable_reference.lock_mut() )
+		with( mut lock : variable_reference.lock_mut() )
 		{
 			lock.deref().llvm_value= llvm_value;
 		}
@@ -2007,8 +2007,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 	// Create separate namespace for variable. Redefinition here is not possible.
 	var NamesScopeMutPtr varaible_names_scope( NamesScope( "", names_scope ) );
+	with( mut lock : varaible_names_scope.lock_mut() )
 	{
-		auto mut lock= varaible_names_scope.lock_mut();
 		lock.deref().AddName( with_operator.variable_name, move(variable_reference) ).empty();
 	}
 
@@ -2081,8 +2081,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	var Type mut t= PrepareType( names_scope, function_context, type_alias.type_name );
 
 	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope.lock_mut() )
 	{
-		auto mut lock= names_scope.lock_mut();
 		insert_not_ok= lock.deref().AddName( type_alias.name, NamesScopeValue( move(t) ) ).empty();
 	}
 	if( insert_not_ok )

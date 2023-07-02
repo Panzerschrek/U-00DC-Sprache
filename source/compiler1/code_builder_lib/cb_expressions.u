@@ -976,7 +976,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			{
 				auto phi_node= LLVMBuildPhi( function_context.llvm_ir_builder, LLVMPointerType( t.GetLLVMType(), 0u ), "select_result\0"[0] );
 				LLVMAddIncoming( phi_node, $<(branches_reference_values[0]), $<(branches_end_blocks[0]), 2u );
-				with( &mut lock : result_ptr.lock_mut() )
+				with( mut lock : result_ptr.lock_mut() )
 				{
 					lock.deref().llvm_value= phi_node;
 				}
@@ -986,7 +986,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if( condition_constexpr_value != LLVMValueRef::Null )
 	{
-		with( &mut lock : result_ptr.lock_mut() )
+		with( mut lock : result_ptr.lock_mut() )
 		{
 			lock.deref().constexpr_value=
 				select( unsafe( LLVMConstIntGetZExtValue( condition_constexpr_value ) ) != 0u64 ? branches_constexpr_values[0] : branches_constexpr_values[1] );
@@ -3699,18 +3699,18 @@ fn CodeBuilder::DoCallFunction(
 		}
 		else
 		{
-			auto errors_container_ptr= names_scope.lock_imut().deref().GetErrors();
-			auto mut lock= errors_container_ptr.try_lock_mut();
-			auto &mut errors_container= lock.deref();
-			foreach( &err : res.errors )
+			with( mut lock : names_scope.lock_imut().deref().GetErrors().try_lock_mut() )
 			{
-				var CodeBuilderError mut out_error
+				foreach( &err : res.errors )
 				{
-					.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
-					.src_loc= src_loc,
-					.text= err,
-				};
-				errors_container.push_back( move(out_error) );
+					var CodeBuilderError mut out_error
+					{
+						.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+						.src_loc= src_loc,
+						.text= err,
+					};
+					lock.deref().push_back( move(out_error) );
+				}
 			}
 		}
 	}
@@ -3998,7 +3998,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 
 		function_context.references_graph.RemoveNode( variable_for_initialization_ptr );
 
-		with( &mut lock: result_ptr.lock_mut() )
+		with( mut lock : result_ptr.lock_mut() )
 		{
 			lock.deref().constexpr_value= constexpr_value;
 		}

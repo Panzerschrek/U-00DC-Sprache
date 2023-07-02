@@ -13,19 +13,17 @@ fn CodeBuilder::NamesScopeMerge(
 {
 	foreach( &el : src )
 	{
+		with( dst_lock : dst_ptr.lock_imut() )
 		{
-			auto dst_lock= dst_ptr.lock_imut();
-			auto& dst= dst_lock.deref();
-			if_var( &dst_value : dst.GetThisScopeValue( el.key() ) )
+			if_var( &dst_value : dst_lock.deref().GetThisScopeValue( el.key() ) )
 			{
 				NamesScopeMergeValues( dst_value, el.value(), el.key(), dst_ptr, src_classes_members_namespaces_table );
 				continue;
 			}
 		}
+		with( mut dst_lock : dst_ptr.lock_mut() )
 		{
-			auto mut dst_lock= dst_ptr.lock_mut();
-			auto &mut dst= dst_lock.deref();
-			dst.AddName( el.key(), DeepCopyNamesScopeValue( el.value(), dst_ptr, src_classes_members_namespaces_table ) );
+			dst_lock.deref().AddName( el.key(), DeepCopyNamesScopeValue( el.value(), dst_ptr, src_classes_members_namespaces_table ) );
 		}
 	}
 }
@@ -62,8 +60,8 @@ fn CodeBuilder::DeepCopyNamesScopeValue(
 
 	var NamesScopeMutPtr mut copy_ptr( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
 
+	with( mut copy_lock : copy_ptr.lock_mut() )
 	{
-		auto mut copy_lock= copy_ptr.lock_mut();
 		copy_lock.deref().CopyAccessRightsFrom( src );
 	}
 
@@ -84,10 +82,10 @@ fn CodeBuilder::DeepCopyNamesScopeValue(
 
 	var NamesScopeMutPtr mut dst_namespace( NamesScope( src.GetThisNamespaceName(), target_names_scope ) );
 
+	with( mut lock : dst_namespace.lock_mut() )
 	{
-		auto mut dst_namespace_lock= dst_namespace.lock_mut();
-		dst_namespace_lock.deref().CopyAccessRightsFrom( src );
-		dst_namespace_lock.deref().SetClass( class_type );
+		lock.deref().CopyAccessRightsFrom( src );
+		lock.deref().SetClass( class_type );
 	}
 
 	NamesScopeMerge( dst_namespace, src, src_classes_members_namespaces_table );

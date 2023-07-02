@@ -238,8 +238,8 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	};
 
 	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		auto mut lock= names_scope_ptr.lock_mut();
 		insert_not_ok= lock.deref().AddName( name, move(result_enum) ).empty();
 	}
 
@@ -271,8 +271,8 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	var TypeAlias mut result_type_alias{ .syntax_element= type_alias };
 
 	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		auto mut lock= names_scope_ptr.lock_mut();
 		insert_not_ok= lock.deref().AddName( name, move(result_type_alias) ).empty();
 	}
 
@@ -358,8 +358,8 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		};
 
 		var bool mut insert_not_ok= false;
+		with( mut lock : names_scope_ptr.lock_mut() )
 		{
-			auto mut lock= names_scope_ptr.lock_mut();
 			insert_not_ok= lock.deref().AddName( variable_declaration.name, move(global_variable) ).empty();
 		}
 
@@ -394,8 +394,8 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	var GlobalAutoVariable mut global_auto_variable{ .syntax_element= auto_variable_declaration };
 
 	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		auto mut lock= names_scope_ptr.lock_mut();
 		insert_not_ok= lock.deref().AddName( auto_variable_declaration.deref().name, move(global_auto_variable) ).empty();
 	}
 
@@ -503,8 +503,8 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 	}
 
 	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		auto mut lock= names_scope_ptr.lock_mut();
 		insert_not_ok= lock.deref().AddName( field_name, move(field) ).empty();
 	}
 
@@ -667,9 +667,8 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 
 	class_table_.push_back( class_type_ptr );
 
+	with( mut lock : class_members.lock_mut() )
 	{
-		auto mut lock= class_members.lock_mut();
-
 		// Create functions set for constructors/destructors/assignment operators. It's needed for later methods generation.
 		// TODO - what about user-specified non-public constructors and assignment operators?
 		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
@@ -694,8 +693,8 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 	NamesScopeFillClass( class_members, class_.deref().class_elements, class_type_ptr );
 
 	var bool mut insert_not_ok= false;
+	with( mut lock : names_scope_ptr.lock_mut() )
 	{
-		auto mut lock= names_scope_ptr.lock_mut();
 		insert_not_ok= lock.deref().AddName( class_name, move(names_scope_value) ).empty();
 	}
 
