@@ -1229,7 +1229,6 @@ Type CodeBuilder::BuildFuncCode(
 	// Build debug info only for functions with body.
 	debug_info_builder_->CreateFunctionInfo( func_variable, func_name );
 
-	// For functions with body we can use comdat.
 	if( parent_names_scope.IsInsideTemplate() )
 	{
 		// Set private visibility for functions inside templates.
@@ -1243,10 +1242,10 @@ Type CodeBuilder::BuildFuncCode(
 	}
 	else
 	{
-		// Set comdat for correct linkage of same functions, emitted in several modules.
-		llvm::Comdat* const comdat= module_->getOrInsertComdat( llvm_function->getName() );
-		comdat->setSelectionKind( llvm::Comdat::Any );
-		llvm_function->setComdat( comdat );
+		// This is a non-template function in main file. Use external linkage.
+		// Do not need to use comdat here, since this function is defined only in main (compiled) file.
+		// TODO - use external linkage only if this function has prototype in imported file.
+		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
 	}
 
 	// Ensure completeness only for functions body.
