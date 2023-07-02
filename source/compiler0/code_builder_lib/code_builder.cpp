@@ -1231,7 +1231,16 @@ Type CodeBuilder::BuildFuncCode(
 
 	// For functions with body we can use comdat.
 	if( parent_names_scope.IsInsideTemplate() )
+	{
+		// Set private visibility for functions inside templates.
+		// There is no need to use external linkage, since each user must import file with source template.
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	}
+	else if( func_variable.body_src_loc.GetFileIndex() != 0 )
+	{
+		// This function is defined inside imported file - no need to use private linkage for it.
+		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	}
 	else
 	{
 		// Set comdat for correct linkage of same functions, emitted in several modules.
