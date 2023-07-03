@@ -3,7 +3,6 @@ compiler. Features are grouped and sorted by priority inside each group.
 Delete the features from the list as soon as they are implemented.
 
 General:
-*) Anonymous (module-local) symbols - functions, classes, variables.
 *) build-in "for" for array types.
 *) switch-case
 *) "Disassembly operator" - declare variables with initializer as members of value of structure type.
@@ -14,6 +13,7 @@ General:
 *) Lambdas.
 *) Async functions.
 *) Continious initializer for arrays
+*) Auto-move in "return" for local variable
 *) More advanced macros - more context, elements, string manipulations
 *) Some code customization mechanism (like preprocessor directives and ifdef/endif in C++).
 *) debug_assert
@@ -51,6 +51,7 @@ Compiler:
 *) Virtual call for final function optimization
 *) Do not crash in some cases of code with errors
 *) Prevent execution of constexpr functions with errors
+*) Inline assembly/module level assembly support
 *) Precompiled modules
 *) More calling conventions (including platform-dependent)
 
