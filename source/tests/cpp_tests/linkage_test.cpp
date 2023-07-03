@@ -241,6 +241,38 @@ U_TEST( VariableLinkage_Test1 )
 	U_TEST_ASSERT( w->hasComdat() );
 }
 
+U_TEST( PolymorphClassesDataLinkage_Test0 )
+{
+	// Virtaul functions table should have private linkage.
+	static const char c_program_text[]=
+	R"(
+		class C polymorph {}
+	)";
+
+	const auto engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	const llvm::GlobalVariable* const vtable= engine->FindGlobalVariableNamed( "_ZTV1C", true );
+	U_TEST_ASSERT( vtable != nullptr );
+	U_TEST_ASSERT( vtable->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+}
+
+
+U_TEST( PolymorphClassesDataLinkage_Test1 )
+{
+	// Type id table should have external linkage and comdat.
+	static const char c_program_text[]=
+	R"(
+		class C polymorph {}
+	)";
+
+	const auto engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C" );
+	U_TEST_ASSERT( type_id_table != nullptr );
+	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( type_id_table->hasComdat() );
+}
+
 } // namespace
 
 } // namespace U
