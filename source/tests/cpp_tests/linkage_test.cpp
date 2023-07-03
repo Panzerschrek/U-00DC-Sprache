@@ -256,16 +256,52 @@ U_TEST( PolymorphClassesDataLinkage_Test0 )
 	U_TEST_ASSERT( vtable->getLinkage() == llvm::GlobalValue::PrivateLinkage );
 }
 
-
 U_TEST( PolymorphClassesDataLinkage_Test1 )
 {
-	// Type id table should have external linkage and comdat.
+	// Virtaul functions table should have private linkage event for class, declared in imported file.
+	static const char c_program_text_a[]= " class C polymorph {} ";
+	static const char c_program_text_root[]= "import \"a\" ";
+
+	const auto engine= CreateEngine( BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" ) );
+
+	const llvm::GlobalVariable* const vtable= engine->FindGlobalVariableNamed( "_ZTV1C", true );
+	U_TEST_ASSERT( vtable != nullptr );
+	U_TEST_ASSERT( vtable->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+}
+
+U_TEST( PolymorphClassesDataLinkage_Test2 )
+{
+	// Type id table of class, declared in imported file, should have internal linkage.
 	static const char c_program_text[]=
 	R"(
 		class C polymorph {}
 	)";
 
 	const auto engine= CreateEngine( BuildProgram( c_program_text ) );
+
+	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C", true );
+	U_TEST_ASSERT( type_id_table != nullptr );
+	U_TEST_ASSERT( type_id_table->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+	U_TEST_ASSERT( !type_id_table->hasComdat() );
+}
+
+U_TEST( PolymorphClassesDataLinkage_Test3 )
+{
+	// Type id table of class, declared in imported file, should have external linkage and comdat.
+	static const char c_program_text_a[]= " class C polymorph {} ";
+	static const char c_program_text_root[]= "import \"a\" ";
+
+	const auto engine= CreateEngine( BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" ) );
 
 	const llvm::GlobalVariable* const type_id_table= engine->FindGlobalVariableNamed( "_type_id_for_1C" );
 	U_TEST_ASSERT( type_id_table != nullptr );

@@ -447,15 +447,26 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 
 		var LLVMTypeRef type_id_table_type= LLVMArrayType( polymorph_type_id_table_element_type_, u32(initializers.size()) );
 
-
 		var LLVMValueRef global_value= LLVMAddGlobal( module_, type_id_table_type, name_mangled_null_terminated.front() );
-		LLVMSetLinkage( global_value, LLVMLinkage::External );
-		LLVMSetGlobalConstant( global_value, LLVMBool::True );
 		LLVMSetInitializer( global_value, initializer );
+		LLVMSetGlobalConstant( global_value, LLVMBool::True );
 
-		var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front() );
-		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
-		LLVMSetComdat( global_value, comdat );
+		if( class_.syntax_element.try_deref().src_loc.GetFileIndex() != 0u )
+		{
+			// This is a class, declared in imported file.
+			// Create comdat in order to ensure uniquiness of the table across different modules, that import file with declaration of this class.
+			LLVMSetLinkage( global_value, LLVMLinkage::External );
+
+			var LLVMComdatRef comdat= LLVMGetOrInsertComdat( module_, name_mangled_null_terminated.front() );
+			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+			LLVMSetComdat( global_value, comdat );
+		}
+		else
+		{
+			// This class is declared in main file.
+			// It should not be externally available, thus there is no need to use external linkage or comdat.
+			LLVMSetLinkage( global_value, LLVMLinkage::Private );
+		}
 
 		halt if( class_.polymorph_type_id_table != LLVMValueRef::Null );
 		class_.polymorph_type_id_table= global_value;
