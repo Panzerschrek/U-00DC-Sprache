@@ -984,7 +984,7 @@ private:
 	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
 	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );
-	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name );
+	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name, bool externally_available );
 
 	bool IsGlobalVariable( const VariablePtr& variable );
 

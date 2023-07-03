@@ -1190,6 +1190,8 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	auto& variables_declaration= variables_declaration_ptr.deref();
 	auto& variable_declaration= variables_declaration.variables[ global_variable_ptr.lock_imut().deref().variable_index ];
 
+	var bool externally_available= variables_declaration.src_loc.GetFileIndex() != 0u;
+
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
 	var bool is_mutable= variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
@@ -1220,7 +1222,7 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	{
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), variable_declaration.name, t, !is_mutable );
 		auto llvm_value= select( is_mutable
-			? AddGlobalMutableVariable( name_mangled, t.GetLLVMType() )
+			? AddGlobalMutableVariable( name_mangled, t.GetLLVMType(), externally_available )
 			: AddGlobalConstantVariable( name_mangled, t.GetLLVMType(), LLVMValueRef::Null ) );
 
 		with( mut lock : variable_ptr.lock_mut() )
@@ -1353,6 +1355,8 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	auto auto_variable_declaration_ptr= global_auto_variable_ptr.lock_imut().deref().syntax_element;
 	auto& auto_variable_declaration= auto_variable_declaration_ptr.deref();
 
+	var bool externally_available= auto_variable_declaration.src_loc.GetFileIndex() != 0u;
+
 	var FunctionContext mut function_context= CreateGlobalFunctionContext();
 
 	var bool is_mutable= auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Mutable;
@@ -1408,7 +1412,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	{
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), auto_variable_declaration.name, variable.t, !is_mutable );
 		variable.llvm_value= select( is_mutable
-			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType() )
+			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType(), externally_available )
 			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value ) );
 
 		unsafe( LLVMSetInitializer( variable.llvm_value, expr.constexpr_value ) );

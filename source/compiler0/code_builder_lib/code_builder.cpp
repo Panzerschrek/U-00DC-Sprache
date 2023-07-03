@@ -2150,9 +2150,8 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	return val;
 }
 
-llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name )
+llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name, const bool externally_available )
 {
-	// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
 	const auto var=
 		new llvm::GlobalVariable(
 			*module_,
@@ -2162,11 +2161,20 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 			nullptr,
 			mangled_name );
 
-	llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
-	comdat->setSelectionKind( llvm::Comdat::Any );
-	var->setComdat( comdat );
+	if( externally_available )
+	{
+		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
+		llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
+		comdat->setSelectionKind( llvm::Comdat::Any );
+		var->setComdat( comdat );
 
-	var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+		var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+	}
+	else
+	{
+		// This global mutable variable is local for this module, do not need to use external linkage.
+		var->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	}
 
 	return var;
 }

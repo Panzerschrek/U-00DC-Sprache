@@ -208,9 +208,10 @@ U_TEST( VariableLinkage_Test0 )
 
 U_TEST( VariableLinkage_Test1 )
 {
-	// All mutable global variables should have external linkage.
+	// Mutable global variables, that are defined in imported files, should have external linkage.
 	// Additionaly comdat must be present in order to merge identical mutable variables in different modules.
 	static const char c_program_text_a[]= " var i32 mut x = 0; auto mut y = false; ";
+	// Global mutable variables, defined in main files, should have private linkage.
 	static const char c_program_text_root[]= "import \"a\" var f32 mut z= 0.0f; auto mut w= \"lol\"; ";
 
 	const auto engine= CreateEngine( BuildMultisourceProgram(
@@ -232,13 +233,13 @@ U_TEST( VariableLinkage_Test1 )
 
 	const llvm::GlobalVariable* const z= engine->FindGlobalVariableNamed( "z", true );
 	U_TEST_ASSERT( z != nullptr );
-	U_TEST_ASSERT( z->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( z->hasComdat() );
+	U_TEST_ASSERT( z->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+	U_TEST_ASSERT( !z->hasComdat() );
 
 	const llvm::GlobalVariable* const w= engine->FindGlobalVariableNamed( "w", true );
 	U_TEST_ASSERT( w != nullptr );
-	U_TEST_ASSERT( w->getLinkage() == llvm::GlobalValue::ExternalLinkage );
-	U_TEST_ASSERT( w->hasComdat() );
+	U_TEST_ASSERT( w->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+	U_TEST_ASSERT( !w->hasComdat() );
 }
 
 U_TEST( PolymorphClassesDataLinkage_Test0 )

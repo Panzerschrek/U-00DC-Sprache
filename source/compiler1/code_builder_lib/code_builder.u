@@ -2394,20 +2394,28 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_termina
 	}
 }
 
-fn CodeBuilder::AddGlobalMutableVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type ) : LLVMValueRef
+fn CodeBuilder::AddGlobalMutableVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, bool externally_available ) : LLVMValueRef
 {
 	unsafe
 	{
-		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
 
 		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
-		LLVMSetLinkage( global_variable, LLVMLinkage::External );
 		LLVMSetUnnamedAddress( global_variable, LLVMUnnamedAddr::GlobalUnnamedAddr );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
 
-		auto comdat= LLVMGetOrInsertComdat( module_, name_null_terminated.front() );
-		LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
-		LLVMSetComdat( global_variable, comdat );
+		if( externally_available )
+		{
+			// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
+			LLVMSetLinkage( global_variable, LLVMLinkage::External );
+			auto comdat= LLVMGetOrInsertComdat( module_, name_null_terminated.front() );
+			LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any );
+			LLVMSetComdat( global_variable, comdat );
+		}
+		else
+		{
+			// This global mutable variable is local for this module, do not need to use external linkage.
+			LLVMSetLinkage( global_variable, LLVMLinkage::Private );
+		}
 
 		return global_variable;
 	}
