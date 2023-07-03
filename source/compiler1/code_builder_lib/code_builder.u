@@ -1584,28 +1584,34 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	auto body_syntax_element_ptr= func_variable.body_syntax_element.try_to_non_nullable();
 	var Synt::Function& body_syntax_element= body_syntax_element_ptr.deref();
 
-	unsafe
+	if( names_scope.lock_imut().deref().IsInsideTemplate() )
 	{
-		if( names_scope.lock_imut().deref().IsInsideTemplate() )
-		{
-			LLVMSetLinkage( llvm_function, LLVMLinkage::Private );
-		}
-		else
-		{
-			// Set comdat. This needed because we want linkage like "inline" in C++ but for all functions.
-			var size_type mut name_length = zero_init;
-			var $(char8) name_start= LLVMGetValueName2( llvm_function, name_length );
-			if( name_length > 0s )
-			{
-				var ust::string8 mut name_str;
-				name_str.resize( name_length + 1s, "\0"c8 );
-				ust::memory_copy( cast_ref_unsafe</byte8/>( name_str.front() ), cast_ref_unsafe</byte8/>( $>(name_start) ), name_length );
-
-				auto comdat= LLVMGetOrInsertComdat( module_, name_str.front() );
-				LLVMSetComdatSelectionKind( comdat, LLVMComdatSelectionKind::Any ); // Actually, we needs something, like ExactMatch, but it works not in all cases.
-				LLVMSetComdat( llvm_function, comdat );
-			}
-		}
+		// Set private visibility for functions inside templates.
+		// There is no need to use external linkage, since each user of the template must import file with source template.
+		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+	}
+	else if( body_syntax_element.src_loc.GetFileIndex() != 0u )
+	{
+		// This function is defined inside imported file - no need to use private linkage for it.
+		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+	}
+	else if( func_variable.no_mangle )
+	{
+		// The only reason to use "nomangle" functions is to interact with external code.
+		// For such purposes  external linkage is essential.
+		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::External ) );
+	}
+	else if( func_variable.prototype_syntax_element.empty() || func_variable.prototype_syntax_element.try_deref().src_loc.GetFileIndex() == 0u )
+	{
+		// This function has no portotype in imported files.
+		// There is no reason to use external linkage for it.
+		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::Private ) );
+	}
+	else
+	{
+		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
+		// Do not need to use comdat here, since this function is defined only in main (compiled) file.
+		unsafe( LLVMSetLinkage( llvm_function, LLVMLinkage::External ) );
 	}
 
 	debug_info_builder_.try_deref().CreateFunctionInfo( func_variable );

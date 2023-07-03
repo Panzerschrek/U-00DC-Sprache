@@ -1249,7 +1249,7 @@ Type CodeBuilder::BuildFuncCode(
 	else if( func_variable.prototype_src_loc.GetFileIndex() == 0 )
 	{
 		// This function has no portotype in imported files.
-		// There is no reason to use external linkage for it,.
+		// There is no reason to use external linkage for it.
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
 	}
 	else
