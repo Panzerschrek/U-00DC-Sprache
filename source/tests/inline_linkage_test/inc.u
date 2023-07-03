@@ -9,7 +9,7 @@ fn FunFromA();
 fn FunFromB();
 fn FunFromC();
 
-// Must be inlined in each module, but not visible in extern modules, that does not include this file.
+// Must be inlined in each module, but not visible in extern modules, that do not import this file.
 fn InlineFromInc()
 {
 }

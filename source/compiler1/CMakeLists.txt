@@ -45,7 +45,7 @@ function( CompileUSource u_source_file out_object )
 				-MF ${CMAKE_CURRENT_BINARY_DIR}/${u_source_file_relative}.d
 				--verify-module
 				${SPRACHE_COMPILER_OPT_OPTIONS} ${SPRACHE_COMPILER_PIC_OPTIONS}
-				--data-sections --function-sections # Put symbols into section in order to remove unused functions duing linking.
+				--data-sections --function-sections # Put symbols into section in order to remove unused functions during linking.
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib/
 				--include-dir ${CMAKE_CURRENT_SOURCE_DIR}/
 				--include-dir ${CMAKE_CURRENT_BINARY_DIR}/

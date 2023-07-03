@@ -12,12 +12,12 @@ U_TEST( FunctionLinkage_Test0 )
 
 	static const char c_program_text_root[]=
 	R"(
-		// Function defined in main file without prototypes in external file should be private.
+		// Function defined in main file without prototype in external file should be private.
 		fn Foo(){}
 		namespace NN{ fn Baz(){} }
 		struct S
 		{
-			// Methods defined in main file without prototypes in external file should be private.
+			// Methods defined in main file without prototype in external file should be private.
 			fn Bar(this){}
 			fn StaticMethod(){}
 		}
@@ -125,7 +125,7 @@ U_TEST( FunctionLinkage_Test2 )
 
 	static const char c_program_text_root[]= R"(
 		import "a"
-		// Functions with prototypes in imported file should have external linkage.
+		// Functions with prototype in imported file should have external linkage.
 		fn Foo(){}
 		fn NN::Baz(){}
 		fn S::Bar(this){}
@@ -299,7 +299,7 @@ U_TEST( PolymorphClassesDataLinkage_Test1 )
 
 U_TEST( PolymorphClassesDataLinkage_Test2 )
 {
-	// Type id table of class, declared in imported file, should have internal linkage.
+	// Type id table of class, declared in main file, should have private linkage.
 	static const char c_program_text[]=
 	R"(
 		class C polymorph {}
