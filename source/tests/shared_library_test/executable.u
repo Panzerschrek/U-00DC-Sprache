@@ -1,6 +1,4 @@
-// Shared library functions.
-fn nomangle SomeUnmangledFunction() : i32;
-fn SomeMangledFunction(f32 x) : u32;
+import "shared_library.uh"
 
 fn nomangle main() : i32
 {

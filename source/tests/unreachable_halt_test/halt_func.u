@@ -1,3 +1,5 @@
+import "halt_func.uh"
+
 fn HaltIfTrue(bool b)
 {
 	halt if(b);

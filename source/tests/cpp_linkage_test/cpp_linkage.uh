@@ -1,0 +1,14 @@
+fn Do( i32 x ) : f64;
+
+namespace NameSpace
+{
+	fn Nested();
+
+	struct S{}
+}
+
+fn TakeS( NameSpace::S &imut s );
+
+fn U32ToStr( u32 mut x, [ char8, 64 ] &mut out_str );
+
+fn CondHalt( bool cond );

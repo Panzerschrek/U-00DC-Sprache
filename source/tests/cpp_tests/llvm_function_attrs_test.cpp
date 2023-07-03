@@ -8,6 +8,7 @@ namespace
 
 U_TEST( LLVMFunctionAttrsTest_FunctionsLinkage )
 {
+	DISABLE_TEST;
 	// All regular functions must have "external" linkage.
 	static const char c_program_text[]=
 	R"(
@@ -36,6 +37,7 @@ U_TEST( LLVMFunctionAttrsTest_FunctionsLinkage )
 
 U_TEST( LLVMFunctionAttrsTest_MethodsLinkage )
 {
+	DISABLE_TEST;
 	// All regular class functions must have "external" linkage.
 	static const char c_program_text[]=
 	R"(

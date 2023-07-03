@@ -1232,7 +1232,7 @@ Type CodeBuilder::BuildFuncCode(
 	if( parent_names_scope.IsInsideTemplate() )
 	{
 		// Set private visibility for functions inside templates.
-		// There is no need to use external linkage, since each user must import file with source template.
+		// There is no need to use external linkage, since each user of the template must import file with source template.
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
 	}
 	else if( func_variable.body_src_loc.GetFileIndex() != 0 )
@@ -1240,11 +1240,22 @@ Type CodeBuilder::BuildFuncCode(
 		// This function is defined inside imported file - no need to use private linkage for it.
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
 	}
+	else if( func_variable.no_mangle )
+	{
+		// The only reason to use "nomangle" functions is to interact with external code.
+		// For such purposes  external linkage is essential.
+		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
+	}
+	else if( func_variable.prototype_src_loc.GetFileIndex() == 0 )
+	{
+		// This function has no portotype in imported files.
+		// There is no reason to use external linkage for it,.
+		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	}
 	else
 	{
-		// This is a non-template function in main file. Use external linkage.
+		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
 		// Do not need to use comdat here, since this function is defined only in main (compiled) file.
-		// TODO - use external linkage only if this function has prototype in imported file.
 		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
 	}
 
