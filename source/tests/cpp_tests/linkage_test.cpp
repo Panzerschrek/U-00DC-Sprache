@@ -23,7 +23,7 @@ U_TEST( FunctionLinkage_Test0 )
 		}
 	)";
 
-	auto module= BuildMultisourceProgram(
+	const auto module= BuildMultisourceProgram(
 		{
 			{ "a", c_program_text_a },
 			{ "root", c_program_text_root }
@@ -69,7 +69,7 @@ U_TEST( FunctionLinkage_Test1 )
 
 	static const char c_program_text_root[]= R"( import "a" )";
 
-	auto module= BuildMultisourceProgram(
+	const auto module= BuildMultisourceProgram(
 		{
 			{ "a", c_program_text_a },
 			{ "root", c_program_text_root }
@@ -122,7 +122,7 @@ U_TEST( FunctionLinkage_Test2 )
 		fn S::StaticMethod(){}
 	)";
 
-	auto module= BuildMultisourceProgram(
+	const auto module= BuildMultisourceProgram(
 		{
 			{ "a", c_program_text_a },
 			{ "root", c_program_text_root }
@@ -160,7 +160,7 @@ U_TEST( FunctionLinkage_Test3 )
 		fn nomangle Bar(){}
 	)";
 
-	auto module= BuildMultisourceProgram(
+	const auto module= BuildMultisourceProgram(
 		{
 			{ "a", c_program_text_a },
 			{ "root", c_program_text_root }
@@ -174,6 +174,71 @@ U_TEST( FunctionLinkage_Test3 )
 	const llvm::Function* const bar= module->getFunction( "Bar" );
 	U_TEST_ASSERT( bar != nullptr );
 	U_TEST_ASSERT( bar->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+}
+
+U_TEST( VariableLinkage_Test0 )
+{
+	// All constant global variables should have private linkage.
+	static const char c_program_text_a[]= " var i32 x = 0; auto y = false; ";
+	static const char c_program_text_root[]= "import \"a\" var f32 z= 0.0f; auto w= \"lol\"; ";
+
+	const auto engine= CreateEngine( BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" ) );
+
+	const llvm::GlobalVariable* const x= engine->FindGlobalVariableNamed( "x", true );
+	U_TEST_ASSERT( x != nullptr );
+	U_TEST_ASSERT( x->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::GlobalVariable* const y= engine->FindGlobalVariableNamed( "y", true );
+	U_TEST_ASSERT( y != nullptr );
+	U_TEST_ASSERT( y->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::GlobalVariable* const z= engine->FindGlobalVariableNamed( "z", true );
+	U_TEST_ASSERT( z != nullptr );
+	U_TEST_ASSERT( z->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+
+	const llvm::GlobalVariable* const w= engine->FindGlobalVariableNamed( "w", true );
+	U_TEST_ASSERT( w != nullptr );
+	U_TEST_ASSERT( w->getLinkage() == llvm::GlobalValue::PrivateLinkage );
+}
+
+U_TEST( VariableLinkage_Test1 )
+{
+	// All mutable global variables should have external linkage.
+	// Additionaly comdat must be present in order to merge identical mutable variables in different modules.
+	static const char c_program_text_a[]= " var i32 mut x = 0; auto mut y = false; ";
+	static const char c_program_text_root[]= "import \"a\" var f32 mut z= 0.0f; auto mut w= \"lol\"; ";
+
+	const auto engine= CreateEngine( BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root" ) );
+
+	const llvm::GlobalVariable* const x= engine->FindGlobalVariableNamed( "x", true );
+	U_TEST_ASSERT( x != nullptr );
+	U_TEST_ASSERT( x->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( x->hasComdat() );
+
+	const llvm::GlobalVariable* const y= engine->FindGlobalVariableNamed( "y", true );
+	U_TEST_ASSERT( y != nullptr );
+	U_TEST_ASSERT( y->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( y->hasComdat() );
+
+	const llvm::GlobalVariable* const z= engine->FindGlobalVariableNamed( "z", true );
+	U_TEST_ASSERT( z != nullptr );
+	U_TEST_ASSERT( z->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( z->hasComdat() );
+
+	const llvm::GlobalVariable* const w= engine->FindGlobalVariableNamed( "w", true );
+	U_TEST_ASSERT( w != nullptr );
+	U_TEST_ASSERT( w->getLinkage() == llvm::GlobalValue::ExternalLinkage );
+	U_TEST_ASSERT( w->hasComdat() );
 }
 
 } // namespace
