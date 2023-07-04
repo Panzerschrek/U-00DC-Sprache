@@ -7,7 +7,7 @@ namespace U
 namespace
 {
 
-U1_StringView StringToStringView( const std::string& s )
+U1_StringView StringToStringView( const std::string_view s )
 {
 	return U1_StringView{ s.data(), s.size() };
 }
@@ -118,7 +118,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const ManglingScheme mangling_scheme,
 	const std::string_view prelude_code )
 {
-	(void) prelude_code; // TODO - use it
 
 	CodeBuilderLaunchResult result;
 
@@ -132,6 +131,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			generate_debug_info,
 			generate_tbaa_metadata,
 			mangling_scheme,
+			StringToStringView(prelude_code),
 			SourceFilePathProcessingFunction,
 			reinterpret_cast<UserHandle>(&result.dependent_files),
 			LexSyntErrorProcessingFunction,
