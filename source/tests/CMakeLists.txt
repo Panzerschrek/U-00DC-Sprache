@@ -20,6 +20,7 @@ function( CompileUSources u_source_files out_objects )
 endfunction()
 
 add_subdirectory( bitcode_linking_test )
+add_subdirectory( compiler_info_test )
 add_subdirectory( cpp_header_converter_test )
 add_subdirectory( cpp_linkage_test )
 add_subdirectory( debug_info_test )

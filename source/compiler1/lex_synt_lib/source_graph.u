@@ -7,7 +7,8 @@ namespace U1
 fn LoadSourceGraph(
 	IVfs &mut vfs,
 	SourceFileContentsHashigFunction source_file_contents_hashing_function,
-	ust::string8& root_file_path ) : SourceGraph
+	ust::string8& root_file_path,
+	ust::array_view_imut</char8/> prelude_code ) : SourceGraph
 {
 	var SourceGraph mut source_graph{ .macro_expansion_contexts(Synt::MacroExpansionContexts()) };
 
@@ -24,6 +25,50 @@ fn LoadSourceGraph(
 		SrcLoc( 0u, 0u, 0u ),
 		source_graph,
 		imports_stack );
+
+	if( !prelude_code.empty() )
+	{
+		auto prelude_node_index= source_graph.nodes.size();
+
+		auto mut lex_result= LexicalAnalysis( prelude_code );
+		foreach( &error : lex_result.errors )
+		{
+			source_graph.errors.push_back( error );
+		}
+
+		if( lex_result.errors.empty() )
+		{
+			foreach( &mut lexem : lex_result.lexems )
+			{
+				lexem.src_loc.SetFileIndex( u32(prelude_node_index) );
+			}
+
+			var Synt::SyntaxAnalysisResult mut synt_result=
+				Synt::SyntaxAnalysis(
+					lex_result.lexems,
+					Synt::MacrosByContextMap(),
+					source_graph.macro_expansion_contexts,
+					source_file_contents_hashing_function( prelude_code ) );
+
+			// Add "import" of prelude node in nodes, that have no other imports (and only in these nodes).
+			// There is no reason to import prelude in all modules.
+			foreach( &mut other_node : source_graph.nodes )
+			{
+				if( other_node.children.empty() )
+				{
+					other_node.children.push_back( prelude_node_index );
+				}
+			}
+
+			var SourceGraph::Node mut node
+			{
+				.synt_result= move(synt_result),
+				.file_path_normalized= "compiler_generated_prelude"
+			};
+
+			source_graph.nodes.push_back( move(node) );
+		}
+	}
 
 	return move(source_graph);
 }

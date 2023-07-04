@@ -32,6 +32,7 @@ type SourceFileContentsHashigFunction= fn( ust::array_view_imut</ char8 /> sourc
 fn LoadSourceGraph(
 	IVfs &mut vfs,
 	SourceFileContentsHashigFunction source_file_contents_hashing_function,
-	ust::string8& root_file_path ) : SourceGraph;
+	ust::string8& root_file_path,
+	ust::array_view_imut</char8/> prelude_code ) : SourceGraph;
 
 } // namespace U1

@@ -15,7 +15,6 @@ General:
 *) Continious initializer for arrays
 *) Auto-move in "return" for local variable
 *) More advanced macros - more context, elements, string manipulations
-*) Some code customization mechanism (like preprocessor directives and ifdef/endif in C++).
 *) debug_assert
 
 References:
@@ -42,6 +41,7 @@ Standart library:
 *) More math functions
 
 Compiler:
+*) Add option to define some constants in prelude (like preprocessor defenitions in C++).
 *) Imporve TBAA - use struct path-based TBAA.
 *) Pass/return by-value composite values containing more than one scalar inside.
 	Use some approach, dependent on target architecture, to determine, if type is suitable for passing in registers,

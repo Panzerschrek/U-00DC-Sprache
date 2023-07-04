@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Analysis/CGSCCPassManager.h>
@@ -295,6 +296,12 @@ cl::opt<bool> print_llvm_asm_initial(
 	cl::init(false),
 	cl::cat(options_category) );
 
+cl::opt<bool> print_prelude_code(
+	"print-prelude-code",
+	cl::desc("Print compiler-generated prelude code."),
+	cl::init(false),
+	cl::cat(options_category) );
+
 enum class HaltMode{ Trap, Abort, ConfigurableHandler, Unreachable, };
 cl::opt< HaltMode > halt_mode(
 	"halt-mode",
@@ -359,6 +366,73 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 			return true;
 
 	return false;
+}
+
+std::string GenerateCompilerPreludeCode(
+	const llvm::Triple& target_triple,
+	const llvm::DataLayout& data_layout,
+	const std::string_view& features,
+	const std::string_view cpu_name )
+{
+	std::ostringstream ss;
+
+	ss << "namespace compiler\n{\n";
+	{
+		// Info about compiler itself.
+		ss << "auto& version = \"" << getSpracheVersion() << "\";\n";
+		ss << "auto& git_revision = \"" << getGitRevision() << "\";\n";
+		ss << "var size_type generation = " << std::to_string(GetCompilerGeneration()) << "s;\n";
+
+		// Options.
+		ss << "namespace options\n{\n";
+		{
+			ss << "var char8 optimization_level = \"" << Options::optimization_level << "\"c8;\n";
+			ss << "var bool generate_debug_info = " << (Options::generate_debug_info ? "true" : "false") << ";\n";
+			ss << "auto& cpu_name = \"" << cpu_name << "\";\n";
+
+			// Features
+			{
+				const llvm::SubtargetFeatures features_parsed( features );
+				const auto features_list= features_parsed.getFeatures();
+
+				ss << "var tup[ ";
+				for( const std::string& feature : features_list )
+				{
+					ss << "[ char8, " << std::to_string(feature.size()) << " ]";
+					if( &feature != &features_list.back() )
+						ss << ", ";
+				}
+				ss << " ]";
+
+				ss << " features[ ";
+				for( const std::string& feature : features_list )
+				{
+					ss << "\"" << feature << "\"";
+					if( &feature != &features_list.back() )
+						ss << ", ";
+				}
+				ss << " ];\n";
+			}
+		}
+		ss << "}\n";
+
+		// Target triple.
+		ss << "namespace target\n{\n";
+		{
+			ss << "auto& str = \"" << target_triple.str() << "\";\n";
+			ss << "auto& arch = \"" << std::string_view(target_triple.getArchName()) << "\";\n";
+			ss << "auto& vendor = \"" << std::string_view(target_triple.getVendorName()) << "\";\n";
+			ss << "auto& os = \"" << std::string_view(target_triple.getOSName()) << "\";\n";
+			ss << "auto& environment = \"" << std::string_view(target_triple.getEnvironmentName() )<< "\";\n";
+			ss << "auto& os_and_environment = \"" << std::string_view(target_triple.getOSAndEnvironmentName()) << "\";\n";
+
+			ss << "var bool is_big_endian = " << (data_layout.isBigEndian() ? "true" : "false") << ";\n";
+		}
+		ss << "}\n";
+	}
+	ss << "}\n";
+
+	return ss.str();
 }
 
 int Main( int argc, const char* argv[] )
@@ -457,14 +531,6 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		const std::string cpu_name= (( Options::architecture == "native" && Options::target_cpu.empty() )
-			? llvm::sys::getHostCPUName()
-			: Options::target_cpu).str();
-
-		const std::string features_str= ( Options::architecture == "native" && Options::target_attributes.empty() )
-			? GetNativeTargetFeaturesStr()
-			: GetFeaturesStr( Options::target_attributes );
-
 		llvm::TargetOptions target_options;
 		target_options.DataSections = Options::data_sections;
 		target_options.FunctionSections = Options::function_sections;
@@ -481,11 +547,20 @@ int Main( int argc, const char* argv[] )
 		else if( optimization_level.getSpeedupLevel() == 3 )
 			code_gen_optimization_level= llvm::CodeGenOpt::Aggressive;
 
+		const std::string features=
+			( Options::architecture == "native" && Options::target_attributes.empty() )
+				? GetNativeTargetFeaturesStr()
+				: GetFeaturesStr( Options::target_attributes );
+
+		const std::string cpu_name= (( Options::architecture == "native" && Options::target_cpu.empty() )
+			? llvm::sys::getHostCPUName()
+			: Options::target_cpu).str();
+
 		target_machine.reset(
 			target->createTargetMachine(
 				target_triple_str,
 				cpu_name,
-				features_str,
+				features,
 				target_options,
 				Options::relocation_model.getValue(),
 				Options::code_model.getNumOccurrences() > 0 ? Options::code_model.getValue() : llvm::Optional<llvm::CodeModel::Model>(),
@@ -519,6 +594,16 @@ int Main( int argc, const char* argv[] )
 		if( vfs == nullptr )
 			return 1u;
 
+		const std::string prelude_code=
+			GenerateCompilerPreludeCode(
+				target_triple,
+				data_layout,
+				target_machine->getTargetFeatureString(),
+				target_machine->getTargetCPU() );
+
+		if( Options::print_prelude_code )
+			std::cout << prelude_code << std::endl;
+
 		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
@@ -531,7 +616,8 @@ int Main( int argc, const char* argv[] )
 					target_triple,
 					Options::generate_debug_info,
 					generate_tbaa_metadata,
-					mangling_scheme );
+					mangling_scheme,
+					prelude_code );
 
 			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
 

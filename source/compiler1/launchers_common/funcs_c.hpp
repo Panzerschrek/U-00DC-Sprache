@@ -96,6 +96,7 @@ extern "C" LLVMModuleRef U1_BuildProgramUsingVFS(
 	bool build_debug_info,
 	bool generate_tbaa_metadata,
 	U::ManglingScheme mangling_scheme,
+	const U1_StringView& prelude_code,
 	SourceFilePathCallback result_source_file_path_callback,
 	UserHandle result_source_file_path_processing_data,
 	LexSyntErrorCallback lex_synt_error_callback,

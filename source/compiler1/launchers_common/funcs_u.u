@@ -56,7 +56,7 @@ fn nomangle U1_BuildProgram(
 		safe
 		{
 			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_" );
+			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_", "" );
 
 			U1::PrintLexSyntErrors( source_graph );
 			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -93,7 +93,7 @@ fn nomangle U1_BuildProgramWithErrors(
 		safe
 		{
 			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_" );
+			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_", "" );
 
 			U1::PrintLexSyntErrors( source_graph );
 			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -123,7 +123,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 		auto program_text= U1::StringToArrayView( program_text.data, program_text.size );
 
 		var U1::TestVfs mut test_vfs( program_text );
-		auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_");
+		auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_", "" );
 
 		foreach( &node : source_graph.nodes )
 		{
@@ -148,6 +148,7 @@ fn nomangle U1_BuildProgramUsingVFS(
 	bool build_debug_info,
 	bool generate_tbaa_metadata,
 	U1::ManglingScheme mangling_scheme,
+	U1_StringView& prelude_code,
 	SourceFilePathCallback result_source_file_path_callback,
 	UserHandle result_source_file_path_processing_data,
 	LexSyntErrorCallback lex_synt_error_callback,
@@ -160,8 +161,9 @@ fn nomangle U1_BuildProgramUsingVFS(
 	unsafe
 	{
 		auto path= U1::StringToArrayView( root_file_path.data, root_file_path.size );
+		auto prelude_code= U1::StringToArrayView( prelude_code.data, prelude_code.size );
 
-		auto source_graph= U1::LoadSourceGraph( vfs, U1::g_calculate_source_file_contents_hash_ptr, path );
+		auto source_graph= U1::LoadSourceGraph( vfs, U1::g_calculate_source_file_contents_hash_ptr, path, prelude_code );
 
 		foreach( &node : source_graph.nodes )
 		{
@@ -221,7 +223,7 @@ fn nomangle U1_BuildMultisourceProgram(
 	var ust::string8 root_file_path_str= unsafe( U1::StringToArrayView( root_file_path.data, root_file_path.size ) );
 
 	var U1::TestVfs mut test_vfs( U1::TransformSourceFiles( source_files, source_file_count ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, root_file_path_str );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, root_file_path_str, "" );
 
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
@@ -253,7 +255,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	var ust::string8 root_file_path_str= unsafe( U1::StringToArrayView( root_file_path.data, root_file_path.size ) );
 
 	var U1::TestVfs mut test_vfs( U1::TransformSourceFiles( source_files, source_file_count ) );
-	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, root_file_path_str );
+	auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, root_file_path_str, "" );
 
 	if( !source_graph.errors.empty() || source_graph.nodes.empty() )
 	{
@@ -282,7 +284,7 @@ fn nomangle U1_BuildProgramForLifetimesTest(
 		safe
 		{
 			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_" );
+			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_", "" );
 
 			U1::PrintLexSyntErrors( source_graph );
 			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
@@ -318,7 +320,7 @@ fn nomangle U1_BuildProgramForMSVCManglingTest(
 		safe
 		{
 			var U1::TestVfs mut test_vfs( program_text );
-			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_" );
+			auto source_graph= U1::LoadSourceGraph( test_vfs, U1::g_calculate_source_file_contents_hash_ptr, "_", "" );
 
 			U1::PrintLexSyntErrors( source_graph );
 			if( !source_graph.errors.empty() || source_graph.nodes.empty() )
