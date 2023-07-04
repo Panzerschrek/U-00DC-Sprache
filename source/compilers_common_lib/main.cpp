@@ -295,6 +295,12 @@ cl::opt<bool> print_llvm_asm_initial(
 	cl::init(false),
 	cl::cat(options_category) );
 
+cl::opt<bool> print_prelude_code(
+	"print-prelude-code",
+	cl::desc("Print compiler-generated prelude code."),
+	cl::init(false),
+	cl::cat(options_category) );
+
 enum class HaltMode{ Trap, Abort, ConfigurableHandler, Unreachable, };
 cl::opt< HaltMode > halt_mode(
 	"halt-mode",
@@ -461,6 +467,9 @@ std::string GenerateCompilerPreludeCode(
 		result += "}\n";
 	}
 	result += "}\n";
+
+	if( Options::print_prelude_code )
+		std::cout << result << std::endl;
 
 	return result;
 }
