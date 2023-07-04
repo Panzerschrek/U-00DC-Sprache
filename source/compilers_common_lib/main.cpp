@@ -552,7 +552,6 @@ int Main( int argc, const char* argv[] )
 	// Prepare target machine.
 	std::string target_triple_str;
 	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
-
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	{
 		const llvm::Target* target= nullptr;

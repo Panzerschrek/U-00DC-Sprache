@@ -118,7 +118,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const ManglingScheme mangling_scheme,
 	const std::string_view prelude_code )
 {
-
 	CodeBuilderLaunchResult result;
 
 	const LLVMModuleRef llvm_module=
