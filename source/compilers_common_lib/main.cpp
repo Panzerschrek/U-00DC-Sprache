@@ -56,15 +56,15 @@ void PrintAvailableTargets()
 	std::cout << "Available targets: " << targets_list << std::endl;
 }
 
-std::string GetFeaturesStr( const llvm::ArrayRef<std::string> features_list )
+llvm::SubtargetFeatures GetFeatures( const llvm::ArrayRef<std::string> features_list )
 {
 	llvm::SubtargetFeatures features;
 	for( auto& f : features_list )
 		features.AddFeature( f, true );
-	return features.getString();
+	return features;
 }
 
-std::string GetNativeTargetFeaturesStr()
+llvm::SubtargetFeatures GetNativeTargetFeatures()
 {
 	llvm::SubtargetFeatures features;
 
@@ -75,7 +75,7 @@ std::string GetNativeTargetFeaturesStr()
 			features.AddFeature( f.first(), f.second );
 	}
 
-	return features.getString();
+	return features;
 }
 
 void AddModuleGlobalConstant( llvm::Module& module, llvm::Constant* const initializer, const std::string& name )
@@ -361,7 +361,10 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 	return false;
 }
 
-std::string GenerateCompilerPreludeCode( const llvm::Triple& target_triple )
+std::string GenerateCompilerPreludeCode(
+	const llvm::Triple& target_triple,
+	const llvm::SubtargetFeatures& features,
+	const std::string& cpu_name )
 {
 	std::string result;
 
@@ -370,16 +373,49 @@ std::string GenerateCompilerPreludeCode( const llvm::Triple& target_triple )
 	result += "{\n";
 	{
 		// Options.
+		result += "namespace options\n";
+		result += "{\n";
 		{
 			result += "var char8 optimization_level = \"";
 			result += Options::optimization_level;
 			result += "\"c8;\n";
-		}
-		{
+
 			result += "var bool generate_debug_info = ";
 			result += Options::generate_debug_info ? "true" : "false";
 			result += ";\n";
+
+			result += "auto& cpu_name = \"";
+			result += cpu_name;
+			result += "\";\n";
+
+			// Features
+			{
+				const auto features_list= features.getFeatures();
+
+				result += "var tup[ ";
+				for( const std::string& feature : features_list )
+				{
+					result += "[ char8, ";
+					result += std::to_string(feature.size());
+					result += " ]";
+					if( &feature != &features_list.back() )
+						result += ", ";
+				}
+				result += " ]";
+
+				result += " features[ ";
+				for( const std::string& feature : features_list )
+				{
+					result += "\"";
+					result += feature;
+					result+= "\"";
+					if( &feature != &features_list.back() )
+						result += ", ";
+				}
+				result += " ];\n";
+			}
 		}
+		result += "}\n";
 
 		// Target triple.
 		result += "namespace target\n";
@@ -410,8 +446,6 @@ std::string GenerateCompilerPreludeCode( const llvm::Triple& target_triple )
 			result += "\";\n";
 		}
 		result += "}\n";
-
-		// TODO - add other info.
 	}
 	result += "}\n";
 
@@ -490,6 +524,16 @@ int Main( int argc, const char* argv[] )
 	// Prepare target machine.
 	std::string target_triple_str;
 	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
+
+	const llvm::SubtargetFeatures features=
+		( Options::architecture == "native" && Options::target_attributes.empty() )
+			? GetNativeTargetFeatures()
+			: GetFeatures( Options::target_attributes );
+
+	const std::string cpu_name= (( Options::architecture == "native" && Options::target_cpu.empty() )
+		? llvm::sys::getHostCPUName()
+		: Options::target_cpu).str();
+
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	{
 		const llvm::Target* target= nullptr;
@@ -514,14 +558,6 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		const std::string cpu_name= (( Options::architecture == "native" && Options::target_cpu.empty() )
-			? llvm::sys::getHostCPUName()
-			: Options::target_cpu).str();
-
-		const std::string features_str= ( Options::architecture == "native" && Options::target_attributes.empty() )
-			? GetNativeTargetFeaturesStr()
-			: GetFeaturesStr( Options::target_attributes );
-
 		llvm::TargetOptions target_options;
 		target_options.DataSections = Options::data_sections;
 		target_options.FunctionSections = Options::function_sections;
@@ -542,7 +578,7 @@ int Main( int argc, const char* argv[] )
 			target->createTargetMachine(
 				target_triple_str,
 				cpu_name,
-				features_str,
+				features.getString(),
 				target_options,
 				Options::relocation_model.getValue(),
 				Options::code_model.getNumOccurrences() > 0 ? Options::code_model.getValue() : llvm::Optional<llvm::CodeModel::Model>(),
@@ -576,6 +612,8 @@ int Main( int argc, const char* argv[] )
 		if( vfs == nullptr )
 			return 1u;
 
+		const std::string prelude_code= GenerateCompilerPreludeCode( target_triple, features, cpu_name );
+
 		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )
 		{
@@ -589,7 +627,7 @@ int Main( int argc, const char* argv[] )
 					Options::generate_debug_info,
 					generate_tbaa_metadata,
 					mangling_scheme,
-					GenerateCompilerPreludeCode(target_triple) );
+					prelude_code );
 
 			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
 
