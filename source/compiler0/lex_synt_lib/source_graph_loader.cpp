@@ -155,7 +155,8 @@ size_t LoadNode_r(
 SourceGraph LoadSourceGraph(
 	IVfs& vfs,
 	const SourceFileContentsHashigFunction source_file_contents_hashing_function,
-	const IVfs::Path& root_file_path )
+	const IVfs::Path& root_file_path,
+	const std::string_view prelude_code )
 {
 	SourceGraph result;
 	result.macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
@@ -172,6 +173,47 @@ SourceGraph LoadSourceGraph(
 		processed_files_stack,
 		SrcLoc(0, 0, 0),
 		result );
+
+	if( !prelude_code.empty() )
+	{
+		// Assume that prelude code has no imports and macroses.
+		// With such assumption we can just parse prelude without bothering with imports/macros.
+
+		const uint32_t prelude_node_index= uint32_t(result.nodes_storage.size());
+
+		LexicalAnalysisResult lex_result= LexicalAnalysis( prelude_code );
+
+		for( LexSyntError error: lex_result.errors )
+		{
+			error.src_loc.SetFileIndex(uint32_t(prelude_node_index));
+			result.errors.push_back( std::move(error) );
+		}
+
+		if( lex_result.errors.empty() )
+		{
+			for( Lexem& lexem :lex_result.lexems )
+				lexem.src_loc.SetFileIndex(uint32_t(prelude_node_index));
+
+			Synt::SyntaxAnalysisResult synt_result=
+				Synt::SyntaxAnalysis(
+				lex_result.lexems,
+				*built_in_macros,
+				result.macro_expansion_contexts,
+				source_file_contents_hashing_function( prelude_code ) );
+
+			result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
+
+			// Add "import" of prelude node in nodes, that have no other import (and only in these nodes).
+			// There is no reason to import prelude in all modules.
+			for( SourceGraph::Node& other_node : result.nodes_storage )
+				if( other_node.child_nodes_indeces.empty() )
+					other_node.child_nodes_indeces.push_back( prelude_node_index );
+
+			SourceGraph::Node prelude_node;
+			prelude_node.ast= std::move(synt_result);
+			result.nodes_storage.push_back( std::move(prelude_node) );
+		}
+	}
 
 	return result;
 }
