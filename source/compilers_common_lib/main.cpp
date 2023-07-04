@@ -369,6 +369,7 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 
 std::string GenerateCompilerPreludeCode(
 	const llvm::Triple& target_triple,
+	const llvm::DataLayout& data_layout,
 	const std::string_view& features,
 	const std::string_view cpu_name )
 {
@@ -464,6 +465,10 @@ std::string GenerateCompilerPreludeCode(
 			result += "auto& os_and_environment = \"";
 			result += target_triple.getOSAndEnvironmentName();
 			result += "\";\n";
+
+			result += "var bool is_big_endian = ";
+			result += data_layout.isBigEndian() ? "true" : "false";
+			result += ";\n";
 		}
 		result += "}\n";
 	}
@@ -638,6 +643,7 @@ int Main( int argc, const char* argv[] )
 		const std::string prelude_code=
 			GenerateCompilerPreludeCode(
 				target_triple,
+				data_layout,
 				target_machine->getTargetFeatureString(),
 				target_machine->getTargetCPU() );
 

@@ -16,6 +16,8 @@ var bool is_pc = string_equals( compiler::target::vendor, "pc" );
 var bool is_gnu = string_equals( compiler::target::environment, "gnu" );
 var bool is_msvc = string_equals( compiler::target::environment, "msvc" );
 
+var bool is_little_endian= !compiler::target::is_big_endian;
+
 template</ size_type size0, size_type size1 />
 fn constexpr string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
 {
