@@ -50,7 +50,7 @@ fn LoadSourceGraph(
 					source_graph.macro_expansion_contexts,
 					source_file_contents_hashing_function( prelude_code ) );
 
-			// Add "import" of prelude node in nodes, that have no other import (and only in these nodes).
+			// Add "import" of prelude node in nodes, that have no other imports (and only in these nodes).
 			// There is no reason to import prelude in all modules.
 			foreach( &mut other_node : source_graph.nodes )
 			{

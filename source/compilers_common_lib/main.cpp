@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Analysis/CGSCCPassManager.h>
@@ -373,111 +374,65 @@ std::string GenerateCompilerPreludeCode(
 	const std::string_view& features,
 	const std::string_view cpu_name )
 {
-	std::string result;
+	std::ostringstream ss;
 
-	// TODO - carefully choose namespace name.
-	result += "namespace compiler\n";
-	result += "{\n";
+	ss << "namespace compiler\n{\n";
 	{
 		// Info about compiler itself.
-		result += "auto& version = \"";
-		result += getSpracheVersion();
-		result += "\";\n";
-
-		result += "auto& git_revision = \"";
-		result += getGitRevision();
-		result += "\";\n";
-
-		result += "var size_type generation = ";
-		result += std::to_string(GetCompilerGeneration());
-		result += "s;\n";
+		ss << "auto& version = \"" << getSpracheVersion() << "\";\n";
+		ss << "auto& git_revision = \"" << getGitRevision() << "\";\n";
+		ss << "var size_type generation = " << std::to_string(GetCompilerGeneration()) << "s;\n";
 
 		// Options.
-		result += "namespace options\n";
-		result += "{\n";
+		ss << "namespace options\n{\n";
 		{
-			result += "var char8 optimization_level = \"";
-			result += Options::optimization_level;
-			result += "\"c8;\n";
-
-			result += "var bool generate_debug_info = ";
-			result += Options::generate_debug_info ? "true" : "false";
-			result += ";\n";
-
-			result += "auto& cpu_name = \"";
-			result += cpu_name;
-			result += "\";\n";
+			ss << "var char8 optimization_level = \"" << Options::optimization_level << "\"c8;\n";
+			ss << "var bool generate_debug_info = " << (Options::generate_debug_info ? "true" : "false") << ";\n";
+			ss << "auto& cpu_name = \"" << cpu_name << "\";\n";
 
 			// Features
 			{
 				const llvm::SubtargetFeatures features_parsed( features );
 				const auto features_list= features_parsed.getFeatures();
 
-				result += "var tup[ ";
+				ss << "var tup[ ";
 				for( const std::string& feature : features_list )
 				{
-					result += "[ char8, ";
-					result += std::to_string(feature.size());
-					result += " ]";
+					ss << "[ char8, " << std::to_string(feature.size()) << " ]";
 					if( &feature != &features_list.back() )
-						result += ", ";
+						ss << ", ";
 				}
-				result += " ]";
+				ss << " ]";
 
-				result += " features[ ";
+				ss << " features[ ";
 				for( const std::string& feature : features_list )
 				{
-					result += "\"";
-					result += feature;
-					result+= "\"";
+					ss << "\"" << feature << "\"";
 					if( &feature != &features_list.back() )
-						result += ", ";
+						ss << ", ";
 				}
-				result += " ];\n";
+				ss << " ];\n";
 			}
 		}
-		result += "}\n";
+		ss << "}\n";
 
 		// Target triple.
-		result += "namespace target\n";
-		result += "{\n";
+		ss << "namespace target\n{\n";
 		{
-			result += "auto& str = \"";
-			result += target_triple.str();
-			result += "\";\n";
+			ss << "auto& str = \"" << target_triple.str() << "\";\n";
+			ss << "auto& arch = \"" << std::string_view(target_triple.getArchName()) << "\";\n";
+			ss << "auto& vendor = \"" << std::string_view(target_triple.getVendorName()) << "\";\n";
+			ss << "auto& os = \"" << std::string_view(target_triple.getOSName()) << "\";\n";
+			ss << "auto& environment = \"" << std::string_view(target_triple.getEnvironmentName() )<< "\";\n";
+			ss << "auto& os_and_environment = \"" << std::string_view(target_triple.getOSAndEnvironmentName()) << "\";\n";
 
-			result += "auto& arch = \"";
-			result += target_triple.getArchName();
-			result += "\";\n";
-
-			result += "auto& vendor = \"";
-			result += target_triple.getVendorName();
-			result += "\";\n";
-
-			result += "auto& os = \"";
-			result += target_triple.getOSName();
-			result += "\";\n";
-
-			result += "auto& environment = \"";
-			result += target_triple.getEnvironmentName();
-			result += "\";\n";
-
-			result += "auto& os_and_environment = \"";
-			result += target_triple.getOSAndEnvironmentName();
-			result += "\";\n";
-
-			result += "var bool is_big_endian = ";
-			result += data_layout.isBigEndian() ? "true" : "false";
-			result += ";\n";
+			ss << "var bool is_big_endian = " << (data_layout.isBigEndian() ? "true" : "false") << ";\n";
 		}
-		result += "}\n";
+		ss << "}\n";
 	}
-	result += "}\n";
+	ss << "}\n";
 
-	if( Options::print_prelude_code )
-		std::cout << result << std::endl;
-
-	return result;
+	return ss.str();
 }
 
 int Main( int argc, const char* argv[] )
@@ -645,6 +600,9 @@ int Main( int argc, const char* argv[] )
 				data_layout,
 				target_machine->getTargetFeatureString(),
 				target_machine->getTargetCPU() );
+
+		if( Options::print_prelude_code )
+			std::cout << prelude_code << std::endl;
 
 		bool have_some_errors= false;
 		for( const std::string& input_file : Options::input_files )

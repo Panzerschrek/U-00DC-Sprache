@@ -203,7 +203,7 @@ SourceGraph LoadSourceGraph(
 
 			result.errors.insert( result.errors.end(), synt_result.error_messages.begin(), synt_result.error_messages.end() );
 
-			// Add "import" of prelude node in nodes, that have no other import (and only in these nodes).
+			// Add "import" of prelude node in nodes, that have no other imports (and only in these nodes).
 			// There is no reason to import prelude in all modules.
 			for( SourceGraph::Node& other_node : result.nodes_storage )
 				if( other_node.child_nodes_indeces.empty() )
