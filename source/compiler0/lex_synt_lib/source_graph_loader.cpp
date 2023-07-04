@@ -211,6 +211,7 @@ SourceGraph LoadSourceGraph(
 
 			SourceGraph::Node prelude_node;
 			prelude_node.ast= std::move(synt_result);
+			prelude_node.file_path= "compiler_generated_prelude";
 			result.nodes_storage.push_back( std::move(prelude_node) );
 		}
 	}

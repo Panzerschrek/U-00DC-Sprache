@@ -60,7 +60,12 @@ fn LoadSourceGraph(
 				}
 			}
 
-			var SourceGraph::Node mut node{ .synt_result= move(synt_result) };
+			var SourceGraph::Node mut node
+			{
+				.synt_result= move(synt_result),
+				.file_path_normalized= "compiler_generated_prelude"
+			};
+
 			source_graph.nodes.push_back( move(node) );
 		}
 	}
