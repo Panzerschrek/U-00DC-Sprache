@@ -1,10 +1,4 @@
-fn FunFromA();
-fn FunFromB();
-fn FunFromC();
-fn InlineFromInc();
-
-fn GetGlobalAddressA() : $(i32);
-fn GetGlobalAddressB() : $(i32);
+import "inc.u"
 
 fn nomangle main() : i32
 {

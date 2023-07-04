@@ -1,4 +1,4 @@
-fn HaltIfTrue(bool b);
+import "halt_func.uh"
 
 fn nomangle main() : i32
 {

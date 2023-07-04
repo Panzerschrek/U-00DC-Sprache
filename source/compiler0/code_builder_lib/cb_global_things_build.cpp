@@ -1043,6 +1043,8 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 	else if( incomplete_global_variable.auto_variable_declaration != nullptr )
 		src_loc= incomplete_global_variable.auto_variable_declaration->src_loc_;
 
+	const bool externally_available= src_loc.GetFileIndex() != 0;
+
 	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, src_loc );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
@@ -1090,7 +1092,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 			llvm::GlobalVariable* const global_variable=
 				is_mutable
-					? CreateGlobalMutableVariable( type, name_mangled )
+					? CreateGlobalMutableVariable( type, name_mangled, externally_available )
 					: CreateGlobalConstantVariable( type, name_mangled );
 
 			const VariableMutPtr variable=
@@ -1258,7 +1260,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 			const std::string name_mangled = mangler_->MangleGlobalVariable( names_scope, auto_variable_declaration->name, variable_reference->type, !is_mutable );
 			llvm::GlobalVariable* const global_variable=
 				is_mutable
-					? CreateGlobalMutableVariable( variable_reference->type, name_mangled )
+					? CreateGlobalMutableVariable( variable_reference->type, name_mangled, externally_available )
 					: CreateGlobalConstantVariable( variable_reference->type, name_mangled );
 
 			variable_reference->llvm_value= global_variable;

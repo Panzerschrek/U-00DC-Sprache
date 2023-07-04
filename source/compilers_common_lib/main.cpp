@@ -252,6 +252,18 @@ cl::opt<ManglingScheme> mangling_scheme(
 		clEnumValN( ManglingScheme::MSVC64, "msvc64", "MSVC 64-bit mangling scheme." ) ),
 	cl::cat(options_category) );
 
+cl::opt<bool> data_sections(
+	"data-sections",
+	cl::desc("Emit data into separate sections"),
+	cl::init(false),
+	cl::cat(options_category) );
+
+cl::opt<bool> function_sections(
+	"function-sections",
+	cl::desc("Emit functions into separate sections"),
+	cl::init(false),
+	cl::cat(options_category) );
+
 cl::opt<std::string> dep_file_name(
 	"MF",
 	cl::desc("Output dependency file"),
@@ -454,6 +466,8 @@ int Main( int argc, const char* argv[] )
 			: GetFeaturesStr( Options::target_attributes );
 
 		llvm::TargetOptions target_options;
+		target_options.DataSections = Options::data_sections;
+		target_options.FunctionSections = Options::function_sections;
 
 		auto code_gen_optimization_level= llvm::CodeGenOpt::None;
 		if ( optimization_level.getSizeLevel() > 0 )

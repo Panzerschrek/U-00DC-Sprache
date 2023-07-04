@@ -1,0 +1,3 @@
+fn nomangle SomeUnmangledFunction() : i32;
+
+fn SomeMangledFunction(f32 x) : u32;

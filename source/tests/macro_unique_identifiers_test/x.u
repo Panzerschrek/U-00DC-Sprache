@@ -1,6 +1,7 @@
 import "a.uh"
 import "b.uh"
 import "c.uh"
+import "x.uh"
 
 fn XSetABC(u32 a, u32 b, u32 c)
 {

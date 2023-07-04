@@ -1,5 +1,4 @@
-fn Foo();
-fn Bar();
+import "inc.uh"
 
 fn nomangle main() : u32
 {

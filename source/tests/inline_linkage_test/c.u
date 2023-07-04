@@ -1,9 +1,4 @@
-// Extern functions
-fn FunFromA();
-fn FunFromB();
-fn FunFromC();
-
-fn InlineFromInc();
+import "inc.u"
 
 fn FunFromC()
 {

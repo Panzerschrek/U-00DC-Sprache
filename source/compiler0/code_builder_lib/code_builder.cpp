@@ -1229,15 +1229,34 @@ Type CodeBuilder::BuildFuncCode(
 	// Build debug info only for functions with body.
 	debug_info_builder_->CreateFunctionInfo( func_variable, func_name );
 
-	// For functions with body we can use comdat.
 	if( parent_names_scope.IsInsideTemplate() )
+	{
+		// Set private visibility for functions inside templates.
+		// There is no need to use external linkage, since each user of the template must import file with source template.
 		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	}
+	else if( func_variable.body_src_loc.GetFileIndex() != 0 )
+	{
+		// This function is defined inside imported file - no need to use private linkage for it.
+		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	}
+	else if( func_variable.no_mangle )
+	{
+		// The only reason to use "nomangle" functions is to interact with external code.
+		// For such purposes  external linkage is essential.
+		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
+	}
+	else if( func_variable.prototype_src_loc.GetFileIndex() == 0 )
+	{
+		// This function has no portotype in imported files.
+		// There is no reason to use external linkage for it.
+		llvm_function->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	}
 	else
 	{
-		// Set comdat for correct linkage of same functions, emitted in several modules.
-		llvm::Comdat* const comdat= module_->getOrInsertComdat( llvm_function->getName() );
-		comdat->setSelectionKind( llvm::Comdat::Any );
-		llvm_function->setComdat( comdat );
+		// This is a non-template function in main file, that has prototype in imported file. Use external linkage.
+		// Do not need to use comdat here, since this function is defined only in main (compiled) file.
+		llvm_function->setLinkage( llvm::GlobalValue::ExternalLinkage );
 	}
 
 	// Ensure completeness only for functions body.
@@ -2131,9 +2150,8 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	return val;
 }
 
-llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name )
+llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name, const bool externally_available )
 {
-	// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
 	const auto var=
 		new llvm::GlobalVariable(
 			*module_,
@@ -2143,11 +2161,20 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 			nullptr,
 			mangled_name );
 
-	llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
-	comdat->setSelectionKind( llvm::Comdat::Any );
-	var->setComdat( comdat );
+	if( externally_available )
+	{
+		// Use external linkage and comdat for global mutable variables to guarantee address uniqueness.
+		llvm::Comdat* const comdat= module_->getOrInsertComdat( var->getName() );
+		comdat->setSelectionKind( llvm::Comdat::Any );
+		var->setComdat( comdat );
 
-	var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+		var->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
+	}
+	else
+	{
+		// This global mutable variable is local for this module, do not need to use external linkage.
+		var->setLinkage( llvm::GlobalValue::PrivateLinkage );
+	}
 
 	return var;
 }

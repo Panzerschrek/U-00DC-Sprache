@@ -2,6 +2,8 @@ import "inc.u"
 
 fn FunFromA()
 {
+	halt if( InternalShouldHavePrivateLinkage() != 77 );
+	halt if( unsafe( internal_global_mutable != 777 ) );
 }
 
 fn PrivateA()
@@ -16,3 +18,9 @@ fn GetGlobalAddressA() : $(i32)
 {
 	unsafe{  return $<(global_x);  }
 }
+
+// Same function exists in "b.u", but with private linkage there is no conflict here.
+fn InternalShouldHavePrivateLinkage() : i32 { return 77; }
+
+// Same mutable variable exists in "b.u", but with private linkage there is no conflict here.
+var i32 mut internal_global_mutable = 777;
