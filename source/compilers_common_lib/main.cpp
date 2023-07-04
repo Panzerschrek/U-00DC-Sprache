@@ -372,6 +372,19 @@ std::string GenerateCompilerPreludeCode(
 	result += "namespace compiler\n";
 	result += "{\n";
 	{
+		// Info about compiler itself.
+		result += "auto& version = \"";
+		result += getSpracheVersion();
+		result += "\";\n";
+
+		result += "auto& git_revision = \"";
+		result += getGitRevision();
+		result += "\";\n";
+
+		result += "var size_type generation = ";
+		result += std::to_string(GetCompilerGeneration());
+		result += "s;\n";
+
 		// Options.
 		result += "namespace options\n";
 		result += "{\n";
