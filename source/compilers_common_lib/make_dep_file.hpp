@@ -4,7 +4,7 @@
 namespace U
 {
 
-void DeduplicateDepsList( std::vector<IVfs::Path>& deps_list );
+void DeduplicateAndFilterDepsList( std::vector<IVfs::Path>& deps_list );
 
 bool WriteDepFile(
 	const std::string& out_file_path,

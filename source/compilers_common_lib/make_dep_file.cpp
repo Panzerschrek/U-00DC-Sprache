@@ -31,10 +31,23 @@ std::string QuoteDepTargetString( const std::string& str )
 
 } // namespace
 
-void DeduplicateDepsList( std::vector<IVfs::Path>& deps_list )
+void DeduplicateAndFilterDepsList( std::vector<IVfs::Path>& deps_list )
 {
 	std::sort( deps_list.begin(), deps_list.end() );
 	deps_list.erase( std::unique( deps_list.begin(), deps_list.end() ), deps_list.end() );
+
+	// Remove prelude pseudo-file from dependencies list.
+	for( size_t i= 0; i < deps_list.size(); )
+	{
+		if( deps_list[i] == "compiler_generated_prelude" )
+		{
+			if( i + 1 < deps_list.size() )
+				deps_list[i]= std::move(deps_list.back());
+			deps_list.pop_back();
+		}
+		else
+			++i;
+	}
 }
 
 bool WriteDepFile(

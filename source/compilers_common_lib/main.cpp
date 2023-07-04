@@ -971,7 +971,7 @@ int Main( int argc, const char* argv[] )
 	}
 
 	// Left only unique paths in dependencies list.
-	DeduplicateDepsList(deps_list);
+	DeduplicateAndFilterDepsList(deps_list);
 
 	if( Options::deps_tracking )
 		DepFile::Write( Options::output_file_name, argc, argv, deps_list );
