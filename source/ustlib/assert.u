@@ -2,7 +2,7 @@
 <?
 {
 	// TODO - use message.
-	halt if( ?e );
+	halt if( !(?e) );
 }
 ?>
 
