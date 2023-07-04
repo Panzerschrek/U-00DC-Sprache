@@ -361,7 +361,7 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 	return false;
 }
 
-std::string GenerateCompilerPreludeCode()
+std::string GenerateCompilerPreludeCode( const llvm::Triple& target_triple )
 {
 	std::string result;
 
@@ -369,6 +369,7 @@ std::string GenerateCompilerPreludeCode()
 	result += "namespace compiler\n";
 	result += "{\n";
 	{
+		// Options.
 		{
 			result += "var char8 optimization_level = \"";
 			result += Options::optimization_level;
@@ -379,6 +380,37 @@ std::string GenerateCompilerPreludeCode()
 			result += Options::generate_debug_info ? "true" : "false";
 			result += ";\n";
 		}
+
+		// Target triple.
+		result += "namespace target\n";
+		result += "{\n";
+		{
+			result += "auto& str = \"";
+			result += target_triple.str();
+			result += "\";\n";
+
+			result += "auto& arch = \"";
+			result += target_triple.getArchName();
+			result += "\";\n";
+
+			result += "auto& vendor = \"";
+			result += target_triple.getVendorName();
+			result += "\";\n";
+
+			result += "auto& os = \"";
+			result += target_triple.getOSName();
+			result += "\";\n";
+
+			result += "auto& environment = \"";
+			result += target_triple.getEnvironmentName();
+			result += "\";\n";
+
+			result += "auto& os_and_environment = \"";
+			result += target_triple.getOSAndEnvironmentName();
+			result += "\";\n";
+		}
+		result += "}\n";
+
 		// TODO - add other info.
 	}
 	result += "}\n";
@@ -557,7 +589,7 @@ int Main( int argc, const char* argv[] )
 					Options::generate_debug_info,
 					generate_tbaa_metadata,
 					mangling_scheme,
-					GenerateCompilerPreludeCode() );
+					GenerateCompilerPreludeCode(target_triple) );
 
 			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
 
