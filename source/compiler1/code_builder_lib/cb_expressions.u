@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -1908,7 +1909,7 @@ fn CodeBuilder::AccessDirectClassField(
 {
 	var VariableLite variable= variable_ptr.lock_imut().deref();
 	var ClassTypePtr class_type= variable.t.GetClassType().try_deref();
-	halt if( class_type != field.source_class ); // TODO - use debug assert.
+	debug_assert( class_type == field.source_class );
 
 	var ust::string8 mut node_name= variable_ptr.lock_imut().deref().name;
 	node_name+= ".";
