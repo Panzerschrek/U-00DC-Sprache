@@ -1,15 +1,15 @@
-// TODO - add message
-?macro <? assert:block ( ?e:expr ) ?term:opt<? ; ?> ?> ->
+?macro <? assert:block ( ?e:expr ?m:opt<? , ?message:expr ?> ) ?term:opt<? ; ?> ?> ->
 <?
 {
+	// TODO - use message.
 	halt if( ?e );
 }
 ?>
 
-// TODO - add message
-?macro <? debug_assert:block ( ?e:expr ) ?term:opt<? ; ?> ?> ->
+?macro <? debug_assert:block ( ?e:expr ?m:opt<? , ?message:expr ?>  ) ?term:opt<? ; ?> ?> ->
 <?
 {
+	// TODO - use message.
 	if( compiler::options::generate_debug_info || compiler::options::optimization_level == "0"c8 )
 	{
 		assert( ?e )
