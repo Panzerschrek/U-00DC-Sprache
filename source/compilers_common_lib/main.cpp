@@ -361,6 +361,31 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 	return false;
 }
 
+std::string GenerateCompilerPreludeCode()
+{
+	std::string result;
+
+	// TODO - carefully choose namespace name.
+	result += "namespace compiler\n";
+	result += "{\n";
+	{
+		{
+			result += "var char8 optimization_level = \"";
+			result += Options::optimization_level;
+			result += "\"c8;\n";
+		}
+		{
+			result += "var bool generate_debug_info = ";
+			result += Options::generate_debug_info ? "true" : "false";
+			result += ";\n";
+		}
+		// TODO - add other info.
+	}
+	result += "}\n";
+
+	return result;
+}
+
 int Main( int argc, const char* argv[] )
 {
 	const llvm::InitLLVM llvm_initializer(argc, argv);
@@ -531,7 +556,8 @@ int Main( int argc, const char* argv[] )
 					target_triple,
 					Options::generate_debug_info,
 					generate_tbaa_metadata,
-					mangling_scheme );
+					mangling_scheme,
+					GenerateCompilerPreludeCode() );
 
 			deps_list.insert( deps_list.end(), code_builder_launch_result.dependent_files.begin(), code_builder_launch_result.dependent_files.end() );
 

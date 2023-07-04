@@ -14,11 +14,12 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::Triple& target_triple,
 	const bool generate_debug_info,
 	const bool generate_tbaa_metadata,
-	const ManglingScheme mangling_scheme )
+	const ManglingScheme mangling_scheme,
+	const std::string_view prelude_code )
 {
 	CodeBuilderLaunchResult result;
 
-	const SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, input_file );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
 
 	result.dependent_files.reserve( source_graph.nodes_storage.size() );
 	for( const SourceGraph::Node& node : source_graph.nodes_storage )
