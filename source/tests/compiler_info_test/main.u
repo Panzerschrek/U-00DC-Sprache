@@ -1,0 +1,34 @@
+static_assert( compiler::version == "0.6" );
+static_assert( compiler::generation <= 10s );
+static_assert( typeinfo</ typeof(compiler::git_revision) />.element_count == 40s );
+
+var bool is_debug = compiler::options::generate_debug_info || compiler::options::optimization_level == "0"c8;
+var bool is_haswell= string_equals( compiler::options::cpu_name, "haswell" );
+
+var bool is_windows = string_equals( compiler::target::os, "windows" );
+var bool is_linux = string_equals( compiler::target::os, "linux" );
+
+var bool is_x86 = string_equals( compiler::target::arch, "x86" );
+var bool is_x86_64 = string_equals( compiler::target::arch, "x86_64" );
+
+var bool is_pc = string_equals( compiler::target::vendor, "pc" );
+
+var bool is_gnu = string_equals( compiler::target::environment, "gnu" );
+var bool is_msvc = string_equals( compiler::target::environment, "msvc" );
+
+template</ size_type size0, size_type size1 />
+fn constexpr string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+{
+	if( size0 != size1 ) { return false; }
+
+	for( var size_type mut i(0); i < size0; ++i )
+	{
+		if( s0[i] != s1[i] ) { return false; }
+	}
+	return true;
+}
+
+fn nomangle main() : i32
+{
+	return 0;
+}
