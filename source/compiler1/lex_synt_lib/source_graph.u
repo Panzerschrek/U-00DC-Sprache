@@ -48,7 +48,7 @@ fn LoadSourceGraph(
 					lex_result.lexems,
 					Synt::MacrosByContextMap(),
 					source_graph.macro_expansion_contexts,
-					source_file_contents_hashing_function( c_built_in_macros ) );
+					source_file_contents_hashing_function( prelude_code ) );
 
 			// Add "import" of prelude node in nodes, that have no other import (and only in these nodes).
 			// There is no reason to import prelude in all modules.
@@ -60,11 +60,7 @@ fn LoadSourceGraph(
 				}
 			}
 
-			var SourceGraph::Node mut node
-			{
-				.synt_result= move(synt_result),
-			};
-
+			var SourceGraph::Node mut node{ .synt_result= move(synt_result) };
 			source_graph.nodes.push_back( move(node) );
 		}
 	}
