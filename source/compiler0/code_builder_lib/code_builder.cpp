@@ -271,12 +271,19 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	if( result.names_map != nullptr )
 		return;
 
+	const SourceGraph::Node& source_graph_node= source_graph.nodes_storage[ node_index ];
+
 	result.names_map= std::make_unique<NamesScope>( "", nullptr );
 	result.names_map->SetErrors( global_errors_ );
-	FillGlobalNamesScope( *result.names_map );
+
+	if( source_graph_node.child_nodes_indeces.empty() )
+	{
+		// Fill global names scope only for files with no imports.
+		// Files with imports should inherit contents of global namespace from imported files.
+		FillGlobalNamesScope( *result.names_map );
+	}
 
 	U_ASSERT( node_index < source_graph.nodes_storage.size() );
-	const SourceGraph::Node& source_graph_node= source_graph.nodes_storage[ node_index ];
 
 	// Build dependent nodes.
 	for( const size_t child_node_inex : source_graph_node.child_nodes_indeces )

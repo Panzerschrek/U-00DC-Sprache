@@ -323,6 +323,8 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 
 fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_type node_index )
 {
+	var SourceGraph::Node& source_graph_node= source_graph.nodes[node_index];
+
 	var NamesScopeMutPtr mut global_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
 
 	with( mut lock : global_names_scope.lock_mut() )
@@ -330,10 +332,14 @@ fn CodeBuilder::BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_
 		auto &mut n= lock.deref();
 
 		n.SetErrors( root_errors_container_ );
-		FillGlobalNamesScope( n );
-	}
 
-	var SourceGraph::Node& source_graph_node= source_graph.nodes[node_index];
+		if( source_graph_node.children.empty() )
+		{
+			// Fill global names scope only for files with no imports.
+			// Files with imports should inherit contents of global namespace from imported files.
+			FillGlobalNamesScope( n );
+		}
+	}
 
 	// Build dependent nodes.
 	foreach( child_node_index : source_graph_node.children )
