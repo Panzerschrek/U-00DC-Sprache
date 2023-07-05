@@ -1044,6 +1044,7 @@ private:
 		llvm::IntegerType* i128_;
 		llvm::IntegerType* u128_;
 
+		llvm::Type* f16_;
 		llvm::Type* f32_;
 		llvm::Type* f64_;
 
