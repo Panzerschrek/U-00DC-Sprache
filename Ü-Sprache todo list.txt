@@ -15,7 +15,6 @@ General:
 *) Continious initializer for arrays
 *) Auto-move in "return" for local variable
 *) More advanced macros - more context, elements, string manipulations
-*) debug_assert
 
 References:
 *) Multiple inner reference tags for some types
@@ -36,6 +35,7 @@ Standart library:
 *) Time library - get time functions, timers
 *) File library
 *) Console input/output library
+*) Print fail message in asserts
 *) Formatting library
 *) More type traits
 *) More math functions
