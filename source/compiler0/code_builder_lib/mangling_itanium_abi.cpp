@@ -346,6 +346,7 @@ std::string_view EncodeFundamentalType( const U_FundamentalType t )
 	case U_FundamentalType::u64_ : return "y";
 	case U_FundamentalType::i128_: return "n";
 	case U_FundamentalType::u128_: return "o";
+	case U_FundamentalType::f16_: return "Dh";
 	case U_FundamentalType::f32_: return "f";
 	case U_FundamentalType::f64_: return "d";
 	case U_FundamentalType::char8_ : return "c"; // C++ char

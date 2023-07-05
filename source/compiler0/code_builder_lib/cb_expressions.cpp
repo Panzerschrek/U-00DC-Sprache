@@ -2511,7 +2511,7 @@ Value CodeBuilder::BuildBinaryOperator(
 		}
 		else
 		{
-			if( l_fundamental_type->GetSize() < 4u )
+			if( l_fundamental_type->GetSize() < 4u && !IsFloatingPoint( l_fundamental_type->fundamental_type ) )
 			{
 				// Operation supported only for 32 and 64bit operands
 				REPORT_ERROR( OperationNotSupportedForThisType, names_scope.GetErrors(), src_loc, l_type );
