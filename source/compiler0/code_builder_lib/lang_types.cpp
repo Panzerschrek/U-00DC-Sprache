@@ -35,6 +35,7 @@ bool IsInteger( const U_FundamentalType type )
 bool IsFloatingPoint( U_FundamentalType type )
 {
 	return
+		type == U_FundamentalType::f16_ ||
 		type == U_FundamentalType::f32_ ||
 		type == U_FundamentalType::f64_;
 }
@@ -83,6 +84,7 @@ std::string_view GetFundamentalTypeName( const U_FundamentalType type )
 	case U_FundamentalType::u128_: return Keyword( Keywords::u128_ );
 	case U_FundamentalType::ssize_type_: return Keyword( Keywords::ssize_type_ );
 	case U_FundamentalType::size_type_ : return Keyword( Keywords::size_type_  );
+	case U_FundamentalType::f16_: return Keyword( Keywords::f16_ );
 	case U_FundamentalType::f32_: return Keyword( Keywords::f32_ );
 	case U_FundamentalType::f64_: return Keyword( Keywords::f64_ );
 	case U_FundamentalType::char8_ : return Keyword( Keywords::char8_  );
@@ -119,6 +121,7 @@ U_FundamentalType GetFundamentalTypeByName( const std::string_view name )
 	if( name == Keywords::u128_ ) return U_FundamentalType::u128_;
 	if( name == Keywords::ssize_type_ ) return U_FundamentalType::ssize_type_;
 	if( name == Keywords::size_type_  ) return U_FundamentalType::size_type_ ;
+	if( name == Keywords::f16_ ) return U_FundamentalType::f16_;
 	if( name == Keywords::f32_ ) return U_FundamentalType::f32_;
 	if( name == Keywords::f64_ ) return U_FundamentalType::f64_;
 	if( name == Keywords::char8_  ) return U_FundamentalType::char8_;

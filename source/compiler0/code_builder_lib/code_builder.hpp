@@ -1502,6 +1502,7 @@ private:
 		llvm::IntegerType* ssize_type_;
 		llvm::IntegerType* size_type_ ;
 
+		llvm::Type* f16_;
 		llvm::Type* f32_;
 		llvm::Type* f64_;
 

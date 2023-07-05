@@ -42,6 +42,7 @@ std::string_view GetFundamentalTypeMangledName( const U_FundamentalType t )
 	case U_FundamentalType::u128_: return "_M"; // "unsigned __int128"
 	case U_FundamentalType::ssize_type_: return "J"; // C++ "long"
 	case U_FundamentalType::size_type_ : return "K"; // C++ "unsigned long"
+	case U_FundamentalType::f16_: return "TODO_f16";
 	case U_FundamentalType::f32_: return "M";  // C++ "float"
 	case U_FundamentalType::f64_: return "N"; // C++ "double"
 	case U_FundamentalType::char8_ : return "D"; // C++ "char"
