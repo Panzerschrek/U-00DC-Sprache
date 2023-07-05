@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -898,7 +899,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 	{
 		unsafe
 		{
-			halt if( LLVMTypeOf( dst ) != LLVMTypeOf( src ) ); // TODO - use debug assert
+			debug_assert( LLVMTypeOf( dst ) == LLVMTypeOf( src ), "Copying incompatible types!" );
 			auto mut value= CreateTypedLoad( function_context, t, src );
 			CreateTypedStore( function_context, t, value, dst );
 		}
@@ -969,7 +970,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 	{
 		unsafe
 		{
-			halt if( LLVMTypeOf( dst ) != LLVMTypeOf( src ) ); // TODO - use debug assert
+			debug_assert( LLVMTypeOf( dst ) == LLVMTypeOf( src ), "Copying incompatible types!" );
 			auto mut value= CreateTypedLoad( function_context, t, src );
 			CreateTypedStore( function_context, t, value, dst );
 		}

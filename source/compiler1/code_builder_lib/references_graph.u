@@ -1,4 +1,4 @@
-import "/atomic.u"
+import "/assert.u"
 import "error_reporting.uh"
 import "references_graph.uh"
 
@@ -13,7 +13,7 @@ struct NodeReplacement
 
 fn ReferencesGraph::AddNode( mut this, VariablePtr& node )
 {
-	halt if( !nodes_.find( node ).empty() ); // TODO - use debug assert.
+	debug_assert( nodes_.find( node ).empty(), "Node is already registered!" );
 
 	var NodeState mut node_state{ .moved= false };
 	nodes_.insert( node, move(node_state) );
@@ -54,9 +54,8 @@ fn ReferencesGraph::RemoveNode( mut this, VariablePtr& node )
 
 fn ReferencesGraph::AddLink( mut this, VariablePtr& from, VariablePtr& to )
 {
-	// TODO - use debug assert.
-	halt if( nodes_.find( from ).empty() );
-	halt if( nodes_.find( to ).empty() );
+	debug_assert( !nodes_.find( from ).empty(), "Node is not registered!" );
+	debug_assert( !nodes_.find( to ).empty(), "Node is not registered!" );
 
 	if( from == to )
 	{
@@ -105,7 +104,7 @@ fn ReferencesGraph::CreateNodeInnerReference( mut this, VariablePtr& node, Value
 
 fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 {
-	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
 
 	var VariableNullablePtr mut inner_reference_node;
 	{
@@ -140,14 +139,14 @@ fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 
 fn ReferencesGraph::NodeIsMoved( this, VariablePtr& node ) : bool
 {
-	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
 
 	return nodes_[node].moved;
 }
 
 fn ReferencesGraph::HaveOutgoingLinks( this, VariablePtr& from ) : bool
 {
-	halt if( nodes_.find(from).empty() ); // TODO - use debug assert instead.
+	debug_assert( !nodes_.find( from ).empty(), "Node is not registered!" );
 
 	// Check if any parent have links and any child (including children of children) have links.
 	// Doesn't count sibling nodes and other indirect relatives.
@@ -173,7 +172,7 @@ fn ReferencesGraph::HaveOutgoingLinks( this, VariablePtr& from ) : bool
 
 fn ReferencesGraph::HaveOutgoingMutableNodes( this, VariablePtr& from ) : bool
 {
-	halt if( nodes_.find(from).empty() ); // TODO - use debug assert instead.
+	debug_assert( !nodes_.find( from ).empty(), "Node is not registered!" );
 
 	// Check if any parent have mutable links and any child (including children of children) have mutable links.
 	// Doesn't count sibling nodes and other indirect relatives.
@@ -215,14 +214,13 @@ fn ReferencesGraph::EnsureHaveNoOutgoingMutableNodes( this, VariablePtr& from, N
 
 fn ReferencesGraph::GetNodeInnerReference( this, VariablePtr& node ) : VariableNullablePtr
 {
-	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
-
+	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
 	return nodes_[node].inner_reference_node;
 }
 
 fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr& node ) : NodesSet
 {
-	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
 
 	var NodesSet mut nodes_set;
 	GetAllAccessibleVariableNodes_r( node, nodes_set );
@@ -231,7 +229,7 @@ fn ReferencesGraph::GetAllAccessibleVariableNodes( this, VariablePtr& node ) : N
 
 fn ReferencesGraph::GetAccessibleVariableNodesInnerReferences( this, VariablePtr& node ) : NodesSet
 {
-	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
 
 	var NodesSet mut nodes_set;
 	GetAccessibleVariableNodesInnerReferences_r( node, nodes_set );
@@ -240,7 +238,7 @@ fn ReferencesGraph::GetAccessibleVariableNodesInnerReferences( this, VariablePtr
 
 fn ReferencesGraph::GetNodeInputLinks( this, VariablePtr& node ) : NodesSet
 {
-	halt if( nodes_.find(node).empty() ); // TODO - use debug assert instead.
+	debug_assert( !nodes_.find( node ).empty(), "Node is not registered!" );
 
 	var NodesSet mut result;
 
@@ -587,8 +585,7 @@ fn ReferencesGraph::RemoveNodeLinks( mut this, VariablePtr& node )
 	var VariableNullablePtr parent= node.lock_imut().deref().parent.lock();
 	if( !parent.empty() )
 	{
-		// TODO - use debug assert.
-		halt if( !in_nodes.empty() ); // Child node has no input links, it has only parent.
+		debug_assert( in_nodes.empty(), "Non-empty input nodes list for node with parent!" );
 
 		var VariablePtr parent_non_null= parent.try_to_non_nullable();
 		foreach( &to : out_nodes )

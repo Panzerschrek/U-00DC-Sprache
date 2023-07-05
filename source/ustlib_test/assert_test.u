@@ -1,0 +1,20 @@
+//##success_test
+import "../ustlib/assert.u"
+
+fn nomangle main() : i32
+{
+	assert( Foo() == 42 );
+	assert( Foo() != 0, "Assert with message" );
+	assert( Foo() != 666, GetMessage() );
+	assert( Foo() != 88 ) // it is possible not to use trailing ;
+
+	debug_assert( Foo() == 42 );
+	debug_assert( Foo() != 0, "Assert with message" );
+	debug_assert( Foo() != 666, GetMessage() );
+	debug_assert( Foo() != 88 ) // it is possible not to use trailing ;
+
+	return 0;
+}
+
+fn Foo() : i32 { return 42; }
+fn GetMessage() : [char8, 4] { return "SPQR"; }
