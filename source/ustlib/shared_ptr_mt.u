@@ -180,33 +180,33 @@ public:
 	fn enable_if(is_nullable && is_mutable) try_lock_mut( this ) : lock_mut_t 'this'
 	{
 		halt if( empty() );
-		unsafe{  return lock_mut_unchecked();  }
+		return unsafe( lock_mut_unchecked() );
 	}
 
 	fn enable_if(is_nullable) try_lock_imut( this ) : lock_imut_t'this'
 	{
 		halt if( empty() );
-		unsafe{  return lock_imut_unchecked();  }
+		return unsafe( lock_imut_unchecked() );
 	}
 
 	fn enable_if(!is_nullable && is_mutable) lock_mut( this ) : lock_mut_t 'this'
 	{
-		unsafe{  return lock_mut_unchecked();  }
+		return unsafe( lock_mut_unchecked() );
 	}
 
 	fn enable_if(!is_nullable) lock_imut( this ) : lock_imut_t'this'
 	{
-		unsafe{  return lock_imut_unchecked();  }
+		return unsafe( lock_imut_unchecked() );
 	}
 
 	fn lock_mut_unchecked ( this ) unsafe : lock_mut_t 'this'
 	{
-		unsafe{  return lock_mut_t ( $>(value_), counter_ );  }
+		return unsafe( lock_mut_t ( $>(value_), counter_ ) );
 	}
 
 	fn lock_imut_unchecked( this ) unsafe : lock_imut_t'this'
 	{
-		unsafe{  return lock_imut_t( $>(value_), counter_ );  }
+		return unsafe( lock_imut_t( $>(value_), counter_ ) );
 	}
 
 	// Compare.
@@ -248,10 +248,7 @@ struct shared_ptr_mt_base_hasher
 	template</type T, bool is_nullable, bool is_mutable/>
 	fn hash( shared_ptr_mt_base</T, is_nullable, is_mutable/>& ptr ) : size_type
 	{
-		unsafe
-		{
-			return ust::ptr_to_int( ptr.get_value_ptr() );
-		}
+		return ust::ptr_to_int( unsafe( ptr.get_value_ptr() ) );
 	}
 }
 
@@ -455,21 +452,18 @@ public:
 	fn constructor( mut this'a', T &'b  mut value, $(counter) c ) ' a <- b ' unsafe
 		( value_(value), counter_(c) )
 	{
-		unsafe{  halt if( pthread_rwlock_wrlock( $>(counter_).rwlock ) != 0 );  }
+		halt if( unsafe( pthread_rwlock_wrlock( $>(counter_).rwlock ) ) != 0 );
 	}
 
 	fn destructor()
 	{
-		unsafe{  halt if( pthread_rwlock_unlock( $>(counter_).rwlock ) != 0 );  }
+		halt if( unsafe( pthread_rwlock_unlock( $>(counter_).rwlock ) ) != 0 );
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
 	fn deref( mut this ) : T &'this  mut
 	{
-		unsafe
-		{
-			return $>( $<(value_) );
-		}
+		return unsafe( $>( $<(value_) ) );
 	}
 
 private:
@@ -484,21 +478,18 @@ public:
 	fn constructor( mut this'a', T &'b imut value, $(counter) c) ' a <- b ' unsafe
 		( value_(value), counter_(c) )
 	{
-		unsafe{  halt if( pthread_rwlock_rdlock( $>(counter_).rwlock ) != 0 );  }
+		halt if( unsafe( pthread_rwlock_rdlock( $>(counter_).rwlock ) ) != 0 );
 	}
 
 	fn destructor()
 	{
-		unsafe{  halt if( pthread_rwlock_unlock( $>(counter_).rwlock ) != 0 );  }
+		halt if( unsafe( pthread_rwlock_unlock( $>(counter_).rwlock ) ) != 0 );
 	}
 
 	// Mark reference by "this" tag, instead of inner tag, for prevention of "lock" destruction.
 	fn deref( this ) : T &'this imut
 	{
-		unsafe
-		{
-			return $>($<(cast_mut(value_)));
-		}
+		return unsafe( $>($<(cast_mut(value_))) );
 	}
 
 private:

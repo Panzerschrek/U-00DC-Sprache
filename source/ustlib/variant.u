@@ -192,12 +192,7 @@ public:
 			if( cur_index == size_type(l.index_) )
 			{
 				type ElementT= typeof(element.type)::src_type;
-				unsafe
-				{
-					auto& l_element= cast_ref_unsafe</ ElementT />(l.storage_);
-					auto& r_element= cast_ref_unsafe</ ElementT />(r.storage_);
-					safe{  return l_element == r_element;  }
-				}
+				return unsafe( cast_ref_unsafe</ ElementT />(l.storage_) ) == unsafe( cast_ref_unsafe</ ElementT />(r.storage_) );
 			}
 			++cur_index;
 		}

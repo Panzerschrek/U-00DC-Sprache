@@ -115,20 +115,17 @@ public:
 	fn enable_if(is_nullable) try_deref( this ) : T &imut
 	{
 		halt if(empty());
-		unsafe{  return deref_unchecked();  }
+		return unsafe( deref_unchecked() );
 	}
 
 	fn enable_if(!is_nullable) deref( this ) : T &imut
 	{
-		unsafe{  return deref_unchecked();  }
+		return unsafe( deref_unchecked() );
 	}
 
 	fn deref_unchecked( this ) unsafe : T &imut
 	{
-		unsafe
-		{
-			return $>(ptr_).value;
-		}
+		return unsafe( $>(ptr_).value );
 	}
 
 	// Compare.
@@ -162,10 +159,7 @@ struct shared_ptr_mt_final_base_hasher
 	template</type T, bool is_nullable/>
 	fn hash( shared_ptr_mt_final_base</T, is_nullable/>& ptr ) : size_type
 	{
-		unsafe
-		{
-			return ust::ptr_to_int( ptr.get_ptr() );
-		}
+		return ust::ptr_to_int( unsafe( ptr.get_ptr() ) );
 	}
 }
 

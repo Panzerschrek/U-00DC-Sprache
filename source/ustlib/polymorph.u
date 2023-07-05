@@ -20,7 +20,7 @@ fn polymorph_restore_original_ref( T &imut ref ) : byte8 &imut
 	}
 	else
 	{
-		unsafe{  return  cast_ref_unsafe</byte8/>( ref );  }
+		return unsafe( cast_ref_unsafe</byte8/>( ref ) );
 	}
 }
 
@@ -29,14 +29,11 @@ fn polymorph_is_same_type( A& a, B& b ) : bool
 {
 	static_if( polymorph_impl::is_polymorph</A/>() && polymorph_impl::is_polymorph</B/>() )
 	{
-		unsafe
-		{
-			// Virtual table pointer is always first field in class.
-			// Types are same if "type_id_table" address is same.
-			return
-				cast_ref_unsafe</ polymorph_impl::virtual_class />(a).vptr.type_id_table ==
-				cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id_table;
-		}
+		// Virtual table pointer is always first field in class.
+		// Types are same if "type_id_table" address is same.
+		return unsafe(
+			cast_ref_unsafe</ polymorph_impl::virtual_class />(a).vptr.type_id_table ==
+			cast_ref_unsafe</ polymorph_impl::virtual_class />(b).vptr.type_id_table );
 	}
 	else
 	{

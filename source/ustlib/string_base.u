@@ -113,12 +113,9 @@ public:
 
 	fn destructor()
 	{
-		unsafe
+		if( !is_nullptr(ptr_) )
 		{
-			if( !is_nullptr(ptr_) )
-			{
-				memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
-			}
+			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) ) );
 		}
 	}
 
@@ -142,23 +139,23 @@ public:
 	op[]( mut this, size_type index ) : char_type &mut
 	{
 		halt if( index >= size_ );
-		unsafe{  return $>(ptr_ + index );  }
+		return unsafe( index_unchecked(index) );
 	}
 
 	op[]( imut this, size_type index ) : char_type &imut
 	{
 		halt if( index >= size_ );
-		unsafe{  return $>(ptr_ + index );  }
+		return unsafe( index_unchecked(index) );
 	}
 
 	fn index_unchecked( mut this, size_type index ) unsafe : char_type &mut
 	{
-		unsafe{  return $>(ptr_ + index );  }
+		return unsafe( $>(ptr_ + index ) );
 	}
 
 	fn index_unchecked( imut this, size_type index ) unsafe : char_type &imut
 	{
-		unsafe{  return $>(ptr_ + index );  }
+		return unsafe( $>(ptr_ + index ) );
 	}
 
 	op enable_if( c_size_type_is_u64_ ) []( mut this, u32 index ) : char_type &mut
@@ -188,57 +185,57 @@ public:
 	fn front( mut this ) : char_type &mut
 	{
 		halt if(empty());
-		unsafe{  return $>(ptr_);  }
+		return unsafe( front_unchecked() );
 	}
 
 	fn front( imut this ) : char_type &imut
 	{
 		halt if(empty());
-		unsafe{  return $>(ptr_);  }
+		return unsafe( front_unchecked() );
 	}
 
 	fn back( mut this ) : char_type &mut
 	{
 		halt if(empty());
-		unsafe{  return $>(ptr_ + size_ - 1s);  }
+		return unsafe( back_unchecked() );
 	}
 
 	fn back( imut this ) : char_type &imut
 	{
 		halt if(empty());
-		unsafe{  return $>(ptr_ + size_ - 1s);  }
+		return unsafe( back_unchecked() );
 	}
 
 	fn front_unchecked( mut this ) unsafe : char_type &mut
 	{
-		unsafe{  return $>(ptr_);  }
+		return unsafe( $>(ptr_) );
 	}
 
 	fn front_unchecked( imut this ) unsafe : char_type &imut
 	{
-		unsafe{  return $>(ptr_);  }
+		return unsafe( $>(ptr_) );
 	}
 
 	fn back_unchecked( mut this ) unsafe : char_type &mut
 	{
-		unsafe{  return $>(ptr_ + size_ - 1s);  }
+		return unsafe( $>(ptr_ + size_ - 1s) );
 	}
 
 	fn back_unchecked( imut this ) unsafe : char_type &imut
 	{
-		unsafe{  return $>(ptr_ + size_ - 1s);  }
+		return unsafe( $>(ptr_ + size_ - 1s) );
 	}
 
 	// ranges
 
 	fn range(  mut this ) : range_mut'this'
 	{
-		unsafe{  return range_mut ( ptr_, size_ );  }
+		return unsafe( range_mut ( ptr_, size_ ) );
 	}
 
 	fn range( imut this ) : range_imut'this'
 	{
-		unsafe{  return range_imut( ptr_, size_ );  }
+		return unsafe( range_imut( ptr_, size_ ) );
 	}
 
 	fn substr( this, size_type start_index, size_type end_index ) : this_type
@@ -275,11 +272,8 @@ public:
 	{
 		if( l.size() != r.size() ) { return false; }
 
-		unsafe
-		{
-			auto size= l.size();
-			return memory_equals( cast_ref_unsafe</byte8/>( $>(l.ptr_) ), cast_ref_unsafe</byte8/>( $>(r.data()) ), size * c_element_size_ );
-		}
+		auto size= l.size();
+		return unsafe( memory_equals( cast_ref_unsafe</byte8/>( $>(l.ptr_) ), cast_ref_unsafe</byte8/>( $>(r.data()) ), size * c_element_size_ ) );
 	}
 
 	op==( range_imut l, this_type& r ) : bool
@@ -377,20 +371,14 @@ public:
 	fn pop_back( mut this ) : char_type
 	{
 		halt if(empty());
-		unsafe
-		{
-			--size_;
-			return $>(ptr_ + size_);
-		}
+		--size_;
+		return unsafe( $>(ptr_ + size_) );
 	}
 
 	fn pop_back_unchecked( mut this ) unsafe : char_type
 	{
-		unsafe
-		{
-			--size_;
-			return $>(ptr_ + size_);
-		}
+		--size_;
+		return unsafe( $>(ptr_ + size_) );
 	}
 
 	fn resize( mut this, size_type new_size, char_type val )

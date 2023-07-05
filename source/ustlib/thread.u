@@ -80,10 +80,7 @@ private:
 
 	fn join_impl( mut this )
 	{
-		unsafe
-		{
-			halt if( pthread_join( impl_.try_deref().thread_id, nullptr</$(byte8)/>() ) != 0 );
-		}
+		halt if( unsafe( pthread_join( impl_.try_deref().thread_id, nullptr</$(byte8)/>() ) ) != 0 );
 	}
 
 private:

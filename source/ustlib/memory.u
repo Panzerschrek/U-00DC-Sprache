@@ -26,24 +26,18 @@ fn int_to_ref( size_type i ) unsafe : T&
 template</type T/>
 fn ptr_to_int( $(T) v ) : size_type
 {
-	unsafe
-	{
-		return cast_ref_unsafe</size_type/>(v); // Cast reference to pointer to reference to integer, read integer value.
-	}
+	return unsafe( cast_ref_unsafe</size_type/>(v) ); // Cast reference to pointer to reference to integer, read integer value.
 }
 
 template</type T/>
 fn int_to_ptr( size_type i ) unsafe : $(T)
 {
-	unsafe
-	{
-		return cast_ref_unsafe</$(T)/>(i); // Cast reference to integer to reference to pointer, read pointer value.
-	}
+	return unsafe( cast_ref_unsafe</$(T)/>(i) ); // Cast reference to integer to reference to pointer, read pointer value.
 }
 
 fn memory_copy( byte8 &mut dst, byte8 & src, size_type size_bytes ) unsafe
 {
-	unsafe{  ust_memory_copy_impl( $<(dst), $<(cast_mut(src)), size_bytes );  }
+	unsafe( ust_memory_copy_impl( $<(dst), $<(cast_mut(src)), size_bytes ) );
 }
 
 fn memory_copy_aligned( size_type alignment, byte8 &mut dst, byte8 & src, size_type size_bytes ) unsafe
@@ -62,10 +56,7 @@ fn memory_copy_aligned( size_type alignment, byte8 &mut dst, byte8 & src, size_t
 
 fn memory_equals( byte8& a, byte8& b, size_type size ) unsafe : bool
 {
-	unsafe
-	{
-		return ust_memory_compare_impl( $<(cast_mut(a)), $<(cast_mut(b)), size ) == 0;
-	}
+	return unsafe( ust_memory_compare_impl( $<(cast_mut(a)), $<(cast_mut(b)), size ) ) == 0;
 }
 
 template</type T/>
@@ -84,43 +75,43 @@ fn is_nullptr( $(T) ptr ) : bool
 template</type T/>
 fn ref_cmp( T& l, T& r ) : i32
 {
-	unsafe{ return $<(cast_mut(l)) <=> $<(cast_mut(r)); }
+	return unsafe( $<(cast_mut(l)) <=> $<(cast_mut(r)) );
 }
 
 template</type T/>
 fn ref_cmp_eq( T& l, T& r ) : bool
 {
-	unsafe{ return $<(cast_mut(l)) == $<(cast_mut(r)); }
+	return unsafe( $<(cast_mut(l)) == $<(cast_mut(r)) );
 }
 
 template</type T/>
 fn ref_cmp_ne( T& l, T& r ) : bool
 {
-	unsafe{ return $<(cast_mut(l)) != $<(cast_mut(r)); }
+	return unsafe( $<(cast_mut(l)) != $<(cast_mut(r)) );
 }
 
 template</type T/>
 fn ref_cmp_lt( T& l, T& r ) : bool
 {
-	unsafe{ return $<(cast_mut(l)) <  $<(cast_mut(r)); }
+	return unsafe( $<(cast_mut(l)) <  $<(cast_mut(r)) );
 }
 
 template</type T/>
 fn ref_cmp_le( T& l, T& r ) : bool
 {
-	unsafe{ return $<(cast_mut(l)) <= $<(cast_mut(r)); }
+	return unsafe( $<(cast_mut(l)) <= $<(cast_mut(r)) );
 }
 
 template</type T/>
 fn ref_cmp_gt( T& l, T& r ) : bool
 {
-	unsafe{ return $<(cast_mut(l)) >  $<(cast_mut(r)); }
+	return unsafe( $<(cast_mut(l)) >  $<(cast_mut(r)) );
 }
 
 template</type T/>
 fn ref_cmp_ge( T& l, T& r ) : bool
 {
-	unsafe{ return $<(cast_mut(l)) >= $<(cast_mut(r)); }
+	return unsafe( $<(cast_mut(l)) >= $<(cast_mut(r)) );
 }
 
 } // namespace ust

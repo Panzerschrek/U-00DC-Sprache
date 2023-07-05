@@ -127,16 +127,13 @@ public:
 
 	fn destructor()
 	{
-		unsafe
+		for( var size_type mut i(0); i < size_; ++i )
 		{
-			for( var size_type mut i(0); i < size_; ++i )
-			{
-				call_destructor( $>(ptr_ + i) );
-			}
-			if( !is_nullptr(ptr_) )
-			{
-				memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) );
-			}
+			unsafe( call_destructor( $>(ptr_ + i) ) );
+		}
+		if( !is_nullptr(ptr_) )
+		{
+			unsafe( memory_free( cast_ref_unsafe</byte8/>( $>(ptr_) ) ) );
 		}
 	}
 
@@ -285,10 +282,7 @@ public:
 
 		if( i0 == i1 ){ return; }
 
-		unsafe
-		{
-			ust::swap( $>(ptr_ + i0), $>(ptr_ + i1) );
-		}
+		unsafe( ust::swap( $>(ptr_ + i0), $>(ptr_ + i1) ) );
 	}
 
 	fn enable_if( c_size_type_is_u64_ ) swap( mut this, u32 i0, u32 i1 )
@@ -341,14 +335,12 @@ public:
 	fn drop_back( mut this, size_type count )
 	{
 		halt if( count > size_ );
-		unsafe
-		{
-			size_-= count;
 
-			for( var size_type mut i(0); i < count; ++i )
-			{
-				call_destructor( $>(ptr_ + size_ + i) );
-			}
+		size_-= count;
+
+		for( var size_type mut i(0); i < count; ++i )
+		{
+			unsafe( call_destructor( $>(ptr_ + size_ + i) ) );
 		}
 	}
 

@@ -50,7 +50,7 @@ public:
 	[]( this'x', size_type index ) : T &'x  mut
 	{
 		halt if( empty() );
-		unsafe{  return index_unchecked(index);  }
+		return unsafe( index_unchecked(index) );
 	}
 
 	op
@@ -58,68 +58,68 @@ public:
 	[]( this'x', size_type index ) : T &'x imut
 	{
 		halt if( empty() );
-		unsafe{  return index_unchecked(index);  }
+		return unsafe( index_unchecked(index) );
 	}
 
 	fn enable_if(  is_mutable ) index_unchecked( this'x', size_type index ) unsafe : T &'x  mut
 	{
-		unsafe{  return $>(begin_ + index);  }
+		return unsafe( $>(begin_ + index) );
 	}
 
 	fn enable_if( !is_mutable ) index_unchecked( this'x', size_type index ) unsafe : T &'x imut
 	{
-		unsafe{  return $>(begin_ + index);  }
+		return unsafe( $>(begin_ + index) );
 	}
 
 	fn enable_if(  is_mutable ) front( this'x' ) : T &'x  mut
 	{
 		halt if(empty());
-		unsafe{  return front_unchecked();  }
+		return unsafe( front_unchecked() );
 	}
 
 	fn enable_if( !is_mutable ) front( this'x' ) : T &'x imut
 	{
 		halt if(empty());
-		unsafe{  return front_unchecked();  }
+		return unsafe( front_unchecked() );
 	}
 
 	fn enable_if(  is_mutable ) back ( this'x' ) : T &'x  mut
 	{
 		halt if(empty());
-		unsafe{  return back_unchecked ();  }
+		return unsafe( back_unchecked () );
 	}
 
 	fn enable_if( !is_mutable ) back ( this'x' ) : T &'x imut
 	{
 		halt if(empty());
-		unsafe{  return back_unchecked ();  }
+		return unsafe( back_unchecked () );
 	}
 
 	fn enable_if(  is_mutable ) front_unchecked( this'x' ) unsafe : T &'x  mut
 	{
-		unsafe{  return $>(begin_);  }
+		return unsafe( $>(begin_) );
 	}
 
 	fn enable_if( !is_mutable ) front_unchecked( this'x' ) unsafe : T &'x imut
 	{
-		unsafe{  return $>(begin_);  }
+		return unsafe( $>(begin_) );
 	}
 
 	fn enable_if(  is_mutable ) back_unchecked ( this'x' ) unsafe : T &'x  mut
 	{
-		unsafe{  return $>(begin_ + size_ - 1s);  }
+		return unsafe( $>(begin_ + size_ - 1s) );
 	}
 
 	fn enable_if( !is_mutable ) back_unchecked ( this'x' ) unsafe : T &'x imut
 	{
-		unsafe{  return $>(begin_ + size_ - 1s);  }
+		return unsafe( $>(begin_ + size_ - 1s) );
 	}
 
 	fn subrange( this'x', size_type start_index, size_type end_index ) : this_type'x'
 	{
 		halt if( start_index > end_index );
 		halt if( end_index > size_ );
-		unsafe{  return this_type( begin_ + start_index, end_index - start_index );  }
+		return unsafe( this_type( begin_ + start_index, end_index - start_index ) );
 	}
 
 	fn empty( this ) : bool
@@ -143,17 +143,9 @@ public:
 
 		for( auto mut i= 0s; i < l.size_; ++i )
 		{
-			unsafe
+			if( unsafe( l.index_unchecked(i) ) != unsafe( r.index_unchecked(i) ) )
 			{
-				var T& l_element= l.index_unchecked(i);
-				var T& r_element= r.index_unchecked(i);
-				safe
-				{
-					if( l_element != r_element )
-					{
-						return false;
-					}
-				}
+				return false;
 			}
 		}
 
@@ -204,10 +196,7 @@ public:
 
 		if( i0 == i1 ){ return; }
 
-		unsafe
-		{
-			ust::swap( $>(begin_ + i0), $>(begin_ + i1) );
-		}
+		ust::swap( unsafe( $>(begin_ + i0) ), unsafe( $>(begin_ + i1) ) );
 	}
 
 private:

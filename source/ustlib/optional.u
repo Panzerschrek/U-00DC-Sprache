@@ -30,10 +30,7 @@ public:
 	fn conversion_constructor( mut this'a', T mut val'b' ) ' a <- b '
 	( storage_= zero_init, has_value_= true  ) // TODO - initialize with unsafe 
 	{
-		unsafe
-		{
-			move_into_uninitialized( deref_unchecked(), move(val) );
-		}
+		unsafe( move_into_uninitialized( deref_unchecked(), move(val) ) );
 	}
 
 	// Copy constructor
@@ -42,10 +39,7 @@ public:
 	{
 		if( other.has_value_ )
 		{
-			unsafe
-			{
-				move_into_uninitialized( deref_unchecked(), other.deref_unchecked() );
-			}
+			unsafe( move_into_uninitialized( deref_unchecked(), other.deref_unchecked() ) );
 		}
 	}
 
@@ -53,10 +47,7 @@ public:
 	{
 		if( has_value_ )
 		{
-			unsafe
-			{
-				call_destructor( deref_unchecked() );
-			}
+			unsafe( call_destructor( deref_unchecked() ) );
 		}
 	}
 
@@ -165,10 +156,7 @@ public:
 	{
 		if( !empty() )
 		{
-			unsafe
-			{
-				call_destructor( deref_unchecked() );
-			}
+			unsafe( call_destructor( deref_unchecked() ) );
 			has_value_= false;
 		} 
 	}
