@@ -899,7 +899,7 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 	{
 		unsafe
 		{
-			debug_assert( LLVMTypeOf( dst ) == LLVMTypeOf( src ) );
+			debug_assert( LLVMTypeOf( dst ) == LLVMTypeOf( src ), "Copying incompatible types!" );
 			auto mut value= CreateTypedLoad( function_context, t, src );
 			CreateTypedStore( function_context, t, value, dst );
 		}
@@ -970,7 +970,7 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 	{
 		unsafe
 		{
-			debug_assert( LLVMTypeOf( dst ) == LLVMTypeOf( src ) );
+			debug_assert( LLVMTypeOf( dst ) == LLVMTypeOf( src ), "Copying incompatible types!" );
 			auto mut value= CreateTypedLoad( function_context, t, src );
 			CreateTypedStore( function_context, t, value, dst );
 		}

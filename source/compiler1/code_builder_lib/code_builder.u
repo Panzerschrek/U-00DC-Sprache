@@ -3326,7 +3326,7 @@ fn CodeBuilder::SaveFunctionContextState( FunctionContext& function_context ) : 
 fn CodeBuilder::RestoreFunctionContextState( FunctionContext &mut function_context, FunctionContextState& state )
 {
 	// Make sure no new basic blocks were added.
-	debug_assert( state.current_block == unsafe( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ) );
+	debug_assert( state.current_block == unsafe( LLVMGetInsertBlock( function_context.llvm_ir_builder ) ), "Basic blocks were added during preevaluation!" );
 	// New instructions may still be added - in case of GEP for structs or tuples. But it is fine since such instructions have no side-effects.
 
 	function_context.references_graph= state.references_graph;

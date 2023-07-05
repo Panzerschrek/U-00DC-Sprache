@@ -1909,7 +1909,7 @@ fn CodeBuilder::AccessDirectClassField(
 {
 	var VariableLite variable= variable_ptr.lock_imut().deref();
 	var ClassTypePtr class_type= variable.t.GetClassType().try_deref();
-	debug_assert( class_type == field.source_class );
+	debug_assert( class_type == field.source_class, "Accessing non-direct class field!" );
 
 	var ust::string8 mut node_name= variable_ptr.lock_imut().deref().name;
 	node_name+= ".";
