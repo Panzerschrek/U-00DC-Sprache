@@ -371,8 +371,8 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 std::string GenerateCompilerPreludeCode(
 	const llvm::Triple& target_triple,
 	const llvm::DataLayout& data_layout,
-	const std::string_view& features,
-	const std::string_view cpu_name )
+	const llvm::StringRef features,
+	const llvm::StringRef cpu_name )
 {
 	std::ostringstream ss;
 
@@ -388,7 +388,7 @@ std::string GenerateCompilerPreludeCode(
 		{
 			ss << "var char8 optimization_level = \"" << Options::optimization_level << "\"c8;\n";
 			ss << "var bool generate_debug_info = " << (Options::generate_debug_info ? "true" : "false") << ";\n";
-			ss << "auto& cpu_name = \"" << cpu_name << "\";\n";
+			ss << "auto& cpu_name = \"" << cpu_name.str() << "\";\n";
 
 			// Features
 			{
@@ -420,11 +420,11 @@ std::string GenerateCompilerPreludeCode(
 		ss << "namespace target\n{\n";
 		{
 			ss << "auto& str = \"" << target_triple.str() << "\";\n";
-			ss << "auto& arch = \"" << std::string_view(target_triple.getArchName()) << "\";\n";
-			ss << "auto& vendor = \"" << std::string_view(target_triple.getVendorName()) << "\";\n";
-			ss << "auto& os = \"" << std::string_view(target_triple.getOSName()) << "\";\n";
-			ss << "auto& environment = \"" << std::string_view(target_triple.getEnvironmentName() )<< "\";\n";
-			ss << "auto& os_and_environment = \"" << std::string_view(target_triple.getOSAndEnvironmentName()) << "\";\n";
+			ss << "auto& arch = \"" << target_triple.getArchName().str() << "\";\n";
+			ss << "auto& vendor = \"" << target_triple.getVendorName().str() << "\";\n";
+			ss << "auto& os = \"" << target_triple.getOSName().str() << "\";\n";
+			ss << "auto& environment = \"" << target_triple.getEnvironmentName().str() << "\";\n";
+			ss << "auto& os_and_environment = \"" << target_triple.getOSAndEnvironmentName().str() << "\";\n";
 
 			ss << "var bool is_big_endian = " << (data_layout.isBigEndian() ? "true" : "false") << ";\n";
 		}
