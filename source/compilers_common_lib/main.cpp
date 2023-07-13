@@ -870,6 +870,7 @@ int Main( int argc, const char* argv[] )
 	// Create and run optimization passes.
 	{
 		llvm::PipelineTuningOptions tuning_options;
+		tuning_options.LoopInterleaving= optimization_level.getSpeedupLevel() > 0;
 		tuning_options.LoopUnrolling= optimization_level.getSpeedupLevel() > 0;
 		tuning_options.LoopVectorization= optimization_level.getSpeedupLevel() > 1 && optimization_level.getSizeLevel() < 2;
 		tuning_options.SLPVectorization= optimization_level.getSpeedupLevel() > 1 && optimization_level.getSizeLevel() < 2;
