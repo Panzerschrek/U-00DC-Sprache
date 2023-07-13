@@ -875,6 +875,9 @@ int Main( int argc, const char* argv[] )
 		tuning_options.LoopVectorization= optimization_level.getSpeedupLevel() > 1 && optimization_level.getSizeLevel() < 2;
 		tuning_options.SLPVectorization= optimization_level.getSpeedupLevel() > 1 && optimization_level.getSizeLevel() < 2;
 
+		// Do not care about function address uniqueness.
+		tuning_options.MergeFunctions= optimization_level.getSpeedupLevel() > 0 || optimization_level.getSizeLevel() > 0;
+
 		llvm::PassBuilder pass_builder( target_machine.get(), tuning_options );
 
 		// Register all the basic analyses with the managers.
