@@ -2,9 +2,9 @@ import "funcs_u.uh"
 
 // If contents of this file changed, source_file_contents_hash_wrapper.hpp must be changed too!
 
-type CalculateSourceFileContentsHashCallback= fn( UserHandle data,  U1_StringView& hash );
+type U1_CalculateSourceFileContentsHashCallback= fn( U1_UserHandle data, U1_StringView& hash );
 
 fn nomangle U1_CalculateSourceFileContentsHash(
 	U1_StringView& contents,
-	CalculateSourceFileContentsHashCallback callback,
-	UserHandle callback_data ) unsafe;
+	U1_CalculateSourceFileContentsHashCallback callback,
+	U1_UserHandle callback_data ) unsafe;

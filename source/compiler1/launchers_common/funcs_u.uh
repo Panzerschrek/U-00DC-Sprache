@@ -14,13 +14,26 @@ struct U1_SourceFile ordered
 	U1_StringView file_content;
 }
 
-type UserHandle= size_type; // pointer, index, etc - any kind of handle for user data identification.
+type U1_UserHandle= size_type; // pointer, index, etc - any kind of handle for user data identification.
 
-struct ErrorsHandlingCallbacks ordered
+struct U1_ErrorsHandlingCallbacks ordered
 {
-	( fn( UserHandle data, u32 file_index, u32 line, u32 column, u32 error_code, U1_StringView& error_text ) unsafe : UserHandle ) error_callback;
-	( fn( UserHandle data, u32 file_index, u32 line, u32 column, U1_StringView& context_name, U1_StringView& args_description ) unsafe : UserHandle ) template_errors_context_callback;
+	( fn( U1_UserHandle data, u32 file_index, u32 line, u32 column, u32 error_code, U1_StringView& error_text ) unsafe : U1_UserHandle ) error_callback;
+	( fn( U1_UserHandle data, u32 file_index, u32 line, u32 column, U1_StringView& context_name, U1_StringView& args_description ) unsafe : U1_UserHandle ) template_errors_context_callback;
 }
+
+struct U1_IVfsInterface ordered
+{
+	type FillStringCallback= fn( U1_UserHandle user_data, U1_StringView& result_path_normalized );
+
+	U1_UserHandle this_;
+	( fn( U1_UserHandle this_, U1_StringView& file_path, U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, U1_UserHandle user_data ) ) normalize_path_function;
+	( fn( U1_UserHandle this_, U1_StringView& full_file_path, FillStringCallback result_callback, U1_UserHandle user_data ) : bool ) load_file_content_function;
+}
+
+type U1_SourceFilePathCallback= fn( U1_UserHandle data, U1_StringView& file_path_normalized );
+
+type U1_LexSyntErrorCallback= fn( U1_UserHandle data, u32 file_index, u32 line, u32 column, U1_StringView& text );
 
 fn nomangle U1_BuildProgram(
 	U1_StringView& program_text,
@@ -32,13 +45,13 @@ fn nomangle U1_BuildProgramWithErrors(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	ErrorsHandlingCallbacks& errors_handling_callbacks,
-	UserHandle data ) unsafe : bool;
+	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
+	U1_UserHandle data ) unsafe : bool;
 
 fn nomangle U1_BuildProgramWithSyntaxErrors(
 	U1_StringView& program_text,
-	ErrorsHandlingCallbacks& errors_handling_callbacks,
-	UserHandle data ) unsafe;
+	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
+	U1_UserHandle data ) unsafe;
 
 fn nomangle U1_BuildMultisourceProgram(
 	U1_SourceFile& source_files,
@@ -53,8 +66,8 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	ErrorsHandlingCallbacks& errors_handling_callbacks,
-	UserHandle data ) unsafe : bool;
+	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
+	U1_UserHandle data ) unsafe : bool;
 
 fn nomangle U1_BuildProgramForLifetimesTest(
 	U1_StringView& program_text,
@@ -66,21 +79,8 @@ fn nomangle U1_BuildProgramForMSVCManglingTest(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
 
-struct IVfsInterface ordered
-{
-	type FillStringCallback= fn( UserHandle user_data, U1_StringView& result_path_normalized );
-
-	UserHandle this_;
-	( fn( UserHandle this_, U1_StringView& file_path, U1_StringView& parent_file_path_normalized, FillStringCallback result_callback, UserHandle user_data ) ) normalize_path_function;
-	( fn( UserHandle this_, U1_StringView& full_file_path, FillStringCallback result_callback, UserHandle user_data ) : bool ) load_file_content_function;
-}
-
-type SourceFilePathCallback= fn( UserHandle data, U1_StringView& file_path_normalized );
-
-type LexSyntErrorCallback= fn( UserHandle data, u32 file_index, u32 line, u32 column, U1_StringView& text );
-
 fn nomangle U1_BuildProgramUsingVFS(
-	IVfsInterface& vfs_interface,
+	U1_IVfsInterface& vfs_interface,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
@@ -89,9 +89,9 @@ fn nomangle U1_BuildProgramUsingVFS(
 	bool generate_tbaa_metadata,
 	U1::ManglingScheme mangling_scheme,
 	U1_StringView& prelude_code,
-	SourceFilePathCallback result_source_file_path_callback,
-	UserHandle result_source_file_path_processing_data,
-	LexSyntErrorCallback lex_synt_error_callback,
-	UserHandle lex_synt_error_callback_data,
-	ErrorsHandlingCallbacks& errors_handling_callbacks,
-	UserHandle error_processing_data ) : LLVMModuleRef;
+	U1_SourceFilePathCallback result_source_file_path_callback,
+	U1_UserHandle result_source_file_path_processing_data,
+	U1_LexSyntErrorCallback lex_synt_error_callback,
+	U1_UserHandle lex_synt_error_callback_data,
+	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
+	U1_UserHandle error_processing_data ) : LLVMModuleRef;

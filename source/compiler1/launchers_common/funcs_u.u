@@ -5,45 +5,6 @@ import "print.uh"
 import "source_file_contents_hash_wrapper.uh"
 import "funcs_u.uh"
 
-fn GetTestsTargetTripleStr() : ust::string8
-{
-	return "\0";
-}
-
-fn U1_ProcessCodeBuilderErrors(
-	ErrorsHandlingCallbacks& errors_handling_callbacks,
-	UserHandle data,
-	U1::ErrorsContainer& errors )
-{
-	foreach( & err : errors )
-	{
-		unsafe
-		{
-			var U1_StringView text_view{ .data= cast_mut(err.text).data(), .size= err.text.size() };
-
-			var UserHandle error_data= errors_handling_callbacks.error_callback( data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), u32(err.code), text_view );
-			if( !err.errors_context.empty() )
-			{
-				auto lock= err.errors_context.try_lock_imut();
-				var U1::TemplateErrorsContext& errors_context= lock.deref();
-
-				var U1_StringView context_name{ .data= cast_mut(errors_context.context_name).data(), .size= errors_context.context_name.size() };
-				var U1_StringView args_description{ .data= cast_mut(errors_context.args_description).data(), .size= errors_context.args_description.size() };
-
-				var UserHandle context_user_handle= errors_handling_callbacks.template_errors_context_callback(
-					error_data,
-					errors_context.context_declaration_src_loc.GetFileIndex(),
-					errors_context.context_declaration_src_loc.GetLine(),
-					errors_context.context_declaration_src_loc.GetColumn(),
-					context_name,
-					args_description );
-
-				U1_ProcessCodeBuilderErrors( errors_handling_callbacks, context_user_handle, errors_context.errors.lock_imut().deref() );
-			}
-		}
-	}
-}
-
 fn nomangle U1_BuildProgram(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
@@ -64,7 +25,7 @@ fn nomangle U1_BuildProgram(
 				return LLVMModuleRef::Null;
 			}
 
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -83,8 +44,8 @@ fn nomangle U1_BuildProgramWithErrors(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	ErrorsHandlingCallbacks& errors_handling_callbacks,
-	UserHandle data ) unsafe : bool
+	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
+	U1_UserHandle data ) unsafe : bool
 {
 	unsafe
 	{
@@ -101,12 +62,12 @@ fn nomangle U1_BuildProgramWithErrors(
 				return false;
 			}
 
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
 
-			U1_ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors );
+			U1::ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors );
 		}
 	}
 
@@ -115,8 +76,8 @@ fn nomangle U1_BuildProgramWithErrors(
 
 fn nomangle U1_BuildProgramWithSyntaxErrors(
 	U1_StringView& program_text,
-	ErrorsHandlingCallbacks& errors_handling_callbacks,
-	UserHandle data ) unsafe
+	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
+	U1_UserHandle data ) unsafe
 {
 	unsafe
 	{
@@ -140,7 +101,7 @@ fn nomangle U1_BuildProgramWithSyntaxErrors(
 }
 
 fn nomangle U1_BuildProgramUsingVFS(
-	IVfsInterface& vfs_interface,
+	U1_IVfsInterface& vfs_interface,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
@@ -149,12 +110,12 @@ fn nomangle U1_BuildProgramUsingVFS(
 	bool generate_tbaa_metadata,
 	U1::ManglingScheme mangling_scheme,
 	U1_StringView& prelude_code,
-	SourceFilePathCallback result_source_file_path_callback,
-	UserHandle result_source_file_path_processing_data,
-	LexSyntErrorCallback lex_synt_error_callback,
-	UserHandle lex_synt_error_callback_data,
-	ErrorsHandlingCallbacks& errors_handling_callbacks,
-	UserHandle error_processing_data ) : LLVMModuleRef
+	U1_SourceFilePathCallback result_source_file_path_callback,
+	U1_UserHandle result_source_file_path_processing_data,
+	U1_LexSyntErrorCallback lex_synt_error_callback,
+	U1_UserHandle lex_synt_error_callback_data,
+	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
+	U1_UserHandle error_processing_data ) : LLVMModuleRef
 {
 	var U1::ExternalVfsWrapper mut vfs( vfs_interface );
 
@@ -201,7 +162,7 @@ fn nomangle U1_BuildProgramUsingVFS(
 		var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options );
 		auto code_builder_res= code_builder.BuildProgram( source_graph );
 
-		U1_ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors );
+		U1::ProcessCodeBuilderErrors( errors_handling_callbacks, error_processing_data, code_builder_res.errors );
 
 		if( !code_builder_res.errors.empty() )
 		{
@@ -230,7 +191,7 @@ fn nomangle U1_BuildMultisourceProgram(
 		return LLVMModuleRef::Null;
 	}
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -249,8 +210,8 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
-	ErrorsHandlingCallbacks& errors_handling_callbacks,
-	UserHandle data ) unsafe : bool
+	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
+	U1_UserHandle data ) unsafe : bool
 {
 	var ust::string8 root_file_path_str= unsafe( U1::StringToArrayView( root_file_path.data, root_file_path.size ) );
 
@@ -262,12 +223,12 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 		return false;
 	}
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
 
-	U1_ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors );
+	U1::ProcessCodeBuilderErrors( errors_handling_callbacks, data, code_builder_res.errors );
 
 	return true;
 }
@@ -293,7 +254,7 @@ fn nomangle U1_BuildProgramForLifetimesTest(
 			}
 
 			var U1::CodeBuilderOptions options{ .build_debug_info= true, .create_lifetimes= true, .generate_lifetime_start_end_debug_calls= true };
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, GetTestsTargetTripleStr(), options );
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -329,7 +290,7 @@ fn nomangle U1_BuildProgramForMSVCManglingTest(
 			}
 
 			var U1::CodeBuilderOptions options{ .build_debug_info= true, .mangling_scheme= U1::ManglingScheme::MSVC64 };
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, GetTestsTargetTripleStr(), options );
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -346,6 +307,46 @@ fn nomangle U1_BuildProgramForMSVCManglingTest(
 
 namespace U1
 {
+
+
+fn GetTestsTargetTripleStr() : ust::string8
+{
+	return "\0";
+}
+
+fn ProcessCodeBuilderErrors(
+	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
+	U1_UserHandle data,
+	U1::ErrorsContainer& errors )
+{
+	foreach( & err : errors )
+	{
+		unsafe
+		{
+			var U1_StringView text_view{ .data= cast_mut(err.text).data(), .size= err.text.size() };
+
+			var U1_UserHandle error_data= errors_handling_callbacks.error_callback( data, err.src_loc.GetFileIndex(), err.src_loc.GetLine(), err.src_loc.GetColumn(), u32(err.code), text_view );
+			if( !err.errors_context.empty() )
+			{
+				auto lock= err.errors_context.try_lock_imut();
+				var U1::TemplateErrorsContext& errors_context= lock.deref();
+
+				var U1_StringView context_name{ .data= cast_mut(errors_context.context_name).data(), .size= errors_context.context_name.size() };
+				var U1_StringView args_description{ .data= cast_mut(errors_context.args_description).data(), .size= errors_context.args_description.size() };
+
+				var U1_UserHandle context_user_handle= errors_handling_callbacks.template_errors_context_callback(
+					error_data,
+					errors_context.context_declaration_src_loc.GetFileIndex(),
+					errors_context.context_declaration_src_loc.GetLine(),
+					errors_context.context_declaration_src_loc.GetColumn(),
+					context_name,
+					args_description );
+
+				ProcessCodeBuilderErrors( errors_handling_callbacks, context_user_handle, errors_context.errors.lock_imut().deref() );
+			}
+		}
+	}
+}
 
 fn GetCodeBuilderOptionsForTests() : CodeBuilderOptions
 {
@@ -434,18 +435,18 @@ fn CalculateSourceFileContentsHash( ust::array_view_imut</ char8 /> source_file_
 
 		var ust::string8 mut result;
 		var $(ust::string8) result_ptr= $<(result);
-		auto result_handle= cast_ref_unsafe</UserHandle/>(result_ptr);
+		auto result_handle= cast_ref_unsafe</U1_UserHandle/>(result_ptr);
 
 		U1_CalculateSourceFileContentsHash(
 			source_file_contents_view,
-			CalculateSourceFileContentsHashCallback( CalculateSourceFileContentsHashCallbackFunc ),
+			U1_CalculateSourceFileContentsHashCallback( CalculateSourceFileContentsHashCallbackFunc ),
 			result_handle );
 
 		return result;
 	}
 }
 
-fn CalculateSourceFileContentsHashCallbackFunc( UserHandle data, U1_StringView& hash )
+fn CalculateSourceFileContentsHashCallbackFunc( U1_UserHandle data, U1_StringView& hash )
 {
 	unsafe
 	{
@@ -507,7 +508,7 @@ private:
 class ExternalVfsWrapper final : IVfs
 {
 public:
-	fn constructor( IVfsInterface mut vfs_interface )
+	fn constructor( U1_IVfsInterface mut vfs_interface )
 		( vfs_interface_= move(vfs_interface) )
 	{}
 
@@ -528,7 +529,7 @@ public:
 				vfs_interface_.this_,
 				file_path_view,
 				parent_file_path_normalized_view,
-				IVfsInterface::FillStringCallback(FillStringCallback),
+				U1_IVfsInterface::FillStringCallback(FillStringCallback),
 				ust::ref_to_int( result ) );
 			return move(result);
 		}
@@ -545,7 +546,7 @@ public:
 			var bool ok= vfs_interface_.load_file_content_function(
 				vfs_interface_.this_,
 				full_file_path_view,
-				IVfsInterface::FillStringCallback(FillStringCallback),
+				U1_IVfsInterface::FillStringCallback(FillStringCallback),
 				ust::ref_to_int( result ) );
 			if( ok )
 			{
@@ -556,7 +557,7 @@ public:
 	}
 
 private:
-	fn FillStringCallback( UserHandle user_data, U1_StringView& result_path_normalized )
+	fn FillStringCallback( U1_UserHandle user_data, U1_StringView& result_path_normalized )
 	{
 		unsafe
 		{
@@ -566,7 +567,7 @@ private:
 	}
 
 private:
-	IVfsInterface vfs_interface_;
+	U1_IVfsInterface vfs_interface_;
 }
 
 } // namespace U1

@@ -1,6 +1,7 @@
 #include <fstream>
 #include <iostream>
-#include "print.hpp"
+
+using CppIoStreamRef= void*;
 
 static std::ostream& Unwrap(const CppIoStreamRef stream )
 {
@@ -10,6 +11,10 @@ static std::ostream& Unwrap(const CppIoStreamRef stream )
 extern "C"
 {
 
+// If contents of this file changed, print.uh must be changed too!
+
+// Print to given stream
+
 CppIoStreamRef U1_GetCerr()
 {
 	return &std::cerr;
@@ -18,16 +23,6 @@ CppIoStreamRef U1_GetCerr()
 void U1_PrintStr( const CppIoStreamRef stream, const char* const string_null_termainated )
 {
 	Unwrap(stream) << string_null_termainated;
-}
-
-void U1_PrintInt( const CppIoStreamRef stream, const int64_t i )
-{
-	Unwrap(stream) << i;
-}
-
-void U1_PrintEndl( const CppIoStreamRef stream )
-{
-	Unwrap(stream) << std::endl;
 }
 
 } // extern "C"

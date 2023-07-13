@@ -18,11 +18,11 @@ const std::string StringViewToString( const U1_StringView view )
 }
 
 void GetFullFilePath(
-	const UserHandle this_,
+	const U1_UserHandle this_,
 	const U1_StringView& file_path,
 	const U1_StringView& parent_file_path_normalized,
-	const  IVfsInterface::FillStringCallback result_callback,
-	const UserHandle user_data )
+	const  U1_IVfsInterface::FillStringCallback result_callback,
+	const U1_UserHandle user_data )
 {
 	const std::string path=
 		reinterpret_cast<IVfs*>(this_)->GetFullFilePath(
@@ -33,10 +33,10 @@ void GetFullFilePath(
 }
 
 bool LoadFileContent(
-	const UserHandle this_,
+	const U1_UserHandle this_,
 	const U1_StringView& path_normalized,
-	const IVfsInterface::FillStringCallback result_callback,
-	const UserHandle user_data )
+	const U1_IVfsInterface::FillStringCallback result_callback,
+	const U1_UserHandle user_data )
 {
 	const std::optional<IVfs::FileContent> file_content=
 		reinterpret_cast<IVfs*>(this_)->LoadFileContent( StringViewToString(path_normalized) );
@@ -48,8 +48,8 @@ bool LoadFileContent(
 	return true;
 }
 
-UserHandle ErrorHanlder(
-	const UserHandle data, // should be "CodeBuilderErrorsContainer"
+U1_UserHandle ErrorHanlder(
+	const U1_UserHandle data, // should be "CodeBuilderErrorsContainer"
 	const uint32_t file_index,
 	const uint32_t line,
 	const uint32_t column,
@@ -63,11 +63,11 @@ UserHandle ErrorHanlder(
 
 	const auto errors_container= reinterpret_cast<CodeBuilderErrorsContainer*>(data);
 	errors_container->push_back( std::move(error) );
-	return reinterpret_cast<UserHandle>(&errors_container->back());
+	return reinterpret_cast<U1_UserHandle>(&errors_container->back());
 }
 
-UserHandle TemplateErrorsContextHandler(
-	const UserHandle data, // should be "CodeBuilderError*"
+U1_UserHandle TemplateErrorsContextHandler(
+	const U1_UserHandle data, // should be "CodeBuilderError*"
 	const uint32_t file_index,
 	const uint32_t line,
 	const uint32_t column,
@@ -80,19 +80,19 @@ UserHandle TemplateErrorsContextHandler(
 	out_error->template_context->context_name= StringViewToString( context_name );
 	out_error->template_context->parameters_description= StringViewToString( args_description );
 
-	return reinterpret_cast<UserHandle>(&out_error->template_context->errors);
+	return reinterpret_cast<U1_UserHandle>(&out_error->template_context->errors);
 }
 
 
 void SourceFilePathProcessingFunction(
-	const UserHandle data, // should be "std::vector<IVfs::Path>*"
+	const U1_UserHandle data, // should be "std::vector<IVfs::Path>*"
 	const U1_StringView& file_path )
 {
 	reinterpret_cast< std::vector<IVfs::Path>* >(data)->push_back( StringViewToString(file_path) );
 }
 
 void LexSyntErrorProcessingFunction(
-	const UserHandle data, // Should be "LexSyntErrors*"
+	const U1_UserHandle data, // Should be "LexSyntErrors*"
 	const uint32_t file_index,
 	const uint32_t line,
 	const uint32_t column,
@@ -122,7 +122,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 
 	const LLVMModuleRef llvm_module=
 		U1_BuildProgramUsingVFS(
-			IVfsInterface{ reinterpret_cast<UserHandle>(&vfs), GetFullFilePath, LoadFileContent },
+			U1_IVfsInterface{ reinterpret_cast<U1_UserHandle>(&vfs), GetFullFilePath, LoadFileContent },
 			StringToStringView(input_file),
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout ),
@@ -132,11 +132,11 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			mangling_scheme,
 			StringToStringView(prelude_code),
 			SourceFilePathProcessingFunction,
-			reinterpret_cast<UserHandle>(&result.dependent_files),
+			reinterpret_cast<U1_UserHandle>(&result.dependent_files),
 			LexSyntErrorProcessingFunction,
-			reinterpret_cast<UserHandle>(&result.lex_synt_errors),
-			ErrorsHandlingCallbacks{ ErrorHanlder, TemplateErrorsContextHandler },
-			reinterpret_cast<UserHandle>(&result.code_builder_errors) );
+			reinterpret_cast<U1_UserHandle>(&result.lex_synt_errors),
+			U1_ErrorsHandlingCallbacks{ ErrorHanlder, TemplateErrorsContextHandler },
+			reinterpret_cast<U1_UserHandle>(&result.code_builder_errors) );
 
 	if( llvm_module == nullptr )
 		return result;

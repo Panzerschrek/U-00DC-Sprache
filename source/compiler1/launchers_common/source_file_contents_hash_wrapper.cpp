@@ -3,12 +3,12 @@
 
 // If contents of this file changed, source_file_contents_hash_wrapper.uh must be changed too!
 
-using CalculateSourceFileContentsHashCallback= void(*)( UserHandle data, const U1_StringView& hash );
+using U1_CalculateSourceFileContentsHashCallback= void(*)( U1_UserHandle data, const U1_StringView& hash );
 
 extern "C" void U1_CalculateSourceFileContentsHash(
 	const U1_StringView& contents,
-	const CalculateSourceFileContentsHashCallback callback,
-	const UserHandle callback_data )
+	const U1_CalculateSourceFileContentsHashCallback callback,
+	const U1_UserHandle callback_data )
 {
 	const std::string hash= U::CalculateSourceFileContentsHash( std::string_view( contents.data, contents.size ) );
 	callback( callback_data, U1_StringView{ hash.data(), hash.size() } );

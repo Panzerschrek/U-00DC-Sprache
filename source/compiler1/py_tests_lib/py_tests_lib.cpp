@@ -258,8 +258,8 @@ PyObject* BuildString( const U1_StringView& str )
 	return PyUnicode_DecodeUTF8( str.data, Py_ssize_t(str.size), nullptr );
 }
 
-UserHandle ErrorHandler(
-	const UserHandle data, // Should be python list
+U1_UserHandle ErrorHandler(
+	const U1_UserHandle data, // Should be python list
 	const uint32_t file_index,
 	const uint32_t line,
 	const uint32_t column,
@@ -277,11 +277,11 @@ UserHandle ErrorHandler(
 
 	PyList_Append( reinterpret_cast<PyObject*>(data), dict );
 
-	return reinterpret_cast<UserHandle>(dict);
+	return reinterpret_cast<U1_UserHandle>(dict);
 }
 
-UserHandle TemplateErrorsContextHandler(
-	const UserHandle data, // should be python dictionary
+U1_UserHandle TemplateErrorsContextHandler(
+	const U1_UserHandle data, // should be python dictionary
 	const uint32_t file_index,
 	const uint32_t line,
 	const uint32_t column,
@@ -299,10 +299,10 @@ UserHandle TemplateErrorsContextHandler(
 
 	PyDict_SetItemString( reinterpret_cast<PyObject*>(data), "template_context", dict );
 
-	return reinterpret_cast<UserHandle>(errors_list);
+	return reinterpret_cast<U1_UserHandle>(errors_list);
 }
 
-const ErrorsHandlingCallbacks g_error_handling_callbacks
+const U1_ErrorsHandlingCallbacks g_error_handling_callbacks
 {
 	ErrorHandler,
 	TemplateErrorsContextHandler,
@@ -329,7 +329,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
 			g_error_handling_callbacks,
-			reinterpret_cast<UserHandle>(errors_list) );
+			reinterpret_cast<U1_UserHandle>(errors_list) );
 
 	llvm::llvm_shutdown();
 
@@ -353,7 +353,7 @@ PyObject* BuildProgramWithSyntaxErrors( PyObject* const self, PyObject* const ar
 
 	const U1_StringView text_view{ program_text, std::strlen(program_text) };
 	PyObject* const errors_list= PyList_New(0);
-	U1_BuildProgramWithSyntaxErrors( text_view, g_error_handling_callbacks, reinterpret_cast<UserHandle>(errors_list) );
+	U1_BuildProgramWithSyntaxErrors( text_view, g_error_handling_callbacks, reinterpret_cast<U1_UserHandle>(errors_list) );
 
 	return errors_list;
 }
