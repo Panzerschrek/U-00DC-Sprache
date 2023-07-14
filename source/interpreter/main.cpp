@@ -203,9 +203,17 @@ int Main( int argc, const char* argv[] )
 	// TODO - run here optimizations?
 
 	llvm::EngineBuilder builder(std::move(result_module));
+	std::string engine_creation_error_string;
 	builder.setEngineKind(llvm::EngineKind::JIT);
 	builder.setMemoryManager(std::make_unique<llvm::SectionMemoryManager>());
+	builder.setErrorStr( &engine_creation_error_string );
 	const std::unique_ptr<llvm::ExecutionEngine> engine(builder.create(target_machine.release())); // Engine takes ownership over target machine.
+
+	if( engine == nullptr )
+	{
+		std::cerr << "Can't create engine: " << engine_creation_error_string << std::endl;
+		return 1;
+	}
 
 	const auto main_function_llvm= engine->FindFunctionNamed(Options::entry_point_name);
 	if( main_function_llvm == nullptr )
