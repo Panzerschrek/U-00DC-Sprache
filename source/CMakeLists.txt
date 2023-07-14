@@ -218,7 +218,6 @@ if( U_BUILD_COMPILER )
 	file( GLOB COMPILERS_COMMON_LIB_SOURCES "compilers_common_lib/*" )
 	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} )
 	target_link_libraries( CompilersCommonLib CompilersSupportLib )
-	target_include_directories( CompilersCommonLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 
 	install( FILES ${USTLIB_SOURCES} DESTINATION "ustlib" )
 
