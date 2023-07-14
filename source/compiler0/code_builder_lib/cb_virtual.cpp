@@ -103,7 +103,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 	{
 		FunctionVariable* function;
 		std::string name;
-		bool operator<( ClassFunction& other ) const{ return this->function->llvm_function->name_mangled < other.function->llvm_function->name_mangled; }
+		bool operator<( const ClassFunction& other ) const{ return this->function->llvm_function->name_mangled < other.function->llvm_function->name_mangled; }
 	};
 	std::vector<ClassFunction> class_functions;
 
