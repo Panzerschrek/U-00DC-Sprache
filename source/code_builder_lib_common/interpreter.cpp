@@ -677,11 +677,11 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 		const auto element_type= array_type->getElementType();
 		const uint64_t element_size= data_layout_.getTypeAllocSize(element_type);
 
-		val.AggregateVal.resize(num_elements);
+		val.AggregateVal.resize(size_t(num_elements));
 		for( uint64_t i= 0; i < num_elements; ++i)
-			val.AggregateVal[i]=
+			val.AggregateVal[size_t(i)]=
 				DoLoad(
-					ptr+ i * element_size,
+					ptr + size_t(i * element_size),
 					element_type );
 	}
 	else U_ASSERT(false);
@@ -744,8 +744,8 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 		U_ASSERT( val.AggregateVal.size() == num_elements );
 		for( uint64_t i= 0; i < num_elements; ++i)
 				DoStore(
-					ptr + i * element_size,
-					val.AggregateVal[i],
+					ptr + size_t(i * element_size),
+					val.AggregateVal[size_t(i)],
 					element_type );
 	}
 	else U_ASSERT(false);

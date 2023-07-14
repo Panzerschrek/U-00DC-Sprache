@@ -248,8 +248,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			}
 		}
 
-		variable->children.resize( tuple_type->llvm_type->getNumElements(), nullptr );
-		if( const auto prev_node= variable->children[ index_value ] )
+		variable->children.resize( size_t(tuple_type->llvm_type->getNumElements()), nullptr );
+		if( const auto prev_node= variable->children[ size_t(index_value) ] )
 		{
 			function_context.variables_state.AddNodeIfNotExists( prev_node );
 			return Value( prev_node, indexation_operator.src_loc_ ); // Child node already created.
