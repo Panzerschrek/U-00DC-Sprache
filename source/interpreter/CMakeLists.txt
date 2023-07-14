@@ -1,6 +1,10 @@
 file( GLOB_RECURSE SOURCES "*.cpp" )
 file( GLOB_RECURSE HEADERS "*.hpp" )
 
+if( U_EMSCRIPTEN )
+	set(CMAKE_EXECUTABLE_SUFFIX ".html")
+endif()
+
 add_executable( Interpreter ${SOURCES} ${HEADERS} )
 # Link directly against CodeBuilderLib of compiler0. There is no reason to use compiler1 for interpreter.
 target_link_libraries( Interpreter CodeBuilderLib CompilersSupportLib ${LLVM_LIBS_FOR_INTERPRETER} )
