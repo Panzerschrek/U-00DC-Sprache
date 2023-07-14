@@ -1,36 +1,15 @@
 #include <iostream>
 
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/Analysis/CGSCCPassManager.h>
-#include <llvm/Analysis/TargetTransformInfo.h>
-#include <llvm/AsmParser/Parser.h>
-#include <llvm/Bitcode/BitcodeReader.h>
-#include <llvm/Bitcode/BitcodeWriterPass.h>
-#include <llvm/CodeGen/TargetPassConfig.h>
-#include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
-#include <llvm/InitializePasses.h>
-#include <llvm/IR/Constants.h>
-#include <llvm/IR/LegacyPassManager.h>
-#include <llvm/IR/PassManager.h>
-#include <llvm/IR/Verifier.h>
 #include <llvm/Linker/Linker.h>
 #include <llvm/MC/SubtargetFeature.h>
 #include <llvm/MC/TargetRegistry.h>
-#include <llvm/Passes/PassBuilder.h>
-#include <llvm/Support/CodeGen.h>
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/Host.h>
 #include <llvm/Support/InitLLVM.h>
-#include <llvm/Support/MemoryBuffer.h>
-#include <llvm/Support/raw_os_ostream.h>
-#include <llvm/Support/SourceMgr.h>
 #include <llvm/Support/TargetSelect.h>
-#include <llvm/Target/TargetMachine.h>
-#include <llvm/Transforms/IPO.h>
-#include <llvm/Transforms/IPO/GlobalDCE.h>
-#include <llvm/Transforms/IPO/Internalize.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../sprache_version/sprache_version.hpp"
