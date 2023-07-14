@@ -75,7 +75,7 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	Passes # for new PassManager.
 	${LLVM_TARGETS_TO_BUILD}
 	)
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_INTERPRETER Interpreter MCJIT )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_INTERPRETER Interpreter MCJIT ${LLVM_NATIVE_ARCH} Linker )
 
 # Python
 
@@ -212,12 +212,12 @@ if( U_BUILD_COMPILER )
 
 	file( GLOB COMPILERS_SUPPORT_LIB_SOURCES "compilers_support_lib/*" )
 	add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_SOURCES_LL} ${USTLIB_TEST_SOURCES} )
-	target_link_libraries( CompilersSupportLib ${LLVM_LIBS_FOR_COMPILER} )
+	target_link_libraries( CompilersSupportLib )
 	target_include_directories( CompilersSupportLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 
 	file( GLOB COMPILERS_COMMON_LIB_SOURCES "compilers_common_lib/*" )
 	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} )
-	target_link_libraries( CompilersCommonLib CompilersSupportLib )
+	target_link_libraries( CompilersCommonLib CompilersSupportLib ${LLVM_LIBS_FOR_COMPILER} )
 
 	install( FILES ${USTLIB_SOURCES} DESTINATION "ustlib" )
 

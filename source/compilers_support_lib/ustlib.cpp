@@ -96,4 +96,4 @@ bool LinkUstLibModules( llvm::Module& result_module, const HaltMode halt_mode, c
 	return true;
 }
 
-} // namespace
+} // namespace U

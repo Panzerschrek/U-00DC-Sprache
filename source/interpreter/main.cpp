@@ -46,18 +46,6 @@ namespace U
 namespace
 {
 
-void PrintAvailableTargets()
-{
-	std::string targets_list;
-	for( const llvm::Target& target : llvm::TargetRegistry::targets() )
-	{
-		if( !targets_list.empty() )
-			targets_list+= ", ";
-		targets_list+= target.getName();
-	}
-	std::cout << "Available targets: " << targets_list << std::endl;
-}
-
 std::string GetNativeTargetFeaturesStr()
 {
 	llvm::SubtargetFeatures features;
@@ -113,8 +101,6 @@ int Main( int argc, const char* argv[] )
 		[]( llvm::raw_ostream& )
 		{
 			std::cout << "Ü-Sprache version " << getFullVersion() << ", llvm version " << LLVM_VERSION_STRING << std::endl;
-			llvm::InitializeAllTargets();
-			PrintAvailableTargets();
 		} );
 
 	llvm::cl::HideUnrelatedOptions( Options::options_category );
@@ -126,29 +112,12 @@ int Main( int argc, const char* argv[] )
 	llvm::cl::ParseCommandLineOptions( argc, argv, description );
 
 	// LLVM stuff initialization.
-	llvm::InitializeAllTargets();
-	llvm::InitializeAllTargetMCs();
-	llvm::InitializeAllAsmPrinters();
-	llvm::InitializeAllAsmParsers();
-
-	{
-		llvm::PassRegistry& registry= *llvm::PassRegistry::getPassRegistry();
-		llvm::initializeCore(registry);
-		llvm::initializeTransformUtils(registry);
-		llvm::initializeScalarOpts(registry);
-		llvm::initializeVectorization(registry);
-		llvm::initializeInstCombine(registry);
-		llvm::initializeAggressiveInstCombine(registry);
-		llvm::initializeIPO(registry);
-		llvm::initializeInstrumentation(registry);
-		llvm::initializeAnalysis(registry);
-		llvm::initializeCodeGen(registry);
-		llvm::initializeTarget(registry);
-	}
+	llvm::InitializeNativeTarget();
+	llvm::InitializeNativeTargetAsmPrinter();
 
 	// Prepare target machine.
 	std::string target_triple_str;
-	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
+	llvm::Triple target_triple( llvm::sys::getProcessTriple() );
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	{
 		target_triple_str= target_triple.normalize();
@@ -158,7 +127,6 @@ int Main( int argc, const char* argv[] )
 		if( target == nullptr )
 		{
 			std::cerr << "Error, selecting target: " << error_str << std::endl;
-			PrintAvailableTargets();
 			return 1;
 		}
 
