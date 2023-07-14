@@ -96,6 +96,12 @@ cl::list<std::string> include_dir(
 	cl::ZeroOrMore,
 	cl::cat(options_category));
 
+cl::opt<std::string> entry_point_name(
+	"entry",
+	cl::desc("Name of entry point function. Default is \"main\"."),
+	cl::init("main"),
+	cl::cat(options_category));
+
 } // namespace Options
 
 int Main( int argc, const char* argv[] )
@@ -112,7 +118,12 @@ int Main( int argc, const char* argv[] )
 		} );
 
 	llvm::cl::HideUnrelatedOptions( Options::options_category );
-	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
+
+	const auto description=
+		"Ü-Sprache interpreter.\n"
+		"Compiles provided files and emmideately executes result.\n"
+		"Uses JIT.\n";
+	llvm::cl::ParseCommandLineOptions( argc, argv, description );
 
 	// LLVM stuff initialization.
 	llvm::InitializeAllTargets();
@@ -239,13 +250,11 @@ int Main( int argc, const char* argv[] )
 	builder.setMemoryManager(std::make_unique<llvm::SectionMemoryManager>());
 	const std::unique_ptr<llvm::ExecutionEngine> engine(builder.create(target_machine.release())); // Engine takes ownership over target machine.
 
-	const std::string entry_function_name= "main"; // TODO - customize it.
-
 	// TODO - support main with empty args or argc+argv.
-	const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(entry_function_name));
+	const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(Options::entry_point_name));
 	if( main_function == nullptr )
 	{
-		std::cerr << "Can't find main." << std::endl;
+		std::cerr << "Can't find entry point!" << std::endl;
 
 		return 1;
 	}
