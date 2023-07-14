@@ -1,0 +1,196 @@
+#include <iostream>
+
+#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Analysis/CGSCCPassManager.h>
+#include <llvm/Analysis/TargetTransformInfo.h>
+#include <llvm/AsmParser/Parser.h>
+#include <llvm/Bitcode/BitcodeReader.h>
+#include <llvm/Bitcode/BitcodeWriterPass.h>
+#include <llvm/CodeGen/TargetPassConfig.h>
+#include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/MCJIT.h>
+#include <llvm/ExecutionEngine/SectionMemoryManager.h>
+#include <llvm/InitializePasses.h>
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/PassManager.h>
+#include <llvm/IR/Verifier.h>
+#include <llvm/Linker/Linker.h>
+#include <llvm/MC/SubtargetFeature.h>
+#include <llvm/MC/TargetRegistry.h>
+#include <llvm/Passes/PassBuilder.h>
+#include <llvm/Support/CodeGen.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/Host.h>
+#include <llvm/Support/InitLLVM.h>
+#include <llvm/Support/MemoryBuffer.h>
+#include <llvm/Support/raw_os_ostream.h>
+#include <llvm/Support/SourceMgr.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/Transforms/IPO.h>
+#include <llvm/Transforms/IPO/GlobalDCE.h>
+#include <llvm/Transforms/IPO/Internalize.h>
+#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
+
+#include "../sprache_version/sprache_version.hpp"
+
+namespace U
+{
+
+namespace
+{
+
+void PrintAvailableTargets()
+{
+	std::string targets_list;
+	for( const llvm::Target& target : llvm::TargetRegistry::targets() )
+	{
+		if( !targets_list.empty() )
+			targets_list+= ", ";
+		targets_list+= target.getName();
+	}
+	std::cout << "Available targets: " << targets_list << std::endl;
+}
+
+std::string GetNativeTargetFeaturesStr()
+{
+	llvm::SubtargetFeatures features;
+
+	llvm::StringMap<bool> host_features;
+	if( llvm::sys::getHostCPUFeatures(host_features) )
+	{
+		for( auto& f : host_features )
+			features.AddFeature( f.first(), f.second );
+	}
+
+	return features.getString();
+}
+
+using MainFunctionType= int(*)();
+
+namespace Options
+{
+
+namespace cl= llvm::cl;
+
+cl::OptionCategory options_category( "Ü compier options" );
+
+cl::list<std::string> input_files(
+	cl::Positional,
+	cl::desc("<source0> [... <sourceN>]"),
+	cl::value_desc("input files"),
+	cl::OneOrMore,
+	cl::cat(options_category) );
+
+} // namespace Options
+
+int Main( int argc, const char* argv[] )
+{
+	const llvm::InitLLVM llvm_initializer(argc, argv);
+
+	// Options
+	llvm::cl::SetVersionPrinter(
+		[]( llvm::raw_ostream& )
+		{
+			std::cout << "Ü-Sprache version " << getFullVersion() << ", llvm version " << LLVM_VERSION_STRING << std::endl;
+			llvm::InitializeAllTargets();
+			PrintAvailableTargets();
+		} );
+
+	llvm::cl::HideUnrelatedOptions( Options::options_category );
+	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache compiler\n" );
+
+	// LLVM stuff initialization.
+	llvm::InitializeAllTargets();
+	llvm::InitializeAllTargetMCs();
+	llvm::InitializeAllAsmPrinters();
+	llvm::InitializeAllAsmParsers();
+
+	{
+		llvm::PassRegistry& registry= *llvm::PassRegistry::getPassRegistry();
+		llvm::initializeCore(registry);
+		llvm::initializeTransformUtils(registry);
+		llvm::initializeScalarOpts(registry);
+		llvm::initializeVectorization(registry);
+		llvm::initializeInstCombine(registry);
+		llvm::initializeAggressiveInstCombine(registry);
+		llvm::initializeIPO(registry);
+		llvm::initializeInstrumentation(registry);
+		llvm::initializeAnalysis(registry);
+		llvm::initializeCodeGen(registry);
+		llvm::initializeTarget(registry);
+	}
+
+	// Prepare target machine.
+	std::string target_triple_str;
+	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
+	std::unique_ptr<llvm::TargetMachine> target_machine;
+	{
+		target_triple_str= target_triple.normalize();
+
+		std::string error_str;
+		const llvm::Target* const target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
+		if( target == nullptr )
+		{
+			std::cerr << "Error, selecting target: " << error_str << std::endl;
+			PrintAvailableTargets();
+			return 1;
+		}
+
+		llvm::TargetOptions target_options;
+
+		target_machine.reset(
+			target->createTargetMachine(
+				target_triple_str,
+				llvm::sys::getHostCPUName(),
+				GetNativeTargetFeaturesStr(),
+				target_options,
+				llvm::Reloc::PIC_,
+				llvm::Optional<llvm::CodeModel::Model>(),
+				llvm::CodeGenOpt::None ) );
+
+		if( target_machine == nullptr )
+		{
+			std::cerr << "Error, creating target machine." << std::endl;
+			return 1;
+		}
+	}
+	const llvm::DataLayout data_layout= target_machine->createDataLayout();
+
+	std::unique_ptr<llvm::Module> module;
+	for( const std::string& input_file : Options::input_files )
+	{
+		// TODO - load source file.
+	}
+
+	// TODO - run here optimizations?
+
+	llvm::EngineBuilder builder(std::move(module));
+	builder.setEngineKind(llvm::EngineKind::JIT);
+	builder.setMemoryManager(std::make_unique<llvm::SectionMemoryManager>());
+	const std::unique_ptr<llvm::ExecutionEngine> engine(builder.create(target_machine.release())); // Engine takes ownership over target machine.
+
+	const std::string entry_function_name= "main"; // TODO - customize it.
+
+	// TODO - support main with empty args or argc+argv.
+	const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(entry_function_name));
+	if( main_function == nullptr )
+	{
+		std::cerr << "Can't find main." << std::endl;
+
+		return 1;
+	}
+
+	return main_function();
+}
+
+} // namespace
+
+} // namespace U
+
+int main( const int argc, const char* argv[] )
+{
+	// Place actual "main" body inside "U" namespace.
+	return U::Main( argc, argv );
+}

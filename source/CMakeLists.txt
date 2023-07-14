@@ -295,6 +295,12 @@ else()
 endif()
 
 #
+# Interpreter
+#
+
+add_subdirectory( interpreter )
+
+#
 # Docs
 #
 
