@@ -36,8 +36,8 @@
 #include "../sprache_version/sprache_version.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
-#include "../compilers_common_lib/errors_print.hpp"
-#include "../compilers_common_lib/vfs.hpp"
+#include "../compilers_support_lib/errors_print.hpp"
+#include "../compilers_support_lib/vfs.hpp"
 
 namespace U
 {

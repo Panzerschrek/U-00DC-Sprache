@@ -210,9 +210,14 @@ if( U_BUILD_COMPILER )
 	file( GLOB_RECURSE USTLIB_SOURCES_LL "ustlib/src/*.ll" )
 	file( GLOB_RECURSE USTLIB_TEST_SOURCES "ustlib_test/*.u" )
 
+	file( GLOB COMPILERS_SUPPORT_LIB_SOURCES "compilers_support_lib/*" )
+	add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_SOURCES_LL} ${USTLIB_TEST_SOURCES} )
+	target_link_libraries( CompilersSupportLib ${LLVM_LIBS_FOR_COMPILER} )
+	target_include_directories( CompilersSupportLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
+
 	file( GLOB COMPILERS_COMMON_LIB_SOURCES "compilers_common_lib/*" )
-	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_SOURCES_LL} ${USTLIB_TEST_SOURCES} )
-	target_link_libraries( CompilersCommonLib ${LLVM_LIBS_FOR_COMPILER} )
+	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} )
+	target_link_libraries( CompilersCommonLib CompilersSupportLib )
 	target_include_directories( CompilersCommonLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 
 	install( FILES ${USTLIB_SOURCES} DESTINATION "ustlib" )

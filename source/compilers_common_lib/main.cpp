@@ -31,13 +31,13 @@
 #include <llvm/Transforms/IPO/Internalize.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "../compilers_support_lib/errors_print.hpp"
+#include "../compilers_support_lib/vfs.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
 #include "../sprache_version/sprache_version.hpp"
 #include  "code_builder_launcher.hpp"
 #include "dep_file.hpp"
-#include "errors_print.hpp"
 #include "make_dep_file.hpp"
-#include "vfs.hpp"
 
 namespace U
 {
