@@ -34,9 +34,10 @@
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../sprache_version/sprache_version.hpp"
-#include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
+#include "../compilers_support_lib/ustlib.hpp"
 #include "../compilers_support_lib/vfs.hpp"
 
 namespace U
@@ -228,7 +229,8 @@ int Main( int argc, const char* argv[] )
 	if( have_some_errors )
 		return 1;
 
-	// TODO - link ustlib modules.
+	if( !LinkUstLibModules( *result_module, HaltMode::Abort, false ) )
+		return 1;
 
 	// TODO - run here optimizations?
 
