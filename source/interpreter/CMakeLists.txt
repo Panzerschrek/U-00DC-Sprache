@@ -2,7 +2,8 @@ file( GLOB_RECURSE SOURCES "*.cpp" )
 file( GLOB_RECURSE HEADERS "*.hpp" )
 
 if( U_EMSCRIPTEN )
-	set(CMAKE_EXECUTABLE_SUFFIX ".html")
+	set( CMAKE_EXECUTABLE_SUFFIX ".html" )
+	set( CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}--shell-file ${CMAKE_CURRENT_SOURCE_DIR}/emscripten/shell.html" )
 endif()
 
 add_executable( Interpreter ${SOURCES} ${HEADERS} )

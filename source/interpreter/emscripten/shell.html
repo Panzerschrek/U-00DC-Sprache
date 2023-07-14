@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en-us">
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>Ü Interpreter</title>
+	</head>
+	<body>
+		Input code:
+		<br>
+		<textarea id="input" style="font-family: monospace; width: 768px;" rows="12"></textarea>
+		<br>
+		<button onClick="CompileAndRun()"> Compile and run! </button>
+		<br>
+		Execution status:
+		<textarea id="execution_status" readonly style="font-family: monospace; width: 64px; resize: none;" rows="1"></textarea>
+		<br>
+		Stdout:
+		<br>
+		<textarea id="output" readonly style="font-family: monospace; width: 768px;" rows="8"></textarea>
+		<br>
+		Stderr:
+		<br>
+		<textarea id="output_err" readonly style="font-family: monospace; width: 768px;" rows="8"></textarea>
+		<script type='text/javascript'>
+
+			var text_in_element = document.getElementById('input');
+			var text_out_element = document.getElementById('output');
+			var text_out_err_element = document.getElementById('output_err');
+			var execution_status_element = document.getElementById('execution_status');
+			text_out_element.value = '';
+			text_out_err_element.value = '';
+			execution_status_element.value = '';
+
+			function CompileAndRun()
+			{
+				// Clear contents.
+				text_out_element.value = '';
+				text_out_err_element.value = '';
+				execution_status_element.value=  '';
+
+				var file_name= 'test.u';
+				var file_content = text_in_element.value;
+				FS.writeFile(file_name, file_content);
+				var call_result= callMain([file_name, '--entry', 'main']);
+				execution_status_element.value = call_result;
+			};
+
+			function PirintText(text)
+			{
+				if (arguments.length > 1)
+					text = Array.prototype.slice.call(arguments).join('');
+				console.log(text);
+				text_out_element.value += text;
+				text_out_element.scrollTop = text_out_element.scrollHeight;
+			};
+
+			function PirintErrText(text)
+			{
+				if (arguments.length > 1)
+					text = Array.prototype.slice.call(arguments).join('');
+				console.log(text);
+				text_out_err_element.value += text;
+				text_out_err_element.scrollTop = text_out_err_element.scrollHeight;
+			};
+
+			// This variable is used by template script.
+			var Module = 
+			{
+				preRun: [],
+				postRun: [],
+				print: PirintText,
+				printErr: PirintErrText,
+				setStatus: (text) => {},
+				totalDependencies: 0,
+				monitorRunDependencies: (left) => {},
+				arguments: [],
+				noInitialRun: true // Do not run at start, run only when it is necessary.
+			};
+
+		</script>
+		{{{ SCRIPT }}}
+	</body>
+</html>
