@@ -2,6 +2,11 @@
 
 project(Sprache)
 
+option( U_EMSCRIPTEN "Build for emscripten" NO )
+if( U_EMSCRIPTEN )
+	set( CMAKE_CROSSCOMPILING YES )
+endif()
+
 option( U_BUILD_COMPILER "Enable compilation of compiler" YES )
 option( U_BUILD_TESTS "Enable compilation of base tests" YES )
 option( U_BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
@@ -35,6 +40,11 @@ endif()
 
 if( DEFINED LLVM_SRC_DIR )
 	message( STATUS "Build LLVM from sources" )
+
+	# Hack for emscripten LLVM build
+	if( U_EMSCRIPTEN )
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Dwait4=__syscall_wait4")
+	endif()
 
 	add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm EXCLUDE_FROM_ALL )
 
