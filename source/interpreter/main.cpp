@@ -79,7 +79,7 @@ namespace Options
 
 namespace cl= llvm::cl;
 
-cl::OptionCategory options_category( "Ü compier options" );
+cl::OptionCategory options_category( "Ü interpreter options" );
 
 cl::list<std::string> input_files(
 	cl::Positional,
