@@ -207,7 +207,22 @@ int Main( int argc, const char* argv[] )
 	builder.setMemoryManager(std::make_unique<llvm::SectionMemoryManager>());
 	const std::unique_ptr<llvm::ExecutionEngine> engine(builder.create(target_machine.release())); // Engine takes ownership over target machine.
 
+	const auto main_function_llvm= engine->FindFunctionNamed(Options::entry_point_name);
+	if( main_function_llvm == nullptr )
+	{
+		std::cerr << "Can't find entry point!" << std::endl;
+		return 1;
+	}
+
+	// Check if entry point function signatire is correct.
 	// TODO - support main with empty args or argc+argv.
+	const auto expected_main_function_type= llvm::FunctionType::get( llvm::Type::getInt32Ty(llvm_context), {}, false );
+	if( main_function_llvm->getFunctionType() != expected_main_function_type )
+	{
+		std::cerr << "Entry point has invalid signature! Expected (fn() : i32)." << std::endl;
+		return 1;
+	}
+
 	const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(Options::entry_point_name));
 	if( main_function == nullptr )
 	{
