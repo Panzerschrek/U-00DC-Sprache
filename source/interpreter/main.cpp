@@ -14,6 +14,7 @@
 
 #include "../sprache_version/sprache_version.hpp"
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../code_builder_lib_common/interpreter.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
@@ -69,6 +70,12 @@ cl::opt<std::string> entry_point_name(
 	cl::desc("Name of entry point function. Default is \"main\"."),
 	cl::init("main"),
 	cl::cat(options_category));
+
+cl::opt<bool> use_jit(
+	"use_jit",
+	cl::desc("Use JIT."),
+	cl::init(false),
+	cl::cat(options_category) );
 
 } // namespace Options
 
@@ -202,44 +209,70 @@ int Main( int argc, const char* argv[] )
 
 	// TODO - run here optimizations?
 
-	llvm::EngineBuilder builder(std::move(result_module));
-	std::string engine_creation_error_string;
-	builder.setEngineKind(llvm::EngineKind::JIT);
-	builder.setMemoryManager(std::make_unique<llvm::SectionMemoryManager>());
-	builder.setErrorStr( &engine_creation_error_string );
-	const std::unique_ptr<llvm::ExecutionEngine> engine(builder.create(target_machine.release())); // Engine takes ownership over target machine.
-
-	if( engine == nullptr )
+	if( Options::use_jit )
 	{
-		std::cerr << "Can't create engine: " << engine_creation_error_string << std::endl;
-		return 1;
-	}
+		llvm::EngineBuilder builder(std::move(result_module));
+		std::string engine_creation_error_string;
+		builder.setEngineKind(llvm::EngineKind::JIT);
+		builder.setMemoryManager(std::make_unique<llvm::SectionMemoryManager>());
+		builder.setErrorStr( &engine_creation_error_string );
+		const std::unique_ptr<llvm::ExecutionEngine> engine(builder.create(target_machine.release())); // Engine takes ownership over target machine.
 
-	const auto main_function_llvm= engine->FindFunctionNamed(Options::entry_point_name);
-	if( main_function_llvm == nullptr )
+		if( engine == nullptr )
+		{
+			std::cerr << "Can't create engine: " << engine_creation_error_string << std::endl;
+			return 1;
+		}
+
+		const auto main_function_llvm= engine->FindFunctionNamed(Options::entry_point_name);
+		if( main_function_llvm == nullptr )
+		{
+			std::cerr << "Can't find entry point!" << std::endl;
+			return 1;
+		}
+
+		// Check if entry point function signatire is correct.
+		// TODO - support main with empty args or argc+argv.
+		const auto expected_main_function_type= llvm::FunctionType::get( llvm::Type::getInt32Ty(llvm_context), {}, false );
+		if( main_function_llvm->getFunctionType() != expected_main_function_type )
+		{
+			std::cerr << "Entry point has invalid signature! Expected (fn() : i32)." << std::endl;
+			return 1;
+		}
+
+		const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(Options::entry_point_name));
+		if( main_function == nullptr )
+		{
+			std::cerr << "Can't find entry point!" << std::endl;
+
+			return 1;
+		}
+
+		return main_function();
+	}
+	else
 	{
-		std::cerr << "Can't find entry point!" << std::endl;
-		return 1;
+		const auto main_function_llvm= result_module->getFunction(Options::entry_point_name);
+		if( main_function_llvm == nullptr )
+		{
+			std::cerr << "Can't find entry point!" << std::endl;
+			return 1;
+		}
+
+		// Check if entry point function signatire is correct.
+		// TODO - support main with empty args or argc+argv.
+		const auto expected_main_function_type= llvm::FunctionType::get( llvm::Type::getInt32Ty(llvm_context), {}, false );
+		if( main_function_llvm->getFunctionType() != expected_main_function_type )
+		{
+			std::cerr << "Entry point has invalid signature! Expected (fn() : i32)." << std::endl;
+			return 1;
+		}
+
+		Interpreter interpreter( data_layout );
+		const llvm::GenericValue result_value= interpreter.EvaluateGeneric( main_function_llvm, {} ).result;
+
+		return int(result_value.IntVal.getLimitedValue());
 	}
-
-	// Check if entry point function signatire is correct.
-	// TODO - support main with empty args or argc+argv.
-	const auto expected_main_function_type= llvm::FunctionType::get( llvm::Type::getInt32Ty(llvm_context), {}, false );
-	if( main_function_llvm->getFunctionType() != expected_main_function_type )
-	{
-		std::cerr << "Entry point has invalid signature! Expected (fn() : i32)." << std::endl;
-		return 1;
-	}
-
-	const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(Options::entry_point_name));
-	if( main_function == nullptr )
-	{
-		std::cerr << "Can't find entry point!" << std::endl;
-
-		return 1;
-	}
-
-	return main_function();
 }
 
 } // namespace
