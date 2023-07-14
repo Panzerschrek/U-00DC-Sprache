@@ -27,6 +27,19 @@ namespace U
 namespace
 {
 
+llvm::GenericValue CustomPrintF( llvm::FunctionType*, const llvm::ArrayRef<llvm::GenericValue> args )
+{
+	if( args.empty() )
+	{
+		std::cerr << "Printf called with invalid number of args" << std::endl;
+		return llvm::GenericValue();
+	}
+
+	// TODO - check if args are correct.
+	std::printf( "%s", reinterpret_cast<const char*>( uintptr_t( args[0].IntVal.getLimitedValue() ) ) );
+	return llvm::GenericValue();
+}
+
 std::string GetNativeTargetFeaturesStr()
 {
 	llvm::SubtargetFeatures features;
@@ -269,9 +282,15 @@ int Main( int argc, const char* argv[] )
 		}
 
 		Interpreter interpreter( data_layout );
-		const llvm::GenericValue result_value= interpreter.EvaluateGeneric( main_function_llvm, {} ).result;
+		// TODO - reguster more functions.
+		interpreter.RegisterCustomFunction( "printf", CustomPrintF );
 
-		return int(result_value.IntVal.getLimitedValue());
+		const Interpreter::ResultGeneric result= interpreter.EvaluateGeneric( main_function_llvm, {} );
+
+		for( const std::string& err : result.errors )
+			std::cerr << "Execution error: " << err << std::endl;
+
+		return int(result.result.IntVal.getLimitedValue());
 	}
 }
 
