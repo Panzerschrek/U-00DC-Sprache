@@ -75,6 +75,7 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	Passes # for new PassManager.
 	${LLVM_TARGETS_TO_BUILD}
 	)
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_INTERPRETER Interpreter MCJIT )
 
 # Python
 

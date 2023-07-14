@@ -34,6 +34,10 @@
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../sprache_version/sprache_version.hpp"
+#include "../compiler0/code_builder_lib/code_builder.hpp"
+#include "../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../compilers_common_lib/errors_print.hpp"
+#include "../compilers_common_lib/vfs.hpp"
 
 namespace U
 {
@@ -82,6 +86,14 @@ cl::list<std::string> input_files(
 	cl::value_desc("input files"),
 	cl::OneOrMore,
 	cl::cat(options_category) );
+
+cl::list<std::string> include_dir(
+	"include-dir",
+	cl::Prefix,
+	cl::desc("Add directory for search of \"import\" files"),
+	cl::value_desc("dir"),
+	cl::ZeroOrMore,
+	cl::cat(options_category));
 
 } // namespace Options
 
@@ -158,15 +170,69 @@ int Main( int argc, const char* argv[] )
 	}
 	const llvm::DataLayout data_layout= target_machine->createDataLayout();
 
-	std::unique_ptr<llvm::Module> module;
+	const auto vfs= CreateVfsOverSystemFS( Options::include_dir );
+	if( vfs == nullptr )
+		return 1u;
+
+	llvm::LLVMContext llvm_context;
+	std::unique_ptr<llvm::Module> result_module;
+
+	const std::string prelude_code = ""; // TODO - generate it.
+	const auto errors_format= ErrorsFormat::GCC;
+
+	bool have_some_errors= false;
 	for( const std::string& input_file : Options::input_files )
 	{
-		// TODO - load source file.
+		const SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
+
+		std::vector<IVfs::Path> dependent_files;
+		dependent_files.reserve( source_graph.nodes_storage.size() );
+		for( const SourceGraph::Node& node : source_graph.nodes_storage )
+			dependent_files.push_back( node.file_path );
+
+		PrintLexSyntErrors( dependent_files, source_graph.errors, errors_format );
+		if( !source_graph.errors.empty() )
+		{
+			have_some_errors= true;
+			continue;
+		}
+
+		CodeBuilder::BuildResult build_result=
+			CodeBuilder(
+				llvm_context,
+				data_layout,
+				target_triple,
+				CodeBuilderOptions() ).BuildProgram( source_graph );
+
+		PrintErrors( dependent_files, build_result.errors, errors_format );
+
+		if( !build_result.errors.empty() || build_result.module == nullptr )
+		{
+			have_some_errors= true;
+			continue;
+		}
+
+		if( result_module == nullptr )
+			result_module= std::move( build_result.module );
+		else
+		{
+			const bool not_ok= llvm::Linker::linkModules( *result_module, std::move(build_result.module) );
+			if( not_ok )
+			{
+				std::cerr << "Error, linking file \"" << input_file << "\"" << std::endl;
+				have_some_errors= true;
+			}
+		}
 	}
+
+	if( have_some_errors )
+		return 1;
+
+	// TODO - link ustlib modules.
 
 	// TODO - run here optimizations?
 
-	llvm::EngineBuilder builder(std::move(module));
+	llvm::EngineBuilder builder(std::move(result_module));
 	builder.setEngineKind(llvm::EngineKind::JIT);
 	builder.setMemoryManager(std::make_unique<llvm::SectionMemoryManager>());
 	const std::unique_ptr<llvm::ExecutionEngine> engine(builder.create(target_machine.release())); // Engine takes ownership over target machine.
