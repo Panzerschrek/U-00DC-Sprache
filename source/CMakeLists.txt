@@ -175,51 +175,56 @@ add_library( CodeBuilderLibCommon ${CODE_BUILDER_COMMON_SOURCES} )
 target_link_libraries( CodeBuilderLibCommon ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 
 #
-# CompilersCommonLib
+# CompilersSupportLib
 #
+
+function( CompileLLFile ll_file )
+	get_filename_component( source_name ${ll_file} NAME_WE )
+	set( bc_name ${CMAKE_CURRENT_BINARY_DIR}/bc_files/${source_name}.bc )
+	set( bc_header_path ${CMAKE_CURRENT_BINARY_DIR}/bc_files_headers/${source_name}.h )
+	add_custom_command(
+		OUTPUT ${bc_name}
+		DEPENDS ${ll_file}
+		DEPENDS llvm-as
+		COMMAND llvm-as ${ll_file} -o ${bc_name}
+		)
+	add_custom_command(
+		OUTPUT ${bc_header_path}
+		DEPENDS ${bc_name}
+		DEPENDS ${CMAKE_SOURCE_DIR}/bin2c.cmake ${bc_name}
+		COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/bin2c.cmake ${bc_name} ${bc_header_path} c_${source_name}_file_content
+		)
+	set( BC_FILE ${bc_header_path} PARENT_SCOPE )
+endfunction()
+
+file( GLOB LL_FILES ${CMAKE_SOURCE_DIR}/ustlib/src/* )
+foreach( LL_FILE ${LL_FILES} )
+	CompileLLFile( ${LL_FILE} )
+	list( APPEND bc_files ${BC_FILE} )
+endforeach()
+
+# Show in editor also ustlib and ustlib tests files
+file( GLOB_RECURSE USTLIB_SOURCES "ustlib/*.u" )
+file( GLOB_RECURSE USTLIB_SOURCES_LL "ustlib/src/*.ll" )
+file( GLOB_RECURSE USTLIB_TEST_SOURCES "ustlib_test/*.u" )
+
+file( GLOB COMPILERS_SUPPORT_LIB_SOURCES "compilers_support_lib/*" )
+add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_SOURCES_LL} ${USTLIB_TEST_SOURCES} )
+target_link_libraries( CompilersSupportLib )
+target_include_directories( CompilersSupportLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
+
+install( FILES ${USTLIB_SOURCES} DESTINATION "ustlib" )
+
+#
+# CompilersSupportLib
+#
+
 if( U_BUILD_COMPILER )
 	message( STATUS "Build compiler" )
-
-	function( CompileLLFile ll_file )
-		get_filename_component( source_name ${ll_file} NAME_WE )
-		set( bc_name ${CMAKE_CURRENT_BINARY_DIR}/bc_files/${source_name}.bc )
-		set( bc_header_path ${CMAKE_CURRENT_BINARY_DIR}/bc_files_headers/${source_name}.h )
-		add_custom_command(
-			OUTPUT ${bc_name}
-			DEPENDS ${ll_file}
-			DEPENDS llvm-as
-			COMMAND llvm-as ${ll_file} -o ${bc_name}
-			)
-		add_custom_command(
-			OUTPUT ${bc_header_path}
-			DEPENDS ${bc_name}
-			DEPENDS ${CMAKE_SOURCE_DIR}/bin2c.cmake ${bc_name}
-			COMMAND ${CMAKE_COMMAND} -P ${CMAKE_SOURCE_DIR}/bin2c.cmake ${bc_name} ${bc_header_path} c_${source_name}_file_content
-			)
-		set( BC_FILE ${bc_header_path} PARENT_SCOPE )
-	endfunction()
-
-	file( GLOB LL_FILES ${CMAKE_SOURCE_DIR}/ustlib/src/* )
-	foreach( LL_FILE ${LL_FILES} )
-		CompileLLFile( ${LL_FILE} )
-		list( APPEND bc_files ${BC_FILE} )
-	endforeach()
-
-	# Show in editor also ustlib and ustlib tests files
-	file( GLOB_RECURSE USTLIB_SOURCES "ustlib/*.u" )
-	file( GLOB_RECURSE USTLIB_SOURCES_LL "ustlib/src/*.ll" )
-	file( GLOB_RECURSE USTLIB_TEST_SOURCES "ustlib_test/*.u" )
-
-	file( GLOB COMPILERS_SUPPORT_LIB_SOURCES "compilers_support_lib/*" )
-	add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_SOURCES_LL} ${USTLIB_TEST_SOURCES} )
-	target_link_libraries( CompilersSupportLib )
-	target_include_directories( CompilersSupportLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 
 	file( GLOB COMPILERS_COMMON_LIB_SOURCES "compilers_common_lib/*" )
 	add_library( CompilersCommonLib ${COMPILERS_COMMON_LIB_SOURCES} )
 	target_link_libraries( CompilersCommonLib CompilersSupportLib ${LLVM_LIBS_FOR_COMPILER} )
-
-	install( FILES ${USTLIB_SOURCES} DESTINATION "ustlib" )
 
 else()
 	message( STATUS "Skip compiler" )
