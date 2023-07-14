@@ -37,6 +37,7 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
+#include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/ustlib.hpp"
 #include "../compilers_support_lib/vfs.hpp"
 
@@ -154,10 +155,19 @@ int Main( int argc, const char* argv[] )
 	if( vfs == nullptr )
 		return 1u;
 
+	const std::string prelude_code=
+		GenerateCompilerPreludeCode(
+			target_triple,
+			data_layout,
+			target_machine->getTargetFeatureString(),
+			target_machine->getTargetCPU(),
+			'0',
+			false,
+			0 );
+
 	llvm::LLVMContext llvm_context;
 	std::unique_ptr<llvm::Module> result_module;
 
-	const std::string prelude_code = ""; // TODO - generate it.
 	const auto errors_format= ErrorsFormat::GCC;
 
 	bool have_some_errors= false;

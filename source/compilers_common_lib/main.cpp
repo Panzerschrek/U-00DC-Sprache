@@ -32,6 +32,7 @@
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../compilers_support_lib/errors_print.hpp"
+#include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/ustlib.hpp"
 #include "../compilers_support_lib/vfs.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
@@ -368,73 +369,6 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 	return false;
 }
 
-std::string GenerateCompilerPreludeCode(
-	const llvm::Triple& target_triple,
-	const llvm::DataLayout& data_layout,
-	const llvm::StringRef features,
-	const llvm::StringRef cpu_name )
-{
-	std::ostringstream ss;
-
-	ss << "namespace compiler\n{\n";
-	{
-		// Info about compiler itself.
-		ss << "auto& version = \"" << getSpracheVersion() << "\";\n";
-		ss << "auto& git_revision = \"" << getGitRevision() << "\";\n";
-		ss << "var size_type generation = " << std::to_string(GetCompilerGeneration()) << "s;\n";
-
-		// Options.
-		ss << "namespace options\n{\n";
-		{
-			ss << "var char8 optimization_level = \"" << Options::optimization_level << "\"c8;\n";
-			ss << "var bool generate_debug_info = " << (Options::generate_debug_info ? "true" : "false") << ";\n";
-			ss << "auto& cpu_name = \"" << cpu_name.str() << "\";\n";
-
-			// Features
-			{
-				const llvm::SubtargetFeatures features_parsed( features );
-				const auto features_list= features_parsed.getFeatures();
-
-				ss << "var tup[ ";
-				for( const std::string& feature : features_list )
-				{
-					ss << "[ char8, " << std::to_string(feature.size()) << " ]";
-					if( &feature != &features_list.back() )
-						ss << ", ";
-				}
-				ss << " ]";
-
-				ss << " features[ ";
-				for( const std::string& feature : features_list )
-				{
-					ss << "\"" << feature << "\"";
-					if( &feature != &features_list.back() )
-						ss << ", ";
-				}
-				ss << " ];\n";
-			}
-		}
-		ss << "}\n";
-
-		// Target triple.
-		ss << "namespace target\n{\n";
-		{
-			ss << "auto& str = \"" << target_triple.str() << "\";\n";
-			ss << "auto& arch = \"" << target_triple.getArchName().str() << "\";\n";
-			ss << "auto& vendor = \"" << target_triple.getVendorName().str() << "\";\n";
-			ss << "auto& os = \"" << target_triple.getOSName().str() << "\";\n";
-			ss << "auto& environment = \"" << target_triple.getEnvironmentName().str() << "\";\n";
-			ss << "auto& os_and_environment = \"" << target_triple.getOSAndEnvironmentName().str() << "\";\n";
-
-			ss << "var bool is_big_endian = " << (data_layout.isBigEndian() ? "true" : "false") << ";\n";
-		}
-		ss << "}\n";
-	}
-	ss << "}\n";
-
-	return ss.str();
-}
-
 int Main( int argc, const char* argv[] )
 {
 	const llvm::InitLLVM llvm_initializer(argc, argv);
@@ -599,7 +533,10 @@ int Main( int argc, const char* argv[] )
 				target_triple,
 				data_layout,
 				target_machine->getTargetFeatureString(),
-				target_machine->getTargetCPU() );
+				target_machine->getTargetCPU(),
+				Options::optimization_level,
+				Options::generate_debug_info,
+				GetCompilerGeneration() );
 
 		if( Options::print_prelude_code )
 			std::cout << prelude_code << std::endl;
