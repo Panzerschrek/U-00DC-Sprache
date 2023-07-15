@@ -73,7 +73,6 @@ llvm::GenericValue MemCmp( llvm::FunctionType*, const llvm::ArrayRef<llvm::Gener
 		return llvm::GenericValue();
 	}
 
-
 	const uint64_t address0= args[0].IntVal.getLimitedValue();
 	const uint64_t address1= args[1].IntVal.getLimitedValue();
 	const size_t size= size_t( args[2].IntVal.getLimitedValue() );
@@ -134,8 +133,6 @@ std::string GetNativeTargetFeaturesStr()
 
 	return features.getString();
 }
-
-using MainFunctionType= int(*)();
 
 namespace Options
 {
@@ -342,9 +339,10 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		// TODO - reguster more functions.
+		// TODO - register more functions.
 		engine->addGlobalMapping( "ust_stdout_print_impl", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint )) );
 
+		using MainFunctionType= int(*)();
 		const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(Options::entry_point_name));
 		if( main_function == nullptr )
 		{
@@ -358,7 +356,7 @@ int Main( int argc, const char* argv[] )
 	else
 	{
 		g_interpreter= std::make_unique<Interpreter>( data_layout );
-		// TODO - reguster more functions.
+		// TODO - register more functions.
 		g_interpreter->RegisterCustomFunction( "ust_stdout_print_impl", InterpreterFuncs::StdOutPrint );
 		g_interpreter->RegisterCustomFunction( "memcmp", InterpreterFuncs::MemCmp );
 

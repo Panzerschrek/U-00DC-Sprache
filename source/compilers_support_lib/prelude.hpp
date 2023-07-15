@@ -14,6 +14,6 @@ std::string GenerateCompilerPreludeCode(
 	llvm::StringRef cpu_name,
 	char optimization_level,
 	bool generate_debug_info,
-	 uint32_t compiler_generatio );
+	uint32_t compiler_generation );
 
 } // namespace U

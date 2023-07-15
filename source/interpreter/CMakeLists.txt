@@ -23,7 +23,7 @@ add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DI
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/intrinsics_test.u )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/intrinsics_test.u --use-jit )
 
-# Run some ustlib tests
+# Run some ustlib tests. It is important, since there tests contain some intrinsics, that need to be tested.
 set( USTLIB_TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../ustlib_test )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/atomic_test.u )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/atomic_test.u --use-jit )
