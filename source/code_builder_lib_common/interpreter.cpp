@@ -267,6 +267,32 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 			}
 			break;
 
+		case llvm::Instruction::AtomicCmpXchg:
+			{
+				const llvm::GenericValue op0= GetVal(instruction->getOperand(0u));
+				const llvm::GenericValue op1= GetVal(instruction->getOperand(1u));
+				const llvm::GenericValue op2= GetVal(instruction->getOperand(2u));
+				llvm::Type* const read_type= instruction->getOperand(1u)->getType();
+
+				std::byte* const data_ptr= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
+				const llvm::GenericValue load_result= DoLoad( data_ptr, read_type );
+
+				bool success= false;
+				if( load_result.IntVal == op1.IntVal )
+				{
+					DoStore( data_ptr, op2, read_type );
+					success= true;
+				}
+
+				llvm::GenericValue success_val;
+				success_val.IntVal= llvm::APInt( 1, success ? 1 : 0 );
+
+				llvm::GenericValue val;
+				val.AggregateVal= { load_result, success_val };
+				current_function_frame_.instructions_map[ instruction ]= val;
+			}
+			break;
+
 		case llvm::Instruction::Unreachable:
 			errors_.push_back( "executing Unreachable instruction" );
 			return llvm::GenericValue();
@@ -1531,6 +1557,46 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 			case llvm::FCmpInst::FCMP_UGE  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpLessThan ); break;
 			case llvm::FCmpInst::FCMP_OGE  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpGreaterThan || cmp_result == llvm::APFloat::cmpEqual ); break;
 			}
+		}
+		break;
+
+	case llvm::Instruction::AtomicRMW:
+		{
+			std::byte* const data_ptr= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
+			const llvm::GenericValue load_result= DoLoad( data_ptr, instruction->getType() );
+			val= load_result;
+
+			llvm::GenericValue new_value;
+			const auto operation= llvm::dyn_cast<llvm::AtomicRMWInst>(instruction)->getOperation();
+			switch(operation)
+			{
+			case llvm::AtomicRMWInst::Xchg:
+				new_value= op1;
+				break;
+			case llvm::AtomicRMWInst::Add:
+				new_value.IntVal= load_result.IntVal + op1.IntVal;
+				break;
+			case llvm::AtomicRMWInst::Sub:
+				new_value.IntVal= load_result.IntVal - op1.IntVal;
+				break;
+			case llvm::AtomicRMWInst::And:
+				new_value.IntVal= load_result.IntVal & op1.IntVal;
+				break;
+			case llvm::AtomicRMWInst::Nand:
+				new_value.IntVal= ~(load_result.IntVal & op1.IntVal);
+				break;
+			case llvm::AtomicRMWInst::Or:
+				new_value.IntVal= load_result.IntVal | op1.IntVal;
+				break;
+			case llvm::AtomicRMWInst::Xor:
+				new_value.IntVal= load_result.IntVal | op1.IntVal;
+				break;
+			default:
+				errors_.push_back( ( std::string("Unsupported atomic operation \"") + llvm::AtomicRMWInst::getOperationName(operation) + "\"" ).str() );
+				new_value= op1;
+				break;
+			}
+			DoStore( data_ptr, new_value, instruction->getType() );
 		}
 		break;
 
