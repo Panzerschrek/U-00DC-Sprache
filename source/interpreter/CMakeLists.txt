@@ -5,6 +5,8 @@ add_executable( Interpreter ${SOURCES} ${HEADERS} )
 # Link directly against CodeBuilderLib of compiler0. There is no reason to use compiler1 for interpreter.
 target_link_libraries( Interpreter CodeBuilderLib CompilersSupportLib ${LLVM_LIBS_FOR_INTERPRETER} )
 
+install( TARGETS Interpreter )
+
 # Run various tests.
 
 set( TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests )
