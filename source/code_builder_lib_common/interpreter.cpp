@@ -795,7 +795,7 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 		return;
 	}
 
-	// It is possible to call function providing more arguments, than needed.
+	// It is possible to call function by providing more arguments, than needed.
 	U_ASSERT( function->arg_size() <= instruction->getNumOperands() - 1u );
 
 	const llvm::StringRef function_name= function->getName();
@@ -1590,7 +1590,7 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 				new_value.IntVal= load_result.IntVal | op1.IntVal;
 				break;
 			case llvm::AtomicRMWInst::Xor:
-				new_value.IntVal= load_result.IntVal | op1.IntVal;
+				new_value.IntVal= load_result.IntVal ^ op1.IntVal;
 				break;
 			default:
 				errors_.push_back( ( std::string("Unsupported atomic operation \"") + llvm::AtomicRMWInst::getOperationName(operation) + "\"" ).str() );
