@@ -1,0 +1,7 @@
+import "../../ustlib/stdout.u"
+
+fn nomangle main() : i32
+{
+	ust::stdout_print( "Interpreter stdout test.\n" );
+	return 0;
+}

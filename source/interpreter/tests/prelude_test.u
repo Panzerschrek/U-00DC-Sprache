@@ -1,0 +1,29 @@
+import "../../ustlib/stdout.u"
+import "../../ustlib/string_conversions.u"
+
+fn nomangle main() : i32
+{
+	ust::stdout_print( "Interpreter compiler prelude test.\n" );
+
+	ust::stdout_print( "compiler version: " );
+	ust::stdout_print( compiler::version );
+	ust::stdout_print( "\n" );
+	ust::stdout_print( "compiler git revision: " );
+	ust::stdout_print( compiler::git_revision );
+	ust::stdout_print( "\n" );
+
+	ust::stdout_print( "arch: " );
+	ust::stdout_print( compiler::target::arch );
+	ust::stdout_print( "\n" );
+	ust::stdout_print( "vendor: " );
+	ust::stdout_print( compiler::target::vendor );
+	ust::stdout_print( "\n" );
+	ust::stdout_print( "os: " );
+	ust::stdout_print( compiler::target::os );
+	ust::stdout_print( "\n" );
+	ust::stdout_print( "environment: " );
+	ust::stdout_print( compiler::target::environment );
+	ust::stdout_print( "\n" );
+
+	return 0;
+}
