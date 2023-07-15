@@ -20,6 +20,7 @@
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/ustlib.hpp"
 #include "../compilers_support_lib/vfs.hpp"
+#include "../tests/tests_common.hpp"
 
 namespace U
 {
@@ -85,7 +86,7 @@ cl::opt<std::string> entry_point_name(
 	cl::cat(options_category));
 
 cl::opt<bool> use_jit(
-	"use_jit",
+	"use-jit",
 	cl::desc("Use JIT."),
 	cl::init(false),
 	cl::cat(options_category) );
@@ -107,19 +108,24 @@ int Main( int argc, const char* argv[] )
 
 	const auto description=
 		"Ü-Sprache interpreter.\n"
-		"Compiles provided files and emmideately executes result.\n"
-		"Uses JIT.\n";
+		"Compiles provided files and emmideately executes result.\n";
 	llvm::cl::ParseCommandLineOptions( argc, argv, description );
 
-	// LLVM stuff initialization.
-	llvm::InitializeNativeTarget();
-	llvm::InitializeNativeTargetAsmPrinter();
-
-	// Prepare target machine.
 	std::string target_triple_str;
 	llvm::Triple target_triple( llvm::sys::getProcessTriple() );
+	const llvm::StringRef cpu_name= llvm::sys::getHostCPUName();
+	const std::string features_str= GetNativeTargetFeaturesStr();
 	std::unique_ptr<llvm::TargetMachine> target_machine;
+	llvm::DataLayout data_layout("");
+	if( Options::use_jit )
 	{
+		// Initialize native target and create target machine only if using JIT.
+
+		// LLVM stuff initialization.
+		llvm::InitializeNativeTarget();
+		llvm::InitializeNativeTargetAsmPrinter();
+
+		// Prepare target machine.
 		target_triple_str= target_triple.normalize();
 
 		std::string error_str;
@@ -135,8 +141,8 @@ int Main( int argc, const char* argv[] )
 		target_machine.reset(
 			target->createTargetMachine(
 				target_triple_str,
-				llvm::sys::getHostCPUName(),
-				GetNativeTargetFeaturesStr(),
+				cpu_name,
+				features_str,
 				target_options,
 				llvm::Reloc::PIC_,
 				llvm::Optional<llvm::CodeModel::Model>(),
@@ -147,8 +153,11 @@ int Main( int argc, const char* argv[] )
 			std::cerr << "Error, creating target machine." << std::endl;
 			return 1;
 		}
+
+		data_layout= target_machine->createDataLayout();
 	}
-	const llvm::DataLayout data_layout= target_machine->createDataLayout();
+	else
+		data_layout= llvm::DataLayout( GetTestsDataLayout() );
 
 	const auto vfs= CreateVfsOverSystemFS( Options::include_dir );
 	if( vfs == nullptr )
@@ -158,8 +167,8 @@ int Main( int argc, const char* argv[] )
 		GenerateCompilerPreludeCode(
 			target_triple,
 			data_layout,
-			target_machine->getTargetFeatureString(),
-			target_machine->getTargetCPU(),
+			features_str,
+			cpu_name,
 			'0',
 			false,
 			0 );
@@ -222,6 +231,22 @@ int Main( int argc, const char* argv[] )
 
 	// TODO - run here optimizations?
 
+	// TODO - support main with empty args or argc+argv.
+	const auto expected_main_function_type= llvm::FunctionType::get( llvm::Type::getInt32Ty(llvm_context), {}, false );
+	const auto main_function_llvm= result_module->getFunction(Options::entry_point_name);
+	if( main_function_llvm == nullptr )
+	{
+		std::cerr << "Can't find entry point!" << std::endl;
+		return 1;
+	}
+
+	// Check if entry point function signatire is correct.
+	if( main_function_llvm->getFunctionType() != expected_main_function_type )
+	{
+		std::cerr << "Entry point has invalid signature! Expected (fn() : i32)." << std::endl;
+		return 1;
+	}
+
 	if( Options::use_jit )
 	{
 		llvm::EngineBuilder builder(std::move(result_module));
@@ -237,22 +262,6 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		const auto main_function_llvm= engine->FindFunctionNamed(Options::entry_point_name);
-		if( main_function_llvm == nullptr )
-		{
-			std::cerr << "Can't find entry point!" << std::endl;
-			return 1;
-		}
-
-		// Check if entry point function signatire is correct.
-		// TODO - support main with empty args or argc+argv.
-		const auto expected_main_function_type= llvm::FunctionType::get( llvm::Type::getInt32Ty(llvm_context), {}, false );
-		if( main_function_llvm->getFunctionType() != expected_main_function_type )
-		{
-			std::cerr << "Entry point has invalid signature! Expected (fn() : i32)." << std::endl;
-			return 1;
-		}
-
 		const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(Options::entry_point_name));
 		if( main_function == nullptr )
 		{
@@ -265,22 +274,6 @@ int Main( int argc, const char* argv[] )
 	}
 	else
 	{
-		const auto main_function_llvm= result_module->getFunction(Options::entry_point_name);
-		if( main_function_llvm == nullptr )
-		{
-			std::cerr << "Can't find entry point!" << std::endl;
-			return 1;
-		}
-
-		// Check if entry point function signatire is correct.
-		// TODO - support main with empty args or argc+argv.
-		const auto expected_main_function_type= llvm::FunctionType::get( llvm::Type::getInt32Ty(llvm_context), {}, false );
-		if( main_function_llvm->getFunctionType() != expected_main_function_type )
-		{
-			std::cerr << "Entry point has invalid signature! Expected (fn() : i32)." << std::endl;
-			return 1;
-		}
-
 		Interpreter interpreter( data_layout );
 		// TODO - reguster more functions.
 		interpreter.RegisterCustomFunction( "printf", CustomPrintF );
