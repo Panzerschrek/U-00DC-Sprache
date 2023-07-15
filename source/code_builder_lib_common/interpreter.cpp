@@ -1058,6 +1058,15 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 	llvm::GenericValue val;
 	switch(instruction->getOpcode())
 	{
+	case llvm::Instruction::ExtractValue:
+		val= op;
+		for( const auto index : llvm::dyn_cast<llvm::ExtractValueInst>(instruction)->indices() )
+		{
+			U_ASSERT( index < val.AggregateVal.size() );
+			val= val.AggregateVal[index];
+		}
+		break;
+
 	case llvm::Instruction::SExt:
 		U_ASSERT(dst_type->isIntegerTy());
 		val.IntVal= op.IntVal.sext(dst_type->getIntegerBitWidth());
