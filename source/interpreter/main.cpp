@@ -43,12 +43,12 @@ llvm::GenericValue StdOutPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::
 	}
 
 	const uint64_t address= args[0].IntVal.getLimitedValue();
-	const uint64_t size= args[1].IntVal.getLimitedValue();
+	const size_t size= size_t(args[1].IntVal.getLimitedValue());
 	constexpr auto buffer_size= 1024;
 	if( size < buffer_size )
 	{
 		char buffer[buffer_size];
-		g_interpreter->ReadExecutinEngineData( buffer, address, size_t(size) );
+		g_interpreter->ReadExecutinEngineData( buffer, address, size );
 		buffer[size]= '\0';
 		std::cout << buffer;
 	}
@@ -56,7 +56,7 @@ llvm::GenericValue StdOutPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::
 	{
 		std::string buffer;
 		buffer.resize(size + 1);
-		g_interpreter->ReadExecutinEngineData( buffer.data(), address, size_t(size) );
+		g_interpreter->ReadExecutinEngineData( buffer.data(), address, size );
 		buffer[size]= '\0';
 		std::cout << buffer;
 	}
