@@ -142,6 +142,11 @@ std::string GetNativeTargetFeaturesStr()
 
 int Main( int argc, const char* argv[] )
 {
+	// HACK! Reset globals state from previous run (needed for emscripten).
+	llvm::llvm_shutdown();
+
+	static const llvm::InitLLVM llvm_initializer(argc, argv); // Static in order to construct exactly once (for emscripten).
+
 	// Options.
 
 	// Declare options locally in order to reset state after main.
@@ -177,8 +182,6 @@ int Main( int argc, const char* argv[] )
 		cl::desc("Use JIT."),
 		cl::init(false),
 		cl::cat(options_category) );
-
-	const llvm::InitLLVM llvm_initializer(argc, argv);
 
 	llvm::cl::SetVersionPrinter(
 		[]( llvm::raw_ostream& )
