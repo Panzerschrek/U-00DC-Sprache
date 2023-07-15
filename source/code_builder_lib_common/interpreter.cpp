@@ -818,6 +818,24 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 		case llvm::Intrinsic::coro_promise:
 			ProcessCoroPromise( instruction );
 			return;
+		case llvm::Intrinsic::sadd_with_overflow:
+			ProcessSAddWithOverflow( instruction );
+			return;
+		case llvm::Intrinsic::uadd_with_overflow:
+			ProcessUAddWithOverflow( instruction );
+			return;
+		case llvm::Intrinsic::ssub_with_overflow:
+			ProcessSSubWithOverflow( instruction );
+			return;
+		case llvm::Intrinsic::usub_with_overflow:
+			ProcessUSubWithOverflow( instruction );
+			return;
+		case llvm::Intrinsic::smul_with_overflow:
+			ProcessSMulWithOverflow( instruction );
+			return;
+		case llvm::Intrinsic::umul_with_overflow:
+			ProcessUMulWithOverflow( instruction );
+			return;
 		default:
 			break;
 		};
@@ -1017,6 +1035,120 @@ void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
 	const CoroutineData& coroutine_data= coroutines_data_[coroutine_id];
 
 	current_function_frame_.instructions_map[ instruction ]= coroutine_data.promise;
+}
+
+void Interpreter::ProcessSAddWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.sadd_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessUAddWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.uadd_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessSSubWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.ssub_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessUSubWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.usub_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessSMulWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.smul_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessUMulWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.umul_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
 void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const size_t stack_depth, const bool destroy )

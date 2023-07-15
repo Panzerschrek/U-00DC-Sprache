@@ -20,3 +20,5 @@ add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DI
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/heap_allocation_test.u --use-jit )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/prelude_test.u )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/prelude_test.u --use-jit )
+add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/intrinsics_test.u )
+add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${TESTS_DIR}/intrinsics_test.u --use-jit )

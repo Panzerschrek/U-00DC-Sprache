@@ -108,6 +108,13 @@ private:
 	void ProcessCoroDone( const llvm::CallInst* instruction );
 	void ProcessCoroPromise( const llvm::CallInst* instruction );
 
+	void ProcessSAddWithOverflow( const llvm::CallInst* instruction );
+	void ProcessUAddWithOverflow( const llvm::CallInst* instruction );
+	void ProcessSSubWithOverflow( const llvm::CallInst* instruction );
+	void ProcessUSubWithOverflow( const llvm::CallInst* instruction );
+	void ProcessSMulWithOverflow( const llvm::CallInst* instruction );
+	void ProcessUMulWithOverflow( const llvm::CallInst* instruction );
+
 	void ResumeCoroutine( const llvm::CallInst* instruction, size_t stack_depth, bool destroy );
 
 	void ProcessUnaryArithmeticInstruction( const llvm::Instruction* instruction );
