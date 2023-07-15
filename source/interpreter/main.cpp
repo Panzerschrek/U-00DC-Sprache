@@ -341,6 +341,9 @@ int Main( int argc, const char* argv[] )
 
 		g_interpreter= nullptr;
 
+		if( !result.errors.empty() )
+			return 1;
+
 		return int(result.result.IntVal.getLimitedValue());
 	}
 }
