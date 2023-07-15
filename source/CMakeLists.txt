@@ -7,6 +7,7 @@ option( U_BUILD_TESTS "Enable compilation of base tests" YES )
 option( U_BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
 option( U_BUILD_PY_TESTS "Enable compilation of py_tests" YES )
 option( U_BUILD_CPP_HEADER_CONVERTER "Enable compilation of c++ header converter (clang required)" YES )
+option( U_BUILD_INTERPRETER "Build Interpreter" YES )
 option( U_BUILD_UNICODE_FILE_NAMES_TEST "Enable compilation of unicode filenames test (such test may not work correctly is some environmens)" YES )
 option( U_BUILD_DOCS "Enable Ǖ docs (Sphinx Required)" YES )
 option( U_BUILD_COMPILER1 "Build compiler1 (written on Ǖ)" YES)
@@ -308,7 +309,12 @@ endif()
 # Interpreter
 #
 
-add_subdirectory( interpreter )
+if( U_BUILD_INTERPRETER )
+	message( STATUS "Build Interpreter" )
+	add_subdirectory( interpreter )
+else()
+	message( STATUS "Skip Interpreter" )
+endif()
 
 #
 # Docs
