@@ -65,6 +65,33 @@ llvm::GenericValue StdOutPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::
 	return llvm::GenericValue();
 }
 
+llvm::GenericValue MemCmp( llvm::FunctionType*, const llvm::ArrayRef<llvm::GenericValue> args )
+{
+	if( args.size() < 3 )
+	{
+		std::cerr << "memcmp called with invalid number of args." << std::endl;
+		return llvm::GenericValue();
+	}
+
+
+	const uint64_t address0= args[0].IntVal.getLimitedValue();
+	const uint64_t address1= args[1].IntVal.getLimitedValue();
+	const size_t size= size_t( args[2].IntVal.getLimitedValue() );
+
+	llvm::SmallVector<std::byte, 1024> buffer0, buffer1;
+	buffer0.resize( size );
+	buffer1.resize( size );
+	g_interpreter->ReadExecutinEngineData( buffer0.data(), address0, size );
+	g_interpreter->ReadExecutinEngineData( buffer1.data(), address1, size );
+
+	const auto memcmp_result= std::memcmp( buffer0.data(), buffer1.data(), size );
+
+	llvm::GenericValue result;
+	result.IntVal= llvm::APInt( 32, uint64_t(memcmp_result) );
+
+	return result;
+}
+
 } // namespace InterpreterFuncs
 
 namespace JitFuncs
@@ -333,6 +360,7 @@ int Main( int argc, const char* argv[] )
 		g_interpreter= std::make_unique<Interpreter>( data_layout );
 		// TODO - reguster more functions.
 		g_interpreter->RegisterCustomFunction( "ust_stdout_print_impl", InterpreterFuncs::StdOutPrint );
+		g_interpreter->RegisterCustomFunction( "memcmp", InterpreterFuncs::MemCmp );
 
 		const Interpreter::ResultGeneric result= g_interpreter->EvaluateGeneric( main_function_llvm, {} );
 
