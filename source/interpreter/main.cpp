@@ -28,18 +28,71 @@ namespace U
 namespace
 {
 
-llvm::GenericValue CustomPrintF( llvm::FunctionType*, const llvm::ArrayRef<llvm::GenericValue> args )
+// Use global instance in order to access it in registered functions.
+std::unique_ptr<Interpreter> g_interpreter;
+
+namespace InterpreterFuncs
 {
-	if( args.empty() )
+
+llvm::GenericValue StdOutPrint( llvm::FunctionType*, const llvm::ArrayRef<llvm::GenericValue> args )
+{
+	if( args.size() < 2 )
 	{
-		std::cerr << "Printf called with invalid number of args" << std::endl;
+		std::cerr << "stdout_print called with invalid number of args." << std::endl;
 		return llvm::GenericValue();
 	}
 
-	// TODO - check if args are correct.
-	std::printf( "%s", reinterpret_cast<const char*>( uintptr_t( args[0].IntVal.getLimitedValue() ) ) );
+	const uint64_t address= args[0].IntVal.getLimitedValue();
+	const uint64_t size= args[1].IntVal.getLimitedValue();
+	constexpr auto buffer_size= 1024;
+	if( size < buffer_size )
+	{
+		char buffer[buffer_size];
+		g_interpreter->ReadExecutinEngineData( buffer, address, size_t(size) );
+		buffer[size]= '\0';
+		std::cout << buffer;
+	}
+	else
+	{
+		std::string buffer;
+		buffer.resize(size + 1);
+		g_interpreter->ReadExecutinEngineData( buffer.data(), address, size_t(size) );
+		buffer[size]= '\0';
+		std::cout << buffer;
+	}
+
+	std::cout.flush();
 	return llvm::GenericValue();
 }
+
+} // namespace InterpreterFuncs
+
+namespace JitFuncs
+{
+
+void StdOutPrint( const char* const ptr, const size_t size )
+{
+	constexpr auto buffer_size= 1024;
+	if( size < buffer_size )
+	{
+		char buffer[buffer_size];
+		std::memcpy( buffer, ptr, size );
+		buffer[size]= '\0';
+		std::cout << buffer;
+	}
+	else
+	{
+		std::string buffer;
+		buffer.resize(size + 1);
+		std::memcpy( buffer.data(), ptr, size );
+		buffer[size]= '\0';
+		std::cout << buffer;
+	}
+
+	std::cout.flush();
+}
+
+} // namespace JitFuncs
 
 std::string GetNativeTargetFeaturesStr()
 {
@@ -262,6 +315,9 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
+		// TODO - reguster more functions.
+		engine->addGlobalMapping( "ust_stdout_print_impl", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint )) );
+
 		const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(Options::entry_point_name));
 		if( main_function == nullptr )
 		{
@@ -274,14 +330,16 @@ int Main( int argc, const char* argv[] )
 	}
 	else
 	{
-		Interpreter interpreter( data_layout );
+		g_interpreter= std::make_unique<Interpreter>( data_layout );
 		// TODO - reguster more functions.
-		interpreter.RegisterCustomFunction( "printf", CustomPrintF );
+		g_interpreter->RegisterCustomFunction( "ust_stdout_print_impl", InterpreterFuncs::StdOutPrint );
 
-		const Interpreter::ResultGeneric result= interpreter.EvaluateGeneric( main_function_llvm, {} );
+		const Interpreter::ResultGeneric result= g_interpreter->EvaluateGeneric( main_function_llvm, {} );
 
 		for( const std::string& err : result.errors )
 			std::cerr << "Execution error: " << err << std::endl;
+
+		g_interpreter= nullptr;
 
 		return int(result.result.IntVal.getLimitedValue());
 	}
