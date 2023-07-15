@@ -795,7 +795,8 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 		return;
 	}
 
-	U_ASSERT( function->arg_size() == instruction->getNumOperands() - 1u );
+	// It is possible to call function providing more arguments, than needed.
+	U_ASSERT( function->arg_size() <= instruction->getNumOperands() - 1u );
 
 	const llvm::StringRef function_name= function->getName();
 
