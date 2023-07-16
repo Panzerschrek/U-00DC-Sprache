@@ -55,6 +55,11 @@ Compiler:
 *) Precompiled modules
 *) More calling conventions (including platform-dependent)
 
+Interpreter:
+*)Support entry point with args and add possibility to provide such args (argc, argv?)
+*) Add possibility to optimize code
+*) Support math functions
+
 Compiler1:
 
 QtCreator plugin:
