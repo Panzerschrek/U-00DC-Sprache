@@ -975,7 +975,7 @@ void Interpreter::ProcessRealloc( const llvm::CallInst* const instruction )
 
 	const size_t offset= heap_.size();
 
-	const size_t new_size= offset + size;
+	const size_t new_size= offset + size + g_malloc_header_size;
 	if( new_size >= g_max_heap_segment_size )
 	{
 		errors_.push_back( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached" );
