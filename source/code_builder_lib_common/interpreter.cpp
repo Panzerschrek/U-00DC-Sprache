@@ -872,6 +872,11 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 		ProcessMalloc( instruction );
 		return;
 	}
+	else if( function_name == "realloc" )
+	{
+		ProcessRealloc( instruction );
+		return;
+	}
 	else if( function_name == "free" || function_name == "ust_memory_free_impl" || function_name == "__U_ust_memory_free_impl" )
 	{
 		ProcessFree( instruction );
@@ -923,13 +928,15 @@ void Interpreter::ProcessMemmove( const llvm::Instruction* const instruction )
 	std::memmove( dst_ptr, src_ptr, size );
 }
 
+constexpr size_t g_malloc_header_size= sizeof(size_t);
+
 void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
 {
 	const size_t size= size_t( GetVal( instruction->getOperand(0u) ).IntVal.getLimitedValue() );
 
 	const size_t offset= heap_.size();
 
-	const size_t new_size= offset + size;
+	const size_t new_size= offset + size + g_malloc_header_size;
 	if( new_size >= g_max_heap_segment_size )
 	{
 		errors_.push_back( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached" );
@@ -937,8 +944,56 @@ void Interpreter::ProcessMalloc( const llvm::CallInst* const instruction )
 	}
 	heap_.resize( new_size );
 
+	// Save size of allocated block.
+	std::memcpy( heap_.data() + offset, &size, g_malloc_header_size );
+
 	llvm::GenericValue val;
-	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(offset + g_heap_segment_offset) );
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(offset + g_malloc_header_size + g_heap_segment_offset) );
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessRealloc( const llvm::CallInst* const instruction )
+{
+	// Just allocate new memory block and copy contents of old one into new.
+
+	const llvm::GenericValue op0= GetVal( instruction->getOperand(0u) );
+	const llvm::GenericValue op1= GetVal( instruction->getOperand(1u) );
+
+	const size_t prev_offset= size_t( op0.IntVal.getLimitedValue() ) - g_heap_segment_offset;
+
+	size_t prev_size= 0;
+	std::memcpy( &prev_size, heap_.data() + ( prev_offset - g_malloc_header_size ), g_malloc_header_size );
+
+	const size_t size= size_t( op1.IntVal.getLimitedValue() );
+
+	if( size <= prev_size )
+	{
+		// If resizing down - just reuse previous block.
+		current_function_frame_.instructions_map[ instruction ]= op0;
+		return;
+	}
+
+	const size_t offset= heap_.size();
+
+	const size_t new_size= offset + size + g_malloc_header_size;
+	if( new_size >= g_max_heap_segment_size )
+	{
+		errors_.push_back( "Max heap size (" + std::to_string( g_max_heap_segment_size ) + ") reached" );
+		return;
+	}
+	heap_.resize( new_size );
+
+	// Save size of newly allocated block.
+	std::memcpy( heap_.data() + offset, &size, g_malloc_header_size );
+
+	// Copy data from previous block.
+	std::memcpy(
+		heap_.data() + ( offset + g_malloc_header_size ),
+		heap_.data() + prev_offset,
+		prev_size );
+
+	llvm::GenericValue val;
+	val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(offset + g_malloc_header_size + g_heap_segment_offset) );
 	current_function_frame_.instructions_map[ instruction ]= val;
 }
 
