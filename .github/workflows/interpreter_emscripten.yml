@@ -11,3 +11,10 @@ jobs:
       run: |
         sudo apt-get install ninja-build sphinx-doc sphinx-common python-stemmer p7zip
         ./ci/build_emscripten.sh
+    - uses: actions/upload-artifact@v3
+      with:
+        name: Interpreter build
+        path: |
+          build/interpreter/Interpreter.html
+          build/interpreter/Interpreter.js
+          build/interpreter/Interpreter.wasm
