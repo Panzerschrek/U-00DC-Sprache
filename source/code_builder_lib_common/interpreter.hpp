@@ -94,6 +94,7 @@ private:
 	void ProcessCall( const llvm::CallInst* instruction, size_t stack_depth );
 	void ProcessMemmove( const llvm::Instruction* instruction );
 	void ProcessMalloc( const llvm::CallInst* instruction );
+	void ProcessRealloc( const llvm::CallInst* instruction );
 	void ProcessFree( const llvm::CallInst* instruction );
 
 	void ProcessCoroId( const llvm::CallInst* instruction );
