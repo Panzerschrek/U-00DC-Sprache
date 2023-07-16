@@ -15,6 +15,7 @@ jobs:
       with:
         name: Interpreter build
         path: |
-          build/interpreter/Interpreter.html
+          build/interpreter/Interpreter_test_shell.html
+          build/interpreter/Interpreter_launcher.js
           build/interpreter/Interpreter.js
           build/interpreter/Interpreter.wasm

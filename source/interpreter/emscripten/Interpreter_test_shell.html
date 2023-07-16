@@ -3,7 +3,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>Ü Interpreter</title>
+		<title>Ü Interpreter test shell</title>
 	</head>
 	<body>
 		Input code:
@@ -35,50 +35,18 @@
 			function CompileAndRun()
 			{
 				// Clear contents.
+				execution_status_element.value=  '';
 				text_out_element.value = '';
 				text_out_err_element.value = '';
-				execution_status_element.value=  '';
 
-				var file_name= 'test.u';
-				var file_content = text_in_element.value;
-				FS.writeFile(file_name, file_content);
-				var call_result= callMain([file_name, '--entry', 'main']);
-				execution_status_element.value = call_result;
-			};
-
-			function PirintText(text)
-			{
-				if (arguments.length > 1)
-					text = Array.prototype.slice.call(arguments).join('');
-				console.log(text);
-				text_out_element.value += text;
-				text_out_element.scrollTop = text_out_element.scrollHeight;
-			};
-
-			function PirintErrText(text)
-			{
-				if (arguments.length > 1)
-					text = Array.prototype.slice.call(arguments).join('');
-				console.log(text);
-				text_out_err_element.value += text;
-				text_out_err_element.scrollTop = text_out_err_element.scrollHeight;
-			};
-
-			// This variable is used by template script.
-			var Module = 
-			{
-				preRun: [],
-				postRun: [],
-				print: PirintText,
-				printErr: PirintErrText,
-				setStatus: (text) => {},
-				totalDependencies: 0,
-				monitorRunDependencies: (left) => {},
-				arguments: [],
-				noInitialRun: true // Do not run at start, run only when it is necessary.
+				var interpreter_result = InterpreterCompileAndRun( text_in_element.value );
+				execution_status_element.value = interpreter_result[0];
+				text_out_element.value = interpreter_result[1];
+				text_out_err_element.value = interpreter_result[2];
 			};
 
 		</script>
-		{{{ SCRIPT }}}
+		<script async="" src="Interpreter_launcher.js"></script>
+		<script async="" src="Interpreter.js"></script>
 	</body>
 </html>
