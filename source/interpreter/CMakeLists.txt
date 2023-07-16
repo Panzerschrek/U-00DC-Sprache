@@ -5,7 +5,11 @@ add_executable( Interpreter ${SOURCES} ${HEADERS} )
 # Link directly against CodeBuilderLib of compiler0. There is no reason to use compiler1 for interpreter.
 target_link_libraries( Interpreter CodeBuilderLib CompilersSupportLib ${LLVM_LIBS_FOR_INTERPRETER} )
 
-install( TARGETS Interpreter )
+if( NOT CMAKE_CROSSCOMPILING )
+	install( TARGETS Interpreter )
+endif()
+
+if( NOT CMAKE_CROSSCOMPILING )
 
 # Run various tests.
 
@@ -38,3 +42,5 @@ add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_T
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/vector_test.u --use-jit )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/volatile_test.u )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/volatile_test.u --use-jit )
+
+endif() # NOT CMAKE CROSSCOMPILING
