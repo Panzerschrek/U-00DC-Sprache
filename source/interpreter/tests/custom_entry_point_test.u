@@ -1,0 +1,7 @@
+import "../../ustlib/stdout.u"
+
+fn nomangle custom_entry_point() : i32
+{
+	ust::stdout_print( "Interpreter custom entry point test.\n" );
+	return 0;
+}

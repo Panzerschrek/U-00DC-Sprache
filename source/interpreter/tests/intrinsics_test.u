@@ -1,0 +1,20 @@
+import "../../ustlib/stdout.u"
+import "../../ustlib/checked_math.u"
+
+fn nomangle main() : i32
+{
+	ust::add_overflow_check_halt( 8, -7 );
+	ust::add_overflow_check_halt( 17u, 656u );
+	ust::sub_overflow_check_halt( 77, -876 );
+	ust::sub_overflow_check_halt( 8765u, 11u );
+	ust::mul_overflow_check_halt( 8, -7 );
+	ust::mul_overflow_check_halt( 17u, 656u );
+	ust::add_overflow_check_halt( 8i64, -7i64 );
+	ust::add_overflow_check_halt( 17u64, 656u64 );
+	ust::sub_overflow_check_halt( 77i64, -876i64 );
+	ust::sub_overflow_check_halt( 8765u64, 11u64 );
+	ust::mul_overflow_check_halt( 8i64, -7i64 );
+	ust::mul_overflow_check_halt( 17u64, 656u64 );
+
+	return 0;
+}

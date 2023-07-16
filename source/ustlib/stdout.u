@@ -1,0 +1,16 @@
+import "random_access_range.u"
+
+namespace ust
+{
+
+// Print string into stdout.
+fn stdout_print( ust::array_view_imut</char8/> str )
+{
+	unsafe( ust_stdout_print_impl( str.data(), str.size() ) );
+}
+
+} // namespace ust
+
+// External implementation functions.
+
+fn nomangle ust_stdout_print_impl( $(char8) start, size_type size ) unsafe;

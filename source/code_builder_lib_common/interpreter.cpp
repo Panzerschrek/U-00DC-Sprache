@@ -267,6 +267,32 @@ llvm::GenericValue Interpreter::CallFunctionImpl( const llvm::Instruction* instr
 			}
 			break;
 
+		case llvm::Instruction::AtomicCmpXchg:
+			{
+				const llvm::GenericValue op0= GetVal(instruction->getOperand(0u));
+				const llvm::GenericValue op1= GetVal(instruction->getOperand(1u));
+				const llvm::GenericValue op2= GetVal(instruction->getOperand(2u));
+				llvm::Type* const read_type= instruction->getOperand(1u)->getType();
+
+				std::byte* const data_ptr= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
+				const llvm::GenericValue load_result= DoLoad( data_ptr, read_type );
+
+				bool success= false;
+				if( load_result.IntVal == op1.IntVal )
+				{
+					DoStore( data_ptr, op2, read_type );
+					success= true;
+				}
+
+				llvm::GenericValue success_val;
+				success_val.IntVal= llvm::APInt( 1, success ? 1 : 0 );
+
+				llvm::GenericValue val;
+				val.AggregateVal= { load_result, success_val };
+				current_function_frame_.instructions_map[ instruction ]= val;
+			}
+			break;
+
 		case llvm::Instruction::Unreachable:
 			errors_.push_back( "executing Unreachable instruction" );
 			return llvm::GenericValue();
@@ -769,7 +795,8 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 		return;
 	}
 
-	U_ASSERT( function->arg_size() == instruction->getNumOperands() - 1u );
+	// It is possible to call function by providing more arguments, than needed.
+	U_ASSERT( function->arg_size() <= instruction->getNumOperands() - 1u );
 
 	const llvm::StringRef function_name= function->getName();
 
@@ -817,6 +844,24 @@ void Interpreter::ProcessCall( const llvm::CallInst* const instruction, const si
 			return;
 		case llvm::Intrinsic::coro_promise:
 			ProcessCoroPromise( instruction );
+			return;
+		case llvm::Intrinsic::sadd_with_overflow:
+			ProcessSAddWithOverflow( instruction );
+			return;
+		case llvm::Intrinsic::uadd_with_overflow:
+			ProcessUAddWithOverflow( instruction );
+			return;
+		case llvm::Intrinsic::ssub_with_overflow:
+			ProcessSSubWithOverflow( instruction );
+			return;
+		case llvm::Intrinsic::usub_with_overflow:
+			ProcessUSubWithOverflow( instruction );
+			return;
+		case llvm::Intrinsic::smul_with_overflow:
+			ProcessSMulWithOverflow( instruction );
+			return;
+		case llvm::Intrinsic::umul_with_overflow:
+			ProcessUMulWithOverflow( instruction );
 			return;
 		default:
 			break;
@@ -1019,6 +1064,120 @@ void Interpreter::ProcessCoroPromise( const llvm::CallInst* const instruction )
 	current_function_frame_.instructions_map[ instruction ]= coroutine_data.promise;
 }
 
+void Interpreter::ProcessSAddWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.sadd_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessUAddWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.uadd_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessSSubWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.ssub_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessUSubWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.usub_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessSMulWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.smul_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
+void Interpreter::ProcessUMulWithOverflow( const llvm::CallInst* const instruction )
+{
+	const llvm::APInt a= GetVal( instruction->getOperand(0u) ).IntVal;
+	const llvm::APInt b= GetVal( instruction->getOperand(1u) ).IntVal;
+
+	bool overflow= false;
+	const llvm::APInt result= a.umul_ov( b, overflow );
+
+	llvm::GenericValue result_val;
+	result_val.IntVal= result;
+
+	llvm::GenericValue overflow_val;
+	overflow_val.IntVal= llvm::APInt( 1, overflow ? 1 : 0 );
+
+	llvm::GenericValue val;
+	val.AggregateVal= { result_val, overflow_val };
+	current_function_frame_.instructions_map[ instruction ]= val;
+}
+
 void Interpreter::ResumeCoroutine( const llvm::CallInst* instruction, const size_t stack_depth, const bool destroy )
 {
 	const llvm::GenericValue handle= GetVal( instruction->getOperand(0u) );
@@ -1058,6 +1217,15 @@ void Interpreter::ProcessUnaryArithmeticInstruction( const llvm::Instruction* co
 	llvm::GenericValue val;
 	switch(instruction->getOpcode())
 	{
+	case llvm::Instruction::ExtractValue:
+		val= op;
+		for( const auto index : llvm::dyn_cast<llvm::ExtractValueInst>(instruction)->indices() )
+		{
+			U_ASSERT( index < val.AggregateVal.size() );
+			val= val.AggregateVal[index];
+		}
+		break;
+
 	case llvm::Instruction::SExt:
 		U_ASSERT(dst_type->isIntegerTy());
 		val.IntVal= op.IntVal.sext(dst_type->getIntegerBitWidth());
@@ -1390,6 +1558,46 @@ void Interpreter::ProcessBinaryArithmeticInstruction( const llvm::Instruction* c
 			case llvm::FCmpInst::FCMP_UGE  : val.IntVal= llvm::APInt( 1u, cmp_result != llvm::APFloat::cmpLessThan ); break;
 			case llvm::FCmpInst::FCMP_OGE  : val.IntVal= llvm::APInt( 1u, cmp_result == llvm::APFloat::cmpGreaterThan || cmp_result == llvm::APFloat::cmpEqual ); break;
 			}
+		}
+		break;
+
+	case llvm::Instruction::AtomicRMW:
+		{
+			std::byte* const data_ptr= GetMemoryForVirtualAddress( size_t(op0.IntVal.getLimitedValue()) );
+			const llvm::GenericValue load_result= DoLoad( data_ptr, instruction->getType() );
+			val= load_result;
+
+			llvm::GenericValue new_value;
+			const auto operation= llvm::dyn_cast<llvm::AtomicRMWInst>(instruction)->getOperation();
+			switch(operation)
+			{
+			case llvm::AtomicRMWInst::Xchg:
+				new_value= op1;
+				break;
+			case llvm::AtomicRMWInst::Add:
+				new_value.IntVal= load_result.IntVal + op1.IntVal;
+				break;
+			case llvm::AtomicRMWInst::Sub:
+				new_value.IntVal= load_result.IntVal - op1.IntVal;
+				break;
+			case llvm::AtomicRMWInst::And:
+				new_value.IntVal= load_result.IntVal & op1.IntVal;
+				break;
+			case llvm::AtomicRMWInst::Nand:
+				new_value.IntVal= ~(load_result.IntVal & op1.IntVal);
+				break;
+			case llvm::AtomicRMWInst::Or:
+				new_value.IntVal= load_result.IntVal | op1.IntVal;
+				break;
+			case llvm::AtomicRMWInst::Xor:
+				new_value.IntVal= load_result.IntVal ^ op1.IntVal;
+				break;
+			default:
+				errors_.push_back( ( std::string("Unsupported atomic operation \"") + llvm::AtomicRMWInst::getOperationName(operation) + "\"" ).str() );
+				new_value= op1;
+				break;
+			}
+			DoStore( data_ptr, new_value, instruction->getType() );
 		}
 		break;
 
