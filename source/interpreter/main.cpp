@@ -91,6 +91,12 @@ llvm::GenericValue MemCmp( llvm::FunctionType*, const llvm::ArrayRef<llvm::Gener
 	return result;
 }
 
+llvm::GenericValue Abort( llvm::FunctionType*, const llvm::ArrayRef<llvm::GenericValue> )
+{
+	std::abort();
+	return llvm::GenericValue();
+}
+
 } // namespace InterpreterFuncs
 
 namespace JitFuncs
@@ -339,8 +345,8 @@ int Main( int argc, const char* argv[] )
 			return 1;
 		}
 
-		// TODO - register more functions.
-		engine->addGlobalMapping( "ust_stdout_print_impl", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint )) );
+		engine->addGlobalMapping( "ust_stdout_print_impl", reinterpret_cast<uint64_t>(reinterpret_cast<void*>( &JitFuncs::StdOutPrint ) ) );
+		// No need to add other functions here - llvm interpreter supports other required functions (memory functions, exit, abort).
 
 		using MainFunctionType= int(*)();
 		const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(Options::entry_point_name));
@@ -356,9 +362,11 @@ int Main( int argc, const char* argv[] )
 	else
 	{
 		g_interpreter= std::make_unique<Interpreter>( data_layout );
-		// TODO - register more functions.
+
+		// Memory functions are supported internally (inside interpreter), for other needed functions register our own handlers.
 		g_interpreter->RegisterCustomFunction( "ust_stdout_print_impl", InterpreterFuncs::StdOutPrint );
 		g_interpreter->RegisterCustomFunction( "memcmp", InterpreterFuncs::MemCmp );
+		g_interpreter->RegisterCustomFunction( "abort", InterpreterFuncs::Abort );
 
 		const Interpreter::ResultGeneric result= g_interpreter->EvaluateGeneric( main_function_llvm, {} );
 
