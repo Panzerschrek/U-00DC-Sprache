@@ -80,6 +80,7 @@ else()
 endif()
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_CODE_BUILDER_LIB Core Target )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB Core )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	IPO # for pass manager builder, etc.
 	Linker # for linking of multiple llvm modules.
@@ -228,7 +229,7 @@ file( GLOB_RECURSE USTLIB_TEST_SOURCES "ustlib_test/*.u" )
 
 file( GLOB COMPILERS_SUPPORT_LIB_SOURCES "compilers_support_lib/*" )
 add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_SOURCES_LL} ${USTLIB_TEST_SOURCES} )
-target_link_libraries( CompilersSupportLib )
+target_link_libraries( CompilersSupportLib ${LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB} )
 target_include_directories( CompilersSupportLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 
 install( FILES ${USTLIB_SOURCES} DESTINATION "ustlib" )
