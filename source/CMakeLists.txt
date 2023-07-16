@@ -41,11 +41,6 @@ endif()
 if( DEFINED LLVM_SRC_DIR )
 	message( STATUS "Build LLVM from sources" )
 
-	# Hack for emscripten LLVM build
-	if( U_EMSCRIPTEN )
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Dwait4=__syscall_wait4")
-	endif()
-
 	add_subdirectory( ${LLVM_SRC_DIR} ${CMAKE_BINARY_DIR}/llvm EXCLUDE_FROM_ALL )
 
 	include_directories( ${LLVM_SRC_DIR}/include ${CMAKE_BINARY_DIR}/llvm/include )
