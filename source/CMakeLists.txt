@@ -189,6 +189,13 @@ target_link_libraries( CodeBuilderLibCommon ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 # CompilersSupportLib
 #
 
+# External AS needed for cross-builds.
+if( DEFINED U_EXTERNAL_LLVM_AS )
+	set( U_LLVM_AS ${U_EXTERNAL_LLVM_AS} )
+else()
+	set( U_LLVM_AS llvm-as )
+endif()
+
 function( CompileLLFile ll_file )
 	get_filename_component( source_name ${ll_file} NAME_WE )
 	set( bc_name ${CMAKE_CURRENT_BINARY_DIR}/bc_files/${source_name}.bc )
@@ -196,8 +203,8 @@ function( CompileLLFile ll_file )
 	add_custom_command(
 		OUTPUT ${bc_name}
 		DEPENDS ${ll_file}
-		DEPENDS llvm-as
-		COMMAND llvm-as ${ll_file} -o ${bc_name}
+		DEPENDS ${U_LLVM_AS}
+		COMMAND ${U_LLVM_AS} ${ll_file} -o ${bc_name}
 		)
 	add_custom_command(
 		OUTPUT ${bc_header_path}
