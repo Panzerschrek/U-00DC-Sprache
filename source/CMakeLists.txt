@@ -2,6 +2,11 @@
 
 project(Sprache)
 
+option( U_EMSCRIPTEN "Build for emscripten" NO )
+if( U_EMSCRIPTEN )
+	set( CMAKE_CROSSCOMPILING YES )
+endif()
+
 option( U_BUILD_COMPILER "Enable compilation of compiler" YES )
 option( U_BUILD_TESTS "Enable compilation of base tests" YES )
 option( U_BUILD_LINKAGE_TESTS "Enable compilation of linkage tests" YES )
@@ -70,6 +75,7 @@ else()
 endif()
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_CODE_BUILDER_LIB Core Target )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB Core )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	IPO # for pass manager builder, etc.
 	Linker # for linking of multiple llvm modules.
@@ -179,6 +185,13 @@ target_link_libraries( CodeBuilderLibCommon ${LLVM_LIBS_FOR_CODE_BUILDER_LIB} )
 # CompilersSupportLib
 #
 
+# External AS needed for cross-builds.
+if( DEFINED U_EXTERNAL_LLVM_AS )
+	set( U_LLVM_AS ${U_EXTERNAL_LLVM_AS} )
+else()
+	set( U_LLVM_AS llvm-as )
+endif()
+
 function( CompileLLFile ll_file )
 	get_filename_component( source_name ${ll_file} NAME_WE )
 	set( bc_name ${CMAKE_CURRENT_BINARY_DIR}/bc_files/${source_name}.bc )
@@ -186,8 +199,8 @@ function( CompileLLFile ll_file )
 	add_custom_command(
 		OUTPUT ${bc_name}
 		DEPENDS ${ll_file}
-		DEPENDS llvm-as
-		COMMAND llvm-as ${ll_file} -o ${bc_name}
+		DEPENDS ${U_LLVM_AS}
+		COMMAND ${U_LLVM_AS} ${ll_file} -o ${bc_name}
 		)
 	add_custom_command(
 		OUTPUT ${bc_header_path}
@@ -211,7 +224,7 @@ file( GLOB_RECURSE USTLIB_TEST_SOURCES "ustlib_test/*.u" )
 
 file( GLOB COMPILERS_SUPPORT_LIB_SOURCES "compilers_support_lib/*" )
 add_library( CompilersSupportLib ${COMPILERS_SUPPORT_LIB_SOURCES} ${bc_files} ${USTLIB_SOURCES} ${USTLIB_SOURCES_LL} ${USTLIB_TEST_SOURCES} )
-target_link_libraries( CompilersSupportLib )
+target_link_libraries( CompilersSupportLib ${LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB} )
 target_include_directories( CompilersSupportLib PRIVATE ${CMAKE_CURRENT_BINARY_DIR} )
 
 install( FILES ${USTLIB_SOURCES} DESTINATION "ustlib" )

@@ -1,0 +1,21 @@
+name: CI
+
+on: [workflow_dispatch]
+
+jobs:
+  build_interpreter_emscripten:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v1
+    - name: build project
+      run: |
+        sudo apt-get install ninja-build sphinx-doc sphinx-common python-stemmer p7zip
+        ./ci/build_emscripten.sh
+    - uses: actions/upload-artifact@v3
+      with:
+        name: Interpreter build
+        path: |
+          build/interpreter/Interpreter_test_shell.html
+          build/interpreter/Interpreter_launcher.js
+          build/interpreter/Interpreter.js
+          build/interpreter/Interpreter.wasm

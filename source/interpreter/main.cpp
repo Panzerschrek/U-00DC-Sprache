@@ -140,54 +140,56 @@ std::string GetNativeTargetFeaturesStr()
 	return features.getString();
 }
 
-namespace Options
-{
-
-namespace cl= llvm::cl;
-
-cl::OptionCategory options_category( "Ü interpreter options" );
-
-cl::list<std::string> input_files(
-	cl::Positional,
-	cl::desc("<source0> [... <sourceN>]"),
-	cl::value_desc("input files"),
-	cl::OneOrMore,
-	cl::cat(options_category) );
-
-cl::list<std::string> include_dir(
-	"include-dir",
-	cl::Prefix,
-	cl::desc("Add directory for search of \"import\" files"),
-	cl::value_desc("dir"),
-	cl::ZeroOrMore,
-	cl::cat(options_category));
-
-cl::opt<std::string> entry_point_name(
-	"entry",
-	cl::desc("Name of entry point function. Default is \"main\"."),
-	cl::init("main"),
-	cl::cat(options_category));
-
-cl::opt<bool> use_jit(
-	"use-jit",
-	cl::desc("Use JIT."),
-	cl::init(false),
-	cl::cat(options_category) );
-
-} // namespace Options
-
 int Main( int argc, const char* argv[] )
 {
-	const llvm::InitLLVM llvm_initializer(argc, argv);
+	// HACK! Reset globals state from previous run (needed for emscripten).
+	llvm::llvm_shutdown();
 
-	// Options
+	static const llvm::InitLLVM llvm_initializer(argc, argv); // Static in order to construct exactly once (for emscripten).
+
+	// Options.
+
+	// Declare options locally in order to reset state after main.
+	// This is needed in case if main function is re-entered (emscripten).
+
+	namespace cl= llvm::cl;
+
+	cl::OptionCategory options_category( "Ü interpreter options" );
+
+	cl::list<std::string> input_files(
+		cl::Positional,
+		cl::desc("<source0> [... <sourceN>]"),
+		cl::value_desc("input files"),
+		cl::OneOrMore,
+		cl::cat(options_category) );
+
+	cl::list<std::string> include_dir(
+		"include-dir",
+		cl::Prefix,
+		cl::desc("Add directory for search of \"import\" files"),
+		cl::value_desc("dir"),
+		cl::ZeroOrMore,
+		cl::cat(options_category));
+
+	cl::opt<std::string> entry_point_name(
+		"entry",
+		cl::desc("Name of entry point function. Default is \"main\"."),
+		cl::init("main"),
+		cl::cat(options_category));
+
+	cl::opt<bool> use_jit(
+		"use-jit",
+		cl::desc("Use JIT."),
+		cl::init(false),
+		cl::cat(options_category) );
+
 	llvm::cl::SetVersionPrinter(
 		[]( llvm::raw_ostream& )
 		{
 			std::cout << "Ü-Sprache version " << getFullVersion() << ", llvm version " << LLVM_VERSION_STRING << std::endl;
 		} );
 
-	llvm::cl::HideUnrelatedOptions( Options::options_category );
+	llvm::cl::HideUnrelatedOptions( options_category );
 
 	const auto description=
 		"Ü-Sprache interpreter.\n"
@@ -200,7 +202,7 @@ int Main( int argc, const char* argv[] )
 	const std::string features_str= GetNativeTargetFeaturesStr();
 	std::unique_ptr<llvm::TargetMachine> target_machine;
 	llvm::DataLayout data_layout("");
-	if( Options::use_jit )
+	if( use_jit )
 	{
 		// Initialize native target and create target machine only if using JIT.
 
@@ -242,7 +244,7 @@ int Main( int argc, const char* argv[] )
 	else
 		data_layout= llvm::DataLayout( GetTestsDataLayout() );
 
-	const auto vfs= CreateVfsOverSystemFS( Options::include_dir );
+	const auto vfs= CreateVfsOverSystemFS( include_dir );
 	if( vfs == nullptr )
 		return 1u;
 
@@ -262,7 +264,7 @@ int Main( int argc, const char* argv[] )
 	const auto errors_format= ErrorsFormat::GCC;
 
 	bool have_some_errors= false;
-	for( const std::string& input_file : Options::input_files )
+	for( const std::string& input_file : input_files )
 	{
 		const SourceGraph source_graph= LoadSourceGraph( *vfs, CalculateSourceFileContentsHash, input_file, prelude_code );
 
@@ -316,7 +318,7 @@ int Main( int argc, const char* argv[] )
 
 	// TODO - support main with empty args or argc+argv.
 	const auto expected_main_function_type= llvm::FunctionType::get( llvm::Type::getInt32Ty(llvm_context), {}, false );
-	const auto main_function_llvm= result_module->getFunction(Options::entry_point_name);
+	const auto main_function_llvm= result_module->getFunction(entry_point_name);
 	if( main_function_llvm == nullptr )
 	{
 		std::cerr << "Can't find entry point!" << std::endl;
@@ -330,7 +332,7 @@ int Main( int argc, const char* argv[] )
 		return 1;
 	}
 
-	if( Options::use_jit )
+	if( use_jit )
 	{
 		llvm::EngineBuilder builder(std::move(result_module));
 		std::string engine_creation_error_string;
@@ -349,7 +351,7 @@ int Main( int argc, const char* argv[] )
 		// No need to add other functions here - llvm interpreter supports other required functions (memory functions, exit, abort).
 
 		using MainFunctionType= int(*)();
-		const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(Options::entry_point_name));
+		const auto main_function= reinterpret_cast<MainFunctionType>(engine->getFunctionAddress(entry_point_name));
 		if( main_function == nullptr )
 		{
 			std::cerr << "Can't find entry point!" << std::endl;
