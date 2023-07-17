@@ -5,6 +5,9 @@ import "memory.u"
 namespace ust
 {
 
+struct empty_range_type{}
+var empty_range_type constexpr empty_range{};
+
 template</ type T, bool is_mutable />
 class random_access_range
 {
@@ -14,6 +17,10 @@ public:
 	fn constructor( mut this, this_type &imut other )= default;
 
 	op=( mut this, this_type &imut other )= default;
+
+	// Use this conversion constructor in order to use simple "ust::empty_range" to pass/return empty range, without specifying exact range type.
+	fn conversion_constructor( empty_range_type e )
+	{}
 
 	template</ size_type size />
 	fn enable_if( is_mutable )

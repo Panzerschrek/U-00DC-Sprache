@@ -127,7 +127,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 					llvm_function,
 					false, // Non-constexpr call.
 					ust::make_array( variable_ptr, expr_result_ptr ),
-					ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+					ust::empty_range,
 					ArgsEvaluationOrder::Direct,
 					src_loc );
 
@@ -697,7 +697,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			function_context,
 			variable_ptr,
 			constructors_ptr.try_lock_imut().deref().functions_set,
-			ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+			ust::empty_range,
 			src_loc );
 
 		return LLVMValueRef::Null;

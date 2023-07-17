@@ -2291,7 +2291,7 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 				overloaded_operator.t,
 				fetch_result[1],
 				false, // non-constexpr call.
-				ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />(),
+				ust::empty_range,
 				src_loc );
 			CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
 			return;

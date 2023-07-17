@@ -30,7 +30,7 @@ fn KeywordToString( Keyword k ) : ust::array_view_imut</ char8 />
 		}
 	}
 
-	return ust::array_view_imut</ char8 />( "" );
+	return "";
 }
 
 } // namespace U1

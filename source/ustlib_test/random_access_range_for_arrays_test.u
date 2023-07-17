@@ -174,7 +174,14 @@ fn nomangle main() : i32
 		var IntRangeImut range= ust::single_element_array_view( x );
 		halt if( range.size() != 1s );
 		halt if( range[0s] != 778 );
+	}
 
+	// Empty range
+	{
+		var IntRangeMut r_mut= ust::empty_range;
+		var IntRangeImut r_imut= ust::empty_range;
+		halt if( !r_mut.empty() );
+		halt if( !r_imut.empty() );
 	}
 
 	return 0;
