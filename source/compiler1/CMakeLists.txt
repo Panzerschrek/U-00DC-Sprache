@@ -87,7 +87,7 @@ string(
 string(
 	REGEX REPLACE
 	${ERRORS_LIST_REGEXP}
-	"	if( e == CodeBuilderErrorCode::\\1 ) { return ust::array_view_imut</ char8 />(\\2); }"
+	"	if( e == CodeBuilderErrorCode::\\1 ) { return ust::string_view8(\\2); }"
 	ERROR_CODE_TO_STRING_LIST
 	${ERRORS_LIST_CONTENT} )
 

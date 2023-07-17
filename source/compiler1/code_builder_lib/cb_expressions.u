@@ -55,7 +55,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NumericConstant& numeric_constant ) : Value
 {
-	var ust::array_view_imut</char8/> mut type_suffix( numeric_constant.num.type_suffix );
+	var ust::string_view8 mut type_suffix( numeric_constant.num.type_suffix );
 	while( !type_suffix.empty() && type_suffix.back() == "\0"c8 )
 	{
 		type_suffix.drop_back();

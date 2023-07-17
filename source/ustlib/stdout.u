@@ -4,7 +4,7 @@ namespace ust
 {
 
 // Print string into stdout.
-fn stdout_print( ust::array_view_imut</char8/> str )
+fn stdout_print( array_view_imut</char8/> str )
 {
 	unsafe( ust_stdout_print_impl( str.data(), str.size() ) );
 }

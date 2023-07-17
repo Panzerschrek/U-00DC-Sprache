@@ -46,7 +46,7 @@ fn IsNumericType( U_FundamentalType t ) : bool;
 fn IsChar( U_FundamentalType t ) : bool;
 fn IsByte( U_FundamentalType t ) : bool;
 
-fn GetFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ char8 />;
-fn GetFundamentalTypeByName( ust::array_view_imut</ char8 /> name ) : U_FundamentalType;
+fn GetFundamentalTypeName( U_FundamentalType t ) : ust::string_view8;
+fn GetFundamentalTypeByName( ust::string_view8 name ) : U_FundamentalType;
 
 } // namespace U1

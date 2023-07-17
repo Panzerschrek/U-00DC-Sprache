@@ -13,7 +13,7 @@ enum CodeBuilderErrorCode
 
 }
 
-fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::array_view_imut</ char8 />
+fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::string_view8
 {
 	@ERROR_CODE_TO_STRING_LIST@
 

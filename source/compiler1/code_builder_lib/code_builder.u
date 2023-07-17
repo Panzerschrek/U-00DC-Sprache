@@ -1696,7 +1696,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 			unsafe
 			{
 				function_context.s_ret= LLVMGetParam( llvm_function, 0u );
-				var ust::array_view_imut</ char8 /> param_name= "_return_value";
+				var ust::string_view8 param_name= "_return_value";
 				LLVMSetValueName2( function_context.s_ret, param_name.data(), param_name.size() );
 			}
 		}
@@ -2428,12 +2428,12 @@ fn CodeBuilder::AddGlobalMutableVariable( this, ust::string8& name_null_terminat
 	}
 }
 
-fn CodeBuilder::GetAttributeKindByName( ust::array_view_imut</char8/> attr_name ) : u32
+fn CodeBuilder::GetAttributeKindByName( ust::string_view8 attr_name ) : u32
 {
 	return unsafe( LLVMGetEnumAttributeKindForName( attr_name.data(), attr_name.size() ) );
 }
 
-fn CodeBuilder::AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name )
+fn CodeBuilder::AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::string_view8 attr_name )
 {
 	unsafe
 	{
@@ -2442,7 +2442,7 @@ fn CodeBuilder::AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 inde
 	}
 }
 
-fn CodeBuilder::AddFunctionTypeAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name, LLVMTypeRef t )
+fn CodeBuilder::AddFunctionTypeAttribute( this, LLVMValueRef llvm_function, u32 index, ust::string_view8 attr_name, LLVMTypeRef t )
 {
 	unsafe
 	{
@@ -3303,7 +3303,7 @@ fn CodeBuilder::CreateLifetimeEnd( this, FunctionContext &mut function_context, 
 	}
 }
 
-fn CodeBuilder::GetIntrinsic( this, ust::array_view_imut</char8/> name, ust::array_view_imut</LLVMTypeRef/> types ) : LLVMValueRef
+fn CodeBuilder::GetIntrinsic( this, ust::string_view8 name, ust::array_view_imut</LLVMTypeRef/> types ) : LLVMValueRef
 {
 	return unsafe(
 		LLVMGetIntrinsicDeclaration(

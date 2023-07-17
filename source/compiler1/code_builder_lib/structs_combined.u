@@ -981,39 +981,39 @@ fn FunctionVariable::VirtuallyEquals( this, FunctionVariable& other ) : bool
 namespace ValueKindHelper
 {
 
-fn GetValueKind( VariablePtr& v ) : ust::array_view_imut</ char8 />
+fn GetValueKind( VariablePtr& v ) : ust::string_view8
 {
 	return "variable";
 }
 
-fn GetValueKind( Type& v ) : ust::array_view_imut</ char8 />
+fn GetValueKind( Type& v ) : ust::string_view8
 {
 	return "type";
 }
 
-fn GetValueKind( FunctionsSet& v ) : ust::array_view_imut</ char8 />
+fn GetValueKind( FunctionsSet& v ) : ust::string_view8
 {
 	return "functions set";
 }
 
-fn GetValueKind( ThisMethodsSet& v ) : ust::array_view_imut</ char8 />
+fn GetValueKind( ThisMethodsSet& v ) : ust::string_view8
 {
 	return "this + methods set";
 }
 
-fn GetValueKind( ust::shared_ptr_imut</TypeTemplatesSet/>& v ) : ust::array_view_imut</ char8 />
+fn GetValueKind( ust::shared_ptr_imut</TypeTemplatesSet/>& v ) : ust::string_view8
 {
 	return "type templates set";
 }
 
-fn GetValueKind( ErrorValue& v ) : ust::array_view_imut</ char8 />
+fn GetValueKind( ErrorValue& v ) : ust::string_view8
 {
 	return "error value";
 }
 
 } // namespace ValueKindHelper
 
-fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />
+fn GetValueKindName( Value& v ) : ust::string_view8
 {
 	variant_visit( &el : v )
 	{

@@ -4,7 +4,7 @@ import "program_string.uh"
 namespace U1
 {
 
-type Iterator= ust::array_view_imut</ char8 />;
+type Iterator= ust::string_view8;
 
 fn IsWhitespace( sprache_char c ) : bool
 {
@@ -533,7 +533,7 @@ c_fixed_lexems_table
 	]
 ];
 
-fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult
+fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 {
 	var LexicalAnalysisResult mut result;
 

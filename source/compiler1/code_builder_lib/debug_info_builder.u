@@ -267,7 +267,7 @@ fn DebugInfoBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 		}
 	}
 
-	var ust::array_view_imut</char8/> stub_type_name= "_stub_debug_type";
+	var ust::string_view8 stub_type_name= "_stub_debug_type";
 
 	return unsafe( LLVMDIBuilderCreateBasicType(
 		builder_,

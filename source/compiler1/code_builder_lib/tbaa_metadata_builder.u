@@ -192,7 +192,7 @@ fn TBAAMetadataBuilder::GetEnumTypeBaseTypeDescriptor( mut this, EnumTypePtr& en
 	halt; // Wrong underlaying type.
 }
 
-fn MakeTBAATypeDescriptor( LLVMContextRef llvm_context, LLVMMetadataRef base_descriptor, ust::array_view_imut</char8/>& name ) unsafe : LLVMMetadataRef
+fn MakeTBAATypeDescriptor( LLVMContextRef llvm_context, LLVMMetadataRef base_descriptor, ust::string_view8 name ) unsafe : LLVMMetadataRef
 {
 	unsafe
 	{
@@ -213,12 +213,12 @@ fn CreateI64ZeroMetadata( LLVMContextRef llvm_context ) unsafe : LLVMMetadataRef
 	return unsafe( LLVMValueAsMetadata( LLVMConstInt( LLVMInt64TypeInContext( llvm_context ), 0u64, LLVMBool::False ) ) );
 }
 
-fn CreateMetadataString( LLVMContextRef llvm_context, ust::array_view_imut</char8/>& s ) unsafe : LLVMMetadataRef
+fn CreateMetadataString( LLVMContextRef llvm_context, ust::string_view8 s ) unsafe : LLVMMetadataRef
 {
 	return unsafe( LLVMMDStringInContext2( llvm_context, s.data(), s.size() ) );
 }
 
-fn CreateMetadataNode( LLVMContextRef llvm_context, ust::array_view_imut</LLVMMetadataRef/>& elements ) unsafe : LLVMMetadataRef
+fn CreateMetadataNode( LLVMContextRef llvm_context, ust::array_view_imut</LLVMMetadataRef/> elements ) unsafe : LLVMMetadataRef
 {
 	return unsafe( LLVMMDNodeInContext2( llvm_context, elements.data(), elements.size() ) );
 }

@@ -58,7 +58,7 @@ fn PreprocessErrorArg( T& x ) : ust::string8
 	{
 		return ust::string8(x);
 	}
-	else static_if( ust::is_same_type</ T, ust::array_view_imut</char8/> />() )
+	else static_if( ust::is_same_type</ T, ust::string_view8 />() )
 	{
 		return ust::string8(x);
 	}

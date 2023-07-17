@@ -924,9 +924,9 @@ private:
 	fn AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef;
 	fn AddGlobalMutableVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, bool externally_available ) : LLVMValueRef;
 
-	fn GetAttributeKindByName( ust::array_view_imut</char8/> attr_name ) : u32;
-	fn AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name );
-	fn AddFunctionTypeAttribute( this, LLVMValueRef llvm_function, u32 index, ust::array_view_imut</char8/> attr_name, LLVMTypeRef t );
+	fn GetAttributeKindByName( ust::string_view8 attr_name ) : u32;
+	fn AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::string_view8 attr_name );
+	fn AddFunctionTypeAttribute( this, LLVMValueRef llvm_function, u32 index, ust::string_view8 attr_name, LLVMTypeRef t );
 
 	// Creates LLVM function and its LLVM type lazily. This call may trigger types competion.
 	fn EnsureLLVMFunctionCreated( mut this, FunctionVariable& function_variable ) : LLVMValueRef;
@@ -984,7 +984,7 @@ private:
 	fn CreateLifetimeStart( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 	fn CreateLifetimeEnd( this, FunctionContext &mut function_context, LLVMValueRef llvm_value );
 
-	fn GetIntrinsic( this, ust::array_view_imut</char8/> name, ust::array_view_imut</LLVMTypeRef/> types ) : LLVMValueRef;
+	fn GetIntrinsic( this, ust::string_view8 name, ust::array_view_imut</LLVMTypeRef/> types ) : LLVMValueRef;
 
 	struct FunctionContextState
 	{

@@ -8,7 +8,7 @@ fn LoadSourceGraph(
 	IVfs &mut vfs,
 	SourceFileContentsHashigFunction source_file_contents_hashing_function,
 	ust::string8& root_file_path,
-	ust::array_view_imut</char8/> prelude_code ) : SourceGraph
+	ust::string_view8 prelude_code ) : SourceGraph
 {
 	var SourceGraph mut source_graph{ .macro_expansion_contexts(Synt::MacroExpansionContexts()) };
 

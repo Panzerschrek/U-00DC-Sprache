@@ -3,7 +3,7 @@ import "program_string.uh"
 namespace U1
 {
 
-fn ReadNextUTF8Char( ust::array_view_imut</ char8 /> &mut start ) : sprache_char
+fn ReadNextUTF8Char( ust::string_view8 &mut start ) : sprache_char
 {
 	// c_bit_masks[4] - menas save first 4 bits
 	var [ u32, 9 ] constexpr c_bit_masks
@@ -85,7 +85,7 @@ fn ReadNextUTF8Char( ust::array_view_imut</ char8 /> &mut start ) : sprache_char
 	return code;
 }
 
-fn GetUTF8FirstChar( ust::array_view_imut</ char8 /> start ) : sprache_char
+fn GetUTF8FirstChar( ust::string_view8 start ) : sprache_char
 {
 	auto mut range_copy= start;
 	return ReadNextUTF8Char( range_copy );

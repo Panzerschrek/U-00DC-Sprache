@@ -418,7 +418,7 @@ type Value= ust::variant</ tup[
 	ust::shared_ptr_imut</TypeTemplatesSet/>
 	] />;
 
-fn GetValueKindName( Value& v ) : ust::array_view_imut</ char8 />;
+fn GetValueKindName( Value& v ) : ust::string_view8;
 
 //
 // NamesScopeValue

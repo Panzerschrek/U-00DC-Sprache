@@ -7,4 +7,8 @@ type string8 = string_base</char8 />;
 type string16= string_base</char16/>;
 type string32= string_base</char32/>;
 
+type string_view8 = array_view_imut</char8 />;
+type string_view16= array_view_imut</char16/>;
+type string_view32= array_view_imut</char32/>;
+
 } // namespace ust

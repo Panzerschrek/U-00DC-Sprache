@@ -59,9 +59,9 @@ fn IsByte( U_FundamentalType t ) : bool
 		t == U_FundamentalType::byte128_;
 }
 
-fn GetFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ char8 />
+fn GetFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
 {
-	if( t == U_FundamentalType::InvalidType	) { return ust::array_view_imut</ char8 />("invalid_type");}
+	if( t == U_FundamentalType::InvalidType	) { return "invalid_type"; }
 	if( t == U_FundamentalType::void_		) { return KeywordToString( Keyword::void_	); }
 	if( t == U_FundamentalType::bool_		) { return KeywordToString( Keyword::bool_	); }
 	if( t == U_FundamentalType::i8_			) { return KeywordToString( Keyword::i8_	); }
@@ -88,7 +88,7 @@ fn GetFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ char8 
 	halt;
 }
 
-fn GetFundamentalTypeByName( ust::array_view_imut</ char8 /> name ) : U_FundamentalType
+fn GetFundamentalTypeByName( ust::string_view8 name ) : U_FundamentalType
 {
 	if( name == KeywordToString( Keyword::void_ ) ) { return U_FundamentalType::void_; }
 	if( name == KeywordToString( Keyword::bool_ ) ) { return U_FundamentalType::bool_; }

@@ -45,7 +45,7 @@ private:
 	fn EncodeFunctionType( this, ManglerState &mut mangler_state, FunctionType& function_type, bool encode_full_type );
 	fn EncodeFunctionParams( this, ManglerState &mut mangler_state, ust::vector</FunctionType::Param/>& params );
 	fn EncodeTemplateArgs( this, ManglerState &mut mangler_state, TemplateArgsFinished& template_args );
-	fn EncodeFullName( this, ManglerState &mut mangler_state, ust::array_view_imut</char8/> name, NamesScope& scope );
+	fn EncodeFullName( this, ManglerState &mut mangler_state, ust::string_view8 name, NamesScope& scope );
 	fn EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state, NamesScope& scope );
 	fn EncodeTemplateClassName( this, ManglerState &mut mangler_state, ClassType& the_class );
 	fn EncodeCoroutineClassName( this, ManglerState &mut mangler_state, ClassType& the_class );
@@ -529,7 +529,7 @@ fn ManglerMSVC::EncodeTemplateArgs( this, ManglerState &mut mangler_state, Templ
 	mangler_state.PushElement( g_terminator );
 }
 
-fn ManglerMSVC::EncodeFullName( this, ManglerState &mut mangler_state, ust::array_view_imut</char8/> name, NamesScope& scope )
+fn ManglerMSVC::EncodeFullName( this, ManglerState &mut mangler_state, ust::string_view8 name, NamesScope& scope )
 {
 	mangler_state.EncodeName( name );
 	EncodeNamespacePostfix_r( mangler_state, scope );
@@ -671,18 +671,18 @@ class ManglerState
 public:
 
 	// Push name and possible create or use backreferences.
-	fn EncodeName( mut this, ust::array_view_imut</char8/> str )
+	fn EncodeName( mut this, ust::string_view8 str )
 	{
 		EncodeNameImpl( str, true );
 	}
 
-	fn EncodeNameNoTerminator( mut this, ust::array_view_imut</char8/> str )
+	fn EncodeNameNoTerminator( mut this, ust::string_view8 str )
 	{
 		EncodeNameImpl( str, false );
 	}
 
 	// Push non-name element (no need to create backreferences for it).
-	fn PushElement( mut this, ust::array_view_imut</char8/> str )
+	fn PushElement( mut this, ust::string_view8 str )
 	{
 		res_+= str;
 	}
@@ -698,7 +698,7 @@ public:
 	}
 
 private:
-	fn EncodeNameImpl( mut this, ust::array_view_imut</char8/> str, bool use_terminator )
+	fn EncodeNameImpl( mut this, ust::string_view8 str, bool use_terminator )
 	{
 		for( auto mut i= 0s; i < g_num_back_references; ++i )
 		{
@@ -734,7 +734,7 @@ private:
 	ust::string8 res_;
 }
 
-fn DecodeOperator( ust::string8& o ) : ust::array_view_imut</ char8 />
+fn DecodeOperator( ust::string8& o ) : ust::string_view8
 {
 	if( o == "+" ){ return "?H"; }
 	if( o == "-" ){ return "?G"; }
@@ -778,7 +778,7 @@ fn DecodeOperator( ust::string8& o ) : ust::array_view_imut</ char8 />
 	return "";
 }
 
-fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ char8 />
+fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
 {
 	if( t == U_FundamentalType::InvalidType ){ return ""; }
 	if( t == U_FundamentalType::LastType	){ return ""; }
@@ -815,7 +815,7 @@ fn MakeNullTerminatedString( ust::string8 mut str ) : ust::string8
 	return move(str);
 }
 
-fn GetCallingConventionName( LLVMCallConvID cc ) : ust::array_view_imut</ char8 />
+fn GetCallingConventionName( LLVMCallConvID cc ) : ust::string_view8
 {
 	if( cc == LLVMCallConv::C )
 	{

@@ -123,6 +123,6 @@ struct LexicalAnalysisResult
 	LexSyntErrors errors;
 }
 
-fn LexicalAnalysis( ust::array_view_imut</ char8 /> program_text ) : LexicalAnalysisResult;
+fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult;
 
 } // namespace U1

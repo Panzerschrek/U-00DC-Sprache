@@ -171,8 +171,8 @@ class ManglerState
 {
 public:
 	fn Push( mut this, char8 c );
-	fn Push( mut this, ust::array_view_imut</char8/> name );
-	fn PushLengthPrefixed( mut this, ust::array_view_imut</char8/> name );
+	fn Push( mut this, ust::string_view8 name );
+	fn PushLengthPrefixed( mut this, ust::string_view8 name );
 	fn PushDecimalNumber( mut this, u64 n );
 
 	fn TakeResult( mut this ) : ust::string8;
@@ -226,13 +226,13 @@ fn ManglerState::Push( mut this, char8 c )
 	result_compressed_.push_back( c );
 }
 
-fn ManglerState::Push( mut this, ust::array_view_imut</char8/> name )
+fn ManglerState::Push( mut this, ust::string_view8 name )
 {
 	result_full_+= name;
 	result_compressed_+= name;
 }
 
-fn ManglerState::PushLengthPrefixed( mut this, ust::array_view_imut</char8/> name )
+fn ManglerState::PushLengthPrefixed( mut this, ust::string_view8 name )
 {
 	PushDecimalNumber( u64(name.size()) );
 	Push( name );
@@ -362,7 +362,7 @@ fn EncodeNestedName( ManglerState &mut mangler_state, ust::string8& name, NamesS
 	}
 }
 
-fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::array_view_imut</ char8 />
+fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
 {
 	if( t == U_FundamentalType::InvalidType ){ return ""; }
 	if( t == U_FundamentalType::LastType	){ return ""; }
@@ -832,7 +832,7 @@ fn EncodeTemplateArgs( ManglerState &mut mangler_state, TemplateArgsFinished& te
 	mangler_state.Push( "E" );
 }
 
-fn DecodeOperator( ust::string8& o ) : ust::array_view_imut</ char8 />
+fn DecodeOperator( ust::string8& o ) : ust::string_view8
 {
 	if( o == "+" ){ return "pl"; }
 	if( o == "-" ){ return "mi"; }

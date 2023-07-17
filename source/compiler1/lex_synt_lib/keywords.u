@@ -7,7 +7,7 @@ fn IsKeyword( ust::string8& str ) : bool
 {
 	for( &el : typeinfo</Keyword/>.elements_list )
 	{
-		var ust::array_view_imut</ char8 /> mut element_name( el.name );
+		var ust::string_view8 mut element_name( el.name );
 		element_name.drop_back(); // remove '_'
 		if( str == element_name )
 		{
@@ -18,13 +18,13 @@ fn IsKeyword( ust::string8& str ) : bool
 	return false;
 }
 
-fn KeywordToString( Keyword k ) : ust::array_view_imut</ char8 />
+fn KeywordToString( Keyword k ) : ust::string_view8
 {
 	for( &el : typeinfo</Keyword/>.elements_list )
 	{
 		if( el.value == u8(k) )
 		{
-			var ust::array_view_imut</ char8 /> mut res( el.name );
+			var ust::string_view8 mut res( el.name );
 			res.drop_back(); // remove '_'
 			return res;
 		}

@@ -42,7 +42,7 @@ fn GetOverloadedOperatorForBinaryOperator( BinaryOperatorType o ) : OverloadedOp
 	halt;
 }
 
-fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8 />
+fn BinaryOperatorToString( BinaryOperatorType o ) : ust::string_view8
 {
 	if( o == BinaryOperatorType::Add ){ return "+"; }
 	if( o == BinaryOperatorType::Sub ){ return "-"; }
@@ -71,7 +71,7 @@ fn BinaryOperatorToString( BinaryOperatorType o ) : ust::array_view_imut</ char8
 	halt;
 }
 
-fn OverloadedOperatorToString( OverloadedOperator o ) : ust::array_view_imut</ char8 />
+fn OverloadedOperatorToString( OverloadedOperator o ) : ust::string_view8
 {
 	if( o == OverloadedOperator::None ) { return ""; }
 

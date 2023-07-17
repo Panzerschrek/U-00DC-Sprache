@@ -354,9 +354,9 @@ fn GetCodeBuilderOptionsForTests() : CodeBuilderOptions
 	return move(options);
 }
 
-fn StringToArrayView( $(char8) string_start, size_type string_size ) unsafe : ust::array_view_imut</ char8 />
+fn StringToArrayView( $(char8) string_start, size_type string_size ) unsafe : ust::string_view8
 {
-	return unsafe( ust::array_view_imut</ char8 />( string_start, string_size ) );
+	return unsafe( ust::string_view8( string_start, string_size ) );
 }
 
 fn TransformSourceFiles( U1_SourceFile& source_files, size_type source_file_count ) : TestVfs::SourceEntries
@@ -427,7 +427,7 @@ fn PrintCodeBuilderErrors( SourceGraph& source_graph, ErrorsContainer& errors )
 
 var SourceFileContentsHashigFunction g_calculate_source_file_contents_hash_ptr(CalculateSourceFileContentsHash);
 
-fn CalculateSourceFileContentsHash( ust::array_view_imut</ char8 /> source_file_contents ) : ust::string8
+fn CalculateSourceFileContentsHash( ust::string_view8 source_file_contents ) : ust::string8
 {
 	unsafe
 	{
