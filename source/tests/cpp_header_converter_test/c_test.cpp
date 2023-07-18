@@ -59,4 +59,4 @@ void DuplicatedProto( int xx )
 	(void)xx;
 }
 
-}
+} // extern "C"

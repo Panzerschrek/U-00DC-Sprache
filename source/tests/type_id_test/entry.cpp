@@ -1,9 +1,14 @@
 #include <cassert>
 #include <iostream>
 
-extern "C" size_t GetSomeClassIdA();
-extern "C" size_t GetSomeClassIdB();
-extern "C" size_t GetSomeClassIdTypeinfo();
+extern "C"
+{
+
+size_t GetSomeClassIdA();
+size_t GetSomeClassIdB();
+size_t GetSomeClassIdTypeinfo();
+
+} // extern "C"
 
 int main()
 {

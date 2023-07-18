@@ -87,7 +87,7 @@ LLVMModuleRef U1_BuildProgramForMSVCManglingTest(
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout );
 
-extern "C" LLVMModuleRef U1_BuildProgramUsingVFS(
+LLVMModuleRef U1_BuildProgramUsingVFS(
 	const U1_IVfsInterface& vfs_interface,
 	const U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,

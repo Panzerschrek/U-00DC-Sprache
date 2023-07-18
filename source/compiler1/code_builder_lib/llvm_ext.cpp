@@ -8,37 +8,40 @@
 #include "../../code_builder_lib_common/return_value_optimization.hpp"
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-extern "C" LLVMValueRef U1_ConstantTokenNone( const LLVMContextRef C )
+extern "C"
+{
+
+LLVMValueRef U1_ConstantTokenNone( const LLVMContextRef C )
 {
 	return llvm::wrap( llvm::ConstantTokenNone::get( *llvm::unwrap(C) ) );
 }
 
-extern "C" LLVMTypeRef U1_GetFunctionType(const LLVMValueRef f)
+LLVMTypeRef U1_GetFunctionType(const LLVMValueRef f)
 {
 	return llvm::wrap(llvm::dyn_cast<llvm::Function>(llvm::unwrap(f))->getFunctionType());
 }
 
-extern "C" void U1_SetStructName(const LLVMTypeRef t, const char* const name)
+void U1_SetStructName(const LLVMTypeRef t, const char* const name)
 {
 	llvm::dyn_cast<llvm::StructType>(llvm::unwrap(t))->setName(name);
 }
 
-extern "C" bool U1_BasicBlockHasPredecessors(const LLVMBasicBlockRef basic_block)
+bool U1_BasicBlockHasPredecessors(const LLVMBasicBlockRef basic_block)
 {
 	return llvm::unwrap(basic_block)->hasNPredecessorsOrMore(1);
 }
 
-extern "C" LLVMValueRef U1_CreateOrphanGEP( const LLVMTypeRef t, const LLVMValueRef poiter, LLVMValueRef* const indices, const uint32_t num_indices )
+LLVMValueRef U1_CreateOrphanGEP( const LLVMTypeRef t, const LLVMValueRef poiter, LLVMValueRef* const indices, const uint32_t num_indices )
 {
 	return llvm::wrap( llvm::GetElementPtrInst::Create( llvm::unwrap(t), llvm::unwrap(poiter), llvm::ArrayRef<llvm::Value*>( reinterpret_cast<llvm::Value**>(indices), num_indices ) ) );
 }
 
-extern "C" void U1_InsertInstructionAfterAnother( const LLVMValueRef src_instructuon, const LLVMValueRef instruction_for_insert )
+void U1_InsertInstructionAfterAnother( const LLVMValueRef src_instructuon, const LLVMValueRef instruction_for_insert )
 {
 	llvm::dyn_cast<llvm::Instruction>( llvm::unwrap(instruction_for_insert) )->insertAfter( llvm::dyn_cast<llvm::Instruction>( llvm::unwrap( src_instructuon ) ) );
 }
 
-extern "C" void U1_FunctionAddDereferenceableAttr(const LLVMValueRef function, const uint32_t index, const uint64_t bytes)
+void U1_FunctionAddDereferenceableAttr(const LLVMValueRef function, const uint32_t index, const uint64_t bytes)
 {
 	const auto f= llvm::dyn_cast<llvm::Function>(llvm::unwrap(function));
 
@@ -51,7 +54,7 @@ extern "C" void U1_FunctionAddDereferenceableAttr(const LLVMValueRef function, c
 		f->addParamAttrs(index - llvm::AttributeList::FirstArgIndex, builder);
 }
 
-extern "C" size_t U1_ConvertUTF8ToUTF16(
+size_t U1_ConvertUTF8ToUTF16(
 	const char* const src_buff, const size_t src_buff_size,
 	llvm::UTF16* const dst_buff, const size_t dst_buff_size )
 {
@@ -62,7 +65,7 @@ extern "C" size_t U1_ConvertUTF8ToUTF16(
 	return str.size();
 }
 
-extern "C" size_t U1_ConvertUTF8ToUTF32(
+size_t U1_ConvertUTF8ToUTF32(
 	const llvm::UTF8* src_buff, const size_t src_buff_size,
 	llvm::UTF32* dst_buff, const size_t dst_buff_size )
 {
@@ -81,7 +84,7 @@ extern "C" size_t U1_ConvertUTF8ToUTF32(
 		return dst_buff_size + 1; // Size is unknown, but greater then expected.
 }
 
-extern "C" LLVMValueRef U1_ConstDataArray(LLVMTypeRef t, const char* const data, const size_t size, const size_t element_count)
+LLVMValueRef U1_ConstDataArray(LLVMTypeRef t, const char* const data, const size_t size, const size_t element_count)
 {
 	return llvm::wrap(
 		llvm::ConstantDataArray::getRaw(
@@ -90,8 +93,10 @@ extern "C" LLVMValueRef U1_ConstDataArray(LLVMTypeRef t, const char* const data,
 			llvm::unwrap(t)));
 }
 
-extern "C" void U1_TryToPerformReturnValueAllocationOptimization( const LLVMValueRef function )
+void U1_TryToPerformReturnValueAllocationOptimization( const LLVMValueRef function )
 {
 	const auto function_really= llvm::dyn_cast<llvm::Function>( llvm::unwrap(function) );
 	U::TryToPerformReturnValueAllocationOptimization( *function_really );
 }
+
+} // extern "C"

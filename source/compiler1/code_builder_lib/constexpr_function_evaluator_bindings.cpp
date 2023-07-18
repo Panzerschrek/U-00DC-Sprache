@@ -2,19 +2,22 @@
 
 #include "../../code_builder_lib_common/interpreter.hpp"
 
-extern "C" U::Interpreter* U1_ConstexprFunctionEvaluatorCreate( const llvm::DataLayout& data_layout )
+extern "C"
+{
+
+U::Interpreter* U1_ConstexprFunctionEvaluatorCreate( const llvm::DataLayout& data_layout )
 {
 	return new U::Interpreter( data_layout );
 }
 
-extern "C" void U1_ConstexprFunctionEvaluatorDestroy( U::Interpreter* const constexpr_function_evaluator )
+void U1_ConstexprFunctionEvaluatorDestroy( U::Interpreter* const constexpr_function_evaluator )
 {
 	delete constexpr_function_evaluator;
 }
 
 using ConstexprFunctionEvaluatorErrorHandlerFunc= void(*)( void* user_data, const char* error_text_start, size_t error_text_size );
 
-extern "C" LLVMValueRef U1_ConstexprFunctionEvaluatorEvaluate(
+LLVMValueRef U1_ConstexprFunctionEvaluatorEvaluate(
 	U::Interpreter& constexpr_function_evaluator,
 	const LLVMValueRef function,
 	const LLVMValueRef* const args_start,
@@ -32,3 +35,5 @@ extern "C" LLVMValueRef U1_ConstexprFunctionEvaluatorEvaluate(
 
 	return llvm::wrap(res.result_constant);
 }
+
+} // extern "C"
