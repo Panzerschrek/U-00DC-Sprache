@@ -157,8 +157,6 @@ U1_BuildProgramWithErrors,\
 U1_BuildProgramWithSyntaxErrors,\
 U1_BuildMultisourceProgram,\
 U1_BuildMultisourceProgramWithErrors,\
-U1_BuildMultisourceProgramWithErrors,\
-U1_BuildMultisourceProgramWithErrors,\
 U1_BuildProgramForLifetimesTest,\
 U1_BuildProgramForMSVCManglingTest,\
 U1_BuildProgramUsingVFS"
