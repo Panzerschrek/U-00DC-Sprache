@@ -221,7 +221,7 @@ U_TEST(LeftShiftTest0)
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(value) );
-		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		for( uint32_t shift= 0u; shift < 32u; shift++ )
 		{
 			args[1].IntVal= llvm::APInt( 32, shift );
 
@@ -230,7 +230,7 @@ U_TEST(LeftShiftTest0)
 					function,
 					llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
 
-			U_TEST_ASSERT( ( value << shift ) == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+			U_TEST_ASSERT( ( uint32_t(value) << shift ) == static_cast<uint32_t>(result_value.IntVal.getLimitedValue()) );
 		}
 	}
 }
@@ -482,7 +482,7 @@ U_TEST(LeftShiftAndAssignTest0)
 	{
 		llvm::GenericValue args[2];
 		args[0].IntVal= llvm::APInt( 32, uint64_t(value) );
-		for( unsigned int shift= 0u; shift < 32u; shift++ )
+		for( uint32_t shift= 0u; shift < 32u; shift++ )
 		{
 			args[1].IntVal= llvm::APInt( 32, shift );
 
@@ -491,7 +491,7 @@ U_TEST(LeftShiftAndAssignTest0)
 					function,
 					llvm::ArrayRef<llvm::GenericValue>( args, 2 ) );
 
-			U_TEST_ASSERT( ( value << shift ) == static_cast<int32_t>(result_value.IntVal.getLimitedValue()) );
+			U_TEST_ASSERT( ( uint32_t(value) << shift ) == static_cast<uint32_t>(result_value.IntVal.getLimitedValue()) );
 		}
 	}
 }

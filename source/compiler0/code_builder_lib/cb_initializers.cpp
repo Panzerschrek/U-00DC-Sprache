@@ -1317,7 +1317,7 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 
 	// Reset "this" for function context.
 	// TODO - maybe reset also other function context fields?
-	const VariablePtr prev_this= function_context.this_;
+	VariablePtr prev_this= function_context.this_;
 	function_context.this_= nullptr;
 
 	llvm::Constant* const result=
@@ -1327,7 +1327,7 @@ llvm::Constant* CodeBuilder::InitializeClassFieldWithInClassIninitalizer(
 			function_context,
 			*class_field.syntax_element->initializer );
 
-	function_context.this_= prev_this;
+	function_context.this_= std::move(prev_this);
 
 	return result;
 }
@@ -1342,7 +1342,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 
 	// Reset "this" for function context.
 	// TODO - maybe reset also other function context fields?
-	const VariablePtr prev_this= function_context.this_;
+	VariablePtr prev_this= function_context.this_;
 	function_context.this_= nullptr;
 
 	llvm::Constant* const result=
@@ -1353,7 +1353,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceClassFieldWithInClassIninitalize
 			*class_field.class_->members_initial, // Use initial class members names scope.
 			function_context );
 
-	function_context.this_= prev_this;
+	function_context.this_= std::move(prev_this);
 
 	return result;
 }

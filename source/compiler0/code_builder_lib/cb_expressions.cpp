@@ -855,6 +855,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			if( !function_context.is_functionless_context )
 			{
+				U_ASSERT( branches_basic_blocks[i] != nullptr );
 				function_context.function->getBasicBlockList().push_back( branches_basic_blocks[i] );
 				function_context.llvm_ir_builder.SetInsertPoint( branches_basic_blocks[i] );
 			}
@@ -928,12 +929,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( !function_context.is_functionless_context )
 	{
+		U_ASSERT( result_block != nullptr );
 		function_context.function->getBasicBlockList().push_back( result_block );
 		function_context.llvm_ir_builder.SetInsertPoint( result_block );
 
 		if( result->value_type != ValueType::Value )
 		{
 			llvm::PHINode* const phi= function_context.llvm_ir_builder.CreatePHI( result->type.GetLLVMType()->getPointerTo(), 2u );
+			U_ASSERT( branches_end_basic_blocks[0] != nullptr );
+			U_ASSERT( branches_end_basic_blocks[1] != nullptr );
 			phi->addIncoming( branches_reference_values[0], branches_end_basic_blocks[0] );
 			phi->addIncoming( branches_reference_values[1], branches_end_basic_blocks[1] );
 			result->llvm_value= phi;
@@ -2818,6 +2822,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	{
 		llvm::BasicBlock* const r_part_end_block= function_context.llvm_ir_builder.GetInsertBlock();
 
+		U_ASSERT( block_after_operator != nullptr );
 		function_context.llvm_ir_builder.CreateBr( block_after_operator );
 		function_context.function->getBasicBlockList().push_back( block_after_operator );
 		function_context.llvm_ir_builder.SetInsertPoint( block_after_operator );
