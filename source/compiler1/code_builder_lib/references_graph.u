@@ -88,7 +88,7 @@ fn ReferencesGraph::TryAddLink( mut this, VariablePtr& from, VariablePtr& to, Na
 
 fn ReferencesGraph::CreateNodeInnerReference( mut this, VariablePtr& node, ValueType value_type ) : VariablePtr
 {
-	halt if( value_type == ValueType::Value );
+	debug_assert( value_type != ValueType::Value, "Creating inner reference node of value type!" );
 
 	var Variable mut node_src{ .value_type= value_type, .location= Variable::Location::Pointer, .name= node.lock_imut().deref().name + " inner reference" };
 	var VariablePtr inner_node( move(node_src) );
@@ -96,7 +96,7 @@ fn ReferencesGraph::CreateNodeInnerReference( mut this, VariablePtr& node, Value
 	AddNode( inner_node );
 
 	var NodeState &mut dst_node= nodes_[node];
-	halt if( !dst_node.inner_reference_node.empty() );
+	debug_assert( dst_node.inner_reference_node.empty(), "Inner reference node already exists!" );
 	dst_node.inner_reference_node= inner_node;
 
 	return inner_node;
@@ -109,7 +109,7 @@ fn ReferencesGraph::MoveNode( mut this, VariablePtr& node )
 	var VariableNullablePtr mut inner_reference_node;
 	{
 		var NodeState &mut node= nodes_[node];
-		halt if(node.moved);
+		debug_assert( !node.moved, "Node is already moved!" );
 		node.moved= true;
 
 		inner_reference_node= node.inner_reference_node;
