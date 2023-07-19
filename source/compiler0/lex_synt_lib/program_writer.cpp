@@ -88,7 +88,7 @@ void ElementWrite( const NameLookup& name_lookup, std::ostream& stream )
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream )
 {
 	ElementWrite( *names_scope_fetch.base, stream );
-	stream << names_scope_fetch.name;
+	stream << "::" << names_scope_fetch.name;
 }
 
 void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream )
