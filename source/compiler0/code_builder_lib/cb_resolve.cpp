@@ -102,7 +102,6 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	Value* value= nullptr;
 
 	if( const TypeTemplatesSet* const type_templates_set= base.GetTypeTemplatesSet() )
-	{
 		value=
 			GenTemplateType(
 				template_parametrization.src_loc_,
@@ -110,15 +109,11 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 				template_parametrization.template_args,
 				names_scope,
 				function_context );
-	}
 	else if( const OverloadedFunctionsSetPtr functions_set= base.GetFunctionsSet() )
 	{
 		if( functions_set->template_functions.empty() )
-		{
 			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc_ );
-		}
 		else
-		{
 			value=
 				ParametrizeFunctionTemplate(
 					template_parametrization.src_loc_,
@@ -126,10 +121,6 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 					template_parametrization.template_args,
 					names_scope,
 					function_context );
-
-			if( value == nullptr )
-				REPORT_ERROR( TemplateFunctionGenerationFailed, names_scope.GetErrors(), template_parametrization.src_loc_, "TODO - name" );
-		}
 	}
 	else
 		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc_ );
@@ -188,9 +179,8 @@ CodeBuilder::NameLookupResult CodeBuilder::LookupName( NamesScope& names_scope, 
 
 	if( value == nullptr )
 		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), src_loc, name );
-
-	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
-			REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), src_loc, name );
+	else if( value->GetYetNotDeducedTemplateArg() != nullptr )
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), src_loc, name );
 
 	return NameLookupResult{ last_space, value };
 }
