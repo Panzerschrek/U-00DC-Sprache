@@ -26,6 +26,26 @@ SyntaxElementBase::SyntaxElementBase( const SrcLoc& src_loc )
 	: src_loc_(src_loc)
 {}
 
+TypeofTypeName::TypeofTypeName( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
+RootNamespaceLookup::RootNamespaceLookup( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
+NameLookup::NameLookup( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
+NamesScopeNameFetch::NamesScopeNameFetch( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
+TemplateParametrization::TemplateParametrization( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 ArrayTypeName::ArrayTypeName( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
@@ -39,10 +59,6 @@ RawPointerType::RawPointerType( const SrcLoc& src_loc )
 {}
 
 GeneratorType::GeneratorType( const SrcLoc& src_loc )
-	: SyntaxElementBase(src_loc)
-{}
-
-ComplexName::ComplexName( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
@@ -278,7 +294,6 @@ TypeAlias::TypeAlias( const SrcLoc& src_loc )
 
 Enum::Enum( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
-	, underlaying_type_name(src_loc)
 {}
 
 FunctionParam::FunctionParam( const SrcLoc& src_loc )
@@ -338,6 +353,11 @@ struct GetSrcLocVisitor final
 		return GetExpressionSrcLoc(expression);
 	}
 
+	SrcLoc operator()( const ComplexName& complex_name ) const
+	{
+		return GetComplexNameSrcLoc(complex_name);
+	}
+
 	SrcLoc operator()( const SyntaxElementBase& element ) const
 	{
 		return element.src_loc_;
@@ -353,6 +373,11 @@ struct GetSrcLocVisitor final
 SrcLoc GetExpressionSrcLoc( const Expression& expression )
 {
 	return std::visit( GetSrcLocVisitor(), expression );
+}
+
+SrcLoc GetComplexNameSrcLoc( const ComplexName& complex_name )
+{
+	return std::visit( GetSrcLocVisitor(), complex_name );
 }
 
 SrcLoc GetInitializerSrcLoc( const Initializer& initializer )
