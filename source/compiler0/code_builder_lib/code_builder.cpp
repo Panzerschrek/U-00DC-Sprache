@@ -1733,6 +1733,10 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 	NamesScope* last_space= nullptr;
 	Value* value= nullptr;
 
+	// In case of typedef convert it to type before other checks.
+	if( base.value->GetTypedef() != nullptr )
+		GlobalThingBuildTypedef( *base.space, *base.value );
+
 	if( const NamesScopePtr inner_namespace= base.value->GetNamespace() )
 	{
 		value= inner_namespace->GetThisScopeValue( names_scope_fetch.name );
@@ -1760,9 +1764,7 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 		}
 	}
 	else if( base.value->GetTypeTemplatesSet() != nullptr )
-	{
 		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
-	}
 
 	if( value == nullptr )
 		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );

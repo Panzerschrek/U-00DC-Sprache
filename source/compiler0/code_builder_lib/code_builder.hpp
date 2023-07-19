@@ -752,7 +752,9 @@ private:
 
 	struct ResolveValueInternalResult
 	{
+		// Namespace where this value is located. Needed in order to build some values (like template sets).
 		NamesScope* space= nullptr;
+		// Value pointer itself. Should be stable pointer (inside some namespace, usually).
 		Value* value= nullptr;
 	};
 
