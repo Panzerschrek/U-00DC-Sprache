@@ -256,7 +256,6 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	non_sync_expression_stack_.clear();
 	generated_template_things_storage_.clear();
 	generated_template_things_sequence_.clear();
-	typeof_values_storage_.clear();
 	coroutine_classes_table_.clear();
 	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
 

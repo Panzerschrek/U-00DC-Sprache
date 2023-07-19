@@ -748,12 +748,16 @@ private:
 	// Name resolving.
 	//
 
-	Value ResolveValue(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		const Synt::ComplexName& complex_name );
+	Value ResolveValue( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& complex_name );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization );
 
-	struct ResolveValueInternalResult
+	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, Value* value );
+
+	struct NameLookupResult
 	{
 		// Namespace where this value is located. Needed in order to build some values (like template sets).
 		// May be empty.
@@ -763,38 +767,9 @@ private:
 		Value* value= nullptr;
 	};
 
-	ResolveValueInternalResult ResolveValueInternal(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		const Synt::ComplexName& complex_name );
-
-	ResolveValueInternalResult ResolveValueImpl(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		const Synt::TypeofTypeName& typeof_type_name );
-
-	ResolveValueInternalResult ResolveValueImpl(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		const Synt::RootNamespaceNameLookup& root_namespace_lookup );
-
-	ResolveValueInternalResult ResolveValueImpl(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		const Synt::NameLookup& name_lookup );
-
-	ResolveValueInternalResult ResolveValueImpl(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		const Synt::NamesScopeNameFetch& names_scope_fetch );
-
-	ResolveValueInternalResult ResolveValueImpl(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		const Synt::TemplateParametrization& template_parametrization );
-
 	// Try to lookup value from names scope. If it is not found - try to lookup it from parent scope, than from parent of parent, etc.
-	ResolveValueInternalResult LookupName( NamesScope& names_scope, const std::string& name, const SrcLoc& src_loc );
+	// Do not perform name build.
+	NameLookupResult LookupName( NamesScope& names_scope, const std::string& name, const SrcLoc& src_loc );
 
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, const std::string& name );
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, const std::string& name, bool recursive_call= false );
@@ -1134,10 +1109,6 @@ private:
 	ProgramStringMap<Value> generated_template_things_storage_;
 	// Template things for current source graph node added sequentialy into this vector too.
 	std::vector<std::string> generated_template_things_sequence_;
-
-	// Hack! Resolve code works with value pointers. But we have no stable value stored inside any names scope for result of typeof.
-	// So, store here such values, if resolve with "typeof" is required.
-	std::vector<std::unique_ptr<Value>> typeof_values_storage_;
 
 	std::vector<GlobalThing> global_things_stack_;
 
