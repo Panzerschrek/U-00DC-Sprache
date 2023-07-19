@@ -355,48 +355,47 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 			if( func.name_.size() <= 1u )
 				continue;
 
-			NamesScope* src_space= &names_scope;
+			Value* value= nullptr;
 			size_t component_index= 0u;
 			if( func.name_.front().empty() )
 			{
+				// Perform function name lookup starting from root.
 				U_ASSERT( func.name_.size() >= 2u );
-				src_space= src_space->GetRoot();
+				value= names_scope.GetRoot()->GetThisScopeValue( func.name_[1] );
 				++component_index;
 			}
-
-			Value* prev_value = nullptr;
-			while( prev_value == nullptr && src_space != nullptr )
+			else
 			{
-				prev_value= src_space->GetThisScopeValue( func.name_[component_index] );
-				src_space= src_space->GetParent();
+				// Perform regular name lookup.
+				value= LookupName( names_scope, func.name_[0], func.src_loc_ ).value;
 			}
 
-			if( prev_value == nullptr )
+			if( value == nullptr )
 			{
 				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.src_loc_, func.name_.front() );
 				continue;
 			}
 
-			for( size_t i= component_index + 1u; prev_value != nullptr && i < func.name_.size(); ++i )
+			for( size_t i= component_index + 1u; value != nullptr && i < func.name_.size(); ++i )
 			{
-				if( const auto namespace_= prev_value->GetNamespace() )
-					prev_value= namespace_->GetThisScopeValue( func.name_[i] );
-				else if( const auto type= prev_value->GetTypeName() )
+				if( const auto namespace_= value->GetNamespace() )
+					value= namespace_->GetThisScopeValue( func.name_[i] );
+				else if( const auto type= value->GetTypeName() )
 				{
 					if( const auto class_= type->GetClassType() )
-						prev_value= class_->members->GetThisScopeValue( func.name_[i] );
+						value= class_->members->GetThisScopeValue( func.name_[i] );
 				}
 
-				if( prev_value == nullptr )
+				if( value == nullptr )
 					REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.src_loc_, func.name_[i] );
 			}
 
-			if( prev_value == nullptr || prev_value->GetFunctionsSet() == nullptr )
+			if( value == nullptr || value->GetFunctionsSet() == nullptr )
 			{
 				REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.src_loc_ );
 				continue;
 			}
-			prev_value->GetFunctionsSet()->out_of_line_syntax_elements.push_back(&func);
+			value->GetFunctionsSet()->out_of_line_syntax_elements.push_back(&func);
 		}
 		else if( const auto namespace_ptr= std::get_if<Synt::NamespacePtr>( &program_element ) )
 		{
