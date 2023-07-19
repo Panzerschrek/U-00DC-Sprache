@@ -256,11 +256,6 @@ private:
 
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope );
 
-	// Resolve as deep, as can, but does not instantiate last component, if it is template.
-	Value ResolveForTemplateSignatureParameter(
-		const Synt::ComplexName& signature_parameter,
-		NamesScope& names_scope );
-
 	// Returns "true" if all ok.
 	bool MatchTemplateArg(
 		const TemplateBase& template_,
@@ -750,17 +745,46 @@ private:
 	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
 
 	// Name resolving.
-	enum class ResolveMode : uint8_t
-	{
-		Regular,
-		ForTemplateSignatureParameter,
-	};
-
 	Value ResolveValue(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const Synt::ComplexName& complex_name,
-		ResolveMode resolve_mode= ResolveMode::Regular );
+		const Synt::ComplexName& complex_name );
+
+	struct ResolveValueInternalResult
+	{
+		NamesScope* space= nullptr;
+		Value* value= nullptr;
+	};
+
+	ResolveValueInternalResult ResolveValueInternal(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const Synt::ComplexName& complex_name );
+
+	ResolveValueInternalResult ResolveValueImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const Synt::TypeofTypeName& typeof_type_name );
+
+	ResolveValueInternalResult ResolveValueImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const Synt::RootNamespaceNameLookup& root_namespace_lookup );
+
+	ResolveValueInternalResult ResolveValueImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const Synt::NameLookup& name_lookup );
+
+	ResolveValueInternalResult ResolveValueImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const Synt::NamesScopeNameFetch& names_scope_fetch );
+
+	ResolveValueInternalResult ResolveValueImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const Synt::TemplateParametrization& template_parametrization );
 
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, const std::string& name );
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, const std::string& name, bool recursive_call= false );

@@ -1520,20 +1520,15 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 {
 	if( it_->type == Lexem::Type::Scope )
 	{
-		RootNamespaceLookup root_namespace_lookup( it_->src_loc );
+		RootNamespaceNameLookup root_namespace_lookup( it_->src_loc );
 		NextLexem(); // Skip ::
-
-		NamesScopeNameFetch names_scope_fetch( it_->src_loc );
-		NextLexem();
 
 		if( it_->type != Lexem::Type::Identifier )
 			PushErrorMessage();
-		names_scope_fetch.name= it_->text;
+		root_namespace_lookup.name= it_->text;
 		NextLexem();
 
-		names_scope_fetch.base= std::make_unique<ComplexName>( std::move( root_namespace_lookup ) );
-
-		return ParseComplexNameTail( std::move( names_scope_fetch ) );
+		return ParseComplexNameTail( std::move( root_namespace_lookup ) );
 	}
 	else if( it_->type == Lexem::Type::Identifier )
 	{
@@ -1560,7 +1555,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 	else
 	{
 		PushErrorMessage();
-		return RootNamespaceLookup( it_->src_loc );
+		return RootNamespaceNameLookup( it_->src_loc );
 	}
 }
 

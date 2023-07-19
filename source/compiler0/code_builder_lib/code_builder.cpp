@@ -794,18 +794,20 @@ size_t CodeBuilder::PrepareFunction(
 		{
 			if( const auto named_return_type = std::get_if<Synt::ComplexName>(func.type_.return_type_.get()) )
 			{
-				// TODO - set flag "auto" in syntax analyzer.
-				if( named_return_type->tail == nullptr &&
-					std::get_if<std::string>( &named_return_type->start_value ) != nullptr &&
-					std::get<std::string>( named_return_type->start_value ) == Keywords::auto_ )
+				if( const auto name_lookup = std::get_if<Synt::NameLookup>( named_return_type ) )
 				{
-					func_variable.return_type_is_auto= true;
-					if( base_class != nullptr )
-						REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, names_scope.GetErrors(), func.src_loc_, func_name );
-					if( func.block_ == nullptr )
-						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc_, func_name );
+					// TODO - set flag "auto" in syntax analyzer.
 
-					function_type.return_type= void_type_;
+					if( name_lookup->name == Keywords::auto_ )
+					{
+						func_variable.return_type_is_auto= true;
+						if( base_class != nullptr )
+							REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, names_scope.GetErrors(), func.src_loc_, func_name );
+						if( func.block_ == nullptr )
+							REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc_, func_name );
+
+						function_type.return_type= void_type_;
+					}
 				}
 			}
 
@@ -1609,182 +1611,195 @@ void CodeBuilder::BuildStaticAssert( StaticAssert& static_assert_, NamesScope& n
 Value CodeBuilder::ResolveValue(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const Synt::ComplexName& complex_name,
-	const ResolveMode resolve_mode )
+	const Synt::ComplexName& complex_name )
 {
-	const SrcLoc& src_loc= complex_name.src_loc_;
-
-	Value* value= nullptr;
-	Value temp_value_storage;
-	const Synt::ComplexName::Component* component= complex_name.tail.get();
-	NamesScope* last_space= &names_scope;
-
-	if( std::get_if<Synt::EmptyVariant>(&complex_name.start_value) != nullptr )
-	{
-		const auto name= std::get_if<std::string>( &complex_name.tail->name_or_template_paramenters );
-		U_ASSERT( complex_name.tail != nullptr && name != nullptr )
-		last_space= names_scope.GetRoot();
-		value= last_space->GetThisScopeValue( *name );
-		component= complex_name.tail->next.get();
-
-		if( value == nullptr )
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), src_loc, *name );
-
-		if( ( *name == Keywords::constructor_ || *name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
-			REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), src_loc, *name );
-	}
-	else if( const auto typeof_type_name= std::get_if<Synt::TypeofTypeName>(&complex_name.start_value) )
-	{
-		temp_value_storage= Value( PrepareTypeImpl( names_scope, function_context, *typeof_type_name ), src_loc );
-		value= &temp_value_storage;
-	}
-	else if(const auto simple_name= std::get_if<std::string>(&complex_name.start_value) )
-	{
-		do
-		{
-			if( const auto class_type= last_space->GetClass() )
-			{
-				const auto class_value= ResolveClassValue( class_type, *simple_name );
-				value= class_value.first;
-				if( names_scope.GetAccessFor( class_type ) < class_value.second )
-					REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, *simple_name, last_space->GetThisNamespaceName() );
-			}
-			else
-				value= last_space->GetThisScopeValue( *simple_name );
-			if( value != nullptr )
-				break;
-			last_space= last_space->GetParent();
-		} while( last_space != nullptr );
-
-		if( value == nullptr )
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), src_loc, *simple_name );
-	}
-	else U_ASSERT(false);
-
-	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
-		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), src_loc, complex_name );
-
-	while( component != nullptr && value != nullptr )
-	{
-		if( resolve_mode == ResolveMode::ForTemplateSignatureParameter && component->next == nullptr &&
-			std::get_if< std::vector<Synt::Expression> >( &component->name_or_template_paramenters ) != nullptr )
-			break;
-
-		// In case of typedef convert it to type before other checks.
-		if( value->GetTypedef() != nullptr )
-			GlobalThingBuildTypedef( *last_space, *value );
-
-		if( const auto component_name= std::get_if<std::string>( &component->name_or_template_paramenters ) )
-		{
-			if( const NamesScopePtr inner_namespace= value->GetNamespace() )
-			{
-				value= inner_namespace->GetThisScopeValue( *component_name );
-				last_space= inner_namespace.get();
-			}
-			else if( const Type* const type= value->GetTypeName() )
-			{
-				if( ClassPtr class_= type->GetClassType() )
-				{
-					const auto class_value= ResolveClassValue( class_, *component_name );
-					if( names_scope.GetAccessFor( class_ ) < class_value.second )
-						REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, *component_name, class_->members->GetThisNamespaceName() );
-
-					if( ( *component_name == Keywords::constructor_ || *component_name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
-						REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), src_loc, *component_name );
-
-					value= class_value.first;
-					// This is wrong for name fetched from parent space.
-					// But it is fine until we perform real build of global things, using this space.
-					// "ResolveClassValue" function should build resolved global things, using correct namespace.
-					last_space= class_->members.get();
-				}
-				else if( EnumPtr const enum_= type->GetEnumType() )
-				{
-					GlobalThingBuildEnum( enum_ );
-					value= enum_->members.GetThisScopeValue( *component_name );
-					last_space= &enum_->members;
-				}
-			}
-			else if( value->GetTypeTemplatesSet() != nullptr )
-			{
-				REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), src_loc, *component_name );
-				return ErrorValue();
-			}
-
-			if( value == nullptr )
-				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), src_loc, *component_name );
-		}
-		else if( const auto template_parameters= std::get_if< std::vector<Synt::Expression> >( &component->name_or_template_paramenters ) )
-		{
-			if( TypeTemplatesSet* const type_templates_set= value->GetTypeTemplatesSet() )
-			{
-				GlobalThingBuildTypeTemplatesSet( *last_space, *type_templates_set );
-				value=
-					GenTemplateType(
-						src_loc,
-						*type_templates_set,
-						*template_parameters,
-						names_scope,
-						function_context );
-				if( value == nullptr )
-					return ErrorValue();
-
-				const Type* const type= value->GetTypeName();
-				U_ASSERT( type != nullptr );
-				if( Class* const class_= type->GetClassType() )
-					last_space= class_->members.get();
-			}
-			else if( const OverloadedFunctionsSetPtr functions_set= value->GetFunctionsSet() )
-			{
-				GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
-				if( functions_set->template_functions.empty() )
-				{
-					REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), src_loc );
-					return ErrorValue();
-				}
-
-				value=
-					ParametrizeFunctionTemplate(
-						src_loc,
-						*functions_set,
-						*template_parameters,
-						names_scope,
-						function_context );
-				if( value == nullptr )
-				{
-					REPORT_ERROR( TemplateFunctionGenerationFailed, names_scope.GetErrors(), src_loc, complex_name );
-					return ErrorValue();
-				}
-			}
-			else
-			{
-				REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), src_loc );
-				return ErrorValue();
-			}
-		}
-
-		component= component->next.get();
-	}
+	const ResolveValueInternalResult result= ResolveValueInternal( names_scope, function_context, complex_name );
 
 	// Complete some things in resolve.
-	if( value != nullptr )
+	if( result.space != nullptr && result.value != nullptr )
 	{
-		if( const OverloadedFunctionsSetPtr functions_set= value->GetFunctionsSet() )
-			GlobalThingBuildFunctionsSet( *last_space, *functions_set, false );
-		else if( TypeTemplatesSet* const type_templates_set= value->GetTypeTemplatesSet() )
-			GlobalThingBuildTypeTemplatesSet( *last_space, *type_templates_set );
-		else if( value->GetTypedef() != nullptr )
-			GlobalThingBuildTypedef( *last_space, *value );
-		else if( value->GetIncompleteGlobalVariable() != nullptr )
-			GlobalThingBuildVariable( *last_space, *value );
-		else if( const Type* const type= value->GetTypeName() )
+		if( const OverloadedFunctionsSetPtr functions_set=  result.value->GetFunctionsSet() )
+			GlobalThingBuildFunctionsSet( *result.space, *functions_set, false );
+		else if( TypeTemplatesSet* const type_templates_set=  result.value->GetTypeTemplatesSet() )
+			GlobalThingBuildTypeTemplatesSet( *result.space, *type_templates_set );
+		else if( result.value->GetTypedef() != nullptr )
+			GlobalThingBuildTypedef( *result.space, * result.value );
+		else if( result.value->GetIncompleteGlobalVariable() != nullptr )
+			GlobalThingBuildVariable( *result.space, * result.value );
+		else if( const Type* const type= result.value->GetTypeName() )
 		{
 			if( const EnumPtr enum_= type->GetEnumType() )
 				GlobalThingBuildEnum( enum_ );
 		}
 	}
 
-	return value == nullptr ? ErrorValue() : *value;
+	return result.value == nullptr ? ErrorValue() : *result.value;
+}
+
+CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueInternal(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::ComplexName& complex_name )
+{
+	return std::visit( [&]( const auto& el ) { return ResolveValueImpl( names_scope, function_context, el ); }, complex_name );
+}
+
+CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::TypeofTypeName& typeof_type_name )
+{
+	// TODO
+	(void)names_scope;
+	(void)function_context;
+	(void)typeof_type_name;
+	return ResolveValueInternalResult{ nullptr, nullptr };
+}
+
+CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::RootNamespaceNameLookup& root_namespace_lookup )
+{
+	(void)function_context;
+
+	NamesScope* const last_space= names_scope.GetRoot();
+	Value* const value= last_space->GetThisScopeValue( root_namespace_lookup.name );
+	if( value == nullptr )
+		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), root_namespace_lookup.src_loc_, root_namespace_lookup.name );
+
+	return ResolveValueInternalResult{ last_space, value };
+}
+
+CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::NameLookup& name_lookup )
+{
+	(void)function_context;
+
+	NamesScope* last_space= &names_scope;
+	Value* value= nullptr;
+
+	do
+	{
+		if( const auto class_type= last_space->GetClass() )
+		{
+			const auto class_value= ResolveClassValue( class_type, name_lookup.name );
+			value= class_value.first;
+			if( names_scope.GetAccessFor( class_type ) < class_value.second )
+				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), name_lookup.src_loc_, name_lookup.name, last_space->GetThisNamespaceName() );
+		}
+		else
+			value= last_space->GetThisScopeValue( name_lookup.name );
+		if( value != nullptr )
+			break;
+		last_space= last_space->GetParent();
+	} while( last_space != nullptr );
+
+	if( value == nullptr )
+		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), name_lookup.src_loc_, name_lookup.name );
+
+	return ResolveValueInternalResult{ last_space, value };
+}
+
+CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::NamesScopeNameFetch& names_scope_fetch )
+{
+	const ResolveValueInternalResult base= ResolveValueInternal( names_scope, function_context, *names_scope_fetch.base );
+	if( base.space == nullptr && base.value == nullptr )
+		return ResolveValueInternalResult{ nullptr, nullptr };
+
+	NamesScope* last_space= nullptr;
+	Value* value= nullptr;
+
+	if( const NamesScopePtr inner_namespace= base.value->GetNamespace() )
+	{
+		value= inner_namespace->GetThisScopeValue( names_scope_fetch.name );
+		last_space= inner_namespace.get();
+	}
+	else if( const Type* const type= base.value->GetTypeName() )
+	{
+		if( ClassPtr class_= type->GetClassType() )
+		{
+			const auto class_value= ResolveClassValue( class_, names_scope_fetch.name );
+			if( names_scope.GetAccessFor( class_ ) < class_value.second )
+				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name, class_->members->GetThisNamespaceName() );
+
+			if( ( names_scope_fetch.name == Keywords::constructor_ || names_scope_fetch.name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
+				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
+
+			value= class_value.first;
+			last_space= class_->members.get();
+		}
+		else if( EnumPtr const enum_= type->GetEnumType() )
+		{
+			GlobalThingBuildEnum( enum_ );
+			value= enum_->members.GetThisScopeValue( names_scope_fetch.name );
+			last_space= &enum_->members;
+		}
+	}
+
+	if( value == nullptr )
+		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
+
+	return ResolveValueInternalResult{ last_space, value };
+}
+
+CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
+	NamesScope& names_scope,
+	FunctionContext& function_context,
+	const Synt::TemplateParametrization& template_parametrization )
+{
+	const ResolveValueInternalResult base= ResolveValueInternal( names_scope, function_context, *template_parametrization.base );
+	if( base.space == nullptr && base.value == nullptr )
+		return ResolveValueInternalResult{ nullptr, nullptr };
+
+	NamesScope* last_space= nullptr;
+	Value* value= nullptr;
+
+	if( TypeTemplatesSet* const type_templates_set= base.value->GetTypeTemplatesSet() )
+	{
+		GlobalThingBuildTypeTemplatesSet( *base.space, *type_templates_set );
+		value=
+			GenTemplateType(
+				template_parametrization.src_loc_,
+				*type_templates_set,
+				template_parametrization.template_args,
+				names_scope,
+				function_context );
+
+		const Type* const type= value->GetTypeName();
+		U_ASSERT( type != nullptr );
+		if( Class* const class_= type->GetClassType() )
+			last_space= class_->members.get();
+	}
+	else if( const OverloadedFunctionsSetPtr functions_set= base.value->GetFunctionsSet() )
+	{
+		GlobalThingBuildFunctionsSet( *base.space, *functions_set, false );
+		if( functions_set->template_functions.empty() )
+		{
+			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc_ );
+		}
+		else
+		{
+			value=
+				ParametrizeFunctionTemplate(
+					template_parametrization.src_loc_,
+					*functions_set,
+					template_parametrization.template_args,
+					names_scope,
+					function_context );
+			if( value == nullptr )
+			REPORT_ERROR( TemplateFunctionGenerationFailed, names_scope.GetErrors(), template_parametrization.src_loc_, "TODO - name" );
+		}
+	}
+	else
+		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc_ );
+
+	return ResolveValueInternalResult{ last_space, value };
 }
 
 std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( const ClassPtr class_type, const std::string& name )

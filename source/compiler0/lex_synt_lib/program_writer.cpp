@@ -16,7 +16,7 @@ namespace
 
 // Prototypes start
 void ElementWrite( const EmptyVariant& empty_variant, std::ostream& stream );
-void ElementWrite( const RootNamespaceLookup& root_namespace_lookup, std::ostream& stream );
+void ElementWrite( const RootNamespaceNameLookup& root_namespace_lookup, std::ostream& stream );
 void ElementWrite( const NameLookup& name_lookup, std::ostream& stream );
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream );
 void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream );
@@ -75,17 +75,15 @@ private:
 
 void ElementWrite( const EmptyVariant&, std::ostream& ) {}
 
-void ElementWrite( const RootNamespaceLookup& root_namespace_lookup, std::ostream& stream )
+void ElementWrite( const RootNamespaceNameLookup& root_namespace_lookup, std::ostream& stream )
 {
-	(void)root_namespace_lookup;
-	stream << "::";
+	stream << "::" << root_namespace_lookup.name;
 }
 
 void ElementWrite( const NameLookup& name_lookup, std::ostream& stream )
 {
 	stream << name_lookup.name;
 }
-
 
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream )
 {

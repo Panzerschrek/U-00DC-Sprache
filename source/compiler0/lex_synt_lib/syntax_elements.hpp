@@ -93,14 +93,14 @@ struct TypeTemplate;
 struct FunctionTemplate;
 
 struct TypeofTypeName;
-struct RootNamespaceLookup;
+struct RootNamespaceNameLookup;
 struct NameLookup;
 struct NamesScopeNameFetch;
 struct TemplateParametrization;
 
 using ComplexName= std::variant<
 	TypeofTypeName,
-	RootNamespaceLookup,
+	RootNamespaceNameLookup,
 	NameLookup,
 	NamesScopeNameFetch,
 	TemplateParametrization
@@ -278,9 +278,11 @@ struct TypeofTypeName final : public SyntaxElementBase
 	ExpressionPtr expression;
 };
 
-struct RootNamespaceLookup final : public SyntaxElementBase
+struct RootNamespaceNameLookup final : public SyntaxElementBase
 {
-	explicit RootNamespaceLookup( const SrcLoc& src_loc );
+	explicit RootNamespaceNameLookup( const SrcLoc& src_loc );
+
+	std::string name;
 };
 
 struct NameLookup final : public SyntaxElementBase

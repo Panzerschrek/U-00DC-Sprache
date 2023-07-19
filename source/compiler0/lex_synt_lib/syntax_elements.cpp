@@ -30,7 +30,7 @@ TypeofTypeName::TypeofTypeName( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
-RootNamespaceLookup::RootNamespaceLookup( const SrcLoc& src_loc )
+RootNamespaceNameLookup::RootNamespaceNameLookup( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 

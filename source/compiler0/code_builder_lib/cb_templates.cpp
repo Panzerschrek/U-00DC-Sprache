@@ -262,13 +262,11 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	std::vector<bool>& template_parameters_usage_flags,
 	const Synt::ComplexName& signature_parameter )
 {
-	// If signature parameter is template parameter, set usage flag.
-	const std::string* const signature_parameter_start= std::get_if<std::string>( &signature_parameter.start_value );
-	if( signature_parameter_start != nullptr && signature_parameter.tail == nullptr )
+	if( const auto name_lookup= std::get_if<Synt::NameLookup>( &signature_parameter ) )
 	{
 		for( const TypeTemplate::TemplateParameter& template_parameter : template_parameters )
 		{
-			if( template_parameter.name == *signature_parameter_start )
+			if( name_lookup->name == template_parameter.name )
 			{
 				const size_t param_index= size_t(&template_parameter - template_parameters.data());
 				template_parameters_usage_flags[ param_index ]= true;
@@ -278,41 +276,26 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		}
 	}
 
-	const Value start_value= ResolveForTemplateSignatureParameter( signature_parameter, names_scope );
-	if( const auto type_templates_set= start_value.GetTypeTemplatesSet() )
+	if( const auto template_parametrization= std::get_if<Synt::TemplateParametrization>( &signature_parameter ) )
 	{
-		const Synt::ComplexName::Component* name_component= signature_parameter.tail.get();
-		if( name_component == nullptr )
+		if( const auto type_templates_set= ResolveValue( names_scope, *global_function_context_, *template_parametrization->base ).GetTypeTemplatesSet() )
 		{
-			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), signature_parameter.src_loc_, "TODO: template name" );
-			return TemplateSignatureParam::TypeParam();
+			TemplateSignatureParam::SpecializedTemplateParam specialized_template;
+
+			bool all_args_are_known= true;
+			for( const Synt::Expression& template_arg : template_parametrization->template_args )
+			{
+				specialized_template.params.push_back( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, template_arg ) );
+				all_args_are_known&= specialized_template.params.back().IsType() || specialized_template.params.back().IsVariable();
+			}
+
+			if( all_args_are_known )
+				return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope );
+
+			specialized_template.type_templates= type_templates_set->type_templates;
+
+			return specialized_template;
 		}
-
-		while( name_component->next != nullptr )
-			name_component= name_component->next.get();
-
-		const auto last_template_parameters= std::get_if< std::vector<Synt::Expression> >( &name_component->name_or_template_paramenters );
-		if( last_template_parameters == nullptr )
-		{
-			REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), signature_parameter.src_loc_, "TODO:  template name" );
-			return TemplateSignatureParam::TypeParam();
-		}
-
-		TemplateSignatureParam::SpecializedTemplateParam specialized_template;
-
-		bool all_args_are_known= true;
-		for( const Synt::Expression& template_parameter : *last_template_parameters )
-		{
-			specialized_template.params.push_back( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, template_parameter ) );
-			all_args_are_known&= specialized_template.params.back().IsType() || specialized_template.params.back().IsVariable();
-		}
-
-		if( all_args_are_known )
-			return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope );
-
-		specialized_template.type_templates= type_templates_set->type_templates;
-
-		return specialized_template;
 	}
 
 	return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope );
@@ -562,13 +545,6 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 
 	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope.GetErrors(), value.GetSrcLoc(), invalid_type_ );
 	return TemplateSignatureParam::TypeParam();
-}
-
-Value CodeBuilder::ResolveForTemplateSignatureParameter(
-	const Synt::ComplexName& signature_parameter,
-	NamesScope& names_scope )
-{
-	return ResolveValue( names_scope, *global_function_context_, signature_parameter, ResolveMode::ForTemplateSignatureParameter );
 }
 
 bool CodeBuilder::MatchTemplateArg(

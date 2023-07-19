@@ -621,34 +621,34 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::ComplexName& named_operand )
 {
-	if( std::get_if<std::string>( &named_operand.start_value ) != nullptr && named_operand.tail == nullptr )
+	if( const auto name_lookup = std::get_if<Synt::NameLookup>( &named_operand) )
 	{
-		const std::string& start_name= std::get<std::string>( named_operand.start_value );
+		const std::string& start_name= name_lookup->name;
 		if( start_name == Keywords::this_ )
 		{
 			if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
 			{
-				REPORT_ERROR( ThisUnavailable, names.GetErrors(), named_operand.src_loc_ );
+				REPORT_ERROR( ThisUnavailable, names.GetErrors(), name_lookup->src_loc_ );
 				return ErrorValue();
 			}
-			return Value( function_context.this_, named_operand.src_loc_ );
+			return Value( function_context.this_, name_lookup->src_loc_ );
 		}
 		else if( start_name == Keywords::base_ )
 		{
 			if( function_context.this_ == nullptr )
 			{
-				REPORT_ERROR( BaseUnavailable, names.GetErrors(), named_operand.src_loc_ );
+				REPORT_ERROR( BaseUnavailable, names.GetErrors(), name_lookup->src_loc_ );
 				return ErrorValue();
 			}
 			const Class& class_= *function_context.this_->type.GetClassType();
 			if( class_.base_class == nullptr )
 			{
-				REPORT_ERROR( BaseUnavailable, names.GetErrors(), named_operand.src_loc_ );
+				REPORT_ERROR( BaseUnavailable, names.GetErrors(), name_lookup->src_loc_ );
 				return ErrorValue();
 			}
 			if( function_context.whole_this_is_unavailable && ( !function_context.base_initialized || class_.base_class->kind == Class::Kind::Abstract ) )
 			{
-				REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.src_loc_, Keyword( Keywords::base_ ) );
+				REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), name_lookup->src_loc_, Keyword( Keywords::base_ ) );
 				return ErrorValue();
 			}
 
@@ -665,21 +665,23 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, class_.base_class, function_context ) );
 
 			function_context.variables_state.AddNode( base );
-			function_context.variables_state.TryAddLink( function_context.this_, base, names.GetErrors(), named_operand.src_loc_ );
+			function_context.variables_state.TryAddLink( function_context.this_, base, names.GetErrors(),name_lookup->src_loc_ );
 
 			RegisterTemporaryVariable( function_context, base );
 
-			return Value( base, named_operand.src_loc_ );
+			return Value( base, name_lookup->src_loc_ );
 		}
 	}
 
 	const Value value_entry= ResolveValue( names, function_context, named_operand );
 
+	const SrcLoc src_loc= Synt::GetComplexNameSrcLoc( named_operand );
+
 	if( const ClassField* const field= value_entry.GetClassField() )
 	{
 		if( function_context.this_ == nullptr )
 		{
-			REPORT_ERROR( ClassFieldAccessInStaticMethod, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
+			REPORT_ERROR( ClassFieldAccessInStaticMethod, names.GetErrors(), src_loc, field->syntax_element->name );
 			return ErrorValue();
 		}
 
@@ -693,7 +695,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				if( field->index < function_context.initialized_this_fields.size() &&
 					!function_context.initialized_this_fields[ field->index ] )
 				{
-					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.src_loc_, field->syntax_element->name );
+					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, field->syntax_element->name );
 					return ErrorValue();
 				}
 			}
@@ -701,25 +703,17 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			{
 				if(!function_context.base_initialized )
 				{
-					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), named_operand.src_loc_, Keyword( Keywords::base_ ) );
+					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, Keyword( Keywords::base_ ) );
 					return ErrorValue();
 				}
 			}
 		}
 
 		const std::string* field_name= nullptr;
-		if( const auto start_string= std::get_if<std::string>( &named_operand.start_value ) )
-			field_name= start_string;
+		if( const auto name_lookup = std::get_if<Synt::NameLookup>( &named_operand) )
+			field_name= &name_lookup->name;
 
-		const Synt::ComplexName::Component* last_component= named_operand.tail.get();
-		while( last_component != nullptr )
-		{
-			if( const auto component_name= std::get_if<std::string>( &last_component->name_or_template_paramenters ) )
-				field_name= component_name;
-			last_component= last_component->next.get();
-		}
-
-		return AccessClassField( names, function_context, function_context.this_, *field, field_name == nullptr ? "" : *field_name, named_operand.src_loc_ );
+		return AccessClassField( names, function_context, function_context.this_, *field, field_name == nullptr ? "" : *field_name, src_loc );
 	}
 	else if( const OverloadedFunctionsSetConstPtr overloaded_functions_set= value_entry.GetFunctionsSet() )
 	{
@@ -740,7 +734,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	else if( const VariablePtr variable= value_entry.GetVariable() )
 	{
 		if( function_context.variables_state.NodeMoved( variable ) )
-			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), named_operand.src_loc_, variable->name );
+			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, variable->name );
 
 		// Forbid mutable global variables access outside unsafe block.
 		// Detect global variable by checking dynamic type of variable's LLVM value.
@@ -748,7 +742,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( variable->value_type == ValueType::ReferenceMut &&
 			llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) != nullptr &&
 			!function_context.is_in_unsafe_block )
-			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), named_operand.src_loc_ );
+			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), src_loc );
 
 		if( IsGlobalVariable(variable) )
 		{
@@ -1232,10 +1226,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
-	Synt::ComplexName complex_name(move_operator.src_loc_);
-	complex_name.start_value= move_operator.var_name_;
+	// TODO - avoid creating Synt struct here.
+	Synt::NameLookup name_lookup(move_operator.src_loc_);
+	name_lookup.name= move_operator.var_name_;
 
-	const Value resolved_value= ResolveValue( names, function_context, complex_name );
+	const Value resolved_value= ResolveValue( names, function_context, name_lookup );
 	const VariablePtr resolved_variable= resolved_value.GetVariable();
 
 	// "resolved_variable" should be mutable reference node pointing to single variable node.
