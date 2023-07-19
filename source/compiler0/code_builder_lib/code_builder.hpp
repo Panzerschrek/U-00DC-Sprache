@@ -744,7 +744,10 @@ private:
 
 	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
 
+	//
 	// Name resolving.
+	//
+
 	Value ResolveValue(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
@@ -790,7 +793,8 @@ private:
 		FunctionContext& function_context,
 		const Synt::TemplateParametrization& template_parametrization );
 
-	ResolveValueInternalResult PerformNameLookup( NamesScope& names_scope, const std::string& name, const SrcLoc& src_loc );
+	// Try to lookup value from names scope. If it is not found - try to lookup it from parent scope, than from parent of parent, etc.
+	ResolveValueInternalResult LookupName( NamesScope& names_scope, const std::string& name, const SrcLoc& src_loc );
 
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, const std::string& name );
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, const std::string& name, bool recursive_call= false );

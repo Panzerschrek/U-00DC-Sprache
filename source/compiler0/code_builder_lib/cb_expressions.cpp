@@ -1226,7 +1226,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
-	const Value* const resolved_value_ptr= PerformNameLookup( names, move_operator.var_name_, move_operator.src_loc_ ).value;
+	const Value* const resolved_value_ptr= LookupName( names, move_operator.var_name_, move_operator.src_loc_ ).value;
 	if( resolved_value_ptr == nullptr )
 		return ErrorValue();
 
