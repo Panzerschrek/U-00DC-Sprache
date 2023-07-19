@@ -1692,33 +1692,7 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 	const Synt::NameLookup& name_lookup )
 {
 	(void)function_context;
-
-	NamesScope* last_space= &names_scope;
-	Value* value= nullptr;
-
-	do
-	{
-		if( const auto class_type= last_space->GetClass() )
-		{
-			const auto class_value= ResolveClassValue( class_type, name_lookup.name );
-			value= class_value.first;
-			if( names_scope.GetAccessFor( class_type ) < class_value.second )
-				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), name_lookup.src_loc_, name_lookup.name, last_space->GetThisNamespaceName() );
-		}
-		else
-			value= last_space->GetThisScopeValue( name_lookup.name );
-		if( value != nullptr )
-			break;
-		last_space= last_space->GetParent();
-	} while( last_space != nullptr );
-
-	if( value == nullptr )
-		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), name_lookup.src_loc_, name_lookup.name );
-
-	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
-			REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), name_lookup.src_loc_, name_lookup.name );
-
-	return ResolveValueInternalResult{ last_space, value };
+	return PerformNameLookup( names_scope, name_lookup.name, name_lookup.src_loc_ );
 }
 
 CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
@@ -1825,6 +1799,36 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 	}
 	else
 		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc_ );
+
+	return ResolveValueInternalResult{ last_space, value };
+}
+
+CodeBuilder::ResolveValueInternalResult CodeBuilder::PerformNameLookup( NamesScope& names_scope, const std::string& name, const SrcLoc& src_loc )
+{
+	NamesScope* last_space= &names_scope;
+	Value* value= nullptr;
+
+	do
+	{
+		if( const auto class_type= last_space->GetClass() )
+		{
+			const auto class_value= ResolveClassValue( class_type, name );
+			value= class_value.first;
+			if( names_scope.GetAccessFor( class_type ) < class_value.second )
+				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), src_loc, name, last_space->GetThisNamespaceName() );
+		}
+		else
+			value= last_space->GetThisScopeValue( name );
+		if( value != nullptr )
+			break;
+		last_space= last_space->GetParent();
+	} while( last_space != nullptr );
+
+	if( value == nullptr )
+		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), src_loc, name );
+
+	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
+			REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), src_loc, name );
 
 	return ResolveValueInternalResult{ last_space, value };
 }

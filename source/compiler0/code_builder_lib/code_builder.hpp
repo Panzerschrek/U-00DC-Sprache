@@ -788,6 +788,8 @@ private:
 		FunctionContext& function_context,
 		const Synt::TemplateParametrization& template_parametrization );
 
+	ResolveValueInternalResult PerformNameLookup( NamesScope& names_scope, const std::string& name, const SrcLoc& src_loc );
+
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, const std::string& name );
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, const std::string& name, bool recursive_call= false );
 

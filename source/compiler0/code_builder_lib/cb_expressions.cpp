@@ -1226,11 +1226,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
-	// TODO - avoid creating Synt struct here.
-	Synt::NameLookup name_lookup(move_operator.src_loc_);
-	name_lookup.name= move_operator.var_name_;
+	const Value* const resolved_value_ptr= PerformNameLookup( names, move_operator.var_name_, move_operator.src_loc_ ).value;
+	if( resolved_value_ptr == nullptr )
+		return ErrorValue();
 
-	const Value resolved_value= ResolveValue( names, function_context, name_lookup );
+	const Value& resolved_value= *resolved_value_ptr;
 	const VariablePtr resolved_variable= resolved_value.GetVariable();
 
 	// "resolved_variable" should be mutable reference node pointing to single variable node.
