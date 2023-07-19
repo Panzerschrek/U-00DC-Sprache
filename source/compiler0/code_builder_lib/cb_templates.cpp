@@ -278,7 +278,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 
 	if( const auto template_parametrization= std::get_if<Synt::TemplateParametrization>( &signature_parameter ) )
 	{
-		if( const auto type_templates_set= ResolveValue( names_scope, *global_function_context_, *template_parametrization->base ).GetTypeTemplatesSet() )
+		const Value base_value= ResolveValue( names_scope, *global_function_context_, *template_parametrization->base );
+		if( const auto type_templates_set= base_value.GetTypeTemplatesSet() )
 		{
 			TemplateSignatureParam::SpecializedTemplateParam specialized_template;
 
@@ -290,7 +291,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 			}
 
 			if( all_args_are_known )
-				return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope );
+				return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope, template_parametrization->src_loc_ );
 
 			specialized_template.type_templates= type_templates_set->type_templates;
 
@@ -298,7 +299,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		}
 	}
 
-	return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope );
+	return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope, Synt::GetComplexNameSrcLoc(signature_parameter) );
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
@@ -321,7 +322,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	else if( const auto generator_type_name_ptr= std::get_if<Synt::GeneratorTypePtr>(&template_parameter) )
 		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *generator_type_name_ptr );
 
-	return ValueToTemplateParam( BuildExpressionCode( template_parameter, names_scope, function_context ), names_scope );
+	return ValueToTemplateParam( BuildExpressionCode( template_parameter, names_scope, function_context ), names_scope, Synt::GetExpressionSrcLoc(template_parameter) );
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
@@ -523,7 +524,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	return coroutine_param;
 }
 
-TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, NamesScope& names_scope )
+TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, NamesScope& names_scope, const SrcLoc& src_loc )
 {
 	if( const auto type= value.GetTypeName() )
 		return TemplateSignatureParam::TypeParam{ *type };
@@ -532,18 +533,21 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 	{
 		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
 		{
-			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), value.GetSrcLoc(), variable->type );
+			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), src_loc, variable->type );
 			return TemplateSignatureParam::TypeParam();
 		}
 		if( variable->constexpr_value == nullptr )
 		{
-			REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), value.GetSrcLoc() );
+			REPORT_ERROR( ExpectedConstantExpression, names_scope.GetErrors(), src_loc );
 			return TemplateSignatureParam::TypeParam();
 		}
 		return TemplateSignatureParam::VariableParam{ variable->type, variable->constexpr_value };
 	}
 
-	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope.GetErrors(), value.GetSrcLoc(), invalid_type_ );
+	if( value.GetTypeTemplatesSet() != nullptr )
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), src_loc, "TODO - name" );
+
+	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope.GetErrors(), src_loc, invalid_type_ );
 	return TemplateSignatureParam::TypeParam();
 }
 

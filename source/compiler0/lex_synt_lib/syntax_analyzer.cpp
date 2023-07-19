@@ -1528,7 +1528,16 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 		root_namespace_lookup.name= it_->text;
 		NextLexem();
 
-		return ParseComplexNameTail( std::move( root_namespace_lookup ) );
+		if( it_->type == Lexem::Type::TemplateBracketLeft )
+		{
+			TemplateParametrization template_parametrization( it_->src_loc );
+			template_parametrization.template_args= ParseTemplateParameters();
+			template_parametrization.base= std::make_unique<ComplexName>( std::move(root_namespace_lookup) );
+
+			return ParseComplexNameTail( std::move(template_parametrization) );
+		}
+		else
+			return ParseComplexNameTail( std::move(root_namespace_lookup) );
 	}
 	else if( it_->type == Lexem::Type::Identifier )
 	{
@@ -1542,14 +1551,22 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 		else
 		{
 			NameLookup name_lookup( it_->src_loc );
-			NextLexem();
 
 			if( it_->type != Lexem::Type::Identifier )
 				PushErrorMessage();
 			name_lookup.name= it_->text;
 			NextLexem();
 
-			return ParseComplexNameTail( std::move( name_lookup ) );
+			if( it_->type == Lexem::Type::TemplateBracketLeft )
+			{
+				TemplateParametrization template_parametrization( it_->src_loc );
+				template_parametrization.template_args= ParseTemplateParameters();
+				template_parametrization.base= std::make_unique<ComplexName>( std::move(name_lookup) );
+
+				return ParseComplexNameTail( std::move(template_parametrization) );
+			}
+			else
+				return ParseComplexNameTail( std::move(name_lookup) );
 		}
 	}
 	else
@@ -1563,14 +1580,9 @@ ComplexName SyntaxAnalyzer::ParseComplexNameTail( ComplexName base )
 {
 	if( it_->type != Lexem::Type::Scope )
 		return base;
-
 	NextLexem(); // Skip ::
 
-	if( it_->type != Lexem::Type::Identifier )
-		PushErrorMessage();
-
 	NamesScopeNameFetch names_scope_fetch( it_->src_loc );
-	NextLexem();
 
 	if( it_->type != Lexem::Type::Identifier )
 		PushErrorMessage();

@@ -1618,14 +1618,14 @@ Value CodeBuilder::ResolveValue(
 	// Complete some things in resolve.
 	if( result.space != nullptr && result.value != nullptr )
 	{
-		if( const OverloadedFunctionsSetPtr functions_set=  result.value->GetFunctionsSet() )
+		if( const OverloadedFunctionsSetPtr functions_set= result.value->GetFunctionsSet() )
 			GlobalThingBuildFunctionsSet( *result.space, *functions_set, false );
-		else if( TypeTemplatesSet* const type_templates_set=  result.value->GetTypeTemplatesSet() )
+		else if( TypeTemplatesSet* const type_templates_set= result.value->GetTypeTemplatesSet() )
 			GlobalThingBuildTypeTemplatesSet( *result.space, *type_templates_set );
 		else if( result.value->GetTypedef() != nullptr )
-			GlobalThingBuildTypedef( *result.space, * result.value );
+			GlobalThingBuildTypedef( *result.space, *result.value );
 		else if( result.value->GetIncompleteGlobalVariable() != nullptr )
-			GlobalThingBuildVariable( *result.space, * result.value );
+			GlobalThingBuildVariable( *result.space, *result.value );
 		else if( const Type* const type= result.value->GetTypeName() )
 		{
 			if( const EnumPtr enum_= type->GetEnumType() )
@@ -1700,6 +1700,9 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 	if( value == nullptr )
 		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), name_lookup.src_loc_, name_lookup.name );
 
+	if( value != nullptr && value->GetYetNotDeducedTemplateArg() != nullptr )
+			REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), name_lookup.src_loc_, name_lookup.name );
+
 	return ResolveValueInternalResult{ last_space, value };
 }
 
@@ -1741,6 +1744,10 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 			last_space= &enum_->members;
 		}
 	}
+	else if( base.value->GetTypeTemplatesSet() != nullptr )
+	{
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
+	}
 
 	if( value == nullptr )
 		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
@@ -1771,10 +1778,13 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 				names_scope,
 				function_context );
 
-		const Type* const type= value->GetTypeName();
-		U_ASSERT( type != nullptr );
-		if( Class* const class_= type->GetClassType() )
-			last_space= class_->members.get();
+		if( value != nullptr )
+		{
+			const Type* const type= value->GetTypeName();
+			U_ASSERT( type != nullptr );
+			if( Class* const class_= type->GetClassType() )
+				last_space= class_->members.get();
+		}
 	}
 	else if( const OverloadedFunctionsSetPtr functions_set= base.value->GetFunctionsSet() )
 	{
@@ -1793,7 +1803,7 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 					names_scope,
 					function_context );
 			if( value == nullptr )
-			REPORT_ERROR( TemplateFunctionGenerationFailed, names_scope.GetErrors(), template_parametrization.src_loc_, "TODO - name" );
+				REPORT_ERROR( TemplateFunctionGenerationFailed, names_scope.GetErrors(), template_parametrization.src_loc_, "TODO - name" );
 		}
 	}
 	else

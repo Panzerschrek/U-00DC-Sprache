@@ -254,7 +254,7 @@ private:
 		std::vector<bool>& template_parameters_usage_flags,
 		const Synt::GeneratorTypePtr& generator_type_name_ptr );
 
-	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope );
+	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope, const SrcLoc& src_loc );
 
 	// Returns "true" if all ok.
 	bool MatchTemplateArg(
