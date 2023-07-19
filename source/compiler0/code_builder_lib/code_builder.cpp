@@ -256,6 +256,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	non_sync_expression_stack_.clear();
 	generated_template_things_storage_.clear();
 	generated_template_things_sequence_.clear();
+	typeof_values_storage_.clear();
 	coroutine_classes_table_.clear();
 	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
 
@@ -1613,6 +1614,10 @@ Value CodeBuilder::ResolveValue(
 	FunctionContext& function_context,
 	const Synt::ComplexName& complex_name )
 {
+	// Fast path for simple typeof.
+	if( const auto typeof_type_name= std::get_if<Synt::TypeofTypeName>( &complex_name ) )
+		return Value( PrepareTypeImpl( names_scope, function_context, *typeof_type_name ), typeof_type_name->src_loc_ );
+
 	const ResolveValueInternalResult result= ResolveValueInternal( names_scope, function_context, complex_name );
 
 	// Complete some things in resolve.
@@ -1649,11 +1654,21 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 	FunctionContext& function_context,
 	const Synt::TypeofTypeName& typeof_type_name )
 {
-	// TODO
-	(void)names_scope;
-	(void)function_context;
-	(void)typeof_type_name;
-	return ResolveValueInternalResult{ nullptr, nullptr };
+	const Type type= PrepareTypeImpl( names_scope, function_context, typeof_type_name );
+
+	Value* value= nullptr;
+	NamesScope* last_scope= nullptr;
+
+	auto value_ptr= std::make_unique<Value>( type, typeof_type_name.src_loc_ );
+	value= value_ptr.get();
+	typeof_values_storage_.push_back(std::move(value_ptr));
+
+	if( const auto class_= type.GetClassType() )
+		last_scope= class_->members.get();
+	else if( const auto enum_= type.GetEnumType() )
+		last_scope= &enum_->members;
+
+	return ResolveValueInternalResult{ last_scope, value };
 }
 
 CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(

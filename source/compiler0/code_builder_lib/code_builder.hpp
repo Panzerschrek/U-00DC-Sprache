@@ -1125,6 +1125,10 @@ private:
 	// Template things for current source graph node added sequentialy into this vector too.
 	std::vector<std::string> generated_template_things_sequence_;
 
+	// Hack! Resolve code works with value pointers. But we have no stable value stored inside any names scope for result of typeof.
+	// So, store here such values, if resolve with "typeof" is required.
+	std::vector<std::unique_ptr<Value>> typeof_values_storage_;
+
 	std::vector<GlobalThing> global_things_stack_;
 
 	std::optional<DebugInfoBuilder> debug_info_builder_;
