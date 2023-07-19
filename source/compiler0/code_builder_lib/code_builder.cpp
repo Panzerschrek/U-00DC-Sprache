@@ -1656,19 +1656,11 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 {
 	const Type type= PrepareTypeImpl( names_scope, function_context, typeof_type_name );
 
-	Value* value= nullptr;
-	NamesScope* last_scope= nullptr;
-
 	auto value_ptr= std::make_unique<Value>( type, typeof_type_name.src_loc_ );
-	value= value_ptr.get();
+	Value* const value= value_ptr.get();
 	typeof_values_storage_.push_back(std::move(value_ptr));
 
-	if( const auto class_= type.GetClassType() )
-		last_scope= class_->members.get();
-	else if( const auto enum_= type.GetEnumType() )
-		last_scope= &enum_->members;
-
-	return ResolveValueInternalResult{ last_scope, value };
+	return ResolveValueInternalResult{ nullptr, value };
 }
 
 CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
@@ -1701,20 +1693,20 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 	const Synt::NamesScopeNameFetch& names_scope_fetch )
 {
 	const ResolveValueInternalResult base= ResolveValueInternal( names_scope, function_context, *names_scope_fetch.base );
-	if( base.space == nullptr && base.value == nullptr )
+	if( base.value == nullptr )
 		return ResolveValueInternalResult{ nullptr, nullptr };
 
 	NamesScope* last_space= nullptr;
 	Value* value= nullptr;
 
 	// In case of typedef convert it to type before other checks.
-	if( base.value->GetTypedef() != nullptr )
+	if( base.value->GetTypedef() != nullptr && base.space != nullptr )
 		GlobalThingBuildTypedef( *base.space, *base.value );
 
 	if( const NamesScopePtr inner_namespace= base.value->GetNamespace() )
 	{
-		value= inner_namespace->GetThisScopeValue( names_scope_fetch.name );
 		last_space= inner_namespace.get();
+		value= inner_namespace->GetThisScopeValue( names_scope_fetch.name );
 	}
 	else if( const Type* const type= base.value->GetTypeName() )
 	{
@@ -1727,14 +1719,14 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::ResolveValueImpl(
 			if( ( names_scope_fetch.name == Keywords::constructor_ || names_scope_fetch.name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
 				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
 
-			value= class_value.first;
 			last_space= class_->members.get();
+			value= class_value.first;
 		}
 		else if( EnumPtr const enum_= type->GetEnumType() )
 		{
 			GlobalThingBuildEnum( enum_ );
-			value= enum_->members.GetThisScopeValue( names_scope_fetch.name );
 			last_space= &enum_->members;
+			value= enum_->members.GetThisScopeValue( names_scope_fetch.name );
 		}
 	}
 	else if( base.value->GetTypeTemplatesSet() != nullptr )
@@ -1819,8 +1811,10 @@ CodeBuilder::ResolveValueInternalResult CodeBuilder::PerformNameLookup( NamesSco
 		}
 		else
 			value= last_space->GetThisScopeValue( name );
+
 		if( value != nullptr )
 			break;
+
 		last_space= last_space->GetParent();
 	} while( last_space != nullptr );
 
