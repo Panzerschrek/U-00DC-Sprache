@@ -1912,7 +1912,7 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( Cla
 	GlobalThingPrepareClassParentsList( class_type );
 
 	// TODO - maybe produce some kind of error if name found more than in one parents?
-	std::pair<Value*, ClassMemberVisibility> parent_class_value;
+	std::pair<Value*, ClassMemberVisibility> parent_class_value{nullptr, ClassMemberVisibility::Public};
 	bool has_mergable_thing= false;
 	for( const Class::Parent& parent : class_type->parents )
 	{
@@ -1926,7 +1926,7 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( Cla
 			if( current_thing_is_mergable && has_mergable_thing && !class_type->is_complete && !recursive_call )
 			{
 				// If we found more than one functions sets or template sets - trigger class build and perform resolve again.
-				// Mergable thisngs will be merged during class build and added into class namespace.
+				// Mergable things will be merged during class build and added into class namespace.
 				GlobalThingBuildClass( class_type );
 				return ResolveClassValueImpl( class_type, name, true );
 			}
