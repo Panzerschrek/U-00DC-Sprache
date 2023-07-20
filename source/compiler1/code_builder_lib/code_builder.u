@@ -400,20 +400,28 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	{
 		with( &names_scope_functions_set : f_ptr.try_lock_imut().deref() )
 		{
-			// Append "this" to functions set of this class.
-			if( !names_scope_functions_set.class_.empty() && !function_context.this_.empty() )
+			if( !names_scope_functions_set.class_.empty() )
 			{
-				auto this_non_null= function_context.this_.try_to_non_nullable();
-				with( &this_ : this_non_null.lock_imut().deref() )
+				// Append "this" to functions set of this class.
+				if( !function_context.this_.empty() && !function_context.whole_this_is_unavailable )
 				{
-					if( names_scope_functions_set.class_.try_to_non_nullable() == this_.t && !function_context.whole_this_is_unavailable )
+					auto this_non_null= function_context.this_.try_to_non_nullable();
+					with( &this_ : this_non_null.lock_imut().deref() )
 					{
-						var ThisMethodsSet mut this_methods_set
+						if_var( &this_class_type : this_.t.GetClassType() )
 						{
-							.this_= this_non_null,
-							.functions_set= names_scope_functions_set.functions_set,
-						};
-						return move(this_methods_set);
+							auto functions_set_class_non_null= names_scope_functions_set.class_.try_to_non_nullable();
+							if( functions_set_class_non_null == this_class_type ||
+								this_class_type.lock_imut().deref().HasAncestor( functions_set_class_non_null ) )
+							{
+								var ThisMethodsSet mut this_methods_set
+								{
+									.this_= this_non_null,
+									.functions_set= names_scope_functions_set.functions_set,
+								};
+								return move(this_methods_set);
+							}
+						}
 					}
 				}
 			}
@@ -822,6 +830,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 				names_scope,
 				function_context,
 				f.functions_set,
+				f.class_,
 				template_parametrization.template_args.deref(),
 				template_parametrization.src_loc );
 

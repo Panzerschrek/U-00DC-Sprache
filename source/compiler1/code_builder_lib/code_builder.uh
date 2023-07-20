@@ -664,6 +664,7 @@ private:
 		NamesScopePtr& args_names_scope,
 		FunctionContext &mut function_context,
 		FunctionsSet& functions_set,
+		ust::shared_ptr_nullable_mut</ClassType/> functions_set_class,
 		Synt::TemplateArgs& template_args,
 		SrcLoc& src_loc ) : ust::optional</NamesScopeValue/>;
 

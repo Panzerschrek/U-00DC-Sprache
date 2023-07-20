@@ -1559,6 +1559,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				names_scope,
 				function_context,
 				functions_set,
+				functions_set_lock.deref().class_,
 				member_access_operator.template_args.try_deref(),
 				member_access_operator.src_loc );
 

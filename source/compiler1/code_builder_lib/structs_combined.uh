@@ -201,6 +201,8 @@ struct ClassType
 
 	fn GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility;
 	fn SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility );
+
+	fn HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool;
 }
 
 type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;

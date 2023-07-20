@@ -1154,6 +1154,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	NamesScopePtr& args_names_scope,
 	FunctionContext &mut function_context,
 	FunctionsSet& functions_set,
+	ust::shared_ptr_nullable_mut</ClassType/> mut functions_set_class,
 	Synt::TemplateArgs& template_args,
 	SrcLoc& src_loc ) : ust::optional</NamesScopeValue/>
 {
@@ -1208,6 +1209,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	}
 
 	var NamesScopeFunctionsSet mut result_functions_set;
+	result_functions_set.class_= move(functions_set_class);
 	foreach( &function_template_ptr : functions_set.function_templates )
 	{
 		auto& function_template= function_template_ptr.deref();
