@@ -642,7 +642,7 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 	}
 	else if( !value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
 	{
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "TODO - name" )
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "" )
 		return TemplateSignatureParam::TypeParam();
 	}
 	else

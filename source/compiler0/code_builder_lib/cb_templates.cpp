@@ -545,7 +545,7 @@ TemplateSignatureParam CodeBuilder::ValueToTemplateParam( const Value& value, Na
 	}
 
 	if( value.GetTypeTemplatesSet() != nullptr )
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), src_loc, "TODO - name" );
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), src_loc, "" );
 
 	REPORT_ERROR( InvalidValueAsTemplateArgument, names_scope.GetErrors(), src_loc, invalid_type_ );
 	return TemplateSignatureParam::TypeParam();

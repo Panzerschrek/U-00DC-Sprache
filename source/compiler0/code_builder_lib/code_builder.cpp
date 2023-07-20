@@ -796,8 +796,6 @@ size_t CodeBuilder::PrepareFunction(
 			{
 				if( const auto name_lookup = std::get_if<Synt::NameLookup>( named_return_type ) )
 				{
-					// TODO - set flag "auto" in syntax analyzer.
-
 					if( name_lookup->name == Keywords::auto_ )
 					{
 						func_variable.return_type_is_auto= true;

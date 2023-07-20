@@ -174,7 +174,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			function_context.references_graph.AddNodeIfNotExists( v_ptr );
 			return v_ptr;
 		}
-		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, src_loc, ust::string8("TODO - name" ) )
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, src_loc, ust::string8("") )
 	}
 
 	auto type_templates_set_ptr= names_scope_value.Get</TypeTemplatesSet/>();
@@ -350,7 +350,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	}
 	else if( !type_templates_set.empty() )
 	{
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope, names_scope_fetch.src_loc, names_scope_fetch.name )
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, names_scope_fetch.src_loc, names_scope_fetch.base_.deref() )
 		return ust::null_optional;
 	}
 

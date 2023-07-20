@@ -75,16 +75,17 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
 
 			value= class_value.first;
+			// TODO - is this correct namespace?
 			BuildGlobalThingDuringResolveIfNecessary( *class_->members, value );
 		}
-		else if( EnumPtr const enum_= type->GetEnumType() )
+		else if( const EnumPtr enum_= type->GetEnumType() )
 		{
 			value= enum_->members.GetThisScopeValue( names_scope_fetch.name );
 			BuildGlobalThingDuringResolveIfNecessary( enum_->members, value );
 		}
 	}
 	else if( base.GetTypeTemplatesSet() != nullptr )
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc_, *names_scope_fetch.base );
 
 	if( value == nullptr )
 	{
