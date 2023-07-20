@@ -536,24 +536,13 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 				continue;
 			}
 
-			var ust::shared_ptr_nullable_imut</NamesScope/> mut current_scope(names_scope_ptr);
 			var ust::optional</NamesScopeValue/> mut current_value;
 
 			auto mut start_component_index= 0s;
 			if( name_components.front().empty() )
 			{
 				// Global name - search in root namespace.
-				loop
-				{
-					auto parent= current_scope.try_lock_imut().deref().GetParent();
-					if( parent.empty() )
-					{
-						break;
-					}
-					current_scope= parent;
-				}
-
-				if_var( mut names_scope_value : current_scope.try_lock_imut().deref().GetThisScopeValue( name_components[1s] ) )
+				if_var( mut names_scope_value : GetRootNamespace( names_scope_ptr ).lock_imut().deref().GetThisScopeValue( name_components[1s] ) )
 				{
 					current_value= move(names_scope_value);
 				}
@@ -562,18 +551,25 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 			}
 			else
 			{
-				while( !current_scope.empty() )
+				var ust::shared_ptr_imut</NamesScope/> mut current_scope(names_scope_ptr);
+
+				loop
 				{
-					if_var( mut names_scope_value : current_scope.try_lock_imut().deref().GetThisScopeValue( name_components.front() ) )
+					if_var( mut names_scope_value : current_scope.lock_imut().deref().GetThisScopeValue( name_components.front() ) )
 					{
 						current_value= move(names_scope_value);
 						break;
 					}
-					current_scope= current_scope.try_lock_imut().deref().GetParent();
+					auto next_scope= current_scope.lock_imut().deref().GetParent();
+					if( next_scope.empty() )
+					{
+						break;
+					}
+					current_scope= next_scope.try_to_non_nullable();
 				}
 				start_component_index= 1s;
 			}
-			if( current_scope.empty() )
+			if( current_value.empty() )
 			{
 				REPORT_ERROR( NameNotFound, names_scope_ptr, function_declaration.src_loc, name_components.front() )
 				continue;
@@ -596,7 +592,6 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 					}
 
 					current_value.try_deref()= new_value.try_deref();
-					current_scope= namespace_;
 				}
 				else if( !class_.empty() )
 				{
@@ -611,7 +606,6 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 					}
 
 					current_value.try_deref()= new_value.try_deref();
-					current_scope= class_lock.deref().members;
 				}
 				else
 				{
