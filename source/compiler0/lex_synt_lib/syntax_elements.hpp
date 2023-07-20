@@ -74,6 +74,7 @@ struct WithOperator;
 struct IfOperator;
 struct StaticIfOperator;
 struct IfCoroAdvanceOperator;
+struct SwitchOperator;
 struct SingleExpressionOperator;
 struct AssignmentOperator;
 struct AdditiveAssignmentOperator;
@@ -193,6 +194,7 @@ using BlockElement= std::variant<
 	IfOperator,
 	StaticIfOperator,
 	IfCoroAdvanceOperator,
+	SwitchOperator,
 	SingleExpressionOperator,
 	AssignmentOperator,
 	AdditiveAssignmentOperator,
@@ -786,6 +788,20 @@ struct IfCoroAdvanceOperator final : public SyntaxElementBase
 	Block block;
 	IfAlternativePtr alternative;
 	SrcLoc end_src_loc;
+};
+
+struct SwitchOperator final : public SyntaxElementBase
+{
+	SwitchOperator( const SrcLoc& src_loc );
+
+	struct Case
+	{
+		Expression value;
+		Block block;
+	};
+
+	Expression value;
+	std::vector<Case> cases_;
 };
 
 struct SingleExpressionOperator final : public SyntaxElementBase
