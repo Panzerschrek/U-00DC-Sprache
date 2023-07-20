@@ -112,7 +112,12 @@ private:
 	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TemplateParametrization& template_parametrization ) : ust::optional</NamesScopeValue/>;
 	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeof& typeof_ ) : ust::optional</NamesScopeValue/>;
 
-	fn BuildGlobalThingDuringResolveIfNecessary(mut this, NamesScopePtr& names_scope, NamesScopeValue& value );
+	fn BuildGlobalThingDuringResolveIfNecessary( mut this, NamesScopePtr& names_scope, NamesScopeValue& value );
+
+	// Value with scope where it was found.
+	type NameLookupResult= ust::optional</tup[NamesScopePtr, NamesScopeValue]/>;
+
+	fn LookupName( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::string8& name, SrcLoc& src_loc ) : NameLookupResult;
 
 	// Returns value itself, visibility label, namespace of class where this value was found (class itself or one of parents).
 	fn ResolveClassValue(

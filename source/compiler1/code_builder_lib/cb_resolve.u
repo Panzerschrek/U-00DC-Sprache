@@ -206,62 +206,14 @@ fn CodeBuilder::ResolveValueInternal( mut this, NamesScopePtr& names_scope, Func
 
 fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NameLookup& name_lookup ) : ust::optional</NamesScopeValue/>
 {
-	var NamesScopePtr mut current_scope(names_scope);
-	var ust::optional</NamesScopeValue/> mut start_value;
-
-	loop
+	if_var( &lookup_result : LookupName( names_scope, function_context, name_lookup.name, name_lookup.src_loc ) )
 	{
-		auto class_= current_scope.lock_imut().deref().GetClass();
-		if( !class_.empty() )
-		{
-			auto class_non_null= class_.try_to_non_nullable();
-			if_var( &class_value : ResolveClassValue( class_non_null, name_lookup.name ) )
-			{
-				start_value= class_value[0];
-				current_scope= class_value[2];
-
-				if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) < u32( class_value[1] ) )
-				{
-					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, name_lookup.src_loc, name_lookup.name, Type(class_non_null).ToString() )
-				}
-
-				if( name_lookup.name == KeywordToString( Keyword::constructor_ ) ||
-					name_lookup.name == KeywordToString( Keyword::destructor_ ) )
-				{
-					if( !function_context.is_in_unsafe_block )
-					{
-						REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, name_lookup.src_loc, name_lookup.name )
-					}
-				}
-				break;
-			}
-		}
-		else
-		{
-			if_var( mut names_scope_value : current_scope.lock_imut().deref().GetThisScopeValue( name_lookup.name ) )
-			{
-				start_value= move(names_scope_value);
-				break;
-			}
-		}
-		auto next_scope= current_scope.lock_imut().deref().GetParent();
-		if( next_scope.empty() )
-		{
-			break;
-		}
-		current_scope= next_scope.try_to_non_nullable();
+		BuildGlobalThingDuringResolveIfNecessary( lookup_result[0], lookup_result[1] );
+		return lookup_result[1];
 	}
 
-	if( start_value.empty() )
-	{
-		REPORT_ERROR( NameNotFound, names_scope, name_lookup.src_loc, name_lookup.name )
-		return ust::null_optional;
-	}
-
-	BuildGlobalThingDuringResolveIfNecessary( current_scope, start_value.try_deref() );
-	return start_value.try_deref();
+	return ust::null_optional;
 }
-
 
 fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RootNamespaceNameLookup& root_namespace_name_lookup ) : ust::optional</NamesScopeValue/>
 {
@@ -523,6 +475,54 @@ fn CodeBuilder::BuildGlobalThingDuringResolveIfNecessary(mut this, NamesScopePtr
 	{
 		BuiltTypeTemplatesSet( names_scope, type_templates_set_ptr.try_to_non_nullable() );
 	}
+}
+
+fn CodeBuilder::LookupName( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, ust::string8& name, SrcLoc& src_loc ) : NameLookupResult
+{
+	var NamesScopePtr mut current_scope(names_scope);
+
+	loop
+	{
+		auto class_= current_scope.lock_imut().deref().GetClass();
+		if( !class_.empty() )
+		{
+			auto class_non_null= class_.try_to_non_nullable();
+			if_var( &class_value : ResolveClassValue( class_non_null, name ) )
+			{
+				if( u32( names_scope.lock_imut().deref().GetAccessFor( class_non_null ) ) < u32( class_value[1] ) )
+				{
+					REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, name, Type(class_non_null).ToString() )
+				}
+
+				if( name == KeywordToString( Keyword::constructor_ ) ||
+					name == KeywordToString( Keyword::destructor_ ) )
+				{
+					if( !function_context.is_in_unsafe_block )
+					{
+						REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope, src_loc, name )
+					}
+				}
+
+				return ust::make_tuple( class_value[2], class_value[0] );
+			}
+		}
+		else
+		{
+			if_var( mut names_scope_value : current_scope.lock_imut().deref().GetThisScopeValue( name ) )
+			{
+				return ust::make_tuple( current_scope, names_scope_value );
+			}
+		}
+		auto next_scope= current_scope.lock_imut().deref().GetParent();
+		if( next_scope.empty() )
+		{
+			break;
+		}
+		current_scope= next_scope.try_to_non_nullable();
+	}
+
+	REPORT_ERROR( NameNotFound, names_scope, src_loc, name )
+	return ust::null_optional;
 }
 
 fn CodeBuilder::ResolveClassValue(

@@ -616,16 +616,20 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
 {
-	// TODO - avoid creating Synt struct here.
-	var Synt::NameLookup name_lookup{ .src_loc= move_operator.src_loc, .name= move_operator.variable_name };
-	var Value value= ResolveValue( names_scope, function_context, name_lookup );
-	if( value.get</VariablePtr/>().empty() )
+	auto name_lookup_result= LookupName( names_scope, function_context, move_operator.variable_name, move_operator.src_loc );
+	if( name_lookup_result.empty() )
 	{
-		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, GetValueKindName(value) )
 		return ErrorValue();
 	}
 
-	var VariablePtr variable_reference_ptr= value.get</VariablePtr/>().try_deref();
+	auto variable_ptr = name_lookup_result.try_deref()[1].Get</Variable/>();
+	if( variable_ptr.empty() )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "non-variable" )
+		return ErrorValue();
+	}
+
+	var VariablePtr variable_reference_ptr= variable_ptr.try_to_non_nullable();
 
 	if( IsGlobalVariable( variable_reference_ptr ) )
 	{
