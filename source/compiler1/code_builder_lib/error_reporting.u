@@ -64,34 +64,38 @@ fn PutErrorIntoContainer( NamesScopePtr& names_scope, CodeBuilderError mut error
 
 fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8
 {
-	// TODO
-	return "";
-	/*
-	var ust::string8 mut result;
-	if_var( &empty_start : complex_name.start.get</Synt::EmptyVariant/>() )
-	{}
-	else if_var( &name : complex_name.start.get</ust::string8/>() )
+	variant_visit( &el : complex_name )
 	{
-		result+= name;
+		return ComplexNameToStringImpl( el );
 	}
+	halt;
+}
 
-	foreach( &tail_component : complex_name.tail )
-	{
-		if_var( &name : tail_component.get</ust::string8/>() )
-		{
-			result+= "::";
-			result+= name;
-		}
-		else if_var( &template_args : tail_component.get</ ust::box</Synt::TemplateArgs/> />() )
-		{
-			result+= "</";
-			result+= "..."; // TODO - print real args
-			result+= "/>";
-		}
-	}
+fn ComplexNameToStringImpl( Synt::NameLookup& name_lookup ) : ust::string8
+{
+	return name_lookup.name;
+}
 
-	return move(result);
-	*/
+fn ComplexNameToStringImpl( Synt::RootNamespaceNameLookup& root_namespace_name_lookup ) : ust::string8
+{
+	return "::" + root_namespace_name_lookup.name;
+}
+
+fn ComplexNameToStringImpl( Synt::NamesScopeNameFetch& names_scope_name_fetch ) : ust::string8
+{
+	return ComplexNameToString( names_scope_name_fetch.base_.deref() ) + "::" + names_scope_name_fetch.name;
+}
+
+fn ComplexNameToStringImpl( Synt::TemplateParametrization& template_parametrization ) : ust::string8
+{
+	// TODO - print real args.
+	return ComplexNameToString( template_parametrization.base_.deref() ) + "</ .. />";
+}
+
+fn ComplexNameToStringImpl( Synt::Typeof& typeof_ ) : ust::string8
+{
+	// TODO - print typeof.
+	return "typeof(...)";
 }
 
 fn NormalizeErrors( ErrorsContainer &mut errors, Synt::MacroExpansionContexts& macro_expansion_contexts )
