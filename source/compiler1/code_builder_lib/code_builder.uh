@@ -98,6 +98,10 @@ public:
 private:
 	fn BuildSourceGraphNode( mut this, SourceGraph& source_graph, size_type node_index );
 
+	//
+	// Resolving
+	//
+
 	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, SrcLoc& src_loc ) : Value;
 	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
 
@@ -120,6 +124,10 @@ private:
 		ClassTypePtr& class_type,
 		ust::string8& name,
 		bool recursive_call ) : ust::optional</ tup[ NamesScopeValue, Synt::ClassVisibility, NamesScopePtr ] />;
+
+	//
+	// NamesScope-related functions
+	//
 
 	fn FillGlobalNamesScope( this, NamesScope &mut names_scope );
 
