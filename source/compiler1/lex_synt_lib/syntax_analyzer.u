@@ -591,7 +591,7 @@ fn SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( mut this, ComplexNam
 	}
 	else
 	{
-		return move(base_);
+		return ParseComplexNameTail( move(base_) );
 	}
 }
 

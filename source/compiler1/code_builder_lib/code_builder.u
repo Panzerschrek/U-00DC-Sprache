@@ -548,7 +548,7 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 			function_context.references_graph.AddNodeIfNotExists( v_ptr );
 			return v_ptr;
 		}
-		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, SrcLoc(), ust::string8("TODO - name" ) )
+		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, src_loc, ust::string8("TODO - name" ) )
 	}
 
 	auto type_templates_set_ptr= names_scope_value.Get</TypeTemplatesSet/>();
@@ -664,7 +664,8 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	auto mut enum_= base_.Get</Enum/>();
 	auto t= base_.Get</Type/>();
 	auto type_alias= base_.Get</TypeAlias/>();
-	auto template_arg= base_.Get</TemplateArg/>();
+	auto template_arg_ptr= base_.Get</TemplateArg/>();
+	auto type_templates_set= base_.Get</TypeTemplatesSet/>();
 
 	if( !t.empty() )
 	{
@@ -692,17 +693,24 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			}
 		}
 	}
-	if( !template_arg.empty() )
+	if( !template_arg_ptr.empty() )
 	{
-		if_var( &t : template_arg.try_lock_imut().deref().something.get</Type/>() )
+		with( & template_arg : template_arg_ptr.try_lock_imut().deref() )
 		{
-			if_var( &class_type : t.GetClassType() )
+			if_var( &t : template_arg.something.get</Type/>() )
 			{
-				class_= class_type;
+				if_var( &class_type : t.GetClassType() )
+				{
+					class_= class_type;
+				}
+				else if_var( &enum_type : t.GetEnumType() )
+				{
+					enum_= enum_type;
+				}
 			}
-			else if_var( &enum_type : t.GetEnumType() )
+			if( !template_arg.something.get</TemplateArg::NotKnownYet/>().empty() )
 			{
-				enum_= enum_type;
+				REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope, names_scope_fetch.src_loc, ust::to_string8(template_arg.index) )
 			}
 		}
 	}
@@ -761,6 +769,11 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			};
 			return NamesScopeValue(move(v));
 		}
+	}
+	else if( !type_templates_set.empty() )
+	{
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, names_scope_fetch.src_loc, names_scope_fetch.name )
+		return ust::null_optional;
 	}
 
 	REPORT_ERROR( NameNotFound, names_scope, names_scope_fetch.src_loc, names_scope_fetch.name )
@@ -876,6 +889,12 @@ fn CodeBuilder::BuildGlobalThingDuringResolveIfNecessary(mut this, NamesScopePtr
 	if( !global_auto_variable_ptr.empty() )
 	{
 		BuildGlobalAutoVariable( names_scope, global_auto_variable_ptr.try_to_non_nullable() );
+	}
+
+	auto type_templates_set_ptr= value.Get</TypeTemplatesSet/>();
+	if( !type_templates_set_ptr.empty() )
+	{
+		BuiltTypeTemplatesSet( names_scope, type_templates_set_ptr.try_to_non_nullable() );
 	}
 }
 

@@ -332,45 +332,38 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		}
 	}
 
-	/*
-	auto value= ResolveValue( names_scope, function_context, param, true );
-	if_var( &type_templates_set_ptr : value.get</ ust::shared_ptr_imut</ TypeTemplatesSet /> />() )
+	if_var( &template_parametrization : param.get</Synt::TemplateParametrization/>() )
 	{
-		if( !param.tail.empty() )
+		if_var( &type_templates_set_ptr : ResolveValue( names_scope, function_context, template_parametrization.base_.deref() ).get</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
 		{
-			if_var( &template_args : param.tail.back().get</ ust::box</ Synt::TemplateArgs /> />() )
+			var TemplateSignatureParam::SpecializedTemplateParam mut specialized_template_param
 			{
-				var TemplateSignatureParam::SpecializedTemplateParam mut specialized_template_param
-				{
-					.type_templates_set= type_templates_set_ptr,
-				};
+				.type_templates_set= type_templates_set_ptr,
+			};
 
-				auto mut all_params_are_known= true;
-				foreach( &arg : template_args.deref() )
-				{
-					auto mut out_param= CreateTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
+			auto mut all_params_are_known= true;
+			foreach( &arg : template_parametrization.template_args.deref() )
+			{
+				auto mut out_param= CreateTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
 
-					all_params_are_known&= !out_param.GetTypeParam().empty() || !out_param.GetVariableParam().empty();
+				all_params_are_known&= !out_param.GetTypeParam().empty() || !out_param.GetVariableParam().empty();
 
-					specialized_template_param.params.push_back(move(out_param));
-				}
-
-				if( all_params_are_known )
-				{
-					auto value= ResolveValue( names_scope, function_context, param );
-					if_var( &t : value.get</Type/>() )
-					{
-						var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
-						return move(type_param);
-					}
-				}
-
-				return move(specialized_template_param);
+				specialized_template_param.params.push_back(move(out_param));
 			}
+
+			if( all_params_are_known )
+			{
+				auto value= ResolveValue( names_scope, function_context, param );
+				if_var( &t : value.get</Type/>() )
+				{
+					var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
+					return move(type_param);
+				}
+			}
+
+			return move(specialized_template_param);
 		}
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.src_loc, param )
 	}
-	*/
 
 	// Nothing special - process as regular expression
 	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
@@ -646,6 +639,11 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 			var TemplateSignatureParam::VariableParam mut variable_param{ .t= v.t, .constexpr_value= v.constexpr_value };
 			return move(variable_param);
 		}
+	}
+	else if( !value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
+	{
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "TODO - name" )
+		return TemplateSignatureParam::TypeParam();
 	}
 	else
 	{
