@@ -41,21 +41,21 @@ struct Typeof
 }
 
 type ComplexName= ust::variant</ tup[
-	RootNamespaceNameLookup,
 	NameLookup,
+	RootNamespaceNameLookup,
 	NamesScopeNameFetch,
 	TemplateParametrization,
 	Typeof
 	] />;
 
-struct RootNamespaceNameLookup
+struct NameLookup
 {
 	SrcLoc src_loc;
 
 	ust::string8 name;
 }
 
-struct NameLookup
+struct RootNamespaceNameLookup
 {
 	SrcLoc src_loc;
 
@@ -761,7 +761,7 @@ struct Enum
 {
 	SrcLoc src_loc;
 	ust::string8 name;
-	ComplexName underlaying_type;
+	ust::optional</ComplexName/> underlaying_type;
 
 	struct Element
 	{

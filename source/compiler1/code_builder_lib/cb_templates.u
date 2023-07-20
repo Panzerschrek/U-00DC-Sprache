@@ -318,23 +318,21 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	Synt::ComplexName& param,
 	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
 {
-	if( param.tail.empty() )
+	if_var( &name_lookup : param.get</Synt::NameLookup/>() )
 	{
-		if_var( &simple_name : param.start.get</ust::string8/>() )
+		for( auto mut i= 0s; i < template_params.size(); ++i )
 		{
-			for( auto mut i= 0s; i < template_params.size(); ++i )
+			if( name_lookup.name == template_params[i].name )
 			{
-				if( simple_name == template_params[i].name )
-				{
-					template_params_usage_flags[i]= true;
+				template_params_usage_flags[i]= true;
 
-					var TemplateSignatureParam::TemplateParam mut res{ .index= u32(i) };
-					return move(res);
-				}
+				var TemplateSignatureParam::TemplateParam mut res{ .index= u32(i) };
+				return move(res);
 			}
 		}
 	}
 
+	/*
 	auto value= ResolveValue( names_scope, function_context, param, true );
 	if_var( &type_templates_set_ptr : value.get</ ust::shared_ptr_imut</ TypeTemplatesSet /> />() )
 	{
@@ -372,10 +370,11 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 		}
 		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.src_loc, param )
 	}
+	*/
 
 	// Nothing special - process as regular expression
 	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
-	return CreateTemplateSignatureParam( names_scope, expression_value, param.src_loc );
+	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetSrcLoc(param) );
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(

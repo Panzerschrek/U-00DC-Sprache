@@ -64,6 +64,9 @@ fn PutErrorIntoContainer( NamesScopePtr& names_scope, CodeBuilderError mut error
 
 fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8
 {
+	// TODO
+	return "";
+	/*
 	var ust::string8 mut result;
 	if_var( &empty_start : complex_name.start.get</Synt::EmptyVariant/>() )
 	{}
@@ -88,6 +91,7 @@ fn ComplexNameToString( Synt::ComplexName& complex_name ) : ust::string8
 	}
 
 	return move(result);
+	*/
 }
 
 fn NormalizeErrors( ErrorsContainer &mut errors, Synt::MacroExpansionContexts& macro_expansion_contexts )

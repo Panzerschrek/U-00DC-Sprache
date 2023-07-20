@@ -100,12 +100,15 @@ private:
 
 	fn NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, NamesScopeValue& names_scope_value, SrcLoc& src_loc ) : Value;
 	fn ResolveValue( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : Value;
-	fn ResolveValue(
-		mut this,
-		NamesScopePtr& names_scope,
-		FunctionContext &mut function_context,
-		Synt::ComplexName& complex_name,
-		bool skip_last_template_args ) : Value;
+
+	fn ResolveValueInternal( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& complex_name ) : ust::optional</NamesScopeValue/>;
+	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NameLookup& name_lookup ) : ust::optional</NamesScopeValue/>;
+	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RootNamespaceNameLookup& root_namespace_name_lookup ) : ust::optional</NamesScopeValue/>;
+	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NamesScopeNameFetch& names_scope_fetch ) : ust::optional</NamesScopeValue/>;
+	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TemplateParametrization& template_parametrization ) : ust::optional</NamesScopeValue/>;
+	fn ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Typeof& typeof_ ) : ust::optional</NamesScopeValue/>;
+
+	fn BuildGlobalThingDuringResolveIfNecessary(mut this, NamesScopePtr& names_scope, NamesScopeValue& value );
 
 	// Returns value itself, visibility label, namespace of class where this value was found (class itself or one of parents).
 	fn ResolveClassValue(
