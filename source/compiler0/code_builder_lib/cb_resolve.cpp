@@ -75,8 +75,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
 
 			value= class_value.first;
-			// TODO - is this correct namespace?
-			BuildGlobalThingDuringResolveIfNecessary( *class_->members, value );
+			// ResolveClassValue performs proper building of resolved value.
 		}
 		else if( const EnumPtr enum_= type->GetEnumType() )
 		{
