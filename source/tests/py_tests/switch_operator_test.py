@@ -204,3 +204,45 @@ def SwitchOperator_MultipleCaseValues_Test1():
 	assert( tests_lib.run_function( "_Z6IsFivei", 7 ) == False )
 	assert( tests_lib.run_function( "_Z6IsFivei", 8 ) == False )
 	assert( tests_lib.run_function( "_Z6IsFivei", 9 ) == False )
+
+
+def SwithOperator_DefaultBranch_Test0():
+	c_program_text= """
+		fn IsTen( i32 x ) : bool
+		{
+			switch( x )
+			{
+				10 -> { return true; },
+				default -> { return false; }
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z5IsTeni",  0 ) == False )
+	assert( tests_lib.run_function( "_Z5IsTeni",  7 ) == False )
+	assert( tests_lib.run_function( "_Z5IsTeni", 10 ) == True )
+	assert( tests_lib.run_function( "_Z5IsTeni", 16 ) == False )
+
+
+def SwithOperator_DefaultBranch_Test1():
+	c_program_text= """
+		fn IsPowerOfTwo( i32 x ) : bool
+		{
+			switch( x )
+			{
+				default -> { return false; }, // It is possible to use default branch as first branch.
+				1, 2, 4, 8, 16, 32, 64 -> { return true; },
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  0 ) == False )
+	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  1 ) == True )
+	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  2 ) == True )
+	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  3 ) == False )
+	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  4 ) == True )
+	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  5 ) == False )
+	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  6 ) == False )
+	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  7 ) == False )
+	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  8 ) == True )
+	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  9 ) == False )

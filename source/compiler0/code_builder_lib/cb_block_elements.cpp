@@ -1804,43 +1804,63 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Preevaluate case values. It is fine, since only constexpr expressions are allowed.
 	using CaseValues= llvm::SmallVector<llvm::Constant*, 4>;
 	llvm::SmallVector<CaseValues, 16> branches_values;
+	bool all_cases_are_ok= true;
+	const Synt::Block* default_branch_synt_block= nullptr;
 	branches_values.reserve( switch_operator.cases.size() );
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
 		for( const Synt::SwitchOperator::Case& case_ : switch_operator.cases )
 		{
 			CaseValues case_values;
-			case_values.reserve( case_.values.size() );
-			for( const Synt::Expression& value : case_.values )
+			if( const auto values = std::get_if<std::vector<Synt::Expression>>( &case_.values ) )
 			{
-				const VariablePtr expression= BuildExpressionCodeEnsureVariable( value, names, function_context );
-				if( expression->type != switch_type )
+				case_values.reserve( values->size() );
+				for( const Synt::Expression& value : *values )
 				{
-					REPORT_ERROR(
-						TypesMismatch,
-						names.GetErrors(),
-						Synt::GetExpressionSrcLoc(value ),
-						switch_type,
-						expression->type );
-					continue;
+					const VariablePtr expression= BuildExpressionCodeEnsureVariable( value, names, function_context );
+					if( expression->type != switch_type )
+					{
+						REPORT_ERROR(
+							TypesMismatch,
+							names.GetErrors(),
+							Synt::GetExpressionSrcLoc(value ),
+							switch_type,
+							expression->type );
+						all_cases_are_ok= false;
+						continue;
+					}
+					if( expression->constexpr_value == nullptr )
+					{
+						REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( value ) );
+						all_cases_are_ok= false;
+						continue;
+					}
+					case_values.push_back( expression->constexpr_value );
 				}
-				if( expression->constexpr_value == nullptr )
-				{
-					REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( value ) );
-					continue;
-				}
-				case_values.push_back( expression->constexpr_value );
 			}
-
-			if( case_values.empty() )
-				continue;
+			else if( std::get_if<Synt::SwitchOperator::DefaultPlaceholder>( &case_.values ) != nullptr )
+			{
+				if( default_branch_synt_block != nullptr )
+				{
+					// TODO - use other error code.
+					REPORT_ERROR(
+						NotImplemented,
+						names.GetErrors(),
+						switch_operator.src_loc_,
+						"multiple default branches" );
+					all_cases_are_ok= false;
+				}
+				else
+					default_branch_synt_block= &case_.block;
+			}
+			else U_ASSERT( false );
 
 			branches_values.push_back( std::move(case_values) );
 		}
 		CallDestructors( temp_variables_storage, names, function_context, switch_operator.src_loc_ );
 	}
 
-	if( branches_values.size() != switch_operator.cases.size() )
+	if( !all_cases_are_ok || branches_values.size() != switch_operator.cases.size() )
 		return BlockBuildInfo(); // Some error generated before.
 
 	const ReferencesGraph variables_state_before_branching= function_context.variables_state;
@@ -1848,13 +1868,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	breances_states_after_case.reserve( switch_operator.cases.size() + 1 );
 
 	llvm::BasicBlock* block_after_switch= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* next_case_block= nullptr;
+	llvm::BasicBlock* default_branch= default_branch_synt_block == nullptr ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
+	bool all_branches_are_terminal= true;
+
 	for( size_t i= 0; i < switch_operator.cases.size(); ++i )
 	{
+		if( std::get_if<Synt::SwitchOperator::DefaultPlaceholder>( &switch_operator.cases[i].values ) != nullptr )
+		{
+			// Default branch - handle it later.
+			continue;
+		}
+
 		llvm::BasicBlock* const case_handle_block= llvm::BasicBlock::Create( llvm_context_ );
-		llvm::BasicBlock* const next_case_block=
-			( i + 1 < switch_operator.cases.size() )
-				? llvm::BasicBlock::Create( llvm_context_ )
-				: block_after_switch;
+		next_case_block= llvm::BasicBlock::Create( llvm_context_ );
 
 		const CaseValues& case_values= branches_values[i];
 		U_ASSERT( !case_values.empty() );
@@ -1876,28 +1903,72 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		breances_states_after_case.push_back( function_context.variables_state );
 
 		if( !block_build_info.have_terminal_instruction_inside )
+		{
 			function_context.llvm_ir_builder.CreateBr( block_after_switch );
+			all_branches_are_terminal= false;
+		}
 
 		// Next case block
-		if( next_case_block != block_after_switch )
-		{
-			function_context.function->getBasicBlockList().push_back( next_case_block );
-			function_context.llvm_ir_builder.SetInsertPoint( next_case_block );
-		}
+		function_context.function->getBasicBlockList().push_back( next_case_block );
+		function_context.llvm_ir_builder.SetInsertPoint( next_case_block );
 	}
 
-	if( switch_operator.cases.empty() )
-		function_context.llvm_ir_builder.CreateBr( block_after_switch );
+	// Handle default branch lastly.
+	if( default_branch_synt_block != nullptr && default_branch != nullptr )
+	{
+		if( next_case_block == nullptr )
+			function_context.llvm_ir_builder.CreateBr( default_branch );
+		else
+		{
+			next_case_block->replaceAllUsesWith( default_branch );
+			next_case_block->eraseFromParent();
+		}
 
-	// TODO - check if all branches of switch-case are terminal and block after switch is unreachable.
-	breances_states_after_case.push_back( variables_state_before_branching );
+		function_context.function->getBasicBlockList().push_back( default_branch );
+		function_context.llvm_ir_builder.SetInsertPoint( default_branch );
 
-	function_context.function->getBasicBlockList().push_back( block_after_switch );
-	function_context.llvm_ir_builder.SetInsertPoint( block_after_switch );
+		function_context.variables_state= variables_state_before_branching;
+		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, *default_branch_synt_block );
+		breances_states_after_case.push_back( function_context.variables_state );
 
-	function_context.variables_state= MergeVariablesStateAfterIf( breances_states_after_case, names.GetErrors(), switch_operator.end_src_loc );
+		if( !block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.llvm_ir_builder.CreateBr( block_after_switch );
+			all_branches_are_terminal= false;
+		}
+	}
+	else
+	{
+		if( next_case_block == nullptr )
+			function_context.llvm_ir_builder.CreateBr( block_after_switch );
+		else
+		{
+			next_case_block->replaceAllUsesWith( block_after_switch );
+			next_case_block->eraseFromParent();
+		}
 
-	return BlockBuildInfo();
+		// TODO - even if default branch doesn't exists prove that all possible values are handled.
+		// Normally switch should hanlde all possible values and swith should be terminal if all branches are terminal.
+		all_branches_are_terminal= false;
+		breances_states_after_case.push_back( variables_state_before_branching );
+	}
+
+	BlockBuildInfo block_build_info;
+
+	if( all_branches_are_terminal )
+	{
+		block_build_info.have_terminal_instruction_inside= true;
+		delete block_after_switch;
+		// There is no reason to merge variables state here.
+	}
+	else
+	{
+		function_context.function->getBasicBlockList().push_back( block_after_switch );
+		function_context.llvm_ir_builder.SetInsertPoint( block_after_switch );
+		function_context.variables_state= MergeVariablesStateAfterIf( breances_states_after_case, names.GetErrors(), switch_operator.end_src_loc );
+	}
+
+	return block_build_info;
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(

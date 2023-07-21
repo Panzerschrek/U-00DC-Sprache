@@ -794,9 +794,12 @@ struct SwitchOperator final : public SyntaxElementBase
 {
 	SwitchOperator( const SrcLoc& src_loc );
 
+	struct DefaultPlaceholder{};
+	using CaseValues= std::variant<std::vector<Expression>, DefaultPlaceholder>;
+
 	struct Case
 	{
-		std::vector<Expression> values;
+		CaseValues values;
 		Block block;
 	};
 
