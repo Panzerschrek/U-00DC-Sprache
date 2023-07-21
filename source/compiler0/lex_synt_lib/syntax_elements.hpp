@@ -796,7 +796,7 @@ struct SwitchOperator final : public SyntaxElementBase
 
 	struct Case
 	{
-		Expression value;
+		std::vector<Expression> values;
 		Block block;
 	};
 

@@ -158,3 +158,49 @@ def SwitchOperator_Test3():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def SwitchOperator_MultipleCaseValues_Test0():
+	# A couple of cases with multiple values.
+	c_program_text= """
+		fn Even( i32 x ) : bool
+		{
+			switch( x )
+			{
+				0, 2, 4, 6, 8, 10, 12, 14 -> { return  true; },
+				1, 3, 5, 7, 9, 11, 13, 15 -> { return false; },
+			}
+
+			halt;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	for i in range(0, 16):
+		assert( tests_lib.run_function( "_Z4Eveni", i ) == (i % 2 == 0) )
+
+
+def SwitchOperator_MultipleCaseValues_Test1():
+	# Single case with multiple values and one case with single value.
+	c_program_text= """
+		fn IsFive( i32 x ) : bool
+		{
+			switch( x )
+			{
+				0, 1, 2, 3, 4, 6, 7, 8, 9 -> {  return false; },
+				5 -> { return true; }
+			}
+
+			halt;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z6IsFivei", 0 ) == False )
+	assert( tests_lib.run_function( "_Z6IsFivei", 1 ) == False )
+	assert( tests_lib.run_function( "_Z6IsFivei", 2 ) == False )
+	assert( tests_lib.run_function( "_Z6IsFivei", 3 ) == False )
+	assert( tests_lib.run_function( "_Z6IsFivei", 4 ) == False )
+	assert( tests_lib.run_function( "_Z6IsFivei", 5 ) == True )
+	assert( tests_lib.run_function( "_Z6IsFivei", 6 ) == False )
+	assert( tests_lib.run_function( "_Z6IsFivei", 7 ) == False )
+	assert( tests_lib.run_function( "_Z6IsFivei", 8 ) == False )
+	assert( tests_lib.run_function( "_Z6IsFivei", 9 ) == False )

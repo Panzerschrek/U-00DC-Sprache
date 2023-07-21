@@ -1786,7 +1786,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		if( !type_ok )
 		{
-			REPORT_ERROR( TypesMismatch,
+			REPORT_ERROR(
+				TypesMismatch,
 				names.GetErrors(),
 				src_loc,
 				"Enum, integer or char type",
@@ -1801,29 +1802,40 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	// Preevaluate case values. It is fine, since only constexpr expressions are allowed.
-	std::vector<llvm::Constant*> branches_values;
+	using CaseValues= llvm::SmallVector<llvm::Constant*, 4>;
+	llvm::SmallVector<CaseValues, 16> branches_values;
 	branches_values.reserve( switch_operator.cases.size() );
 	{
 		const StackVariablesStorage temp_variables_storage( function_context );
 		for( const Synt::SwitchOperator::Case& case_ : switch_operator.cases )
 		{
-			const VariablePtr expression= BuildExpressionCodeEnsureVariable( case_.value, names, function_context );
-			if( expression->type != switch_type )
+			CaseValues case_values;
+			case_values.reserve( case_.values.size() );
+			for( const Synt::Expression& value : case_.values )
 			{
-				REPORT_ERROR( TypesMismatch,
-					names.GetErrors(),
-					Synt::GetExpressionSrcLoc( case_.value ),
-					switch_type,
-					expression->type );
-				continue;
-			}
-			if( expression->constexpr_value == nullptr )
-			{
-				REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( case_.value ) );
-				continue;
+				const VariablePtr expression= BuildExpressionCodeEnsureVariable( value, names, function_context );
+				if( expression->type != switch_type )
+				{
+					REPORT_ERROR(
+						TypesMismatch,
+						names.GetErrors(),
+						Synt::GetExpressionSrcLoc(value ),
+						switch_type,
+						expression->type );
+					continue;
+				}
+				if( expression->constexpr_value == nullptr )
+				{
+					REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( value ) );
+					continue;
+				}
+				case_values.push_back( expression->constexpr_value );
 			}
 
-			branches_values.push_back( expression->constexpr_value );
+			if( case_values.empty() )
+				continue;
+
+			branches_values.push_back( std::move(case_values) );
 		}
 		CallDestructors( temp_variables_storage, names, function_context, switch_operator.src_loc_ );
 	}
@@ -1832,7 +1844,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		return BlockBuildInfo(); // Some error generated before.
 
 	const ReferencesGraph variables_state_before_branching= function_context.variables_state;
-	std::vector<ReferencesGraph> breances_states_after_case;
+	llvm::SmallVector<ReferencesGraph, 16> breances_states_after_case;
 	breances_states_after_case.reserve( switch_operator.cases.size() + 1 );
 
 	llvm::BasicBlock* block_after_switch= llvm::BasicBlock::Create( llvm_context_ );
@@ -1844,7 +1856,15 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				? llvm::BasicBlock::Create( llvm_context_ )
 				: block_after_switch;
 
-		const auto value_equals= function_context.llvm_ir_builder.CreateICmpEQ( switch_value, branches_values[i] );
+		const CaseValues& case_values= branches_values[i];
+		U_ASSERT( !case_values.empty() );
+		llvm::Value* value_equals= function_context.llvm_ir_builder.CreateICmpEQ( switch_value, case_values[0] );
+		for( size_t j= 1; j < branches_values[i].size(); ++j )
+		{
+			llvm::Value* const other_value_equals=  function_context.llvm_ir_builder.CreateICmpEQ( switch_value, case_values[j] );
+			value_equals= function_context.llvm_ir_builder.CreateOr( value_equals, other_value_equals );
+		}
+
 		function_context.llvm_ir_builder.CreateCondBr( value_equals, case_handle_block, next_case_block );
 
 		// Case handle block

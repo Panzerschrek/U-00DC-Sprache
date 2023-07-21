@@ -2385,11 +2385,23 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 
 	while( it_->type != Lexem::Type::BraceRight && NotEndOfFile() )
 	{
-		Expression expression= ParseExpression();
+		std::vector<Expression> values;
+		while(true)
+		{
+			values.push_back( ParseExpression() );
+			if( it_->type == Lexem::Type::Comma )
+			{
+				NextLexem();
+				continue;
+			}
+			else
+				break;
+		}
+
 		ExpectLexem( Lexem::Type::RightArrow ); // TODO - maybe use another lexem?
 		Block block= ParseBlock();
 
-		SwitchOperator::Case case_{ std::move(expression), std::move(block) };
+		SwitchOperator::Case case_{ std::move(values), std::move(block) };
 		result.cases.push_back( std::move(case_) );
 
 		if( it_->type == Lexem::Type::Comma )
