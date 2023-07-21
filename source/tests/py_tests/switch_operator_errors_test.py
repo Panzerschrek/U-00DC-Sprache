@@ -145,3 +145,99 @@ def SwitchInvalidRange_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "SwitchInvalidRange", 7 ) )
+
+
+def SwitchRangesOverlapping_Test0():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			switch(x)
+			{
+				123 -> {},
+				123 -> {}, // Duplicated value
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchRangesOverlapping", 7 ) )
+
+
+def SwitchRangesOverlapping_Test1():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			switch(x)
+			{
+				123, 100 + 23  -> {}, // Duplcated value in same branch.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchRangesOverlapping", 6 ) )
+
+
+def SwitchRangesOverlapping_Test2():
+	c_program_text= """
+		fn Foo( u32 x )
+		{
+			switch(x)
+			{
+				77u -> {},
+				0u ... 100u -> {}, // Single value inside range.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchRangesOverlapping", 7 ) )
+
+
+def SwitchRangesOverlapping_Test3():
+	c_program_text= """
+		fn Foo( char8 x )
+		{
+			switch(x)
+			{
+				"a"c8 ... "z"c8 -> {},
+				"p"c8 ... "s"c8 -> {}, // Subrange
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchRangesOverlapping", 7 ) )
+
+
+def SwitchRangesOverlapping_Test4():
+	c_program_text= """
+		enum E{ A, B, C, D, E, F }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				E::A ... E::C  -> {},
+				E::B ... E::F  -> {}, // intersection of ranges
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchRangesOverlapping", 8 ) )
+
+
+def SwitchRangesOverlapping_Test5():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			switch(x)
+			{
+				0 ... 10 -> {},
+				10 ... 20 -> {}, // Touching ranges.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchRangesOverlapping", 7 ) )
