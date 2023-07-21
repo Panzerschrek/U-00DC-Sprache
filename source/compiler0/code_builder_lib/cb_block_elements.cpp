@@ -1902,7 +1902,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						if( range_constants[1] == nullptr )
 							range_constants[1]= llvm::ConstantInt::get( switch_type.GetLLVMType(), type_last_value );
 
-						// TODO - check if range is correct.
+						const llvm::APInt range_low = range_constants[0]->getUniqueInteger();
+						const llvm::APInt range_high= range_constants[1]->getUniqueInteger();
+						if( !( is_signed ? range_low.sle( range_high ) : range_low.ule( range_high ) ) )
+							REPORT_ERROR(
+								SwitchInvalidRange,
+								names.GetErrors(),
+								case_.block.src_loc_, // TODO - use proper src_loc
+								range_low .getLimitedValue(),
+								range_high.getLimitedValue() );
+
 						case_values.emplace_back( range_constants[0], range_constants[1] );
 					}
 					else U_ASSERT(false);
@@ -1912,12 +1921,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			{
 				if( default_branch_synt_block != nullptr )
 				{
-					// TODO - use other error code.
 					REPORT_ERROR(
-						NotImplemented,
+						SwitchDuplicatedDefaultLabel,
 						names.GetErrors(),
-						switch_operator.src_loc_,
-						"multiple default branches" );
+						case_.block.src_loc_ ); // TODO - use proper src_loc
 					all_cases_are_ok= false;
 				}
 				else
