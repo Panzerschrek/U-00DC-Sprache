@@ -801,7 +801,8 @@ struct SwitchOperator final : public SyntaxElementBase
 	};
 
 	Expression value;
-	std::vector<Case> cases_;
+	std::vector<Case> cases;
+	SrcLoc end_src_loc;
 };
 
 struct SingleExpressionOperator final : public SyntaxElementBase

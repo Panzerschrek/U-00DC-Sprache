@@ -2390,7 +2390,7 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 		Block block= ParseBlock();
 
 		SwitchOperator::Case case_{ std::move(expression), std::move(block) };
-		result.cases_.push_back( std::move(case_) );
+		result.cases.push_back( std::move(case_) );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -2401,6 +2401,7 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 			break;
 	}
 
+	result.end_src_loc= it_->src_loc;
 	ExpectLexem( Lexem::Type::BraceRight );
 
 	return result;

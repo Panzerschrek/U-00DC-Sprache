@@ -1768,10 +1768,112 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	FunctionContext& function_context,
 	const Synt::SwitchOperator& switch_operator )
 {
-	// TODO
-	(void) names;
-	(void) function_context;
-	(void)switch_operator;
+	Type switch_type;
+	llvm::Value* switch_value= nullptr;
+	{
+		const StackVariablesStorage temp_variables_storage( function_context );
+		const VariablePtr expression= BuildExpressionCodeEnsureVariable( switch_operator.value, names, function_context );
+
+		bool type_ok= expression->type.GetEnumType();
+		if( const auto fundamental_type= expression->type.GetFundamentalType() )
+			type_ok= IsInteger( fundamental_type->fundamental_type ) || IsChar( fundamental_type->fundamental_type );
+		else
+			type_ok= false;
+
+		const SrcLoc src_loc= Synt::GetExpressionSrcLoc( switch_operator.value );
+
+		if( !type_ok )
+		{
+			REPORT_ERROR( TypesMismatch,
+				names.GetErrors(),
+				src_loc,
+				"Integer or char type",
+				expression->type );
+			return BlockBuildInfo();
+		}
+
+		switch_type= expression->type;
+		switch_value= CreateMoveToLLVMRegisterInstruction( *expression, function_context );
+
+		CallDestructors( temp_variables_storage, names, function_context, src_loc );
+	}
+
+	// Preevaluate case values. It is fine, since only constexpr expressions are allowed.
+	std::vector<llvm::Constant*> branches_values;
+	branches_values.reserve( switch_operator.cases.size() );
+	{
+		const StackVariablesStorage temp_variables_storage( function_context );
+		for( const Synt::SwitchOperator::Case& case_ : switch_operator.cases )
+		{
+			const VariablePtr expression= BuildExpressionCodeEnsureVariable( case_.value, names, function_context );
+			if( expression->type != switch_type )
+			{
+				REPORT_ERROR( TypesMismatch,
+					names.GetErrors(),
+					Synt::GetExpressionSrcLoc( case_.value ),
+					switch_type,
+					expression->type );
+				continue;
+			}
+			if( expression->constexpr_value == nullptr )
+			{
+				REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( case_.value ) );
+				continue;
+			}
+
+			branches_values.push_back( expression->constexpr_value );
+		}
+		CallDestructors( temp_variables_storage, names, function_context, switch_operator.src_loc_ );
+	}
+
+	if( branches_values.size() != switch_operator.cases.size() )
+		return BlockBuildInfo(); // Some error generated before.
+
+	const ReferencesGraph variables_state_before_branching= function_context.variables_state;
+	std::vector<ReferencesGraph> breances_states_after_case;
+	breances_states_after_case.reserve( switch_operator.cases.size() + 1 );
+
+	llvm::BasicBlock* block_after_switch= llvm::BasicBlock::Create( llvm_context_ );
+	for( size_t i= 0; i < switch_operator.cases.size(); ++i )
+	{
+		llvm::BasicBlock* const case_handle_block= llvm::BasicBlock::Create( llvm_context_ );
+		llvm::BasicBlock* const next_case_block=
+			( i + 1 < switch_operator.cases.size() )
+				? llvm::BasicBlock::Create( llvm_context_ )
+				: block_after_switch;
+
+		const auto value_equals= function_context.llvm_ir_builder.CreateICmpEQ( switch_value, branches_values[i] );
+		function_context.llvm_ir_builder.CreateCondBr( value_equals, case_handle_block, next_case_block );
+
+		// Case handle block
+		function_context.function->getBasicBlockList().push_back( case_handle_block );
+		function_context.llvm_ir_builder.SetInsertPoint( case_handle_block );
+
+		function_context.variables_state= variables_state_before_branching;
+		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, switch_operator.cases[i].block );
+		breances_states_after_case.push_back( function_context.variables_state );
+
+		if( !block_build_info.have_terminal_instruction_inside )
+			function_context.llvm_ir_builder.CreateBr( block_after_switch );
+
+		// Next case block
+		if( next_case_block != block_after_switch )
+		{
+			function_context.function->getBasicBlockList().push_back( next_case_block );
+			function_context.llvm_ir_builder.SetInsertPoint( next_case_block );
+		}
+	}
+
+	if( switch_operator.cases.empty() )
+		function_context.llvm_ir_builder.CreateBr( block_after_switch );
+
+	// TODO - check if all branches of switch-case are terminal and block after switch is unreachable.
+	breances_states_after_case.push_back( variables_state_before_branching );
+
+	function_context.function->getBasicBlockList().push_back( block_after_switch );
+	function_context.llvm_ir_builder.SetInsertPoint( block_after_switch );
+
+	function_context.variables_state= MergeVariablesStateAfterIf( breances_states_after_case, names.GetErrors(), switch_operator.end_src_loc );
 
 	return BlockBuildInfo();
 }
