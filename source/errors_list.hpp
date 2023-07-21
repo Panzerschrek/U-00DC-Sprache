@@ -31,6 +31,7 @@ PROCESS_ERROR( SwitchInvalidRange, "Invalid range from {0} to {1}. Second value 
 PROCESS_ERROR( SwitchRangesOverlapping, "Switch range [{0}; {1}] overlaps with range [{2}; {3}]." )
 PROCESS_ERROR( SwitchUndhandledValue, "Value {0} is not handled in switch." )
 PROCESS_ERROR( SwitchUndhandledRange, "Values range [{0}; {1}] is not handled in switch." )
+PROCESS_ERROR( SwithcUnreachableDefaultBranch, "Switch default branch is unreachable - all other cases handle all possible values." )
 PROCESS_ERROR( ExpectedInitializer, "Expected initializer or constructor for \"{0}\"." )
 PROCESS_ERROR( ExpectedReferenceValue, "Expected reference value." )
 PROCESS_ERROR( BindingConstReferenceToNonconstReference, "Binding constant reference to non-constant reference." )

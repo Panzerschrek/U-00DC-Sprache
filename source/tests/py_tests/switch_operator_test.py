@@ -263,7 +263,6 @@ def SwitchOperatorRange_Test0():
 				34u -> { return 456u; },
 				35u ... 40u -> { return 789u; }, // Full range
 				41u ... -> { return 1000u; }, // Range from specific value to end
-				default -> { halt; }
 			}
 		}
 	"""
@@ -300,7 +299,6 @@ def SwitchOperatorRange_Test1():
 				-1 ... 5 -> { return 4; },
 				6 -> { return 5; },
 				7 ... -> { return 6; },
-				default -> { halt; }
 			}
 		}
 	"""
@@ -410,7 +408,6 @@ def SwitchOperatorRange_Test3():
 				E::E ... E::G -> { return 3; },
 				E::H -> { return 4; },
 				E::I ... -> { return 5; },
-				default -> { halt; },
 			}
 		}
 		enum E{ A, B, C, D, E, F, G, H, I, J }

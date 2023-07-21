@@ -1801,29 +1801,28 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		CallDestructors( temp_variables_storage, names, function_context, src_loc );
 	}
 
-	llvm::APInt type_first_value, type_last_value;
-	uint32_t type_size_in_bits= 0;
+	llvm::APInt type_low, type_high;
 	bool is_signed= false;
 	if( const auto enum_= switch_type.GetEnumType() )
 	{
-		type_size_in_bits= 8 * uint32_t(enum_->underlaying_type.GetSize());
-		type_first_value= llvm::APInt( type_size_in_bits, uint64_t(0) );
-		type_last_value= llvm::APInt( type_size_in_bits, uint64_t(enum_->element_count - 1) );
+		const uint32_t size_in_bits= 8 * uint32_t(enum_->underlaying_type.GetSize());
+		type_low= llvm::APInt( size_in_bits, uint64_t(0) );
+		type_high= llvm::APInt( size_in_bits, uint64_t(enum_->element_count - 1) );
 	}
 	else if( const auto fundamental_type= switch_type.GetFundamentalType() )
 	{
-		type_size_in_bits= 8 * uint32_t(fundamental_type->GetSize());
+		const uint32_t size_in_bits= 8 * uint32_t(fundamental_type->GetSize());
 		if( IsSignedInteger( fundamental_type->fundamental_type ) )
 		{
 			is_signed= true;
-			type_first_value= llvm::APInt( type_size_in_bits, uint64_t(1u) << (type_size_in_bits - 1), true );
-			type_last_value= llvm::APInt( type_size_in_bits, (uint64_t(1u) << (type_size_in_bits - 1)) - 1, true );
+			type_low= llvm::APInt( size_in_bits, uint64_t(1u) << (size_in_bits - 1), true );
+			type_high= llvm::APInt( size_in_bits, (uint64_t(1u) << (size_in_bits - 1)) - 1, true );
 		}
 		else
 		{
 			// Unsigned integers and chars (chars are unsigned).
-			type_first_value= llvm::APInt( type_size_in_bits, uint64_t(0), false );
-			type_last_value= llvm::APInt( type_size_in_bits, (uint64_t(1u) << type_size_in_bits) - 1, false );
+			type_low= llvm::APInt( size_in_bits, uint64_t(0), false );
+			type_high= llvm::APInt( size_in_bits, (uint64_t(1u) << size_in_bits) - 1, false );
 		}
 	}
 	else U_ASSERT(false);
@@ -1877,7 +1876,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 					}
 					else if( const auto range= std::get_if<Synt::SwitchOperator::CaseRange>( &value ) )
 					{
-						llvm::APInt range_constants[2]{ type_first_value, type_last_value };
+						llvm::APInt range_constants[2]{ type_low, type_high };
 						for( size_t i= 0; i < 2; ++i )
 						{
 							const auto& expression_opt = i == 0 ? range->low : range->high;
@@ -1950,46 +1949,38 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			all_ranges.append( case_ranges );
 
 		// Sort by low. Use comparator depending on switch type signness.
+		// Sorting is needed in order to simplify ranges overlapping and gaps searching.
 		if( is_signed )
 			std::sort(
 				all_ranges.begin(),
 				all_ranges.end(),
-				[]( const CaseRange& l, const CaseRange& r ) -> bool
-				{
-					return l.low.slt(r.low);
-				});
+				[]( const CaseRange& l, const CaseRange& r ) -> bool { return l.low.slt(r.low); });
 		else
 			std::sort(
 				all_ranges.begin(),
 				all_ranges.end(),
-				[]( const CaseRange& l, const CaseRange& r ) -> bool
-				{
-					return l.low.ult(r.low);
-				});
+				[]( const CaseRange& l, const CaseRange& r ) -> bool { return l.low.ult(r.low); });
 
-		// Check for overlaps and gaps.
-		const llvm::APInt one= llvm::APInt( type_size_in_bits, 1 );
-		const llvm::APInt two= llvm::APInt( type_size_in_bits, 2 );
-
-		for( size_t i = 0; i < all_ranges.size(); ++i )
+		// Check for overlaps and gaps between ranges.
+		bool has_gaps= false;
+		for( size_t i = 0; i + 1 < all_ranges.size(); ++i )
 		{
 			const CaseRange& current_range= all_ranges[i];
-			if( i + 1 < all_ranges.size() )
-			{
-				const CaseRange& next_range= all_ranges[i + 1];
-				const llvm::APInt& current_high= current_range.high;
-				const llvm::APInt& next_low= next_range.low;
-				const bool current_high_is_less_than_next_low=
-					is_signed ? current_high.slt(next_low) : current_high.ult(next_low);
+			const CaseRange& next_range= all_ranges[i + 1];
 
-				if( current_high_is_less_than_next_low )
+			const llvm::APInt& current_high= current_range.high;
+			const llvm::APInt& next_low= next_range.low;
+
+			if( is_signed ? current_high.slt(next_low) : current_high.ult(next_low) )
+			{
+				// Because of condition above diff is always non-negative.
+				const llvm::APInt gap_size= next_low - current_high - 1;
+				if( !gap_size.isZero() )
 				{
-					// Because of condition above diff is always non-negative.
-					const llvm::APInt diff= next_low - current_high;
-					if( diff.uge( two ) && default_branch_synt_block == nullptr )
+					has_gaps= true;
+					if( default_branch_synt_block == nullptr )
 					{
-						// Found a gap.
-						if( diff == two )
+						if( gap_size.isOne() )
 							REPORT_ERROR(
 								SwitchUndhandledValue,
 								names.GetErrors(),
@@ -2004,81 +1995,94 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 								(next_low - 1).getLimitedValue() );
 					}
 				}
-				else
-					REPORT_ERROR(
-						SwitchRangesOverlapping,
-						names.GetErrors(),
-						std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
-						current_range.low .getLimitedValue(),
-						current_range.high.getLimitedValue(),
-						next_range.low .getLimitedValue(),
-						next_range.high.getLimitedValue() );
 			}
+			else
+				REPORT_ERROR(
+					SwitchRangesOverlapping,
+					names.GetErrors(),
+					std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
+					current_range.low .getLimitedValue(),
+					current_range.high.getLimitedValue(),
+					next_range.low .getLimitedValue(),
+					next_range.high.getLimitedValue() );
 		}
 
-		if( default_branch_synt_block == nullptr )
+		if( !all_ranges.empty() )
 		{
-			if( !all_ranges.empty() )
+			// Process begin range.
+			const llvm::APInt& first_range_low= all_ranges.front().low;
+			const llvm::APInt begin_gap_size= first_range_low - type_low;
+			if( !begin_gap_size.isZero() )
 			{
-				// Process begin.
-				const llvm::APInt& first_range_low= all_ranges.front().low;
-				const llvm::APInt begin_diff= first_range_low - type_first_value;
-				if( !begin_diff.isZero() )
+				has_gaps= true;
+				if( default_branch_synt_block == nullptr )
 				{
-					// Found a gap.
-					if( begin_diff == one )
+					if( begin_gap_size.isOne() )
 						REPORT_ERROR(
 							SwitchUndhandledValue,
 							names.GetErrors(),
 							all_ranges.front().src_loc,
-							type_first_value.getLimitedValue() );
+							type_low.getLimitedValue() );
 					else
 						REPORT_ERROR(
 							SwitchUndhandledRange,
 							names.GetErrors(),
 							all_ranges.front().src_loc,
-							type_first_value.getLimitedValue(),
+							type_low.getLimitedValue(),
 							(first_range_low - 1).getLimitedValue() );
 				}
-				// Process end.
-				const llvm::APInt& last_range_high= all_ranges.back().high;
-				const llvm::APInt end_diff= type_last_value - last_range_high;
-				if( !end_diff.isZero() )
+			}
+			// Process end range.
+			const llvm::APInt& last_range_high= all_ranges.back().high;
+			const llvm::APInt end_gap_size= type_high - last_range_high;
+			if( !end_gap_size.isZero() )
+			{
+				has_gaps= true;
+				if( default_branch_synt_block == nullptr )
 				{
-					// Found a gap.
-					if( end_diff == one )
+					if( end_gap_size.isOne() )
 						REPORT_ERROR(
 							SwitchUndhandledValue,
 							names.GetErrors(),
 							all_ranges.back().src_loc,
-							type_last_value.getLimitedValue() );
+							type_high.getLimitedValue() );
 					else
 						REPORT_ERROR(
 							SwitchUndhandledRange,
 							names.GetErrors(),
 							all_ranges.back().src_loc,
 							(last_range_high + 1).getLimitedValue(),
-							type_last_value.getLimitedValue() );
+							type_high.getLimitedValue() );
 				}
 			}
-			else
+		}
+		else
+		{
+			// No ranges at all - this is a gap.
+			has_gaps= true;
+			if( default_branch_synt_block == nullptr )
 			{
-				// No ranges at all - this is an error.
-				if( type_last_value == type_first_value )
+				if( type_high == type_low )
 					REPORT_ERROR(
 						SwitchUndhandledValue,
 						names.GetErrors(),
 						switch_operator.src_loc_,
-						type_last_value.getLimitedValue() );
+						type_high.getLimitedValue() );
 				else
 					REPORT_ERROR(
 						SwitchUndhandledRange,
 						names.GetErrors(),
 						switch_operator.src_loc_,
-						type_first_value.getLimitedValue(),
-						type_last_value.getLimitedValue() );
+						type_low.getLimitedValue(),
+						type_high.getLimitedValue() );
 			}
 		}
+
+		if( default_branch_synt_block != nullptr && !has_gaps )
+			REPORT_ERROR(
+				SwithcUnreachableDefaultBranch,
+				names.GetErrors(),
+				default_branch_synt_block->src_loc_ );
 	}
 
 	const ReferencesGraph variables_state_before_branching= function_context.variables_state;

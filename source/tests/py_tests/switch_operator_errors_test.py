@@ -417,3 +417,55 @@ def SwitchUndhandledRange_Test4():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "SwitchUndhandledRange", 5 ) )
+
+
+def SwithcUnreachableDefaultBranch_Test0():
+	c_program_text= """
+		enum E{ A, B }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				E::A -> {},
+				E::B -> {},
+				default -> {}, // Unreachable - all enum values are handled.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwithcUnreachableDefaultBranch", 9 ) )
+
+
+def SwithcUnreachableDefaultBranch_Test1():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			switch(x)
+			{
+				default -> {}, // Unreachable - all numeric values are handled.
+				... -1 -> {},
+				0 -> {},
+				1 ... -> {},
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwithcUnreachableDefaultBranch", 6 ) )
+
+
+def SwithcUnreachableDefaultBranch_Test2():
+	c_program_text= """
+		fn Foo( char16 c )
+		{
+			switch(c)
+			{
+				... -> {}, // Hanlde all range here.
+				default -> {}, // Unreachable - all numeric values are handled.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwithcUnreachableDefaultBranch", 7 ) )
