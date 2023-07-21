@@ -93,6 +93,7 @@ def SwitchInvalidRange_Test2():
 			switch(x)
 			{
 				888 ... 888 -> {}, // Ok - correct range
+				default -> {}
 			}
 		}
 	"""
@@ -241,3 +242,178 @@ def SwitchRangesOverlapping_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "SwitchRangesOverlapping", 7 ) )
+
+
+def SwitchUndhandledValue_Test0():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			switch(x)
+			{
+				... 41 -> {},
+				// Single unhandled value "42" here.
+				43 ... -> {},
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchUndhandledValue", 8 ) )
+	assert( errors_list[0].text.find("42") != -1 )
+
+
+def SwitchUndhandledValue_Test1():
+	c_program_text= """
+		enum E{ A, B, C }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				E::A -> {},
+				E::C -> {},
+				// B - unhandled
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchUndhandledValue", 8 ) )
+
+
+def SwitchUndhandledValue_Test2():
+	c_program_text= """
+		enum E{ A, B, C }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				E::A -> {},
+				E::B -> {},
+				// C - unhandled
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchUndhandledValue", 8 ) )
+
+
+def SwitchUndhandledValue_Test3():
+	c_program_text= """
+		enum E{ A, B, C }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				E::B -> {},
+				E::C -> {},
+				// A - unhandled
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchUndhandledValue", 7 ) )
+
+
+def SwitchUndhandledValue_Test4():
+	c_program_text= """
+		enum E{ A }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				// A - unhandled
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchUndhandledValue", 5 ) )
+
+
+def SwitchUndhandledRange_Test0():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			switch(x)
+			{
+				... 41 -> {},
+				// Unhandled range [42; 43] here.
+				44 ... -> {},
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchUndhandledRange", 8 ) )
+
+
+def SwitchUndhandledRange_Test1():
+	c_program_text= """
+		enum E{ A, B, C, D }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				E::A -> {},
+				E::D -> {},
+				// [B; C] - unhandled
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchUndhandledRange", 8 ) )
+
+
+def SwitchUndhandledRange_Test2():
+	c_program_text= """
+		enum E{ A, B, C, D }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				E::A -> {},
+				E::B -> {},
+				// [C; D] - unhandled
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchUndhandledRange", 8 ) )
+
+
+def SwitchUndhandledRange_Test3():
+	c_program_text= """
+		enum E{ Null, A, B, C }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				E::B -> {},
+				E::C -> {},
+				// [Null; A] - unhandled
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchUndhandledRange", 7 ) )
+
+
+def SwitchUndhandledRange_Test4():
+	c_program_text= """
+		enum E{ A, B }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				// [A; B] - unhandled
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "SwitchUndhandledRange", 5 ) )

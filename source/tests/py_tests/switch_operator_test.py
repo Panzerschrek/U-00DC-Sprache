@@ -8,7 +8,8 @@ def SwitchOperatorDeclaration_Test0():
 			switch( x ){} // Empty switch
 		}
 	"""
-	tests_lib.build_program( c_program_text )
+	# Build with errors, since empty switch is now useless, because it does not handles all possible values.
+	tests_lib.build_program_with_errors( c_program_text )
 
 
 def SwitchOperatorDeclaration_Test1():
@@ -18,9 +19,11 @@ def SwitchOperatorDeclaration_Test1():
 			switch( x ) // Switch with one value.
 			{
 				0 -> {},
+				default -> {},
 			}
 			switch( x )
 			{
+				default -> {},
 				1 -> {} // Last comma is unnecessary.
 			}
 		}
@@ -34,11 +37,13 @@ def SwitchOperatorDeclaration_Test2():
 		{
 			switch( x ) // Switch with two values.
 			{
+				default -> {},
 				0 -> {},
 				1 -> { return; },
 			}
 			switch( x )
 			{
+				default -> {},
 				2 -> {},
 				3 -> {} // Last comma is unnecessary.
 			}
@@ -60,6 +65,7 @@ def SwitchOperator_Test0():
 				4 -> { return 4444; },
 				5 -> { return 55555; },
 				6 -> { return 666666; },
+				default -> {},
 			}
 
 			return 0;
@@ -92,6 +98,7 @@ def SwitchOperator_Test1():
 				3 -> { res= 333u; },
 				2 -> { res= 22u; },
 				1 -> { res= 1u; },
+				default -> {},
 			}
 
 			return res;
@@ -127,8 +134,8 @@ def SwitchOperator_Test2():
 				"b"c8 -> { return "B"c8; },
 				"c"c8 -> { return "C"c8; },
 				"d"c8 -> { return "D"c8; },
+				default -> { halt; }
 			}
-			halt;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -169,9 +176,8 @@ def SwitchOperator_MultipleCaseValues_Test0():
 			{
 				0, 2, 4, 6, 8, 10, 12, 14 -> { return  true; },
 				1, 3, 5, 7, 9, 11, 13, 15 -> { return false; },
+				default -> { halt; }
 			}
-
-			halt;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -187,10 +193,9 @@ def SwitchOperator_MultipleCaseValues_Test1():
 			switch( x )
 			{
 				0, 1, 2, 3, 4, 6, 7, 8, 9 -> {  return false; },
-				5 -> { return true; }
+				5 -> { return true; },
+				default -> { halt; }
 			}
-
-			halt;
 		}
 	"""
 	tests_lib.build_program( c_program_text )
