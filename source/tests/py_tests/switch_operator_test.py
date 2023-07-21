@@ -160,7 +160,6 @@ def SwitchOperator_Test3():
 				E::B -> { return E::B; },
 				E::C -> { return E::A; },
 			}
-			halt;
 		}
 	"""
 	tests_lib.build_program( c_program_text )

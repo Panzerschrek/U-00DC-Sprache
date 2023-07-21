@@ -2188,10 +2188,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			next_case_block->eraseFromParent();
 		}
 
-		// TODO - even if default branch doesn't exists prove that all possible values are handled.
-		// Normally switch should hanlde all possible values and swith should be terminal if all branches are terminal.
-		all_branches_are_terminal= false;
-		breances_states_after_case.push_back( variables_state_before_branching );
+		// No default branch - handle all cases in normal branches.
 	}
 
 	BlockBuildInfo block_build_info;
@@ -2199,8 +2196,17 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( all_branches_are_terminal )
 	{
 		block_build_info.have_terminal_instruction_inside= true;
-		delete block_after_switch;
 		// There is no reason to merge variables state here.
+
+		// Hack - preserve LLVM basic blocks structure in case of impossible jump to block after swith.
+		if( block_after_switch->hasNPredecessorsOrMore(1) )
+		{
+			function_context.function->getBasicBlockList().push_back( block_after_switch );
+			function_context.llvm_ir_builder.SetInsertPoint( block_after_switch );
+			function_context.llvm_ir_builder.CreateUnreachable();
+		}
+		else
+			delete block_after_switch;
 	}
 	else
 	{
