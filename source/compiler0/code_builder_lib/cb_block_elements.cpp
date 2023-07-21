@@ -1801,8 +1801,35 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		CallDestructors( temp_variables_storage, names, function_context, src_loc );
 	}
 
+	llvm::APInt type_first_value, type_last_value;
+	bool is_signed= false;
+	if( const auto enum_= switch_type.GetEnumType() )
+	{
+		const uint32_t size_in_bits= 8 * uint32_t(enum_->underlaying_type.GetSize());
+		type_first_value= llvm::APInt( size_in_bits, uint64_t(0) );
+		type_last_value= llvm::APInt( size_in_bits, uint64_t(enum_->element_count - 1) );
+	}
+	else if( const auto fundamental_type= switch_type.GetFundamentalType() )
+	{
+		// TODO - check this.
+		const uint32_t size_in_bits= 8 * uint32_t(fundamental_type->GetSize());
+		if( IsSignedInteger( fundamental_type->fundamental_type ) )
+		{
+			is_signed= true;
+			type_first_value= llvm::APInt( size_in_bits, uint64_t(1u) << (size_in_bits - 1), true );
+			type_last_value= llvm::APInt( size_in_bits, (uint64_t(1u) << (size_in_bits - 1)) - 1, true );
+		}
+		else
+		{
+			// Unsigned integers and chars (chars are unsigned).
+			type_first_value= llvm::APInt( size_in_bits, uint64_t(0), false );
+			type_last_value= llvm::APInt( size_in_bits, (uint64_t(1u) << size_in_bits) - 1, false );
+		}
+	}
+	else U_ASSERT(false);
+
 	// Preevaluate case values. It is fine, since only constexpr expressions are allowed.
-	using CaseValues= llvm::SmallVector<llvm::Constant*, 4>;
+	using CaseValues= llvm::SmallVector<std::pair<llvm::Constant*, llvm::Constant*>, 4>;
 	llvm::SmallVector<CaseValues, 16> branches_values;
 	bool all_cases_are_ok= true;
 	const Synt::Block* default_branch_synt_block= nullptr;
@@ -1812,30 +1839,73 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		for( const Synt::SwitchOperator::Case& case_ : switch_operator.cases )
 		{
 			CaseValues case_values;
-			if( const auto values = std::get_if<std::vector<Synt::Expression>>( &case_.values ) )
+			if( const auto values = std::get_if<std::vector<Synt::SwitchOperator::CaseValue>>( &case_.values ) )
 			{
 				case_values.reserve( values->size() );
-				for( const Synt::Expression& value : *values )
+				for( const Synt::SwitchOperator::CaseValue& value : *values )
 				{
-					const VariablePtr expression= BuildExpressionCodeEnsureVariable( value, names, function_context );
-					if( expression->type != switch_type )
+					if( const auto single_value= std::get_if<Synt::Expression>( &value ) )
 					{
-						REPORT_ERROR(
-							TypesMismatch,
-							names.GetErrors(),
-							Synt::GetExpressionSrcLoc(value ),
-							switch_type,
-							expression->type );
-						all_cases_are_ok= false;
-						continue;
+						const VariablePtr expression= BuildExpressionCodeEnsureVariable( *single_value, names, function_context );
+						if( expression->type != switch_type )
+						{
+							REPORT_ERROR(
+								TypesMismatch,
+								names.GetErrors(),
+								Synt::GetExpressionSrcLoc(*single_value ),
+								switch_type,
+								expression->type );
+							all_cases_are_ok= false;
+							continue;
+						}
+						if( expression->constexpr_value == nullptr )
+						{
+							REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( *single_value ) );
+							all_cases_are_ok= false;
+							continue;
+						}
+						case_values.emplace_back( expression->constexpr_value, expression->constexpr_value );
 					}
-					if( expression->constexpr_value == nullptr )
+					else if( const auto range= std::get_if<Synt::SwitchOperator::CaseRange>( &value ) )
 					{
-						REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( value ) );
-						all_cases_are_ok= false;
-						continue;
+						llvm::Constant* range_constants[2]= { nullptr, nullptr };
+						for( size_t i= 0; i < 2; ++i )
+						{
+							const auto& expression_opt = i == 0 ? range->low : range->high;
+							if( expression_opt == std::nullopt )
+								continue;
+
+							const VariablePtr expression= BuildExpressionCodeEnsureVariable( *expression_opt, names, function_context );
+							if( expression->type != switch_type )
+							{
+								REPORT_ERROR(
+									TypesMismatch,
+									names.GetErrors(),
+									Synt::GetExpressionSrcLoc(*expression_opt ),
+									switch_type,
+									expression->type );
+								all_cases_are_ok= false;
+								continue;
+							}
+							if( expression->constexpr_value == nullptr )
+							{
+								REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( *expression_opt ) );
+								all_cases_are_ok= false;
+								continue;
+							}
+							range_constants[i]= expression->constexpr_value;
+						}
+
+						if( range_constants[0] == nullptr )
+							range_constants[0]= llvm::ConstantInt::get( switch_type.GetLLVMType(), type_first_value );
+
+						if( range_constants[1] == nullptr )
+							range_constants[1]= llvm::ConstantInt::get( switch_type.GetLLVMType(), type_last_value );
+
+						// TODO - check if range is correct.
+						case_values.emplace_back( range_constants[0], range_constants[1] );
 					}
-					case_values.push_back( expression->constexpr_value );
+					else U_ASSERT(false);
 				}
 			}
 			else if( std::get_if<Synt::SwitchOperator::DefaultPlaceholder>( &case_.values ) != nullptr )
@@ -1885,11 +1955,27 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		const CaseValues& case_values= branches_values[i];
 		U_ASSERT( !case_values.empty() );
-		llvm::Value* value_equals= function_context.llvm_ir_builder.CreateICmpEQ( switch_value, case_values[0] );
-		for( size_t j= 1; j < branches_values[i].size(); ++j )
+		llvm::Value* value_equals= nullptr;
+		for( const auto& case_range : case_values )
 		{
-			llvm::Value* const other_value_equals=  function_context.llvm_ir_builder.CreateICmpEQ( switch_value, case_values[j] );
-			value_equals= function_context.llvm_ir_builder.CreateOr( value_equals, other_value_equals );
+			llvm::Value* current_value_equals= nullptr;
+			if( case_range.first == case_range.second ) // LLVM creates identical constant values for identical constants.
+				current_value_equals= function_context.llvm_ir_builder.CreateICmpEQ( switch_value, case_range.first );
+			else if( is_signed )
+				current_value_equals=
+					function_context.llvm_ir_builder.CreateAnd(
+						function_context.llvm_ir_builder.CreateICmpSGE( switch_value, case_range.first  ),
+						function_context.llvm_ir_builder.CreateICmpSLE( switch_value, case_range.second ) );
+			else
+				current_value_equals=
+					function_context.llvm_ir_builder.CreateAnd(
+						function_context.llvm_ir_builder.CreateICmpUGE( switch_value, case_range.first  ),
+						function_context.llvm_ir_builder.CreateICmpULE( switch_value, case_range.second ) );
+
+			if( value_equals == nullptr )
+				value_equals= current_value_equals;
+			else
+				value_equals= function_context.llvm_ir_builder.CreateOr( value_equals, current_value_equals );
 		}
 
 		function_context.llvm_ir_builder.CreateCondBr( value_equals, case_handle_block, next_case_block );

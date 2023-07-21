@@ -2385,6 +2385,8 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 
 	while( it_->type != Lexem::Type::BraceRight && NotEndOfFile() )
 	{
+		const auto values_end_lexem= Lexem::Type::RightArrow; // TODO - maybe use another lexem?
+
 		SwitchOperator::CaseValues case_values;
 		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::default_ )
 		{
@@ -2393,10 +2395,33 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 		}
 		else
 		{
-			std::vector<Expression> values;
+			std::vector<SwitchOperator::CaseValue> values;
 			while(true)
 			{
-				values.push_back( ParseExpression() );
+				if( it_->type == Lexem::Type::Ellipsis )
+				{
+					NextLexem();
+					SwitchOperator::CaseRange range;
+					if( it_->type != Lexem::Type::Comma && it_->type != values_end_lexem )
+						range.high= ParseExpression();
+					values.push_back( std::move(range) );
+				}
+				else
+				{
+					Expression expression= ParseExpression();
+					if( it_->type== Lexem::Type::Ellipsis )
+					{
+						SwitchOperator::CaseRange range;
+						range.low= std::move(expression);
+
+						if( it_->type != Lexem::Type::Comma && it_->type != values_end_lexem )
+							range.high= ParseExpression();
+						values.push_back( std::move(range) );
+					}
+					else
+						values.push_back( std::move(expression) );
+				}
+
 				if( it_->type == Lexem::Type::Comma )
 				{
 					NextLexem();
@@ -2408,7 +2433,7 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 			case_values= std::move(values);
 		}
 
-		ExpectLexem( Lexem::Type::RightArrow ); // TODO - maybe use another lexem?
+		ExpectLexem( values_end_lexem );
 		Block block= ParseBlock();
 
 		SwitchOperator::Case case_{ std::move(case_values), std::move(block) };
