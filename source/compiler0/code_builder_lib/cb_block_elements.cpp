@@ -1774,8 +1774,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		const StackVariablesStorage temp_variables_storage( function_context );
 		const VariablePtr expression= BuildExpressionCodeEnsureVariable( switch_operator.value, names, function_context );
 
-		bool type_ok= expression->type.GetEnumType();
-		if( const auto fundamental_type= expression->type.GetFundamentalType() )
+		bool type_ok= false;
+		if( expression->type.GetEnumType() != nullptr )
+			type_ok= true;
+		else if( const auto fundamental_type= expression->type.GetFundamentalType() )
 			type_ok= IsInteger( fundamental_type->fundamental_type ) || IsChar( fundamental_type->fundamental_type );
 		else
 			type_ok= false;
@@ -1787,7 +1789,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			REPORT_ERROR( TypesMismatch,
 				names.GetErrors(),
 				src_loc,
-				"Integer or char type",
+				"Enum, integer or char type",
 				expression->type );
 			return BlockBuildInfo();
 		}
