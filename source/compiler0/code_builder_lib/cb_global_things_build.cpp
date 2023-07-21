@@ -946,12 +946,12 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 		enum_->underlaying_type= FundamentalType( U_FundamentalType::u32_, fundamental_llvm_types_.u32_ );
 
 	// Process custom underlaying type.
-	if( !( std::get_if<Synt::EmptyVariant>( &enum_decl.underlaying_type_name.start_value ) != nullptr && enum_decl.underlaying_type_name.tail == nullptr ) )
+	if( enum_decl.underlaying_type_name != std::nullopt )
 	{
-		const Value type_value= ResolveValue( names_scope, *global_function_context_, enum_decl.underlaying_type_name );
+		const Value type_value= ResolveValue( names_scope, *global_function_context_, *enum_decl.underlaying_type_name );
 		const Type* const type= type_value.GetTypeName();
 		if( type == nullptr )
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.src_loc_, enum_decl.underlaying_type_name );
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), enum_decl.src_loc_, *enum_decl.underlaying_type_name );
 		else
 		{
 			const FundamentalType* const fundamental_type= type->GetFundamentalType();

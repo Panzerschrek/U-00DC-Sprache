@@ -16,6 +16,10 @@ namespace
 
 // Prototypes start
 void ElementWrite( const EmptyVariant& empty_variant, std::ostream& stream );
+void ElementWrite( const RootNamespaceNameLookup& root_namespace_lookup, std::ostream& stream );
+void ElementWrite( const NameLookup& name_lookup, std::ostream& stream );
+void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream );
+void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream );
 void ElementWrite( const ComplexName& complex_name, std::ostream& stream );
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
 void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream );
@@ -71,37 +75,39 @@ private:
 
 void ElementWrite( const EmptyVariant&, std::ostream& ) {}
 
+void ElementWrite( const RootNamespaceNameLookup& root_namespace_lookup, std::ostream& stream )
+{
+	stream << "::" << root_namespace_lookup.name;
+}
+
+void ElementWrite( const NameLookup& name_lookup, std::ostream& stream )
+{
+	stream << name_lookup.name;
+}
+
+void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream )
+{
+	ElementWrite( *names_scope_fetch.base, stream );
+	stream << "::" << names_scope_fetch.name;
+}
+
+void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream )
+{
+	ElementWrite( *template_parametrization.base, stream );
+
+	stream << "</ ";
+	for( const Expression& expr : template_parametrization.template_args )
+	{
+		ElementWrite( expr, stream );
+		if( &expr != &template_parametrization.template_args.back() )
+			stream << ", ";
+	}
+	stream << " />";
+}
+
 void ElementWrite( const ComplexName& complex_name, std::ostream& stream )
 {
-	if( std::get_if<EmptyVariant>(&complex_name.start_value) != nullptr )
-	{}
-	else if( const auto typeof_type_name= std::get_if<TypeofTypeName>(&complex_name.start_value) )
-		ElementWrite( *typeof_type_name, stream );
-	else if(const auto simple_name= std::get_if<std::string>(&complex_name.start_value) )
-		stream << *simple_name;
-	else U_ASSERT(false);
-
-	auto tail= complex_name.tail.get();
-	while(tail != nullptr)
-	{
-		if( const auto name= std::get_if<std::string>( &tail->name_or_template_paramenters ) )
-			stream << "::" << *name;
-		else if( const auto template_prameters= std::get_if< std::vector<Expression> >( &tail->name_or_template_paramenters ) )
-		{
-			stream << "</ ";
-			for( const Expression& expr : *template_prameters )
-			{
-				ElementWrite( expr, stream );
-				if( &expr != &template_prameters->back() )
-					stream << ", ";
-			}
-			stream << " />";
-		}
-		else
-			U_ASSERT( false );
-
-		tail= tail->next.get();
-	}
+	return std::visit( UniversalVisitor(stream), complex_name );
 }
 
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream )
@@ -781,10 +787,10 @@ void ElementWrite( const Enum& enum_, std::ostream& stream )
 {
 	stream << Keyword( Keywords::enum_ ) << " " << enum_.name;
 
-	if( !( std::get_if<Synt::EmptyVariant>( &enum_.underlaying_type_name.start_value ) != nullptr && enum_.underlaying_type_name.tail == nullptr ) )
+	if( enum_.underlaying_type_name != std::nullopt )
 	{
 		stream << " : ";
-		ElementWrite( enum_.underlaying_type_name, stream );
+		ElementWrite( *enum_.underlaying_type_name, stream );
 	}
 
 	stream << "\n{\n";

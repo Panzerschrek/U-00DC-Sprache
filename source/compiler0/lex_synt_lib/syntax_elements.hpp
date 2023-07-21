@@ -17,7 +17,6 @@ namespace Synt
 
 struct EmptyVariant{};
 
-struct ComplexName;
 
 struct ArrayTypeName;
 struct TypeofTypeName;
@@ -92,6 +91,22 @@ struct ClassField;
 struct ClassVisibilityLabel;
 struct TypeTemplate;
 struct FunctionTemplate;
+
+struct TypeofTypeName;
+struct RootNamespaceNameLookup;
+struct NameLookup;
+struct NamesScopeNameFetch;
+struct TemplateParametrization;
+
+using ComplexName= std::variant<
+	TypeofTypeName,
+	RootNamespaceNameLookup,
+	NameLookup,
+	NamesScopeNameFetch,
+	TemplateParametrization
+	>;
+
+using ComplexNamePtr= std::unique_ptr<ComplexName>;
 
 struct Namespace;
 
@@ -254,34 +269,43 @@ enum class ReferenceModifier : uint8_t
 {
 	None,
 	Reference,
-	// SPRACE_TODO - add "move" references here
 };
 
-struct TypeofTypeName
+struct TypeofTypeName final : public SyntaxElementBase
 {
+	explicit TypeofTypeName( const SrcLoc& src_loc );
+
 	ExpressionPtr expression;
 };
 
-struct ComplexName final : public SyntaxElementBase
+struct RootNamespaceNameLookup final : public SyntaxElementBase
 {
-	explicit ComplexName( const SrcLoc& src_loc );
+	explicit RootNamespaceNameLookup( const SrcLoc& src_loc );
 
-	std::variant<
-		EmptyVariant, // ::
-		TypeofTypeName, // typeof(x)
-		std::string // name
-		> start_value;
+	std::string name;
+};
 
-	struct Component
-	{
-		std::variant<
-			std::string,
-			std::vector<Expression>
-			> name_or_template_paramenters;
-		std::unique_ptr<const Component> next;
-	};
+struct NameLookup final : public SyntaxElementBase
+{
+	explicit NameLookup( const SrcLoc& src_loc );
 
-	std::unique_ptr<const Component> tail;
+	std::string name;
+};
+
+struct NamesScopeNameFetch final : public SyntaxElementBase
+{
+	explicit NamesScopeNameFetch( const SrcLoc& src_loc );
+
+	std::string name;
+	ComplexNamePtr base;
+};
+
+struct TemplateParametrization final : public SyntaxElementBase
+{
+	explicit TemplateParametrization( const SrcLoc& src_loc );
+
+	std::vector<Expression> template_args;
+	ComplexNamePtr base;
 };
 
 struct ArrayTypeName final : public SyntaxElementBase
@@ -843,7 +867,7 @@ struct Enum final : public SyntaxElementBase
 	};
 
 	std::string name;
-	ComplexName underlaying_type_name;
+	std::optional<ComplexName> underlaying_type_name;
 	std::vector<Member> members;
 };
 
@@ -995,6 +1019,7 @@ struct Import final : public SyntaxElementBase
 // Utility functions for manipulations with variants.
 
 SrcLoc GetExpressionSrcLoc( const Expression& expression );
+SrcLoc GetComplexNameSrcLoc( const ComplexName& complex_name );
 SrcLoc GetInitializerSrcLoc( const Initializer& initializer );
 SrcLoc GetBlockElementSrcLoc( const BlockElement& block_element );
 

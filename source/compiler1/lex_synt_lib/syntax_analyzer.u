@@ -114,6 +114,8 @@ private:
 
 	fn ParseTemplateArgs( mut this ) : TemplateArgs;
 	fn ParseComplexName( mut this ) : ComplexName;
+	fn ParseComplexNameTail( mut this, ComplexName base_ ) : ComplexName;
+	fn TryParseComplexNameTailWithTemplateArgs( mut this, ComplexName base_ ) : ComplexName;
 
 	fn ParseExpression( mut this ) : Expression;
 
@@ -510,55 +512,87 @@ fn SyntaxAnalyzer::ParseTemplateArgs( mut this ) : TemplateArgs
 
 fn SyntaxAnalyzer::ParseComplexName( mut this ) : ComplexName
 {
-	var ComplexName mut complex_name{ .src_loc= it_.front().src_loc };
-	if( IsKeyword( it_.front(), Keyword::typeof_ ) )
+	if( it_.front().lexem_type == Lexem::Type::Scope )
 	{
-		NextLexem();
-
-		ExpectLexem(  Lexem::Type::BracketLeft );
-
-		var Typeof mut typeof_{ .expr( ParseExpression() ) };
-		complex_name.start= move(typeof_);
-
-		ExpectLexem( Lexem::Type::BracketRight );
-	}
-	else if( it_.front().lexem_type == Lexem::Type::Identifier )
-	{
-		complex_name.start= it_.front().text;
-		NextLexem();
-
-		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
-		{
-			complex_name.tail.push_back( ust::make_box( ParseTemplateArgs() ) );
-		}
-	}
-	else if( it_.front().lexem_type == Lexem::Type::Scope )
-	{
-		complex_name.start= EmptyVariant();
-	}
-	else
-	{
-		PushErrorMessage();
-	}
-
-	while( NotEndOfFile() && it_.front().lexem_type == Lexem::Type::Scope )
-	{
-		NextLexem();
+		var RootNamespaceNameLookup mut root_namespace_lookup{ .src_loc= it_.front().src_loc };
+		NextLexem(); // Skip ::
 
 		if( it_.front().lexem_type != Lexem::Type::Identifier )
 		{
 			PushErrorMessage();
 		}
-		complex_name.tail.push_back( it_.front().text );
+		root_namespace_lookup.name= it_.front().text;
 		NextLexem();
 
-		if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
+		return TryParseComplexNameTailWithTemplateArgs( move(root_namespace_lookup) );
+	}
+	else if( it_.front().lexem_type == Lexem::Type::Identifier )
+	{
+		if( IsKeyword( it_.front(), Keyword::typeof_ ) )
 		{
-			complex_name.tail.push_back( ust::make_box( ParseTemplateArgs() ) );
+			var SrcLoc src_loc= it_.front().src_loc;
+			NextLexem();
+			var Typeof mut typeof_type_name{ .src_loc= src_loc, .expr(ParseExpressionInBrackets()) };
+			return ParseComplexNameTail( move( typeof_type_name ) );
+		}
+		else
+		{
+			var NameLookup mut name_lookup{ .src_loc= it_.front().src_loc };
+
+			if( it_.front().lexem_type != Lexem::Type::Identifier )
+			{
+				PushErrorMessage();
+			}
+			name_lookup.name= it_.front().text;
+			NextLexem();
+
+			return TryParseComplexNameTailWithTemplateArgs( move(name_lookup) );
 		}
 	}
+	else
+	{
+		PushErrorMessage();
+		return ComplexName();
+	}
+}
 
-	return move(complex_name);
+fn SyntaxAnalyzer::ParseComplexNameTail( mut this, ComplexName mut base_ ) : ComplexName
+{
+	if( it_.front().lexem_type != Lexem::Type::Scope )
+	{
+		return move(base_);
+	}
+	NextLexem(); // Skip ::
+
+	var NamesScopeNameFetch mut names_scope_fetch{ .src_loc= it_.front().src_loc, .base_(move(base_)) };
+
+	if( it_.front().lexem_type != Lexem::Type::Identifier )
+	{
+		PushErrorMessage();
+	}
+	names_scope_fetch.name= it_.front().text;
+	NextLexem();
+
+	return TryParseComplexNameTailWithTemplateArgs( move(names_scope_fetch) );
+}
+
+fn SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( mut this, ComplexName mut base_ ) : ComplexName
+{
+	if( it_.front().lexem_type == Lexem::Type::TemplateBracketLeft )
+	{
+		var TemplateParametrization mut template_parametrization
+		{
+			.src_loc= it_.front().src_loc,
+			.base_(move(base_)),
+			.template_args(ParseTemplateArgs())
+		};
+
+		return ParseComplexNameTail( move(template_parametrization) );
+	}
+	else
+	{
+		return ParseComplexNameTail( move(base_) );
+	}
 }
 
 fn SyntaxAnalyzer::ParseExpression( mut this ) : Expression

@@ -254,12 +254,7 @@ private:
 		std::vector<bool>& template_parameters_usage_flags,
 		const Synt::GeneratorTypePtr& generator_type_name_ptr );
 
-	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope );
-
-	// Resolve as deep, as can, but does not instantiate last component, if it is template.
-	Value ResolveForTemplateSignatureParameter(
-		const Synt::ComplexName& signature_parameter,
-		NamesScope& names_scope );
+	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope, const SrcLoc& src_loc );
 
 	// Returns "true" if all ok.
 	bool MatchTemplateArg(
@@ -749,18 +744,32 @@ private:
 
 	void BuildStaticAssert( StaticAssert& static_assert_, NamesScope& names, FunctionContext& function_context );
 
+	//
 	// Name resolving.
-	enum class ResolveMode : uint8_t
+	//
+
+	Value ResolveValue( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& complex_name );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization );
+
+	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, Value* value );
+
+	struct NameLookupResult
 	{
-		Regular,
-		ForTemplateSignatureParameter,
+		// Namespace where this value is located. Needed in order to build some values (like template sets).
+		// May be empty.
+		NamesScope* space= nullptr;
+		// Value pointer itself. Should be stable pointer (inside some namespace, usually).
+		// Empty if not found.
+		Value* value= nullptr;
 	};
 
-	Value ResolveValue(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		const Synt::ComplexName& complex_name,
-		ResolveMode resolve_mode= ResolveMode::Regular );
+	// Try to lookup value from names scope. If it is not found - try to lookup it from parent scope, than from parent of parent, etc.
+	// Do not perform name build.
+	NameLookupResult LookupName( NamesScope& names_scope, const std::string& name, const SrcLoc& src_loc );
 
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, const std::string& name );
 	std::pair<Value*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, const std::string& name, bool recursive_call= false );

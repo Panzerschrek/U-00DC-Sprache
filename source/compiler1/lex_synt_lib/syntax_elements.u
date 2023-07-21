@@ -27,6 +27,15 @@ fn GetSrcLoc( Initializer& initializer ) : SrcLoc
 	halt;
 }
 
+fn GetSrcLoc( ComplexName& complex_name ) : SrcLoc
+{
+	variant_visit( &el : complex_name )
+	{
+		return el.src_loc;
+	}
+	halt;
+}
+
 fn GetSrcLoc( Expression& expression ) : SrcLoc
 {
 	variant_visit( &el : expression )
@@ -55,6 +64,10 @@ fn GetSrcLoc( Expression& expression ) : SrcLoc
 		else static_if( ust::is_same_type</ ElementT, ust::box</GeneratorType/> />() )
 		{
 			return el.deref().src_loc;
+		}
+		else static_if( ust::is_same_type</ ElementT, ComplexName />() )
+		{
+			return GetSrcLoc( el );
 		}
 		else
 		{

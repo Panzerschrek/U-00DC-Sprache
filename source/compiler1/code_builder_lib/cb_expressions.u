@@ -350,18 +350,20 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ComplexName& named_operand ) : Value
 {
-	if( named_operand.start.get</ust::string8/>().empty() || !named_operand.tail.empty() )
+	auto name_lookup_ref= named_operand.get</Synt::NameLookup/>();
+	if( name_lookup_ref.empty() )
 	{
 		return ResolveValue( names_scope, function_context, named_operand );
 	}
 
 	// Process special simple names here.
-	var ust::string8& name= named_operand.start.get</ust::string8/>().try_deref();
+	var ust::string8& name= name_lookup_ref.try_deref().name;
+	var SrcLoc src_loc= name_lookup_ref.try_deref().src_loc;
 	if( name == KeywordToString( Keyword::this_ ) )
 	{
 		if( function_context.this_.empty() || function_context.whole_this_is_unavailable )
 		{
-			REPORT_ERROR( ThisUnavailable, names_scope, named_operand.src_loc )
+			REPORT_ERROR( ThisUnavailable, names_scope, src_loc )
 			return ErrorValue();
 		}
 		return function_context.this_.try_to_non_nullable();
@@ -370,7 +372,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	{
 		if( function_context.this_.empty() )
 		{
-			REPORT_ERROR( BaseUnavailable, names_scope, named_operand.src_loc )
+			REPORT_ERROR( BaseUnavailable, names_scope, src_loc )
 			return ErrorValue();
 		}
 
@@ -382,7 +384,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		auto base_class= class_type.lock_imut().deref().base_class;
 		if( base_class.empty() )
 		{
-			REPORT_ERROR( BaseUnavailable, names_scope, named_operand.src_loc )
+			REPORT_ERROR( BaseUnavailable, names_scope, src_loc )
 			return ErrorValue();
 		}
 		var ClassTypePtr base_class_non_null= base_class.try_to_non_nullable();
@@ -393,7 +395,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			if( ( base_field_index < function_context.initialized_this_fields.size() && !function_context.initialized_this_fields[ base_field_index ] ) ||
 				base_class_non_null.lock_imut().deref().kind == ClassType::Kind::Abstract )
 			{
-				REPORT_ERROR( FieldIsNotInitializedYet, names_scope, named_operand.src_loc, KeywordToString( Keyword::base_ ) )
+				REPORT_ERROR( FieldIsNotInitializedYet, names_scope,src_loc, KeywordToString( Keyword::base_ ) )
 				return ErrorValue();
 			}
 		}
@@ -409,7 +411,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 		var VariablePtr mut base_ptr( move(base_) );
 		function_context.references_graph.AddNode( base_ptr );
-		function_context.references_graph.TryAddLink( this_ptr, base_ptr, names_scope, named_operand.src_loc );
+		function_context.references_graph.TryAddLink( this_ptr, base_ptr, names_scope, src_loc );
 
 		RegisterTemporaryVariable( function_context, base_ptr );
 		return move(base_ptr);
@@ -614,15 +616,20 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MoveOperator& move_operator ) : Value
 {
-	var Synt::ComplexName complex_name{ .src_loc= move_operator.src_loc, .start= move_operator.variable_name };
-	var Value value= ResolveValue( names_scope, function_context, complex_name );
-	if( value.get</VariablePtr/>().empty() )
+	auto name_lookup_result= LookupName( names_scope, function_context, move_operator.variable_name, move_operator.src_loc );
+	if( name_lookup_result.empty() )
 	{
-		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, GetValueKindName(value) )
 		return ErrorValue();
 	}
 
-	var VariablePtr variable_reference_ptr= value.get</VariablePtr/>().try_deref();
+	auto variable_ptr = name_lookup_result.try_deref()[1].Get</Variable/>();
+	if( variable_ptr.empty() )
+	{
+		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "non-variable" )
+		return ErrorValue();
+	}
+
+	var VariablePtr variable_reference_ptr= variable_ptr.try_to_non_nullable();
 
 	if( IsGlobalVariable( variable_reference_ptr ) )
 	{
@@ -1556,6 +1563,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				names_scope,
 				function_context,
 				functions_set,
+				functions_set_lock.deref().class_,
 				member_access_operator.template_args.try_deref(),
 				member_access_operator.src_loc );
 

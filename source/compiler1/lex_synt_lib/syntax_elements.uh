@@ -35,21 +35,47 @@ type TemplateArgs= ust::vector</Expression/>;
 
 struct Typeof
 {
+	SrcLoc src_loc;
+
 	ust::box</Expression/> expr;
 }
 
-struct ComplexName
+type ComplexName= ust::variant</ tup[
+	NameLookup,
+	RootNamespaceNameLookup,
+	NamesScopeNameFetch,
+	TemplateParametrization,
+	Typeof
+	] />;
+
+struct NameLookup
 {
 	SrcLoc src_loc;
 
-	ust::variant</ tup[
-		EmptyVariant, // for name, started with ::
-		ust::string8, // for regular name
-		Typeof
-		] /> start;
+	ust::string8 name;
+}
 
-	type TailComponent= ust::variant</ tup[ ust::string8, ust::box</TemplateArgs/> ] />;
-	ust::vector</ TailComponent /> tail;
+struct RootNamespaceNameLookup
+{
+	SrcLoc src_loc;
+
+	ust::string8 name;
+}
+
+struct NamesScopeNameFetch
+{
+	SrcLoc src_loc;
+
+	ust::string8 name;
+	ust::box</ComplexName/> base_;
+}
+
+struct TemplateParametrization
+{
+	SrcLoc src_loc;
+
+	ust::box</TemplateArgs/> template_args;
+	ust::box</ComplexName/> base_;
 }
 
 struct NumericConstant
@@ -735,7 +761,7 @@ struct Enum
 {
 	SrcLoc src_loc;
 	ust::string8 name;
-	ComplexName underlaying_type;
+	ust::optional</ComplexName/> underlaying_type;
 
 	struct Element
 	{
@@ -820,6 +846,7 @@ type ProgramElements= ust::vector</ProgramElement/>;
 
 fn GetSrcLoc( Initializer& initializer ) : SrcLoc;
 fn GetSrcLoc( Expression& expression ) : SrcLoc;
+fn GetSrcLoc( ComplexName& complex_name ) : SrcLoc;
 fn GetSrcLoc( BlockElement& block_element ) : SrcLoc;
 
 } // namespace Synt

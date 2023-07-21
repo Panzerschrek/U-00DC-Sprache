@@ -223,7 +223,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	if( const Type* const type= value.GetTypeName() )
 		return *type;
 	else
-		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), named_type_name.src_loc_, named_type_name );
+		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), Synt::GetComplexNameSrcLoc(named_type_name), named_type_name );
 
 	return invalid_type_;
 }

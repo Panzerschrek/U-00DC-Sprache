@@ -863,6 +863,19 @@ fn ClassType::SetMemberVisibility( mut this, ust::string8& member_name, Synt::Cl
 	}
 }
 
+fn ClassType::HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool
+{
+	foreach( &parent : parents )
+	{
+		if( parent.class_ == possible_ancestor || parent.class_.lock_imut().deref().HasAncestor( possible_ancestor ) )
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 //
 // Value
 //

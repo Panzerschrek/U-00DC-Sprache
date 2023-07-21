@@ -318,64 +318,56 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	Synt::ComplexName& param,
 	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
 {
-	if( param.tail.empty() )
+	if_var( &name_lookup : param.get</Synt::NameLookup/>() )
 	{
-		if_var( &simple_name : param.start.get</ust::string8/>() )
+		for( auto mut i= 0s; i < template_params.size(); ++i )
 		{
-			for( auto mut i= 0s; i < template_params.size(); ++i )
+			if( name_lookup.name == template_params[i].name )
 			{
-				if( simple_name == template_params[i].name )
-				{
-					template_params_usage_flags[i]= true;
+				template_params_usage_flags[i]= true;
 
-					var TemplateSignatureParam::TemplateParam mut res{ .index= u32(i) };
-					return move(res);
-				}
+				var TemplateSignatureParam::TemplateParam mut res{ .index= u32(i) };
+				return move(res);
 			}
 		}
 	}
 
-	auto value= ResolveValue( names_scope, function_context, param, true );
-	if_var( &type_templates_set_ptr : value.get</ ust::shared_ptr_imut</ TypeTemplatesSet /> />() )
+	if_var( &template_parametrization : param.get</Synt::TemplateParametrization/>() )
 	{
-		if( !param.tail.empty() )
+		if_var( &type_templates_set_ptr : ResolveValue( names_scope, function_context, template_parametrization.base_.deref() ).get</ ust::shared_ptr_imut</TypeTemplatesSet/> />() )
 		{
-			if_var( &template_args : param.tail.back().get</ ust::box</ Synt::TemplateArgs /> />() )
+			var TemplateSignatureParam::SpecializedTemplateParam mut specialized_template_param
 			{
-				var TemplateSignatureParam::SpecializedTemplateParam mut specialized_template_param
-				{
-					.type_templates_set= type_templates_set_ptr,
-				};
+				.type_templates_set= type_templates_set_ptr,
+			};
 
-				auto mut all_params_are_known= true;
-				foreach( &arg : template_args.deref() )
-				{
-					auto mut out_param= CreateTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
+			auto mut all_params_are_known= true;
+			foreach( &arg : template_parametrization.template_args.deref() )
+			{
+				auto mut out_param= CreateTemplateSignatureParam( names_scope, function_context, template_params, arg, template_params_usage_flags );
 
-					all_params_are_known&= !out_param.GetTypeParam().empty() || !out_param.GetVariableParam().empty();
+				all_params_are_known&= !out_param.GetTypeParam().empty() || !out_param.GetVariableParam().empty();
 
-					specialized_template_param.params.push_back(move(out_param));
-				}
-
-				if( all_params_are_known )
-				{
-					auto value= ResolveValue( names_scope, function_context, param );
-					if_var( &t : value.get</Type/>() )
-					{
-						var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
-						return move(type_param);
-					}
-				}
-
-				return move(specialized_template_param);
+				specialized_template_param.params.push_back(move(out_param));
 			}
+
+			if( all_params_are_known )
+			{
+				auto value= ResolveValue( names_scope, function_context, param );
+				if_var( &t : value.get</Type/>() )
+				{
+					var TemplateSignatureParam::TypeParam mut type_param{ .t= t };
+					return move(type_param);
+				}
+			}
+
+			return move(specialized_template_param);
 		}
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope, param.src_loc, param )
 	}
 
 	// Nothing special - process as regular expression
 	auto expression_value= BuildExpressionCode( names_scope, function_context, param );
-	return CreateTemplateSignatureParam( names_scope, expression_value, param.src_loc );
+	return CreateTemplateSignatureParam( names_scope, expression_value, Synt::GetSrcLoc(param) );
 }
 
 fn CodeBuilder::CreateTemplateSignatureParam(
@@ -647,6 +639,11 @@ fn CodeBuilder::CreateTemplateSignatureParam( mut this, NamesScopePtr& names_sco
 			var TemplateSignatureParam::VariableParam mut variable_param{ .t= v.t, .constexpr_value= v.constexpr_value };
 			return move(variable_param);
 		}
+	}
+	else if( !value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
+	{
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope, src_loc, "" )
+		return TemplateSignatureParam::TypeParam();
 	}
 	else
 	{
@@ -1157,6 +1154,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	NamesScopePtr& args_names_scope,
 	FunctionContext &mut function_context,
 	FunctionsSet& functions_set,
+	ust::shared_ptr_nullable_mut</ClassType/> mut functions_set_class,
 	Synt::TemplateArgs& template_args,
 	SrcLoc& src_loc ) : ust::optional</NamesScopeValue/>
 {
@@ -1211,6 +1209,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 	}
 
 	var NamesScopeFunctionsSet mut result_functions_set;
+	result_functions_set.class_= move(functions_set_class);
 	foreach( &function_template_ptr : functions_set.function_templates )
 	{
 		auto& function_template= function_template_ptr.deref();

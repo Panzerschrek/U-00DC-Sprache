@@ -238,10 +238,9 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 			bool is_same_name= false;
 			if( const auto named_type_name= std::get_if<Synt::ComplexName>( &type_alias.value ) )
 			{
-				is_same_name=
-					named_type_name->tail == nullptr &&
-					std::get_if<std::string>( &named_type_name->start_value ) != nullptr &&
-					std::get<std::string>( named_type_name->start_value ) == type_alias.name;
+				is_same_name= false;
+				if( const auto name_lookup= std::get_if<Synt::NameLookup>( named_type_name ) )
+					is_same_name= name_lookup->name == type_alias.name;
 			}
 			if( !is_same_name )
 				program_elements.push_back( std::move(type_alias) );
@@ -360,11 +359,8 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			default: U_ASSERT(false); break;
 			};
 
-			Synt::ComplexName named_type_name(g_dummy_src_loc);
-			named_type_name.start_value= int_name;
-
 			Synt::ArrayTypeName array_type( g_dummy_src_loc );
-			array_type.element_type= std::make_unique<Synt::TypeName>( std::move(named_type_name) );
+			array_type.element_type= std::make_unique<Synt::TypeName>( TranslateNamedType( int_name ) );
 
 			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 			numeric_constant.value_int= num;
@@ -542,25 +538,13 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 {
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
-	{
-		Synt::ComplexName named_type(g_dummy_src_loc);
-		named_type.start_value= GetUFundamentalType( *built_in_type );
-		return std::move(named_type);
-	}
+		return TranslateNamedType( GetUFundamentalType( *built_in_type ) );
 	else if( const auto record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
-	{
-		Synt::ComplexName named_type(g_dummy_src_loc);
-		named_type.start_value= TranslateRecordType( *record_type );
-		return std::move(named_type);
-	}
+		return TranslateNamedType( TranslateRecordType( *record_type ) );
 	else if( const auto enum_type= llvm::dyn_cast<clang::EnumType>(&in_type) )
 	{
 		if( const auto it= enum_names_cache_.find( enum_type->getDecl() ); it != enum_names_cache_.end() )
-		{
-			Synt::ComplexName named_type(g_dummy_src_loc);
-			named_type.start_value= it->second;
-			return std::move(named_type);
-		}
+			return TranslateNamedType( it->second );
 	}
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
 		return TranslateNamedType( typedef_type->getDecl()->getName().str() );
@@ -684,9 +668,9 @@ std::string CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_ty
 
 Synt::ComplexName CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name )
 {
-	Synt::ComplexName named_type(g_dummy_src_loc);
-	named_type.start_value= TranslateIdentifier( cpp_type_name );
-	return named_type;
+	Synt::NameLookup named_type(g_dummy_src_loc);
+	named_type.name= cpp_type_name;
+	return Synt::ComplexName( std::move(named_type) );
 }
 
 Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type )
