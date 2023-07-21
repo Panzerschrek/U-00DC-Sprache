@@ -2411,6 +2411,7 @@ SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
 					Expression expression= ParseExpression();
 					if( it_->type== Lexem::Type::Ellipsis )
 					{
+						NextLexem();
 						SwitchOperator::CaseRange range;
 						range.low= std::move(expression);
 

@@ -246,3 +246,216 @@ def SwithOperator_DefaultBranch_Test1():
 	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  7 ) == False )
 	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  8 ) == True )
 	assert( tests_lib.run_function( "_Z12IsPowerOfTwoi",  9 ) == False )
+
+
+def SwitchOperatorRange_Test0():
+	# Ranges for unsigned integer.
+	c_program_text= """
+		fn Foo( u32 x ) : u32
+		{
+			switch( x )
+			{
+				... 33u -> { return 123u; }, // Range from begin to specific value
+				34u -> { return 456u; },
+				35u ... 40u -> { return 789u; }, // Full range
+				41u ... -> { return 1000u; }, // Range from specific value to end
+				default -> { halt; }
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Fooj",  0 ) == 123 )
+	assert( tests_lib.run_function( "_Z3Fooj",  1 ) == 123 )
+	assert( tests_lib.run_function( "_Z3Fooj",  2 ) == 123 )
+	assert( tests_lib.run_function( "_Z3Fooj", 10 ) == 123 )
+	assert( tests_lib.run_function( "_Z3Fooj", 32 ) == 123 )
+	assert( tests_lib.run_function( "_Z3Fooj", 33 ) == 123 )
+	assert( tests_lib.run_function( "_Z3Fooj", 34 ) == 456 )
+	assert( tests_lib.run_function( "_Z3Fooj", 35 ) == 789 )
+	assert( tests_lib.run_function( "_Z3Fooj", 36 ) == 789 )
+	assert( tests_lib.run_function( "_Z3Fooj", 37 ) == 789 )
+	assert( tests_lib.run_function( "_Z3Fooj", 38 ) == 789 )
+	assert( tests_lib.run_function( "_Z3Fooj", 39 ) == 789 )
+	assert( tests_lib.run_function( "_Z3Fooj", 40 ) == 789 )
+	assert( tests_lib.run_function( "_Z3Fooj", 41 ) == 1000 )
+	assert( tests_lib.run_function( "_Z3Fooj", 42 ) == 1000 )
+	assert( tests_lib.run_function( "_Z3Fooj", 100 ) == 1000 )
+	assert( tests_lib.run_function( "_Z3Fooj", 100500 ) == 1000 )
+
+
+def SwitchOperatorRange_Test1():
+	# Ranges for signed integer.
+	c_program_text= """
+		fn Foo( i32 x ) : i32
+		{
+			switch( x )
+			{
+				... -45 -> { return 1; },
+				-44 -> { return 2; },
+				-43 ... -2 -> { return 3; },
+				-1 ... 5 -> { return 4; },
+				6 -> { return 5; },
+				7 ... -> { return 6; },
+				default -> { halt; }
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Fooi", -2147483648 ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooi", -100500 ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooi", -46 ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooi", -45 ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooi", -44 ) == 2 )
+	assert( tests_lib.run_function( "_Z3Fooi", -43 ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooi", -42 ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooi", -16 ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooi", -3 ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooi", -2 ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooi", -1 ) == 4 )
+	assert( tests_lib.run_function( "_Z3Fooi", 0 ) == 4 )
+	assert( tests_lib.run_function( "_Z3Fooi", 1 ) == 4 )
+	assert( tests_lib.run_function( "_Z3Fooi", 4 ) == 4 )
+	assert( tests_lib.run_function( "_Z3Fooi", 5 ) == 4 )
+	assert( tests_lib.run_function( "_Z3Fooi", 6 ) == 5 )
+	assert( tests_lib.run_function( "_Z3Fooi", 7 ) == 6 )
+	assert( tests_lib.run_function( "_Z3Fooi", 8 ) == 6 )
+	assert( tests_lib.run_function( "_Z3Fooi", 100 ) == 6 )
+	assert( tests_lib.run_function( "_Z3Fooi", 2147483647 ) == 6 )
+
+
+def SwitchOperatorRange_Test2():
+	# Ranges for char
+	c_program_text= """
+		fn Foo( char8 x ) : i32
+		{
+			switch( x )
+			{
+				"a"c8 ... "z"c8 -> { return 1; },
+				"A"c8 ... "Z"c8 -> { return 2; },
+				"0"c8 ... "9"c8 -> { return 3; },
+				"$"c8 -> { return 4; },
+				default -> { return 5; },
+				128c8 ... -> { return 6; },
+				... 31c8 -> { return 7; },
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('a') ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('b') ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('c') ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('q') ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('x') ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('y') ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('z') ) == 1 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('A') ) == 2 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('B') ) == 2 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('C') ) == 2 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('S') ) == 2 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('X') ) == 2 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('Y') ) == 2 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('Z') ) == 2 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('0') ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('1') ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('2') ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('3') ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('4') ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('5') ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('6') ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('7') ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('8') ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('9') ) == 3 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('$') ) == 4 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('_') ) == 5 )
+	assert( tests_lib.run_function( "_Z3Fooc", ord('*') ) == 5 )
+	assert( tests_lib.run_function( "_Z3Fooc", 127 ) == 5 )
+	assert( tests_lib.run_function( "_Z3Fooc", 128 ) == 6 )
+	assert( tests_lib.run_function( "_Z3Fooc", 129 ) == 6 )
+	assert( tests_lib.run_function( "_Z3Fooc", 147 ) == 6 )
+	assert( tests_lib.run_function( "_Z3Fooc", 255 ) == 6 )
+	assert( tests_lib.run_function( "_Z3Fooc", 0 ) == 7 )
+	assert( tests_lib.run_function( "_Z3Fooc", 1 ) == 7 )
+	assert( tests_lib.run_function( "_Z3Fooc", 18 ) == 7 )
+	assert( tests_lib.run_function( "_Z3Fooc", 30 ) == 7 )
+	assert( tests_lib.run_function( "_Z3Fooc", 31 ) == 7 )
+	assert( tests_lib.run_function( "_Z3Fooc", 32 ) == 5 )
+
+
+def SwitchOperatorRange_Test3():
+	# Ranges for enum
+	c_program_text= """
+		fn Foo()
+		{
+			halt if( ProcessE( E::A ) != 1 );
+			halt if( ProcessE( E::B ) != 1 );
+			halt if( ProcessE( E::C ) != 1 );
+			halt if( ProcessE( E::D ) != 2 );
+			halt if( ProcessE( E::E ) != 3 );
+			halt if( ProcessE( E::F ) != 3 );
+			halt if( ProcessE( E::G ) != 3 );
+			halt if( ProcessE( E::H ) != 4 );
+			halt if( ProcessE( E::I ) != 5 );
+			halt if( ProcessE( E::J ) != 5 );
+		}
+		fn ProcessE( E e ) : i32
+		{
+			switch( e )
+			{
+				... E::C -> { return 1; },
+				E::D -> { return 2; },
+				E::E ... E::G -> { return 3; },
+				E::H -> { return 4; },
+				E::I ... -> { return 5; },
+				default -> { halt; },
+			}
+		}
+		enum E{ A, B, C, D, E, F, G, H, I, J }
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def SwitchOperatorRange_Test4():
+	# Ranges together with other elements,.
+	c_program_text= """
+		fn Foo( i32 x ) : i32
+		{
+			switch( x )
+			{
+				33, ... -7, 66 ... 78, 999 ... -> { return 777; },
+				96 ... 108, 80 -> { return 888; },
+				82, 200 ... 300 -> { return 999; },
+				default -> { return 1000; },
+			}
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	assert( tests_lib.run_function( "_Z3Fooi", 33 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", -100 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", -8 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", -7 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", 65 ) == 1000 )
+	assert( tests_lib.run_function( "_Z3Fooi", 66 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", 67 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", 70 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", 77 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", 78 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", 79 ) == 1000 )
+	assert( tests_lib.run_function( "_Z3Fooi", 999 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", 1000 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", 100500 ) == 777 )
+	assert( tests_lib.run_function( "_Z3Fooi", 95 ) == 1000 )
+	assert( tests_lib.run_function( "_Z3Fooi", 96 ) == 888 )
+	assert( tests_lib.run_function( "_Z3Fooi", 97 ) == 888 )
+	assert( tests_lib.run_function( "_Z3Fooi", 101 ) == 888 )
+	assert( tests_lib.run_function( "_Z3Fooi", 107 ) == 888 )
+	assert( tests_lib.run_function( "_Z3Fooi", 108 ) == 888 )
+	assert( tests_lib.run_function( "_Z3Fooi", 109 ) == 1000 )
+	assert( tests_lib.run_function( "_Z3Fooi", 82 ) == 999 )
+	assert( tests_lib.run_function( "_Z3Fooi", 199 ) == 1000 )
+	assert( tests_lib.run_function( "_Z3Fooi", 200 ) == 999 )
+	assert( tests_lib.run_function( "_Z3Fooi", 201 ) == 999 )
+	assert( tests_lib.run_function( "_Z3Fooi", 234 ) == 999 )
+	assert( tests_lib.run_function( "_Z3Fooi", 299 ) == 999 )
+	assert( tests_lib.run_function( "_Z3Fooi", 300 ) == 999 )
+	assert( tests_lib.run_function( "_Z3Fooi", 301 ) == 1000 )
