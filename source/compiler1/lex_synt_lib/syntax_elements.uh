@@ -503,6 +503,34 @@ struct IfCoroAdvanceOperator
 	SrcLoc end_src_loc;
 }
 
+struct SwitchOperator
+{
+	struct DefaultPlaceholder{}
+	struct CaseRange
+	{
+		// EmptyVariant if has no value.
+		Expression low;
+		Expression high;
+	}
+
+	type CaseValue= ust::variant</ tup[ Expression, CaseRange ] />; // Range or single value.
+
+	// List of values/ranges or single "default".
+	// There is no reason to combine "default" branch with other values/ranges, since such values are unnecessary (default will handle them all).
+	type CaseValues= ust::variant</ tup[ ust::vector</CaseValue/>, DefaultPlaceholder ] />;
+
+	struct Case
+	{
+		CaseValues values;
+		ust::box</Block/> block;
+	}
+
+	SrcLoc src_loc;
+	Expression value;
+	ust::vector</Case/> cases;
+	SrcLoc end_src_loc;
+}
+
 struct Label
 {
 	SrcLoc src_loc;
@@ -616,6 +644,7 @@ type BlockElement = ust::variant</ tup[
 	IfOperator,
 	StaticIfOperator,
 	IfCoroAdvanceOperator,
+	SwitchOperator,
 	WhileOperator,
 	LoopOperator,
 	RangeForOperator,

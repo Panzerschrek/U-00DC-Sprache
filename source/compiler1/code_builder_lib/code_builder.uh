@@ -329,6 +329,7 @@ private:
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfOperator& if_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticIfOperator& static_if_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::IfCoroAdvanceOperator& if_coro_advance_operator ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SwitchOperator& switch_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::LoopOperator& loop_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RangeForOperator& range_for_operator ) : BlockElementBuildInfo;

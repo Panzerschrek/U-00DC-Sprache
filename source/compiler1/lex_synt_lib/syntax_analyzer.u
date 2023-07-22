@@ -198,6 +198,7 @@ private:
 	fn ParseIfOperator( mut this ) : IfOperator;
 	fn ParseStaticIfOperator( mut this ) : StaticIfOperator;
 	fn ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperator;
+	fn ParseSwitchOperator( mut this ) : SwitchOperator;
 	fn TryParseLabel( mut this ) : ust::optional</Label/>;
 	fn ParseWhileOperator( mut this ) : WhileOperator;
 	fn ParseLoopOperator( mut this ) : LoopOperator;
@@ -1936,6 +1937,10 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		{
 			block_elements.push_back( ParseIfCoroAdvanceOperator() );
 		}
+		else if( IsKeyword( it_.front(), Keyword::switch_ ) )
+		{
+			block_elements.push_back( ParseSwitchOperator() );
+		}
 		else if( IsKeyword( it_.front(), Keyword::while_ ) )
 		{
 			block_elements.push_back( ParseWhileOperator() );
@@ -2350,6 +2355,96 @@ fn SyntaxAnalyzer::ParseIfCoroAdvanceOperator( mut this ) : IfCoroAdvanceOperato
 	if_coro_advance_operator.end_src_loc= GetPrevSrcLoc();
 
 	return move(if_coro_advance_operator);
+}
+
+fn SyntaxAnalyzer::ParseSwitchOperator( mut this ) : SwitchOperator
+{
+	var SwitchOperator mut switch_operator { .src_loc= it_.front().src_loc };
+	NextLexem();
+	switch_operator.value= ParseExpressionInBrackets();
+
+	ExpectLexem( Lexem::Type::BraceLeft );
+
+	while( it_.front().lexem_type != Lexem::Type::BraceRight && NotEndOfFile() )
+	{
+		auto values_end_lexem= Lexem::Type::RightArrow; // TODO - maybe use another lexem?
+
+		var SwitchOperator::CaseValues mut case_values;
+		if( IsKeyword( it_.front(), Keyword::default_ ) )
+		{
+			NextLexem();
+			case_values= SwitchOperator::DefaultPlaceholder();
+		}
+		else
+		{
+			var ust::vector</SwitchOperator::CaseValue/> mut values;
+			loop
+			{
+				if( it_.front().lexem_type == Lexem::Type::Ellipsis )
+				{
+					NextLexem();
+					var SwitchOperator::CaseRange mut range;
+					if( it_.front().lexem_type != Lexem::Type::Comma && it_.front().lexem_type != values_end_lexem )
+					{
+						range.high= ParseExpression();
+					}
+					values.push_back( move(range) );
+				}
+				else
+				{
+					var Expression mut expression= ParseExpression();
+					if( it_.front().lexem_type == Lexem::Type::Ellipsis )
+					{
+						NextLexem();
+						var SwitchOperator::CaseRange mut range;
+						range.low= move(expression);
+
+						if( it_.front().lexem_type != Lexem::Type::Comma && it_.front().lexem_type != values_end_lexem )
+						{
+							range.high= ParseExpression();
+						}
+						values.push_back( move(range) );
+					}
+					else
+					{
+						values.push_back( move(expression) );
+					}
+				}
+
+				if( it_.front().lexem_type== Lexem::Type::Comma )
+				{
+					NextLexem();
+					continue;
+				}
+				else
+				{
+					break;
+				}
+			}
+			case_values= move(values);
+		}
+
+		ExpectLexem( values_end_lexem );
+		var Block mut block= ParseBlock();
+
+		var SwitchOperator::Case mut case_{ .values= move(case_values), .block(move(block)) };
+		switch_operator.cases.push_back( move(case_) );
+
+		if( it_.front().lexem_type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			continue;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	switch_operator.end_src_loc= it_.front().src_loc;
+	ExpectLexem( Lexem::Type::BraceRight );
+
+	return move(switch_operator);
 }
 
 fn SyntaxAnalyzer::TryParseLabel( mut this ) : ust::optional</Label/>
