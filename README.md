@@ -1,6 +1,6 @@
-﻿## Ü-Sprache
+## Ü-Sprache
 Experimental programming language.  
-It is a compilable, statically-typed C++-like language.
+It is a compilable, statically-typed C++/Rust-like language.
 
 Here is a compiler for this language. 
 
@@ -19,4 +19,4 @@ Documentation available [here](https://u-00dc-sprache.readthedocs.io/ru/latest/c
 * Run qmake for qt_creator_plugin/usprace.pro. You must set path to QtCreator sources and binaries in qmake arguments.
 
 ### Authors
-Copyright © 2016-2023 Artöm "Panzerscrek" Kunz.
+Copyright © 2016-2023 "Panzerscrek".
