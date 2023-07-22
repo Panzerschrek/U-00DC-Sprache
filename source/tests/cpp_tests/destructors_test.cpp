@@ -3153,6 +3153,62 @@ U_TEST(BreakFromBlock_Destructor_Test1)
 	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 134, 87, 7234, 5564 } ) );
 }
 
+U_TEST(SwitchOperatorDestructors_Test0)
+{
+	static const char c_program_text[]=
+	R"(
+		fn DestructorCalled(i32 x);
+		class S
+		{
+			i32 x;
+			fn constructor( i32 in_x ) ( x= in_x ) {}
+			fn destructor() { DestructorCalled(x); }
+		}
+		fn Foo( i32 x )
+		{
+			var S s_init(123);
+			switch(x)
+			{
+				1 ->
+				{
+					var S s1(456);
+					// Destroy here "s1"
+				},
+				2 ->
+				{
+					var S s2(789);
+					return; // Destroy here "s2", "s_init".
+				},
+				default -> {},
+			}
+			var S s_final(101112);
+			// Destroy here "s_final",  "s_init".
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	DestructorTestPrepare(engine);
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Fooi" );
+	U_TEST_ASSERT( function != nullptr );
+
+	llvm::GenericValue arg;
+
+	arg.IntVal= llvm::APInt( 32, 1 );
+	engine->runFunction( function, { arg } );
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 456, 101112, 123 } ) );
+	g_destructors_call_sequence.clear();
+
+	arg.IntVal= llvm::APInt( 32, 2 );
+	engine->runFunction( function, { arg } );
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 789, 123 } ) );
+	g_destructors_call_sequence.clear();
+
+	arg.IntVal= llvm::APInt( 32, 3 );
+	engine->runFunction( function, { arg } );
+	U_TEST_ASSERT( g_destructors_call_sequence == std::vector<int>( { 101112, 123 } ) );
+	g_destructors_call_sequence.clear();
+}
+
 } // namespace
 
 } // namespace U

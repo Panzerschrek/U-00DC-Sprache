@@ -460,3 +460,105 @@ def SwitchOperatorRange_Test4():
 	assert( tests_lib.run_function( "_Z3Fooi", 299 ) == 999 )
 	assert( tests_lib.run_function( "_Z3Fooi", 300 ) == 999 )
 	assert( tests_lib.run_function( "_Z3Fooi", 301 ) == 1000 )
+
+
+def VariablesStateMerge_ForSwitchOperator_Test0():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			var i32 mut a(0);
+			switch(x)
+			{
+				1 -> { move(a); },
+				default -> {},
+			} // Variable "a" moved not in all branches
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConditionalMove", 9 ) )
+
+
+def VariablesStateMerge_ForSwitchOperator_Test1():
+	c_program_text= """
+		fn Foo( u32 x )
+		{
+			var i32 mut a(0);
+			switch(x)
+			{
+				0u -> {},
+				1u ... -> { move(a); },
+			} // Variable "a" moved not in all branches
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ConditionalMove", 9 ) )
+
+
+
+def VariablesStateMerge_ForSwitchOperator_Test2():
+	c_program_text= """
+		fn Foo( u32 x )
+		{
+			var i32 mut a(0);
+			switch(x)
+			{
+				0u -> { move(a); },
+				1u ... -> { move(a); },
+			} // Ok - move "a" in all branches.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariablesStateMerge_ForSwitchOperator_Test3():
+	c_program_text= """
+		fn Foo( u32 x )
+		{
+			var i32 mut a(0);
+			switch(x)
+			{
+				0u -> { move(a); },
+				1u -> { move(a); },
+				default -> { move(a); },
+			} // Ok - move "a" in all branches, including default branch.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariablesStateMerge_ForSwitchOperator_Test4():
+	c_program_text= """
+		fn Foo( u32 x )
+		{
+			var i32 mut a(0);
+			switch(x)
+			{
+				0u -> { move(a); },
+				default -> { return; },
+			} // Ok - move "a" in all branches, terminal branches are ignored.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariablesStateMerge_ForSwitchOperator_Test5():
+	c_program_text= """
+		struct S{ i32 &mut x; }
+		fn DoPollution( S &mut s'a', i32 &'b mut x ) ' a <- b ';
+		fn Foo( i32 a )
+		{
+			var i32 mut x= 0, mut y= 0;
+			var S mut s{ .x= x };
+			switch(a)
+			{
+				0 -> {  DoPollution( s, y ); },
+				default -> {},
+			} // Merge here variables state. In one of the branches "y" was written into "s".
+			++y; // Error, "y" has reference inside "s".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ReferenceProtectionError", 13 ) )

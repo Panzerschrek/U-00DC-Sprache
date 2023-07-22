@@ -1,6 +1,91 @@
 from py_tests_common import *
 
 
+def TypesMismatch_ForSwitchOperator_Test0():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			switch(x)
+			{
+				13u -> {}, // Expected i32, got u32
+				default -> {},
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 6 ) )
+
+
+def TypesMismatch_ForSwitchOperator_Test1():
+	c_program_text= """
+		fn Foo( char8 c )
+		{
+			switch(c)
+			{
+				"7"c16 -> {}, // Expected char8, got char16
+				default -> {},
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 6 ) )
+
+
+def TypesMismatch_ForSwitchOperator_Test2():
+	c_program_text= """
+		enum E{ A, B, C }
+		fn Foo( E e )
+		{
+			switch(e)
+			{
+				1 -> {}, // Expected enum E, got i32
+				default -> {},
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "TypesMismatch", 7 ) )
+
+
+def ExpectedConstantExpression_ForSwitchOperator_Test0():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			switch(x)
+			{
+				Bar() -> {}, // Call to non-constexpr function
+				default -> {},
+			}
+		}
+		fn Bar() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedConstantExpression", 6 ) )
+
+
+def ExpectedConstantExpression_ForSwitchOperator_Test1():
+	c_program_text= """
+		fn Foo( i32 x )
+		{
+			switch(x)
+			{
+				1 ... Bar() -> {}, // Call to non-constexpr function in range
+				Bar() + 1 ... -> {}, // Call to non-constexpr function in range
+				default -> {},
+			}
+		}
+		fn Bar() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) >= 2 )
+	assert( HaveError( errors_list, "ExpectedConstantExpression", 6 ) )
+	assert( HaveError( errors_list, "ExpectedConstantExpression", 7 ) )
+
+
 def SwitchDuplicatedDefaultLabel_Test0():
 	c_program_text= """
 		fn Foo( i32 x )
