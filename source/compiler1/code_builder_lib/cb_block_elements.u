@@ -1341,13 +1341,43 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
 	}
 
+	// TODO - support 128bit values.
+	var u64 mut type_low(0), mut type_high(0);
 	var bool mut is_signed= false;
-	if_var( &enum_type : switch_type.GetEnumType() )
+	if_var( &enum_type_ptr : switch_type.GetEnumType() )
 	{
+		type_low= u64(0);
+		type_high= u64( enum_type_ptr.lock_imut().deref().elements.size() );
 	}
 	else if_var( &fundamental_type : switch_type.GetFundamentalType() )
 	{
 		is_signed= IsSignedInteger( fundamental_type.fundamental_type );
+		var u32 size_in_bits= fundamental_type.GetSize() * 8u;
+		if( is_signed )
+		{
+			if( size_in_bits == 64u )
+			{
+				type_low = 0x8000000000000000u64;
+				type_high= 0x7FFFFFFFFFFFFFFFu64;
+			}
+			else
+			{
+				type_low = u64( (-1i64) << (size_in_bits - 1u) );
+				type_high= ( 1u64 << (size_in_bits - 1u) ) - 1u64;
+			}
+		}
+		else
+		{
+			type_low= 0u64;
+			if( size_in_bits == 64u )
+			{
+				type_high= 0xFFFFFFFFFFFFFFFFu64;
+			}
+			else
+			{
+				type_high= ( 1u64 << size_in_bits ) - 1u64;
+			}
+		}
 	}
 	else { halt; }
 
@@ -1391,13 +1421,58 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 						var u64 val= select(
 							is_signed
 								? u64( unsafe( LLVMConstIntGetSExtValue( expression_variable.constexpr_value ) ) )
-								: unsafe (LLVMConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
+								: unsafe( LLVMConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
 						var SwitchCaseRange mut range{ .low= val, .high= val, .src_loc= src_loc };
 						case_values.push_back( move(range) );
 					}
 					else if_var( &range : value.get</ Synt::SwitchOperator::CaseRange />() )
 					{
-						// TODO
+						var [ u64, 2 ] mut range_constants[ type_low, type_high ];
+						for( auto mut i= 0s; i < 2s; ++i )
+						{
+							var Synt::Expression& expression = select( i == 0s ? range.low : range.high );
+							if( !expression.get</ Synt::EmptyVariant />().empty() )
+							{
+								continue;
+							}
+
+							var VariableLite expression_variable= BuildExpressionCodeEnsureVariable( names_scope, function_context, expression ).lock_imut().deref();
+							if( expression_variable.t != switch_type )
+							{
+								REPORT_ERROR(
+									TypesMismatch,
+									names_scope,
+									Synt::GetSrcLoc( expression ),
+									switch_type,
+									expression_variable.t )
+								all_cases_are_ok= false;
+								continue;
+							}
+							if( expression_variable.constexpr_value == LLVMValueRef::Null )
+							{
+								REPORT_ERROR( ExpectedConstantExpression, names_scope, Synt::GetSrcLoc( expression ) )
+								all_cases_are_ok= false;
+								continue;
+							}
+							range_constants[i]= select(
+								is_signed
+									? u64( unsafe( LLVMConstIntGetSExtValue( expression_variable.constexpr_value ) ) )
+									: unsafe( LLVMConstIntGetZExtValue( expression_variable.constexpr_value ) ) );
+						}
+
+						var SrcLoc src_loc= case_.block.deref().src_loc; // TODO - use proper src_loc;
+						if( !select( is_signed ? ( i64(range_constants[0]) <= i64(range_constants[1]) ) : ( range_constants[0] <= range_constants[1] ) ) )
+						{
+							REPORT_ERROR(
+								SwitchInvalidRange,
+								names_scope,
+								src_loc,
+								cast_imut(range_constants)[0],
+								cast_imut(range_constants)[1] )
+						}
+
+						var SwitchCaseRange mut out_range{ .low= range_constants[0], .high= range_constants[1], .src_loc= src_loc };
+						case_values.push_back( move(out_range) );
 					}
 					else { halt; }
 				}
@@ -1474,18 +1549,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					current_value_equals= unsafe(
 						LLVMBuildAnd(
 							function_context.llvm_ir_builder,
-							LLVMBuildICmp(
-								function_context.llvm_ir_builder,
-								LLVMIntPredicate::SGE,
-								switch_value,
-								constant_low,
-								g_null_string ),
-							LLVMBuildICmp(
-								function_context.llvm_ir_builder,
-								LLVMIntPredicate::SLE,
-								switch_value,
-								constant_low,
-								g_null_string ),
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, switch_value, constant_low , g_null_string ),
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, switch_value, constant_high, g_null_string ),
 							g_null_string ) );
 				}
 				else
@@ -1493,18 +1558,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 					current_value_equals= unsafe(
 						LLVMBuildAnd(
 							function_context.llvm_ir_builder,
-							LLVMBuildICmp(
-								function_context.llvm_ir_builder,
-								LLVMIntPredicate::UGE,
-								switch_value,
-								constant_low,
-								g_null_string ),
-							LLVMBuildICmp(
-								function_context.llvm_ir_builder,
-								LLVMIntPredicate::ULE,
-								switch_value,
-								constant_low,
-								g_null_string ),
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, switch_value, constant_low , g_null_string ),
+							LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULE, switch_value, constant_high, g_null_string ),
 							g_null_string ) );
 				}
 			}
@@ -1582,27 +1637,24 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		// This was checked after ranges calculation.
 	}
 
-	var  BlockElementBuildInfo mut block_build_info;
+	unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_switch ) );
+	unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_switch ) );
+
+	var BlockElementBuildInfo mut block_build_info;
 
 	if( all_branches_are_terminal )
 	{
 		block_build_info.have_terminal_instruction_inside= true;
 		// There is no reason to merge variables state here.
 
-		// Hack - preserve LLVM basic blocks structure in case of impossible jump to block after swith.
-		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_switch ) );
-		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_switch ) );
 		unsafe( LLVMBuildUnreachable( function_context.llvm_ir_builder ) );
 	}
 	else
 	{
-		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, block_after_switch ) );
-		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, block_after_switch ) );
-
 		function_context.references_graph= MergeReferencesGraphsAfterConditionalBranches( breances_states_after_case.range(), names_scope, switch_operator.end_src_loc );
 	}
 
-	return BlockElementBuildInfo();
+	return block_build_info;
 }
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WhileOperator& while_operator ) : BlockElementBuildInfo
