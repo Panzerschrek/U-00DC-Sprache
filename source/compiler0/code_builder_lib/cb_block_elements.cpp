@@ -1836,7 +1836,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	// Preevaluate case values. It is fine, since only constexpr expressions are allowed.
 	using CaseValues= llvm::SmallVector<CaseRange, 4>;
-	llvm::SmallVector<CaseValues, 16> branches_ranges;
+	constexpr size_t c_expected_num_branches= 16;
+	llvm::SmallVector<CaseValues, c_expected_num_branches> branches_ranges;
 	bool all_cases_are_ok= true;
 	const Synt::Block* default_branch_synt_block= nullptr;
 	branches_ranges.reserve( switch_operator.cases.size() );
@@ -1852,26 +1853,26 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				{
 					if( const auto single_value= std::get_if<Synt::Expression>( &value ) )
 					{
-						const VariablePtr expression= BuildExpressionCodeEnsureVariable( *single_value, names, function_context );
+						const VariablePtr expression_variable= BuildExpressionCodeEnsureVariable( *single_value, names, function_context );
 						const auto src_loc= Synt::GetExpressionSrcLoc( *single_value );
-						if( expression->type != switch_type )
+						if( expression_variable->type != switch_type )
 						{
 							REPORT_ERROR(
 								TypesMismatch,
 								names.GetErrors(),
 								src_loc,
 								switch_type,
-								expression->type );
+								expression_variable->type );
 							all_cases_are_ok= false;
 							continue;
 						}
-						if( expression->constexpr_value == nullptr )
+						if( expression_variable->constexpr_value == nullptr )
 						{
 							REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), src_loc );
 							all_cases_are_ok= false;
 							continue;
 						}
-						const llvm::APInt value_int= expression->constexpr_value->getUniqueInteger();
+						const llvm::APInt value_int= expression_variable->constexpr_value->getUniqueInteger();
 						case_values.emplace_back( CaseRange{ value_int, value_int, src_loc } );
 					}
 					else if( const auto range= std::get_if<Synt::SwitchOperator::CaseRange>( &value ) )
@@ -1879,29 +1880,29 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 						llvm::APInt range_constants[2]{ type_low, type_high };
 						for( size_t i= 0; i < 2; ++i )
 						{
-							const auto& expression_opt = i == 0 ? range->low : range->high;
-							if( expression_opt == std::nullopt )
+							const Synt::Expression& expression = i == 0 ? range->low : range->high;
+							if( std::get_if<Synt::EmptyVariant>( &expression ) != nullptr )
 								continue;
 
-							const VariablePtr expression= BuildExpressionCodeEnsureVariable( *expression_opt, names, function_context );
-							if( expression->type != switch_type )
+							const VariablePtr expression_variable= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+							if( expression_variable->type != switch_type )
 							{
 								REPORT_ERROR(
 									TypesMismatch,
 									names.GetErrors(),
-									Synt::GetExpressionSrcLoc(*expression_opt ),
+									Synt::GetExpressionSrcLoc( expression ),
 									switch_type,
-									expression->type );
+									expression_variable->type );
 								all_cases_are_ok= false;
 								continue;
 							}
-							if( expression->constexpr_value == nullptr )
+							if( expression_variable->constexpr_value == nullptr )
 							{
-								REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( *expression_opt ) );
+								REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
 								all_cases_are_ok= false;
 								continue;
 							}
-							range_constants[i]= expression->constexpr_value->getUniqueInteger();
+							range_constants[i]= expression_variable->constexpr_value->getUniqueInteger();
 						}
 
 						const SrcLoc src_loc= case_.block.src_loc_; // TODO - use proper src_loc;
@@ -1944,7 +1945,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Perform checks of ranges.
 	{
 		// Collect all ranges.
-		llvm::SmallVector<CaseRange, 16> all_ranges;
+		llvm::SmallVector<CaseRange, 32> all_ranges;
 		for( const auto& case_ranges : branches_ranges )
 			all_ranges.append( case_ranges );
 
@@ -1952,13 +1953,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Sorting is needed in order to simplify ranges overlapping and gaps searching.
 		if( is_signed )
 			std::sort(
-				all_ranges.begin(),
-				all_ranges.end(),
+				all_ranges.begin(), all_ranges.end(),
 				[]( const CaseRange& l, const CaseRange& r ) -> bool { return l.low.slt(r.low); });
 		else
 			std::sort(
-				all_ranges.begin(),
-				all_ranges.end(),
+				all_ranges.begin(), all_ranges.end(),
 				[]( const CaseRange& l, const CaseRange& r ) -> bool { return l.low.ult(r.low); });
 
 		// Check for overlaps and gaps between ranges.
@@ -2086,17 +2085,18 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	}
 
 	const ReferencesGraph variables_state_before_branching= function_context.variables_state;
-	llvm::SmallVector<ReferencesGraph, 16> breances_states_after_case;
+	llvm::SmallVector<ReferencesGraph, c_expected_num_branches> breances_states_after_case;
 	breances_states_after_case.reserve( switch_operator.cases.size() + 1 );
 
-	llvm::BasicBlock* block_after_switch= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const block_after_switch= llvm::BasicBlock::Create( llvm_context_ );
 	llvm::BasicBlock* next_case_block= nullptr;
-	llvm::BasicBlock* default_branch= default_branch_synt_block == nullptr ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* const default_branch= default_branch_synt_block == nullptr ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
 	bool all_branches_are_terminal= true;
 
 	for( size_t i= 0; i < switch_operator.cases.size(); ++i )
 	{
-		if( std::get_if<Synt::SwitchOperator::DefaultPlaceholder>( &switch_operator.cases[i].values ) != nullptr )
+		const Synt::SwitchOperator::Case& case_= switch_operator.cases[i];
+		if( std::get_if<Synt::SwitchOperator::DefaultPlaceholder>( &case_.values ) != nullptr )
 		{
 			// Default branch - handle it later.
 			continue;
@@ -2144,7 +2144,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		function_context.llvm_ir_builder.SetInsertPoint( case_handle_block );
 
 		function_context.variables_state= variables_state_before_branching;
-		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, switch_operator.cases[i].block );
+		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, case_.block );
 		breances_states_after_case.push_back( function_context.variables_state );
 
 		if( !block_build_info.have_terminal_instruction_inside )
@@ -2192,7 +2192,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			next_case_block->eraseFromParent();
 		}
 
-		// No default branch - handle all cases in normal branches.
+		// No default branch - all values must be handled in normal branches.
+		// This was checked after ranges calculation.
 	}
 
 	BlockBuildInfo block_build_info;

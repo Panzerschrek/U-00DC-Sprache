@@ -797,11 +797,15 @@ struct SwitchOperator final : public SyntaxElementBase
 	struct DefaultPlaceholder{};
 	struct CaseRange
 	{
-		std::optional<Expression> low;
-		std::optional<Expression> high;
+		// EmptyVariant if has no value.
+		Expression low;
+		Expression high;
 	};
 
-	using CaseValue= std::variant<Expression, CaseRange>;
+	using CaseValue= std::variant<Expression, CaseRange>; // Range or single value.
+
+	// List of values/ranges or single "default".
+	// There is no reason to combine "default" branch with other values/ranges, since such values are unnecessary (default will handle them all).
 	using CaseValues= std::variant<std::vector<CaseValue>, DefaultPlaceholder>;
 
 	struct Case
