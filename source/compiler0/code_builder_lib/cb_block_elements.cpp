@@ -2093,6 +2093,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	llvm::BasicBlock* const default_branch= default_branch_synt_block == nullptr ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
 	bool all_branches_are_terminal= true;
 
+	llvm::Type* const switch_llvm_type= switch_type.GetLLVMType();
 	for( size_t i= 0; i < switch_operator.cases.size(); ++i )
 	{
 		const Synt::SwitchOperator::Case& case_= switch_operator.cases[i];
@@ -2112,12 +2113,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{
 			llvm::Value* current_value_equals= nullptr;
 
-			llvm::Type* const switch_llvm_type= switch_type.GetLLVMType();
-			if( case_range.low == case_range.high ) // LLVM creates identical constant values for identical constants.
-				current_value_equals= function_context.llvm_ir_builder.CreateICmpEQ( switch_value, llvm::ConstantInt::get( switch_llvm_type, case_range.low ) );
+			llvm::Constant* const constant_low = llvm::ConstantInt::get( switch_llvm_type, case_range.low  );
+
+			if( case_range.low == case_range.high )
+				current_value_equals= function_context.llvm_ir_builder.CreateICmpEQ( switch_value, constant_low );
 			else
 			{
-				llvm::Constant* const constant_low = llvm::ConstantInt::get( switch_llvm_type, case_range.low  );
 				llvm::Constant* const constant_high= llvm::ConstantInt::get( switch_llvm_type, case_range.high );
 				if( is_signed )
 					current_value_equals=

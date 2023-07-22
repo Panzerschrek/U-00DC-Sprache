@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -1353,6 +1354,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	// Preevaluate case values. It is fine, since only constexpr expressions are allowed.
 	var ust::vector</SwitchCaseValues/> mut branches_ranges;
 	var bool mut all_cases_are_ok= true;
+	var ust::optional_ref_imut</Synt::Block/> mut default_branch_synt_block;
+
 	{
 		var VariablesFrameHolder temp_variables_frame_hodler(function_context);
 		auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
@@ -1402,7 +1405,19 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			}
 			else if( ! case_.values.get</ Synt::SwitchOperator::DefaultPlaceholder />().empty() )
 			{
-				// TODO
+				if( !default_branch_synt_block.empty() )
+				{
+						REPORT_ERROR(
+							SwitchDuplicatedDefaultLabel,
+							names_scope,
+							case_.block.deref().src_loc ) // TODO - use proper src_loc
+						all_cases_are_ok= false;
+				}
+				else
+				{
+					// TODO - compiler crashes here, fix it.
+					//default_branch_synt_block.reset( case_.block.deref() );
+				}
 			}
 			else { halt; }
 
@@ -1410,6 +1425,131 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, switch_operator.src_loc );
+	}
+
+
+	if( !all_cases_are_ok || branches_ranges.size() != switch_operator.cases.size() )
+	{
+		return BlockElementBuildInfo(); // Some error generated before.
+	}
+
+
+	var ReferencesGraph references_graph_before_branching= function_context.references_graph;
+	var ust::vector</ReferencesGraph/> mut breances_states_after_case;
+
+	var LLVMBasicBlockRef block_after_switch= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+	var LLVMBasicBlockRef mut next_case_block= LLVMBasicBlockRef::Null;
+	var LLVMBasicBlockRef default_branch=
+		select( default_branch_synt_block.empty() ? LLVMBasicBlockRef::Null : unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) ) );
+	var bool mut all_branches_are_terminal= true;
+
+	var LLVMTypeRef switch_llvm_type= switch_type.GetLLVMType();
+	for( auto mut i= 0s; i < switch_operator.cases.size(); ++i )
+	{
+		var Synt::SwitchOperator::Case& case_= switch_operator.cases[i];
+		if( !case_.values.get</Synt::SwitchOperator::DefaultPlaceholder/>().empty() )
+		{
+			// Default branch - handle it later.
+			continue;
+		}
+
+		var LLVMBasicBlockRef case_handle_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+		next_case_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
+
+		var SwitchCaseValues& case_values= branches_ranges[i];
+		debug_assert( !case_values.empty() );
+		var LLVMValueRef mut value_equals= LLVMValueRef::Null;
+		foreach( & case_range : case_values )
+		{
+			var LLVMValueRef mut current_value_equals= LLVMValueRef::Null;
+
+			var LLVMValueRef constant_low= unsafe( LLVMConstInt( switch_llvm_type, case_range.low, select( is_signed ? LLVMBool::True : LLVMBool::False ) ) );
+			if( case_range.low == case_range.high )
+			{
+				current_value_equals= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::EQ, switch_value, constant_low, g_null_string ) );
+			}
+			else
+			{
+				var LLVMValueRef constant_high= unsafe( LLVMConstInt( switch_llvm_type, case_range.high, select( is_signed ? LLVMBool::True : LLVMBool::False ) ) );
+				if( is_signed )
+				{
+					current_value_equals= unsafe(
+						LLVMBuildAnd(
+							function_context.llvm_ir_builder,
+							LLVMBuildICmp(
+								function_context.llvm_ir_builder,
+								LLVMIntPredicate::SGE,
+								switch_value,
+								constant_low,
+								g_null_string ),
+							LLVMBuildICmp(
+								function_context.llvm_ir_builder,
+								LLVMIntPredicate::SLE,
+								switch_value,
+								constant_low,
+								g_null_string ),
+							g_null_string ) );
+				}
+				else
+				{
+					current_value_equals= unsafe(
+						LLVMBuildAnd(
+							function_context.llvm_ir_builder,
+							LLVMBuildICmp(
+								function_context.llvm_ir_builder,
+								LLVMIntPredicate::UGE,
+								switch_value,
+								constant_low,
+								g_null_string ),
+							LLVMBuildICmp(
+								function_context.llvm_ir_builder,
+								LLVMIntPredicate::ULE,
+								switch_value,
+								constant_low,
+								g_null_string ),
+							g_null_string ) );
+				}
+			}
+
+			if( value_equals == LLVMValueRef::Null )
+			{
+				value_equals= current_value_equals;
+			}
+			else
+			{
+				value_equals= unsafe( LLVMBuildOr( function_context.llvm_ir_builder, value_equals, current_value_equals, g_null_string ) );
+			}
+		}
+
+		unsafe( LLVMBuildCondBr( function_context.llvm_ir_builder, value_equals, case_handle_block, next_case_block ) );
+
+		// Case handle block
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, case_handle_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, case_handle_block ) );
+
+		function_context.references_graph= references_graph_before_branching;
+		var BlockElementBuildInfo block_build_info= BuildBlock( names_scope, function_context, case_.block.deref() );
+		breances_states_after_case.push_back( function_context.references_graph );
+
+		if( !block_build_info.have_terminal_instruction_inside )
+		{
+			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_switch ) );
+			all_branches_are_terminal= false;
+		}
+
+		// Next case block
+		unsafe( LLVMAppendExistingBasicBlock( function_context.llvm_function, next_case_block ) );
+		unsafe( LLVMPositionBuilderAtEnd( function_context.llvm_ir_builder, next_case_block ) );
+	}
+
+	// Handle default branch lastly.
+	if( !default_branch_synt_block.empty() && default_branch != LLVMBasicBlockRef::Null )
+	{
+		// TODO
+	}
+	else
+	{
+		// TODO
 	}
 
 	// TODO
