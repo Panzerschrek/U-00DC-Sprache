@@ -43,6 +43,12 @@ fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, A& param0, B& param1
 	return ReportErrorImpl( code, src_loc, ust::make_array( PreprocessErrorArg(param0), PreprocessErrorArg( param1 ), PreprocessErrorArg( param2 ) ) );
 }
 
+template</ type A, type B, type C, type D />
+fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, A& param0, B& param1, C& param2, D& param3 ) : CodeBuilderError
+{
+	return ReportErrorImpl( code, src_loc, ust::make_array( PreprocessErrorArg(param0), PreprocessErrorArg( param1 ), PreprocessErrorArg( param2 ), PreprocessErrorArg( param3 ) ) );
+}
+
 template</type T/>
 fn PreprocessErrorArg( T& x ) : ust::string8
 {
