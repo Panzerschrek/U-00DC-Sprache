@@ -38,8 +38,8 @@ private:
 	fn CreateFunctionDIType( mut this, FunctionType& t ) : LLVMMetadataRef;
 
 private:
-	LLVMContextRef imut llvm_context_;
-	LLVMTargetDataRef imut data_layout_;
+	LLVMContextRef llvm_context_; // TODO - make field imut
+	LLVMTargetDataRef data_layout_; // TODO - make field imut
 
 	LLVMDIBuilderRef builder_= LLVMDIBuilderRef::Null;
 	ust::vector</LLVMMetadataRef/> source_file_entries_; // Entry for each file in sources graph.

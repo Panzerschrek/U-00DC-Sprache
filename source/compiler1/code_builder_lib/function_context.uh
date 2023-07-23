@@ -30,7 +30,7 @@ public:
 public:
 	FunctionType function_type;
 
-	LLVMValueRef imut llvm_function;
+	LLVMValueRef llvm_function; // TODO - make field imut
 
 	LLVMBuilderRef alloca_ir_builder= LLVMBuilderRef::Null;
 

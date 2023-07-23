@@ -1,11 +1,18 @@
 // This file contains prototypes of functions defined in llvm c interface.
 // This prototypes is written manually. If llvm updated, all this function should be revised.
 
-// Use enums for replacement of pointers, because Ü have no pointers.
+// Use struct with single element inside. Such struct is passed in register and thus equivalent to raw C pointer.
+// We can't use enum for implementing such typedef, since it is UB in Ü to create enum values outside its range.
 ?macro <? DefineLLVMRef:namespace ?name:ident ?>
 	->
 <?
-	enum ?name : size_type { Null }
+	struct ?name
+	{
+		size_type ??ptr_value; // Can't use proper pointer type, since this struct type must be constexpr.
+
+		// Null constant for this type.
+		var ?name constexpr Null { .??ptr_value= 0s };
+	}
 ?>
 
 // Types

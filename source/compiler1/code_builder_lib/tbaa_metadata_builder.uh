@@ -58,7 +58,7 @@ private:
 	}
 
 private:
-	LLVMContextRef imut llvm_context_;
+	LLVMContextRef llvm_context_; // TODO - make field imut
 	ust::box</IMangler/> mangler_; // TODO - use shared_ptr instead.
 
 	TypeDescriptors type_descriptors_= zero_init;
