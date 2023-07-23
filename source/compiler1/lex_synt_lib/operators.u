@@ -5,116 +5,107 @@ namespace U1
 
 fn GetOverloadedOperatorForAdditiveAssignmentOperator( BinaryOperatorType o ) : OverloadedOperator
 {
-	if( o == BinaryOperatorType::Add ) { return OverloadedOperator::AssignAdd; }
-	if( o == BinaryOperatorType::Sub ) { return OverloadedOperator::AssignSub; }
-	if( o == BinaryOperatorType::Mul ) { return OverloadedOperator::AssignMul; }
-	if( o == BinaryOperatorType::Div ) { return OverloadedOperator::AssignDiv; }
-	if( o == BinaryOperatorType::Rem ) { return OverloadedOperator::AssignRem; }
-	if( o == BinaryOperatorType::And ) { return OverloadedOperator::AssignAnd; }
-	if( o == BinaryOperatorType::Or  ) { return OverloadedOperator::AssignOr ; }
-	if( o == BinaryOperatorType::Xor ) { return OverloadedOperator::AssignXor; }
-	if( o == BinaryOperatorType::ShiftLeft  ) { return OverloadedOperator::AssignShiftLeft ; }
-	if( o == BinaryOperatorType::ShiftRight ) { return OverloadedOperator::AssignShiftRight; }
-
-	halt;
+	switch(o)
+	{
+		BinaryOperatorType::Add -> { return OverloadedOperator::AssignAdd; },
+		BinaryOperatorType::Sub -> { return OverloadedOperator::AssignSub; },
+		BinaryOperatorType::Mul -> { return OverloadedOperator::AssignMul; },
+		BinaryOperatorType::Div -> { return OverloadedOperator::AssignDiv; },
+		BinaryOperatorType::Rem -> { return OverloadedOperator::AssignRem; },
+		BinaryOperatorType::And -> { return OverloadedOperator::AssignAnd; },
+		BinaryOperatorType::Or  -> { return OverloadedOperator::AssignOr ; },
+		BinaryOperatorType::Xor -> { return OverloadedOperator::AssignXor; },
+		BinaryOperatorType::ShiftLeft  -> { return OverloadedOperator::AssignShiftLeft ; },
+		BinaryOperatorType::ShiftRight -> { return OverloadedOperator::AssignShiftRight; },
+		default -> { halt; },
+	}
 }
 
 fn GetOverloadedOperatorForBinaryOperator( BinaryOperatorType o ) : OverloadedOperator
 {
-	if( o == BinaryOperatorType::Add ) { return OverloadedOperator::Add; }
-	if( o == BinaryOperatorType::Sub ) { return OverloadedOperator::Sub; }
-	if( o == BinaryOperatorType::Mul ) { return OverloadedOperator::Mul; }
-	if( o == BinaryOperatorType::Div ) { return OverloadedOperator::Div; }
-	if( o == BinaryOperatorType::Rem ) { return OverloadedOperator::Rem; }
-	if( o == BinaryOperatorType::And ) { return OverloadedOperator::And; }
-	if( o == BinaryOperatorType::Or  ) { return OverloadedOperator::Or ; }
-	if( o == BinaryOperatorType::Xor ) { return OverloadedOperator::Xor; }
-	if( o == BinaryOperatorType::Equal        ) { return OverloadedOperator::CompareEqual; }
-	if( o == BinaryOperatorType::NotEqual     ) { return OverloadedOperator::CompareEqual; }
-	if( o == BinaryOperatorType::Less         ) { return OverloadedOperator::CompareOrder; }
-	if( o == BinaryOperatorType::LessEqual    ) { return OverloadedOperator::CompareOrder; }
-	if( o == BinaryOperatorType::Greater      ) { return OverloadedOperator::CompareOrder; }
-	if( o == BinaryOperatorType::GreaterEqual ) { return OverloadedOperator::CompareOrder; }
-	if( o == BinaryOperatorType::CompareOrder ) { return OverloadedOperator::CompareOrder; }
-	if( o == BinaryOperatorType::ShiftLeft  ) { return OverloadedOperator::ShiftLeft ; }
-	if( o == BinaryOperatorType::ShiftRight ) { return OverloadedOperator::ShiftRight; }
-
-	halt;
+	switch(o)
+	{
+		BinaryOperatorType::Add -> { return OverloadedOperator::Add; },
+		BinaryOperatorType::Sub -> { return OverloadedOperator::Sub; },
+		BinaryOperatorType::Mul -> { return OverloadedOperator::Mul; },
+		BinaryOperatorType::Div -> { return OverloadedOperator::Div; },
+		BinaryOperatorType::Rem -> { return OverloadedOperator::Rem; },
+		BinaryOperatorType::And -> { return OverloadedOperator::And; },
+		BinaryOperatorType::Or  -> { return OverloadedOperator::Or ; },
+		BinaryOperatorType::Xor -> { return OverloadedOperator::Xor; },
+		BinaryOperatorType::Equal, BinaryOperatorType::NotEqual -> { return OverloadedOperator::CompareEqual; },
+		BinaryOperatorType::Less,
+		BinaryOperatorType::LessEqual,
+		BinaryOperatorType::Greater,
+		BinaryOperatorType::GreaterEqual ,
+		BinaryOperatorType::CompareOrder -> { return OverloadedOperator::CompareOrder; },
+		BinaryOperatorType::ShiftLeft  -> { return OverloadedOperator::ShiftLeft ; },
+		BinaryOperatorType::ShiftRight -> { return OverloadedOperator::ShiftRight; },
+		BinaryOperatorType::LazyLogicalAnd, BinaryOperatorType::LazyLogicalOr -> { halt; },
+	}
 }
 
 fn BinaryOperatorToString( BinaryOperatorType o ) : ust::string_view8
 {
-	if( o == BinaryOperatorType::Add ){ return "+"; }
-	if( o == BinaryOperatorType::Sub ){ return "-"; }
-	if( o == BinaryOperatorType::Mul ){ return "*"; }
-	if( o == BinaryOperatorType::Div ){ return "/"; }
-	if( o == BinaryOperatorType::Rem ){ return "%"; }
-
-	if( o == BinaryOperatorType::Equal			){ return "=="; }
-	if( o == BinaryOperatorType::NotEqual		){ return "!="; }
-	if( o == BinaryOperatorType::Less			){ return "<" ; }
-	if( o == BinaryOperatorType::LessEqual		){ return "<="; }
-	if( o == BinaryOperatorType::Greater		){ return ">" ; }
-	if( o == BinaryOperatorType::GreaterEqual	){ return ">="; }
-	if( o == BinaryOperatorType::CompareOrder	){ return "<=>"; }
-
-	if( o == BinaryOperatorType::And ){ return "&"; }
-	if( o == BinaryOperatorType::Or  ){ return "|"; }
-	if( o == BinaryOperatorType::Xor ){ return "^"; }
-
-	if( o == BinaryOperatorType::ShiftLeft  ){ return "<<"; }
-	if( o == BinaryOperatorType::ShiftRight ){ return ">>"; }
-
-	if( o == BinaryOperatorType::LazyLogicalAnd ){ return "&&"; }
-	if( o == BinaryOperatorType::LazyLogicalOr  ){ return "||"; }
-
-	halt;
+	switch(o)
+	{
+		BinaryOperatorType::Add -> { return "+"; },
+		BinaryOperatorType::Sub -> { return "-"; },
+		BinaryOperatorType::Mul -> { return "*"; },
+		BinaryOperatorType::Div -> { return "/"; },
+		BinaryOperatorType::Rem -> { return "%"; },
+		BinaryOperatorType::Equal			-> { return "=="; },
+		BinaryOperatorType::NotEqual		-> { return "!="; },
+		BinaryOperatorType::Less			-> { return "<" ; },
+		BinaryOperatorType::LessEqual		-> { return "<="; },
+		BinaryOperatorType::Greater			-> { return ">" ; },
+		BinaryOperatorType::GreaterEqual	-> { return ">="; },
+		BinaryOperatorType::CompareOrder	-> { return "<=>"; },
+		BinaryOperatorType::And -> { return "&"; },
+		BinaryOperatorType::Or  -> { return "|"; },
+		BinaryOperatorType::Xor -> { return "^"; },
+		BinaryOperatorType::ShiftLeft  -> { return "<<"; },
+		BinaryOperatorType::ShiftRight -> { return ">>"; },
+		BinaryOperatorType::LazyLogicalAnd -> { return "&&"; },
+		BinaryOperatorType::LazyLogicalOr  -> { return "||"; },
+	}
 }
 
 fn OverloadedOperatorToString( OverloadedOperator o ) : ust::string_view8
 {
-	if( o == OverloadedOperator::None ) { return ""; }
-
-	if( o == OverloadedOperator::Add ) { return "+"; }
-	if( o == OverloadedOperator::Sub ) { return "-"; }
-	if( o == OverloadedOperator::Mul ) { return "*"; }
-	if( o == OverloadedOperator::Div ) { return "/"; }
-	if( o == OverloadedOperator::Rem ) { return "%"; }
-
-	if( o == OverloadedOperator::CompareEqual ) { return "=="; }
-	if( o == OverloadedOperator::CompareOrder ) { return "<=>"; }
-
-	if( o == OverloadedOperator::And ) { return "&"; }
-	if( o == OverloadedOperator::Or  ) { return "|"; }
-	if( o == OverloadedOperator::Xor ) { return "^"; }
-
-	if( o == OverloadedOperator::ShiftLeft  ) { return "<<"; }
-	if( o == OverloadedOperator::ShiftRight ) { return ">>"; }
-
-	if( o == OverloadedOperator::AssignAdd ) { return "+="; }
-	if( o == OverloadedOperator::AssignSub ) { return "-="; }
-	if( o == OverloadedOperator::AssignMul ) { return "*="; }
-	if( o == OverloadedOperator::AssignDiv ) { return "/="; }
-	if( o == OverloadedOperator::AssignRem ) { return "%="; }
-
-	if( o == OverloadedOperator::AssignAnd ) { return "&="; }
-	if( o == OverloadedOperator::AssignOr  ) { return "|="; }
-	if( o == OverloadedOperator::AssignXor ) { return "^="; }
-
-	if( o == OverloadedOperator::AssignShiftLeft  ) { return "<<="; }
-	if( o == OverloadedOperator::AssignShiftRight ) { return ">>="; }
-
-	if( o == OverloadedOperator::LogicalNot ) { return "!"; }
-	if( o == OverloadedOperator::BitwiseNot ) { return "~"; }
-
-	if( o == OverloadedOperator::Assign ) { return "="; }
-	if( o == OverloadedOperator::Increment ) { return "++"; }
-	if( o == OverloadedOperator::Decrement ) { return "--"; }
-
-	if( o == OverloadedOperator::Indexing ) { return "[]"; }
-	if( o == OverloadedOperator::Call     ) { return "()"; }
-
-	halt;
+	switch(o)
+	{
+		OverloadedOperator::None -> { return ""; },
+		OverloadedOperator::Add -> { return "+"; },
+		OverloadedOperator::Sub -> { return "-"; },
+		OverloadedOperator::Mul -> { return "*"; },
+		OverloadedOperator::Div -> { return "/"; },
+		OverloadedOperator::Rem -> { return "%"; },
+		OverloadedOperator::CompareEqual -> { return "=="; },
+		OverloadedOperator::CompareOrder -> { return "<=>"; },
+		OverloadedOperator::And -> { return "&"; },
+		OverloadedOperator::Or  -> { return "|"; },
+		OverloadedOperator::Xor -> { return "^"; },
+		OverloadedOperator::ShiftLeft  -> { return "<<"; },
+		OverloadedOperator::ShiftRight -> { return ">>"; },
+		OverloadedOperator::AssignAdd -> { return "+="; },
+		OverloadedOperator::AssignSub -> { return "-="; },
+		OverloadedOperator::AssignMul -> { return "*="; },
+		OverloadedOperator::AssignDiv -> { return "/="; },
+		OverloadedOperator::AssignRem -> { return "%="; },
+		OverloadedOperator::AssignAnd -> { return "&="; },
+		OverloadedOperator::AssignOr  -> { return "|="; },
+		OverloadedOperator::AssignXor -> { return "^="; },
+		OverloadedOperator::AssignShiftLeft  -> { return "<<="; },
+		OverloadedOperator::AssignShiftRight -> { return ">>="; },
+		OverloadedOperator::LogicalNot -> { return "!"; },
+		OverloadedOperator::BitwiseNot -> { return "~"; },
+		OverloadedOperator::Assign -> { return "="; },
+		OverloadedOperator::Increment -> { return "++"; },
+		OverloadedOperator::Decrement -> { return "--"; },
+		OverloadedOperator::Indexing -> { return "[]"; },
+		OverloadedOperator::Call     -> { return "()"; },
+	}
 }
 
 } // namespace U1

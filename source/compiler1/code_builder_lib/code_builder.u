@@ -2137,31 +2137,32 @@ fn CodeBuilder::CreateTypedReferenceStore( mut this, FunctionContext& function_c
 
 fn CodeBuilder::GetFundamentalLLVMType( this, U_FundamentalType t ) : LLVMTypeRef
 {
-	if( t == U_FundamentalType::InvalidType	) { return fundamental_llvm_types_.invalid_type_; }
-	if( t == U_FundamentalType::void_		) { return fundamental_llvm_types_.void_; }
-	if( t == U_FundamentalType::bool_		) { return fundamental_llvm_types_.bool_; }
-	if( t == U_FundamentalType::i8_			) { return fundamental_llvm_types_.i8_	; }
-	if( t == U_FundamentalType::u8_			) { return fundamental_llvm_types_.u8_	; }
-	if( t == U_FundamentalType::i16_		) { return fundamental_llvm_types_.i16_	; }
-	if( t == U_FundamentalType::u16_		) { return fundamental_llvm_types_.u16_	; }
-	if( t == U_FundamentalType::i32_		) { return fundamental_llvm_types_.i32_	; }
-	if( t == U_FundamentalType::u32_		) { return fundamental_llvm_types_.u32_	; }
-	if( t == U_FundamentalType::i64_		) { return fundamental_llvm_types_.i64_	; }
-	if( t == U_FundamentalType::u64_		) { return fundamental_llvm_types_.u64_	; }
-	if( t == U_FundamentalType::i128_		) { return fundamental_llvm_types_.i128_; }
-	if( t == U_FundamentalType::u128_		) { return fundamental_llvm_types_.u128_; }
-	if( t == U_FundamentalType::f32_		) { return fundamental_llvm_types_.f32_	; }
-	if( t == U_FundamentalType::f64_		) { return fundamental_llvm_types_.f64_	; }
-	if( t == U_FundamentalType::char8_		) { return fundamental_llvm_types_.char8_ ; }
-	if( t == U_FundamentalType::char16_		) { return fundamental_llvm_types_.char16_; }
-	if( t == U_FundamentalType::char32_		) { return fundamental_llvm_types_.char32_; }
-	if( t == U_FundamentalType::byte8_		) { return fundamental_llvm_types_.byte8_  ; }
-	if( t == U_FundamentalType::byte16_		) { return fundamental_llvm_types_.byte16_ ; }
-	if( t == U_FundamentalType::byte32_		) { return fundamental_llvm_types_.byte32_ ; }
-	if( t == U_FundamentalType::byte64_		) { return fundamental_llvm_types_.byte64_ ; }
-	if( t == U_FundamentalType::byte128_	) { return fundamental_llvm_types_.byte128_; }
-
-	halt;
+	switch(t)
+	{
+		U_FundamentalType::InvalidType	-> { return fundamental_llvm_types_.invalid_type_; },
+		U_FundamentalType::void_		-> { return fundamental_llvm_types_.void_; },
+		U_FundamentalType::bool_		-> { return fundamental_llvm_types_.bool_; },
+		U_FundamentalType::i8_			-> { return fundamental_llvm_types_.i8_	; },
+		U_FundamentalType::u8_			-> { return fundamental_llvm_types_.u8_	; },
+		U_FundamentalType::i16_		-> { return fundamental_llvm_types_.i16_	; },
+		U_FundamentalType::u16_		-> { return fundamental_llvm_types_.u16_	; },
+		U_FundamentalType::i32_		-> { return fundamental_llvm_types_.i32_	; },
+		U_FundamentalType::u32_		-> { return fundamental_llvm_types_.u32_	; },
+		U_FundamentalType::i64_		-> { return fundamental_llvm_types_.i64_	; },
+		U_FundamentalType::u64_		-> { return fundamental_llvm_types_.u64_	; },
+		U_FundamentalType::i128_	-> { return fundamental_llvm_types_.i128_; },
+		U_FundamentalType::u128_	-> { return fundamental_llvm_types_.u128_; },
+		U_FundamentalType::f32_		-> { return fundamental_llvm_types_.f32_; },
+		U_FundamentalType::f64_		-> { return fundamental_llvm_types_.f64_; },
+		U_FundamentalType::char8_	-> { return fundamental_llvm_types_.char8_ ; },
+		U_FundamentalType::char16_	-> { return fundamental_llvm_types_.char16_; },
+		U_FundamentalType::char32_	-> { return fundamental_llvm_types_.char32_; },
+		U_FundamentalType::byte8_	-> { return fundamental_llvm_types_.byte8_  ; },
+		U_FundamentalType::byte16_	-> { return fundamental_llvm_types_.byte16_ ; },
+		U_FundamentalType::byte32_	-> { return fundamental_llvm_types_.byte32_ ; },
+		U_FundamentalType::byte64_	-> { return fundamental_llvm_types_.byte64_ ; },
+		U_FundamentalType::byte128_	-> { return fundamental_llvm_types_.byte128_; },
+	}
 }
 
 fn CodeBuilder::GetZeroGEPIndex( this ) : LLVMValueRef

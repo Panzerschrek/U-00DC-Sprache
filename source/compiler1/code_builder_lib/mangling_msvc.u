@@ -780,33 +780,33 @@ fn DecodeOperator( ust::string8& o ) : ust::string_view8
 
 fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
 {
-	if( t == U_FundamentalType::InvalidType ){ return ""; }
-	if( t == U_FundamentalType::LastType	){ return ""; }
-	if( t == U_FundamentalType::void_		){ return "X"; }
-	if( t == U_FundamentalType::bool_		){ return "_N"; }
-	if( t == U_FundamentalType::i8_			){ return "C"; }
-	if( t == U_FundamentalType::u8_			){ return "E"; }
-	if( t == U_FundamentalType::i16_		){ return "F"; }
-	if( t == U_FundamentalType::u16_		){ return "G"; }
-	if( t == U_FundamentalType::i32_		){ return "H"; }
-	if( t == U_FundamentalType::u32_		){ return "I"; }
-	if( t == U_FundamentalType::i64_		){ return "_J"; }
-	if( t == U_FundamentalType::u64_		){ return "_K"; }
-	if( t == U_FundamentalType::i128_		){ return "_L"; }
-	if( t == U_FundamentalType::u128_		){ return "_M"; }
-	if( t == U_FundamentalType::f32_		){ return "M"; }
-	if( t == U_FundamentalType::f64_		){ return "N"; }
-	if( t == U_FundamentalType::char8_		){ return "D"; }
-	if( t == U_FundamentalType::char16_		){ return "_S"; }
-	if( t == U_FundamentalType::char32_		){ return "_U"; }
+	switch(t)
+	{
+		U_FundamentalType::InvalidType	-> { return ""; },
+		U_FundamentalType::void_		-> { return "X"; },
+		U_FundamentalType::bool_		-> { return "_N"; },
+		U_FundamentalType::i8_			-> { return "C"; },
+		U_FundamentalType::u8_			-> { return "E"; },
+		U_FundamentalType::i16_		-> { return "F"; },
+		U_FundamentalType::u16_		-> { return "G"; },
+		U_FundamentalType::i32_		-> { return "H"; },
+		U_FundamentalType::u32_		-> { return "I"; },
+		U_FundamentalType::i64_		-> { return "_J"; },
+		U_FundamentalType::u64_		-> { return "_K"; },
+		U_FundamentalType::i128_	-> { return "_L"; },
+		U_FundamentalType::u128_	-> { return "_M"; },
+		U_FundamentalType::f32_		-> { return "M"; },
+		U_FundamentalType::f64_		-> { return "N"; },
+		U_FundamentalType::char8_	-> { return "D"; },
+		U_FundamentalType::char16_	-> { return "_S"; },
+		U_FundamentalType::char32_	-> { return "_U"; },
 	// Encode "byte" types as regular structs in global namspace.
-	if( t == U_FundamentalType::byte8_		){ return "Ubyte8@@"  ; }
-	if( t == U_FundamentalType::byte16_		){ return "Ubyte16@@" ; }
-	if( t == U_FundamentalType::byte32_		){ return "Ubyte32@@" ; }
-	if( t == U_FundamentalType::byte64_		){ return "Ubyte64@@" ; }
-	if( t == U_FundamentalType::byte128_	){ return "Ubyte128@@"; }
-
-	return "";
+		U_FundamentalType::byte8_	-> { return "Ubyte8@@"  ; },
+		U_FundamentalType::byte16_	-> { return "Ubyte16@@" ; },
+		U_FundamentalType::byte32_	-> { return "Ubyte32@@" ; },
+		U_FundamentalType::byte64_	-> { return "Ubyte64@@" ; },
+		U_FundamentalType::byte128_ -> { return "Ubyte128@@"; },
+	}
 }
 
 fn MakeNullTerminatedString( ust::string8 mut str ) : ust::string8

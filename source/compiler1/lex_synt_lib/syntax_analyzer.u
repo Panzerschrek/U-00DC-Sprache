@@ -79,20 +79,20 @@ var tup[
 
 fn GetAdditiveAssignmentOperator( Lexem& lexem ) : ust::optional</BinaryOperatorType/>
 {
-	auto t= lexem.lexem_type;
-
-	if( t == Lexem::Type::AssignAdd ){ return BinaryOperatorType::Add; }
-	if( t == Lexem::Type::AssignSub ){ return BinaryOperatorType::Sub; }
-	if( t == Lexem::Type::AssignMul ){ return BinaryOperatorType::Mul; }
-	if( t == Lexem::Type::AssignDiv ){ return BinaryOperatorType::Div; }
-	if( t == Lexem::Type::AssignAnd ){ return BinaryOperatorType::And; }
-	if( t == Lexem::Type::AssignRem ){ return BinaryOperatorType::Rem; }
-	if( t == Lexem::Type::AssignOr  ){ return BinaryOperatorType::Or ; }
-	if( t == Lexem::Type::AssignXor ){ return BinaryOperatorType::Xor; }
-	if( t == Lexem::Type::AssignShiftLeft  ){ return BinaryOperatorType::ShiftLeft ; }
-	if( t == Lexem::Type::AssignShiftRight ){ return BinaryOperatorType::ShiftRight; }
-
-	return ust::null_optional;
+	switch(lexem.lexem_type)
+	{
+		Lexem::Type::AssignAdd -> { return BinaryOperatorType::Add; },
+		Lexem::Type::AssignSub -> { return BinaryOperatorType::Sub; },
+		Lexem::Type::AssignMul -> { return BinaryOperatorType::Mul; },
+		Lexem::Type::AssignDiv -> { return BinaryOperatorType::Div; },
+		Lexem::Type::AssignAnd -> { return BinaryOperatorType::And; },
+		Lexem::Type::AssignRem -> { return BinaryOperatorType::Rem; },
+		Lexem::Type::AssignOr  -> { return BinaryOperatorType::Or ; },
+		Lexem::Type::AssignXor -> { return BinaryOperatorType::Xor; },
+		Lexem::Type::AssignShiftLeft  -> { return BinaryOperatorType::ShiftLeft ; },
+		Lexem::Type::AssignShiftRight -> { return BinaryOperatorType::ShiftRight; },
+		default -> { return ust::null_optional; },
+	}
 }
 
 class SyntaxAnalyzer
@@ -1423,58 +1423,60 @@ fn SyntaxAnalyzer::ParseFunction( mut this ) : Function
 			NextLexem();
 		}
 
-		auto l= it_.front().lexem_type;
 		auto mut o= OverloadedOperator::None;
-			 if( l == Lexem::Type::Plus    ){ o= OverloadedOperator::Add; }
-		else if( l == Lexem::Type::Minus   ){ o= OverloadedOperator::Sub; }
-		else if( l == Lexem::Type::Star    ){ o= OverloadedOperator::Mul; }
-		else if( l == Lexem::Type::Slash   ){ o= OverloadedOperator::Div; }
-		else if( l == Lexem::Type::Percent ){ o= OverloadedOperator::Rem; }
-		else if( l == Lexem::Type::CompareEqual ){ o= OverloadedOperator::CompareEqual; }
-		else if( l == Lexem::Type::CompareOrder ){ o= OverloadedOperator::CompareOrder; }
-		else if( l == Lexem::Type::And ){ o= OverloadedOperator::And; }
-		else if( l == Lexem::Type::Or  ){ o= OverloadedOperator::Or ; }
-		else if( l == Lexem::Type::Xor ){ o= OverloadedOperator::Xor; }
-		else if( l == Lexem::Type::ShiftLeft  ){ o= OverloadedOperator::ShiftLeft ; }
-		else if( l == Lexem::Type::ShiftRight ){ o= OverloadedOperator::ShiftRight; }
-		else if( l == Lexem::Type::AssignAdd ){ o= OverloadedOperator::AssignAdd; }
-		else if( l == Lexem::Type::AssignSub ){ o= OverloadedOperator::AssignSub; }
-		else if( l == Lexem::Type::AssignMul ){ o= OverloadedOperator::AssignMul; }
-		else if( l == Lexem::Type::AssignDiv ){ o= OverloadedOperator::AssignDiv; }
-		else if( l == Lexem::Type::AssignRem ){ o= OverloadedOperator::AssignRem; }
-		else if( l == Lexem::Type::AssignAnd ){ o= OverloadedOperator::AssignAnd; }
-		else if( l == Lexem::Type::AssignOr  ){ o= OverloadedOperator::AssignOr ; }
-		else if( l == Lexem::Type::AssignXor ){ o= OverloadedOperator::AssignXor; }
-		else if( l == Lexem::Type::AssignShiftLeft  ){ o= OverloadedOperator::AssignShiftLeft ; }
-		else if( l == Lexem::Type::AssignShiftRight ){ o= OverloadedOperator::AssignShiftRight; }
-		else if( l == Lexem::Type::Not   ){ o= OverloadedOperator::LogicalNot; }
-		else if( l == Lexem::Type::Tilda ){ o= OverloadedOperator::BitwiseNot; }
-		else if( l == Lexem::Type::Assignment ){ o= OverloadedOperator::Assign; }
-		else if( l == Lexem::Type::Increment ){ o= OverloadedOperator::Increment; }
-		else if( l == Lexem::Type::Decrement ){ o= OverloadedOperator::Decrement; }
-		else if( l == Lexem::Type::SquareBracketLeft )
+		switch( it_.front().lexem_type )
 		{
-			o= OverloadedOperator::Indexing;
+			Lexem::Type::Plus    -> { o= OverloadedOperator::Add; },
+			Lexem::Type::Minus   -> { o= OverloadedOperator::Sub; },
+			Lexem::Type::Star    -> { o= OverloadedOperator::Mul; },
+			Lexem::Type::Slash   -> { o= OverloadedOperator::Div; },
+			Lexem::Type::Percent -> { o= OverloadedOperator::Rem; },
+			Lexem::Type::CompareEqual -> { o= OverloadedOperator::CompareEqual; },
+			Lexem::Type::CompareOrder -> { o= OverloadedOperator::CompareOrder; },
+			Lexem::Type::And -> { o= OverloadedOperator::And; },
+			Lexem::Type::Or  -> { o= OverloadedOperator::Or ; },
+			Lexem::Type::Xor -> { o= OverloadedOperator::Xor; },
+			Lexem::Type::ShiftLeft  -> { o= OverloadedOperator::ShiftLeft ; },
+			Lexem::Type::ShiftRight -> { o= OverloadedOperator::ShiftRight; },
+			Lexem::Type::AssignAdd -> { o= OverloadedOperator::AssignAdd; },
+			Lexem::Type::AssignSub -> { o= OverloadedOperator::AssignSub; },
+			Lexem::Type::AssignMul -> { o= OverloadedOperator::AssignMul; },
+			Lexem::Type::AssignDiv -> { o= OverloadedOperator::AssignDiv; },
+			Lexem::Type::AssignRem -> { o= OverloadedOperator::AssignRem; },
+			Lexem::Type::AssignAnd -> { o= OverloadedOperator::AssignAnd; },
+			Lexem::Type::AssignOr  -> { o= OverloadedOperator::AssignOr ; },
+			Lexem::Type::AssignXor -> { o= OverloadedOperator::AssignXor; },
+			Lexem::Type::AssignShiftLeft  -> { o= OverloadedOperator::AssignShiftLeft ; },
+			Lexem::Type::AssignShiftRight -> { o= OverloadedOperator::AssignShiftRight; },
+			Lexem::Type::Not   -> { o= OverloadedOperator::LogicalNot; },
+			Lexem::Type::Tilda -> { o= OverloadedOperator::BitwiseNot; },
+			Lexem::Type::Assignment -> { o= OverloadedOperator::Assign; },
+			Lexem::Type::Increment -> { o= OverloadedOperator::Increment; },
+			Lexem::Type::Decrement -> { o= OverloadedOperator::Decrement; },
+			Lexem::Type::SquareBracketLeft ->
+			{
+				o= OverloadedOperator::Indexing;
 
-			NextLexem();
-			if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
+				NextLexem();
+				if( it_.front().lexem_type != Lexem::Type::SquareBracketRight )
+				{
+					PushErrorMessage();
+				}
+			},
+			Lexem::Type::BracketLeft ->
+			{
+				o= OverloadedOperator::Call;
+
+				NextLexem();
+				if( it_.front().lexem_type != Lexem::Type::BracketRight )
+				{
+					PushErrorMessage();
+				}
+			},
+			default ->
 			{
 				PushErrorMessage();
 			}
-		}
-		else if( l == Lexem::Type::BracketLeft )
-		{
-			o= OverloadedOperator::Call;
-
-			NextLexem();
-			if( it_.front().lexem_type != Lexem::Type::BracketRight )
-			{
-				PushErrorMessage();
-			}
-		}
-		else
-		{
-			PushErrorMessage();
 		}
 		NextLexem();
 

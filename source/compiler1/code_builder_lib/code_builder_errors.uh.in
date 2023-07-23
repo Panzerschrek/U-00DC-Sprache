@@ -15,9 +15,10 @@ enum CodeBuilderErrorCode
 
 fn GetErrorMessagePattern( CodeBuilderErrorCode e ) : ust::string_view8
 {
-	@ERROR_CODE_TO_STRING_LIST@
-
-	halt;
+	switch(e)
+	{
+		@ERROR_CODE_TO_STRING_LIST@
+	}
 }
 
 struct CodeBuilderError

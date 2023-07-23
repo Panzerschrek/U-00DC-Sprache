@@ -149,31 +149,22 @@ fn FundamentalType::constructor( U_FundamentalType in_fundamental_type, LLVMType
 
 fn FundamentalType::GetSize(this) : u32
 {
-	if( fundamental_type ==  U_FundamentalType::InvalidType){ return 0u; }
-	if( fundamental_type ==  U_FundamentalType::void_  ){ return 0u; }
-	if( fundamental_type ==  U_FundamentalType::bool_ ){ return 1u; }
-	if( fundamental_type ==  U_FundamentalType::i8_   ){ return  1u; }
-	if( fundamental_type ==  U_FundamentalType::u8_   ){ return  1u; }
-	if( fundamental_type ==  U_FundamentalType::i16_  ){ return  2u; }
-	if( fundamental_type ==  U_FundamentalType::u16_  ){ return  2u; }
-	if( fundamental_type ==  U_FundamentalType::i32_  ){ return  4u; }
-	if( fundamental_type ==  U_FundamentalType::u32_  ){ return  4u; }
-	if( fundamental_type ==  U_FundamentalType::i64_  ){ return  8u; }
-	if( fundamental_type ==  U_FundamentalType::u64_  ){ return  8u; }
-	if( fundamental_type ==  U_FundamentalType::i128_ ){ return 16u; }
-	if( fundamental_type ==  U_FundamentalType::u128_ ){ return 16u; }
-	if( fundamental_type ==  U_FundamentalType::f32_ ){ return 4u; }
-	if( fundamental_type ==  U_FundamentalType::f64_ ){ return 8u; }
-	if( fundamental_type ==  U_FundamentalType::char8_  ){ return 1u; }
-	if( fundamental_type ==  U_FundamentalType::char16_ ){ return 2u; }
-	if( fundamental_type ==  U_FundamentalType::char32_ ){ return 4u; }
-	if( fundamental_type ==  U_FundamentalType::byte8_   ){ return  1u; }
-	if( fundamental_type ==  U_FundamentalType::byte16_  ){ return  2u; }
-	if( fundamental_type ==  U_FundamentalType::byte32_  ){ return  4u; }
-	if( fundamental_type ==  U_FundamentalType::byte64_  ){ return  8u; }
-	if( fundamental_type ==  U_FundamentalType::byte128_ ){ return 16u; }
-
-	halt;
+	switch(fundamental_type)
+	{
+		U_FundamentalType::InvalidType -> { return 0u; },
+		U_FundamentalType::void_ -> { return 0u; },
+		U_FundamentalType::bool_ -> { return 1u; },
+		U_FundamentalType::i8_  , U_FundamentalType::u8_  , U_FundamentalType::byte8_   -> { return  1u; },
+		U_FundamentalType::i16_ , U_FundamentalType::u16_ , U_FundamentalType::byte16_  -> { return  2u; },
+		U_FundamentalType::i32_ , U_FundamentalType::u32_ , U_FundamentalType::byte32_  -> { return  4u; },
+		U_FundamentalType::i64_ , U_FundamentalType::u64_ , U_FundamentalType::byte64_  -> { return  8u; },
+		U_FundamentalType::i128_, U_FundamentalType::u128_, U_FundamentalType::byte128_ -> { return 16u; },
+		U_FundamentalType::f32_ -> { return 4u; },
+		U_FundamentalType::f64_ -> { return 8u; },
+		U_FundamentalType::char8_  -> { return 1u; },
+		U_FundamentalType::char16_ -> { return 2u; },
+		U_FundamentalType::char32_ -> { return 4u; },
+	}
 }
 
 op FundamentalType::==( FundamentalType& l, FundamentalType& r ) : bool
@@ -916,23 +907,31 @@ fn ConstantVariableToString( Type& t, LLVMValueRef constant_value ) : ust::strin
 		else if( IsChar( fundamental_type.fundamental_type ) )
 		{
 			var ust::string8 mut suffix;
-			if( fundamental_type.fundamental_type == U_FundamentalType::char8_  ) {  suffix= "c8" ;  }
-			if( fundamental_type.fundamental_type == U_FundamentalType::char16_ ) {  suffix= "c16";  }
-			if( fundamental_type.fundamental_type == U_FundamentalType::char32_ ) {  suffix= "c32";  }
+			switch( fundamental_type.fundamental_type )
+			{
+				U_FundamentalType::char8_  -> {  suffix= "c8" ;  },
+				U_FundamentalType::char16_ -> {  suffix= "c16";  },
+				U_FundamentalType::char32_ -> {  suffix= "c32";  },
+				default -> { halt; },
+			}
 			return ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) ) + suffix;
 		}
-		else if( IsByte(  fundamental_type.fundamental_type ) )
+		else if( IsByte( fundamental_type.fundamental_type ) )
 		{
 			var ust::string8 mut res;
 			res+= GetFundamentalTypeName( fundamental_type.fundamental_type );
 			res+= "( ";
 
 			res+= ust::to_string8( unsafe( LLVMConstIntGetZExtValue( constant_value ) ) );
-			if( fundamental_type.fundamental_type == U_FundamentalType::byte8_   ) { res+= GetFundamentalTypeName( U_FundamentalType::u8_   ); }
-			if( fundamental_type.fundamental_type == U_FundamentalType::byte16_  ) { res+= GetFundamentalTypeName( U_FundamentalType::u16_  ); }
-			if( fundamental_type.fundamental_type == U_FundamentalType::byte32_  ) { res+= GetFundamentalTypeName( U_FundamentalType::u32_  ); }
-			if( fundamental_type.fundamental_type == U_FundamentalType::byte64_  ) { res+= GetFundamentalTypeName( U_FundamentalType::u64_  ); }
-			if( fundamental_type.fundamental_type == U_FundamentalType::byte128_ ) { res+= GetFundamentalTypeName( U_FundamentalType::u128_ ); }
+			switch( fundamental_type.fundamental_type )
+			{
+				U_FundamentalType::byte8_   -> { res+= GetFundamentalTypeName( U_FundamentalType::u8_   ); },
+				U_FundamentalType::byte16_  -> { res+= GetFundamentalTypeName( U_FundamentalType::u16_  ); },
+				U_FundamentalType::byte32_  -> { res+= GetFundamentalTypeName( U_FundamentalType::u32_  ); },
+				U_FundamentalType::byte64_  -> { res+= GetFundamentalTypeName( U_FundamentalType::u64_  ); },
+				U_FundamentalType::byte128_ -> { res+= GetFundamentalTypeName( U_FundamentalType::u128_ ); },
+				default -> { halt; },
+			}
 
 			res+= " )";
 			return move(res);
