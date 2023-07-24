@@ -361,8 +361,8 @@ bool MustPreserveGlobalValue( const llvm::GlobalValue& global_value )
 		return true; // Always preserve "main" - default entry point of executable files.
 
 	// TODO - use StringMap or something like that instead.
-	for( const std::string& name_fro_preserve : Options::internalize_preserve )
-		if( name == name_fro_preserve )
+	for( const std::string& name_for_preserve : Options::internalize_preserve )
+		if( name == name_for_preserve )
 			return true;
 
 	return false;
