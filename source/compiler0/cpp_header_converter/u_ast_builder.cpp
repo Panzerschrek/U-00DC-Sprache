@@ -735,7 +735,7 @@ std::string CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_ty
 Synt::ComplexName CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name )
 {
 	Synt::NameLookup named_type(g_dummy_src_loc);
-	named_type.name= cpp_type_name;
+	named_type.name= TranslateIdentifier( cpp_type_name );
 	return Synt::ComplexName( std::move(named_type) );
 }
 
