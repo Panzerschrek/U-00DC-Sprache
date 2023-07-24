@@ -543,7 +543,8 @@ void CodeBuilder::TryCallCopyConstructor(
 		function_context.have_non_constexpr_operations_inside= true;
 
 	// Call it
-	function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *constructor ), { this_, src } );
+	if( !function_context.is_functionless_context )
+		function_context.llvm_ir_builder.CreateCall( EnsureLLVMFunctionCreated( *constructor ), { this_, src } );
 }
 
 void CodeBuilder::GenerateLoop(

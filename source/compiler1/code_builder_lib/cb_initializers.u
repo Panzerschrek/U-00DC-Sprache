@@ -99,7 +99,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 				CopyBytes( variable.llvm_value, expr_result.llvm_value, variable.t, function_context );
 				CreateLifetimeEnd( function_context, expr_result.llvm_value );
 			}
-			else
+			else if( !function_context.is_functionless_context )
 			{
 				// Copy.
 				auto mut value_for_copy= CreateReferenceCast( expr_result.llvm_value, expr_result.t, variable.t, function_context );
