@@ -64,6 +64,13 @@ typedef struct
 	char data[16];
 } TypedefedStruct;
 
+typedef struct StupidStuctNaming
+{
+	int x;
+} StupidStuctNaming;
+
+void StupidFunc( StupidStuctNaming* s );
+
 struct StructWithAnonimousRecordsInside
 {
 	struct
@@ -93,20 +100,34 @@ enum SequentialEnum
 	Red, Green, Blue,
 };
 
+void SequentialEnumFunc( enum SequentialEnum s );
+
 enum NonSequentialEnum
 {
 	Zero= 0, One= 1, Ten= 10, MinusTwo= -2, Large32bit= 5000000, LargeNegative= -142536 - 50
 };
+
+void NonSequentialEnumFunc(enum  NonSequentialEnum e );
 
 typedef enum // Anonymous
 {
 	AnonA, AnonB, AnonC,
 } TypedefForEnumABC;
 
+void ABCFunc( TypedefForEnumABC arg );
+
 typedef enum
 {
 	AnonX= 23, AnonY= 24, AnonZ= 25,
 } TypedefForEnumXYZ;
+
+enum // Anonymous and without typedef
+{
+	TotallyAnonym0,
+	TotallyAnonym1,
+};
+
+void XYZFunc( TypedefForEnumXYZ arg );
 
 typedef struct SameNameForStructAndTypedef
 {

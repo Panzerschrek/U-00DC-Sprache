@@ -123,6 +123,10 @@ fn nomangle main() : i32
 
 		s.anon_struct_as_array[2u].anon_struct_as_array_content= 66;
 	}
+	{
+		var StupidStuctNaming mut s= zero_init;
+		unsafe( StupidFunc( $<(s) ) );
+	}
 
 	static_assert( typeinfo</UnionAlign1/>.size_of == 1s );
 	static_assert( typeinfo</UnionAlign1/>.align_of == 1s );
@@ -135,6 +139,8 @@ fn nomangle main() : i32
 	static_assert( i32(SequentialEnum::Green) == 1 );
 	static_assert( i32(SequentialEnum::Blue) == 2 );
 
+	unsafe( SequentialEnumFunc( SequentialEnum::Blue ) );
+
 	static_assert( NonSequentialEnum::Zero.ü_underlaying_value == 0 );
 	static_assert( NonSequentialEnum::One.ü_underlaying_value == 1 );
 	static_assert( NonSequentialEnum::Ten.ü_underlaying_value == 10 );
@@ -142,10 +148,17 @@ fn nomangle main() : i32
 	static_assert( NonSequentialEnum::Large32bit.ü_underlaying_value == 5000000 );
 	static_assert( NonSequentialEnum::LargeNegative.ü_underlaying_value == -142586 );
 
+	unsafe( NonSequentialEnumFunc( NonSequentialEnum::MinusTwo ) );
+
 	var NonSequentialEnum ersatz_enum_value= NonSequentialEnum::Zero;
 
 	var TypedefForEnumABC typedefed_sequential_enum_value= AnonB;
+	unsafe( ABCFunc( typedefed_sequential_enum_value ) );
+
 	var TypedefForEnumXYZ typedefed_non_sequential_enum_value= AnonX;
+	unsafe( XYZFunc( typedefed_non_sequential_enum_value ) );
+
+	auto totally_anonym_enum_value= TotallyAnonym0;
 
 	var SameNameForStructAndTypedef same_name_for_struct_and_typedef{ .dummy= 666 };
 

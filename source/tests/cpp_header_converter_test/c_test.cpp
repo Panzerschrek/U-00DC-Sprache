@@ -59,4 +59,29 @@ void DuplicatedProto( int xx )
 	(void)xx;
 }
 
+void StupidFunc( StupidStuctNaming* s )
+{
+	(void)s;
+}
+
+void SequentialEnumFunc( enum SequentialEnum s )
+{
+	(void)s;
+}
+
+void NonSequentialEnumFunc( enum NonSequentialEnum e )
+{
+	(void)e;
+}
+
+void ABCFunc( TypedefForEnumABC arg )
+{
+	(void)arg;
+}
+
+void XYZFunc( TypedefForEnumXYZ arg )
+{
+	(void)arg;
+}
+
 } // extern "C"
