@@ -16,13 +16,14 @@ using ParsedUnitsPtr= std::shared_ptr<ParsedUnits>;
 class FrontendActionFactory : public clang::tooling::FrontendActionFactory
 {
 public:
-	explicit FrontendActionFactory( ParsedUnitsPtr out_result );
+	FrontendActionFactory( ParsedUnitsPtr out_result, bool skip_declarations_from_includes );
 
 public:
 	virtual std::unique_ptr<clang::FrontendAction> create() override;
 
 private:
 	const ParsedUnitsPtr out_result_;
+	const bool skip_declarations_from_includes_;
 };
 
 } // namespace U

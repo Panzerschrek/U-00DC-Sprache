@@ -18,6 +18,11 @@ int main( int argc, const char* argv[] )
 		llvm::cl::desc("Set output filename"),
 		llvm::cl::value_desc("filename") );
 
+	llvm::cl::opt<bool> skip_declarations_from_includes(
+		"skip-declarations-from-includes",
+		llvm::cl::desc("Skip declarations from includes."),
+		llvm::cl::init(false) );
+
 	auto options_parser_opt= clang::tooling::CommonOptionsParser::create( argc, argv, tool_category );
 	if( !options_parser_opt )
 	{
@@ -35,7 +40,7 @@ int main( int argc, const char* argv[] )
 	}
 
 	const auto parsed_units= std::make_shared<U::ParsedUnits>();
-	U::FrontendActionFactory factory(parsed_units);
+	U::FrontendActionFactory factory(parsed_units, skip_declarations_from_includes);
 	const int res= tool.run( &factory );
 	if( res != 0 )
 		return res;

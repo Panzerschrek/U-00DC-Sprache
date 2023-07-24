@@ -29,7 +29,8 @@ public:
 		const clang::TargetInfo& target_info,
 		clang::DiagnosticsEngine& diagnostic_engine,
 		const clang::LangOptions& lang_options,
-		const clang::ASTContext& ast_context );
+		const clang::ASTContext& ast_context,
+		bool skip_declarations_from_includes );
 
 public:
 	virtual bool HandleTopLevelDecl( clang::DeclGroupRef decl_group ) override;
@@ -62,6 +63,7 @@ private:
 	const clang::LangOptions& lang_options_;
 	const clang::PrintingPolicy printing_policy_;
 	const clang::ASTContext& ast_context_;
+	const bool skip_declarations_from_includes_;
 
 	size_t unique_name_index_= 0u;
 	std::unordered_map< const clang::RecordType*, std::string > anon_records_names_cache_;
@@ -71,7 +73,7 @@ private:
 class CppAstProcessor : public clang::ASTFrontendAction
 {
 public:
-	explicit CppAstProcessor( ParsedUnitsPtr out_result );
+	CppAstProcessor( ParsedUnitsPtr out_result, bool skip_declarations_from_includes );
 
 public:
 	virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
@@ -80,6 +82,7 @@ public:
 
 private:
 	const ParsedUnitsPtr out_result_;
+	const bool skip_declarations_from_includes_;
 };
 
 const SrcLoc g_dummy_src_loc;
@@ -91,7 +94,8 @@ CppAstConsumer::CppAstConsumer(
 	const clang::TargetInfo& target_info,
 	clang::DiagnosticsEngine& diagnostic_engine,
 	const clang::LangOptions& lang_options,
-	const clang::ASTContext& ast_context )
+	const clang::ASTContext& ast_context,
+	const bool skip_declarations_from_includes )
 	: root_program_elements_(out_elements)
 	, source_manager_(source_manager)
 	, preprocessor_(preprocessor)
@@ -100,6 +104,7 @@ CppAstConsumer::CppAstConsumer(
 	, lang_options_(lang_options)
 	, printing_policy_(lang_options_)
 	, ast_context_(ast_context)
+	, skip_declarations_from_includes_(skip_declarations_from_includes)
 {}
 
 bool CppAstConsumer::HandleTopLevelDecl( const clang::DeclGroupRef decl_group )
@@ -128,6 +133,10 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 		const clang::MacroDirective* const macro_directive= macro_pair.second.getLatest();
 		if( macro_directive->getKind() != clang::MacroDirective::MD_Define )
 			continue;
+
+		if( skip_declarations_from_includes_ &&
+			source_manager_.getFileID( macro_directive->getLocation() ) != source_manager_.getMainFileID() )
+			return;
 
 		const clang::MacroInfo* const macro_info= macro_directive->getMacroInfo();
 		if( macro_info->isBuiltinMacro() )
@@ -280,6 +289,10 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, const bool externc )
 {
+	if( skip_declarations_from_includes_ &&
+		source_manager_.getFileID( decl.getLocation() ) != source_manager_.getMainFileID() )
+		return;
+
 	bool current_externc= externc;
 	if( const auto decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
 	{
@@ -863,8 +876,8 @@ std::string CppAstConsumer::TranslateIdentifier( const llvm::StringRef identifie
 	return identifier.str();
 }
 
-CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result )
-	: out_result_(std::move(out_result))
+CppAstProcessor::CppAstProcessor( ParsedUnitsPtr out_result, const bool skip_declarations_from_includes )
+	: out_result_(std::move(out_result)), skip_declarations_from_includes_(skip_declarations_from_includes)
 {}
 
 std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
@@ -879,18 +892,19 @@ std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 			compiler_intance.getTarget(),
 			compiler_intance.getDiagnostics(),
 			compiler_intance.getLangOpts(),
-			compiler_intance.getASTContext());
+			compiler_intance.getASTContext(),
+			skip_declarations_from_includes_ );
 }
 
 } // namespace
 
-FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result )
-	: out_result_(std::move(out_result))
+FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result, const bool skip_declarations_from_includes )
+	: out_result_(std::move(out_result)), skip_declarations_from_includes_(skip_declarations_from_includes)
 {}
 
 std::unique_ptr<clang::FrontendAction> FrontendActionFactory::create()
 {
-	return std::make_unique<CppAstProcessor>(out_result_);
+	return std::make_unique<CppAstProcessor>(out_result_, skip_declarations_from_includes_);
 }
 
 } // namespace U
