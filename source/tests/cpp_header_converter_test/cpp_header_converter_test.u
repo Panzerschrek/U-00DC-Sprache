@@ -135,17 +135,17 @@ fn nomangle main() : i32
 	static_assert( i32(SequentialEnum::Green) == 1 );
 	static_assert( i32(SequentialEnum::Blue) == 2 );
 
-	static_assert( NonSequentialEnum_namespace::Zero == 0 );
-	static_assert( NonSequentialEnum_namespace::One == 1 );
-	static_assert( NonSequentialEnum_namespace::Ten == 10 );
-	static_assert( NonSequentialEnum_namespace::MinusTwo == -2 );
-	static_assert( NonSequentialEnum_namespace::Large32bit == 5000000 );
-	static_assert( NonSequentialEnum_namespace::LargeNegative == -142586 );
+	static_assert( NonSequentialEnum::Zero.ü_underlaying_value == 0 );
+	static_assert( NonSequentialEnum::One.ü_underlaying_value == 1 );
+	static_assert( NonSequentialEnum::Ten.ü_underlaying_value == 10 );
+	static_assert( NonSequentialEnum::MinusTwo.ü_underlaying_value == -2 );
+	static_assert( NonSequentialEnum::Large32bit.ü_underlaying_value == 5000000 );
+	static_assert( NonSequentialEnum::LargeNegative.ü_underlaying_value == -142586 );
 
-	var NonSequentialEnum ersatz_vnum_value= NonSequentialEnum_namespace::Zero;
+	var NonSequentialEnum ersatz_enum_value= NonSequentialEnum::Zero;
 
-	var TypedefForEnumABC typedefed_sequential_enum_value= TypedefForEnumABC::B;
-	var TypedefForEnumXYZ typedefed_non_sequential_enum_value= zero_init;
+	var TypedefForEnumABC typedefed_sequential_enum_value= AnonB;
+	var TypedefForEnumXYZ typedefed_non_sequential_enum_value= AnonX;
 
 	var SameNameForStructAndTypedef same_name_for_struct_and_typedef{ .dummy= 666 };
 

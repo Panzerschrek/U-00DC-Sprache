@@ -557,6 +557,18 @@ void ElementWrite( const Initializer& initializer, std::ostream& stream )
 			stream << " )";
 		}
 	}
+	else if( const auto struct_named_initializer= std::get_if<StructNamedInitializer>( &initializer ) )
+	{
+		stream << "{ ";
+		for( const StructNamedInitializer::MemberInitializer& member_initializer : struct_named_initializer->members_initializers )
+		{
+			stream << "." << member_initializer.name;
+			ElementWrite( member_initializer.initializer, stream );
+			if( &member_initializer != &struct_named_initializer->members_initializers.back() )
+				stream << ", ";
+		}
+		stream << "}";
+	}
 	else
 	{
 		U_ASSERT(false);

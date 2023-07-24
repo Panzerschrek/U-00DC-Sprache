@@ -449,7 +449,23 @@ Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& ty
 {
 	Synt::TypeAlias type_alias( g_dummy_src_loc );
 	type_alias.name= TranslateIdentifier( typedef_decl.getName() );
-	type_alias.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
+
+	bool anonymous_enum_processed= false;
+	if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>(typedef_decl.getUnderlyingType().getTypePtr()) )
+	{
+		if( const auto enum_type= llvm::dyn_cast<clang::EnumType>(elaborated_type->desugar().getTypePtr()) )
+		{
+			if( enum_type->getDecl()->getName().empty() )
+			{
+				type_alias.value= TranslateType( *enum_type->getDecl()->getIntegerType().getTypePtr() );
+				anonymous_enum_processed= true;
+			}
+		}
+	}
+
+	if( !anonymous_enum_processed )
+		type_alias.value= TranslateType( *typedef_decl.getUnderlyingType().getTypePtr() );
+
 	return type_alias;
 }
 
@@ -517,6 +533,39 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 
 	enum_names_cache_[ &enum_decl ]= enum_name;
 
+	if( enum_decl.getName().empty() )
+	{
+		// Anonimous enum. Just create a bunch of constants for it in space, where this enum is located.
+		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+		variables_declaration.type= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
+
+		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
+		{
+			Synt::NumericConstant initializer_number( g_dummy_src_loc );
+			const llvm::APSInt val= enumerator->getInitVal();
+			if( val.isNegative() )
+				initializer_number.value_int= uint64_t(val.getExtValue());
+			else
+				initializer_number.value_int= val.getLimitedValue();
+			initializer_number.value_double= static_cast<double>(initializer_number.value_int);
+
+			Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
+			constructor_initializer.arguments.push_back( std::move(initializer_number) );
+
+			Synt::VariablesDeclaration::VariableEntry var;
+			var.src_loc= g_dummy_src_loc;
+			var.name= TranslateIdentifier( enumerator->getName() );
+			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+			var.initializer= std::make_unique<Synt::Initializer>( std::move(constructor_initializer) );
+
+			variables_declaration.variables.push_back( std::move(var) );
+		}
+
+		out_elements.push_back( std::move(variables_declaration) );
+
+		return;
+	}
+
 	// C++ enum can be Ü enum, if it`s members form sequence 0-N with step 1.
 	bool can_be_u_enum= true;
 	{
@@ -551,7 +600,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 		if( const auto named_type_name= std::get_if<Synt::ComplexName>( &type_name ) )
 			enum_.underlaying_type_name= std::move(*named_type_name);
 
-		for( const clang::EnumConstantDecl* const enumerator : enum_decl.enumerators() )
+		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
 		{
 			enum_.members.emplace_back();
 			enum_.members.back().src_loc= g_dummy_src_loc;
@@ -562,22 +611,26 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 	}
 	else
 	{
-		auto enum_namespace_= std::make_unique<Synt::Namespace>( g_dummy_src_loc );
-		enum_namespace_->name_= enum_name + "_namespace";
+		// Can't use Ü enum. So, create struct type and a bunch of constants inside.
+		// Since such struct contains singe scalar inside, it is passed via this scalar.
 
-		Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
-		variables_declaration.type= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
+		auto enum_class_= std::make_unique<Synt::Class>( g_dummy_src_loc );
+		enum_class_->name_= TranslateIdentifier( enum_name );
 
-		for( const clang::EnumConstantDecl* const enumerator : enum_decl.enumerators() )
+		const std::string field_name= "ü_underlaying_value";
 		{
-			Synt::VariablesDeclaration::VariableEntry var;
-			var.src_loc= g_dummy_src_loc;
-			var.name= TranslateIdentifier( enumerator->getName() );
-			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
+			Synt::ClassField field( g_dummy_src_loc );
+			field.name= field_name;
+			field.type= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
+			enum_class_->elements_.push_back( std::move(field) );
+		}
 
-			Synt::ConstructorInitializer initializer( g_dummy_src_loc );
+		Synt::NameLookup enum_class_name( g_dummy_src_loc );
+		enum_class_name.name= enum_class_->name_;
+
+		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
+		{
 			Synt::NumericConstant initializer_number( g_dummy_src_loc );
-
 			const llvm::APSInt val= enumerator->getInitVal();
 			if( val.isNegative() )
 				initializer_number.value_int= uint64_t(val.getExtValue());
@@ -585,19 +638,30 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 				initializer_number.value_int= val.getLimitedValue();
 			initializer_number.value_double= static_cast<double>(initializer_number.value_int);
 
-			initializer.arguments.push_back( std::move(initializer_number) );
+			Synt::ConstructorInitializer constructor_initializer( g_dummy_src_loc );
+			constructor_initializer.arguments.push_back( std::move(initializer_number) );
 
+			Synt::StructNamedInitializer::MemberInitializer member_initializer;
+			member_initializer.initializer= std::move(constructor_initializer);
+			member_initializer.name= field_name;
+
+			Synt::StructNamedInitializer initializer( g_dummy_src_loc );
+			initializer.members_initializers.push_back( std::move(member_initializer) );
+
+			Synt::VariablesDeclaration::VariableEntry var;
+			var.src_loc= g_dummy_src_loc;
+			var.name= TranslateIdentifier( enumerator->getName() );
+			var.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			var.initializer= std::make_unique<Synt::Initializer>( std::move(initializer) );
+
+			Synt::VariablesDeclaration variables_declaration( g_dummy_src_loc );
+			variables_declaration.type= enum_class_name;
 			variables_declaration.variables.push_back( std::move(var) );
+
+			enum_class_->elements_.push_back( std::move(variables_declaration) );
 		}
 
-		enum_namespace_->elements_.push_back( std::move(variables_declaration) );
-		out_elements.push_back( std::move(enum_namespace_) );
-
-		Synt::TypeAlias type_alias( g_dummy_src_loc );
-		type_alias.name= enum_name;
-		type_alias.value= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
-		out_elements.push_back( std::move( type_alias ) );
+		out_elements.push_back( std::move(enum_class_) );
 	}
 }
 

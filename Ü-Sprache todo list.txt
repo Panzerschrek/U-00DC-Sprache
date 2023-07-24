@@ -76,7 +76,6 @@ CPP Header converter:
 *) White list of converted symbols
 *) Black list of converted symbols
 *) Ignore some headers or split result into several files
-*) fix "typedef enum { A, B, C } X;"
 
 Documentation:
 *) More, then one language
