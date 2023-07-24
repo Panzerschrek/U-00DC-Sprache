@@ -1045,6 +1045,28 @@ void CodeBuilder::BuildConstructorInitialization(
 			}
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_, field, function_context );
 		}
+		else if( !field.is_mutable )
+		{
+			// HACK! Can't use "AccessClassField" here, since it returns immtable reference.
+			// So, just create derived reference field, not a child node for the field.
+			const VariablePtr field_variable=
+				std::make_shared<Variable>(
+					field.type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					this_->name + "." + field_name,
+					CreateClassFieldGEP( function_context, *this_, field.index ) );
+
+			function_context.variables_state.AddNode( field_variable );
+			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc_ );
+
+			if( field.syntax_element->initializer != nullptr )
+				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
+			else
+				ApplyEmptyInitializer( field_name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
+
+			function_context.variables_state.RemoveNode( field_variable );
+		}
 		else
 		{
 			const VariablePtr field_variable=
@@ -1093,6 +1115,25 @@ void CodeBuilder::BuildConstructorInitialization(
 
 		if( field->is_reference )
 			InitializeReferenceField( this_, *field, field_initializer.initializer, names_scope, function_context );
+		else if( !field->is_mutable )
+		{
+			// HACK! Can't use "AccessClassField" here, since it returns immtable reference.
+			// So, just create derived reference field, not a child node for the field.
+			const VariablePtr field_variable=
+				std::make_shared<Variable>(
+					field->type,
+					ValueType::ReferenceMut,
+					Variable::Location::Pointer,
+					this_->name + "." + field_initializer.name,
+					CreateClassFieldGEP( function_context, *this_, field->index ) );
+
+			function_context.variables_state.AddNode( field_variable );
+			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), Synt::GetInitializerSrcLoc(field_initializer.initializer) );
+
+			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
+
+			function_context.variables_state.RemoveNode( field_variable );
+		}
 		else
 		{
 			const VariablePtr field_variable=
