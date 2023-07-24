@@ -1815,14 +1815,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( IsSignedInteger( fundamental_type->fundamental_type ) )
 		{
 			is_signed= true;
-			type_low= llvm::APInt( size_in_bits, uint64_t(1u) << (size_in_bits - 1), true );
-			type_high= llvm::APInt( size_in_bits, (uint64_t(1u) << (size_in_bits - 1)) - 1, true );
+			type_low = llvm::APInt::getSignedMinValue( size_in_bits );
+			type_high= llvm::APInt::getSignedMaxValue( size_in_bits );
 		}
 		else
 		{
 			// Unsigned integers and chars (chars are unsigned).
-			type_low= llvm::APInt( size_in_bits, uint64_t(0), false );
-			type_high= llvm::APInt( size_in_bits, (uint64_t(1u) << size_in_bits) - 1, false );
+			type_low = llvm::APInt::getMinValue( size_in_bits );
+			type_high= llvm::APInt::getMaxValue( size_in_bits );
 		}
 	}
 	else U_ASSERT(false);
@@ -1907,12 +1907,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 						const SrcLoc src_loc= case_.block.src_loc_; // TODO - use proper src_loc;
 						if( !( is_signed ? range_constants[0].sle( range_constants[1] ) : range_constants[0].ule( range_constants[1] ) ) )
+						{
 							REPORT_ERROR(
 								SwitchInvalidRange,
 								names.GetErrors(),
 								src_loc,
 								range_constants[0].getLimitedValue(),
 								range_constants[1].getLimitedValue() );
+							all_cases_are_ok= false;
+							continue;
+						}
 
 						case_values.emplace_back( CaseRange{ range_constants[0], range_constants[1], src_loc } );
 					}
@@ -2146,11 +2150,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		function_context.variables_state= variables_state_before_branching;
 		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, case_.block );
-		breances_states_after_case.push_back( function_context.variables_state );
 
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
 			function_context.llvm_ir_builder.CreateBr( block_after_switch );
+			breances_states_after_case.push_back( function_context.variables_state );
 			all_branches_are_terminal= false;
 		}
 
@@ -2175,11 +2179,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		function_context.variables_state= variables_state_before_branching;
 		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, *default_branch_synt_block );
-		breances_states_after_case.push_back( function_context.variables_state );
 
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
 			function_context.llvm_ir_builder.CreateBr( block_after_switch );
+			breances_states_after_case.push_back( function_context.variables_state );
 			all_branches_are_terminal= false;
 		}
 	}

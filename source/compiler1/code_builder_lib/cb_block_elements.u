@@ -1352,8 +1352,18 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 	else if_var( &fundamental_type : switch_type.GetFundamentalType() )
 	{
-		is_signed= IsSignedInteger( fundamental_type.fundamental_type );
 		var u32 size_in_bits= fundamental_type.GetSize() * 8u;
+		if( size_in_bits > 64u )
+		{
+			REPORT_ERROR(
+				NotImplemented,
+				names_scope,
+				switch_operator.src_loc,
+				"Types greater, than 64 bits in switch" )
+			return BlockElementBuildInfo();
+		}
+
+		is_signed= IsSignedInteger( fundamental_type.fundamental_type );
 		if( is_signed )
 		{
 			if( size_in_bits == 64u )
@@ -1470,6 +1480,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 								src_loc,
 								cast_imut(range_constants)[0],
 								cast_imut(range_constants)[1] )
+							all_cases_are_ok= false;
+							continue;
 						}
 
 						var SwitchCaseRange mut out_range{ .low= range_constants[0], .high= range_constants[1], .src_loc= src_loc };
@@ -1750,11 +1762,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		function_context.references_graph= references_graph_before_branching;
 		var BlockElementBuildInfo block_build_info= BuildBlock( names_scope, function_context, case_.block.deref() );
-		breances_states_after_case.push_back( function_context.references_graph );
 
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_switch ) );
+			breances_states_after_case.push_back( function_context.references_graph );
 			all_branches_are_terminal= false;
 		}
 
@@ -1781,11 +1793,11 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		function_context.references_graph= references_graph_before_branching;
 		var BlockElementBuildInfo block_build_info= BuildBlock( names_scope, function_context, default_branch_synt_block.try_deref() );
-		breances_states_after_case.push_back( function_context.references_graph );
 
 		if( !block_build_info.have_terminal_instruction_inside )
 		{
 			unsafe( LLVMBuildBr( function_context.llvm_ir_builder, block_after_switch ) );
+			breances_states_after_case.push_back( function_context.references_graph );
 			all_branches_are_terminal= false;
 		}
 	}
