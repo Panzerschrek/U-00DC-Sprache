@@ -1389,15 +1389,57 @@ fn CodeBuilder::BuildConstructorInitialization(
 				REPORT_ERROR( ExpectedInitializer, names_scope, constructor_initialization_list.src_loc, field_name )
 				continue;
 			}
+			else if( !class_field.is_mutable )
+			{
+				// HACK! Can't use "AccessDirectClassField" here, since it returns immtable reference.
+				// So, just create derived reference field, not a child node for the field.
+				var Variable mut field_variable
+				{
+					.t= class_field.t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
+					.name= this_ptr.lock_imut().deref().name + "." + field_name,
+				};
+				var VariablePtr field_variable_ptr( move(field_variable) );
+				function_context.references_graph.AddNode( field_variable_ptr );
+				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
 
-			var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, field_name, constructor_initialization_list.src_loc );
-			BuildEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
+				BuildEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
+
+				function_context.references_graph.RemoveNode( field_variable_ptr );
+			}
+			else
+			{
+				var VariablePtr field_variable_ptr= AccessDirectClassField( names_scope, function_context, this_ptr, class_field, field_name, constructor_initialization_list.src_loc );
+				BuildEmptyInitializer( names_scope, function_context, field_variable_ptr, field_name, constructor_initialization_list.src_loc );
+			}
 		}
 		else
 		{
 			if( class_field.is_reference )
 			{
 				InitializeReferenceField( class_members_initial, function_context, this_ptr, class_field, initializer );
+			}
+			else if( !class_field.is_mutable )
+			{
+				// HACK! Can't use "AccessDirectClassField" here, since it returns immtable reference.
+				// So, just create derived reference field, not a child node for the field.
+				var Variable mut field_variable
+				{
+					.t= class_field.t,
+					.value_type= ValueType::ReferenceMut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
+					.name= this_ptr.lock_imut().deref().name + "." + field_name,
+				};
+				var VariablePtr field_variable_ptr( move(field_variable) );
+				function_context.references_graph.AddNode( field_variable_ptr );
+				function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
+
+				BuildInitializer( class_members_initial, function_context, field_variable_ptr, initializer );
+
+				function_context.references_graph.RemoveNode( field_variable_ptr );
 			}
 			else
 			{
@@ -1430,6 +1472,26 @@ fn CodeBuilder::BuildConstructorInitialization(
 		if( class_field.is_reference )
 		{
 			InitializeReferenceField( names_scope, function_context, this_ptr, class_field, member_initializer.initializer.deref() );
+		}
+		else if( !class_field.is_mutable )
+		{
+			// HACK! Can't use "AccessDirectClassField" here, since it returns immtable reference.
+			// So, just create derived reference field, not a child node for the field.
+			var Variable mut field_variable
+			{
+				.t= class_field.t,
+				.value_type= ValueType::ReferenceMut,
+				.location= Variable::Location::Pointer,
+				.llvm_value= CreateClassFieldGEP( function_context, this_ptr.lock_imut().deref(), class_field ),
+				.name= this_ptr.lock_imut().deref().name + "." + member_initializer.name,
+			};
+			var VariablePtr field_variable_ptr( move(field_variable) );
+			function_context.references_graph.AddNode( field_variable_ptr );
+			function_context.references_graph.AddLink( this_ptr, field_variable_ptr );
+
+			BuildInitializer( names_scope, function_context, field_variable_ptr, member_initializer.initializer.deref() );
+
+			function_context.references_graph.RemoveNode( field_variable_ptr );
 		}
 		else
 		{
