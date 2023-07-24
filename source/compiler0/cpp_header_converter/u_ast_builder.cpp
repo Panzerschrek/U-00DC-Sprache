@@ -16,7 +16,73 @@
 namespace U
 {
 
-static const SrcLoc g_dummy_src_loc;
+namespace
+{
+
+class CppAstConsumer : public clang::ASTConsumer
+{
+public:
+	CppAstConsumer(
+		Synt::ProgramElements& out_elements,
+		const clang::SourceManager& source_manager,
+		clang::Preprocessor& preprocessor,
+		const clang::TargetInfo& target_info,
+		clang::DiagnosticsEngine& diagnostic_engine,
+		const clang::LangOptions& lang_options,
+		const clang::ASTContext& ast_context );
+
+public:
+	virtual bool HandleTopLevelDecl( clang::DeclGroupRef decl_group ) override;
+	virtual void HandleTranslationUnit( clang:: ASTContext& ast_context ) override;
+
+private:
+	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, bool externc );
+	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc );
+
+	Synt::ClassPtr ProcessRecord( const clang::RecordDecl& record_decl, bool externc );
+	Synt::TypeAlias ProcessTypedef( const clang::TypedefNameDecl& typedef_decl );
+	Synt::FunctionPtr ProcessFunction( const clang::FunctionDecl& func_decl, bool externc );
+	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElements& out_elements );
+
+	Synt::TypeName TranslateType( const clang::Type& in_type );
+	std::string TranslateRecordType( const clang::RecordType& in_type );
+	std::string GetUFundamentalType( const clang::BuiltinType& in_type );
+	Synt::ComplexName TranslateNamedType( const std::string& cpp_type_name );
+	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
+
+	std::string TranslateIdentifier( llvm::StringRef identifier );
+
+private:
+	Synt::ProgramElements& root_program_elements_;
+
+	const clang::SourceManager& source_manager_;
+	clang::Preprocessor& preprocessor_;
+	const clang::TargetInfo &target_info_;
+	clang::DiagnosticsEngine& diagnostic_engine_;
+	const clang::LangOptions& lang_options_;
+	const clang::PrintingPolicy printing_policy_;
+	const clang::ASTContext& ast_context_;
+
+	size_t unique_name_index_= 0u;
+	std::unordered_map< const clang::RecordType*, std::string > anon_records_names_cache_;
+	std::unordered_map< const clang::EnumDecl*, std::string > enum_names_cache_;
+};
+
+class CppAstProcessor : public clang::ASTFrontendAction
+{
+public:
+	explicit CppAstProcessor( ParsedUnitsPtr out_result );
+
+public:
+	virtual std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(
+		clang::CompilerInstance& compiler_intance,
+		llvm::StringRef in_file ) override;
+
+private:
+	const ParsedUnitsPtr out_result_;
+};
+
+const SrcLoc g_dummy_src_loc;
 
 CppAstConsumer::CppAstConsumer(
 	Synt::ProgramElements& out_elements,
@@ -387,13 +453,13 @@ Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& ty
 	return type_alias;
 }
 
-Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_decl, bool externc )
+Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_decl, const bool externc )
 {
 	auto func= std::make_unique<Synt::Function>(g_dummy_src_loc);
 
 	func->name_.push_back( TranslateIdentifier( func_decl.getName() ) );
 	func->no_mangle_= externc;
-	func->type_.unsafe_= true; // All C/C++ functions is unsafe.
+	func->type_.unsafe_= true; // All C/C++ functions are unsafe.
 
 	func->type_.params_.reserve( func_decl.param_size() );
 	size_t i= 0u;
@@ -751,6 +817,8 @@ std::unique_ptr<clang::ASTConsumer> CppAstProcessor::CreateASTConsumer(
 			compiler_intance.getLangOpts(),
 			compiler_intance.getASTContext());
 }
+
+} // namespace
 
 FrontendActionFactory::FrontendActionFactory( ParsedUnitsPtr out_result )
 	: out_result_(std::move(out_result))

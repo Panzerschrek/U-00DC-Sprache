@@ -3,22 +3,21 @@
 
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <clang/Tooling/CommonOptionsParser.h>
-#include <clang/Frontend/FrontendActions.h>
 #include  <llvm/Support/CommandLine.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../lex_synt_lib/program_writer.hpp"
 #include "u_ast_builder.hpp"
 
-static llvm::cl::OptionCategory tool_category( "C++ to Ü header converter options" );
-
-static llvm::cl::opt<std::string> output_file_name(
-	"o",
-	llvm::cl::desc("Set output filename"),
-	llvm::cl::value_desc("filename") );
-
 int main( int argc, const char* argv[] )
 {
+	llvm::cl::OptionCategory tool_category( "C++ to Ü header converter options" );
+
+	llvm::cl::opt<std::string> output_file_name(
+		"o",
+		llvm::cl::desc("Set output filename"),
+		llvm::cl::value_desc("filename") );
+
 	auto options_parser_opt= clang::tooling::CommonOptionsParser::create( argc, argv, tool_category );
 	if( !options_parser_opt )
 	{
