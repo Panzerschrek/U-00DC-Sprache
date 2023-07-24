@@ -74,6 +74,7 @@ struct WithOperator;
 struct IfOperator;
 struct StaticIfOperator;
 struct IfCoroAdvanceOperator;
+struct SwitchOperator;
 struct SingleExpressionOperator;
 struct AssignmentOperator;
 struct AdditiveAssignmentOperator;
@@ -193,6 +194,7 @@ using BlockElement= std::variant<
 	IfOperator,
 	StaticIfOperator,
 	IfCoroAdvanceOperator,
+	SwitchOperator,
 	SingleExpressionOperator,
 	AssignmentOperator,
 	AdditiveAssignmentOperator,
@@ -785,6 +787,35 @@ struct IfCoroAdvanceOperator final : public SyntaxElementBase
 	Expression expression;
 	Block block;
 	IfAlternativePtr alternative;
+	SrcLoc end_src_loc;
+};
+
+struct SwitchOperator final : public SyntaxElementBase
+{
+	SwitchOperator( const SrcLoc& src_loc );
+
+	struct DefaultPlaceholder{};
+	struct CaseRange
+	{
+		// EmptyVariant if has no value.
+		Expression low;
+		Expression high;
+	};
+
+	using CaseValue= std::variant<Expression, CaseRange>; // Range or single value.
+
+	// List of values/ranges or single "default".
+	// There is no reason to combine "default" branch with other values/ranges, since such values are unnecessary (default will handle them all).
+	using CaseValues= std::variant<std::vector<CaseValue>, DefaultPlaceholder>;
+
+	struct Case
+	{
+		CaseValues values;
+		Block block;
+	};
+
+	Expression value;
+	std::vector<Case> cases;
 	SrcLoc end_src_loc;
 };
 

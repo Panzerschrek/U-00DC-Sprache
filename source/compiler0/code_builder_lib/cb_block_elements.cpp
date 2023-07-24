@@ -1766,6 +1766,471 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::SwitchOperator& switch_operator )
+{
+	Type switch_type;
+	llvm::Value* switch_value= nullptr;
+	{
+		const StackVariablesStorage temp_variables_storage( function_context );
+		const VariablePtr expression= BuildExpressionCodeEnsureVariable( switch_operator.value, names, function_context );
+
+		bool type_ok= false;
+		if( expression->type.GetEnumType() != nullptr )
+			type_ok= true;
+		else if( const auto fundamental_type= expression->type.GetFundamentalType() )
+			type_ok= IsInteger( fundamental_type->fundamental_type ) || IsChar( fundamental_type->fundamental_type );
+		else
+			type_ok= false;
+
+		const SrcLoc src_loc= Synt::GetExpressionSrcLoc( switch_operator.value );
+
+		if( !type_ok )
+		{
+			REPORT_ERROR(
+				TypesMismatch,
+				names.GetErrors(),
+				src_loc,
+				"Enum, integer or char type",
+				expression->type );
+			return BlockBuildInfo();
+		}
+
+		switch_type= expression->type;
+		switch_value= CreateMoveToLLVMRegisterInstruction( *expression, function_context );
+
+		CallDestructors( temp_variables_storage, names, function_context, src_loc );
+	}
+
+	llvm::APInt type_low, type_high;
+	bool is_signed= false;
+	if( const auto enum_= switch_type.GetEnumType() )
+	{
+		const uint32_t size_in_bits= 8 * uint32_t(enum_->underlaying_type.GetSize());
+		type_low= llvm::APInt( size_in_bits, uint64_t(0) );
+		type_high= llvm::APInt( size_in_bits, uint64_t(enum_->element_count - 1) );
+	}
+	else if( const auto fundamental_type= switch_type.GetFundamentalType() )
+	{
+		const uint32_t size_in_bits= 8 * uint32_t(fundamental_type->GetSize());
+		if( IsSignedInteger( fundamental_type->fundamental_type ) )
+		{
+			is_signed= true;
+			type_low = llvm::APInt::getSignedMinValue( size_in_bits );
+			type_high= llvm::APInt::getSignedMaxValue( size_in_bits );
+		}
+		else
+		{
+			// Unsigned integers and chars (chars are unsigned).
+			type_low = llvm::APInt::getMinValue( size_in_bits );
+			type_high= llvm::APInt::getMaxValue( size_in_bits );
+		}
+	}
+	else U_ASSERT(false);
+
+	struct CaseRange
+	{
+		llvm::APInt low;
+		llvm::APInt high;
+		SrcLoc src_loc;
+	};
+
+	// Preevaluate case values. It is fine, since only constexpr expressions are allowed.
+	using CaseValues= llvm::SmallVector<CaseRange, 4>;
+	constexpr size_t c_expected_num_branches= 16;
+	llvm::SmallVector<CaseValues, c_expected_num_branches> branches_ranges;
+	bool all_cases_are_ok= true;
+	const Synt::Block* default_branch_synt_block= nullptr;
+	branches_ranges.reserve( switch_operator.cases.size() );
+	{
+		const StackVariablesStorage temp_variables_storage( function_context );
+		for( const Synt::SwitchOperator::Case& case_ : switch_operator.cases )
+		{
+			CaseValues case_values;
+			if( const auto values = std::get_if<std::vector<Synt::SwitchOperator::CaseValue>>( &case_.values ) )
+			{
+				case_values.reserve( values->size() );
+				for( const Synt::SwitchOperator::CaseValue& value : *values )
+				{
+					if( const auto single_value= std::get_if<Synt::Expression>( &value ) )
+					{
+						const VariablePtr expression_variable= BuildExpressionCodeEnsureVariable( *single_value, names, function_context );
+						const auto src_loc= Synt::GetExpressionSrcLoc( *single_value );
+						if( expression_variable->type != switch_type )
+						{
+							REPORT_ERROR(
+								TypesMismatch,
+								names.GetErrors(),
+								src_loc,
+								switch_type,
+								expression_variable->type );
+							all_cases_are_ok= false;
+							continue;
+						}
+						if( expression_variable->constexpr_value == nullptr )
+						{
+							REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), src_loc );
+							all_cases_are_ok= false;
+							continue;
+						}
+						const llvm::APInt value_int= expression_variable->constexpr_value->getUniqueInteger();
+						case_values.emplace_back( CaseRange{ value_int, value_int, src_loc } );
+					}
+					else if( const auto range= std::get_if<Synt::SwitchOperator::CaseRange>( &value ) )
+					{
+						llvm::APInt range_constants[2]{ type_low, type_high };
+						for( size_t i= 0; i < 2; ++i )
+						{
+							const Synt::Expression& expression = i == 0 ? range->low : range->high;
+							if( std::get_if<Synt::EmptyVariant>( &expression ) != nullptr )
+								continue;
+
+							const VariablePtr expression_variable= BuildExpressionCodeEnsureVariable( expression, names, function_context );
+							if( expression_variable->type != switch_type )
+							{
+								REPORT_ERROR(
+									TypesMismatch,
+									names.GetErrors(),
+									Synt::GetExpressionSrcLoc( expression ),
+									switch_type,
+									expression_variable->type );
+								all_cases_are_ok= false;
+								continue;
+							}
+							if( expression_variable->constexpr_value == nullptr )
+							{
+								REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), Synt::GetExpressionSrcLoc( expression ) );
+								all_cases_are_ok= false;
+								continue;
+							}
+							range_constants[i]= expression_variable->constexpr_value->getUniqueInteger();
+						}
+
+						const SrcLoc src_loc= case_.block.src_loc_; // TODO - use proper src_loc;
+						if( !( is_signed ? range_constants[0].sle( range_constants[1] ) : range_constants[0].ule( range_constants[1] ) ) )
+						{
+							REPORT_ERROR(
+								SwitchInvalidRange,
+								names.GetErrors(),
+								src_loc,
+								range_constants[0].getLimitedValue(),
+								range_constants[1].getLimitedValue() );
+							all_cases_are_ok= false;
+							continue;
+						}
+
+						case_values.emplace_back( CaseRange{ range_constants[0], range_constants[1], src_loc } );
+					}
+					else U_ASSERT(false);
+				}
+			}
+			else if( std::get_if<Synt::SwitchOperator::DefaultPlaceholder>( &case_.values ) != nullptr )
+			{
+				if( default_branch_synt_block != nullptr )
+				{
+					REPORT_ERROR(
+						SwitchDuplicatedDefaultLabel,
+						names.GetErrors(),
+						case_.block.src_loc_ ); // TODO - use proper src_loc
+					all_cases_are_ok= false;
+				}
+				else
+					default_branch_synt_block= &case_.block;
+			}
+			else U_ASSERT( false );
+
+			branches_ranges.push_back( std::move(case_values) );
+		}
+		CallDestructors( temp_variables_storage, names, function_context, switch_operator.src_loc_ );
+	}
+
+	if( !all_cases_are_ok || branches_ranges.size() != switch_operator.cases.size() )
+		return BlockBuildInfo(); // Some error generated before.
+
+	// Perform checks of ranges.
+	{
+		// Collect all ranges.
+		llvm::SmallVector<CaseRange, 32> all_ranges;
+		for( const auto& case_ranges : branches_ranges )
+			all_ranges.append( case_ranges );
+
+		// Sort by low. Use comparator depending on switch type signness.
+		// Sorting is needed in order to simplify ranges overlapping and gaps searching.
+		if( is_signed )
+			std::sort(
+				all_ranges.begin(), all_ranges.end(),
+				[]( const CaseRange& l, const CaseRange& r ) -> bool { return l.low.slt(r.low); });
+		else
+			std::sort(
+				all_ranges.begin(), all_ranges.end(),
+				[]( const CaseRange& l, const CaseRange& r ) -> bool { return l.low.ult(r.low); });
+
+		// Check for overlaps and gaps between ranges.
+		bool has_gaps= false;
+		for( size_t i = 0; i + 1 < all_ranges.size(); ++i )
+		{
+			const CaseRange& current_range= all_ranges[i];
+			const CaseRange& next_range= all_ranges[i + 1];
+
+			const llvm::APInt& current_high= current_range.high;
+			const llvm::APInt& next_low= next_range.low;
+
+			if( is_signed ? current_high.slt(next_low) : current_high.ult(next_low) )
+			{
+				// Because of condition above diff is always non-negative.
+				const llvm::APInt gap_size= next_low - current_high - 1;
+				if( !gap_size.isZero() )
+				{
+					has_gaps= true;
+					if( default_branch_synt_block == nullptr )
+					{
+						if( gap_size.isOne() )
+							REPORT_ERROR(
+								SwitchUndhandledValue,
+								names.GetErrors(),
+								std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
+								(current_high + 1).getLimitedValue() );
+						else
+							REPORT_ERROR(
+								SwitchUndhandledRange,
+								names.GetErrors(),
+								std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
+								(current_high + 1).getLimitedValue(),
+								(next_low - 1).getLimitedValue() );
+					}
+				}
+			}
+			else
+				REPORT_ERROR(
+					SwitchRangesOverlapping,
+					names.GetErrors(),
+					std::max( current_range.src_loc, next_range.src_loc ), // Report error furter in the source code.
+					current_range.low .getLimitedValue(),
+					current_range.high.getLimitedValue(),
+					next_range.low .getLimitedValue(),
+					next_range.high.getLimitedValue() );
+		}
+
+		if( !all_ranges.empty() )
+		{
+			// Process begin range.
+			const llvm::APInt& first_range_low= all_ranges.front().low;
+			const llvm::APInt begin_gap_size= first_range_low - type_low;
+			if( !begin_gap_size.isZero() )
+			{
+				has_gaps= true;
+				if( default_branch_synt_block == nullptr )
+				{
+					if( begin_gap_size.isOne() )
+						REPORT_ERROR(
+							SwitchUndhandledValue,
+							names.GetErrors(),
+							all_ranges.front().src_loc,
+							type_low.getLimitedValue() );
+					else
+						REPORT_ERROR(
+							SwitchUndhandledRange,
+							names.GetErrors(),
+							all_ranges.front().src_loc,
+							type_low.getLimitedValue(),
+							(first_range_low - 1).getLimitedValue() );
+				}
+			}
+			// Process end range.
+			const llvm::APInt& last_range_high= all_ranges.back().high;
+			const llvm::APInt end_gap_size= type_high - last_range_high;
+			if( !end_gap_size.isZero() )
+			{
+				has_gaps= true;
+				if( default_branch_synt_block == nullptr )
+				{
+					if( end_gap_size.isOne() )
+						REPORT_ERROR(
+							SwitchUndhandledValue,
+							names.GetErrors(),
+							all_ranges.back().src_loc,
+							type_high.getLimitedValue() );
+					else
+						REPORT_ERROR(
+							SwitchUndhandledRange,
+							names.GetErrors(),
+							all_ranges.back().src_loc,
+							(last_range_high + 1).getLimitedValue(),
+							type_high.getLimitedValue() );
+				}
+			}
+		}
+		else
+		{
+			// No ranges at all - this is a gap.
+			has_gaps= true;
+			if( default_branch_synt_block == nullptr )
+			{
+				if( type_high == type_low )
+					REPORT_ERROR(
+						SwitchUndhandledValue,
+						names.GetErrors(),
+						switch_operator.src_loc_,
+						type_high.getLimitedValue() );
+				else
+					REPORT_ERROR(
+						SwitchUndhandledRange,
+						names.GetErrors(),
+						switch_operator.src_loc_,
+						type_low.getLimitedValue(),
+						type_high.getLimitedValue() );
+			}
+		}
+
+		if( default_branch_synt_block != nullptr && !has_gaps )
+			REPORT_ERROR(
+				SwithcUnreachableDefaultBranch,
+				names.GetErrors(),
+				default_branch_synt_block->src_loc_ );
+	}
+
+	const ReferencesGraph variables_state_before_branching= function_context.variables_state;
+	llvm::SmallVector<ReferencesGraph, c_expected_num_branches> breances_states_after_case;
+	breances_states_after_case.reserve( switch_operator.cases.size() + 1 );
+
+	llvm::BasicBlock* const block_after_switch= llvm::BasicBlock::Create( llvm_context_ );
+	llvm::BasicBlock* next_case_block= nullptr;
+	llvm::BasicBlock* const default_branch= default_branch_synt_block == nullptr ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
+	bool all_branches_are_terminal= true;
+
+	llvm::Type* const switch_llvm_type= switch_type.GetLLVMType();
+	for( size_t i= 0; i < switch_operator.cases.size(); ++i )
+	{
+		const Synt::SwitchOperator::Case& case_= switch_operator.cases[i];
+		if( std::get_if<Synt::SwitchOperator::DefaultPlaceholder>( &case_.values ) != nullptr )
+		{
+			// Default branch - handle it later.
+			continue;
+		}
+
+		llvm::BasicBlock* const case_handle_block= llvm::BasicBlock::Create( llvm_context_ );
+		next_case_block= llvm::BasicBlock::Create( llvm_context_ );
+
+		const CaseValues& case_values= branches_ranges[i];
+		U_ASSERT( !case_values.empty() );
+		llvm::Value* value_equals= nullptr;
+		for( const CaseRange& case_range : case_values )
+		{
+			llvm::Value* current_value_equals= nullptr;
+
+			llvm::Constant* const constant_low = llvm::ConstantInt::get( switch_llvm_type, case_range.low  );
+
+			if( case_range.low == case_range.high )
+				current_value_equals= function_context.llvm_ir_builder.CreateICmpEQ( switch_value, constant_low );
+			else
+			{
+				llvm::Constant* const constant_high= llvm::ConstantInt::get( switch_llvm_type, case_range.high );
+				if( is_signed )
+					current_value_equals=
+						function_context.llvm_ir_builder.CreateAnd(
+							function_context.llvm_ir_builder.CreateICmpSGE( switch_value, constant_low ),
+							function_context.llvm_ir_builder.CreateICmpSLE( switch_value, constant_high ) );
+				else
+					current_value_equals=
+						function_context.llvm_ir_builder.CreateAnd(
+							function_context.llvm_ir_builder.CreateICmpUGE( switch_value, constant_low ),
+							function_context.llvm_ir_builder.CreateICmpULE( switch_value, constant_high ) );
+			}
+
+			if( value_equals == nullptr )
+				value_equals= current_value_equals;
+			else
+				value_equals= function_context.llvm_ir_builder.CreateOr( value_equals, current_value_equals );
+		}
+
+		function_context.llvm_ir_builder.CreateCondBr( value_equals, case_handle_block, next_case_block );
+
+		// Case handle block
+		function_context.function->getBasicBlockList().push_back( case_handle_block );
+		function_context.llvm_ir_builder.SetInsertPoint( case_handle_block );
+
+		function_context.variables_state= variables_state_before_branching;
+		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, case_.block );
+
+		if( !block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.llvm_ir_builder.CreateBr( block_after_switch );
+			breances_states_after_case.push_back( function_context.variables_state );
+			all_branches_are_terminal= false;
+		}
+
+		// Next case block
+		function_context.function->getBasicBlockList().push_back( next_case_block );
+		function_context.llvm_ir_builder.SetInsertPoint( next_case_block );
+	}
+
+	// Handle default branch lastly.
+	if( default_branch_synt_block != nullptr && default_branch != nullptr )
+	{
+		if( next_case_block == nullptr )
+			function_context.llvm_ir_builder.CreateBr( default_branch );
+		else
+		{
+			next_case_block->replaceAllUsesWith( default_branch );
+			next_case_block->eraseFromParent();
+		}
+
+		function_context.function->getBasicBlockList().push_back( default_branch );
+		function_context.llvm_ir_builder.SetInsertPoint( default_branch );
+
+		function_context.variables_state= variables_state_before_branching;
+		const BlockBuildInfo block_build_info= BuildBlock( names, function_context, *default_branch_synt_block );
+
+		if( !block_build_info.have_terminal_instruction_inside )
+		{
+			function_context.llvm_ir_builder.CreateBr( block_after_switch );
+			breances_states_after_case.push_back( function_context.variables_state );
+			all_branches_are_terminal= false;
+		}
+	}
+	else
+	{
+		if( next_case_block == nullptr )
+			function_context.llvm_ir_builder.CreateBr( block_after_switch );
+		else
+		{
+			next_case_block->replaceAllUsesWith( block_after_switch );
+			next_case_block->eraseFromParent();
+		}
+
+		// No default branch - all values must be handled in normal branches.
+		// This was checked after ranges calculation.
+	}
+
+	BlockBuildInfo block_build_info;
+
+	if( all_branches_are_terminal )
+	{
+		block_build_info.have_terminal_instruction_inside= true;
+		// There is no reason to merge variables state here.
+
+		// Hack - preserve LLVM basic blocks structure in case of impossible jump to block after swith.
+		if( block_after_switch->hasNPredecessorsOrMore(1) )
+		{
+			function_context.function->getBasicBlockList().push_back( block_after_switch );
+			function_context.llvm_ir_builder.SetInsertPoint( block_after_switch );
+			function_context.llvm_ir_builder.CreateUnreachable();
+		}
+		else
+			delete block_after_switch;
+	}
+	else
+	{
+		function_context.function->getBasicBlockList().push_back( block_after_switch );
+		function_context.llvm_ir_builder.SetInsertPoint( block_after_switch );
+		function_context.variables_state= MergeVariablesStateAfterIf( breances_states_after_case, names.GetErrors(), switch_operator.end_src_loc );
+	}
+
+	return block_build_info;
+}
+
+CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::SingleExpressionOperator& single_expression_operator )
 {
 	const StackVariablesStorage temp_variables_storage( function_context );

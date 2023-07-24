@@ -1156,26 +1156,26 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				var LLVMValueRef value_in_register= CreateMoveToLLVMRegisterInstruction( variable, function_context );
 				if( value_in_register != LLVMValueRef::Null )
 				{
-					unsafe
+					auto zero= unsafe( LLVMConstInt( variable.t.GetLLVMType(), 0u64, LLVMBool::False ) );
+					switch( binary_operator.operator )
 					{
-						auto zero= LLVMConstInt( variable.t.GetLLVMType(), 0u64, LLVMBool::False );
-						if( binary_operator.operator == BinaryOperatorType::Less )
+						BinaryOperatorType::Less ->
 						{
-							result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, value_in_register, zero, "<\0"[0] );
-						}
-						else if( binary_operator.operator == BinaryOperatorType::LessEqual )
+							result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, value_in_register, zero, "<\0"[0] ) );
+						},
+						BinaryOperatorType::LessEqual ->
 						{
-							result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, value_in_register, zero, "<=\0"[0] );
-						}
-						else if( binary_operator.operator == BinaryOperatorType::Greater )
+							result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, value_in_register, zero, "<=\0"[0] ) );
+						},
+						BinaryOperatorType::Greater ->
 						{
-							result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, value_in_register, zero, ">\0"[0] );
-						}
-						else if( binary_operator.operator == BinaryOperatorType::GreaterEqual )
+							result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, value_in_register, zero, ">\0"[0] ) );
+						},
+						BinaryOperatorType::GreaterEqual->
 						{
-							result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, value_in_register, zero, ">=\0"[0] );
-						}
-						else { halt; }
+							result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, value_in_register, zero, ">=\0"[0] ) );
+						},
+						default -> { halt; }
 					}
 				}
 
@@ -2293,81 +2293,82 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
-			unsafe
+			switch( operator )
 			{
-					 if( operator == BinaryOperatorType::Add )
+				BinaryOperatorType::Add ->
 				{
 					if( is_float )
 					{
-						result.llvm_value= LLVMBuildFAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildFAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] ) );
 					}
 					else
 					{
-						result.llvm_value= LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildAdd( function_context.llvm_ir_builder, l_in_register, r_in_register, "+\0"[0] ) );
 					}
-				}
-				else if( operator == BinaryOperatorType::Sub )
+				},
+				BinaryOperatorType::Sub ->
 				{
 					if( is_float )
 					{
-						result.llvm_value= LLVMBuildFSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildFSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] ) );
 					}
 					else
 					{
-						result.llvm_value= LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildSub( function_context.llvm_ir_builder, l_in_register, r_in_register, "-\0"[0] ) );
 					}
-				}
-				else if( operator == BinaryOperatorType::Mul )
+				},
+				BinaryOperatorType::Mul ->
 				{
 					if( is_float )
 					{
-						result.llvm_value= LLVMBuildFMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildFMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] ) );
 					}
 					else
 					{
-						result.llvm_value= LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildMul( function_context.llvm_ir_builder, l_in_register, r_in_register, "*\0"[0] ) );
 					}
-				}
-				else if( operator == BinaryOperatorType::Div )
+				},
+				BinaryOperatorType::Div ->
 				{
 					if( is_float )
 					{
-						result.llvm_value= LLVMBuildFDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildFDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] ) );
 					}
 					else if( is_signed )
 					{
-						result.llvm_value= LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildSDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] ) );
 					}
 					else
 					{
-						result.llvm_value= LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildUDiv( function_context.llvm_ir_builder, l_in_register, r_in_register, "/\0"[0] ) );
 					}
-				}
-				else if( operator == BinaryOperatorType::Rem )
+				},
+				BinaryOperatorType::Rem ->
 				{
 					if( is_float )
 					{
-						result.llvm_value= LLVMBuildFRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildFRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] ) );
 					}
 					else if( is_signed )
 					{
-						result.llvm_value= LLVMBuildSRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildSRem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] ) );
 					}
 					else
 					{
-						result.llvm_value= LLVMBuildURem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildURem( function_context.llvm_ir_builder, l_in_register, r_in_register, "%\0"[0] ) );
 					}
-				}
+				},
+				default -> { halt; },
+			}
 
-				if( LLVMIsConstant( result.llvm_value ) == LLVMBool::True )
+			if( unsafe( LLVMIsConstant( result.llvm_value ) ) == LLVMBool::True )
+			{
+				result.constexpr_value= result.llvm_value;
+
+				if( unsafe( LLVMIsUndef( result.constexpr_value ) ) == LLVMBool::True )
 				{
-					result.constexpr_value= result.llvm_value;
-
-					if( LLVMIsUndef( result.constexpr_value ) == LLVMBool::True )
-					{
-						result.constexpr_value= LLVMValueRef::Null;
-						REPORT_ERROR( ConstantExpressionResultIsUndefined, names_scope, src_loc )
-					}
+					result.constexpr_value= LLVMValueRef::Null;
+					REPORT_ERROR( ConstantExpressionResultIsUndefined, names_scope, src_loc )
 				}
 			}
 		}
@@ -2397,20 +2398,21 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
-			unsafe
+			switch( operator )
 			{
-					 if( operator == BinaryOperatorType::And )
+				BinaryOperatorType::And ->
 				{
-					result.llvm_value= LLVMBuildAnd( function_context.llvm_ir_builder, l_in_register, r_in_register, "&\0"[0] );
-				}
-				else if( operator == BinaryOperatorType::Or  )
+					result.llvm_value= unsafe( LLVMBuildAnd( function_context.llvm_ir_builder, l_in_register, r_in_register, "&\0"[0] ) );
+				},
+				BinaryOperatorType::Or  ->
 				{
-					result.llvm_value= LLVMBuildOr ( function_context.llvm_ir_builder, l_in_register, r_in_register, "|\0"[0] );
-				}
-				else if( operator == BinaryOperatorType::Xor )
+					result.llvm_value= unsafe( LLVMBuildOr ( function_context.llvm_ir_builder, l_in_register, r_in_register, "|\0"[0] ) );
+				},
+				BinaryOperatorType::Xor ->
 				{
-					result.llvm_value= LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] );
-				}
+					result.llvm_value= unsafe( LLVMBuildXor( function_context.llvm_ir_builder, l_in_register, r_in_register, "^\0"[0] ) );
+				},
+				default -> { halt; },
 			}
 		}
 	}
@@ -2539,6 +2541,7 @@ fn CodeBuilder::BuildBinaryOperator(
 						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::NE, l_in_register, r_in_register, "!=\0"[0] );
 					}
 				}
+				else { halt; }
 			}
 		}
 	}
@@ -2569,68 +2572,69 @@ fn CodeBuilder::BuildBinaryOperator(
 
 		if( l_in_register != LLVMValueRef::Null && r_in_register != LLVMValueRef::Null )
 		{
-			unsafe
+			switch( operator )
 			{
-					 if( operator == BinaryOperatorType::Less )
+				BinaryOperatorType::Less ->
 				{
 					if( is_float )
 					{
-						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLT, l_in_register, r_in_register, "<\0"[0] ) );
 					}
 					else if( is_signed )
 					{
-						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLT, l_in_register, r_in_register, "<\0"[0] ) );
 					}
 					else
 					{
-						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULT, l_in_register, r_in_register, "<\0"[0] ) );
 					}
-				}
-				else if( operator == BinaryOperatorType::LessEqual )
+				},
+				BinaryOperatorType::LessEqual ->
 				{
 					if( is_float )
 					{
-						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLE, l_in_register, r_in_register, "<=\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OLE, l_in_register, r_in_register, "<=\0"[0] ) );
 					}
 					else if( is_signed )
 					{
-						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, l_in_register, r_in_register, "<=\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SLE, l_in_register, r_in_register, "<=\0"[0] ) );
 					}
 					else
 					{
-						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULE, l_in_register, r_in_register, "<=\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::ULE, l_in_register, r_in_register, "<=\0"[0] ) );
 					}
-				}
-				else if( operator == BinaryOperatorType::Greater )
+				},
+				BinaryOperatorType::Greater ->
 				{
 					if( is_float )
 					{
-						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGT, l_in_register, r_in_register, ">\0"[0] ) );
 					}
 					else if( is_signed )
 					{
-						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGT, l_in_register, r_in_register, ">\0"[0] ) );
 					}
 					else
 					{
-						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGT, l_in_register, r_in_register, ">\0"[0] ) );
 					}
-				}
-				else if( operator == BinaryOperatorType::GreaterEqual )
+				},
+				BinaryOperatorType::GreaterEqual ->
 				{
 					if( is_float )
 					{
-						result.llvm_value= LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGE, l_in_register, r_in_register, ">=\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildFCmp( function_context.llvm_ir_builder, LLVMRealPredicate::OGE, l_in_register, r_in_register, ">=\0"[0] ) );
 					}
 					else if( is_signed )
 					{
-						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, l_in_register, r_in_register, ">=\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::SGE, l_in_register, r_in_register, ">=\0"[0] ) );
 					}
 					else
 					{
-						result.llvm_value= LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, l_in_register, r_in_register, ">=\0"[0] );
+						result.llvm_value= unsafe( LLVMBuildICmp( function_context.llvm_ir_builder, LLVMIntPredicate::UGE, l_in_register, r_in_register, ">=\0"[0] ) );
 					}
-				}
+				},
+				default -> { halt; }
 			}
 		}
 	}

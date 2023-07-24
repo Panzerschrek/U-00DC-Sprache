@@ -3460,7 +3460,10 @@ Value CodeBuilder::DoCallFunction(
 
 	// Clear inner references locks. Do this BEFORE result references management.
 	for( const VariablePtr& node : locked_args_inner_references )
-		function_context.variables_state.RemoveNode( node );
+	{
+		if( node != nullptr )
+			function_context.variables_state.RemoveNode( node );
+	}
 	locked_args_inner_references.clear();
 
 	// Call "lifetime.end" just right after call for value args, allocated on stack of this function.

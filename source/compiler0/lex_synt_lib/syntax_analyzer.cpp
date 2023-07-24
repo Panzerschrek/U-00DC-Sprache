@@ -221,6 +221,7 @@ private:
 	IfOperator ParseIfOperator();
 	StaticIfOperator ParseStaticIfOperator();
 	IfCoroAdvanceOperator ParseIfCoroAdvanceOperator();
+	SwitchOperator ParseSwitchOperator();
 	StaticAssert ParseStaticAssert();
 	Enum ParseEnum();
 	BlockElement ParseHalt();
@@ -2372,6 +2373,88 @@ IfCoroAdvanceOperator SyntaxAnalyzer::ParseIfCoroAdvanceOperator()
 	return result;
 }
 
+SwitchOperator SyntaxAnalyzer::ParseSwitchOperator()
+{
+	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::switch_ );
+	SwitchOperator result( it_->src_loc );
+	NextLexem();
+
+	result.value= ParseExpressionInBrackets();
+
+	ExpectLexem( Lexem::Type::BraceLeft );
+
+	while( it_->type != Lexem::Type::BraceRight && NotEndOfFile() )
+	{
+		const auto values_end_lexem= Lexem::Type::RightArrow; // TODO - maybe use another lexem?
+
+		SwitchOperator::CaseValues case_values;
+		if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::default_ )
+		{
+			NextLexem();
+			case_values= SwitchOperator::DefaultPlaceholder{};
+		}
+		else
+		{
+			std::vector<SwitchOperator::CaseValue> values;
+			while(true)
+			{
+				if( it_->type == Lexem::Type::Ellipsis )
+				{
+					NextLexem();
+					SwitchOperator::CaseRange range;
+					if( it_->type != Lexem::Type::Comma && it_->type != values_end_lexem )
+						range.high= ParseExpression();
+					values.push_back( std::move(range) );
+				}
+				else
+				{
+					Expression expression= ParseExpression();
+					if( it_->type== Lexem::Type::Ellipsis )
+					{
+						NextLexem();
+						SwitchOperator::CaseRange range;
+						range.low= std::move(expression);
+
+						if( it_->type != Lexem::Type::Comma && it_->type != values_end_lexem )
+							range.high= ParseExpression();
+						values.push_back( std::move(range) );
+					}
+					else
+						values.push_back( std::move(expression) );
+				}
+
+				if( it_->type == Lexem::Type::Comma )
+				{
+					NextLexem();
+					continue;
+				}
+				else
+					break;
+			}
+			case_values= std::move(values);
+		}
+
+		ExpectLexem( values_end_lexem );
+		Block block= ParseBlock();
+
+		SwitchOperator::Case case_{ std::move(case_values), std::move(block) };
+		result.cases.push_back( std::move(case_) );
+
+		if( it_->type == Lexem::Type::Comma )
+		{
+			NextLexem();
+			continue;
+		}
+		else
+			break;
+	}
+
+	result.end_src_loc= it_->src_loc;
+	ExpectLexem( Lexem::Type::BraceRight );
+
+	return result;
+}
+
 StaticAssert SyntaxAnalyzer::ParseStaticAssert()
 {
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ );
@@ -2535,6 +2618,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			elements.emplace_back( ParseStaticIfOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_coro_advance_ )
 			elements.emplace_back( ParseIfCoroAdvanceOperator() );
+		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::switch_ )
+			elements.emplace_back( ParseSwitchOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 			elements.emplace_back( ParseStaticAssert() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )

@@ -75,6 +75,8 @@ def main():
 		"stack_variables_move_test",
 		"string_literals_test",
 		"strong_order_test",
+		"switch_operator_errors_test",
+		"switch_operator_test",
 		"syntax_errors_test",
 		"take_operator_test",
 		"tuples_test",

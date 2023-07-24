@@ -61,31 +61,32 @@ fn IsByte( U_FundamentalType t ) : bool
 
 fn GetFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
 {
-	if( t == U_FundamentalType::InvalidType	) { return "invalid_type"; }
-	if( t == U_FundamentalType::void_		) { return KeywordToString( Keyword::void_	); }
-	if( t == U_FundamentalType::bool_		) { return KeywordToString( Keyword::bool_	); }
-	if( t == U_FundamentalType::i8_			) { return KeywordToString( Keyword::i8_	); }
-	if( t == U_FundamentalType::u8_			) { return KeywordToString( Keyword::u8_	); }
-	if( t == U_FundamentalType::i16_		) { return KeywordToString( Keyword::i16_	); }
-	if( t == U_FundamentalType::u16_		) { return KeywordToString( Keyword::u16_	); }
-	if( t == U_FundamentalType::i32_		) { return KeywordToString( Keyword::i32_	); }
-	if( t == U_FundamentalType::u32_		) { return KeywordToString( Keyword::u32_	); }
-	if( t == U_FundamentalType::i64_		) { return KeywordToString( Keyword::i64_	); }
-	if( t == U_FundamentalType::u64_		) { return KeywordToString( Keyword::u64_	); }
-	if( t == U_FundamentalType::i128_		) { return KeywordToString( Keyword::i128_	); }
-	if( t == U_FundamentalType::u128_		) { return KeywordToString( Keyword::u128_	); }
-	if( t == U_FundamentalType::f32_		) { return KeywordToString( Keyword::f32_	); }
-	if( t == U_FundamentalType::f64_		) { return KeywordToString( Keyword::f64_	); }
-	if( t == U_FundamentalType::char8_		) { return KeywordToString( Keyword::char8_	); }
-	if( t == U_FundamentalType::char16_		) { return KeywordToString( Keyword::char16_); }
-	if( t == U_FundamentalType::char32_		) { return KeywordToString( Keyword::char32_); }
-	if( t == U_FundamentalType::byte8_		) { return KeywordToString( Keyword::byte8_		); }
-	if( t == U_FundamentalType::byte16_		) { return KeywordToString( Keyword::byte16_	); }
-	if( t == U_FundamentalType::byte32_		) { return KeywordToString( Keyword::byte32_	); }
-	if( t == U_FundamentalType::byte64_		) { return KeywordToString( Keyword::byte64_	); }
-	if( t == U_FundamentalType::byte128_	) { return KeywordToString( Keyword::byte128_	); }
-
-	halt;
+	switch(t)
+	{
+		U_FundamentalType::InvalidType	-> { return "invalid_type"; },
+		U_FundamentalType::void_		-> { return KeywordToString( Keyword::void_	); },
+		U_FundamentalType::bool_		-> { return KeywordToString( Keyword::bool_	); },
+		U_FundamentalType::i8_			-> { return KeywordToString( Keyword::i8_	); },
+		U_FundamentalType::u8_			-> { return KeywordToString( Keyword::u8_	); },
+		U_FundamentalType::i16_		-> { return KeywordToString( Keyword::i16_	); },
+		U_FundamentalType::u16_		-> { return KeywordToString( Keyword::u16_	); },
+		U_FundamentalType::i32_		-> { return KeywordToString( Keyword::i32_	); },
+		U_FundamentalType::u32_		-> { return KeywordToString( Keyword::u32_	); },
+		U_FundamentalType::i64_		-> { return KeywordToString( Keyword::i64_	); },
+		U_FundamentalType::u64_		-> { return KeywordToString( Keyword::u64_	); },
+		U_FundamentalType::i128_	-> { return KeywordToString( Keyword::i128_	); },
+		U_FundamentalType::u128_	-> { return KeywordToString( Keyword::u128_	); },
+		U_FundamentalType::f32_		-> { return KeywordToString( Keyword::f32_	); },
+		U_FundamentalType::f64_		-> { return KeywordToString( Keyword::f64_	); },
+		U_FundamentalType::char8_	-> { return KeywordToString( Keyword::char8_ ); },
+		U_FundamentalType::char16_	-> { return KeywordToString( Keyword::char16_); },
+		U_FundamentalType::char32_	-> { return KeywordToString( Keyword::char32_); },
+		U_FundamentalType::byte8_	-> { return KeywordToString( Keyword::byte8_	); },
+		U_FundamentalType::byte16_	-> { return KeywordToString( Keyword::byte16_	); },
+		U_FundamentalType::byte32_	-> { return KeywordToString( Keyword::byte32_	); },
+		U_FundamentalType::byte64_	-> { return KeywordToString( Keyword::byte64_	); },
+		U_FundamentalType::byte128_	-> { return KeywordToString( Keyword::byte128_	); },
+	}
 }
 
 fn GetFundamentalTypeByName( ust::string_view8 name ) : U_FundamentalType

@@ -8,9 +8,11 @@ type Iterator= ust::string_view8;
 
 fn IsWhitespace( sprache_char c ) : bool
 {
-	return
-		c == " "c32 || c == "\f"c32 || c == "\n"c32 || c == "\r"c32 || c == "\t"c32 ||
-		c <= sprache_char(0x1Fu) || c == sprache_char(0x7Fu);
+	switch(c)
+	{
+		" "c32, "\f"c32, "\n"c32, "\r"c32, "\t"c32, sprache_char(0x1Fu), sprache_char(0x7Fu) -> { return true; },
+		default -> { return false; }
+	}
 }
 
 fn IsNewline( sprache_char c ) : bool
@@ -28,16 +30,20 @@ fn IsIdentifierStartChar( sprache_char c ) : bool
 	// HACK - manually define allowed "letters".
 	// TODO - use something, like symbol category from unicode.
 	var u32 cc(c);
-	return
-		( c >= "a"c32 && c <= "z"c32 ) ||
-		( c >= "A"c32 && c <= "Z"c32 ) ||
-		( cc >= 0x0400u && cc <= 0x04FFu ) || // Cyrillic
-		( cc >= 0x0500u && cc <= 0x0527u ) || // Extended cyrillic
-		( cc >= 0x00C0u && cc <= 0x00D6u ) || // Additional latin symbols
-		( cc >= 0x00D8u && cc <= 0x00F6u ) || // Additional latin symbols
-		( cc >= 0x00F8u && cc <= 0x00FFu ) || // Additional latin symbols
-		( cc >= 0x0100u && cc <= 0x017Fu ) || // Extended latin part A
-		( cc >= 0x0180u && cc <= 0x024Fu ) ;  // Extended latin part B
+	switch(c)
+	{
+		"a"c32 ... "z"c32,
+		"A"c32 ... "Z"c32,
+		sprache_char(0x0400u) ... sprache_char(0x04FFu), // Cyrillic
+		sprache_char(0x0500u) ... sprache_char(0x0527u), // Extended cyrillic
+		sprache_char(0x00C0u) ... sprache_char(0x00D6u), // Additional latin symbols
+		sprache_char(0x00D8u) ... sprache_char(0x00F6u), // Additional latin symbols
+		sprache_char(0x00F8u) ... sprache_char(0x00FFu), // Additional latin symbols
+		sprache_char(0x0100u) ... sprache_char(0x017Fu), // Extended latin part A
+		sprache_char(0x0180u) ... sprache_char(0x024Fu)  // Extended latin part B
+		-> { return true; },
+		default -> { return false; },
+	}
 }
 
 fn IsIdentifierChar( sprache_char c ) : bool
@@ -167,19 +173,13 @@ fn NumberFunc10( char8 c ) : u64
 
 fn NumberFunc16( char8 c ) : u64
 {
-	if( c >= "0"c8 && c <= "9"c8 )
+	switch(c)
 	{
-		return u64(c) - u64("0"c8);
+		"0"c8 ... "9"c8 -> { return u64(c) - u64("0"c8); },
+		"a"c8 ... "f"c8 -> { return u64(c) - u64("a"c8) + u64(10); },
+		"A"c8 ... "F"c8 -> { return u64(c) - u64("A"c8) + u64(10); },
+		default -> { return -1u64; },
 	}
-	if( c >= "a"c8 && c <= "f"c8 )
-	{
-		return u64(c) - u64("a"c8) + u64(10);
-	}
-	if( c >= "A"c8 && c <= "F"c8 )
-	{
-		return u64(c) - u64("A"c8) + u64(10);
-	}
-	return -1u64;
 }
 
 type NumberParseFunc= (fn (char8 c) : u64);
@@ -375,76 +375,58 @@ fn ParseString( Iterator &mut it, LexSyntErrors &mut out_errors, SrcLoc& src_loc
 	{
 		auto c= it.front();
 		it.drop_front();
-		if( c == "\""c8 )
+		switch(c)
 		{
-			break;
-		}
-		else if( c == "\\"c8 )
-		{
-			if( it.empty() )
+			"\""c8 -> { break; },
+			"\\"c8 ->
 			{
-				break;
-			}
-			auto escaped_c= it.front();
-			it.drop_front();
-			if( escaped_c == "\""c8 || escaped_c == "\\"c8  )
-			{
-				result_lexem.text.push_back( escaped_c );
-			}
-			else if( escaped_c == "b"c8 ){ result_lexem.text.push_back( "\b"c8 ); }
-			else if( escaped_c == "f"c8 ){ result_lexem.text.push_back( "\f"c8 ); }
-			else if( escaped_c == "n"c8 ){ result_lexem.text.push_back( "\n"c8 ); }
-			else if( escaped_c == "r"c8 ){ result_lexem.text.push_back( "\r"c8 ); }
-			else if( escaped_c == "t"c8 ){ result_lexem.text.push_back( "\t"c8 ); }
-			else if( escaped_c == "0"c8 ){ result_lexem.text.push_back( "\0"c8 ); }
-			else if( escaped_c == "u"c8 )
-			{
-				if( it.size() < 4s )
+				if( it.empty() )
 				{
-					out_errors.push_back( LexSyntError( src_loc, "expected 4 hex digits" ) );
-					return result_lexem;
+					break;
 				}
-				auto mut char_code= 0u;
-				for( auto mut i= 0u; i < 4u; ++i )
+				auto escaped_c= it.front();
+				it.drop_front();
+				switch(escaped_c)
 				{
-					auto digit_char= it[size_type(i)];
-					auto mut digit= 0u;
-					if( digit_char >= "0"c8 && digit_char <= "9"c8 )
+					"\""c8 , "\\"c8 -> { result_lexem.text.push_back( escaped_c ); },
+					"b"c8 -> { result_lexem.text.push_back( "\b"c8 ); },
+					"f"c8 -> { result_lexem.text.push_back( "\f"c8 ); },
+					"n"c8 -> { result_lexem.text.push_back( "\n"c8 ); },
+					"r"c8 -> { result_lexem.text.push_back( "\r"c8 ); },
+					"t"c8 -> { result_lexem.text.push_back( "\t"c8 ); },
+					"0"c8 -> { result_lexem.text.push_back( "\0"c8 ); },
+					"u"c8 ->
 					{
-						digit= u32(digit_char) - u32("0"c8);
-					}
-					else if( digit_char >= "a"c8 && digit_char <= "f"c8 )
+						if( it.size() < 4s )
+						{
+							out_errors.push_back( LexSyntError( src_loc, "expected 4 hex digits" ) );
+							return result_lexem;
+						}
+						auto mut char_code= 0u;
+						for( auto mut i= 0u; i < 4u; ++i )
+						{
+							auto digit= NumberFunc16( it.front() );
+							if( digit == -1u64 )
+							{
+								out_errors.push_back( LexSyntError( src_loc, "expected hex number" ) );
+								return result_lexem;
+							}
+
+							char_code|= u32(digit) << ( ( 3u - i ) * 4u );
+							it.drop_front();
+						}
+						PushCharToUTF8String( sprache_char(char_code), result_lexem.text );
+					},
+					default ->
 					{
-						digit= u32(digit_char) + ( 10u - u32("a"c8) );
-					}
-					else if( digit_char >= "A"c8 && digit_char <= "F"c8 )
-					{
-						digit= u32(digit_char) + ( 10u - u32("A"c8) );
-					}
-					else
-					{
-						out_errors.push_back( LexSyntError( src_loc, "expected hex number" ) );
-						return result_lexem;
-					}
-					char_code|= digit << ( ( 3u - i ) * 4u );
+						var ust::string8 mut err= "invalid escape sequence: \\";
+						err.push_back( escaped_c );
+						out_errors.push_back( LexSyntError( src_loc, move(err) ) );
+						break;
+					},
 				}
-				it.drop_front();
-				it.drop_front();
-				it.drop_front();
-				it.drop_front();
-				PushCharToUTF8String( sprache_char(char_code), result_lexem.text );
-			}
-			else
-			{
-				var ust::string8 mut err= "invalid escape sequence: \\";
-				err.push_back( escaped_c );
-				out_errors.push_back( LexSyntError( src_loc, move(err) ) );
-				return result_lexem;
-			}
-		}
-		else
-		{
-			result_lexem.text.push_back(c);
+			},
+			default ->{ result_lexem.text.push_back(c); },
 		}
 	}
 

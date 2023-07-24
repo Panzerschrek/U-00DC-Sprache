@@ -34,8 +34,6 @@ enum U_FundamentalType
 	byte32_,
 	byte64_,
 	byte128_,
-
-	LastType,
 }
 
 fn IsUnsignedInteger( U_FundamentalType t ) : bool;

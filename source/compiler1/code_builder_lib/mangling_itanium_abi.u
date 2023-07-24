@@ -364,33 +364,33 @@ fn EncodeNestedName( ManglerState &mut mangler_state, ust::string8& name, NamesS
 
 fn EncodeFundamentalTypeName( U_FundamentalType t ) : ust::string_view8
 {
-	if( t == U_FundamentalType::InvalidType ){ return ""; }
-	if( t == U_FundamentalType::LastType	){ return ""; }
-	if( t == U_FundamentalType::void_		){ return "v"; }
-	if( t == U_FundamentalType::bool_		){ return "b"; }
-	if( t == U_FundamentalType::i8_			){ return "a"; } // C++ signed char
-	if( t == U_FundamentalType::u8_			){ return "h"; } // C++ unsigned char
-	if( t == U_FundamentalType::i16_		){ return "s"; }
-	if( t == U_FundamentalType::u16_		){ return "t"; }
-	if( t == U_FundamentalType::i32_		){ return "i"; }
-	if( t == U_FundamentalType::u32_		){ return "j"; }
-	if( t == U_FundamentalType::i64_		){ return "x"; }
-	if( t == U_FundamentalType::u64_		){ return "y"; }
-	if( t == U_FundamentalType::i128_		){ return "n"; }
-	if( t == U_FundamentalType::u128_		){ return "o"; }
-	if( t == U_FundamentalType::f32_		){ return "f"; }
-	if( t == U_FundamentalType::f64_		){ return "d"; }
-	if( t == U_FundamentalType::char8_		){ return "c"; }
-	if( t == U_FundamentalType::char16_		){ return "Ds"; }
-	if( t == U_FundamentalType::char32_		){ return "Di"; }
-	// Use vendor-extended types for "byte" types.
-	if( t == U_FundamentalType::byte8_		){ return "u5byte8"  ; }
-	if( t == U_FundamentalType::byte16_		){ return "u6byte16" ; }
-	if( t == U_FundamentalType::byte32_		){ return "u6byte32" ; }
-	if( t == U_FundamentalType::byte64_		){ return "u6byte64" ; }
-	if( t == U_FundamentalType::byte128_	){ return "u7byte128"; }
-
-	return "";
+	switch(t)
+	{
+		U_FundamentalType::InvalidType -> { return ""; },
+		U_FundamentalType::void_		-> { return "v"; },
+		U_FundamentalType::bool_		-> { return "b"; },
+		U_FundamentalType::i8_			-> { return "a"; }, // C++ signed char
+		U_FundamentalType::u8_			-> { return "h"; }, // C++ unsigned char
+		U_FundamentalType::i16_		-> { return "s"; },
+		U_FundamentalType::u16_		-> { return "t"; },
+		U_FundamentalType::i32_		-> { return "i"; },
+		U_FundamentalType::u32_		-> { return "j"; },
+		U_FundamentalType::i64_		-> { return "x"; },
+		U_FundamentalType::u64_		-> { return "y"; },
+		U_FundamentalType::i128_	-> { return "n"; },
+		U_FundamentalType::u128_	-> { return "o"; },
+		U_FundamentalType::f32_		-> { return "f"; },
+		U_FundamentalType::f64_		-> { return "d"; },
+		U_FundamentalType::char8_	-> { return "c"; },
+		U_FundamentalType::char16_	-> { return "Ds"; },
+		U_FundamentalType::char32_	-> { return "Di"; },
+		// Use vendor-extended types for "byte" types.
+		U_FundamentalType::byte8_	-> { return "u5byte8"  ; },
+		U_FundamentalType::byte16_	-> { return "u6byte16" ; },
+		U_FundamentalType::byte32_	-> { return "u6byte32" ; },
+		U_FundamentalType::byte64_	-> { return "u6byte64" ; },
+		U_FundamentalType::byte128_	-> { return "u7byte128"; },
+	}
 }
 
 fn EncodeFunctionParam( ManglerState& mut mangler_state, FunctionType::Param& param )

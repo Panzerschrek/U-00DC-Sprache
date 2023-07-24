@@ -4,7 +4,6 @@ Delete the features from the list as soon as they are implemented.
 
 General:
 *) build-in "for" for array types.
-*) switch-case
 *) "Disassembly operator" - declare variables with initializer as members of value of structure type.
 *) Function to function pointer assignment
 *) Functions references info in "typeinfo".
@@ -15,6 +14,7 @@ General:
 *) Continious initializer for arrays
 *) Auto-move in "return" for local variable
 *) More advanced macros - more context, elements, string manipulations
+*) switch-style operator for expression context
 
 References:
 *) Multiple inner reference tags for some types
@@ -61,6 +61,7 @@ Interpreter:
 *) Support math functions
 
 Compiler1:
+*) Support 128-bit types in switch operator
 
 QtCreator plugin:
 *) Syntax errors highlighting
