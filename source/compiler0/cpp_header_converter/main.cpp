@@ -23,6 +23,13 @@ int main( int argc, const char* argv[] )
 		llvm::cl::desc("Skip declarations from includes."),
 		llvm::cl::init(false) );
 
+	llvm::cl::list<std::string> force_import(
+		"force-import",
+		llvm::cl::CommaSeparated,
+		llvm::cl::desc("Specify list of files, added to imports section of result file."),
+		llvm::cl::value_desc("file1, file2, fileN,..."),
+		llvm::cl::Optional );
+
 	auto options_parser_opt= clang::tooling::CommonOptionsParser::create( argc, argv, tool_category );
 	if( !options_parser_opt )
 	{
@@ -46,6 +53,9 @@ int main( int argc, const char* argv[] )
 		return res;
 
 	std::ofstream out_file( output_file_name.getValue() );
+	for( const std::string& import : force_import )
+		out_file << "import " << "\"" << import << "\"\n";
+
 	for( const auto& unit : *parsed_units )
 		U::Synt::WriteProgram( unit.second, out_file );
 
