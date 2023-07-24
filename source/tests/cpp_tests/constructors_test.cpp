@@ -771,6 +771,68 @@ U_TEST(ConstructorTest22)
 	U_TEST_ASSERT( static_cast<uint64_t>(7886) == result_value.IntVal.getLimitedValue() );
 }
 
+U_TEST(ConstructorTest23)
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor( i32 in_x ) (x= in_x) {}
+		}
+		struct B
+		{
+			A imut a(5554);
+			fn constructor() {} // Call constructor of "imut" field
+
+		}
+		fn Foo() : i32
+		{
+			var B b;
+			return b.a.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(5554) == result_value.IntVal.getLimitedValue() );
+}
+
+U_TEST(ConstructorTest24)
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			i32 x;
+			fn constructor() (x= 987654) {}
+		}
+		struct B
+		{
+			A imut a;
+			fn constructor() {} // Call constructor of "imut" field
+
+		}
+		fn Foo() : i32
+		{
+			var B b;
+			return b.a.x;
+		}
+	)";
+
+	const EnginePtr engine= CreateEngine( BuildProgram( c_program_text ) );
+	llvm::Function* const function= engine->FindFunctionNamed( "_Z3Foov" );
+	U_TEST_ASSERT( function != nullptr );
+
+	const llvm::GenericValue result_value= engine->runFunction( function, {} );
+
+	U_TEST_ASSERT( static_cast<uint64_t>(987654) == result_value.IntVal.getLimitedValue() );
+}
+
 } // namespace
 
 } // namespace U
