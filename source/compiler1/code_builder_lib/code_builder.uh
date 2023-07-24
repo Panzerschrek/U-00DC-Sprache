@@ -1017,8 +1017,8 @@ private:
 	fn CreateGlobalFunctionContext( this ) : FunctionContext;
 
 private:
-	LLVMContextRef llvm_context_; // TODO - make field imut
-	LLVMTargetDataRef data_layout_; // TODO - make field imut
+	LLVMContextRef imut llvm_context_;
+	LLVMTargetDataRef imut data_layout_;
 	ust::string8 imut target_triple_str_; // null-terminated
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	bool imut generate_tbaa_metadata_;
