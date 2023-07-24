@@ -20,7 +20,4 @@ python3 source/annotated_tests_run.py --compiler-executable build-travis/compile
 python3 source/annotated_tests_run.py --compiler-executable build-travis/compiler3/Compiler3 --use-position-independent-code --input-dir source/ustlib_test &&\
 # install
 mkdir install &&\
-cmake --install build-travis --prefix install &&\
-# Archive result
-cd install &&\
-7z a -ssw -mx=9 Ü_compiler.7z *
+cmake --install build-travis --prefix install
