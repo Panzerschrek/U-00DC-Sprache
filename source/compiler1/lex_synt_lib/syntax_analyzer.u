@@ -134,7 +134,6 @@ private:
 			var Expression mut expr= SyntaxAnalyzer::TryParseBinaryOperator</next_priority/>();
 			while( NotEndOfFile() ) label operators_chain
 			{
-				auto mut binary_op_parsed= false;
 				auto lexem_type= it_.front().lexem_type;
 				foreach( &op_pair : g_operators_by_priority_table[ priority ] )
 				{
@@ -313,7 +312,7 @@ private:
 	fn PushMacroErrorMessage( mut this, SrcLoc& src_loc, ust::string8 mut text );
 
 private:
-	ust::array_view_imut</Lexem/> it_initial_;
+	ust::array_view_imut</Lexem/> imut it_initial_;
 	ust::array_view_imut</Lexem/> it_;
 	ust::array_view_imut</Lexem/> last_error_it_;
 	size_type last_error_repeats_= 0s;
@@ -390,7 +389,7 @@ fn SyntaxAnalyzer::ParseImports( mut this ) : ImportsList
 fn SyntaxAnalyzer::ParseNamespaceBody( mut this, Lexem::Type end_lexem ) : NamespaceElements
 {
 	var NamespaceElements mut namespace_elements;
-	while( NotEndOfFile() && it_.front().lexem_type != end_lexem  )
+	while( NotEndOfFile() && it_.front().lexem_type != end_lexem )
 	{
 		if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
 		{
@@ -680,66 +679,97 @@ fn SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( mut this, Exp
 
 fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 {
-	if( it_.front().lexem_type == Lexem::Type::Plus )
+	switch( it_.front().lexem_type )
 	{
-		var UnaryPlus mut unary_plus{ .src_loc= it_.front().src_loc, .expr(Expression()) };
-		NextLexem();
-		unary_plus.expr.deref()= ParseBinaryOperatorComponent();
-		return move(unary_plus);
-	}
-	if( it_.front().lexem_type == Lexem::Type::Minus )
-	{
-		var UnaryMinus mut unary_minus{ .src_loc= it_.front().src_loc, .expr(Expression()) };
-		NextLexem();
-		unary_minus.expr.deref()= ParseBinaryOperatorComponent();
-		return move(unary_minus);
-	}
-	if( it_.front().lexem_type == Lexem::Type::Not )
-	{
-		var LogicalNot mut logical_not{ .src_loc= it_.front().src_loc, .expr(Expression()) };
-		NextLexem();
-		logical_not.expr.deref()= ParseBinaryOperatorComponent();
-		return move(logical_not);
-	}
-	if( it_.front().lexem_type == Lexem::Type::Tilda )
-	{
-		var BitwiseNot mut bitwise_not{ .src_loc= it_.front().src_loc, .expr(Expression()) };
-		NextLexem();
-		bitwise_not.expr.deref()= ParseBinaryOperatorComponent();
-		return move(bitwise_not);
-	}
-	if( it_.front().lexem_type == Lexem::Type::Number )
-	{
-		var NumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc };
-		halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
-
-		unsafe( ust::memory_copy( cast_ref_unsafe</byte8/>( numeric_constant.num ), cast_ref_unsafe</byte8/>( it_.front().text.front() ), typeinfo</NumberLexemData/>.size_of ) );
-
-		NextLexem();
-
-		return  move(numeric_constant);
-	}
-	if( it_.front().lexem_type == Lexem::Type::String )
-	{
-		var StringLiteral mut string_literal
+		Lexem::Type::Plus ->
 		{
-			.src_loc= it_.front().src_loc,
-			.value= it_.front().text,
-		};
-		NextLexem();
-
-		if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
-		{
-			string_literal.type_suffix= it_.front().text;
+			var UnaryPlus mut unary_plus{ .src_loc= it_.front().src_loc, .expr(Expression()) };
 			NextLexem();
-		}
+			unary_plus.expr.deref()= ParseBinaryOperatorComponent();
+			return move(unary_plus);
+		},
+		Lexem::Type::Minus ->
+		{
+			var UnaryMinus mut unary_minus{ .src_loc= it_.front().src_loc, .expr(Expression()) };
+			NextLexem();
+			unary_minus.expr.deref()= ParseBinaryOperatorComponent();
+			return move(unary_minus);
+		},
+		Lexem::Type::Not ->
+		{
+			var LogicalNot mut logical_not{ .src_loc= it_.front().src_loc, .expr(Expression()) };
+			NextLexem();
+			logical_not.expr.deref()= ParseBinaryOperatorComponent();
+			return move(logical_not);
+		},
+		Lexem::Type::Tilda ->
+		{
+			var BitwiseNot mut bitwise_not{ .src_loc= it_.front().src_loc, .expr(Expression()) };
+			NextLexem();
+			bitwise_not.expr.deref()= ParseBinaryOperatorComponent();
+			return move(bitwise_not);
+		},
+		Lexem::Type::Number ->
+		{
+			var NumericConstant mut numeric_constant{ .src_loc= it_.front().src_loc };
+			halt if( it_.front().text.size() < typeinfo</NumberLexemData/>.size_of );
 
-		return  move(string_literal);
+			unsafe( ust::memory_copy( cast_ref_unsafe</byte8/>( numeric_constant.num ), cast_ref_unsafe</byte8/>( it_.front().text.front() ), typeinfo</NumberLexemData/>.size_of ) );
+
+			NextLexem();
+
+			return move(numeric_constant);
+		},
+		Lexem::Type::String ->
+		{
+			var StringLiteral mut string_literal
+			{
+				.src_loc= it_.front().src_loc,
+				.value= it_.front().text,
+			};
+			NextLexem();
+
+			if( it_.front().lexem_type == Lexem::Type::LiteralSuffix )
+			{
+				string_literal.type_suffix= it_.front().text;
+				NextLexem();
+			}
+
+			return move(string_literal);
+		},
+		Lexem::Type::SquareBracketLeft ->
+		{
+			return ust::make_box( ParseArrayType() );
+		},
+		Lexem::Type::PointerTypeMark ->
+		{
+			return ust::make_box( ParseRawPointerType() );
+		},
+		Lexem::Type::ReferenceToPointer ->
+		{
+			auto src_loc= it_.front().src_loc;
+			NextLexem();
+			var ReferenceToRawPointerOperator mut o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+			return move(o);
+		},
+		Lexem::Type::PointerToReference ->
+		{
+			auto src_loc= it_.front().src_loc;
+			NextLexem();
+			var RawPointerToReferenceOperator mut o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
+			return move(o);
+		},
+		Lexem::Type::Scope ->
+		{
+			return ParseComplexName();
+		},
+		Lexem::Type::BracketLeft ->
+		{
+			return ParseExpressionInBrackets();
+		},
+		default -> {},
 	}
-	if( it_.front().lexem_type == Lexem::Type::SquareBracketLeft )
-	{
-		return ust::make_box( ParseArrayType() );
-	}
+
 	if( IsKeyword( it_.front(), Keyword::tup_ ) )
 	{
 		return ust::make_box( ParseTupleType() );
@@ -871,28 +901,6 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		};
 		return move(ternary_operator);
 	}
-	if( it_.front().lexem_type == Lexem::Type::PointerTypeMark )
-	{
-		return ust::make_box( ParseRawPointerType() );
-	}
-	if( it_.front().lexem_type == Lexem::Type::ReferenceToPointer )
-	{
-		auto src_loc= it_.front().src_loc;
-		NextLexem();
-		var ReferenceToRawPointerOperator mut o{ .src_loc= src_loc, .expression(ParseExpressionInBrackets()) };
-		return move(o);
-	}
-	if( it_.front().lexem_type == Lexem::Type::PointerToReference )
-	{
-		auto src_loc= it_.front().src_loc;
-		NextLexem();
-
-		var Expression mut e= ParseExpressionInBrackets();
-
-		var RawPointerToReferenceOperator mut o{ .src_loc= src_loc, .expression(move(e)) };
-
-		return move(o);
-	}
 	if( it_.front().lexem_type == Lexem::Type::Identifier )
 	{
 		if_var( &macro : FetchMacro( it_.front().text, Macro::Context::Expression ) )
@@ -901,14 +909,6 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		}
 
 		return ParseComplexName();
-	}
-	if( it_.front().lexem_type == Lexem::Type::Scope )
-	{
-		return ParseComplexName();
-	}
-	if( it_.front().lexem_type == Lexem::Type::BracketLeft )
-	{
-		return ParseExpressionInBrackets();
 	}
 
 	PushErrorMessage();
@@ -1697,7 +1697,7 @@ fn SyntaxAnalyzer::ParseCall( mut this ) : ust::vector</ ust::shared_ptr_final</
 {
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	var ust::vector</ ust::shared_ptr_final</Expression/> />  mut args;
+	var ust::vector</ ust::shared_ptr_final</Expression/> /> mut args;
 	while( NotEndOfFile() )
 	{
 		if( it_.front().lexem_type == Lexem::Type::BracketRight )
@@ -4079,7 +4079,7 @@ fn SyntaxAnalyzer::NextLexem( mut this )
 
 fn SyntaxAnalyzer::PushErrorMessage( mut this )
 {
-	if( errors_.empty() || SrcLoc(errors_.back().src_loc) != it_.front().src_loc )
+	if( errors_.empty() || errors_.back().src_loc != it_.front().src_loc )
 	{
 		var LexSyntError mut error( it_.front().src_loc, "Syntax error - unexpected lexem: \"" + it_.front().text + "\"" );
 		errors_.push_back( move(error) );
