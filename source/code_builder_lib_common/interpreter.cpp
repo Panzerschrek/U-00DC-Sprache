@@ -65,14 +65,14 @@ Interpreter::ResultConstexpr Interpreter::EvaluateConstexpr(
 				stack_.resize( new_stack_size );
 
 				llvm::GenericValue val;
-				val.IntVal= llvm::APInt( 64u, uint64_t(s_ret_ptr) );
+				val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(s_ret_ptr) );
 				current_function_frame_.instructions_map[ &param ]= std::move(val);
 			}
 			else
 			{
 				// Assume this is reference param.
 				llvm::GenericValue val;
-				val.IntVal= llvm::APInt( 64u, uint64_t( MoveConstantToStack( *args[i] ) ) );
+				val.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t( MoveConstantToStack( *args[i] ) ) );
 				current_function_frame_.instructions_map[ &param ]= std::move(val);
 			}
 		}
@@ -543,7 +543,7 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 	else if( llvm::dyn_cast<llvm::ConstantPointerNull>(val) != nullptr )
 		res.IntVal= llvm::APInt( pointer_size_in_bits_, uint64_t(0) );
 	else if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>( val ) )
-		res.IntVal= llvm::APInt( 64u, MoveConstantToStack( *global_variable->getInitializer() ) );
+		res.IntVal= llvm::APInt( pointer_size_in_bits_, MoveConstantToStack( *global_variable->getInitializer() ) );
 	else if( const auto constant_struct= llvm::dyn_cast<llvm::ConstantStruct>( val ) )
 	{
 		res.AggregateVal.resize( constant_struct->getType()->getNumElements() );
@@ -682,7 +682,7 @@ llvm::GenericValue Interpreter::DoLoad( const std::byte* ptr, llvm::Type* const 
 	{
 		uint64_t int_ptr;
 		std::memcpy( &int_ptr, ptr, size_t(data_layout_.getTypeAllocSize( t ) ) );
-		val.IntVal= llvm::APInt( 64u, int_ptr );
+		val.IntVal= llvm::APInt( pointer_size_in_bits_, int_ptr );
 	}
 	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(t) )
 	{
@@ -728,7 +728,7 @@ void Interpreter::ProcessStore( const llvm::Instruction* const instruction )
 
 void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, llvm::Type* const t )
 {
-	if( t->isIntegerTy() )
+	if( t->isIntegerTy() || t->isPointerTy() )
 	{
 		if( t->getIntegerBitWidth() <= 64 )
 		{
@@ -743,11 +743,6 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 		std::memcpy( ptr, &val.FloatVal, size_t(data_layout_.getTypeAllocSize( t )) );
 	else if( t->isDoubleTy() )
 		std::memcpy( ptr, &val.DoubleVal, size_t(data_layout_.getTypeAllocSize( t )) );
-	else if( t->isPointerTy() )
-	{
-		const uint64_t int_ptr= val.IntVal.getLimitedValue();
-		std::memcpy( ptr, &int_ptr, size_t(data_layout_.getTypeAllocSize( t )) );
-	}
 	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(t) )
 	{
 		const uint32_t num_elements= struct_type->getNumElements();
