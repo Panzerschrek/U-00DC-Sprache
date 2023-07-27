@@ -728,7 +728,7 @@ void Interpreter::ProcessStore( const llvm::Instruction* const instruction )
 
 void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, llvm::Type* const t )
 {
-	if( t->isIntegerTy() || t->isPointerTy() )
+	if( t->isIntegerTy() )
 	{
 		if( t->getIntegerBitWidth() <= 64 )
 		{
@@ -743,6 +743,11 @@ void Interpreter::DoStore( std::byte* const ptr, const llvm::GenericValue& val, 
 		std::memcpy( ptr, &val.FloatVal, size_t(data_layout_.getTypeAllocSize( t )) );
 	else if( t->isDoubleTy() )
 		std::memcpy( ptr, &val.DoubleVal, size_t(data_layout_.getTypeAllocSize( t )) );
+	else if( t->isPointerTy() )
+	{
+		const uint64_t int_ptr= val.IntVal.getLimitedValue();
+		std::memcpy( ptr, &int_ptr, size_t(data_layout_.getTypeAllocSize( t )) );
+	}
 	else if( const auto struct_type= llvm::dyn_cast<llvm::StructType>(t) )
 	{
 		const uint32_t num_elements= struct_type->getNumElements();
