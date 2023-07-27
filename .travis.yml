@@ -1,7 +1,0 @@
-dist: bionic
-addons: { apt: { packages: ninja-build, python3-sphinx, sphinx-doc } }
-language: cpp
-compiler:
-  - g++
-  - clang
-script: ./ci_build.sh
