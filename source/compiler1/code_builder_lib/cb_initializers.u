@@ -451,7 +451,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ConstructorInitializer& constructor_initializer ) : LLVMValueRef
 {
-	return BuildConstructorInitializer( names_scope, function_context, variable_ptr, constructor_initializer.args, constructor_initializer.src_loc );
+	return BuildConstructorInitializer( names_scope, function_context, variable_ptr, constructor_initializer.args.range(), constructor_initializer.src_loc );
 }
 
 fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef
@@ -706,7 +706,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 	halt;
 }
 
-fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef
+fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> /> args, SrcLoc& src_loc )  : LLVMValueRef
 {
 	var VariableLite variable= variable_ptr.lock_imut().deref();
 

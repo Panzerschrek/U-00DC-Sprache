@@ -80,7 +80,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 {
 	auto& syntax_element= type_template_syntax_element.deref();
 
-	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
+	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params.range() );
 
 	// Fill signature params and check correctness.
 	var ust::vector</bool/> mut template_params_usage_flags;
@@ -104,18 +104,18 @@ fn CodeBuilder::PrepareTypeTemplate(
 			foreach( &signature_param : syntax_element.signature_params )
 			{
 				signature_params.push_back(
-					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, signature_param.name, template_params_usage_flags ) );
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), signature_param.name, template_params_usage_flags.range() ) );
 
 				// TODO - is this correct usage of "CreateTemplateSignatureParam" function?
 				if( signature_param.default_value.get</Synt::EmptyVariant/>().empty() )
 				{
-					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, signature_param.default_value, template_params_usage_flags );
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), signature_param.default_value, template_params_usage_flags.range() );
 				}
 			}
 		}
 	}
 
-	FillVariableTemplateParamsTypes( names_scope, syntax_element.params, template_params, template_params_usage_flags );
+	FillVariableTemplateParamsTypes( names_scope, syntax_element.params.range(), template_params.range(), template_params_usage_flags.range() );
 
 	// Check for usage of all template params in signature.
 	for( auto mut i= 0s; i < template_params_usage_flags.size(); ++i )
@@ -179,7 +179,7 @@ fn CodeBuilder::PrepareFunctionTemplate(
 		REPORT_ERROR( VirtualForFunctionTemplate, names_scope, function_template_syntax_element.deref().src_loc, function_template_name )
 	}
 
-	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params );
+	auto mut template_params= PrepareTemplateParams( names_scope, syntax_element.params.range() );
 
 	var ust::vector</bool/> mut template_params_usage_flags;
 	template_params_usage_flags.resize( template_params.size(), false );
@@ -199,12 +199,12 @@ fn CodeBuilder::PrepareFunctionTemplate(
 			else
 			{
 				signature_params.push_back(
-					CreateTemplateSignatureParam( names_scope, global_function_context, template_params, param.t, template_params_usage_flags ) );
+					CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), param.t, template_params_usage_flags.range() ) );
 			}
 		}
 	}
 
-	FillVariableTemplateParamsTypes( names_scope, syntax_element.params, template_params, template_params_usage_flags );
+	FillVariableTemplateParamsTypes( names_scope, syntax_element.params.range(), template_params.range(), template_params_usage_flags.range() );
 
 	var FunctionTemplate mut function_template(
 		move(template_params),
@@ -219,7 +219,7 @@ fn CodeBuilder::PrepareFunctionTemplate(
 fn CodeBuilder::PrepareTemplateParams(
 	mut this,
 	NamesScopePtr& names_scope,
-	ust::vector</Synt::TemplateParam/>& in_params ) : ust::vector</ TemplateBase::Param />
+	ust::array_view_imut</Synt::TemplateParam/> in_params ) : ust::vector</ TemplateBase::Param />
 {
 	// Check for template params redefinition, fill params vector.
 	var ust::vector</ TemplateBase::Param /> mut template_params;
@@ -243,9 +243,9 @@ fn CodeBuilder::PrepareTemplateParams(
 fn CodeBuilder::FillVariableTemplateParamsTypes(
 	mut this,
 	NamesScopePtr& names_scope,
-	ust::vector</Synt::TemplateParam/>& in_params,
-	ust::vector</TemplateBase::Param/> &mut template_params,
-	ust::vector</bool/> &mut template_params_usage_flags )
+	ust::array_view_imut</Synt::TemplateParam/> in_params,
+	ust::array_view_mut</TemplateBase::Param/> template_params,
+	ust::array_view_mut</bool/> template_params_usage_flags )
 {
 	halt if( in_params.size() != template_params.size() );
 	halt if( template_params_usage_flags.size() != template_params.size() );
@@ -258,7 +258,7 @@ fn CodeBuilder::FillVariableTemplateParamsTypes(
 		if( template_param.t.get</Synt::EmptyVariant/>().empty() )
 		{
 			var TemplateSignatureParam mut param=
-				CreateTemplateSignatureParam( names_scope, global_function_context, template_params, template_param.t, template_params_usage_flags );
+				CreateTemplateSignatureParam( names_scope, global_function_context, template_params.range(), template_param.t, template_params_usage_flags.range() );
 			if_var( &type_param : param.GetTypeParam() )
 			{
 				if( !TypeIsValidForTemplateVariableArgument(type_param.t) )
@@ -276,9 +276,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</TemplateBase::Param/>& template_params,
+	ust::array_view_imut</TemplateBase::Param/> template_params,
 	Synt::Expression& param,
-	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
 	if_var( &complex_name : param.get</Synt::ComplexName/>() )
 	{
@@ -314,9 +314,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</TemplateBase::Param/>& template_params,
+	ust::array_view_imut</TemplateBase::Param/> template_params,
 	Synt::ComplexName& param,
-	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
 	if_var( &name_lookup : param.get</Synt::NameLookup/>() )
 	{
@@ -374,9 +374,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</TemplateBase::Param/>& template_params,
+	ust::array_view_imut</TemplateBase::Param/> template_params,
 	Synt::TypeName& param,
-	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
 	if_var( &complex_name : param.get</Synt::ComplexName/>() )
 	{
@@ -415,9 +415,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</TemplateBase::Param/>& template_params,
+	ust::array_view_imut</TemplateBase::Param/> template_params,
 	Synt::ArrayType& param,
-	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
 	var TemplateSignatureParam::ArrayTypeParam mut array_type_param
 	{
@@ -441,9 +441,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</TemplateBase::Param/>& template_params,
+	ust::array_view_imut</TemplateBase::Param/> template_params,
 	Synt::TupleType& signature_param,
-	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
 	var TemplateSignatureParam::TupleTypeParam mut tuple_type_param;
 
@@ -472,9 +472,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</TemplateBase::Param/>& template_params,
+	ust::array_view_imut</TemplateBase::Param/> template_params,
 	Synt::RawPointerType& signature_param,
-	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
 	var TemplateSignatureParam::RawPointerTypeParam mut raw_pointer_type_param
 	{
@@ -497,9 +497,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</TemplateBase::Param/>& template_params,
+	ust::array_view_imut</TemplateBase::Param/> template_params,
 	Synt::FunctionType& signature_param,
-	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
 	var TemplateSignatureParam::FunctionTypeParam mut function_type_param
 	{
@@ -560,9 +560,9 @@ fn CodeBuilder::CreateTemplateSignatureParam(
 	mut this,
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
-	ust::vector</TemplateBase::Param/>& template_params,
+	ust::array_view_imut</TemplateBase::Param/> template_params,
 	Synt::GeneratorType& signature_param,
-	ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam
+	ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam
 {
 	var TemplateSignatureParam mut return_type=
 		CreateTemplateSignatureParam( names_scope, function_context, template_params, signature_param.return_type, template_params_usage_flags );

@@ -288,7 +288,7 @@ private:
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::ZeroInitializer& zero_initializer ) : LLVMValueRef;
 	fn BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptre, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef;
 	fn BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::string8& variable_name, SrcLoc& src_loc ) : LLVMValueRef;
-	fn BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args, SrcLoc& src_loc )  : LLVMValueRef;
+	fn BuildConstructorInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> /> args, SrcLoc& src_loc )  : LLVMValueRef;
 
 	fn InitializeFunctionPointer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::Expression& initializer_expression ) : LLVMValueRef;
 
@@ -502,7 +502,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		Type& t,
-		ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> /> args,
 		SrcLoc& src_loc ) : Value;
 
 	fn ConvertVariable(
@@ -540,78 +540,78 @@ private:
 	fn PrepareTemplateParams(
 		mut this,
 		NamesScopePtr& names_scope,
-		ust::vector</Synt::TemplateParam/>& in_params ) : ust::vector</ TemplateBase::Param />;
+		ust::array_view_imut</Synt::TemplateParam/> in_params ) : ust::vector</ TemplateBase::Param />;
 
 	fn FillVariableTemplateParamsTypes(
 		mut this,
 		NamesScopePtr& names_scope,
-		ust::vector</Synt::TemplateParam/>& in_params,
-		ust::vector</TemplateBase::Param/> &mut template_params,
-		ust::vector</bool/> &mut template_params_usage_flags );
+		ust::array_view_imut</Synt::TemplateParam/> in_params,
+		ust::array_view_mut</TemplateBase::Param/> template_params,
+		ust::array_view_mut</bool/> template_params_usage_flags );
 
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</TemplateBase::Param/>& template_params,
+		ust::array_view_imut</TemplateBase::Param/> template_params,
 		Synt::Expression& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</TemplateBase::Param/>& template_params,
+		ust::array_view_imut</TemplateBase::Param/> template_params,
 		Synt::ComplexName& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</TemplateBase::Param/>& template_params,
+		ust::array_view_imut</TemplateBase::Param/> template_params,
 		Synt::TypeName& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</TemplateBase::Param/>& template_params,
+		ust::array_view_imut</TemplateBase::Param/> template_params,
 		Synt::ArrayType& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</TemplateBase::Param/>& template_params,
+		ust::array_view_imut</TemplateBase::Param/> template_params,
 		Synt::TupleType& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</TemplateBase::Param/>& template_params,
+		ust::array_view_imut</TemplateBase::Param/> template_params,
 		Synt::RawPointerType& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</TemplateBase::Param/>& template_params,
+		ust::array_view_imut</TemplateBase::Param/> template_params,
 		Synt::FunctionType& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam(
 		mut this,
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
-		ust::vector</TemplateBase::Param/>& template_params,
+		ust::array_view_imut</TemplateBase::Param/> template_params,
 		Synt::GeneratorType& signature_param,
-		ust::vector</bool/> &mut template_params_usage_flags ) : TemplateSignatureParam;
+		ust::array_view_mut</bool/> template_params_usage_flags ) : TemplateSignatureParam;
 
 	fn CreateTemplateSignatureParam( mut this, NamesScopePtr& names_scope, Value& value, SrcLoc& src_loc ) : TemplateSignatureParam;
 
@@ -779,7 +779,7 @@ private:
 	fn BuildFullTypeinfo( mut this, Type& t ) : VariablePtr;
 
 	fn CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
-	fn FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::vector</LLVMTypeRef/>& fields_llvm_types );
+	fn FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::array_view_imut</LLVMTypeRef/> fields_llvm_types );
 
 	fn BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : VariableLite;
 	fn BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariableLite;

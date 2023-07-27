@@ -1428,7 +1428,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	if_var( &t : function.get</Type/>() )
 	{
-		return BuildTempVariableConstruction( names_scope, function_context, t, call_operator.args, call_operator.src_loc );
+		return BuildTempVariableConstruction( names_scope, function_context, t, call_operator.args.range(), call_operator.src_loc );
 	}
 	if_var( & in_functions_set : function.get</FunctionsSet/>() )
 	{
@@ -3957,7 +3957,7 @@ fn CodeBuilder::BuildTempVariableConstruction(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	Type& t,
-	ust::vector</ ust::shared_ptr_final</Synt::Expression/> />& args,
+	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> /> args,
 	SrcLoc& src_loc ) : Value
 {
 	if( !EnsureTypeComplete( t ) )
