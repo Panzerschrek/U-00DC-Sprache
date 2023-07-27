@@ -1106,7 +1106,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		for( auto mut arg_n= 0s; arg_n < func_variable.t.params.size(); ++arg_n )
 		{
 			auto& in_param= body_syntax_element.function_type.params[arg_n];
-			var FunctionType::Param& type_param= cast_imut(func_variable).t.params[arg_n];
+			var FunctionType::Param& type_param= func_variable.t.params[arg_n];
 			var u32 llvm_arg_n= first_llvm_arg + u32(arg_n);
 
 			var Variable mut variable

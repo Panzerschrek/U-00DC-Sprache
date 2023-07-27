@@ -3456,7 +3456,7 @@ fn SyntaxAnalyzer::ParseMacro( mut this )
 	}
 	else
 	{
-		PushMacroErrorMessage( cast_imut(macro).src_loc, "\"" + macro.name + "\" macro redefinition." );
+		PushMacroErrorMessage( macro.src_loc, "\"" + macro.name + "\" macro redefinition." );
 		move(macro);
 	}
 }
