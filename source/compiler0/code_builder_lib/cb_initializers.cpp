@@ -69,7 +69,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc_ );
 
 		bool is_constant= array_type->element_type.CanBeConstexpr();
-		std::vector<llvm::Constant*> members_constants;
+		llvm::SmallVector<llvm::Constant*, 16> members_constants;
 
 		for( size_t i= 0u; i < initializer.initializers.size(); i++ )
 		{
@@ -104,7 +104,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		}
 
 		bool is_constant= variable->type.CanBeConstexpr();
-		std::vector<llvm::Constant*> members_constants;
+		llvm::SmallVector<llvm::Constant*, 16> members_constants;
 
 		for( size_t i= 0u; i < initializer.initializers.size(); ++i )
 		{
@@ -600,7 +600,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 
 		if( constant_initializer != nullptr )
 		{
-			std::vector<llvm::Constant*> array_initializers;
+			llvm::SmallVector<llvm::Constant*, 16> array_initializers;
 			array_initializers.resize( size_t(array_type->element_count), constant_initializer );
 			return llvm::ConstantArray::get( array_type->llvm_type, array_initializers );
 		}
@@ -608,7 +608,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
-		std::vector<llvm::Constant*> constant_initializers;
+		llvm::SmallVector<llvm::Constant*, 16> constant_initializers;
 
 		for( const Type& element_type : tuple_type->element_types )
 		{
@@ -662,7 +662,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 
 llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 	const VariablePtr& variable,
-	const std::vector<Synt::Expression>& synt_args,
+	const llvm::ArrayRef<Synt::Expression> synt_args,
 	const SrcLoc& src_loc,
 	NamesScope& block_names,
 	FunctionContext& function_context )
@@ -1289,7 +1289,7 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	// Select function with same with pointer type, if it exists.
 	// If there is no function with same type, select function, convertible to pointer type, but only if exists only one convertible function.
 	const FunctionVariable* exact_match_function_variable= nullptr;
-	std::vector<const FunctionVariable*> convertible_function_variables;
+	llvm::SmallVector<const FunctionVariable*, 4> convertible_function_variables;
 
 	for( const FunctionVariable& func : candidate_functions->functions )
 	{

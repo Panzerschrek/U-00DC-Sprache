@@ -251,7 +251,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const TupleType& type )
 
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( type.llvm_type );
 
-	std::vector<llvm::Metadata*> elements;
+	llvm::SmallVector<llvm::Metadata*, 16> elements;
 	elements.reserve( type.element_types.size() );
 
 	const auto di_file= GetRootDIFile();
@@ -330,7 +330,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 	// TODO - get SrcLoc for enum
 	const auto di_file= GetDIFile( the_class.body_src_loc );
 
-	std::vector<llvm::Metadata*> fields;
+	ClassFieldsVector<llvm::Metadata*> fields;
 	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
 	{
 		for( const std::string& name : the_class.fields_order )
@@ -417,7 +417,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 	if( const auto it= enums_di_cache_.find(type); it != enums_di_cache_.end() )
 		return it->second;
 
-	std::vector<llvm::Metadata*> elements;
+	llvm::SmallVector<llvm::Metadata*, 16> elements;
 	type->members.ForEachInThisScope(
 		[&]( const std::string& name, const Value& value )
 		{

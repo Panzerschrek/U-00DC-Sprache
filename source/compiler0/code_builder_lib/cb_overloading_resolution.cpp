@@ -384,7 +384,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 {
 	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
 
-	std::vector<const FunctionVariable*> match_functions;
+	llvm::SmallVector<const FunctionVariable*, 8> match_functions;
 
 	// First, found functions, compatible with given arguments.
 	for( const FunctionVariable& function : functions_set.functions )
@@ -484,7 +484,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	else if( match_functions.size() == 1u )
 		return match_functions.front();
 
-	std::vector<bool> best_functions( match_functions.size(), true );
+	llvm::SmallVector<bool, 16> best_functions( match_functions.size(), true );
 
 	const TemplateSignatureParam dummy_type_param = TemplateSignatureParam::TypeParam();
 
@@ -669,7 +669,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 }
 
 const CodeBuilder::TemplateTypePreparationResult* CodeBuilder::SelectTemplateType(
-	const std::vector<TemplateTypePreparationResult>& candidate_templates,
+	const llvm::ArrayRef<TemplateTypePreparationResult> candidate_templates,
 	const size_t arg_count )
 {
 	if( candidate_templates.empty() )
@@ -678,7 +678,7 @@ const CodeBuilder::TemplateTypePreparationResult* CodeBuilder::SelectTemplateTyp
 	if( candidate_templates.size() == 1u )
 		return &candidate_templates.front();
 
-	std::vector<bool> best_templates( candidate_templates.size(), true );
+	llvm::SmallVector<bool, 16> best_templates( candidate_templates.size(), true );
 
 	for( size_t i= 0u; i < arg_count; ++i )
 	{

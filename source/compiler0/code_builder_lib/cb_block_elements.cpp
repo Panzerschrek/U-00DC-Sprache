@@ -725,7 +725,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		llvm::BasicBlock* const finish_basic_block= tuple_type->element_types.empty() ? nullptr : llvm::BasicBlock::Create( llvm_context_ );
 
-		std::vector<ReferencesGraph> break_variables_states;
+		llvm::SmallVector<ReferencesGraph, 4> break_variables_states;
 
 		U_ASSERT( sequence_expression->location == Variable::Location::Pointer );
 		for( const Type& element_type : tuple_type->element_types )

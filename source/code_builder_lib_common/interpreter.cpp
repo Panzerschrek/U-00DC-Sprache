@@ -457,7 +457,7 @@ llvm::Constant* Interpreter::ReadConstantFromStack( llvm::Type* const type, cons
 	{
 		const size_t element_size= size_t(data_layout_.getTypeAllocSize(array_type->getElementType()));
 
-		std::vector<llvm::Constant*> initializers( size_t(array_type->getNumElements()), nullptr );
+		llvm::SmallVector<llvm::Constant*, 32> initializers( size_t(array_type->getNumElements()), nullptr );
 		for( uint32_t i= 0u; i < array_type->getNumElements(); ++i )
 			initializers[i]= ReadConstantFromStack( array_type->getElementType(), value_ptr + i * element_size );
 

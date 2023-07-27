@@ -85,7 +85,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	std::vector<TypeTemplate::TemplateParameter>& template_parameters= type_template->template_params;
 	template_parameters.reserve( type_template_declaration.params_.size() );
-	std::vector<bool> template_parameters_usage_flags;
+	llvm::SmallVector<bool, 32> template_parameters_usage_flags;
 
 	ProcessTemplateParams(
 		type_template_declaration.params_,
@@ -170,7 +170,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 	function_template->parent_namespace= &names_scope;
 	function_template->base_class= base_class;
 
-	std::vector<bool> template_parameters_usage_flags; // Currently unused, because function template have no signature.
+	llvm::SmallVector<bool, 32> template_parameters_usage_flags; // Currently unused, because function template have no signature.
 
 	ProcessTemplateParams(
 		function_template_declaration.params_,
@@ -202,11 +202,11 @@ void CodeBuilder::PrepareFunctionTemplate(
 }
 
 void CodeBuilder::ProcessTemplateParams(
-	const std::vector<Synt::TemplateBase::Param>& params,
+	const llvm::ArrayRef<Synt::TemplateBase::Param> params,
 	NamesScope& names_scope,
 	const SrcLoc& src_loc,
 	std::vector<TypeTemplate::TemplateParameter>& template_parameters,
-	std::vector<bool>& template_parameters_usage_flags )
+	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags )
 {
 	U_ASSERT( template_parameters.empty() );
 	U_ASSERT( template_parameters_usage_flags.empty() );
@@ -258,8 +258,8 @@ void CodeBuilder::ProcessTemplateParams(
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-	std::vector<bool>& template_parameters_usage_flags,
+	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::ComplexName& signature_parameter )
 {
 	if( const auto name_lookup= std::get_if<Synt::NameLookup>( &signature_parameter ) )
@@ -305,8 +305,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-	std::vector<bool>& template_parameters_usage_flags,
+	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::Expression& template_parameter )
 {
 	if( const auto named_operand= std::get_if<Synt::ComplexName>( &template_parameter ) )
@@ -328,8 +328,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-	std::vector<bool>& template_parameters_usage_flags,
+	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::TypeName& type_name_template_parameter )
 {
 	return
@@ -341,8 +341,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-	std::vector<bool>& template_parameters_usage_flags,
+	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::EmptyVariant& empty_variant )
 {
 	U_ASSERT(false);
@@ -357,8 +357,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-	std::vector<bool>& template_parameters_usage_flags,
+	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::ArrayTypeName& array_type_name )
 {
 	TemplateSignatureParam::ArrayParam array_param;
@@ -374,8 +374,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-	std::vector<bool>& template_parameters_usage_flags,
+	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::FunctionTypePtr& function_pointer_type_name_ptr )
 {
 	TemplateSignatureParam::FunctionParam function_param;
@@ -426,8 +426,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-	std::vector<bool>& template_parameters_usage_flags,
+	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::TupleType& tuple_type_name )
 {
 	TemplateSignatureParam::TupleParam tuple_param;
@@ -448,8 +448,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-	std::vector<bool>& template_parameters_usage_flags,
+	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::RawPointerType& raw_pointer_type_name )
 {
 	TemplateSignatureParam::RawPointerParam raw_pointer_param;
@@ -471,8 +471,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
-	const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-	std::vector<bool>& template_parameters_usage_flags,
+	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 	const Synt::GeneratorTypePtr& generator_type_name_ptr )
 {
 	const Synt::GeneratorType& generator_type_name= *generator_type_name_ptr;
@@ -859,11 +859,11 @@ bool CodeBuilder::MatchTemplateArgImpl(
 Value* CodeBuilder::GenTemplateType(
 	const SrcLoc& src_loc,
 	const TypeTemplatesSet& type_templates_set,
-	const std::vector<Synt::Expression>& template_arguments,
+	const llvm::ArrayRef<Synt::Expression> template_arguments,
 	NamesScope& arguments_names_scope,
 	FunctionContext& function_context )
 {
-	std::vector<Value> arguments_calculated;
+	llvm::SmallVector<Value, 8> arguments_calculated;
 	arguments_calculated.reserve( template_arguments.size() );
 
 	{
@@ -879,7 +879,7 @@ Value* CodeBuilder::GenTemplateType(
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
 
-	std::vector<TemplateTypePreparationResult> prepared_types;
+	llvm::SmallVector<TemplateTypePreparationResult, 4> prepared_types;
 	for( const TypeTemplatePtr& type_template : type_templates_set.type_templates )
 	{
 		TemplateTypePreparationResult generated_type=
@@ -908,7 +908,7 @@ Value* CodeBuilder::GenTemplateType(
 CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	const SrcLoc& src_loc,
 	const TypeTemplatePtr& type_template_ptr,
-	const std::vector<Value>& template_arguments,
+	const llvm::ArrayRef<Value> template_arguments,
 	NamesScope& arguments_names_scope )
 {
 	// This method does not generate some errors, because instantiation may fail
@@ -1238,7 +1238,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 Value* CodeBuilder::ParametrizeFunctionTemplate(
 	const SrcLoc& src_loc,
 	const OverloadedFunctionsSet& functions_set,
-	const std::vector<Synt::Expression>& template_arguments,
+	const llvm::ArrayRef<Synt::Expression> template_arguments,
 	NamesScope& arguments_names_scope,
 	FunctionContext& function_context )
 {

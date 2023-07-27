@@ -40,7 +40,7 @@ private:
 	};
 
 private:
-	std::vector<Substitution> substitutions_;
+	llvm::SmallVector<Substitution, 16> substitutions_;
 	std::string result_full_;
 	std::string result_compressed_;
 };

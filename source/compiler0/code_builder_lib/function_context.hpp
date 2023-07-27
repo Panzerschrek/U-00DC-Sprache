@@ -74,7 +74,7 @@ public:
 	llvm::BasicBlock* coro_cleanup_bb= nullptr; // Used as final destination after suspention destruction blocks.
 
 	VariablePtr this_; // null for non-class functions or static member functions.
-	std::vector<bool> initialized_this_fields; // Non-empty in constructors. element is true, if field is already initialized.
+	ClassFieldsVector<bool> initialized_this_fields; // Non-empty in constructors. element is true, if field is already initialized.
 
 	llvm::BasicBlock* destructor_end_block= nullptr; // exists, if function is destructor
 

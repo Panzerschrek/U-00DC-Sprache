@@ -167,7 +167,7 @@ private:
 	// NonSync stuff
 
 	bool GetTypeNonSync( const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
-	bool GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
+	bool GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc );
 	bool ImmediateEvaluateNonSyncTag( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncTag& non_sync_tag );
 	void CheckClassNonSyncTagExpression( ClassPtr class_type );
 	void CheckClassNonSyncTagInheritance( ClassPtr class_type );
@@ -185,73 +185,73 @@ private:
 		ClassPtr base_class );
 
 	void ProcessTemplateParams(
-		const std::vector<Synt::TemplateBase::Param>& params,
+		llvm::ArrayRef<Synt::TemplateBase::Param> params,
 		NamesScope& names_scope,
 		const SrcLoc& src_loc,
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags );
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::ComplexName& signature_parameter );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::Expression& template_parameter );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::TypeName& template_parameter );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::EmptyVariant& empty_variant );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::ArrayTypeName& array_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::FunctionTypePtr& function_pointer_type_name_ptr );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::TupleType& tuple_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::RawPointerType& raw_pointer_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		const std::vector<TemplateBase::TemplateParameter>& template_parameters,
-		std::vector<bool>& template_parameters_usage_flags,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::GeneratorTypePtr& generator_type_name_ptr );
 
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope, const SrcLoc& src_loc );
@@ -331,7 +331,7 @@ private:
 	Value* GenTemplateType(
 		const SrcLoc& src_loc,
 		const TypeTemplatesSet& type_templates_set,
-		const std::vector<Synt::Expression>& template_arguments,
+		llvm::ArrayRef<Synt::Expression> template_arguments,
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );
 
@@ -339,7 +339,7 @@ private:
 	TemplateTypePreparationResult PrepareTemplateType(
 		const SrcLoc& src_loc,
 		const TypeTemplatePtr& type_template_ptr,
-		const std::vector<Value>& template_arguments,
+		llvm::ArrayRef<Value> template_arguments,
 		NamesScope& arguments_names_scope );
 
 	Value* FinishTemplateTypeGeneration(
@@ -374,7 +374,7 @@ private:
 	Value* ParametrizeFunctionTemplate(
 		const SrcLoc& src_loc,
 		const OverloadedFunctionsSet& functions_set,
-		const std::vector<Synt::Expression>& template_arguments,
+		llvm::ArrayRef<Synt::Expression> template_arguments,
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );
 
@@ -580,7 +580,7 @@ private:
 
 	std::optional<Value> TryCallOverloadedPostfixOperator(
 		const VariablePtr& variable,
-		const llvm::ArrayRef<Synt::Expression>& synt_args,
+		llvm::ArrayRef<Synt::Expression> synt_args,
 		OverloadedOperator op,
 		const SrcLoc& src_loc,
 		NamesScope& names,
@@ -620,7 +620,7 @@ private:
 
 	Value CallFunction(
 		const Value& function_value,
-		const std::vector<Synt::Expression>& synt_args,
+		llvm::ArrayRef<Synt::Expression> synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
@@ -630,7 +630,7 @@ private:
 		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
 		const VariablePtr& this_, // optional
-		const llvm::ArrayRef<const Synt::Expression*>& args,
+		llvm::ArrayRef<const Synt::Expression*> args,
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names,
 		FunctionContext& function_context,
@@ -640,8 +640,8 @@ private:
 		llvm::Value* function,
 		const FunctionType& function_type,
 		const SrcLoc& call_src_loc,
-		const llvm::ArrayRef<VariablePtr>& preevaluated_args,
-		const llvm::ArrayRef<const Synt::Expression*>& args,
+		llvm::ArrayRef<VariablePtr> preevaluated_args,
+		llvm::ArrayRef<const Synt::Expression*> args,
 		bool evaluate_args_in_reverse_order,
 		NamesScope& names,
 		FunctionContext& function_context,
@@ -649,7 +649,7 @@ private:
 
 	VariablePtr BuildTempVariableConstruction(
 		const Type& type,
-		const std::vector<Synt::Expression>& synt_args,
+		llvm::ArrayRef<Synt::Expression> synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
@@ -810,7 +810,7 @@ private:
 		const SrcLoc& src_loc );
 
 	const TemplateTypePreparationResult* SelectTemplateType(
-		const std::vector<TemplateTypePreparationResult>& candidate_templates,
+		llvm::ArrayRef<TemplateTypePreparationResult> candidate_templates,
 		size_t arg_count );
 
 	// Initializers.
@@ -833,7 +833,7 @@ private:
 
 	llvm::Constant* ApplyConstructorInitializer(
 		const VariablePtr& variable,
-		const std::vector<Synt::Expression>& synt_args,
+		llvm::ArrayRef<Synt::Expression> synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& block_names,
 		FunctionContext& function_context );
@@ -905,7 +905,7 @@ private:
 	void DestroyUnusedTemporaryVariables( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
 
 	ReferencesGraph MergeVariablesStateAfterIf(
-		const llvm::ArrayRef<ReferencesGraph>& bracnhes_variables_state,
+		llvm::ArrayRef<ReferencesGraph> bracnhes_variables_state,
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 

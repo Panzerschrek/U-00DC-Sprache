@@ -288,7 +288,7 @@ void CodeBuilder::PrepareClassVirtualTableType( const ClassPtr class_type )
 	if( the_class.virtual_table.empty() )
 		return; // Non-polymorph class.
 
-	std::vector<llvm::Type*> virtual_table_struct_fields;
+	llvm::SmallVector<llvm::Type*, 16> virtual_table_struct_fields;
 
 	// First, add first class virtual table, then, virtual tables of other parent classes.
 	for( const Class::Parent& parent : the_class.parents )
@@ -427,7 +427,7 @@ llvm::Constant* CodeBuilder::BuildClassVirtualTable_r( const Class& ancestor_cla
 
 	const auto array_type= llvm::dyn_cast<llvm::ArrayType>( ancestor_class.virtual_table_llvm_type->getElementType( uint32_t(initializer_values.size() ) ) );
 
-	std::vector<llvm::Constant*> function_pointers_initializer_values;
+	llvm::SmallVector<llvm::Constant*, 16> function_pointers_initializer_values;
 	for( const Class::VirtualTableEntry& ancestor_virtual_table_entry : ancestor_class.virtual_table )
 	{
 		if( ancestor_virtual_table_entry.parent_virtual_table_index != ~0u )

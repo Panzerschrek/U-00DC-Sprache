@@ -35,7 +35,7 @@ struct TypeinfoListElement
 	ClassPtr type= nullptr;
 };
 
-TypeinfoPartVariable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std::vector<TypeinfoListElement>& list )
+TypeinfoPartVariable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, llvm::SmallVectorImpl<TypeinfoListElement>& list )
 {
 	std::sort(
 		list.begin(), list.end(),
@@ -45,8 +45,8 @@ TypeinfoPartVariable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, std:
 		} );
 
 	TupleType list_type;
-	std::vector< llvm::Type* > list_elements_llvm_types;
-	std::vector< llvm::Constant* > list_elements_initializers;
+	llvm::SmallVector< llvm::Type*, 16 > list_elements_llvm_types;
+	llvm::SmallVector< llvm::Constant*, 16 > list_elements_initializers;
 	list_type.element_types.reserve( list.size() );
 	list_elements_llvm_types.reserve( list.size() );
 	list_elements_initializers.reserve( list.size() );
@@ -335,7 +335,7 @@ void CodeBuilder::FinishTypeinfoClass( const ClassPtr class_type, const ClassFie
 
 TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type, NamesScope& root_namespace )
 {
-	std::vector<TypeinfoListElement> list_elements;
+	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 	list_elements.reserve( enum_type->element_count );
 
 	enum_type->members.ForEachInThisScope(
@@ -427,7 +427,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 
 TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr class_type, NamesScope& root_namespace )
 {
-	std::vector<TypeinfoListElement> list_elements;
+	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
 	const auto process_class_member=
 		[&]( const std::string& member_name, const Value& class_member )
@@ -514,7 +514,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr c
 
 TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr class_type, NamesScope& root_namespace )
 {
-	std::vector<TypeinfoListElement> list_elements;
+	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
 	const auto process_class_member=
 		[&]( const std::string& name, Value& class_member )
@@ -559,7 +559,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr cl
 
 TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_type, NamesScope& root_namespace )
 {
-	std::vector<TypeinfoListElement> list_elements;
+	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
 	const auto process_class_member=
 		[&]( const std::string& name, const Value& class_member )
@@ -636,8 +636,8 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr 
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( class_.llvm_type );
 
 	TupleType list_type;
-	std::vector< llvm::Type* > list_elements_llvm_types;
-	std::vector< llvm::Constant* > list_elements_initializers;
+	llvm::SmallVector< llvm::Type*, 16 > list_elements_llvm_types;
+	llvm::SmallVector< llvm::Constant*, 16 > list_elements_initializers;
 	list_type.element_types.reserve( class_.parents.size() );
 	list_elements_llvm_types.reserve( class_.parents.size() );
 	list_elements_initializers.reserve( class_.parents.size() );
@@ -682,8 +682,8 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr 
 TypeinfoPartVariable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace )
 {
 	TupleType list_type;
-	std::vector< llvm::Type* > list_elements_llvm_types;
-	std::vector< llvm::Constant* > list_elements_initializers;
+	llvm::SmallVector< llvm::Type*, 16 > list_elements_llvm_types;
+	llvm::SmallVector< llvm::Constant*, 16 > list_elements_initializers;
 	list_type.element_types.reserve( function_type.params.size() );
 	list_elements_llvm_types.reserve( function_type.params.size() );
 	list_elements_initializers.reserve( function_type.params.size() );
@@ -738,8 +738,8 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoFunctionArguments( const Function
 TypeinfoPartVariable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace )
 {
 	TupleType list_type;
-	std::vector< llvm::Type* > list_elements_llvm_types;
-	std::vector< llvm::Constant* > list_elements_initializers;
+	llvm::SmallVector< llvm::Type*, 16 > list_elements_llvm_types;
+	llvm::SmallVector< llvm::Constant*, 16 > list_elements_initializers;
 	list_type.element_types.reserve( tuple_type.element_types.size() );
 	list_elements_llvm_types.reserve( tuple_type.element_types.size() );
 	list_elements_initializers.reserve( tuple_type.element_types.size() );

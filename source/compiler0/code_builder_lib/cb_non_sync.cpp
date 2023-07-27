@@ -43,7 +43,7 @@ bool CodeBuilder::GetTypeNonSync( const Type& type, NamesScope& names_scope, con
 
 	non_sync_expression_stack_.push_back(type);
 
-	std::vector<Type> types_stack;
+	llvm::SmallVector<Type, 4> types_stack;
 	const bool result= GetTypeNonSyncImpl( types_stack, type, names_scope, src_loc );
 	U_ASSERT( types_stack.empty() ); // Should be empty at end.
 
@@ -52,7 +52,7 @@ bool CodeBuilder::GetTypeNonSync( const Type& type, NamesScope& names_scope, con
 }
 
 // TODO - cache results.
-bool CodeBuilder::GetTypeNonSyncImpl( std::vector<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc )
+bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_stack, const Type& type, NamesScope& names_scope, const SrcLoc& src_loc )
 {
 	// Simple non-recursive types without "non_sync" tag.
 	if( type.GetFundamentalType() != nullptr ||

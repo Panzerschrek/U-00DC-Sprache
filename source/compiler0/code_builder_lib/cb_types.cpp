@@ -145,7 +145,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	TupleType tuple;
 	tuple.element_types.reserve( tuple_type_name.element_types_.size() );
 
-	std::vector<llvm::Type*> elements_llvm_types;
+	llvm::SmallVector<llvm::Type*, 16> elements_llvm_types;
 	elements_llvm_types.reserve( tuple_type_name.element_types_.size() );
 
 	for( const Synt::TypeName& element_type_name : tuple_type_name.element_types_ )

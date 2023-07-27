@@ -1129,7 +1129,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else if( type_suffix == "u32" )
 	{
-		std::vector<uint32_t> str;
+		llvm::SmallVector<uint32_t, 32> str;
 		for( auto it = string_literal.value_.data(), it_end= it + string_literal.value_.size(); it < it_end; )
 			str.push_back( ReadNextUTF8Char( it, it_end ) );
 
@@ -2086,7 +2086,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 
 std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	const VariablePtr& variable,
-	const llvm::ArrayRef<Synt::Expression>& synt_args,
+	const llvm::ArrayRef<Synt::Expression> synt_args,
 	const OverloadedOperator op,
 	const SrcLoc& src_loc,
 	NamesScope& names,
@@ -2912,7 +2912,7 @@ Value CodeBuilder::DoReferenceCast(
 
 Value CodeBuilder::CallFunction(
 	const Value& function_value,
-	const std::vector<Synt::Expression>& synt_args,
+	const llvm::ArrayRef<Synt::Expression> synt_args,
 	const SrcLoc& src_loc,
 	NamesScope& names,
 	FunctionContext& function_context )
@@ -2946,7 +2946,7 @@ Value CodeBuilder::CallFunction(
 				return ErrorValue();
 			}
 
-			std::vector<const Synt::Expression*> args;
+			llvm::SmallVector<const Synt::Expression*, 16> args;
 			args.reserve( synt_args.size() );
 			for( const Synt::Expression& arg : synt_args )
 				args.push_back( &arg );
@@ -3053,7 +3053,7 @@ Value CodeBuilder::DoCallFunction(
 	const FunctionType& function_type,
 	const SrcLoc& call_src_loc,
 	const VariablePtr& this_, // optional
-	const llvm::ArrayRef<const Synt::Expression*>& args,
+	const llvm::ArrayRef<const Synt::Expression*> args,
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -3075,8 +3075,8 @@ Value CodeBuilder::DoCallFunction(
 	llvm::Value* function,
 	const FunctionType& function_type,
 	const SrcLoc& call_src_loc,
-	const llvm::ArrayRef<VariablePtr>& preevaluated_args,
-	const llvm::ArrayRef<const Synt::Expression*>& args,
+	const llvm::ArrayRef<VariablePtr> preevaluated_args,
+	const llvm::ArrayRef<const Synt::Expression*> args,
 	const bool evaluate_args_in_reverse_order,
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -3604,7 +3604,7 @@ Value CodeBuilder::DoCallFunction(
 
 VariablePtr CodeBuilder::BuildTempVariableConstruction(
 	const Type& type,
-	const std::vector<Synt::Expression>& synt_args,
+	const llvm::ArrayRef<Synt::Expression> synt_args,
 	const SrcLoc& src_loc,
 	NamesScope& names,
 	FunctionContext& function_context )
