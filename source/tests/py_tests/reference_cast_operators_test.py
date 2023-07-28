@@ -20,7 +20,7 @@ def CastRefUnsafe_OperatorDeclaration_Test():
 		fn Foo()
 		{
 			var i32 x= 0;
-			unsafe{  cast_ref_unsafe</ f32 />( x );  }
+			unsafe{  auto& x_casted= cast_ref_unsafe</ f32 />( x );  }
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -31,7 +31,7 @@ def CastImut_OperatorDeclaration_Test():
 		fn Foo()
 		{
 			var i32 mut x= 0;
-			cast_imut( x );
+			auto& x_casted= cast_imut( x );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -42,7 +42,7 @@ def CastMut_OperatorDeclaration_Test():
 		fn Foo()
 		{
 			var i32 imut x= 0;
-			unsafe{  cast_mut( x );  }
+			unsafe{  auto& mut x_casted= cast_mut( x );  }
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -119,7 +119,8 @@ def CastRef_Test5_ShouldCastValue():
 		class B : A {}
 		fn Foo()
 		{
-			cast_ref</ A />( B() );
+			with( &val : cast_ref</ A />( B() ) )
+			{}
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -425,7 +426,7 @@ def CastMut_Test4_OperationIsUnsafe():
 		fn Foo()
 		{
 			auto imut x= 0;
-			cast_mut( x );
+			auto& x_casted= cast_mut( x );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -439,7 +440,7 @@ def CastMut_Test5_OperationIsUnsafe():
 		fn Foo()
 		{
 			auto mut x= 0;
-			cast_mut( x );  // even mut->mut casting is unsafe
+			auto &mut x_ref= cast_mut( x );  // even mut->mut casting is unsafe
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

@@ -403,7 +403,7 @@ def AccessingProtectedMember_Test2():
 
 		fn Foo( A& a )
 		{
-			a.x;  // Error, 'A::x' is protected
+			auto& x= a.x;  // Error, 'A::x' is protected
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -441,7 +441,7 @@ def AccessingProtectedMember_Test4():
 		}
 		fn Foo(B& b)
 		{
-			b.x;
+			auto& x= b.x;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

@@ -27,7 +27,7 @@ def MoveOperatorDeclaration_Test2():
 		fn Foo()
 		{
 			var i32 mut x= 0;
-			-( move(x) + 42 );
+			auto y= -( move(x) + 42 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -319,7 +319,7 @@ def Move_InLazyLogicalOperator_Test0():
 		fn Foo()
 		{
 			auto mut b= false;
-			move(b) || true;  // Ok, move in first part, which is unconditional.
+			auto x= move(b) || true;  // Ok, move in first part, which is unconditional.
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -330,7 +330,7 @@ def Move_InLazyLogicalOperator_Test1():
 		fn Foo()
 		{
 			auto mut b= true;
-			move(b) && false;  // Ok, move in first part, which is unconditional.
+			auto r= move(b) && false;  // Ok, move in first part, which is unconditional.
 		}
 	"""
 	tests_lib.build_program( c_program_text )

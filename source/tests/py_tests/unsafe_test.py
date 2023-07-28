@@ -263,7 +263,7 @@ def ExplicitAccessToSpecialMethodsIsUnsafe_Test0():
 		fn Foo()
 		{
 			var S mut s;
-			s.constructor;
+			var (fn(S& mut s)) ptr(s.constructor);
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -277,7 +277,7 @@ def ExplicitAccessToSpecialMethodsIsUnsafe_Test1():
 		struct S {} // have generated default-constructor
 		fn Foo()
 		{
-			S::constructor;
+			var (fn(S& mut s)) ptr(S::constructor);
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -306,7 +306,7 @@ def ExplicitAccessToSpecialMethodsIsUnsafe_Test3():
 		struct S {  fn destructor(){}  }
 		fn Foo()
 		{
-			::S::destructor;
+			var (fn(S& mut s)) ptr( ::S::destructor );
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

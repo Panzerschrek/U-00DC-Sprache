@@ -54,9 +54,10 @@ def VoidTypeReferenceMustBeReturned_Test():
 	fn Foo() : void&
 	{
 		if(false){ return Bar(); }
-		2 + 2;
+		Baz();
 		// Does not return.
 	}
+	fn Baz();
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text) )
 	assert( len(errors_list) > 0 )

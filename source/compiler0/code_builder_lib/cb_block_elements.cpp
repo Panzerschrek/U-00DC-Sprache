@@ -30,6 +30,7 @@ bool SingleExpressionMayBeUseless( const Synt::Expression& expression )
 		// So, in order to avoid generating to many errors, assume, that all calls are not useless.
 		bool operator()( const Synt::CallOperator& ) { return false; }
 		// Some operators may be overloaded. Check if overloaded operator is called later.
+		// But logically it is useless to call even an overloaded operator, since operators exist to return some value, not only to mutate some state.
 		bool operator()( const Synt::IndexationOperator& ) { return true; }
 		bool operator()( const Synt::MemberAccessOperator& ) { return true; }
 		bool operator()( const Synt::UnaryPlus& ) { return true; }

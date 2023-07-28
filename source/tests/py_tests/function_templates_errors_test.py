@@ -26,8 +26,7 @@ def ValueIsNotTemplate_ForFunctionTemplates_Test1():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ValueIsNotTemplate" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( HaveError( errors_list, "ValueIsNotTemplate", 10 ) )
 
 
 def ValueIsNotTemplate_ForFunctionTemplates_Test2():
@@ -45,8 +44,7 @@ def ValueIsNotTemplate_ForFunctionTemplates_Test2():
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "ValueIsNotTemplate" )
-	assert( errors_list[0].src_loc.line == 10 )
+	assert( HaveError( errors_list, "ValueIsNotTemplate", 10 ) )
 
 
 def IncompleteMemberOfClassTemplate_ForFunctionTemplates_Test0():
