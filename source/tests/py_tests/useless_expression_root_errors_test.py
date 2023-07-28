@@ -569,3 +569,16 @@ def UselessExpressionRoot_Test45():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+
+
+def UselessExpressionRoot_Test46():
+	c_program_text= """
+		fn Foo()
+		{
+			S; // Useless type templates set name usafe.
+		}
+		template</type T/> struct S{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
