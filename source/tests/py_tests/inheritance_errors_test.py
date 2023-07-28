@@ -959,7 +959,7 @@ def EqualityCompareOperatorIsNotInherited_Test2():
 		}
 		fn Foo(Derived& l, Derived& r)
 		{
-			l == r; // Ok, call "Derived::=="
+			auto eq= l == r; // Ok, call "Derived::=="
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -1009,7 +1009,7 @@ def OrderCompareOperatorIsNotInherited_Test2():
 		}
 		fn Foo(Derived& l, Derived& r)
 		{
-			l <=> r; // Ok, call Derived::<=>
+			auto cmp= l <=> r; // Ok, call Derived::<=>
 		}
 	"""
 	tests_lib.build_program( c_program_text )

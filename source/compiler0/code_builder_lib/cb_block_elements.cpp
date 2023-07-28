@@ -15,6 +15,64 @@
 namespace U
 {
 
+namespace
+{
+
+// Return true, if root of expression is useless in single expression block element.
+// "useless" meant that expression root is useless, not whole expression.
+bool SingleExpressionIsUseless( const Synt::Expression& expression )
+{
+	struct Visitor
+	{
+		bool operator()( const Synt::EmptyVariant& ) { return false; }
+		// Calls generally are not useless. Useless may be constexpr calls.
+		// But sometimes constexpr/non-constepxr call result may depend on template context.
+		// So, in order to avoid generating too many errors, assume, that all calls are not useless.
+		bool operator()( const Synt::CallOperator& ) { return false; }
+		// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
+		bool operator()( const Synt::IndexationOperator& ) { return true; }
+		bool operator()( const Synt::MemberAccessOperator& ) { return true; }
+		bool operator()( const Synt::UnaryPlus& ) { return true; }
+		bool operator()( const Synt::UnaryMinus& ) { return true; }
+		bool operator()( const Synt::LogicalNot& ) { return true; }
+		bool operator()( const Synt::BitwiseNot& ) { return true; }
+		bool operator()( const Synt::BinaryOperator& ) { return true; }
+		bool operator()( const Synt::TernaryOperator& ) { return true; }
+		bool operator()( const Synt::ReferenceToRawPointerOperator& ) { return true; }
+		bool operator()( const Synt::RawPointerToReferenceOperator& ) { return true; }
+		// Name resolving itself has no side effects.
+		bool operator()( const Synt::ComplexName& ) { return true; }
+		// Simple constant expressions have no side effects.
+		bool operator()( const Synt::NumericConstant& ) { return true; }
+		bool operator()( const Synt::BooleanConstant& ) { return true; }
+		bool operator()( const Synt::StringLiteral& ) { return true; }
+		// Move and take have side effects.
+		bool operator()( const Synt::MoveOperator& ) { return false; }
+		bool operator()( const Synt::TakeOperator& ) { return false; }
+		// Casts have no side effects.
+		bool operator()( const Synt::CastMut& ) { return true; }
+		bool operator()( const Synt::CastImut& ) { return true; }
+		bool operator()( const Synt::CastRef& ) { return true; }
+		bool operator()( const Synt::CastRefUnsafe& ) { return true; }
+		bool operator()( const Synt::TypeInfo& ) { return true; }
+		bool operator()( const Synt::NonSyncExpression& ) { return true; }
+		// safe/unsafe expressions needs to be visited deeply.
+		// safe/unsafe expression can't be discarded, because it has meaning.
+		bool operator()( const Synt::SafeExpression& safe_expression ) { return SingleExpressionIsUseless( *safe_expression.expression_ ); }
+		bool operator()( const Synt::UnsafeExpression& unsafe_expression ) { return SingleExpressionIsUseless( *unsafe_expression.expression_ ); }
+		// Type names have no side-effects.
+		bool operator()( const Synt::ArrayTypeName& ) { return true; }
+		bool operator()( const Synt::FunctionTypePtr& ) { return true; }
+		bool operator()( const Synt::TupleType& ) { return true; }
+		bool operator()( const Synt::RawPointerType& ) { return true; }
+		bool operator()( const Synt::GeneratorTypePtr& ) { return true; }
+	};
+
+	return std::visit( Visitor(), expression );
+}
+
+} // namespace
+
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfAlternative(
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -2234,8 +2292,23 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const Synt::SingleExpressionOperator& single_expression_operator )
 {
 	const StackVariablesStorage temp_variables_storage( function_context );
-	BuildExpressionCode( single_expression_operator.expression_, names, function_context );
+	const Value value= BuildExpressionCode( single_expression_operator.expression_, names, function_context );
 	CallDestructors( temp_variables_storage, names, function_context, single_expression_operator.src_loc_ );
+
+	if( const auto variable_ptr= value.GetVariable() )
+	{
+		if( SingleExpressionIsUseless( single_expression_operator.expression_ ) &&
+			!( variable_ptr->type == void_type_ && variable_ptr->value_type == ValueType::Value ) )
+			REPORT_ERROR( UselessExpressionRoot, names.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression_ ) );
+	}
+	else if(
+		value.GetFunctionsSet() != nullptr ||
+		value.GetTypeName() != nullptr ||
+		value.GetClassField() != nullptr ||
+		value.GetThisOverloadedMethodsSet() != nullptr ||
+		value.GetNamespace() != nullptr ||
+		value.GetTypeTemplatesSet() != nullptr )
+		REPORT_ERROR( UselessExpressionRoot, names.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression_ ) );
 
 	return BlockBuildInfo();
 }

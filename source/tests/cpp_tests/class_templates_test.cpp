@@ -610,7 +610,7 @@ U_TEST( ClassTemplateTest19_StaticAssertForVariableOfTempateDependentType )
 
 		fn Foo()
 		{
-			ZeroInitChecker</ i16 />;
+			type T= ZeroInitChecker</ i16 />;
 		}
 	)";
 

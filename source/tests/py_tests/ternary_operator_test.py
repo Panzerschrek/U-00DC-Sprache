@@ -3,9 +3,9 @@ from py_tests_common import *
 
 def TernaryOperatorParsing_Test0():
 	c_program_text= """
-		fn Foo()
+		fn Foo() : i32
 		{
-			select( true ? 0 : 1 );
+			return select( true ? 0 : 1 );
 		}
 	"""
 	tests_lib.build_program( c_program_text )
@@ -13,9 +13,9 @@ def TernaryOperatorParsing_Test0():
 
 def TernaryOperatorParsing_Test1():
 	c_program_text= """
-		fn Foo( i32 x )
+		fn Foo( i32 x ) : i32
 		{
-			2 + select( x > 0 ? x : -x ) * 2;
+			return 2 + select( x > 0 ? x : -x ) * 2;
 		}
 	"""
 	tests_lib.build_program( c_program_text )

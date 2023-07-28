@@ -1181,8 +1181,9 @@ U_TEST(UnreachableCodeTest1)
 		fn Foo()
 		{
 			{ return; }
-			1 + 2;
+			Bar();
 		}
+		fn Bar();
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -1203,8 +1204,9 @@ U_TEST(UnreachableCodeTest2)
 		{
 			if( false ) { return; }
 			else { return; }
-			1 + 2;
+			Bar();
 		}
+		fn Bar();
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -1225,9 +1227,10 @@ U_TEST(UnreachableCodeTest3)
 		{
 			if( false ) { }
 			else { return; }
-			1 + 2;
+			Bar();
 			return;
 		}
+		fn Bar();
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -1243,9 +1246,10 @@ U_TEST(UnreachableCodeTest4)
 		{
 			if( true ) { return; }
 			else if( false ) { return; }
-			1 + 2;
+			Bar();
 			return;
 		}
+		fn Bar();
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -1262,9 +1266,10 @@ U_TEST(UnreachableCodeTest5)
 			while( true )
 			{
 				break;
-				42;
+				Bar();
 			}
 		}
+		fn Bar();
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -1286,9 +1291,10 @@ U_TEST(UnreachableCodeTest6)
 			while( true )
 			{
 				{ continue; }
-				42;
+				Bar();
 			}
 		}
+		fn Bar();
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -1310,9 +1316,10 @@ U_TEST(UnreachableCodeTest7)
 			while( true )
 			{
 				if( true ) { continue; } else { break; }
-				42;
+				Bar();
 			}
 		}
+		fn Bar();
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -1334,9 +1341,10 @@ U_TEST(UnreachableCodeTest8)
 			while( true )
 			{
 				if( true ) { continue; } else { }
-				42;
+				Bar();
 			}
 		}
+		fn Bar();
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -1353,9 +1361,10 @@ U_TEST(UnreachableCodeTest9)
 			while( true )
 			{
 				if( true ) { continue; } else if( false ) { break; }
-				42;
+				Bar();
 			}
 		}
+		fn Bar();
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -1432,9 +1441,10 @@ U_TEST(NoReturnInFunctionReturningNonVoidTest3)
 			{
 				if( true ) { return 42; }
 			}
-			2 + 2;
+			Bar();
 			return -1;
 		}
+		fn Bar();
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
@@ -1771,7 +1781,7 @@ U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
 		fn Foo()
 		{
 			unsafe{  cast_ref_unsafe</ i32 />( f32 );  }  // type name
-			cast_imut( NS );  // namespace
+			auto& x= cast_imut( NS );  // namespace
 		}
 	)";
 
@@ -1779,10 +1789,8 @@ U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
 
 	U_TEST_ASSERT( build_result.errors.size() >= 2u );
 
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[0].src_loc.GetLine() == 5u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[1].src_loc.GetLine() == 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 5 ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 6 ) );
 }
 
 U_TEST(CouldNotOverloadFunctionTest1)

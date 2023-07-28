@@ -840,7 +840,28 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var VariablesFrameHolder temp_variables_frame_hodler(in_function_context);
 	auto& mut function_context= temp_variables_frame_hodler.GetFunctionContext();
 
-	BuildExpressionCode( names_scope, function_context, expression );
+	var Value value= BuildExpressionCode( names_scope, function_context, expression );
+
+	if_var( &variable_ptr : value.get</VariablePtr/>() )
+	{
+		if( SingleExpressionIsUseless( expression ) )
+		{
+			with( & variable : variable_ptr.lock_imut().deref() )
+			{
+				if( !( variable.t == void_type_ && variable.value_type == ValueType::Value ) )
+				{
+					REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
+				}
+			}
+		}
+	}
+	if( !value.get</Type/>().empty() ||
+		!value.get</FunctionsSet/>().empty() ||
+		!value.get</ThisMethodsSet/>().empty() ||
+		!value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
+	{
+		REPORT_ERROR( UselessExpressionRoot, names_scope, Synt::GetSrcLoc( expression ) )
+	}
 
 	CallDestructorsForTopVariablesFrame( names_scope, function_context, Synt::GetSrcLoc(expression) );
 	return BlockElementBuildInfo();
@@ -2885,6 +2906,60 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 
 	CallDestructorsForTopVariablesFrame( names_scope, function_context, src_loc );
 }
+
+// Return true, if root of expression is useless in single expression block element.
+// "useless" meant that expression root is useless, not whole expression.
+fn SingleExpressionIsUseless( Synt::Expression& expression ) : bool
+{
+	variant_visit( &el : expression )
+	{
+		return SingleExpressionIsUselessImpl(el);
+	}
+	halt;
+}
+
+fn SingleExpressionIsUselessImpl( Synt::EmptyVariant& empty_variant ) : bool { return false; }
+// Calls generally are not useless. Useless may be constexpr calls.
+// But sometimes constexpr/non-constepxr call result may depend on template context.
+// So, in order to avoid generating too many errors, assume, that all calls are not useless.
+fn SingleExpressionIsUselessImpl( Synt::CallOperator& call_operator ) : bool { return false; }
+// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
+fn SingleExpressionIsUselessImpl( Synt::IndexationOperator& indexation_operator ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::MemberAccessOperator& member_access_operator ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::UnaryPlus& unary_plus ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::UnaryMinus& unary_minus ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::LogicalNot& logical_not ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::BitwiseNot& bitwise_not ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::BinaryOperator& binary_operator ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::TernaryOperator& ternary_operator ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator ) : bool { return true; }
+// Name resolving itself has no side effects.
+fn SingleExpressionIsUselessImpl( Synt::ComplexName& complex_name ) : bool { return true; }
+// Simple constant expressions have no side effects.
+fn SingleExpressionIsUselessImpl( Synt::NumericConstant& numeric_constant ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::BooleanConstant& boolean_constant ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::StringLiteral& string_literal ) : bool { return true; }
+// Move and take have side effects.
+fn SingleExpressionIsUselessImpl( Synt::MoveOperator& move_operator ) : bool { return false; }
+fn SingleExpressionIsUselessImpl( Synt::TakeOperator& take_operator ) : bool { return false; }
+// Casts have no side effects.
+fn SingleExpressionIsUselessImpl( Synt::CastMut& cast_mut_ ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastImut& cast_imut_ ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastRef& cast_ref_ ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastRefUnsafe& cast_ref_unsafe_ ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::Typeinfo& typeinfo_ ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::NonSyncExpression& non_sync_expression ) : bool { return true; }
+// safe/unsafe expressions needs to be visited deeply.
+// safe/unsafe expression can't be discarded, because it has meaning.
+fn SingleExpressionIsUselessImpl( Synt::SafeExpression& safe_expression ) : bool { return SingleExpressionIsUseless( safe_expression.expression.deref() ); }
+fn SingleExpressionIsUselessImpl( Synt::UnsafeExpression& unsafe_expression ) : bool { return SingleExpressionIsUseless( unsafe_expression.expression.deref() ); }
+// Type names have no side-effects.
+fn SingleExpressionIsUselessImpl( ust::box</Synt::ArrayType/>& array_type_name ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::FunctionType/>& function_type_name ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::TupleType/>& tuple_type ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::RawPointerType/>& raw_pointer_type ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::GeneratorType/>& generator_type ) : bool { return true; }
 
 fn GetSwitchDefaultBranch( Synt::SwitchOperator&'a switch_operator ) : ust::optional_ref_imut</ Synt::Block />'a'
 {

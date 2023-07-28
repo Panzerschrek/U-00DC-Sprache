@@ -122,7 +122,7 @@ def AccessingMovedVariable_Test2():
 		fn Foo()
 		{
 			auto mut x= 0;
-			move(x) + x;
+			auto y= move(x) + x;
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -165,7 +165,7 @@ def AccessingMovedVariable_Test5():
 		fn Foo()
 		{
 			auto mut b= true;
-			move(b) && b;  // In lazy ligical operator.
+			auto res= move(b) && b;  // In lazy ligical operator.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -366,10 +366,10 @@ def ConditionalMove_InTupleFor_Test0():
 
 def ConditionalMove_ForLazyLogicalOperators_Test0():
 	c_program_text= """
-		fn Foo()
+		fn Foo() : bool
 		{
 			auto mut b= false;
-			true && move(b); // Second part of lazy logical operator is conditional.
+			return true && move(b); // Second part of lazy logical operator is conditional.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -380,10 +380,10 @@ def ConditionalMove_ForLazyLogicalOperators_Test0():
 
 def ConditionalMove_ForLazyLogicalOperators_Test1():
 	c_program_text= """
-		fn Foo()
+		fn Foo() : bool
 		{
 			auto mut b= false;
-			false || move(b); // Second part of lazy logical operator is conditional.
+			return false || move(b); // Second part of lazy logical operator is conditional.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -394,10 +394,10 @@ def ConditionalMove_ForLazyLogicalOperators_Test1():
 
 def ConditionalMove_ForLazyLogicalOperators_Test2():
 	c_program_text= """
-		fn Foo()
+		fn Foo() : bool
 		{
 			auto mut b= false;
-			false || ( move(b) || true ); // Move inside right part of top-level lazy logical operator.
+			return false || ( move(b) || true ); // Move inside right part of top-level lazy logical operator.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

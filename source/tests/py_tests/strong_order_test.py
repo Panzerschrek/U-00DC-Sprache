@@ -462,7 +462,7 @@ def ArgumenstEvaluationOrder_Test1():
 		{
 			var i32 mut x= 0;
 			// Binary operator argumenst should be evaluated in direct order.
-			AddMul10( x, 5 ) * AddMul10( x, 3 );
+			auto add_result= AddMul10( x, 5 ) * AddMul10( x, 3 );
 			return x;
 		}
 	"""
@@ -490,7 +490,7 @@ def ArgumenstEvaluationOrder_Test2():
 		{
 			var i32 mut x= 0;
 			// Overloaded binary operator argumenst should be evaluated in direct order.
-			S( AddMul10( x, 7 ) ) + S( AddMul10( x, 1 ) );
+			auto res= S( AddMul10( x, 7 ) ) + S( AddMul10( x, 1 ) );
 			return x;
 		}
 	"""
