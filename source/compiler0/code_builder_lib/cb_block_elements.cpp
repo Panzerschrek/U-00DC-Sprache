@@ -25,7 +25,10 @@ bool SingleExpressionMayBeUseless( const Synt::Expression& expression )
 	struct Visitor
 	{
 		bool operator()( const Synt::EmptyVariant& ) { return false; }
-		bool operator()( const Synt::CallOperator& ) { return true; } // Calls may have side-effects.
+		// Calls generally are not useless. Useless may be constexpr calls.
+		// But sometimes constexpr/non-constepxr call result may depend on template context.
+		// So, in order to avoid generating to many errors, assume, that all calls are not useless.
+		bool operator()( const Synt::CallOperator& ) { return false; }
 		// Some operators may be overloaded. Check if overloaded operator is called later.
 		bool operator()( const Synt::IndexationOperator& ) { return true; }
 		bool operator()( const Synt::MemberAccessOperator& ) { return true; }

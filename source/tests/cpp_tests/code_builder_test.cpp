@@ -417,7 +417,7 @@ U_TEST(CallTest1)
 	"\
 	fn Bar( i32 x ) : void \
 	{\
-		x + x;\
+		auto unused= x + x;\
 		return;\
 	}\
 	fn FullyVoid() { return; }\
