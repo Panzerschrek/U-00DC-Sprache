@@ -529,3 +529,43 @@ def UselessExpressionRoot_Test42():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def UselessExpressionRoot_Test43():
+	c_program_text= """
+		fn Foo(bool cond)
+		{
+			select( cond ? Bar() : Baz() ); // Select for "void" type is ok.
+		}
+		fn Bar();
+		fn Baz();
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UselessExpressionRoot_Test44():
+	c_program_text= """
+		fn Foo(bool cond)
+		{
+			select( cond ? Bar() : Baz() ); // Select for non-"void" type is useless.
+		}
+		fn Bar() : i32;
+		fn Baz() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )
+
+
+def UselessExpressionRoot_Test45():
+	c_program_text= """
+		fn Foo(bool cond)
+		{
+			select( cond ? Bar() : Baz() ); // Select for non-"void" type is useless.
+		}
+		fn Bar() : void &;
+		fn Baz() : void &;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UselessExpressionRoot", 4 ) )

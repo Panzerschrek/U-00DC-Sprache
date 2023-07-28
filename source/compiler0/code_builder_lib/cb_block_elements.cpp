@@ -18,9 +18,9 @@ namespace U
 namespace
 {
 
-// Return true, if root of expression may be useless in single expression block element.
-// If it returns "true" deep inspection is still required.
-bool SingleExpressionMayBeUseless( const Synt::Expression& expression )
+// Return true, if root of expression is useless in single expression block element.
+// "useless" meant that expression root is useless, not whole expression.
+bool SingleExpressionIsUseless( const Synt::Expression& expression )
 {
 	struct Visitor
 	{
@@ -29,19 +29,20 @@ bool SingleExpressionMayBeUseless( const Synt::Expression& expression )
 		// But sometimes constexpr/non-constepxr call result may depend on template context.
 		// So, in order to avoid generating too many errors, assume, that all calls are not useless.
 		bool operator()( const Synt::CallOperator& ) { return false; }
-		// Some operators may be overloaded. Check if overloaded operator is called later.
-		// But logically it is useless to call even an overloaded operator, since operators exist to return some value, not only to mutate some state.
+		// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
 		bool operator()( const Synt::IndexationOperator& ) { return true; }
 		bool operator()( const Synt::MemberAccessOperator& ) { return true; }
 		bool operator()( const Synt::UnaryPlus& ) { return true; }
 		bool operator()( const Synt::UnaryMinus& ) { return true; }
 		bool operator()( const Synt::LogicalNot& ) { return true; }
 		bool operator()( const Synt::BitwiseNot& ) { return true; }
-		bool operator()( const Synt::ComplexName& ) { return true; }
 		bool operator()( const Synt::BinaryOperator& ) { return true; }
 		bool operator()( const Synt::TernaryOperator& ) { return true; }
 		bool operator()( const Synt::ReferenceToRawPointerOperator& ) { return true; }
 		bool operator()( const Synt::RawPointerToReferenceOperator& ) { return true; }
+		// Name resolving itself has no side effects.
+		bool operator()( const Synt::ComplexName& ) { return true; }
+		// Simple constant expressions have no side effects.
 		bool operator()( const Synt::NumericConstant& ) { return true; }
 		bool operator()( const Synt::BooleanConstant& ) { return true; }
 		bool operator()( const Synt::StringLiteral& ) { return true; }
@@ -57,8 +58,8 @@ bool SingleExpressionMayBeUseless( const Synt::Expression& expression )
 		bool operator()( const Synt::NonSyncExpression& ) { return true; }
 		// safe/unsafe expressions needs to be visited deeply.
 		// safe/unsafe expression can't be discarded, because it has meaning.
-		bool operator()( const Synt::SafeExpression& safe_expression ) { return SingleExpressionMayBeUseless( *safe_expression.expression_ ); }
-		bool operator()( const Synt::UnsafeExpression& unsafe_expression ) { return SingleExpressionMayBeUseless( *unsafe_expression.expression_ ); }
+		bool operator()( const Synt::SafeExpression& safe_expression ) { return SingleExpressionIsUseless( *safe_expression.expression_ ); }
+		bool operator()( const Synt::UnsafeExpression& unsafe_expression ) { return SingleExpressionIsUseless( *unsafe_expression.expression_ ); }
 		// Type names have no side-effects.
 		bool operator()( const Synt::ArrayTypeName& ) { return true; }
 		bool operator()( const Synt::FunctionTypePtr& ) { return true; }
@@ -68,80 +69,6 @@ bool SingleExpressionMayBeUseless( const Synt::Expression& expression )
 	};
 
 	return std::visit( Visitor(), expression );
-}
-
-bool ExpressionResultHasImmediateSideEffects( const Variable& variable )
-{
-	if( variable.llvm_value == nullptr )
-		return true; // Something is wrong. Assume, that some side-effect can exist.
-
-	if( variable.constexpr_value != nullptr )
-		return false; // Constant expressions has no side effects.
-
-	if( llvm::dyn_cast<llvm::Argument>( variable.llvm_value ) != nullptr )
-		return false; // Accessing argument has no side effects.
-
-	if( llvm::dyn_cast<llvm::GlobalVariable>( variable.llvm_value ) != nullptr )
-		return false; // Accessing global variable address has no side effects.
-
-	if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( variable.llvm_value ) )
-	{
-		switch( instruction->getOpcode() )
-		{
-		case llvm::Instruction::Alloca:
-		case llvm::Instruction::Load:
-		case llvm::Instruction::GetElementPtr:
-		case llvm::Instruction::PHI:
-		case llvm::Instruction::Select:
-		case llvm::Instruction::ExtractValue:
-		case llvm::Instruction::SExt:
-		case llvm::Instruction::ZExt:
-		case llvm::Instruction::Trunc:
-		case llvm::Instruction::FPExt:
-		case llvm::Instruction::FPTrunc:
-		case llvm::Instruction::IntToPtr:
-		case llvm::Instruction::PtrToInt:
-		case llvm::Instruction::FNeg:
-		case llvm::Instruction::SIToFP:
-		case llvm::Instruction::UIToFP:
-		case llvm::Instruction::FPToSI:
-		case llvm::Instruction::FPToUI:
-		case llvm::Instruction::BitCast:
-		case llvm::Instruction::Add:
-		case llvm::Instruction::Sub:
-		case llvm::Instruction::Mul:
-		case llvm::Instruction::SDiv:
-		case llvm::Instruction::UDiv:
-		case llvm::Instruction::SRem:
-		case llvm::Instruction::URem:
-		case llvm::Instruction::And:
-		case llvm::Instruction::Or:
-		case llvm::Instruction::Xor:
-		case llvm::Instruction::Shl:
-		case llvm::Instruction::AShr:
-		case llvm::Instruction::LShr:
-		case llvm::Instruction::FAdd:
-		case llvm::Instruction::FSub:
-		case llvm::Instruction::FMul:
-		case llvm::Instruction::FDiv:
-		case llvm::Instruction::FRem:
-		case llvm::Instruction::ICmp:
-		case llvm::Instruction::FCmp:
-			return false;
-
-		case llvm::Instruction::Store: // Notmally "store" can't be expression result.
-		case llvm::Instruction::Call: // Call may contain side-effects.
-		case llvm::Instruction::AtomicCmpXchg:
-		case llvm::Instruction::AtomicRMW:
-			return true;
-
-		default:
-			break;
-		}
-	}
-
-	// Conservative assume, that other instructions/llvm values may have side effects.
-	return true;
 }
 
 } // namespace
@@ -2370,11 +2297,9 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( const auto variable_ptr= value.GetVariable() )
 	{
-		if( SingleExpressionMayBeUseless( single_expression_operator.expression_ ) &&
-			variable_ptr->type != void_type_ && !ExpressionResultHasImmediateSideEffects( *variable_ptr ) )
-		{
+		if( SingleExpressionIsUseless( single_expression_operator.expression_ ) &&
+			!( variable_ptr->type == void_type_ && variable_ptr->value_type == ValueType::Value ) )
 			REPORT_ERROR( UselessExpressionRoot, names.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression_ ) );
-		}
 	}
 	else if(
 		value.GetFunctionsSet() != nullptr ||
@@ -2383,10 +2308,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		value.GetThisOverloadedMethodsSet() != nullptr ||
 		value.GetNamespace() != nullptr ||
 		value.GetTypeTemplatesSet() != nullptr )
-	{
 		REPORT_ERROR( UselessExpressionRoot, names.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression_ ) );
-	}
-
 
 	return BlockBuildInfo();
 }
