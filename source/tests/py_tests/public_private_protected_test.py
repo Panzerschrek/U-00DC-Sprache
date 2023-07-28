@@ -241,7 +241,7 @@ def AccessingPrivateMemberOutsideClass_Test8():
 		fn Foo()
 		{
 			var A a;
-			a[17]; // Accessing private postfix operator.
+			auto res= a[17]; // Accessing private postfix operator.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
@@ -263,7 +263,7 @@ def AccessingPrivateMemberOutsideClass_Test9():
 		fn Foo()
 		{
 			var A a;
-			~a; // Accessing private unary prefix operator.
+			auto res= ~a; // Accessing private unary prefix operator.
 		}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )

@@ -1781,7 +1781,7 @@ U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
 		fn Foo()
 		{
 			unsafe{  cast_ref_unsafe</ i32 />( f32 );  }  // type name
-			cast_imut( NS );  // namespace
+			auto& x= cast_imut( NS );  // namespace
 		}
 	)";
 
@@ -1789,10 +1789,8 @@ U_TEST(ExpectedVariableInReferenceCastOperatorsTest0)
 
 	U_TEST_ASSERT( build_result.errors.size() >= 2u );
 
-	U_TEST_ASSERT( build_result.errors[0].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[0].src_loc.GetLine() == 5u );
-	U_TEST_ASSERT( build_result.errors[1].code == CodeBuilderErrorCode::ExpectedVariable );
-	U_TEST_ASSERT( build_result.errors[1].src_loc.GetLine() == 6u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 5 ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ExpectedVariable, 6 ) );
 }
 
 U_TEST(CouldNotOverloadFunctionTest1)
