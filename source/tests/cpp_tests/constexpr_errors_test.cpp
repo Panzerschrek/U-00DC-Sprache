@@ -349,16 +349,11 @@ U_TEST( ArrayIndexOutOfBoundsTest0 )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 	U_TEST_ASSERT( build_result.errors.size() >= 5u );
 
-	U_TEST_ASSERT( build_result.errors[0u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
-	U_TEST_ASSERT( build_result.errors[0u].src_loc.GetLine() == 6u );
-	U_TEST_ASSERT( build_result.errors[1u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
-	U_TEST_ASSERT( build_result.errors[1u].src_loc.GetLine() == 7u );
-	U_TEST_ASSERT( build_result.errors[2u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
-	U_TEST_ASSERT( build_result.errors[2u].src_loc.GetLine() == 8u );
-	U_TEST_ASSERT( build_result.errors[3u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
-	U_TEST_ASSERT( build_result.errors[3u].src_loc.GetLine() == 9u );
-	U_TEST_ASSERT( build_result.errors[4u].code == CodeBuilderErrorCode::ArrayIndexOutOfBounds );
-	U_TEST_ASSERT( build_result.errors[4u].src_loc.GetLine() == 10u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  6u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  7u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  8u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds,  9u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::ArrayIndexOutOfBounds, 10u ) );
 }
 
 } // namespace
