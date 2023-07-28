@@ -15,6 +15,79 @@
 namespace U
 {
 
+namespace
+{
+
+bool ExpressionResultHasImmediateSideEffects( const Variable& variable )
+{
+	if( variable.constexpr_value != nullptr )
+		return false; // Constant expressions has no side effects.
+
+	if( llvm::dyn_cast<llvm::Argument>( variable.llvm_value ) != nullptr )
+		return false; // Accessing argument has no side effects.
+
+	if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( variable.llvm_value ) )
+	{
+		switch( instruction->getOpcode() )
+		{
+		case llvm::Instruction::Alloca:
+		case llvm::Instruction::Load:
+		case llvm::Instruction::GetElementPtr:
+		case llvm::Instruction::PHI:
+		case llvm::Instruction::Select:
+		case llvm::Instruction::ExtractValue:
+		case llvm::Instruction::SExt:
+		case llvm::Instruction::ZExt:
+		case llvm::Instruction::Trunc:
+		case llvm::Instruction::FPExt:
+		case llvm::Instruction::FPTrunc:
+		case llvm::Instruction::IntToPtr:
+		case llvm::Instruction::PtrToInt:
+		case llvm::Instruction::FNeg:
+		case llvm::Instruction::SIToFP:
+		case llvm::Instruction::UIToFP:
+		case llvm::Instruction::FPToSI:
+		case llvm::Instruction::FPToUI:
+		case llvm::Instruction::BitCast:
+		case llvm::Instruction::Add:
+		case llvm::Instruction::Sub:
+		case llvm::Instruction::Mul:
+		case llvm::Instruction::SDiv:
+		case llvm::Instruction::UDiv:
+		case llvm::Instruction::SRem:
+		case llvm::Instruction::URem:
+		case llvm::Instruction::And:
+		case llvm::Instruction::Or:
+		case llvm::Instruction::Xor:
+		case llvm::Instruction::Shl:
+		case llvm::Instruction::AShr:
+		case llvm::Instruction::LShr:
+		case llvm::Instruction::FAdd:
+		case llvm::Instruction::FSub:
+		case llvm::Instruction::FMul:
+		case llvm::Instruction::FDiv:
+		case llvm::Instruction::FRem:
+		case llvm::Instruction::ICmp:
+		case llvm::Instruction::FCmp:
+			return false;
+
+		case llvm::Instruction::Store: // Notmally "store" can't be expression result.
+		case llvm::Instruction::Call: // Call may contain side-effects.
+		case llvm::Instruction::AtomicCmpXchg:
+		case llvm::Instruction::AtomicRMW:
+			return true;
+
+		default:
+			break;
+		}
+	}
+
+	// Conservative assume, that other instructions/llvm values may have side effects.
+	return true;
+}
+
+} // namespace
+
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfAlternative(
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -2234,8 +2307,27 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const Synt::SingleExpressionOperator& single_expression_operator )
 {
 	const StackVariablesStorage temp_variables_storage( function_context );
-	BuildExpressionCode( single_expression_operator.expression_, names, function_context );
+	const Value value= BuildExpressionCode( single_expression_operator.expression_, names, function_context );
 	CallDestructors( temp_variables_storage, names, function_context, single_expression_operator.src_loc_ );
+
+	if( const auto variable_ptr= value.GetVariable() )
+	{
+		if( variable_ptr->type != void_type_ && !ExpressionResultHasImmediateSideEffects( *variable_ptr ) )
+		{
+			REPORT_ERROR( UselessExpressionRoot, names.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression_ ) );
+		}
+	}
+	else if(
+		value.GetFunctionsSet() != nullptr ||
+		value.GetTypeName() != nullptr ||
+		value.GetClassField() != nullptr ||
+		value.GetThisOverloadedMethodsSet() != nullptr ||
+		value.GetNamespace() != nullptr ||
+		value.GetTypeTemplatesSet() != nullptr )
+	{
+		REPORT_ERROR( UselessExpressionRoot, names.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression_ ) );
+	}
+
 
 	return BlockBuildInfo();
 }
