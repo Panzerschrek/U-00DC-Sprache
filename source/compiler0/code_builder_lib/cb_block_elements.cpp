@@ -20,6 +20,9 @@ namespace
 
 bool ExpressionResultHasImmediateSideEffects( const Variable& variable )
 {
+	if( variable.llvm_value == nullptr )
+		return true; // Something is wrong. Assume, that some side-effect can exist.
+
 	if( variable.constexpr_value != nullptr )
 		return false; // Constant expressions has no side effects.
 
