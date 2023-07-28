@@ -27,7 +27,7 @@ bool SingleExpressionMayBeUseless( const Synt::Expression& expression )
 		bool operator()( const Synt::EmptyVariant& ) { return false; }
 		// Calls generally are not useless. Useless may be constexpr calls.
 		// But sometimes constexpr/non-constepxr call result may depend on template context.
-		// So, in order to avoid generating to many errors, assume, that all calls are not useless.
+		// So, in order to avoid generating too many errors, assume, that all calls are not useless.
 		bool operator()( const Synt::CallOperator& ) { return false; }
 		// Some operators may be overloaded. Check if overloaded operator is called later.
 		// But logically it is useless to call even an overloaded operator, since operators exist to return some value, not only to mutate some state.
@@ -48,6 +48,7 @@ bool SingleExpressionMayBeUseless( const Synt::Expression& expression )
 		// Move and take have side effects.
 		bool operator()( const Synt::MoveOperator& ) { return false; }
 		bool operator()( const Synt::TakeOperator& ) { return false; }
+		// Casts have no side effects.
 		bool operator()( const Synt::CastMut& ) { return true; }
 		bool operator()( const Synt::CastImut& ) { return true; }
 		bool operator()( const Synt::CastRef& ) { return true; }
@@ -79,6 +80,9 @@ bool ExpressionResultHasImmediateSideEffects( const Variable& variable )
 
 	if( llvm::dyn_cast<llvm::Argument>( variable.llvm_value ) != nullptr )
 		return false; // Accessing argument has no side effects.
+
+	if( llvm::dyn_cast<llvm::GlobalVariable>( variable.llvm_value ) != nullptr )
+		return false; // Accessing global variable address has no side effects.
 
 	if( const auto instruction= llvm::dyn_cast<llvm::Instruction>( variable.llvm_value ) )
 	{

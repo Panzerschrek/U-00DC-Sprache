@@ -90,6 +90,7 @@ def main():
 		"uninitialized_initializer_test",
 		"unsafe_expression_test",
 		"unsafe_test",
+		"useless_expression_root_errors_test",
 		"virtual_functions_test",
 		"void_test",
 		"with_operator_test"
