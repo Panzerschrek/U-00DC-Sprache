@@ -18,6 +18,53 @@ namespace U
 namespace
 {
 
+// Return true, if root of expression may be useless in single expression block element.
+// If it returns "true" deep inspection is still required.
+bool SingleExpressionMayBeUseless( const Synt::Expression& expression )
+{
+	struct Visitor
+	{
+		bool operator()( const Synt::EmptyVariant& ) { return false; }
+		bool operator()( const Synt::CallOperator& ) { return true; } // Calls may have side-effects.
+		// Some operators may be overloaded. Check if overloaded operator is called later.
+		bool operator()( const Synt::IndexationOperator& ) { return true; }
+		bool operator()( const Synt::MemberAccessOperator& ) { return true; }
+		bool operator()( const Synt::UnaryPlus& ) { return true; }
+		bool operator()( const Synt::UnaryMinus& ) { return true; }
+		bool operator()( const Synt::LogicalNot& ) { return true; }
+		bool operator()( const Synt::BitwiseNot& ) { return true; }
+		bool operator()( const Synt::ComplexName& ) { return true; }
+		bool operator()( const Synt::BinaryOperator& ) { return true; }
+		bool operator()( const Synt::TernaryOperator& ) { return true; }
+		bool operator()( const Synt::ReferenceToRawPointerOperator& ) { return true; }
+		bool operator()( const Synt::RawPointerToReferenceOperator& ) { return true; }
+		bool operator()( const Synt::NumericConstant& ) { return true; }
+		bool operator()( const Synt::BooleanConstant& ) { return true; }
+		bool operator()( const Synt::StringLiteral& ) { return true; }
+		// Move and take have side effects.
+		bool operator()( const Synt::MoveOperator& ) { return false; }
+		bool operator()( const Synt::TakeOperator& ) { return false; }
+		bool operator()( const Synt::CastMut& ) { return true; }
+		bool operator()( const Synt::CastImut& ) { return true; }
+		bool operator()( const Synt::CastRef& ) { return true; }
+		bool operator()( const Synt::CastRefUnsafe& ) { return true; }
+		bool operator()( const Synt::TypeInfo& ) { return true; }
+		bool operator()( const Synt::NonSyncExpression& ) { return true; }
+		// safe/unsafe expressions needs to be visited deeply.
+		// safe/unsafe expression can't be discarded, because it has meaning.
+		bool operator()( const Synt::SafeExpression& safe_expression ) { return SingleExpressionMayBeUseless( *safe_expression.expression_ ); }
+		bool operator()( const Synt::UnsafeExpression& unsafe_expression ) { return SingleExpressionMayBeUseless( *unsafe_expression.expression_ ); }
+		// Type names have no side-effects.
+		bool operator()( const Synt::ArrayTypeName& ) { return true; }
+		bool operator()( const Synt::FunctionTypePtr& ) { return true; }
+		bool operator()( const Synt::TupleType& ) { return true; }
+		bool operator()( const Synt::RawPointerType& ) { return true; }
+		bool operator()( const Synt::GeneratorTypePtr& ) { return true; }
+	};
+
+	return std::visit( Visitor(), expression );
+}
+
 bool ExpressionResultHasImmediateSideEffects( const Variable& variable )
 {
 	if( variable.llvm_value == nullptr )
@@ -2315,7 +2362,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	if( const auto variable_ptr= value.GetVariable() )
 	{
-		if( variable_ptr->type != void_type_ && !ExpressionResultHasImmediateSideEffects( *variable_ptr ) )
+		if( SingleExpressionMayBeUseless( single_expression_operator.expression_ ) &&
+			variable_ptr->type != void_type_ && !ExpressionResultHasImmediateSideEffects( *variable_ptr ) )
 		{
 			REPORT_ERROR( UselessExpressionRoot, names.GetErrors(), Synt::GetExpressionSrcLoc( single_expression_operator.expression_ ) );
 		}
