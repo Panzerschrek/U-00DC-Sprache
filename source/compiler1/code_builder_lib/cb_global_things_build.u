@@ -1375,8 +1375,7 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	variable.t= expr.t;
 	if( variable.t == invalid_type_ )
 	{
-		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope_ptr, auto_variable_declaration.src_loc, auto_variable_declaration.name )
-		return;
+		return; // Some error was generated before.
 	}
 	if( !variable.t.CanBeConstexpr() )
 	{

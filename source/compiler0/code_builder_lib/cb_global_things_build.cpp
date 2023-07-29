@@ -1208,21 +1208,9 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 		const StackVariablesStorage temp_variables_storage( function_context );
 
 		const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration->initializer_expression, names_scope, function_context );
-
-		{ // Check expression type. Expression can have exotic types, such "Overloading functions set", "class name", etc.
-			const bool type_is_ok=
-				initializer_experrsion->type.GetFundamentalType() != nullptr ||
-				initializer_experrsion->type.GetArrayType() != nullptr ||
-				initializer_experrsion->type.GetTupleType() != nullptr ||
-				initializer_experrsion->type.GetClassType() != nullptr ||
-				initializer_experrsion->type.GetEnumType() != nullptr ||
-				initializer_experrsion->type.GetRawPointerType() != nullptr ||
-				initializer_experrsion->type.GetFunctionPointerType() != nullptr;
-			if( !type_is_ok || initializer_experrsion->type == invalid_type_ )
-			{
-				REPORT_ERROR( InvalidTypeForAutoVariable, names_scope.GetErrors(), auto_variable_declaration->src_loc_, initializer_experrsion->type );
-				FAIL_RETURN;
-			}
+		if( initializer_experrsion->type == invalid_type_ )
+		{
+			FAIL_RETURN; // Some error was generated before.
 		}
 
 		const VariableMutPtr variable_reference=

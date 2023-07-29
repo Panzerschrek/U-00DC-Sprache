@@ -769,7 +769,7 @@ size_t CodeBuilder::PrepareFunction(
 	}
 	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
 	{
-		REPORT_ERROR( InitializationListInNonconstructor, names_scope.GetErrors(), func.constructor_initialization_list_->src_loc_ );
+		REPORT_ERROR( InitializationListInNonConstructor, names_scope.GetErrors(), func.constructor_initialization_list_->src_loc_ );
 		return ~0u;
 	}
 	if( is_destructor && func.type_.params_.size() >= 2u )

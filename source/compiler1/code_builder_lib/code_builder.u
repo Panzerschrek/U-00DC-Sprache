@@ -436,7 +436,7 @@ fn CodeBuilder::PrepareFunction(
 
 	if( !function_declaration.constructor_initializer_list.empty() && func_name != KeywordToString( Keyword::constructor_ ) )
 	{
-		REPORT_ERROR( InitializationListInNonconstructor, names_scope_ptr, function_declaration.constructor_initializer_list.try_deref().src_loc )
+		REPORT_ERROR( InitializationListInNonConstructor, names_scope_ptr, function_declaration.constructor_initializer_list.try_deref().src_loc )
 	}
 
 	// TODO - maybe clear global constext after it's usage?

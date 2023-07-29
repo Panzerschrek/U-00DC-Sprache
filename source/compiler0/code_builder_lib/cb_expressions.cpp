@@ -897,11 +897,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 							BuildCopyConstructorPart( result->llvm_value, branch_result->llvm_value, result->type, function_context );
 					}
 				}
-				else
-				{
-					REPORT_ERROR( NotImplemented, names.GetErrors(), ternary_operator.src_loc_, "move such kind of types" );
-					return ErrorValue();
-				}
+				else U_ASSERT( false );
 			}
 			else
 			{

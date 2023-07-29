@@ -347,8 +347,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 	var VariableLite expr= expr_ptr.lock_imut().deref();
 	if( expr.t == invalid_type_ )
 	{
-		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope, auto_variable_declaration.src_loc, auto_variable_declaration.name )
-		return BlockElementBuildInfo();
+		return BlockElementBuildInfo(); // Some error was generated before.
 	}
 
 	if( auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr && expr.constexpr_value == LLVMValueRef::Null )
@@ -2409,8 +2408,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	var VariableLite expr= expr_ptr.lock_imut().deref();
 	if( expr.t == invalid_type_ )
 	{
-		REPORT_ERROR( InvalidTypeForAutoVariable, names_scope, with_operator.src_loc, with_operator.variable_name )
-		return BlockElementBuildInfo();
+		return BlockElementBuildInfo(); // Some error was generated before.
 	}
 
 	var bool is_mutable= with_operator.mutability_modifier == Synt::MutabilityModifier::Mutable;

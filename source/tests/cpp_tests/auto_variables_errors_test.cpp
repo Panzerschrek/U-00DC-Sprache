@@ -25,7 +25,7 @@ U_TEST(InvalidTypeForAutoVariableTest0)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidTypeForAutoVariable );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 
@@ -46,7 +46,7 @@ U_TEST(InvalidTypeForAutoVariableTest1)
 	U_TEST_ASSERT( !build_result.errors.empty() );
 	const CodeBuilderError& error= build_result.errors.front();
 
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::InvalidTypeForAutoVariable );
+	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::ExpectedVariable );
 	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
 }
 

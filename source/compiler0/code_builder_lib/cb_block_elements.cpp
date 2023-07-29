@@ -364,12 +364,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const StackVariablesStorage temp_variables_storage( function_context );
 
 	const VariablePtr initializer_experrsion= BuildExpressionCodeEnsureVariable( auto_variable_declaration.initializer_expression, names, function_context );
-
 	if( initializer_experrsion->type == invalid_type_ )
-	{
-		REPORT_ERROR( InvalidTypeForAutoVariable, names.GetErrors(), auto_variable_declaration.src_loc_, initializer_experrsion->type );
-		return BlockBuildInfo();
-	}
+		return BlockBuildInfo(); // Some error was generated before.
 
 	if( auto_variable_declaration.reference_modifier != ReferenceModifier::Reference ||
 		auto_variable_declaration.mutability_modifier == Synt::MutabilityModifier::Constexpr )

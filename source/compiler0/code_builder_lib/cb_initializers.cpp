@@ -411,11 +411,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				names.GetErrors(), src_loc, variable->llvm_value, value_for_copy, variable->type.GetClassType(), function_context );
 		}
 	}
-	else
-	{
-		REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "expression initialization for arrays" );
-		return nullptr;
-	}
+	else U_ASSERT( false );
 
 	return nullptr;
 }
@@ -946,11 +942,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 
 		CallFunction( std::move(this_overloaded_methods_set), synt_args, src_loc, block_names, function_context );
 	}
-	else
-	{
-		REPORT_ERROR( ConstructorInitializerForUnsupportedType, block_names.GetErrors(), src_loc );
-		return nullptr;
-	}
+	else U_ASSERT( false );
 
 	return nullptr;
 }
