@@ -124,7 +124,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 				the_class.base_class,
 				ValueType::ReferenceMut,
 				Variable::Location::Pointer,
-				Keyword( Keywords::base_ ),
+				std::string( Keyword( Keywords::base_ ) ),
 				CreateBaseClassGEP( function_context, *class_type, this_llvm_value ) );
 		function_context.variables_state.AddNode( base_variable );
 
@@ -383,7 +383,7 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVar
 			class_type,
 			ValueType::ReferenceMut,
 			Variable::Location::Pointer,
-			Keyword( Keywords::this_ ),
+			std::string( Keyword( Keywords::this_ ) ),
 			this_llvm_value );
 
 	FunctionContext function_context(
@@ -442,7 +442,7 @@ void CodeBuilder::TryGenerateDestructor( const ClassPtr class_type )
 void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 {
 	Class& the_class= *class_type;
-	const std::string op_name= OverloadedOperatorToString( OverloadedOperator::Assign );
+	const std::string_view op_name= OverloadedOperatorToString( OverloadedOperator::Assign );
 
 	// Search for explicit assignment operator.
 	FunctionVariable* operator_variable= nullptr;
@@ -592,7 +592,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type )
 {
 	Class& the_class= *class_type;
-	const std::string op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+	const std::string_view op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
 
 	// Search for explicit "==" operator.
 	FunctionVariable* operator_variable= nullptr;

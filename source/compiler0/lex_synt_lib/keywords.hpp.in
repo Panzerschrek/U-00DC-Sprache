@@ -12,15 +12,15 @@ enum class Keywords : unsigned int
 	LastKeyword,
 };
 
-bool IsKeyword( const std::string& str );
+bool IsKeyword( std::string_view str );
 
-const std::string& Keyword( Keywords keyword );
+std::string_view Keyword( Keywords keyword );
 
 // Relation operators for string and keyword enum.
 // This operators make posible to write "str == Keywords::var_".
-bool operator==( Keywords keyword, const std::string& str );
-bool operator==( const std::string& str, Keywords keyword );
-bool operator!=( Keywords keyword, const std::string& str );
-bool operator!=( const std::string& str, Keywords keyword );
+bool operator==( Keywords keyword, std::string_view str );
+bool operator==( std::string_view str, Keywords keyword );
+bool operator!=( Keywords keyword, std::string_view str );
+bool operator!=( std::string_view str, Keywords keyword );
 
 } // namespace U

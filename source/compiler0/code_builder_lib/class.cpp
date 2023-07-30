@@ -11,7 +11,7 @@ Class::Class( std::string in_name, NamesScope* const parent_scope )
 	, members_initial(members)
 {}
 
-ClassMemberVisibility Class::GetMemberVisibility( const std::string& member_name ) const
+ClassMemberVisibility Class::GetMemberVisibility( const std::string_view member_name ) const
 {
 	const auto it= members_visibility.find( member_name );
 	if( it == members_visibility.end() )
@@ -19,7 +19,7 @@ ClassMemberVisibility Class::GetMemberVisibility( const std::string& member_name
 	return it->second;
 }
 
-void Class::SetMemberVisibility( const std::string& member_name, const ClassMemberVisibility visibility )
+void Class::SetMemberVisibility( const std::string_view member_name, const ClassMemberVisibility visibility )
 {
 	if( visibility == ClassMemberVisibility::Public )
 		return;

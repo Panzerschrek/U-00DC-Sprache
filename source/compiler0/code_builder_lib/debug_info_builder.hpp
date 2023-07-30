@@ -25,17 +25,17 @@ public:
 
 	void CreateVariableInfo(
 		const Variable& variable,
-		const std::string& variable_name,
+		std::string_view variable_name,
 		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
 	void CreateReferenceVariableInfo(
 		const Variable& variable,
-		const std::string& variable_name,
+		std::string_view variable_name,
 		const SrcLoc& src_loc,
 		FunctionContext& function_context );
 
-	void CreateFunctionInfo( const FunctionVariable& func_variable, const std::string& function_name );
+	void CreateFunctionInfo( const FunctionVariable& func_variable, std::string_view function_name );
 
 	void SetCurrentLocation( const SrcLoc& src_loc, FunctionContext& function_context );
 

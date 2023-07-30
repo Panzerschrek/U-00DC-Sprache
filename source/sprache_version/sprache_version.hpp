@@ -4,8 +4,8 @@
 namespace U
 {
 
-const std::string& getSpracheVersion();
-const std::string& getGitRevision();
-const std::string& getFullVersion();
+std::string_view getSpracheVersion();
+std::string_view getGitRevision();
+std::string_view getFullVersion();
 
 } // namespace U

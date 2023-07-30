@@ -26,11 +26,14 @@ DebugInfoBuilder::DebugInfoBuilder(
 
 	builder_= std::make_unique<llvm::DIBuilder>( llvm_module );
 
+	std::string version_str= "U+00DC-Sprache compiler ";
+	version_str+= getFullVersion();
+
 	compile_unit_=
 		builder_->createCompileUnit(
 			c_dwarf_language_id,
 			source_file_entries_[0],
-			"U+00DC-Sprache compiler " + getFullVersion(),
+			version_str,
 			false, // optimized
 			"",
 			0 /* runtime version */ );
@@ -44,7 +47,7 @@ DebugInfoBuilder::~DebugInfoBuilder()
 
 void DebugInfoBuilder::CreateVariableInfo(
 	const Variable& variable,
-	const std::string& variable_name,
+	const std::string_view variable_name,
 	const SrcLoc& src_loc,
 	FunctionContext& function_context )
 {
@@ -69,7 +72,7 @@ void DebugInfoBuilder::CreateVariableInfo(
 
 void DebugInfoBuilder::CreateReferenceVariableInfo(
 	const Variable& variable,
-	const std::string& variable_name,
+	const std::string_view variable_name,
 	const SrcLoc& src_loc,
 	FunctionContext& function_context )
 {
@@ -96,7 +99,7 @@ void DebugInfoBuilder::CreateReferenceVariableInfo(
 		function_context.llvm_ir_builder.GetInsertBlock() );
 }
 
-void DebugInfoBuilder::CreateFunctionInfo( const FunctionVariable& func_variable, const std::string& function_name )
+void DebugInfoBuilder::CreateFunctionInfo( const FunctionVariable& func_variable, const std::string_view function_name )
 {
 	if( builder_ == nullptr )
 		return;
@@ -419,7 +422,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 
 	llvm::SmallVector<llvm::Metadata*, 16> elements;
 	type->members.ForEachInThisScope(
-		[&]( const std::string& name, const Value& value )
+		[&]( const std::string_view name, const Value& value )
 		{
 			const VariablePtr variable= value.GetVariable();
 			if( variable == nullptr )

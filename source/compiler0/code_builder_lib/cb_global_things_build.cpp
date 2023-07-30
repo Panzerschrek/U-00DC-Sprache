@@ -594,7 +594,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// Fill container with fields names.
 	the_class.fields_order.resize( fields_llvm_types.size() );
 	the_class.members->ForEachInThisScope(
-		[&]( const std::string& name, const Value& value )
+		[&]( const std::string_view name, const Value& value )
 		{
 			if( const auto field= value.GetClassField() )
 				the_class.fields_order[field->index]= name;
@@ -785,7 +785,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	{
 		const auto parent_class= parent.class_;
 		parent_class->members->ForEachInThisScope(
-			[&]( const std::string& name, const Value& value )
+			[&]( const std::string_view name, const Value& value )
 			{
 				const auto parent_member_visibility= parent_class->GetMemberVisibility( name );
 				if( parent_member_visibility == ClassMemberVisibility::Private )
@@ -905,7 +905,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 	// Immediately build constexpr functions.
 	the_class.members->ForEachInThisScope(
-		[&]( const std::string& name, Value& value )
+		[&]( const std::string_view name, Value& value )
 		{
 			const OverloadedFunctionsSetPtr functions_set= value.GetFunctionsSet();
 			if( functions_set == nullptr )
@@ -1286,7 +1286,7 @@ size_t CodeBuilder::GlobalThingDetectloop( const GlobalThing& global_thing )
 	return ~0u;
 }
 
-void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_index, const std::string& last_loop_element_name, const SrcLoc& last_loop_element_src_loc )
+void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_index, const std::string_view last_loop_element_name, const SrcLoc& last_loop_element_src_loc )
 {
 	std::string description;
 

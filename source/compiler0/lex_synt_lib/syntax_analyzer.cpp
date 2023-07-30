@@ -3098,7 +3098,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			return nullptr;
 		};
 
-		result->name_.push_back( OverloadedOperatorToString( overloaded_operator ) );
+		result->name_.emplace_back( OverloadedOperatorToString( overloaded_operator ) );
 		result->overloaded_operator_= overloaded_operator;
 
 		NextLexem();

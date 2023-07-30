@@ -47,8 +47,8 @@ private:
 
 	Synt::TypeName TranslateType( const clang::Type& in_type );
 	std::string TranslateRecordType( const clang::RecordType& in_type );
-	std::string GetUFundamentalType( const clang::BuiltinType& in_type );
-	Synt::ComplexName TranslateNamedType( const std::string& cpp_type_name );
+	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
+	Synt::ComplexName TranslateNamedType( std::string_view cpp_type_name );
 	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
@@ -755,7 +755,7 @@ std::string CppAstConsumer::TranslateRecordType( const clang::RecordType& in_typ
 			return it->second;
 		else
 		{
-			const std::string& anon_name= "ü_anon_record" + std::to_string( ++unique_name_index_ );
+			const std::string anon_name= "ü_anon_record" + std::to_string( ++unique_name_index_ );
 			anon_records_names_cache_[ &in_type ]= anon_name;
 			return anon_name;
 		}
@@ -764,7 +764,7 @@ std::string CppAstConsumer::TranslateRecordType( const clang::RecordType& in_typ
 		return TranslateIdentifier( name );
 }
 
-std::string CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
+std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_type )
 {
 	switch( in_type.getKind() )
 	{
@@ -809,7 +809,7 @@ std::string CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& in_ty
 	};
 }
 
-Synt::ComplexName CppAstConsumer::TranslateNamedType( const std::string& cpp_type_name )
+Synt::ComplexName CppAstConsumer::TranslateNamedType( const std::string_view cpp_type_name )
 {
 	Synt::NameLookup named_type(g_dummy_src_loc);
 	named_type.name= TranslateIdentifier( cpp_type_name );

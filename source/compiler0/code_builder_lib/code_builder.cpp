@@ -322,7 +322,7 @@ void CodeBuilder::MergeNameScopes(
 	const ClassesMembersNamespacesTable& src_classes_members_namespaces_table )
 {
 	src.ForEachInThisScope(
-		[&]( const std::string& src_name, const Value& src_member )
+		[&]( const std::string_view src_name, const Value& src_member )
 		{
 			Value* const dst_member= dst.GetThisScopeValue(src_name );
 			if( dst_member == nullptr )
@@ -1223,7 +1223,7 @@ Type CodeBuilder::BuildFuncCode(
 	FunctionVariable& func_variable,
 	const ClassPtr base_class,
 	NamesScope& parent_names_scope,
-	const std::string& func_name,
+	const std::string_view func_name,
 	const Synt::FunctionParams& params,
 	const Synt::Block& block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
@@ -1844,7 +1844,7 @@ llvm::Value* CodeBuilder::CreateReferenceCast( llvm::Value* const ref, const Typ
 
 llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	const Type& type,
-	const std::string& mangled_name,
+	const std::string_view mangled_name,
 	llvm::Constant* const initializer )
 {
 	// Try to reuse global variable.
@@ -1866,7 +1866,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	return val;
 }
 
-llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name, const bool externally_available )
+llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type, const std::string_view mangled_name, const bool externally_available )
 {
 	const auto var=
 		new llvm::GlobalVariable(

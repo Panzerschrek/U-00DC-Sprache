@@ -11,13 +11,8 @@
 namespace U
 {
 
-
-class TemplateSignatureParam;
-
 class NamesScope;
 using NamesScopePtr= std::shared_ptr<NamesScope>;
-
-struct TemplateBase;
 
 struct TypeTemplate;
 using TypeTemplatePtr= std::shared_ptr<const TypeTemplate>;
@@ -222,7 +217,7 @@ public:
 	Value( ErrorValue error_value );
 
 	size_t GetKindIndex() const;
-	std::string GetKindName() const;
+	std::string_view GetKindName() const;
 	const SrcLoc& GetSrcLoc() const;
 
 	VariablePtr GetVariable() const;
@@ -255,7 +250,6 @@ public:
 	YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg();
 	const YetNotDeducedTemplateArg* GetYetNotDeducedTemplateArg() const;
 	// Error value
-	ErrorValue* GetErrorValue();
 	const ErrorValue* GetErrorValue() const;
 
 private:

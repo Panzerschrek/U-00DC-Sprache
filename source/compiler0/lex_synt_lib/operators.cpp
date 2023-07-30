@@ -5,7 +5,7 @@
 namespace U
 {
 
-std::string BinaryOperatorToString( const BinaryOperatorType op )
+std::string_view BinaryOperatorToString( const BinaryOperatorType op )
 {
 	switch( op )
 	{
@@ -38,7 +38,7 @@ std::string BinaryOperatorToString( const BinaryOperatorType op )
 	return "";
 }
 
-std::string OverloadedOperatorToString( const OverloadedOperator op )
+std::string_view OverloadedOperatorToString( const OverloadedOperator op )
 {
 	switch( op )
 	{

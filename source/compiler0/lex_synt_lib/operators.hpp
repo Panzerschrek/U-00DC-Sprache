@@ -75,8 +75,8 @@ enum class OverloadedOperator : uint8_t
 	Call,
 };
 
-std::string BinaryOperatorToString( BinaryOperatorType op );
-std::string OverloadedOperatorToString( OverloadedOperator op );
+std::string_view BinaryOperatorToString( BinaryOperatorType op );
+std::string_view OverloadedOperatorToString( OverloadedOperator op );
 
 OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorType binary_operator_type );
 OverloadedOperator GetOverloadedOperatorForAdditiveAssignmentOperator( const BinaryOperatorType operator_type );

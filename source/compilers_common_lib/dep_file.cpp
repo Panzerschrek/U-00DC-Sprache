@@ -49,7 +49,7 @@ bool NothingChanged(
 	{
 		if( version->kind() != llvm::json::Value::String )
 			return false;
-		if( *(version->getAsString()) != getFullVersion() )
+		if( *(version->getAsString()) != std::string(getFullVersion()) )
 			return false;
 	}
 	else
@@ -105,7 +105,7 @@ void Write(
 	const std::vector<IVfs::Path>& deps_list )
 {
 	llvm::json::Object doc;
-	doc[c_version]= getFullVersion();
+	doc[c_version]= std::string( getFullVersion() );
 
 	{
 		llvm::json::Array args;

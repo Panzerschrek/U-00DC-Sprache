@@ -77,7 +77,7 @@ std::string_view GetCallingConventionName( const llvm::CallingConv::ID calling_c
 	return "A";
 }
 
-const ProgramStringMap<std::string> g_op_names
+const std::unordered_map<std::string_view, std::string_view> g_op_names
 {
 	{ "+", "?H" },
 	{ "-", "?G" },
@@ -119,16 +119,14 @@ const ProgramStringMap<std::string> g_op_names
 	{ "[]", "?A" },
 };
 
-const std::string g_empty_op_name;
-
 // Returns empty string if func_name is not special.
-const std::string& DecodeOperator( const std::string& func_name )
+std::string_view DecodeOperator( std::string_view func_name )
 {
 	const auto it= g_op_names.find( func_name );
 	if( it != g_op_names.end() )
 		return it->second;
 
-	return g_empty_op_name;
+	return "";
 }
 
 // Use special class for backreferences table tracking and usage.
@@ -208,10 +206,10 @@ public:
 public: // IMangler
 	std::string MangleFunction(
 		const NamesScope& parent_scope,
-		const std::string& function_name,
+		std::string_view function_name,
 		const FunctionType& function_type,
 		const TemplateArgs* template_args ) override;
-	std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, bool is_constant ) override;
+	std::string MangleGlobalVariable( const NamesScope& parent_scope, std::string_view variable_name, const Type& type, bool is_constant ) override;
 	std::string MangleType( const Type& type ) override;
 	std::string MangleTemplateArgs( const TemplateArgs& template_args ) override;
 	std::string MangleVirtualTable( const Type& type ) override;
@@ -237,7 +235,7 @@ ManglerMSVC::ManglerMSVC(const bool is_32_bit)
 
 std::string ManglerMSVC::MangleFunction(
 	const NamesScope& parent_scope,
-	const std::string& function_name,
+	const std::string_view function_name,
 	const FunctionType& function_type,
 	const TemplateArgs* const template_args )
 {
@@ -249,7 +247,7 @@ std::string ManglerMSVC::MangleFunction(
 
 	mangler_state.PushElement( g_name_prefix );
 
-	const std::string& op_name= DecodeOperator( function_name );
+	const std::string_view op_name= DecodeOperator( function_name );
 	if( template_args != nullptr )
 	{
 		// Use separate backreferences table.
@@ -288,7 +286,7 @@ std::string ManglerMSVC::MangleFunction(
 	return res;
 }
 
-std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, const bool is_constant )
+std::string ManglerMSVC::MangleGlobalVariable( const NamesScope& parent_scope, const std::string_view variable_name, const Type& type, const bool is_constant )
 {
 	std::string res;
 	ManglerState mangler_state( res );

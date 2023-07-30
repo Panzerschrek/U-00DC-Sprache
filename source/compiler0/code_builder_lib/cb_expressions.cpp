@@ -384,7 +384,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			variable->type,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			OverloadedOperatorToString(OverloadedOperator::Sub) );
+			std::string( OverloadedOperatorToString(OverloadedOperator::Sub) ) );
 
 	if( llvm::Value* const value_for_neg= CreateMoveToLLVMRegisterInstruction( *variable, function_context ) )
 	{
@@ -431,7 +431,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			variable->type,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			OverloadedOperatorToString(OverloadedOperator::LogicalNot) );
+			std::string( OverloadedOperatorToString(OverloadedOperator::LogicalNot) ) );
 
 	if( const auto src_val= CreateMoveToLLVMRegisterInstruction( *variable, function_context ) )
 	{
@@ -472,7 +472,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			variable->type,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			OverloadedOperatorToString(OverloadedOperator::BitwiseNot) );
+			std::string( OverloadedOperatorToString(OverloadedOperator::BitwiseNot) ) );
 
 	if( const auto src_val= CreateMoveToLLVMRegisterInstruction( *variable, function_context ) )
 	{
@@ -525,7 +525,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						bool_type_,
 						ValueType::Value,
 						Variable::Location::LLVMRegister,
-						OverloadedOperatorToString( overloaded_operator ) );
+						std::string( OverloadedOperatorToString( overloaded_operator ) ) );
 
 				// "!=" is implemented via "==", so, invert result.
 				if( const auto call_value_in_register= CreateMoveToLLVMRegisterInstruction( *call_variable, function_context ) )
@@ -549,7 +549,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						bool_type_,
 						ValueType::Value,
 						Variable::Location::LLVMRegister,
-						OverloadedOperatorToString( overloaded_operator ) );
+						std::string( OverloadedOperatorToString( overloaded_operator ) ) );
 
 				if( const auto call_value_in_register= CreateMoveToLLVMRegisterInstruction( *call_variable, function_context ) )
 				{
@@ -661,7 +661,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					class_.base_class,
 					function_context.this_->value_type,
 					Variable::Location::Pointer,
-					Keyword( Keywords::base_ ),
+					std::string( Keyword( Keywords::base_ ) ),
 					CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, class_.base_class, function_context ) );
 
 			function_context.variables_state.AddNode( base );
@@ -1085,7 +1085,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			bool_type_,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ) );
+			std::string( Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ) ) );
 
 	result->llvm_value= result->constexpr_value= llvm::ConstantInt::getBool( llvm_context_, boolean_constant.value_ );
 
@@ -1507,7 +1507,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			bool_type_,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			Keyword( Keywords::non_sync_ ) );
+			std::string( Keyword( Keywords::non_sync_ ) ) );
 
 	result->llvm_value= result->constexpr_value= llvm::ConstantInt::getBool( llvm_context_, is_non_sync );
 
@@ -1644,7 +1644,7 @@ VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionC
 			variabe_type_class->base_class,
 			variable->value_type == ValueType::ReferenceMut ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			Keyword( Keywords::base_ ),
+			std::string( Keyword( Keywords::base_ ) ),
 			ForceCreateConstantIndexGEP( function_context, variable->type.GetLLVMType(), variable->llvm_value, c_base_field_index ) );
 
 	variable->children[ c_base_field_index ]= base;
@@ -1983,7 +1983,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 				bool_type_,
 				ValueType::Value,
 				Variable::Location::LLVMRegister,
-				OverloadedOperatorToString(op) );
+				std::string( OverloadedOperatorToString(op) ) );
 
 		if( l_var->constexpr_value != nullptr && r_var->constexpr_value != nullptr )
 			result->llvm_value= result->constexpr_value= ConstexprCompareEqual( l_var->constexpr_value, r_var->constexpr_value, l_var->type, names, src_loc );
@@ -2807,7 +2807,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 			bool_type_,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			BinaryOperatorToString(binary_operator.operator_type_) );
+			std::string( BinaryOperatorToString(binary_operator.operator_type_) ) );
 
 	if( !function_context.is_functionless_context )
 	{

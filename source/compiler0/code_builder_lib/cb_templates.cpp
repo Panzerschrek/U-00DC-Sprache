@@ -23,7 +23,7 @@ void CreateTemplateErrorsContext(
 	const SrcLoc& src_loc,
 	const NamesScopePtr& template_parameters_namespace,
 	const TemplateBase& template_,
-	const std::string& template_name,
+	const std::string_view template_name,
 	const TemplateArgs& template_args )
 {
 	REPORT_ERROR( TemplateContext, errors_container, src_loc );

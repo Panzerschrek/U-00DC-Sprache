@@ -60,9 +60,9 @@ bool IsByte( const U_FundamentalType type )
 		type == U_FundamentalType::byte128_;
 }
 
-const std::string g_invalid_type_name= "InvalidType";
+const std::string_view g_invalid_type_name= "InvalidType";
 
-const std::string& GetFundamentalTypeName( const U_FundamentalType type )
+std::string_view GetFundamentalTypeName( const U_FundamentalType type )
 {
 	switch(type)
 	{
@@ -96,7 +96,7 @@ const std::string& GetFundamentalTypeName( const U_FundamentalType type )
 	return g_invalid_type_name;
 }
 
-U_FundamentalType GetFundamentalTypeByName( const std::string& name )
+U_FundamentalType GetFundamentalTypeByName( const std::string_view name )
 {
 	// Use here a lot of compare operations, instead of std::unordered_map, because
 	// unordered maps needs be constructed after construction of keywords list.

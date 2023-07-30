@@ -12,10 +12,10 @@ public:
 
 	virtual std::string MangleFunction(
 		const NamesScope& parent_scope,
-		const std::string& function_name,
+		std::string_view function_name,
 		const FunctionType& function_type,
 		const TemplateArgs* template_args= nullptr ) = 0;
-	virtual std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, bool is_constant ) = 0;
+	virtual std::string MangleGlobalVariable( const NamesScope& parent_scope, std::string_view variable_name, const Type& type, bool is_constant ) = 0;
 	virtual std::string MangleType( const Type& type ) = 0;
 	virtual std::string MangleTemplateArgs( const TemplateArgs& template_args ) = 0;
 	virtual std::string MangleVirtualTable( const Type& type ) = 0;

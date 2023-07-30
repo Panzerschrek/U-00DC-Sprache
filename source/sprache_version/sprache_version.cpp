@@ -6,27 +6,27 @@ namespace U
 namespace
 {
 
-const std::string g_sprache_version= SPRACHE_VERSION;
+const std::string_view g_sprache_version= SPRACHE_VERSION;
 
-const std::string g_git_revision=
+const std::string_view g_git_revision=
 	#include "git_revision.hpp"
 	;
 
-const std::string g_full_version= g_sprache_version + ":" + g_git_revision;
+const std::string g_full_version= std::string(g_sprache_version) + ":" + std::string(g_git_revision);
 
 } // namespace
 
-const std::string& getSpracheVersion()
+std::string_view getSpracheVersion()
 {
 	return g_sprache_version;
 }
 
-const std::string& getGitRevision()
+std::string_view getGitRevision()
 {
 	return g_git_revision;
 }
 
-const std::string& getFullVersion()
+std::string_view getFullVersion()
 {
 	return g_full_version;
 }

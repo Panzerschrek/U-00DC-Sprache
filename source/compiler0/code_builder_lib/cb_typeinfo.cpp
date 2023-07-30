@@ -339,7 +339,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr e
 	list_elements.reserve( enum_type->element_count );
 
 	enum_type->members.ForEachInThisScope(
-		[&]( const std::string& name, const Value& enum_member )
+		[&]( const std::string_view name, const Value& enum_member )
 		{
 			llvm::Constant* const enum_member_value= enum_member.GetVariable()->constexpr_value;
 
@@ -376,7 +376,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr e
 
 			list_elements.push_back(
 				TypeinfoListElement{
-					name,
+					std::string(name),
 					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 					node_type } );
 		} );
@@ -386,7 +386,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr e
 
 void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 	const Class& class_, const ClassPtr node_class_type,
-	const std::string& member_name,
+	const std::string_view member_name,
 	ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers )
 {
 	Class& node_class= *node_class_type;
@@ -430,13 +430,15 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr c
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
 	const auto process_class_member=
-		[&]( const std::string& member_name, const Value& class_member )
+		[&]( const std::string_view member_name, const Value& class_member )
 		{
 			const ClassField* const class_field= class_member.GetClassField();
 			if( class_field == nullptr )
 				return;
 
-			const ClassPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_fields_list_node_class_name + member_name );
+			std::string node_class_name= g_typeinfo_class_fields_list_node_class_name;
+			node_class_name+= member_name;
+			const ClassPtr node_type= CreateTypeinfoClass( root_namespace, class_type, std::move(node_class_name) );
 			Class& node_type_class= *node_type;
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -502,7 +504,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr c
 
 			list_elements.push_back(
 				TypeinfoListElement{
-					member_name,
+					std::string(member_name),
 					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 					node_type } );
 		};
@@ -517,7 +519,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr cl
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
 	const auto process_class_member=
-		[&]( const std::string& name, Value& class_member )
+		[&]( const std::string_view name, Value& class_member )
 		{
 			if( class_member.GetTypedef() != nullptr ) // Event in complete class typedefs may be not yet complete. Complete it now.
 				GlobalThingBuildTypedef( *class_type->members, class_member );
@@ -526,7 +528,9 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr cl
 			if( class_inner_type == nullptr )
 				return;
 
-			const ClassPtr node_type= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_types_list_node_class_name + name );
+			std::string node_class_name= g_typeinfo_class_types_list_node_class_name;
+			node_class_name+= name;
+			const ClassPtr node_type= CreateTypeinfoClass( root_namespace, class_type, std::move(node_class_name) );
 			Class& node_type_class= *node_type;
 
 			ClassFieldsVector<llvm::Type*> fields_llvm_types;
@@ -547,7 +551,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr cl
 
 			list_elements.push_back(
 				TypeinfoListElement{
-					name,
+					std::string(name),
 					llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ),
 					node_type } );
 		};
@@ -562,7 +566,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPt
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
 	const auto process_class_member=
-		[&]( const std::string& name, const Value& class_member )
+		[&]( const std::string_view name, const Value& class_member )
 		{
 			const OverloadedFunctionsSetConstPtr functions_set= class_member.GetFunctionsSet();
 			if( functions_set == nullptr )

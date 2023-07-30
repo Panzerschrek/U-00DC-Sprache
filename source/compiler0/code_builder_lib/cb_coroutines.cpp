@@ -75,7 +75,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 	if( const auto it= coroutine_classes_table_.find( coroutine_type_description ); it != coroutine_classes_table_.end() )
 		return it->second.get();
 
-	auto coroutine_class= std::make_unique<Class>( Keyword( Keywords::generator_ ), &root_namespace );
+	auto coroutine_class= std::make_unique<Class>( std::string( Keyword( Keywords::generator_ ) ), &root_namespace );
 	const ClassPtr res_type= coroutine_class.get();
 
 	coroutine_class->coroutine_type_description= coroutine_type_description;
@@ -139,7 +139,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 		op_type.return_value_type= ValueType::Value;
 
 		FunctionVariable op_variable;
-		const std::string op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
+		const std::string_view op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
 		op_variable.llvm_function= std::make_shared<LazyLLVMFunction>( mangler_->MangleFunction( *coroutine_class->members, op_name, op_type ) );
 		op_variable.type= std::move( op_type );
 		op_variable.is_generated= true;

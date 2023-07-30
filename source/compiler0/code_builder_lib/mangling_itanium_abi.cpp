@@ -53,10 +53,10 @@ class ManglerItaniumABI final : public IMangler
 public:
 	std::string MangleFunction(
 		const NamesScope& parent_scope,
-		const std::string& function_name,
+		std::string_view function_name,
 		const FunctionType& function_type,
 		const TemplateArgs* template_args ) override;
-	std::string MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, bool is_constant ) override;
+	std::string MangleGlobalVariable( const NamesScope& parent_scope, std::string_view variable_name, const Type& type, bool is_constant ) override;
 	std::string MangleType( const Type& type ) override;
 	std::string MangleTemplateArgs( const TemplateArgs& template_args ) override;
 	std::string MangleVirtualTable( const Type& type ) override;
@@ -280,7 +280,7 @@ void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& nam
 	mangler_state.PushLengthPrefixed( name );
 }
 
-void EncodeNestedName( ManglerState& mangler_state, const std::string& name, const NamesScope& parent_scope )
+void EncodeNestedName( ManglerState& mangler_state, const std::string_view name, const NamesScope& parent_scope )
 {
 	const ManglerState::NodeHolder result_node( mangler_state );
 
@@ -586,7 +586,7 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 	mangler_state.Push( "E" );
 }
 
-const ProgramStringMap<std::string> g_op_names
+const std::unordered_map<std::string_view, std::string_view> g_op_names
 {
 	{ "+", "pl" },
 	{ "-", "mi" },
@@ -628,29 +628,27 @@ const ProgramStringMap<std::string> g_op_names
 	{ "[]", "ix" },
 };
 
-const std::string g_empty_op_name;
-
 // Returns empty string if func_name is not special.
-const std::string& DecodeOperator( const std::string& func_name )
+std::string_view DecodeOperator( const std::string_view func_name )
 {
 	const auto it= g_op_names.find( func_name );
 	if( it != g_op_names.end() )
 		return it->second;
 
-	return g_empty_op_name;
+	return "";
 }
 
 } // namespace
 
 std::string ManglerItaniumABI::MangleFunction(
 	const NamesScope& parent_scope,
-	const std::string& function_name,
+	const std::string_view function_name,
 	const FunctionType& function_type,
 	const TemplateArgs* const template_args )
 {
 	state_.Push( "_Z" );
 
-	std::string name_prefixed= DecodeOperator( function_name );
+	std::string name_prefixed( DecodeOperator( function_name ) );
 	if( name_prefixed.empty() )
 	{
 		name_prefixed= std::to_string( function_name.size() );
@@ -704,14 +702,14 @@ std::string ManglerItaniumABI::MangleFunction(
 	return state_.TakeResult();
 }
 
-std::string ManglerItaniumABI::MangleGlobalVariable( const NamesScope& parent_scope, const std::string& variable_name, const Type& type, const bool is_constant )
+std::string ManglerItaniumABI::MangleGlobalVariable( const NamesScope& parent_scope, const std::string_view variable_name, const Type& type, const bool is_constant )
 {
 	(void)type;
 	(void)is_constant;
 
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent() == nullptr )
-		return variable_name;
+		return std::string(variable_name);
 
 	state_.Push( "_Z" );
 	EncodeNestedName( state_, variable_name, parent_scope );

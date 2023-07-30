@@ -595,7 +595,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	NamesScope& names,
 	const SrcLoc& src_loc )
 {
-	const std::string op_name= OverloadedOperatorToString( op );
+	const std::string_view op_name= OverloadedOperatorToString( op );
 
 	for( const FunctionType::Param& arg : actual_args )
 	{

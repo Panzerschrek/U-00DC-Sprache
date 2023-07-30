@@ -154,7 +154,7 @@ void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_sc
 	}
 }
 
-CodeBuilder::NameLookupResult CodeBuilder::LookupName( NamesScope& names_scope, const std::string& name, const SrcLoc& src_loc )
+CodeBuilder::NameLookupResult CodeBuilder::LookupName( NamesScope& names_scope, const std::string_view name, const SrcLoc& src_loc )
 {
 	NamesScope* last_space= &names_scope;
 	Value* value= nullptr;
@@ -185,12 +185,12 @@ CodeBuilder::NameLookupResult CodeBuilder::LookupName( NamesScope& names_scope, 
 	return NameLookupResult{ last_space, value };
 }
 
-std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( const ClassPtr class_type, const std::string& name )
+std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( const ClassPtr class_type, const std::string_view name )
 {
 	return ResolveClassValueImpl( class_type, name );
 }
 
-std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( ClassPtr class_type, const std::string& name, const bool recursive_call )
+std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( ClassPtr class_type, const std::string_view name, const bool recursive_call )
 {
 	const bool is_special_method=
 		name == Keyword( Keywords::constructor_ ) ||
