@@ -22,6 +22,7 @@ class H interface{}
 class I : F, G {}
 class J : I, H {}
 class K : J {}
+class L abstract {}
 
 class LargeClassWithMethods
 {
@@ -107,6 +108,33 @@ static_assert(  ust::is_ancestor_for</ F, K />() );
 static_assert(  ust::is_ancestor_for</ G, K />() );
 static_assert(  ust::is_ancestor_for</ H, K />() );
 static_assert( !ust::is_ancestor_for</ K, H />() );
+
+//
+// is_abstract
+//
+
+static_assert( !ust::is_abstract</void/>() );
+static_assert( !ust::is_abstract</bool/>() );
+static_assert( !ust::is_abstract</i32/>() );
+static_assert( !ust::is_abstract</f64/>() );
+static_assert( !ust::is_abstract</byte16/>() );
+static_assert( !ust::is_abstract</char8/>() );
+static_assert( !ust::is_abstract</ [u8, 16] />() );
+static_assert( !ust::is_abstract</ tup[] />() );
+static_assert( !ust::is_abstract</ tup[ void, bool, [ i16, 7 ], f32] />() );
+static_assert( !ust::is_abstract</ $(i128) />() );
+static_assert( !ust::is_abstract</ fn( F& f ) />() );
+static_assert( !ust::is_abstract</ SomeEnum_u8 />() );
+static_assert( !ust::is_abstract</ A />() );
+static_assert( !ust::is_abstract</ K />() );
+static_assert( !ust::is_abstract</ [ A, 17 ] />() );
+static_assert( !ust::is_abstract</ [ [ K, 3 ], 2 ] />() );
+static_assert( !ust::is_abstract</ tup[ A, B, K ] />() );
+static_assert( ust::is_abstract</ F />() );
+static_assert( ust::is_abstract</ L />() );
+static_assert( ust::is_abstract</ [ F, 17 ] />() );
+static_assert( ust::is_abstract</ [ [ L, 3 ], 2 ] />() );
+static_assert( ust::is_abstract</ tup[ A, L, B ] />() );
 
 //
 // Have field

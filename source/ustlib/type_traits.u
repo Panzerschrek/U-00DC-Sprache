@@ -40,6 +40,32 @@ fn is_ancestor_for() : bool
 	else{ return false; }
 }
 
+template</ type T />
+fn is_abstract() : bool
+{
+	static_if( typeinfo</T/>.is_class )
+	{
+		return typeinfo</T/>.is_abstract;
+	}
+	else static_if( typeinfo</T/>.is_array )
+	{
+		return ::ust::is_abstract</ typeof(typeinfo</T/>.element_type)::src_type />();
+	}
+	else static_if( typeinfo</T/>.is_tuple )
+	{
+		var bool mut res= false;
+		foreach( &el : typeinfo</T/>.elements_list )
+		{
+			res|= ::ust::is_abstract</ typeof(el.type)::src_type />();
+		}
+		return res;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 template</type T/>
 fn constexpr is_polymorph_non_final_class() : bool
 {
