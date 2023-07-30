@@ -73,6 +73,11 @@ fn nomangle main() : i32
 		var ust::box</ ImplDerived /> mut box0( ImplDerived() );
 		var ust::box</ I1 /> mut box1( move(box0) );
 	}
+	{ // take
+		auto mut box= ust::make_box( 897 );
+		auto val= ust::box_take( move(box) );
+		halt if( val != 897 );
+	}
 	// make_box
 	{
 		auto box= ust::make_box( 77 );

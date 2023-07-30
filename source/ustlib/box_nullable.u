@@ -180,4 +180,21 @@ fn to_non_nullable( box_nullable</T/> mut val ) : box</T/>
 	}
 }
 
+// Take value, leave box empty.
+// This is a free function, because "is_abstract" check requires T completeness, which may create globals loop.
+template</type T/>
+fn enable_if( !is_abstract</T/>() ) box_try_take( box_nullable</T/> &mut b ) : T
+{
+	halt if(b.empty());
+	unsafe
+	{
+		auto ptr= b.get_ptr();
+		var T mut t= uninitialized;
+		memory_copy_aligned( typeinfo</T/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>($>(ptr)), typeinfo</T/>.size_of ); // Copy contents into the result.
+		memory_free( polymorph_restore_original_ref( $>(ptr) ) ); // Free memory block, that was used for box.
+		move_into_uninitialized( b, box_nullable</T/>() ); // Replace box contents with empty instance.
+		return move(t);
+	}
+}
+
 } // namespace ust
