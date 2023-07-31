@@ -60,6 +60,25 @@ struct DestructibleError
 	}
 }
 
+fn ResultUnwrapContinueTest() : ust::result</f32, SomeErrorEnum />
+{
+	result_unwrap( r : RetRes( 55 ) );
+	return f32(r);
+}
+
+fn ResultUnwrapContinueModifyTest() : ust::result</f32, SomeErrorEnum />
+{
+	result_unwrap( mut r : RetRes( 123 ) );
+	r /= 3;
+	return f32(r);
+}
+
+fn ResultUnwrapRetTest() : ust::result</f32, SomeErrorEnum />
+{
+	result_unwrap( r : RetErr( SomeErrorEnum::NotOk ) );
+	return f32(r);
+}
+
 fn nomangle main() : i32
 {
 	{ // Construct from result.
@@ -261,6 +280,24 @@ fn nomangle main() : i32
 		halt if( !( e != 987 ) );
 		halt if( 987 == e );
 		halt if( !( 987 != e ) );
+	}
+	{ // result_unwrap macro
+		auto r = ResultUnwrapContinueTest();
+		halt if( !r.is_ok() );
+		halt if( r.is_error() );
+		halt if( r.try_deref() != 55.0f );
+	}
+	{ // result_unwrap macro
+		auto r = ResultUnwrapContinueModifyTest();
+		halt if( !r.is_ok() );
+		halt if( r.is_error() );
+		halt if( r.try_deref() != f32(123 / 3) );
+	}
+	{ // result_unwrap macro
+		auto r = ResultUnwrapRetTest();
+		halt if( r.is_ok() );
+		halt if( !r.is_error() );
+		halt if( r.try_deref_error() != SomeErrorEnum::NotOk );
 	}
 
 	return 0;

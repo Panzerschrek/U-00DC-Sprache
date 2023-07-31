@@ -3,6 +3,23 @@ import "container_utils.u"
 import "optional_ref.u"
 import "type_traits.u"
 
+// Use this macro to call some function (or generally, evaluate any expression), returning "result".
+// If result is successfull - it is unwrapped into specified variable.
+// Else error is extracted and returned.
+// Such macro is designated for simplifying passing errors to caller code.
+// TODO - maybe choose different name for this macro?
+?macro <? result_unwrap:block ( ?m:opt<? mut ?> ?var_name:ident : ?e:expr ); ?>
+->
+<?
+	auto mut ??res = ?e;
+	if( ??res.is_error() )
+	{
+		// This works for functions returning result::ErrorT, functionis returning "result" with ErrorT and any other ResultT, optionals and generally any types, constructible from result::ErrorT.
+		return ust::result_try_take_error( move( ??res ) );
+	}
+	auto ?m<? mut ?> ?var_name = ust::result_try_take( move( ??res ) );
+?>
+
 namespace ust
 {
 
