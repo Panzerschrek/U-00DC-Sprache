@@ -1,0 +1,24 @@
+//##success_test
+import "../ustlib/result.u"
+
+enum SomeErrorEnum{ NotOk, CompleteDisaster }
+struct SomeErrorStruct{}
+
+type IntRes= ust::result</ i32, SomeErrorEnum />;
+
+fn nomangle main() : i32
+{
+	{ // COnstruct from result.
+		var IntRes res( 55 );
+		halt if( !res.is_ok() );
+		halt if( res.is_error() );
+		halt if( res.try_deref() != 55 );
+	}
+	{ // Construct from Error
+		var IntRes res( SomeErrorEnum::CompleteDisaster );
+		halt if( res.is_ok() );
+		halt if( !res.is_error() );
+		halt if( res.try_deref_error() != SomeErrorEnum::CompleteDisaster );
+	}
+	return 0;
+}

@@ -1,0 +1,110 @@
+import "aligned_storage.u"
+import "container_utils.u"
+import "minmax.u"
+import "type_traits.u"
+
+namespace ust
+{
+
+template</type ResultT, type ErrorT/>
+class result
+{
+public:
+	static_assert( !is_same_type</ResultT, ErrorT/>(), "Result and error types must be distinct!" );
+
+public:
+	// Construt from result.
+	fn conversion_constructor( mut this, ResultT mut res )
+		( is_result_= true, storage_= zero_init ) // TODO - use uninitialized initializer for storage
+	{
+		unsafe( move_into_uninitialized( deref_unchecked(), move(res) ) );
+	}
+
+	// Construct from error.
+	fn conversion_constructor( mut this, ErrorT mut err )
+		( is_result_= false, storage_= zero_init ) // TODO - use uninitialized initializer for storage
+	{
+		unsafe( move_into_uninitialized( deref_error_unchecked(), move(err) ) );
+	}
+
+	fn destructor()
+	{
+		if( is_result_ )
+		{
+			unsafe( call_destructor( deref_unchecked() ) );
+		}
+		else
+		{
+			unsafe( call_destructor( deref_error_unchecked() ) );
+		}
+	}
+
+	fn is_ok( this ) : bool
+	{
+		return is_result_;
+	}
+
+	fn is_error( this ) : bool
+	{
+		return !is_ok();
+	}
+
+	// Access result value.
+	fn try_deref(  mut this ) : ResultT & mut
+	{
+		halt if(!is_ok());
+		return unsafe( deref_unchecked() );
+	}
+
+	fn try_deref( imut this ) : ResultT &imut
+	{
+		halt if(!is_ok());
+		return unsafe( deref_unchecked() );
+	}
+
+	fn deref_unchecked(  mut this ) unsafe : ResultT & mut
+	{
+		return unsafe( cast_ref_unsafe</ResultT/>( storage_ ) );
+	}
+
+	fn deref_unchecked( imut this ) unsafe : ResultT &imut
+	{
+		return unsafe( cast_ref_unsafe</ResultT/>( storage_ ) );
+	}
+
+	// Access error value.
+
+	fn try_deref_error(  mut this ) : ErrorT & mut
+	{
+		halt if(!is_error());
+		return unsafe( deref_error_unchecked() );
+	}
+
+	fn try_deref_error( imut this ) : ErrorT &imut
+	{
+		halt if(!is_error());
+		return unsafe( deref_error_unchecked() );
+	}
+
+	fn deref_error_unchecked(  mut this ) unsafe : ErrorT & mut
+	{
+		return unsafe( cast_ref_unsafe</ErrorT/>( storage_ ) );
+	}
+
+	fn deref_error_unchecked( imut this ) unsafe : ErrorT &imut
+	{
+		return unsafe( cast_ref_unsafe</ErrorT/>( storage_ ) );
+	}
+
+private:
+	type this_type= result</ResultT, ErrorT/>;
+
+	var size_type constexpr c_storage_size = select( typeinfo</ResultT/>.size_of  > typeinfo</ErrorT/>.size_of ? typeinfo</ResultT/>.size_of : typeinfo</ErrorT/>.size_of  );
+	var size_type constexpr c_storage_align= select( typeinfo</ResultT/>.align_of > typeinfo</ErrorT/>.size_of ? typeinfo</ResultT/>.size_of : typeinfo</ErrorT/>.align_of );
+
+private:
+	aligned_storage</ c_storage_size, c_storage_align /> storage_;
+	bool is_result_;
+}
+
+} // namespace ust
