@@ -13,6 +13,10 @@ static_assert( typeinfo</ ust::result</ [f32, 16], [ u32, 15 ] /> />.size_of == 
 static_assert( typeinfo</ ust::result</ [ u32, 15 ], [f32, 16] /> />.size_of == 68s );
 static_assert( typeinfo</ ust::result</ void, char8 /> />.size_of == 2s );
 
+// Result types are non-copyable.
+static_assert( !typeinfo</IntRes/>.is_copy_constructible );
+static_assert( !typeinfo</IntRes/>.is_copy_assignable );
+
 fn RetRes( i32 i ) : IntRes
 {
 	return i; // Should implicitly convert result type to result.
@@ -123,6 +127,37 @@ fn nomangle main() : i32
 			// Destroy here DestructibleError
 		}
 		halt if( ptr.lock_imut().deref() != 11 * 3 );
+	}
+	{ // Take result.
+		var IntRes mut res( 9998 );
+		halt if( !res.is_ok() );
+		halt if( res.is_error() );
+		auto res_extracted= ust::result_try_take( move(res) );
+		halt if( res_extracted != 9998 );
+	}
+	{ // Take result - check destruction.
+		var ust::result</ DestructibleResult, SomeErrorEnum /> mut res( DestructibleResult( IntSharedPtr( 6655 ) ) );
+		halt if( !res.is_ok() );
+		halt if( res.is_error() );
+		halt if( res.try_deref().ptr.lock_imut().deref() != 6655 );
+		auto res_extracted= ust::result_try_take( move(res) );
+		halt if( res_extracted.ptr.lock_imut().deref() != 6655 );
+	}
+	{ // Take error.
+		var IntRes mut res( SomeErrorEnum::CompleteDisaster );
+		halt if( res.is_ok() );
+		halt if( !res.is_error() );
+		halt if( res.try_deref_error() != SomeErrorEnum::CompleteDisaster );
+		auto err_extracted= ust::result_try_take_error( move(res) );
+		halt if( err_extracted != SomeErrorEnum::CompleteDisaster );
+	}
+	{ // Take error - check destruction.
+		var ust::result</ f32, DestructibleError /> mut res( DestructibleError( IntSharedPtr( 9852 ) ) );
+		halt if( res.is_ok() );
+		halt if( !res.is_error() );
+		halt if( res.try_deref_error().ptr.lock_imut().deref() != 9852 );
+		auto err_extracted= ust::result_try_take_error( move(res) );
+		halt if( err_extracted.ptr.lock_imut().deref() != 9852 );
 	}
 
 	return 0;

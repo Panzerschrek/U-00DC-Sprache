@@ -27,6 +27,13 @@ public:
 		unsafe( move_into_uninitialized( deref_error_unchecked(), move(err) ) );
 	}
 
+	// Disable copying.
+	// Since "result" container is designated for usage as return value, there is no reason to copy it somehow.
+	// Normal usage is to call function, returning "result", check it and extract result or error.
+	fn constructor( mut this, this_type& other )= delete;
+	op=( mut this, this_type& other )= delete;
+
+	// Destroy either result or error.
 	fn destructor()
 	{
 		if( is_result_ )
@@ -38,6 +45,8 @@ public:
 			unsafe( call_destructor( deref_error_unchecked() ) );
 		}
 	}
+
+	// Check contents kind.
 
 	fn is_ok( this ) : bool
 	{
@@ -106,6 +115,38 @@ private:
 private:
 	aligned_storage</ c_storage_size, c_storage_align /> storage_;
 	bool is_result_;
+}
+
+// Extract and return result.
+template</type ResultT, type ErrorT/>
+fn result_try_take( result</ResultT, ErrorT/> mut r ) : ResultT
+{
+	unsafe
+	{
+		var ResultT mut t= uninitialized;
+		{
+			auto& ref= r.try_deref(); // try_deref will halt if result contains error.
+			memory_copy_aligned( typeinfo</ResultT/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>( ref ), typeinfo</ResultT/>.size_of ); // Copy contents into the result.
+		}
+		move_into_nowhere( move(r) ); // Forget about the result container.
+		return move(t);
+	}
+}
+
+// Extract and return error.
+template</type ResultT, type ErrorT/>
+fn result_try_take_error( result</ResultT, ErrorT/> mut r ) : ErrorT
+{
+	unsafe
+	{
+		var ErrorT mut t= uninitialized;
+		{
+			auto& ref= r.try_deref_error(); // try_deref will halt if result contains no error.
+			memory_copy_aligned( typeinfo</ErrorT/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>( ref ), typeinfo</ErrorT/>.size_of ); // Copy contents into the result.
+		}
+		move_into_nowhere( move(r) ); // Forget about the result container.
+		return move(t);
+	}
 }
 
 } // namespace ust
