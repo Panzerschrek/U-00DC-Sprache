@@ -30,6 +30,7 @@ public:
 	// Disable copying.
 	// Since "result" container is designated for usage as return value, there is no reason to copy it somehow.
 	// Normal usage is to call function, returning "result", check it and extract result or error.
+	// Disabling copying prevens some common mistakes/ineffectiveness in usage of "result".
 	fn constructor( mut this, this_type& other )= delete;
 	op=( mut this, this_type& other )= delete;
 
@@ -106,11 +107,85 @@ public:
 		return unsafe( cast_ref_unsafe</ErrorT/>( storage_ ) );
 	}
 
+	// ==
+
+	op enable_if( c_is_equality_comparable )
+	==( this_type& l, this_type& r ) : bool
+	{
+		if( l.is_result_ && r.is_result_ )
+		{
+			// Both results - compare them.
+			return unsafe( l.deref_unchecked() ) == unsafe( r.deref_unchecked() );
+		}
+		if( !l.is_result_ && !r.is_result_ )
+		{
+			// Both errors - compare them.
+			return unsafe( l.deref_error_unchecked() ) == unsafe( r.deref_error_unchecked() );
+		}
+
+		// Different kinds - not equals.
+		return false;
+	}
+
+	op enable_if( c_is_equality_comparable )
+	==( this_type& l, ResultT& r ) : bool
+	{
+		if( l.is_result_ )
+		{
+			// Both results - compare them.
+			return unsafe( l.deref_unchecked() ) == r;
+		}
+
+		// Different kinds - not equals.
+		return false;
+	}
+
+	op enable_if( c_is_equality_comparable )
+	==( ResultT& l, this_type& r ) : bool
+	{
+		if( r.is_result_ )
+		{
+			// Both results - compare them.
+			return l == unsafe( r.deref_unchecked() );
+		}
+
+		// Different kinds - not equals.
+		return false;
+	}
+
+	op enable_if( c_is_equality_comparable )
+	==( this_type& l, ErrorT& r ) : bool
+	{
+		if( !l.is_result_ )
+		{
+			// Both errors - compare them.
+			return unsafe( l.deref_error_unchecked() ) == r;
+		}
+
+		// Different kinds - not equals.
+		return false;
+	}
+
+	op enable_if( c_is_equality_comparable )
+	==( ErrorT& l, this_type& r ) : bool
+	{
+		if( !r.is_result_ )
+		{
+			// Both errors - compare them.
+			return l == unsafe( r.deref_error_unchecked() );
+		}
+
+		// Different kinds - not equals.
+		return false;
+	}
+
 private:
 	type this_type= result</ResultT, ErrorT/>;
 
 	var size_type constexpr c_storage_size = select( typeinfo</ResultT/>.size_of  > typeinfo</ErrorT/>.size_of  ? typeinfo</ResultT/>.size_of  : typeinfo</ErrorT/>.size_of  );
 	var size_type constexpr c_storage_align= select( typeinfo</ResultT/>.align_of > typeinfo</ErrorT/>.align_of ? typeinfo</ResultT/>.align_of : typeinfo</ErrorT/>.align_of );
+
+	var bool constexpr c_is_equality_comparable= typeinfo</ResultT/>.is_equality_comparable && typeinfo</ErrorT/>.is_equality_comparable;
 
 private:
 	aligned_storage</ c_storage_size, c_storage_align /> storage_;

@@ -159,6 +159,71 @@ fn nomangle main() : i32
 		auto err_extracted= ust::result_try_take_error( move(res) );
 		halt if( err_extracted.ptr.lock_imut().deref() != 9852 );
 	}
+	{ // Result == Result.
+		var IntRes r0( 44 );
+		var IntRes r1( 44 );
+		var IntRes r2( 55 );
+		var IntRes e0( SomeErrorEnum::NotOk );
+		var IntRes e1( SomeErrorEnum::NotOk );
+		var IntRes e2( SomeErrorEnum::CompleteDisaster );
+
+		halt if( !( r0 == r1 ) );
+		halt if( r0 != r1 );
+		halt if( !( r1 == r0 ) );
+		halt if( r1 != r0 );
+
+		halt if( r0 == r2 );
+		halt if( !( r0 != r2 ) );
+		halt if( r2 == r0 );
+		halt if( !( r2 != r0 ) );
+
+		halt if( !( e0 == e1 ) );
+		halt if( e0 != e1 );
+		halt if( !( e1 == e0 ) );
+		halt if( e1 != e0 );
+
+		halt if( e0 == e2 );
+		halt if( !( e0 != e2 ) );
+		halt if( e2 == e0 );
+		halt if( !( e2 != e0 ) );
+
+		halt if( r0 == e0 );
+		halt if( e1 == r1 );
+		halt if( ! ( r1 != e2 ) );
+		halt if( ! ( e1 != r2 ) );
+	}
+	{ // Result == result, Result == error.
+		var IntRes r( 532 );
+		var IntRes e( SomeErrorEnum::NotOk );
+
+		halt if( !( r == 532 ) );
+		halt if( r != 532 );
+		halt if( !( 532 == r ) );
+		halt if( 532 != r );
+
+		halt if( r == 987 );
+		halt if( !( r != 987 ) );
+		halt if( 987 == r );
+		halt if( !( 987 != r ) );
+		halt if( r == SomeErrorEnum::NotOk );
+		halt if( !( r != SomeErrorEnum::NotOk ) );
+		halt if( SomeErrorEnum::NotOk == r );
+		halt if( !( SomeErrorEnum::NotOk != r ) );
+
+		halt if( !( e == SomeErrorEnum::NotOk ) );
+		halt if( e != SomeErrorEnum::NotOk );
+		halt if( !( SomeErrorEnum::NotOk == e ) );
+		halt if( SomeErrorEnum::NotOk != e );
+
+		halt if( e == SomeErrorEnum::CompleteDisaster );
+		halt if( !( e != SomeErrorEnum::CompleteDisaster ) );
+		halt if( SomeErrorEnum::CompleteDisaster == e );
+		halt if( !( SomeErrorEnum::CompleteDisaster != e ) );
+		halt if( e == 987 );
+		halt if( !( e != 987 ) );
+		halt if( 987 == e );
+		halt if( !( 987 != e ) );
+	}
 
 	return 0;
 }
