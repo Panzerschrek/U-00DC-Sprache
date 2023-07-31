@@ -50,6 +50,7 @@ public:
 	}
 
 	// Access result value.
+
 	fn try_deref(  mut this ) : ResultT & mut
 	{
 		halt if(!is_ok());
@@ -99,8 +100,8 @@ public:
 private:
 	type this_type= result</ResultT, ErrorT/>;
 
-	var size_type constexpr c_storage_size = select( typeinfo</ResultT/>.size_of  > typeinfo</ErrorT/>.size_of ? typeinfo</ResultT/>.size_of : typeinfo</ErrorT/>.size_of  );
-	var size_type constexpr c_storage_align= select( typeinfo</ResultT/>.align_of > typeinfo</ErrorT/>.size_of ? typeinfo</ResultT/>.size_of : typeinfo</ErrorT/>.align_of );
+	var size_type constexpr c_storage_size = select( typeinfo</ResultT/>.size_of  > typeinfo</ErrorT/>.size_of  ? typeinfo</ResultT/>.size_of  : typeinfo</ErrorT/>.size_of  );
+	var size_type constexpr c_storage_align= select( typeinfo</ResultT/>.align_of > typeinfo</ErrorT/>.align_of ? typeinfo</ResultT/>.align_of : typeinfo</ErrorT/>.align_of );
 
 private:
 	aligned_storage</ c_storage_size, c_storage_align /> storage_;

@@ -1,24 +1,129 @@
 //##success_test
 import "../ustlib/result.u"
+import "../ustlib/shared_ptr.u"
 
 enum SomeErrorEnum{ NotOk, CompleteDisaster }
 struct SomeErrorStruct{}
 
 type IntRes= ust::result</ i32, SomeErrorEnum />;
 
+// Maximum size of result/error + value kind flag + possible padding for alignment.
+static_assert( typeinfo</IntRes/>.size_of == 8s );
+static_assert( typeinfo</ ust::result</ [f32, 16], [ u32, 15 ] /> />.size_of == 68s );
+static_assert( typeinfo</ ust::result</ [ u32, 15 ], [f32, 16] /> />.size_of == 68s );
+static_assert( typeinfo</ ust::result</ void, char8 /> />.size_of == 2s );
+
+fn RetRes( i32 i ) : IntRes
+{
+	return i; // Should implicitly convert result type to result.
+}
+
+fn RetErr( SomeErrorEnum e ) : IntRes
+{
+	return e; // Should implicitly convert eror type to result.
+}
+
+fn PassResult( IntRes r )
+{}
+
+type IntSharedPtr= ust::shared_ptr_mut</i32/>;
+
+struct DestructibleResult
+{
+	IntSharedPtr ptr;
+
+	fn constructor( IntSharedPtr mut p ) ( ptr= move(p) ) {}
+	fn destructor()
+	{
+		with( &mut lock : ptr.lock_mut() )
+		{
+			lock.deref() *= 2;
+		}
+	}
+}
+
+struct DestructibleError
+{
+	IntSharedPtr ptr;
+
+	fn constructor( IntSharedPtr mut p ) ( ptr= move(p) ) {}
+	fn destructor()
+	{
+		with( &mut lock : ptr.lock_mut() )
+		{
+			lock.deref() *= 3;
+		}
+	}
+}
+
 fn nomangle main() : i32
 {
-	{ // COnstruct from result.
+	{ // Construct from result.
 		var IntRes res( 55 );
 		halt if( !res.is_ok() );
 		halt if( res.is_error() );
 		halt if( res.try_deref() != 55 );
 	}
-	{ // Construct from Error
+	{ // Construct from error.
 		var IntRes res( SomeErrorEnum::CompleteDisaster );
 		halt if( res.is_ok() );
 		halt if( !res.is_error() );
 		halt if( res.try_deref_error() != SomeErrorEnum::CompleteDisaster );
 	}
+	{ // Call function with Result
+		var IntRes res= RetRes( 77788 );
+		halt if( !res.is_ok() );
+		halt if( res.is_error() );
+		halt if( res.try_deref() != 77788 );
+	}
+	{ // Call function with Result
+		var IntRes res= RetErr( SomeErrorEnum::NotOk );
+		halt if( res.is_ok() );
+		halt if( !res.is_error() );
+		halt if( res.try_deref_error() != SomeErrorEnum::NotOk );
+	}
+	{ // Implicitely convert result/error into result container in function call.
+		PassResult( -333 );
+		PassResult( SomeErrorEnum::CompleteDisaster );
+	}
+	{ // Modify result.
+		var IntRes mut res( 123 );
+		halt if( !res.is_ok() );
+		halt if( res.is_error() );
+		halt if( res.try_deref() != 123 );
+		res.try_deref() += 7;
+		halt if( res.try_deref() != 130 );
+	}
+	{ // Modify error.
+		var IntRes mut res( SomeErrorEnum::NotOk );
+		halt if( res.is_ok() );
+		halt if( !res.is_error() );
+		halt if( res.try_deref_error() != SomeErrorEnum::NotOk );
+		res.try_deref_error() = SomeErrorEnum::CompleteDisaster;
+		halt if( res.try_deref_error() != SomeErrorEnum::CompleteDisaster );
+	}
+	{ // Check destruction of result.
+		var IntSharedPtr ptr( 785 );
+		{
+			var ust::result</ DestructibleResult, SomeErrorEnum /> res( DestructibleResult(ptr) );
+			halt if( !res.is_ok() );
+			halt if( res.is_error() );
+			halt if( res.try_deref().ptr.lock_imut().deref() != 785 );
+			// Destroy here DestructibleResult
+		}
+		halt if( ptr.lock_imut().deref() != 785 * 2 );
+	}
+	{ // Check destruction of error.
+		var IntSharedPtr ptr( 11 );
+		{
+			var ust::result</ i32, DestructibleError /> res( DestructibleError(ptr) );
+			halt if( res.is_ok() );
+			halt if( !res.is_error() );
+			halt if( res.try_deref_error().ptr.lock_imut().deref() != 11 );
+			// Destroy here DestructibleError
+		}
+		halt if( ptr.lock_imut().deref() != 11 * 3 );
+	}
+
 	return 0;
 }
