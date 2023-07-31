@@ -128,6 +128,44 @@ fn nomangle main() : i32
 		}
 		halt if( ptr.lock_imut().deref() != 11 * 3 );
 	}
+	{ // as_ref for immutable result.
+		var IntRes res( 876789 );
+		var ust::optional_ref_imut</i32/> res_ref= res.as_ref();
+		halt if( res_ref.empty() );
+		halt if( res_ref.try_deref() != 876789 );
+	}
+	{ // as_ref for mutable result.
+		var IntRes mut res( 6 );
+		if_var( &mut i : res.as_ref() )
+		{
+			i -= 2;
+		}
+		halt if( res.try_deref() != 4 );
+	}
+	{ // as_ref for error.
+		var IntRes res( SomeErrorEnum::NotOk );
+		var ust::optional_ref_imut</i32/> res_ref= res.as_ref();
+		halt if( !res_ref.empty() );
+	}
+	{ // as_error_ref for immutable error.
+		var IntRes res( SomeErrorEnum::CompleteDisaster );
+		var ust::optional_ref_imut</SomeErrorEnum/> err_ref= res.as_error_ref();
+		halt if( err_ref.empty() );
+		halt if( err_ref.try_deref() != SomeErrorEnum::CompleteDisaster );
+	}
+	{ // as_error_ref for mutable error.
+		var IntRes mut res( SomeErrorEnum::CompleteDisaster );
+		if_var( &mut e : res.as_error_ref() )
+		{
+			e= SomeErrorEnum::NotOk;
+		}
+		halt if( res.try_deref_error() != SomeErrorEnum::NotOk );
+	}
+	{ // as_error_ref for result.
+		var IntRes res( 42 );
+		var ust::optional_ref_imut</SomeErrorEnum/> err_ref= res.as_error_ref();
+		halt if( !err_ref.empty() );
+	}
 	{ // Take result.
 		var IntRes mut res( 9998 );
 		halt if( !res.is_ok() );

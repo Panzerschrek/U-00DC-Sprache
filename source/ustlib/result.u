@@ -1,6 +1,6 @@
 import "aligned_storage.u"
 import "container_utils.u"
-import "minmax.u"
+import "optional_ref.u"
 import "type_traits.u"
 
 namespace ust
@@ -105,6 +105,64 @@ public:
 	fn deref_error_unchecked( imut this ) unsafe : ErrorT &imut
 	{
 		return unsafe( cast_ref_unsafe</ErrorT/>( storage_ ) );
+	}
+
+	// Get optional reference.
+
+	fn
+	enable_if( typeinfo</ResultT/>.references_tags_count == 0s )
+	as_ref(  mut this ) : optional_ref_mut </ResultT/>'this'
+	{
+		if( is_result_ )
+		{
+			return optional_ref_mut </ResultT/>( unsafe( deref_unchecked() ) );
+		}
+		else
+		{
+			return optional_ref_mut </ResultT/>();
+		}
+	}
+
+	fn
+	enable_if( typeinfo</ResultT/>.references_tags_count == 0s )
+	as_ref( imut this ) : optional_ref_imut</ResultT/>'this'
+	{
+		if( is_result_ )
+		{
+			return optional_ref_imut</ResultT/>( unsafe( deref_unchecked() ) );
+		}
+		else
+		{
+			return optional_ref_imut</ResultT/>();
+		}
+	}
+
+	fn
+	enable_if( typeinfo</ErrorT/>.references_tags_count == 0s )
+	as_error_ref(  mut this ) : optional_ref_mut </ErrorT/>'this'
+	{
+		if( !is_result_ )
+		{
+			return optional_ref_mut </ErrorT/>( unsafe( deref_error_unchecked() ) );
+		}
+		else
+		{
+			return optional_ref_mut </ErrorT/>();
+		}
+	}
+
+	fn
+	enable_if( typeinfo</ErrorT/>.references_tags_count == 0s )
+	as_error_ref( imut this ) : optional_ref_imut</ErrorT/>'this'
+	{
+		if( !is_result_ )
+		{
+			return optional_ref_imut</ErrorT/>( unsafe( deref_error_unchecked() ) );
+		}
+		else
+		{
+			return optional_ref_imut</ErrorT/>();
+		}
 	}
 
 	// ==
