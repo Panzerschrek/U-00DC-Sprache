@@ -14,14 +14,14 @@ public:
 
 public:
 	// Construt from result.
-	fn conversion_constructor( mut this, ResultT mut res )
+	fn conversion_constructor( mut this'a', ResultT mut res'b' ) ' a <- b '
 		( is_result_= true, storage_= zero_init ) // TODO - use uninitialized initializer for storage
 	{
 		unsafe( move_into_uninitialized( deref_unchecked(), move(res) ) );
 	}
 
 	// Construct from error.
-	fn conversion_constructor( mut this, ErrorT mut err )
+	fn conversion_constructor( mut this'a', ErrorT mut err'b' ) ' a <- b '
 		( is_result_= false, storage_= zero_init ) // TODO - use uninitialized initializer for storage
 	{
 		unsafe( move_into_uninitialized( deref_error_unchecked(), move(err) ) );
