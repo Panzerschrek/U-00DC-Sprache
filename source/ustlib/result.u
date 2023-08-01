@@ -269,7 +269,7 @@ private:
 
 // Extract and return result.
 template</type ResultT, type ErrorT/>
-fn result_try_take( result</ResultT, ErrorT/> mut r ) : ResultT
+fn result_try_take( result</ResultT, ErrorT/> mut r'a' ) : ResultT'a'
 {
 	unsafe
 	{
@@ -285,7 +285,7 @@ fn result_try_take( result</ResultT, ErrorT/> mut r ) : ResultT
 
 // Extract and return error.
 template</type ResultT, type ErrorT/>
-fn result_try_take_error( result</ResultT, ErrorT/> mut r ) : ErrorT
+fn result_try_take_error( result</ResultT, ErrorT/> mut r'a' ) : ErrorT'a'
 {
 	unsafe
 	{
