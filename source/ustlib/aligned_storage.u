@@ -20,6 +20,12 @@ struct aligned_storage
 	[ byte_type, element_count ] storage_;
 }
 
+// Special case for zero size. Avoid declaring even internal field.
+// This helps compiler to optimize usage of this class (in some cases).
+template</ size_type alignment />
+struct aligned_storage</ 0s, alignment />
+{}
+
 template</type T/>
 fn swap( T &mut a, T &mut b )
 {
