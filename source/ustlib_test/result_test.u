@@ -299,6 +299,26 @@ fn nomangle main() : i32
 		halt if( !r.is_error() );
 		halt if( r.try_deref_error() != SomeErrorEnum::NotOk );
 	}
-
+	// result_match macro.
+	result_match( RetRes(42) )
+	{
+		Ok(r) -> { halt if( r != 42); },
+		Err(e) -> { halt; },
+	}
+	result_match( RetRes(0) )
+	{
+		Ok(mut r) -> { ++r; }, // Can declare result variable as mutable.
+		Err(e) -> { halt; },
+	}
+	result_match( RetErr(SomeErrorEnum::CompleteDisaster) )
+	{
+		Ok(r) -> { halt; },
+		Err(e) -> { halt if( e != SomeErrorEnum::CompleteDisaster ); },
+	}
+	result_match( RetErr(SomeErrorEnum::CompleteDisaster) )
+	{
+		Ok(r) -> { halt; },
+		Err(mut e) -> { e= SomeErrorEnum::NotOk; }, // Can declare error variable as mutable.
+	}
 	return 0;
 }

@@ -20,6 +20,32 @@ import "type_traits.u"
 	auto ?m<? mut ?> ?var_name = ust::result_try_take( move( ??res ) );
 ?>
 
+// Use this macro to process result or error.
+// TODO - maybe simplify it somehow?
+?macro <?
+	result_match:block ( ?e:expr )
+	{
+		Ok ( ?ok_mut :opt<? mut ?> ?ok_variable :ident ) -> ?b_ok:block ,
+		Err( ?err_mut:opt<? mut ?> ?err_variable:ident ) -> ?b_err:block ?o:opt<? , ?>
+	}
+?>
+->
+<?
+	with( mut ??res : ?e )
+	{
+		if( ??res.is_ok() )
+		{
+			auto ?ok_mut<? mut ?> ?ok_variable = ust::result_try_take( move( ??res ) );
+			?b_ok
+		}
+		else
+		{
+			auto ?err_mut<? mut ?> ?err_variable = ust::result_try_take_error( move( ??res ) );
+			?b_err
+		}
+	}
+?>
+
 namespace ust
 {
 
