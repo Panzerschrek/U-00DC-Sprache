@@ -1,6 +1,8 @@
 #pragma once
 #include <string_view>
+#include "push_disable_llvm_warnings.hpp"
 #include <llvm/ADT/StringRef.h>
+#include "pop_llvm_warnings.hpp"
 
 namespace U
 {
