@@ -7,8 +7,8 @@ import "type_traits.u"
 // If result is successfull - it is unwrapped into specified variable.
 // Else error is extracted and returned.
 // Such macro is designated for simplifying passing errors to caller code.
-// TODO - maybe choose different name for this macro?
-?macro <? result_unwrap:block ( ?m:opt<? mut ?> ?var_name:ident : ?e:expr ); ?>
+// Use word "return" in macro name in order to make visible, that this macro contains possible return point.
+?macro <? result_unwrap_or_return:block ( ?m:opt<? mut ?> ?var_name:ident : ?e:expr ); ?>
 ->
 <?
 	auto mut ??res = ?e;

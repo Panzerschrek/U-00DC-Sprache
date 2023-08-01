@@ -62,20 +62,20 @@ struct DestructibleError
 
 fn ResultUnwrapContinueTest() : ust::result</f32, SomeErrorEnum />
 {
-	result_unwrap( r : RetRes( 55 ) );
+	result_unwrap_or_return( r : RetRes( 55 ) );
 	return f32(r);
 }
 
 fn ResultUnwrapContinueModifyTest() : ust::result</f32, SomeErrorEnum />
 {
-	result_unwrap( mut r : RetRes( 123 ) );
+	result_unwrap_or_return( mut r : RetRes( 123 ) );
 	r /= 3;
 	return f32(r);
 }
 
 fn ResultUnwrapRetTest() : ust::result</f32, SomeErrorEnum />
 {
-	result_unwrap( r : RetErr( SomeErrorEnum::NotOk ) );
+	result_unwrap_or_return( r : RetErr( SomeErrorEnum::NotOk ) );
 	return f32(r);
 }
 
