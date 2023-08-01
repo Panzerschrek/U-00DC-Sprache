@@ -4,6 +4,7 @@
 #include <llvm/Support/MemoryBuffer.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "../code_builder_lib_common/string_ref.hpp"
 #include "../sprache_version/sprache_version.hpp"
 #include "dep_file.hpp"
 
@@ -49,7 +50,7 @@ bool NothingChanged(
 	{
 		if( version->kind() != llvm::json::Value::String )
 			return false;
-		if( *(version->getAsString()) != std::string(getFullVersion()) )
+		if( *(version->getAsString()) != StringViewToStringRef( getFullVersion() ) )
 			return false;
 	}
 	else

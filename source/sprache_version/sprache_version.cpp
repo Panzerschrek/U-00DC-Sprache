@@ -1,3 +1,4 @@
+#include <string>
 #include "sprache_version.hpp"
 
 namespace U
