@@ -1,8 +1,9 @@
 #include "../../lex_synt_lib_common/assert.hpp"
-#include "debug_info_builder.hpp"
 #include "../../sprache_version/sprache_version.hpp"
+#include "../../code_builder_lib_common/string_ref.hpp"
 #include "class.hpp"
 #include "enum.hpp"
+#include "debug_info_builder.hpp"
 
 namespace U
 {
@@ -57,7 +58,7 @@ void DebugInfoBuilder::CreateVariableInfo(
 	const auto di_local_variable=
 		builder_->createAutoVariable(
 			function_context.current_debug_info_scope,
-			variable_name,
+			StringViewToStringRef( variable_name ),
 			GetDIFile( src_loc ),
 			src_loc.GetLine(),
 			CreateDIType(variable.type) );
@@ -82,13 +83,13 @@ void DebugInfoBuilder::CreateReferenceVariableInfo(
 	const auto di_local_variable=
 		builder_->createAutoVariable(
 			function_context.current_debug_info_scope,
-			variable_name,
+			StringViewToStringRef( variable_name ),
 			GetDIFile( src_loc ),
 			src_loc.GetLine(),
 			builder_->createPointerType( CreateDIType(variable.type), data_layout_.getPointerSizeInBits() ) );
 
 	// We needs address for reference, so, move it into stack variable.
-	auto address_for_ref= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType()->getPointerTo(), nullptr, variable_name );
+	auto address_for_ref= function_context.alloca_ir_builder.CreateAlloca( variable.type.GetLLVMType()->getPointerTo(), nullptr, StringViewToStringRef( variable_name ) );
 	function_context.llvm_ir_builder.CreateStore( variable.llvm_value, address_for_ref );
 
 	builder_->insertDeclare(
@@ -106,7 +107,7 @@ void DebugInfoBuilder::CreateFunctionInfo( const FunctionVariable& func_variable
 
 	const auto di_function= builder_->createFunction(
 		GetDIFile( func_variable.body_src_loc ),
-		function_name,
+		StringViewToStringRef( function_name ),
 		func_variable.llvm_function->name_mangled,
 		GetDIFile( func_variable.body_src_loc ),
 		func_variable.body_src_loc.GetLine(),
@@ -195,7 +196,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const FundamentalType& type )
 		// Internal representation of void type is llvm struct with zero elements.
 		return builder_->createStructType(
 			compile_unit_,
-			GetFundamentalTypeName( type.fundamental_type ),
+			StringViewToStringRef( GetFundamentalTypeName( type.fundamental_type ) ),
 			GetRootDIFile(),
 			0u,
 			data_layout_.getTypeAllocSizeInBits( type.llvm_type ),
@@ -220,7 +221,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const FundamentalType& type )
 		type_encoding= llvm::dwarf::DW_ATE_float;
 
 	return builder_->createBasicType(
-		GetFundamentalTypeName(type.fundamental_type),
+		StringViewToStringRef( GetFundamentalTypeName(type.fundamental_type) ),
 		type.GetSize() * 8u,
 		type_encoding );
 }
@@ -432,7 +433,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 
 			elements.push_back(
 				builder_->createEnumerator(
-					name,
+					StringViewToStringRef( name ),
 					variable->constexpr_value->getUniqueInteger().getLimitedValue(),
 					true ) );
 		} );

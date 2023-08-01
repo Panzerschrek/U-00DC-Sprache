@@ -112,7 +112,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 			llvm::IRBuilder ir_builder( llvm::BasicBlock::Create( llvm_context_, "func_code", destructor_function ) );
 
 			llvm::Argument* const this_arg= destructor_function->getArg(0);
-			this_arg->setName( Keyword( Keywords::this_ ) );
+			this_arg->setName( StringViewToStringRef( Keyword( Keywords::this_ ) ) );
 
 			ir_builder.CreateCall(
 				llvm::Intrinsic::getDeclaration( module_.get(), llvm::Intrinsic::coro_destroy ),

@@ -1,4 +1,5 @@
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../../code_builder_lib_common/string_ref.hpp"
 #include "class.hpp"
 #include "template_signature_param.hpp"
 #include "enum.hpp"
@@ -47,7 +48,7 @@ std::string NamesScope::ToString() const
 Value* NamesScope::AddName( const std::string_view name, Value value )
 {
 	U_ASSERT( iterating_ == 0u );
-	auto it_bool_pair= names_map_.insert( std::make_pair( name, std::move( value ) ) );
+	auto it_bool_pair= names_map_.insert( std::make_pair( StringViewToStringRef(name), std::move( value ) ) );
 
 	if( it_bool_pair.second )
 		return &it_bool_pair.first->second;
@@ -57,7 +58,7 @@ Value* NamesScope::AddName( const std::string_view name, Value value )
 
 Value* NamesScope::GetThisScopeValue( const std::string_view name )
 {
-	const auto it= names_map_.find( name );
+	const auto it= names_map_.find( StringViewToStringRef(name) );
 	if( it != names_map_.end() )
 		return &it->second;
 	return nullptr;

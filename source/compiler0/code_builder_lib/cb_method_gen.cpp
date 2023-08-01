@@ -115,7 +115,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		llvm_function );
 	StackVariablesStorage function_variables_storage( function_context );
 	llvm::Value* const this_llvm_value= llvm_function->args().begin();
-	this_llvm_value->setName( Keyword( Keywords::this_ ) );
+	this_llvm_value->setName( StringViewToStringRef( Keyword( Keywords::this_ ) ) );
 
 	if( the_class.base_class != nullptr )
 	{
@@ -301,7 +301,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 		llvm_function );
 
 	llvm::Value* const this_llvm_value= &*llvm_function->args().begin();
-	this_llvm_value->setName( Keyword( Keywords::this_ ) );
+	this_llvm_value->setName( StringViewToStringRef( Keyword( Keywords::this_ ) ) );
 	llvm::Value* const src_llvm_value= &*std::next(llvm_function->args().begin());
 	src_llvm_value->setName( "src" );
 
@@ -376,7 +376,7 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVar
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( destructor_function );
 
 	llvm::Value* const this_llvm_value= &*llvm_function->args().begin();
-	this_llvm_value->setName( Keyword( Keywords::this_ ) );
+	this_llvm_value->setName( StringViewToStringRef( Keyword( Keywords::this_ ) ) );
 
 	const VariablePtr this_=
 		std::make_shared<Variable>(
@@ -552,7 +552,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 		llvm_function );
 
 	llvm::Value* const this_llvm_value= &*llvm_function->args().begin();
-	this_llvm_value->setName( Keyword( Keywords::this_ ) );
+	this_llvm_value->setName( StringViewToStringRef( Keyword( Keywords::this_ ) ) );
 	llvm::Value* const src_llvm_value= &*std::next(llvm_function->args().begin());
 	src_llvm_value->setName( "src" );
 

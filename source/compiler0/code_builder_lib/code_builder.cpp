@@ -1848,7 +1848,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 	llvm::Constant* const initializer )
 {
 	// Try to reuse global variable.
-	if( llvm::GlobalVariable* const prev_literal_name= module_->getNamedGlobal(mangled_name) )
+	if( llvm::GlobalVariable* const prev_literal_name= module_->getNamedGlobal( StringViewToStringRef(mangled_name) ) )
 		if( prev_literal_name->getInitializer() == initializer ) // llvm reuses constants, so, for equal constants pointers will be same.
 			return prev_literal_name;
 	
@@ -1859,7 +1859,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalConstantVariable(
 			true, // is constant
 			llvm::GlobalValue::PrivateLinkage, // We have no external variables, so, use private linkage.
 			initializer,
-			mangled_name );
+			StringViewToStringRef(mangled_name) );
 
 	val->setUnnamedAddr( llvm::GlobalValue::UnnamedAddr::Global );
 
@@ -1875,7 +1875,7 @@ llvm::GlobalVariable* CodeBuilder::CreateGlobalMutableVariable( const Type& type
 			false, // is constant
 			llvm::GlobalValue::ExternalLinkage,
 			nullptr,
-			mangled_name );
+			StringViewToStringRef(mangled_name) );
 
 	if( externally_available )
 	{

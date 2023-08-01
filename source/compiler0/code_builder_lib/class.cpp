@@ -1,3 +1,4 @@
+#include "../../code_builder_lib_common/string_ref.hpp"
 #include "template_signature_param.hpp"
 #include "class.hpp"
 
@@ -13,7 +14,7 @@ Class::Class( std::string in_name, NamesScope* const parent_scope )
 
 ClassMemberVisibility Class::GetMemberVisibility( const std::string_view member_name ) const
 {
-	const auto it= members_visibility.find( member_name );
+	const auto it= members_visibility.find( StringViewToStringRef(member_name) );
 	if( it == members_visibility.end() )
 		return ClassMemberVisibility::Public;
 	return it->second;
@@ -23,7 +24,7 @@ void Class::SetMemberVisibility( const std::string_view member_name, const Class
 {
 	if( visibility == ClassMemberVisibility::Public )
 		return;
-	members_visibility[member_name]= visibility;
+	members_visibility[ StringViewToStringRef(member_name) ]= visibility;
 }
 
 bool Class::HaveAncestor( const ClassPtr class_ ) const
