@@ -14,7 +14,7 @@ import "type_traits.u"
 	auto mut ??res = ?e;
 	if( ??res.is_error() )
 	{
-		// This works for functions returning result::ErrorT, functionis returning "result" with ErrorT and any other ResultT, optionals and generally any types, constructible from result::ErrorT.
+		// This works for functions returning result::ErrorT, functionis returning "result" with ErrorT and any other OkT, optionals and generally any types, constructible from result::ErrorT.
 		return ust::result_try_take_error( move( ??res ) );
 	}
 	auto ?m<? mut ?> ?var_name = ust::result_try_take( move( ??res ) );
@@ -49,23 +49,23 @@ import "type_traits.u"
 namespace ust
 {
 
-template</type ResultT, type ErrorT/>
+template</type OkT, type ErrorT/>
 class result
 {
 public:
-	static_assert( !is_same_type</ResultT, ErrorT/>(), "Result and error types must be distinct!" );
+	static_assert( !is_same_type</OkT, ErrorT/>(), "Result and error types must be distinct!" );
 
 public:
-	// Construt from result.
-	fn conversion_constructor( mut this'a', ResultT mut res'b' ) ' a <- b '
-		( is_result_= true, storage_= zero_init ) // TODO - use uninitialized initializer for storage
+	// Construt from ok value.
+	fn conversion_constructor( mut this'a', OkT mut res'b' ) ' a <- b '
+		( is_ok_= true, storage_= zero_init ) // TODO - use uninitialized initializer for storage
 	{
 		unsafe( move_into_uninitialized( deref_unchecked(), move(res) ) );
 	}
 
-	// Construct from error.
+	// Construct from error value.
 	fn conversion_constructor( mut this'a', ErrorT mut err'b' ) ' a <- b '
-		( is_result_= false, storage_= zero_init ) // TODO - use uninitialized initializer for storage
+		( is_ok_= false, storage_= zero_init ) // TODO - use uninitialized initializer for storage
 	{
 		unsafe( move_into_uninitialized( deref_error_unchecked(), move(err) ) );
 	}
@@ -80,7 +80,7 @@ public:
 	// Destroy either result or error.
 	fn destructor()
 	{
-		if( is_result_ )
+		if( is_ok_ )
 		{
 			unsafe( call_destructor( deref_unchecked() ) );
 		}
@@ -94,7 +94,7 @@ public:
 
 	fn is_ok( this ) : bool
 	{
-		return is_result_;
+		return is_ok_;
 	}
 
 	fn is_error( this ) : bool
@@ -102,28 +102,28 @@ public:
 		return !is_ok();
 	}
 
-	// Access result value.
+	// Access ok value.
 
-	fn try_deref(  mut this ) : ResultT & mut
+	fn try_deref(  mut this ) : OkT & mut
 	{
 		halt if(!is_ok());
 		return unsafe( deref_unchecked() );
 	}
 
-	fn try_deref( imut this ) : ResultT &imut
+	fn try_deref( imut this ) : OkT &imut
 	{
 		halt if(!is_ok());
 		return unsafe( deref_unchecked() );
 	}
 
-	fn deref_unchecked(  mut this ) unsafe : ResultT & mut
+	fn deref_unchecked(  mut this ) unsafe : OkT & mut
 	{
-		return unsafe( cast_ref_unsafe</ResultT/>( storage_ ) );
+		return unsafe( cast_ref_unsafe</OkT/>( storage_ ) );
 	}
 
-	fn deref_unchecked( imut this ) unsafe : ResultT &imut
+	fn deref_unchecked( imut this ) unsafe : OkT &imut
 	{
-		return unsafe( cast_ref_unsafe</ResultT/>( storage_ ) );
+		return unsafe( cast_ref_unsafe</OkT/>( storage_ ) );
 	}
 
 	// Access error value.
@@ -153,30 +153,30 @@ public:
 	// Get optional reference.
 
 	fn
-	enable_if( typeinfo</ResultT/>.references_tags_count == 0s )
-	as_ref(  mut this ) : optional_ref_mut </ResultT/>'this'
+	enable_if( typeinfo</OkT/>.references_tags_count == 0s )
+	as_ref(  mut this ) : optional_ref_mut </OkT/>'this'
 	{
-		if( is_result_ )
+		if( is_ok_ )
 		{
-			return optional_ref_mut </ResultT/>( unsafe( deref_unchecked() ) );
+			return optional_ref_mut </OkT/>( unsafe( deref_unchecked() ) );
 		}
 		else
 		{
-			return optional_ref_mut </ResultT/>();
+			return optional_ref_mut </OkT/>();
 		}
 	}
 
 	fn
-	enable_if( typeinfo</ResultT/>.references_tags_count == 0s )
-	as_ref( imut this ) : optional_ref_imut</ResultT/>'this'
+	enable_if( typeinfo</OkT/>.references_tags_count == 0s )
+	as_ref( imut this ) : optional_ref_imut</OkT/>'this'
 	{
-		if( is_result_ )
+		if( is_ok_ )
 		{
-			return optional_ref_imut</ResultT/>( unsafe( deref_unchecked() ) );
+			return optional_ref_imut</OkT/>( unsafe( deref_unchecked() ) );
 		}
 		else
 		{
-			return optional_ref_imut</ResultT/>();
+			return optional_ref_imut</OkT/>();
 		}
 	}
 
@@ -184,7 +184,7 @@ public:
 	enable_if( typeinfo</ErrorT/>.references_tags_count == 0s )
 	as_error_ref(  mut this ) : optional_ref_mut </ErrorT/>'this'
 	{
-		if( !is_result_ )
+		if( !is_ok_ )
 		{
 			return optional_ref_mut </ErrorT/>( unsafe( deref_error_unchecked() ) );
 		}
@@ -198,7 +198,7 @@ public:
 	enable_if( typeinfo</ErrorT/>.references_tags_count == 0s )
 	as_error_ref( imut this ) : optional_ref_imut</ErrorT/>'this'
 	{
-		if( !is_result_ )
+		if( !is_ok_ )
 		{
 			return optional_ref_imut</ErrorT/>( unsafe( deref_error_unchecked() ) );
 		}
@@ -213,12 +213,12 @@ public:
 	op enable_if( c_is_equality_comparable )
 	==( this_type& l, this_type& r ) : bool
 	{
-		if( l.is_result_ && r.is_result_ )
+		if( l.is_ok_ && r.is_ok_ )
 		{
-			// Both results - compare them.
+			// Both oks - compare them.
 			return unsafe( l.deref_unchecked() ) == unsafe( r.deref_unchecked() );
 		}
-		if( !l.is_result_ && !r.is_result_ )
+		if( !l.is_ok_ && !r.is_ok_ )
 		{
 			// Both errors - compare them.
 			return unsafe( l.deref_error_unchecked() ) == unsafe( r.deref_error_unchecked() );
@@ -229,11 +229,11 @@ public:
 	}
 
 	op enable_if( c_is_equality_comparable )
-	==( this_type& l, ResultT& r ) : bool
+	==( this_type& l, OkT& r ) : bool
 	{
-		if( l.is_result_ )
+		if( l.is_ok_ )
 		{
-			// Both results - compare them.
+			// Both oks - compare them.
 			return unsafe( l.deref_unchecked() ) == r;
 		}
 
@@ -242,11 +242,11 @@ public:
 	}
 
 	op enable_if( c_is_equality_comparable )
-	==( ResultT& l, this_type& r ) : bool
+	==( OkT& l, this_type& r ) : bool
 	{
-		if( r.is_result_ )
+		if( r.is_ok_ )
 		{
-			// Both results - compare them.
+			// Both oks - compare them.
 			return l == unsafe( r.deref_unchecked() );
 		}
 
@@ -257,7 +257,7 @@ public:
 	op enable_if( c_is_equality_comparable )
 	==( this_type& l, ErrorT& r ) : bool
 	{
-		if( !l.is_result_ )
+		if( !l.is_ok_ )
 		{
 			// Both errors - compare them.
 			return unsafe( l.deref_error_unchecked() ) == r;
@@ -270,7 +270,7 @@ public:
 	op enable_if( c_is_equality_comparable )
 	==( ErrorT& l, this_type& r ) : bool
 	{
-		if( !r.is_result_ )
+		if( !r.is_ok_ )
 		{
 			// Both errors - compare them.
 			return l == unsafe( r.deref_error_unchecked() );
@@ -281,37 +281,37 @@ public:
 	}
 
 private:
-	type this_type= result</ResultT, ErrorT/>;
+	type this_type= result</OkT, ErrorT/>;
 
-	var size_type constexpr c_storage_size = select( typeinfo</ResultT/>.size_of  > typeinfo</ErrorT/>.size_of  ? typeinfo</ResultT/>.size_of  : typeinfo</ErrorT/>.size_of  );
-	var size_type constexpr c_storage_align= select( typeinfo</ResultT/>.align_of > typeinfo</ErrorT/>.align_of ? typeinfo</ResultT/>.align_of : typeinfo</ErrorT/>.align_of );
+	var size_type constexpr c_storage_size = select( typeinfo</OkT/>.size_of  > typeinfo</ErrorT/>.size_of  ? typeinfo</OkT/>.size_of  : typeinfo</ErrorT/>.size_of  );
+	var size_type constexpr c_storage_align= select( typeinfo</OkT/>.align_of > typeinfo</ErrorT/>.align_of ? typeinfo</OkT/>.align_of : typeinfo</ErrorT/>.align_of );
 
-	var bool constexpr c_is_equality_comparable= typeinfo</ResultT/>.is_equality_comparable && typeinfo</ErrorT/>.is_equality_comparable;
+	var bool constexpr c_is_equality_comparable= typeinfo</OkT/>.is_equality_comparable && typeinfo</ErrorT/>.is_equality_comparable;
 
 private:
 	aligned_storage</ c_storage_size, c_storage_align /> storage_;
-	bool is_result_;
+	bool is_ok_;
 }
 
-// Extract and return result.
-template</type ResultT, type ErrorT/>
-fn result_try_take( result</ResultT, ErrorT/> mut r'a' ) : ResultT'a'
+// Extract and return ok value.
+template</type OkT, type ErrorT/>
+fn result_try_take( result</OkT, ErrorT/> mut r'a' ) : OkT'a'
 {
 	unsafe
 	{
-		var ResultT mut t= uninitialized;
+		var OkT mut t= uninitialized;
 		{
 			auto& ref= r.try_deref(); // try_deref will halt if result contains error.
-			memory_copy_aligned( typeinfo</ResultT/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>( ref ), typeinfo</ResultT/>.size_of ); // Copy contents into the result.
+			memory_copy_aligned( typeinfo</OkT/>.align_of, cast_ref_unsafe</byte8/>(t), cast_ref_unsafe</byte8/>( ref ), typeinfo</OkT/>.size_of ); // Copy contents into the result.
 		}
 		move_into_nowhere( move(r) ); // Forget about the result container.
 		return move(t);
 	}
 }
 
-// Extract and return error.
-template</type ResultT, type ErrorT/>
-fn result_try_take_error( result</ResultT, ErrorT/> mut r'a' ) : ErrorT'a'
+// Extract and return error value.
+template</type OkT, type ErrorT/>
+fn result_try_take_error( result</OkT, ErrorT/> mut r'a' ) : ErrorT'a'
 {
 	unsafe
 	{
