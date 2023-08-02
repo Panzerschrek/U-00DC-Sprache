@@ -30,6 +30,7 @@
 #include <llvm/Transforms/IPO/Internalize.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "../code_builder_lib_common/string_ref.hpp"
 #include "../compilers_support_lib/errors_print.hpp"
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/ustlib.hpp"
@@ -600,7 +601,7 @@ int Main( int argc, const char* argv[] )
 
 		// Add module flags and global constants for compiler version and generation.
 		{
-			const auto constant= llvm::ConstantDataArray::getString( llvm_context, getFullVersion() );
+			const auto constant= llvm::ConstantDataArray::getString( llvm_context, StringViewToStringRef( getFullVersion() ) );
 			result_module->addModuleFlag( llvm::Module::Warning, "Sprache compiler version", constant );
 			AddModuleGlobalConstant( *result_module, constant, "__U_sprache_compiler_version" );
 		}

@@ -14,8 +14,8 @@ public:
 public:
 	Class( std::string name, NamesScope* parent_scope );
 
-	ClassMemberVisibility GetMemberVisibility( const std::string& member_name ) const;
-	void SetMemberVisibility( const std::string& member_name, ClassMemberVisibility visibility );
+	ClassMemberVisibility GetMemberVisibility( std::string_view member_name ) const;
+	void SetMemberVisibility( std::string_view member_name, ClassMemberVisibility visibility );
 
 	bool HaveAncestor( ClassPtr class_ ) const;
 
@@ -62,7 +62,7 @@ public:
 	NamesScopePtr members_initial;
 
 	// have no visibility for member, means it is public.
-	ProgramStringMap< ClassMemberVisibility > members_visibility;
+	llvm::StringMap< ClassMemberVisibility > members_visibility;
 
 	const Synt::Class* syntax_element= nullptr;
 

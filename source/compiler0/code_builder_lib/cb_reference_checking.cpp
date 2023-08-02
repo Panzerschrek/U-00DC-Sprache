@@ -154,7 +154,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 	FunctionType& function_type )
 {
 	const auto get_references=
-	[&]( const std::string& name ) -> ArgsVector<FunctionType::ParamReference>
+	[&]( const std::string_view name ) -> ArgsVector<FunctionType::ParamReference>
 	{
 		ArgsVector<FunctionType::ParamReference> result;
 

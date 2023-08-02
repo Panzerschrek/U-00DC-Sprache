@@ -8,45 +8,45 @@ namespace U
 namespace
 {
 
-const ProgramStringSet g_keywords_set
+const std::unordered_set<std::string_view> g_keywords_set
 {
 @KEYWORDS_LIST_STRINGS@
 };
 
-const std::string g_keywords[ size_t(Keywords::LastKeyword) ]
+const std::string_view g_keywords[ size_t(Keywords::LastKeyword) ]
 {
 @KEYWORDS_LIST_STRINGS@
 };
 
 } // namespace
 
-bool IsKeyword( const std::string& str )
+bool IsKeyword( const std::string_view str )
 {
 	return g_keywords_set.count( str ) != 0;
 }
 
-const std::string& Keyword( const Keywords keyword )
+std::string_view Keyword( const Keywords keyword )
 {
 	U_ASSERT( keyword < Keywords::LastKeyword );
 	return g_keywords[ size_t(keyword) ];
 }
 
-bool operator==( Keywords keyword, const std::string& str )
+bool operator==( Keywords keyword, const std::string_view str )
 {
 	return Keyword( keyword ) == str;
 }
 
-bool operator==( const std::string& str, Keywords keyword )
+bool operator==( const std::string_view str, Keywords keyword )
 {
 	return keyword == str;
 }
 
-bool operator!=( Keywords keyword, const std::string& str )
+bool operator!=( Keywords keyword, const std::string_view str )
 {
 	return Keyword( keyword ) != str;
 }
 
-bool operator!=( const std::string& str, Keywords keyword )
+bool operator!=( const std::string_view str, Keywords keyword )
 {
 	return keyword != str;
 }

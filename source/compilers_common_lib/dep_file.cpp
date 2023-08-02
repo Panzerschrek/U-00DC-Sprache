@@ -4,6 +4,7 @@
 #include <llvm/Support/MemoryBuffer.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
+#include "../code_builder_lib_common/string_ref.hpp"
 #include "../sprache_version/sprache_version.hpp"
 #include "dep_file.hpp"
 
@@ -49,7 +50,7 @@ bool NothingChanged(
 	{
 		if( version->kind() != llvm::json::Value::String )
 			return false;
-		if( *(version->getAsString()) != getFullVersion() )
+		if( *(version->getAsString()) != StringViewToStringRef( getFullVersion() ) )
 			return false;
 	}
 	else
@@ -105,7 +106,7 @@ void Write(
 	const std::vector<IVfs::Path>& deps_list )
 {
 	llvm::json::Object doc;
-	doc[c_version]= getFullVersion();
+	doc[c_version]= std::string( getFullVersion() );
 
 	{
 		llvm::json::Array args;

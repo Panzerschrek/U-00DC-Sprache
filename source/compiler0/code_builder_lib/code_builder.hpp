@@ -90,8 +90,8 @@ private:
 		std::string name;
 		SrcLoc src_loc;
 
-		GlobalThing( const void* const in_thing_ptr, const std::string& in_name, const SrcLoc& in_src_loc )
-			: thing_ptr(in_thing_ptr), name(in_name), src_loc(in_src_loc)
+		GlobalThing( const void* const in_thing_ptr, std::string in_name, const SrcLoc& in_src_loc )
+			: thing_ptr(in_thing_ptr), name(std::move(in_name)), src_loc(in_src_loc)
 		{}
 	};
 
@@ -498,7 +498,7 @@ private:
 		FunctionVariable& func,
 		ClassPtr base_class,
 		NamesScope& parent_names_scope,
-		const std::string& func_name,
+		std::string_view func_name,
 		const Synt::FunctionParams& params,
 		const Synt::Block& block,
 		const Synt::StructNamedInitializer* constructor_initialization_list );
@@ -680,7 +680,7 @@ private:
 	TypeinfoPartVariable BuildTypeinfoEnumElementsList( EnumPtr enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
 		const Class& class_, ClassPtr node_class_type,
-		const std::string& member_name,
+		std::string_view member_name,
 		ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers );
 	TypeinfoPartVariable BuildTypeinfoClassFieldsList( ClassPtr class_type, NamesScope& root_namespace );
 	TypeinfoPartVariable BuildTypeinfoClassTypesList( ClassPtr class_type, NamesScope& root_namespace );
@@ -770,10 +770,10 @@ private:
 
 	// Try to lookup value from names scope. If it is not found - try to lookup it from parent scope, than from parent of parent, etc.
 	// Do not perform name build.
-	NameLookupResult LookupName( NamesScope& names_scope, const std::string& name, const SrcLoc& src_loc );
+	NameLookupResult LookupName( NamesScope& names_scope, std::string_view name, const SrcLoc& src_loc );
 
-	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, const std::string& name );
-	std::pair<Value*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, const std::string& name, bool recursive_call= false );
+	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, std::string_view name );
+	std::pair<Value*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, std::string_view name, bool recursive_call= false );
 
 	// Functions
 
@@ -825,7 +825,7 @@ private:
 	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
 
 	llvm::Constant* ApplyEmptyInitializer(
-		const std::string& variable_name,
+		std::string_view variable_name,
 		const SrcLoc& src_loc,
 		VariablePtr variable,
 		NamesScope& block_names,
@@ -959,7 +959,7 @@ private:
 	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
 	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );
 	size_t GlobalThingDetectloop( const GlobalThing& global_thing ); // returns loop start index or ~0u
-	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, const std::string& last_loop_element_name, const SrcLoc& last_loop_element_src_loc );
+	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, std::string_view last_loop_element_name, const SrcLoc& last_loop_element_src_loc );
 
 	// Other stuff
 
@@ -993,8 +993,8 @@ private:
 
 	llvm::Value* CreateReferenceCast( llvm::Value* ref, const Type& src_type, const Type& dst_type, FunctionContext& function_context );
 
-	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, const std::string& mangled_name, llvm::Constant* initializer= nullptr );
-	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, const std::string& mangled_name, bool externally_available );
+	llvm::GlobalVariable* CreateGlobalConstantVariable( const Type& type, std::string_view mangled_name, llvm::Constant* initializer= nullptr );
+	llvm::GlobalVariable* CreateGlobalMutableVariable( const Type& type, std::string_view mangled_name, bool externally_available );
 
 	bool IsGlobalVariable( const VariablePtr& variable );
 

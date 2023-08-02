@@ -108,11 +108,11 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 	std::vector<ClassFunction> class_functions;
 
 	the_class.members->ForEachInThisScope(
-		[&]( const std::string& name, Value& value )
+		[&]( const std::string_view name, Value& value )
 		{
 			if( const auto functions_set= value.GetFunctionsSet() )
 				for( FunctionVariable& function : functions_set->functions )
-					class_functions.emplace_back( ClassFunction{ &function, name } );
+					class_functions.emplace_back( ClassFunction{ &function, std::string(name) } );
 		});
 
 	// We needs strong order of functions in virtual table. So, sort them, using mangled name.

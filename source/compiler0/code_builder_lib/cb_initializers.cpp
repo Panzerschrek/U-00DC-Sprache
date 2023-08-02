@@ -546,7 +546,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 }
 
 llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
-	const std::string& variable_name,
+	const std::string_view variable_name,
 	const SrcLoc& src_loc,
 	const VariablePtr variable,
 	NamesScope& block_names,

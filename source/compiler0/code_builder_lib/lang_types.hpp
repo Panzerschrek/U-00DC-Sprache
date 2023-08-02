@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <string_view>
 
 namespace U
 {
@@ -47,7 +48,7 @@ bool IsNumericType( U_FundamentalType type );
 bool IsChar( U_FundamentalType type );
 bool IsByte( U_FundamentalType type );
 
-const std::string& GetFundamentalTypeName( U_FundamentalType type );
-U_FundamentalType GetFundamentalTypeByName( const std::string& name );
+std::string_view GetFundamentalTypeName( U_FundamentalType type );
+U_FundamentalType GetFundamentalTypeByName( std::string_view name );
 
 } // namespace U

@@ -1,5 +1,6 @@
 #include "tbaa_metadata_builder.hpp"
 
+#include "../../code_builder_lib_common/string_ref.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "keywords.hpp"
 
@@ -20,32 +21,32 @@ TBAAMetadataBuilder::TBAAMetadataBuilder(
 	// byte8 is a base type for all other byte types.
 	// byteN type is base for fundamental types with size N.
 
-	type_descriptors_.byte8_  = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte8_   ), tbaa_root );
-	type_descriptors_.byte16_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte16_  ), type_descriptors_.byte8_  );
-	type_descriptors_.byte32_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte32_  ), type_descriptors_.byte16_ );
-	type_descriptors_.byte64_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte64_  ), type_descriptors_.byte32_ );
-	type_descriptors_.byte128_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::byte128_ ), type_descriptors_.byte64_ );
+	type_descriptors_.byte8_  = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::byte8_   ) ), tbaa_root );
+	type_descriptors_.byte16_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::byte16_  ) ), type_descriptors_.byte8_  );
+	type_descriptors_.byte32_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::byte32_  ) ), type_descriptors_.byte16_ );
+	type_descriptors_.byte64_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::byte64_  ) ), type_descriptors_.byte32_ );
+	type_descriptors_.byte128_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::byte128_ ) ), type_descriptors_.byte64_ );
 
-	type_descriptors_.void_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::void_ ), type_descriptors_.byte8_ );
-	type_descriptors_.bool_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::bool_ ), type_descriptors_.byte8_ );
+	type_descriptors_.void_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::void_ ) ), type_descriptors_.byte8_ );
+	type_descriptors_.bool_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::bool_ ) ), type_descriptors_.byte8_ );
 
-	type_descriptors_.i8_  = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::i8_   ), type_descriptors_.byte8_   );
-	type_descriptors_.u8_  = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::u8_   ), type_descriptors_.byte8_   );
-	type_descriptors_.i16_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::i16_  ), type_descriptors_.byte16_  );
-	type_descriptors_.u16_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::u16_  ), type_descriptors_.byte16_  );
-	type_descriptors_.i32_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::i32_  ), type_descriptors_.byte32_  );
-	type_descriptors_.u32_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::u32_  ), type_descriptors_.byte32_  );
-	type_descriptors_.i64_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::i64_  ), type_descriptors_.byte64_  );
-	type_descriptors_.u64_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::u64_  ), type_descriptors_.byte64_  );
-	type_descriptors_.i128_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::i128_ ), type_descriptors_.byte128_ );
-	type_descriptors_.u128_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::u128_ ), type_descriptors_.byte128_ );
+	type_descriptors_.i8_  = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::i8_   ) ), type_descriptors_.byte8_   );
+	type_descriptors_.u8_  = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::u8_   ) ), type_descriptors_.byte8_   );
+	type_descriptors_.i16_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::i16_  ) ), type_descriptors_.byte16_  );
+	type_descriptors_.u16_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::u16_  ) ), type_descriptors_.byte16_  );
+	type_descriptors_.i32_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::i32_  ) ), type_descriptors_.byte32_  );
+	type_descriptors_.u32_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::u32_  ) ), type_descriptors_.byte32_  );
+	type_descriptors_.i64_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::i64_  ) ), type_descriptors_.byte64_  );
+	type_descriptors_.u64_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::u64_  ) ), type_descriptors_.byte64_  );
+	type_descriptors_.i128_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::i128_ ) ), type_descriptors_.byte128_ );
+	type_descriptors_.u128_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::u128_ ) ), type_descriptors_.byte128_ );
 
-	type_descriptors_.char8_ = md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::char8_  ), type_descriptors_.byte8_  );
-	type_descriptors_.char16_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::char16_ ), type_descriptors_.byte16_ );
-	type_descriptors_.char32_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::char32_ ), type_descriptors_.byte32_ );
+	type_descriptors_.char8_ = md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::char8_  ) ), type_descriptors_.byte8_  );
+	type_descriptors_.char16_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::char16_ ) ), type_descriptors_.byte16_ );
+	type_descriptors_.char32_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::char32_ ) ), type_descriptors_.byte32_ );
 
-	type_descriptors_.f32_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::f32_ ), type_descriptors_.byte32_ );
-	type_descriptors_.f64_= md_builder_.createTBAAScalarTypeNode( Keyword( Keywords::f64_ ), type_descriptors_.byte64_ );
+	type_descriptors_.f32_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::f32_ ) ), type_descriptors_.byte32_ );
+	type_descriptors_.f64_= md_builder_.createTBAAScalarTypeNode( StringViewToStringRef( Keyword( Keywords::f64_ ) ), type_descriptors_.byte64_ );
 
 	const auto ptr_base=
 		data_layout.getIntPtrType(llvm_context)->getIntegerBitWidth() == 32u

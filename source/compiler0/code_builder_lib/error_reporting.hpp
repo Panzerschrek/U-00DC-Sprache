@@ -5,6 +5,7 @@
 
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../../code_builder_lib_common/code_builder_errors.hpp"
+#include "../../code_builder_lib_common/string_ref.hpp"
 
 namespace U
 {
@@ -25,6 +26,7 @@ const char* GetErrorMessagePattern( CodeBuilderErrorCode code );
 
 std::string PreprocessArg( const Type& type );
 std::string PreprocessArg( const Synt::ComplexName& name );
+inline llvm::StringRef PreprocessArg( const std::string_view arg ) { return StringViewToStringRef(arg); }
 template<class T> const T& PreprocessArg( const T& t ) { return t; }
 
 template<class ... Args>

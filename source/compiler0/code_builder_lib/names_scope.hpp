@@ -26,11 +26,11 @@ public:
 	std::string ToString() const;
 
 	// Returns nullptr, if name already exists in this scope.
-	Value* AddName( const std::string& name, Value value );
+	Value* AddName( std::string_view name, Value value );
 
 	// Resolve simple name only in this scope.
-	Value* GetThisScopeValue( const std::string& name );
-	const Value* GetThisScopeValue( const std::string& name ) const;
+	Value* GetThisScopeValue( std::string_view name );
+	const Value* GetThisScopeValue( std::string_view name ) const;
 
 	NamesScope* GetParent();
 	const NamesScope* GetParent() const;
@@ -55,13 +55,8 @@ public:
 	void ForEachInThisScope( const Func& func )
 	{
 		++iterating_;
-		std::string name;
-		name.reserve(max_key_size_);
 		for( auto& inserted_name : names_map_ )
-		{
-			name.assign( inserted_name.getKeyData(), inserted_name.getKeyLength() );
-			func( const_cast<const std::string&>(name), inserted_name.second );
-		}
+			func( std::string_view( inserted_name.getKeyData(), inserted_name.getKeyLength() ), inserted_name.second );
 		--iterating_;
 	}
 
@@ -69,13 +64,8 @@ public:
 	void ForEachInThisScope( const Func& func ) const
 	{
 		++iterating_;
-		std::string name;
-		name.reserve(max_key_size_);
 		for( const auto& inserted_name : names_map_ )
-		{
-			name.assign( inserted_name.getKeyData(), inserted_name.getKeyLength() );
-			func( const_cast<const std::string&>(name), inserted_name.second );
-		}
+			func( std::string_view( inserted_name.getKeyData(), inserted_name.getKeyLength() ), inserted_name.second );
 		--iterating_;
 	}
 
@@ -104,7 +94,6 @@ private:
 	ClassPtr class_= nullptr;
 
 	llvm::StringMap< Value > names_map_;
-	size_t max_key_size_= 0u;
 
 	mutable size_t iterating_= 0u;
 	std::unordered_map<ClassPtr, ClassMemberVisibility> access_rights_;

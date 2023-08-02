@@ -401,7 +401,7 @@ std::string Type::ToString() const
 	{
 		std::string operator()( const FundamentalType& fundamental ) const
 		{
-			return GetFundamentalTypeName( fundamental.fundamental_type );
+			return std::string( GetFundamentalTypeName( fundamental.fundamental_type ) );
 		}
 
 		std::string operator()( const ArrayPtr& array ) const
@@ -805,7 +805,7 @@ bool operator!=( const FunctionType& l, const FunctionType& r )
 	return !( l == r );
 }
 
-std::string FunctionParamsToString( const ArgsVector<FunctionType::Param>& params )
+std::string FunctionParamsToString( const llvm::ArrayRef<FunctionType::Param> params )
 {
 	std::string result;
 	for( const FunctionType::Param& param : params )

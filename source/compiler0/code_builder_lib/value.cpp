@@ -72,33 +72,36 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 		}
 		else if( IsSignedInteger( fundamental_type->fundamental_type ) )
 		{
-			const std::string suffix=
+			std::string res= std::to_string( variable.constexpr_value->getUniqueInteger().getSExtValue() );
+			res+=
 				fundamental_type->fundamental_type == U_FundamentalType::i32_
 					? ""
 					: GetFundamentalTypeName( fundamental_type->fundamental_type );
 
-			return std::to_string( variable.constexpr_value->getUniqueInteger().getSExtValue() ) + suffix;
+			return res;
 		}
 		else if( IsUnsignedInteger( fundamental_type->fundamental_type ) )
 		{
-			const std::string suffix=
+			std::string res= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
+			res+=
 				fundamental_type->fundamental_type == U_FundamentalType::u32_
 					? "u"
 					: GetFundamentalTypeName( fundamental_type->fundamental_type );
 
-			return std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() ) + suffix;
+			return res;
 		}
 		else if( IsChar( fundamental_type->fundamental_type ) )
 		{
-			const char* suffix= "";
-			if( fundamental_type->fundamental_type == U_FundamentalType::char8_  )
-				suffix= "c8" ;
-			if( fundamental_type->fundamental_type == U_FundamentalType::char16_ )
-				suffix= "c16";
-			if( fundamental_type->fundamental_type == U_FundamentalType::char32_ )
-				suffix= "c32";
+			std::string res= std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() );
 
-			return std::to_string( variable.constexpr_value->getUniqueInteger().getZExtValue() ) + suffix;
+			if( fundamental_type->fundamental_type == U_FundamentalType::char8_  )
+				res+= "c8" ;
+			if( fundamental_type->fundamental_type == U_FundamentalType::char16_ )
+				res+= "c16";
+			if( fundamental_type->fundamental_type == U_FundamentalType::char32_ )
+				res+= "c32";
+
+			return res;
 		}
 		else if( IsByte( fundamental_type->fundamental_type ) )
 		{
@@ -124,9 +127,9 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 	else if( const auto enum_type= variable.type.GetEnumType() )
 	{
 		const llvm::APInt num_value= variable.constexpr_value->getUniqueInteger();
-		std::string enum_member_name;
+		std::string_view enum_member_name;
 		enum_type->members.ForEachInThisScope(
-			[&]( const std::string& name, const Value& enum_member )
+			[&]( const std::string_view name, const Value& enum_member )
 			{
 				if( const VariablePtr enum_variable= enum_member.GetVariable() )
 				{
@@ -136,7 +139,9 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 				}
 			});
 
-		return enum_type->members.ToString() + "::" + enum_member_name;
+		std::string res= enum_type->members.ToString() + "::";
+		res+= enum_member_name;
+		return res;
 	}
 
 	return "";
@@ -231,23 +236,23 @@ size_t Value::GetKindIndex() const
 	return something_.index();
 }
 
-std::string Value::GetKindName() const
+std::string_view Value::GetKindName() const
 {
 	struct Visitor final
 	{
-		std::string operator()( const VariablePtr& ) const { return "variable"; }
-		std::string operator()( const FunctionVariable& ) const { return "function variable"; }
-		std::string operator()( const OverloadedFunctionsSetPtr& ) const { return "functions set"; }
-		std::string operator()( const Type& ) const { return "typename"; }
-		std::string operator()( const ClassField& ) const { return "class field"; }
-		std::string operator()( const ThisOverloadedMethodsSet& ) const { return "this + functions set"; }
-		std::string operator()( const NamesScopePtr& ) const { return "namespace"; }
-		std::string operator()( const TypeTemplatesSet& ) const { return "type templates set"; }
-		std::string operator()( const StaticAssert& ) const { return "static assert"; }
-		std::string operator()( const Typedef& ) const { return "incomplete typedef"; }
-		std::string operator()( const IncompleteGlobalVariable& ) const { return "incomplete global variable"; }
-		std::string operator()( const YetNotDeducedTemplateArg& ) const { return "yet not deduced template arg"; }
-		std::string operator()( const ErrorValue& ) const { return "error value"; }
+		std::string_view operator()( const VariablePtr& ) const { return "variable"; }
+		std::string_view operator()( const FunctionVariable& ) const { return "function variable"; }
+		std::string_view operator()( const OverloadedFunctionsSetPtr& ) const { return "functions set"; }
+		std::string_view operator()( const Type& ) const { return "typename"; }
+		std::string_view operator()( const ClassField& ) const { return "class field"; }
+		std::string_view operator()( const ThisOverloadedMethodsSet& ) const { return "this + functions set"; }
+		std::string_view operator()( const NamesScopePtr& ) const { return "namespace"; }
+		std::string_view operator()( const TypeTemplatesSet& ) const { return "type templates set"; }
+		std::string_view operator()( const StaticAssert& ) const { return "static assert"; }
+		std::string_view operator()( const Typedef& ) const { return "incomplete typedef"; }
+		std::string_view operator()( const IncompleteGlobalVariable& ) const { return "incomplete global variable"; }
+		std::string_view operator()( const YetNotDeducedTemplateArg& ) const { return "yet not deduced template arg"; }
+		std::string_view operator()( const ErrorValue& ) const { return "error value"; }
 	};
 
 	return std::visit( Visitor(), something_ );
@@ -360,11 +365,6 @@ YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg()
 const YetNotDeducedTemplateArg* Value::GetYetNotDeducedTemplateArg() const
 {
 	return std::get_if<YetNotDeducedTemplateArg>( &something_ );
-}
-
-ErrorValue* Value::GetErrorValue()
-{
-	return std::get_if<ErrorValue>( &something_ );
 }
 
 const ErrorValue* Value::GetErrorValue() const
