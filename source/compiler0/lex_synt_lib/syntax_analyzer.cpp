@@ -2582,16 +2582,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
-		if( it_->type == Lexem::Type::BraceLeft )
-		{
-			ScopeBlock block= ParseBlock();
-			block.label= TryParseLabel();
-			elements.push_back( std::move(block) );
-		}
-
-		else if( it_->type == Lexem::Type::BraceRight )
+		if( it_->type == Lexem::Type::BraceRight )
 			break;
-
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 			elements.emplace_back( ParseVariablesDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
@@ -2644,13 +2636,19 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			block.label= TryParseLabel();
 			elements.emplace_back( std::move( block ) );
 		}
+		else if( it_->type == Lexem::Type::BraceLeft )
+		{
+			ScopeBlock block= ParseBlock();
+			block.label= TryParseLabel();
+			elements.emplace_back( std::move(block) );
+		}
 		else if( it_->type == Lexem::Type::Increment )
 		{
 			IncrementOperator op( it_->src_loc );
 			NextLexem();
 
 			op.expression= ParseExpression();
-			elements.push_back( std::move(op) );
+			elements.emplace_back( std::move(op) );
 
 			ExpectSemicolon();
 		}
@@ -2660,7 +2658,7 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 			NextLexem();
 
 			op.expression= ParseExpression();
-			elements.push_back( std::move(op) );
+			elements.emplace_back( std::move(op) );
 
 			ExpectSemicolon();
 		}
