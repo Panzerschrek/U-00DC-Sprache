@@ -118,6 +118,7 @@ private:
 
 	FunctionPointerType FunctionTypeToPointer( FunctionType function_type );
 
+	// Getting LLVM function type may require building complete types for arguments/return value.
 	llvm::FunctionType* GetLLVMFunctionType( const FunctionType& function_type );
 	llvm::CallingConv::ID GetLLVMCallingConvention(
 		const std::optional<std::string>& calling_convention_name,

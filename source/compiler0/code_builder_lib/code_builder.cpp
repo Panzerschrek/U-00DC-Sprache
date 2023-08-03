@@ -1980,6 +1980,9 @@ llvm::Function* CodeBuilder::EnsureLLVMFunctionCreated( const FunctionVariable& 
 	if( function_type.return_value_type != ValueType::Value )
 		llvm_function->addRetAttr( llvm::Attribute::NonNull );
 
+	// We can't specify dereferenceable attrubutes here, since types of reference args and return values may be still incomplete.
+	// So, setup dereferenceable attributes later, using separate pass.
+
 	return llvm_function;
 }
 

@@ -276,7 +276,12 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 			}
 		}
 		else
+		{
+			// Do not need to have complete type in order to know how to pass reference args.
+			// It is important not to trigger type completeness build, since this function may be called within class build code,
+			// in case of special and/or generated methods.
 			type= type->getPointerTo();
+		}
 
 		args_llvm_types.push_back( type );
 	}
@@ -297,7 +302,6 @@ llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& functi
 	}
 	else
 		llvm_function_return_type= llvm_function_return_type->getPointerTo();
-
 
 	return llvm::FunctionType::get( llvm_function_return_type, args_llvm_types, false );
 }
