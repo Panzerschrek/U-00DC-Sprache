@@ -15,6 +15,8 @@ General:
 *) Auto-move in "return" for local variable
 *) More advanced macros - more context, elements, string manipulations
 *) switch-style operator for expression context
+*) thread-local variables
+*) "nodiscard" for types (and/or) functions
 
 References:
 *) Multiple inner reference tags for some types
@@ -54,6 +56,12 @@ Compiler:
 *) Inline assembly/module level assembly support
 *) Precompiled modules
 *) More calling conventions (including platform-dependent)
+*) Unused local variable error
+*) Unused global variable error
+*) Unused function error
+*) Unused class error
+*) Unused enum error
+*) Unused type alias error
 
 Interpreter:
 *)Support entry point with args and add possibility to provide such args (argc, argv?)
