@@ -31,12 +31,9 @@ fn ConstexprFunctionEvaluator::destructor()
 
 fn ConstexprFunctionEvaluator::Evaluate( mut this, LLVMValueRef function, ust::array_view_imut</LLVMValueRef/> args ) : Result
 {
-	var Result mut result
-	{
-		.constant= zero_init
-	};
+	var ust::vector</ ust::string8 /> mut errors;
 
-	result.constant=
+	var LLVMValueRef constant=
 		unsafe(
 			U1_ConstexprFunctionEvaluatorEvaluate(
 				impl_,
@@ -44,9 +41,16 @@ fn ConstexprFunctionEvaluator::Evaluate( mut this, LLVMValueRef function, ust::a
 				args.data(),
 				args.size(),
 				ConstexprFunctionEvaluatorErrorHandlerFunc( ErrorHandlerFunc ),
-				cast_ref_unsafe</byte8/>( result.errors ) ) );
+				cast_ref_unsafe</byte8/>( errors ) ) );
 
-	return move(result);
+	if( !errors.empty() || constant == LLVMValueRef::Null )
+	{
+		return move(errors);
+	}
+	else
+	{
+		return constant;
+	}
 }
 
 } // namespace U1

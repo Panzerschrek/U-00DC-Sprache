@@ -3679,52 +3679,53 @@ fn CodeBuilder::DoCallFunction(
 
 	if( is_constexpr )
 	{
-		auto res= constexpr_function_evaluator_.Evaluate( function, constexpr_args.range() );
-
-		if( res.errors.empty() )
+		result_match( constexpr_function_evaluator_.Evaluate( function, constexpr_args.range() ) )
 		{
-			if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
+			Ok(constant) ->
 			{
-				result.constexpr_value= unsafe( LLVMConstNull( fundamental_llvm_types_.void_ ) );
-				result.llvm_value= result.constexpr_value;
-			}
-			else if( return_value_is_composite )
-			{
-				if( return_value_is_sret )
+				if( function_type.return_value_type == ValueType::Value && function_type.return_type == void_type_ )
 				{
-					MoveConstantToMemory( s_ret_value, res.constant, function_context );
-					result.constexpr_value= res.constant;
+					result.constexpr_value= unsafe( LLVMConstNull( fundamental_llvm_types_.void_ ) );
+					result.llvm_value= result.constexpr_value;
+				}
+				else if( return_value_is_composite )
+				{
+					if( return_value_is_sret )
+					{
+						MoveConstantToMemory( s_ret_value, constant, function_context );
+						result.constexpr_value= constant;
+					}
+					else
+					{
+						if( !function_context.is_functionless_context )
+						{
+							unsafe( LLVMBuildStore( function_context.llvm_ir_builder, constant, result.llvm_value ) );
+						}
+						result.constexpr_value= WrapRawScalarConstant( constant, function_type.return_type.GetLLVMType() );
+					}
 				}
 				else
 				{
-					if( !function_context.is_functionless_context )
-					{
-						unsafe( LLVMBuildStore( function_context.llvm_ir_builder, res.constant, result.llvm_value ) );
-					}
-					result.constexpr_value= WrapRawScalarConstant( res.constant, function_type.return_type.GetLLVMType() );
+					result.llvm_value= constant;
+					result.constexpr_value= constant;
 				}
-			}
-			else
+			},
+			Err(errors) ->
 			{
-				result.llvm_value= res.constant;
-				result.constexpr_value= res.constant;
-			}
-		}
-		else
-		{
-			with( mut lock : names_scope.lock_imut().deref().GetErrors().try_lock_mut() )
-			{
-				foreach( &err : res.errors )
+				with( mut lock : names_scope.lock_imut().deref().GetErrors().try_lock_mut() )
 				{
-					var CodeBuilderError mut out_error
+					foreach( &err : errors )
 					{
-						.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
-						.src_loc= src_loc,
-						.text= err,
-					};
-					lock.deref().push_back( move(out_error) );
+						var CodeBuilderError mut out_error
+						{
+							.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+							.src_loc= src_loc,
+							.text= err,
+						};
+						lock.deref().push_back( move(out_error) );
+					}
 				}
-			}
+			},
 		}
 	}
 	else if( !function_context.is_functionless_context )

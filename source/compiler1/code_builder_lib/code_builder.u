@@ -2591,32 +2591,31 @@ fn CodeBuilder::ConstexprCompareEqual(
 				continue;
 			}
 			// Found proper "==" operator.
-
 			// TODO - what if "==" is unsafe?
 
 			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( op_ );
-			auto res= constexpr_function_evaluator_.Evaluate( llvm_function, ust::make_array( l, r ) );
-
-			if( res.errors.empty() )
+			result_match( constexpr_function_evaluator_.Evaluate( llvm_function, ust::make_array( l, r ) ) )
 			{
-				return res.constant;
-			}
-
-			with( mut lock : names_scope.lock_imut().deref().GetErrors().try_lock_mut() )
-			{
-				foreach( &err : res.errors )
+				Ok(constant) -> { return constant; },
+				Err(errors) ->
 				{
-					var CodeBuilderError mut out_error
+					with( mut lock : names_scope.lock_imut().deref().GetErrors().try_lock_mut() )
 					{
-						.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
-						.src_loc= src_loc,
-						.text= err,
-					};
-					lock.deref().push_back( move(out_error) );
+						foreach( &err : errors )
+						{
+							var CodeBuilderError mut out_error
+							{
+								.code= CodeBuilderErrorCode::ConstexprFunctionEvaluationError,
+								.src_loc= src_loc,
+								.text= err,
+							};
+							lock.deref().push_back( move(out_error) );
+						}
+					}
+
+					return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) );
 				}
 			}
-
-			return unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, 0u64, LLVMBool::False ) );
 		}
 
 		halt; // Operator not found - wtf?
