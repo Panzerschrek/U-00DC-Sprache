@@ -85,7 +85,7 @@ public:
 	llvm::StructType* llvm_type= nullptr;
 
 	// This class fields in order of field number. Null pointer for parent classes fields.
-	std::vector<ClassFieldPtr> fields_order;
+	ClassFieldsVector<ClassFieldPtr> fields_order;
 
 	// TODO - use "unique_ptr" instead of "optional" for info for special classes?
 
