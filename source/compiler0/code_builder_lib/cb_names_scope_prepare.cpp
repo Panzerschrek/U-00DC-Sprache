@@ -211,7 +211,7 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 
 			if( IsKeyword( in_class_field.name ) )
 				REPORT_ERROR( UsingKeywordAsName, class_type->members->GetErrors(), in_class_field.src_loc_ );
-			if( class_type->members->AddName( in_class_field.name, NamesScopeValue( class_field, in_class_field.src_loc_ ) ) == nullptr )
+			if( class_type->members->AddName( in_class_field.name, NamesScopeValue( std::make_shared<ClassField>(std::move(class_field)), in_class_field.src_loc_ ) ) == nullptr )
 				REPORT_ERROR( Redefinition, class_type->members->GetErrors(), in_class_field.src_loc_, in_class_field.name );
 
 			++field_number;

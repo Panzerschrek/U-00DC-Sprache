@@ -347,7 +347,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( member_access_operator.template_parameters != std::nullopt )
 		REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc_ );
 
-	if( const ClassField* const field= class_member->value.GetClassField() )
+	if( const ClassFieldPtr field= class_member->value.GetClassField() )
 		return AccessClassField( names, function_context, variable, *field, member_access_operator.member_name_, member_access_operator.src_loc_ );
 
 	REPORT_ERROR( NotImplemented, names.GetErrors(), member_access_operator.src_loc_, "class members, except fields or methods" );
@@ -677,7 +677,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	const SrcLoc src_loc= Synt::GetComplexNameSrcLoc( named_operand );
 
-	if( const ClassField* const field= value_entry.GetClassField() )
+	if( const ClassFieldPtr field= value_entry.GetClassField() )
 	{
 		if( function_context.this_ == nullptr )
 		{

@@ -159,8 +159,8 @@ ClassField::ClassField( const ClassPtr in_class, Type in_type, const uint32_t in
 // Value
 //
 
-static_assert( sizeof(Value) <= 64u, "Value is too heavy!" );
-static_assert( sizeof(NamesScopeValue) <= 72u, "NamesScopeValue is too heavy!" );
+static_assert( sizeof(Value) <= 56u, "Value is too heavy!" );
+static_assert( sizeof(NamesScopeValue) <= 64u, "NamesScopeValue is too heavy!" );
 
 Value::Value( VariablePtr variable )
 {
@@ -182,7 +182,7 @@ Value::Value( Type type )
 	something_= std::move(type);
 }
 
-Value::Value( ClassField class_field )
+Value::Value( ClassFieldPtr class_field )
 {
 	something_= std::move( class_field );
 }
@@ -241,7 +241,7 @@ std::string_view Value::GetKindName() const
 		std::string_view operator()( const FunctionVariable& ) const { return "function variable"; }
 		std::string_view operator()( const OverloadedFunctionsSetPtr& ) const { return "functions set"; }
 		std::string_view operator()( const Type& ) const { return "typename"; }
-		std::string_view operator()( const ClassField& ) const { return "class field"; }
+		std::string_view operator()( const ClassFieldPtr& ) const { return "class field"; }
 		std::string_view operator()( const ThisOverloadedMethodsSet& ) const { return "this + functions set"; }
 		std::string_view operator()( const NamesScopePtr& ) const { return "namespace"; }
 		std::string_view operator()( const TypeTemplatesSet& ) const { return "type templates set"; }
@@ -281,14 +281,12 @@ const Type* Value::GetTypeName() const
 	return std::get_if<Type>( &something_ );
 }
 
-ClassField* Value::GetClassField()
+ClassFieldPtr Value::GetClassField() const
 {
-	return std::get_if<ClassField>( &something_ );
-}
+	if( const auto ptr= std::get_if<ClassFieldPtr>( &something_ ) )
+		return *ptr;
 
-const ClassField* Value::GetClassField() const
-{
-	return std::get_if<ClassField>( &something_ );
+	return nullptr;
 }
 
 ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet()

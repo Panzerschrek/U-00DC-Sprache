@@ -45,14 +45,14 @@ private:
 void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm_types, const llvm::DataLayout& data_layout )
 {
 	// Fields in original order
-	using FieldsMap= std::map< uint32_t, ClassField* >;
+	using FieldsMap= std::map< uint32_t, ClassFieldPtr >;
 	FieldsMap fields;
 
 	bool fields_is_ok= true;
 	class_.members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
-			if( ClassField* const field= value.GetClassField() )
+			if( const ClassFieldPtr field= value.GetClassField() )
 			{
 				fields[field->index]= field;
 				if( !field->is_reference && !field->type.GetLLVMType()->isSized() )
@@ -463,7 +463,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	the_class.members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
-			ClassField* const class_field= value.GetClassField();
+			ClassFieldPtr const class_field= value.GetClassField();
 			if( class_field == nullptr )
 				return;
 
@@ -512,7 +512,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	the_class.members->ForEachValueInThisScope(
 		[&]( const Value& value )
 		{
-			const ClassField* const field= value.GetClassField();
+			const ClassFieldPtr field= value.GetClassField();
 			if( field == nullptr )
 				return;
 
@@ -563,18 +563,18 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	}
 
 	{ // Create fields.
-		std::map< uint32_t, ClassField* > class_fields_in_original_order;
+		std::map< uint32_t, ClassFieldPtr > class_fields_in_original_order;
 
 		the_class.members->ForEachValueInThisScope(
 			[&]( Value& value )
 			{
-				if( ClassField* const class_field= value.GetClassField() )
+				if( const ClassFieldPtr class_field= value.GetClassField() )
 					class_fields_in_original_order[class_field->original_index]= class_field;
 			});
 
 		for( const auto& field_entry : class_fields_in_original_order )
 		{
-			ClassField* const class_field= field_entry.second;
+			const ClassFieldPtr& class_field= field_entry.second;
 			class_field->index= uint32_t(fields_llvm_types.size());
 			if( class_field->is_reference )
 				fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );

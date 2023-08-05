@@ -184,7 +184,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			REPORT_ERROR( NameNotFound, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
 		}
-		const ClassField* const field= class_member->value.GetClassField();
+		const ClassFieldPtr field= class_member->value.GetClassField();
 		if( field == nullptr )
 		{
 			REPORT_ERROR( InitializerForNonfieldStructMember, names.GetErrors(), initializer.src_loc_, member_initializer.name );
@@ -988,7 +988,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		const ClassField* const field= class_member->value.GetClassField();
+		const ClassFieldPtr field= class_member->value.GetClassField();
 		if( field == nullptr )
 		{
 			have_fields_errors= true;
@@ -1102,7 +1102,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		const NamesScopeValue* const class_member=
 			base_class.members->GetThisScopeValue( field_initializer.name );
 		U_ASSERT( class_member != nullptr );
-		const ClassField* const field= class_member->value.GetClassField();
+		const ClassFieldPtr field= class_member->value.GetClassField();
 		U_ASSERT( field != nullptr );
 
 		if( field->is_reference )

@@ -166,6 +166,8 @@ struct ClassField final
 	ClassField( ClassPtr in_class, Type in_type, uint32_t in_index, bool in_is_mutable, bool in_is_reference );
 };
 
+using ClassFieldPtr= std::shared_ptr<ClassField>;
+
 // "this" + functions set of class of "this"
 struct ThisOverloadedMethodsSet final
 {
@@ -206,7 +208,7 @@ public:
 	Value( VariableMutPtr variable );
 	Value( OverloadedFunctionsSetPtr functions_set );
 	Value( Type type );
-	Value( ClassField class_field );
+	Value( ClassFieldPtr class_field );
 	Value( ThisOverloadedMethodsSet class_field );
 	Value( NamesScopePtr namespace_ );
 	Value( TypeTemplatesSet type_templates );
@@ -226,8 +228,7 @@ public:
 	Type* GetTypeName();
 	const Type* GetTypeName() const;
 	// Class fields
-	ClassField* GetClassField();
-	const ClassField* GetClassField() const;
+	ClassFieldPtr GetClassField() const;
 	// This + methods set
 	ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet();
 	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
@@ -256,7 +257,7 @@ private:
 		VariablePtr,
 		OverloadedFunctionsSetPtr,
 		Type,
-		ClassField,
+		ClassFieldPtr,
 		ThisOverloadedMethodsSet,
 		NamesScopePtr,
 		TypeTemplatesSet,
