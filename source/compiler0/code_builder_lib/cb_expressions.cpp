@@ -303,7 +303,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	const auto class_value= ResolveClassValue( class_type, member_access_operator.member_name_ );
-	const Value* const class_member= class_value.first;
+	const NamesScopeValue* const class_member= class_value.first;
 	if( class_member == nullptr )
 	{
 		REPORT_ERROR( NameNotFound, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_ );
@@ -317,7 +317,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( names.GetAccessFor( variable->type.GetClassType() ) < class_value.second )
 		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_, class_type->members->GetThisNamespaceName() );
 
-	if( OverloadedFunctionsSetConstPtr functions_set= class_member->GetFunctionsSet() )
+	if( OverloadedFunctionsSetConstPtr functions_set= class_member->value.GetFunctionsSet() )
 	{
 		if( member_access_operator.template_parameters != std::nullopt )
 		{
@@ -325,7 +325,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc_ );
 			else
 			{
-				const Value* const inserted_value=
+				const NamesScopeValue* const inserted_value=
 					ParametrizeFunctionTemplate(
 						member_access_operator.src_loc_,
 						*functions_set,
@@ -335,7 +335,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				if( inserted_value == nullptr )
 					return ErrorValue();
 
-				functions_set= inserted_value->GetFunctionsSet();
+				functions_set= inserted_value->value.GetFunctionsSet();
 			}
 		}
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
@@ -347,7 +347,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( member_access_operator.template_parameters != std::nullopt )
 		REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc_ );
 
-	if( const ClassField* const field= class_member->GetClassField() )
+	if( const ClassField* const field= class_member->value.GetClassField() )
 		return AccessClassField( names, function_context, variable, *field, member_access_operator.member_name_, member_access_operator.src_loc_ );
 
 	REPORT_ERROR( NotImplemented, names.GetErrors(), member_access_operator.src_loc_, "class members, except fields or methods" );
@@ -1222,11 +1222,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
-	const Value* const resolved_value_ptr= LookupName( names, move_operator.var_name_, move_operator.src_loc_ ).value;
+	const NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name_, move_operator.src_loc_ ).value;
 	if( resolved_value_ptr == nullptr )
 		return ErrorValue();
 
-	const Value& resolved_value= *resolved_value_ptr;
+	const Value& resolved_value= resolved_value_ptr->value;
 	const VariablePtr resolved_variable= resolved_value.GetVariable();
 
 	// "resolved_variable" should be mutable reference node pointing to single variable node.

@@ -178,13 +178,13 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			continue;
 		}
 
-		const Value* const class_member= class_type->members->GetThisScopeValue( member_initializer.name );
+		const NamesScopeValue* const class_member= class_type->members->GetThisScopeValue( member_initializer.name );
 		if( class_member == nullptr )
 		{
 			REPORT_ERROR( NameNotFound, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
 		}
-		const ClassField* const field= class_member->GetClassField();
+		const ClassField* const field= class_member->value.GetClassField();
 		if( field == nullptr )
 		{
 			REPORT_ERROR( InitializerForNonfieldStructMember, names.GetErrors(), initializer.src_loc_, member_initializer.name );
@@ -233,7 +233,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& field= *class_type->members->GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *class_type->members->GetThisScopeValue( field_name )->value.GetClassField();
 		if( initialized_members_names.count( field_name ) != 0 )
 			continue;
 
@@ -499,7 +499,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( field_name.empty() )
 				continue;
 
-			const ClassField& field= *class_type->members->GetThisScopeValue( field_name )->GetClassField();
+			const ClassField& field= *class_type->members->GetThisScopeValue( field_name )->value.GetClassField();
 			if( field.is_reference )
 			{
 				all_fields_are_constant= false;
@@ -637,10 +637,10 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 	{
 		// If initializer for class variable is empty, try to call default constructor.
 
-		const Value* constructor_value=
+		const NamesScopeValue* constructor_value=
 			class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		U_ASSERT( constructor_value != nullptr );
-		const OverloadedFunctionsSetConstPtr constructors_set= constructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors_set= constructor_value->value.GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
@@ -925,7 +925,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return initializer_variable->constexpr_value; // Move can preserve constexpr.
 		}
 
-		const Value* constructor_value=
+		const NamesScopeValue* constructor_value=
 			class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 		if( constructor_value == nullptr )
 		{
@@ -933,7 +933,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 			return nullptr;
 		}
 
-		const OverloadedFunctionsSetConstPtr constructors_set= constructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors_set= constructor_value->value.GetFunctionsSet();
 		U_ASSERT( constructors_set != nullptr );
 
 		ThisOverloadedMethodsSet this_overloaded_methods_set;
@@ -980,7 +980,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		const Value* const class_member= base_class.members->GetThisScopeValue( field_initializer.name );
+		const NamesScopeValue* const class_member= base_class.members->GetThisScopeValue( field_initializer.name );
 		if( class_member == nullptr )
 		{
 			have_fields_errors= true;
@@ -988,7 +988,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		const ClassField* const field= class_member->GetClassField();
+		const ClassField* const field= class_member->value.GetClassField();
 		if( field == nullptr )
 		{
 			have_fields_errors= true;
@@ -1026,7 +1026,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( field_name.empty() || initialized_fields.count(field_name) != 0 )
 			continue;
 
-		const ClassField& field= *base_class.members->GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *base_class.members->GetThisScopeValue( field_name )->value.GetClassField();
 
 		if( field.is_reference )
 		{
@@ -1099,10 +1099,10 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		const Value* const class_member=
+		const NamesScopeValue* const class_member=
 			base_class.members->GetThisScopeValue( field_initializer.name );
 		U_ASSERT( class_member != nullptr );
-		const ClassField* const field= class_member->GetClassField();
+		const ClassField* const field= class_member->value.GetClassField();
 		U_ASSERT( field != nullptr );
 
 		if( field->is_reference )
@@ -1407,7 +1407,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& class_field= *class_.members->GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& class_field= *class_.members->GetThisScopeValue( field_name )->value.GetClassField();
 
 		if( class_field.syntax_element->initializer == nullptr )
 			continue;

@@ -26,7 +26,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 	NamesScope* const root_namespace= names_scope.GetRoot();
 	U_ASSERT( root_namespace != nullptr );
-	Value* const value= root_namespace->GetThisScopeValue( root_namespace_lookup.name );
+	NamesScopeValue* const value= root_namespace->GetThisScopeValue( root_namespace_lookup.name );
 	if( value == nullptr )
 	{
 		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), root_namespace_lookup.src_loc_, root_namespace_lookup.name );
@@ -35,7 +35,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 	BuildGlobalThingDuringResolveIfNecessary( *root_namespace, value );
 
-	return *value;
+	return value->value;
 }
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
@@ -49,14 +49,14 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	if( result.space != nullptr )
 		BuildGlobalThingDuringResolveIfNecessary( *result.space, result.value );
 
-	return *result.value;
+	return result.value->value;
 }
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch )
 {
 	const Value base= ResolveValue( names_scope, function_context, *names_scope_fetch.base );
 
-	Value* value= nullptr;
+	NamesScopeValue* value= nullptr;
 
 	if( const NamesScopePtr inner_namespace= base.GetNamespace() )
 	{
@@ -92,14 +92,14 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		return ErrorValue();
 	}
 
-	return *value;
+	return value->value;
 }
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization )
 {
 	const Value base= ResolveValue( names_scope, function_context, *template_parametrization.base );
 
-	Value* value= nullptr;
+	NamesScopeValue* value= nullptr;
 
 	if( const TypeTemplatesSet* const type_templates_set= base.GetTypeTemplatesSet() )
 		value=
@@ -128,10 +128,10 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	if( value == nullptr )
 		return ErrorValue();
 
-	return *value;
+	return value->value;
 }
 
-void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, Value* const value )
+void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* const value )
 {
 	if( value == nullptr )
 		return;
@@ -139,15 +139,15 @@ void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_sc
 	// Build almost everything except classes.
 	// Classes building will be triggered later - during class usage or class name lookup (if it is necessary).
 
-	if( const OverloadedFunctionsSetPtr functions_set= value->GetFunctionsSet() )
+	if( const OverloadedFunctionsSetPtr functions_set= value->value.GetFunctionsSet() )
 		GlobalThingBuildFunctionsSet( names_scope, *functions_set, false );
-	else if( TypeTemplatesSet* const type_templates_set= value->GetTypeTemplatesSet() )
+	else if( TypeTemplatesSet* const type_templates_set= value->value.GetTypeTemplatesSet() )
 		GlobalThingBuildTypeTemplatesSet( names_scope, *type_templates_set );
-	else if( value->GetTypedef() != nullptr )
-		GlobalThingBuildTypedef( names_scope, *value );
-	else if( value->GetIncompleteGlobalVariable() != nullptr )
-		GlobalThingBuildVariable( names_scope, *value );
-	else if( const Type* const type= value->GetTypeName() )
+	else if( value->value.GetTypedef() != nullptr )
+		GlobalThingBuildTypedef( names_scope, value->value );
+	else if( value->value.GetIncompleteGlobalVariable() != nullptr )
+		GlobalThingBuildVariable( names_scope, value->value );
+	else if( const Type* const type= value->value.GetTypeName() )
 	{
 		if( const EnumPtr enum_= type->GetEnumType() )
 			GlobalThingBuildEnum( enum_ );
@@ -157,7 +157,7 @@ void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_sc
 CodeBuilder::NameLookupResult CodeBuilder::LookupName( NamesScope& names_scope, const std::string_view name, const SrcLoc& src_loc )
 {
 	NamesScope* last_space= &names_scope;
-	Value* value= nullptr;
+	NamesScopeValue* value= nullptr;
 
 	do
 	{
@@ -179,18 +179,18 @@ CodeBuilder::NameLookupResult CodeBuilder::LookupName( NamesScope& names_scope, 
 
 	if( value == nullptr )
 		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), src_loc, name );
-	else if( value->GetYetNotDeducedTemplateArg() != nullptr )
+	else if( value->value.GetYetNotDeducedTemplateArg() != nullptr )
 		REPORT_ERROR( TemplateArgumentIsNotDeducedYet, names_scope.GetErrors(), src_loc, name );
 
 	return NameLookupResult{ last_space, value };
 }
 
-std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( const ClassPtr class_type, const std::string_view name )
+std::pair<NamesScopeValue*, ClassMemberVisibility> CodeBuilder::ResolveClassValue( const ClassPtr class_type, const std::string_view name )
 {
 	return ResolveClassValueImpl( class_type, name );
 }
 
-std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( ClassPtr class_type, const std::string_view name, const bool recursive_call )
+std::pair<NamesScopeValue*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( ClassPtr class_type, const std::string_view name, const bool recursive_call )
 {
 	const bool is_special_method=
 		name == Keyword( Keywords::constructor_ ) ||
@@ -205,13 +205,13 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( Cla
 		GlobalThingBuildClass( class_type ); // Functions set changed in this call.
 	}
 
-	if( const auto value= class_type->members->GetThisScopeValue( name ) )
+	if( NamesScopeValue* const value= class_type->members->GetThisScopeValue( name ) )
 	{
 		const auto visibility= class_type->GetMemberVisibility( name );
 
 		// We need to build some things right now (typedefs, global variables, etc.) in order to do this in correct namespace - namespace of class itself but not namespace of one of its child.
 
-		if( value->GetClassField() != nullptr )
+		if( value->value.GetClassField() != nullptr )
 		{
 			if( !class_type->is_complete )
 			{
@@ -219,7 +219,7 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( Cla
 				GlobalThingBuildClass( class_type ); // Class field value changed in this call.
 			}
 		}
-		else if( const auto functions_set= value->GetFunctionsSet() )
+		else if( const auto functions_set= value->value.GetFunctionsSet() )
 		{
 			GlobalThingPrepareClassParentsList( class_type );
 			if( !class_type->is_complete && !class_type->parents.empty() )
@@ -229,7 +229,7 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( Cla
 			}
 			GlobalThingBuildFunctionsSet( *class_type->members, *functions_set, false );
 		}
-		else if( const auto type_templates_set= value->GetTypeTemplatesSet() )
+		else if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
 		{
 			GlobalThingPrepareClassParentsList( class_type );
 			if( !class_type->is_complete && !class_type->parents.empty() )
@@ -239,23 +239,23 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( Cla
 			}
 			GlobalThingBuildTypeTemplatesSet( *class_type->members, *type_templates_set );
 		}
-		else if( value->GetTypedef() != nullptr )
+		else if( value->value.GetTypedef() != nullptr )
 		{
-			GlobalThingBuildTypedef( *class_type->members, *value );
+			GlobalThingBuildTypedef( *class_type->members, value->value );
 		}
-		else if( value->GetIncompleteGlobalVariable() != nullptr )
+		else if( value->value.GetIncompleteGlobalVariable() != nullptr )
 		{
-			GlobalThingBuildVariable( *class_type->members, *value );
+			GlobalThingBuildVariable( *class_type->members, value->value );
 		}
-		else if( const auto type= value->GetTypeName() )
+		else if( const auto type= value->value.GetTypeName() )
 		{
 			if( const auto enum_= type->GetEnumType() )
 				GlobalThingBuildEnum( enum_ );
 		}
 		else if(
-			value->GetVariable() != nullptr ||
-			value->GetStaticAssert() != nullptr ||
-			value->GetYetNotDeducedTemplateArg() != nullptr )
+			value->value.GetVariable() != nullptr ||
+			value->value.GetStaticAssert() != nullptr ||
+			value->value.GetYetNotDeducedTemplateArg() != nullptr )
 		{}
 		else U_ASSERT(false);
 
@@ -270,7 +270,7 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( Cla
 	GlobalThingPrepareClassParentsList( class_type );
 
 	// TODO - maybe produce some kind of error if name found more than in one parents?
-	std::pair<Value*, ClassMemberVisibility> parent_class_value{nullptr, ClassMemberVisibility::Public};
+	std::pair<NamesScopeValue*, ClassMemberVisibility> parent_class_value{nullptr, ClassMemberVisibility::Public};
 	bool has_mergable_thing= false;
 	for( const Class::Parent& parent : class_type->parents )
 	{
@@ -278,8 +278,8 @@ std::pair<Value*, ClassMemberVisibility> CodeBuilder::ResolveClassValueImpl( Cla
 		if( current_parent_class_value.first != nullptr && current_parent_class_value.second != ClassMemberVisibility::Private )
 		{
 			const bool current_thing_is_mergable=
-				current_parent_class_value.first->GetFunctionsSet() != nullptr ||
-				current_parent_class_value.first->GetTypeTemplatesSet() != nullptr;
+				current_parent_class_value.first->value.GetFunctionsSet() != nullptr ||
+				current_parent_class_value.first->value.GetTypeTemplatesSet() != nullptr;
 
 			if( current_thing_is_mergable && has_mergable_thing && !class_type->is_complete && !recursive_call )
 			{

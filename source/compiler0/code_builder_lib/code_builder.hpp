@@ -329,7 +329,7 @@ private:
 		const TemplateSignatureParam::SpecializedTemplateParam& template_param );
 
 	// Returns nullptr in case of fail.
-	Value* GenTemplateType(
+	NamesScopeValue* GenTemplateType(
 		const SrcLoc& src_loc,
 		const TypeTemplatesSet& type_templates_set,
 		llvm::ArrayRef<Synt::Expression> template_arguments,
@@ -343,7 +343,7 @@ private:
 		llvm::ArrayRef<Value> template_arguments,
 		NamesScope& arguments_names_scope );
 
-	Value* FinishTemplateTypeGeneration(
+	NamesScopeValue* FinishTemplateTypeGeneration(
 		const SrcLoc& src_loc,
 		NamesScope& arguments_names_scope,
 		const TemplateTypePreparationResult& template_type_preparation_result );
@@ -372,7 +372,7 @@ private:
 		const SrcLoc& src_loc,
 		const TemplateFunctionPreparationResult& template_function_preparation_result );
 
-	Value* ParametrizeFunctionTemplate(
+	NamesScopeValue* ParametrizeFunctionTemplate(
 		const SrcLoc& src_loc,
 		const OverloadedFunctionsSet& functions_set,
 		llvm::ArrayRef<Synt::Expression> template_arguments,
@@ -386,7 +386,7 @@ private:
 		NamesScope& target_namespace,
 		const SrcLoc& src_loc );
 
-	Value* AddNewTemplateThing( std::string key, Value thing );
+	NamesScopeValue* AddNewTemplateThing( std::string key, NamesScopeValue thing );
 
 	// Constructors/destructors
 	void TryGenerateDefaultConstructor( ClassPtr class_type );
@@ -757,7 +757,7 @@ private:
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization );
 
-	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, Value* value );
+	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* value );
 
 	struct NameLookupResult
 	{
@@ -766,15 +766,15 @@ private:
 		NamesScope* space= nullptr;
 		// Value pointer itself. Should be stable pointer (inside some namespace, usually).
 		// Empty if not found.
-		Value* value= nullptr;
+		NamesScopeValue* value= nullptr;
 	};
 
 	// Try to lookup value from names scope. If it is not found - try to lookup it from parent scope, than from parent of parent, etc.
 	// Do not perform name build.
 	NameLookupResult LookupName( NamesScope& names_scope, std::string_view name, const SrcLoc& src_loc );
 
-	std::pair<Value*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, std::string_view name );
-	std::pair<Value*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, std::string_view name, bool recursive_call= false );
+	std::pair<NamesScopeValue*, ClassMemberVisibility> ResolveClassValue( ClassPtr class_type, std::string_view name );
+	std::pair<NamesScopeValue*, ClassMemberVisibility> ResolveClassValueImpl( ClassPtr class_type, std::string_view name, bool recursive_call= false );
 
 	// Functions
 
@@ -1108,7 +1108,7 @@ private:
 	std::vector<Type> non_sync_expression_stack_;
 
 	// Names map for generated template types/functions. We can not insert it in regular namespaces, because we needs insert it, while iterating regular namespaces.
-	ProgramStringMap<Value> generated_template_things_storage_;
+	ProgramStringMap<NamesScopeValue> generated_template_things_storage_;
 	// Template things for current source graph node added sequentialy into this vector too.
 	std::vector<std::string> generated_template_things_sequence_;
 

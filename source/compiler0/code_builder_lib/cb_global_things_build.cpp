@@ -594,9 +594,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// Fill container with fields names.
 	the_class.fields_order.resize( fields_llvm_types.size() );
 	the_class.members->ForEachInThisScope(
-		[&]( const std::string_view name, const Value& value )
+		[&]( const std::string_view name, const NamesScopeValue& value )
 		{
-			if( const auto field= value.GetClassField() )
+			if( const auto field= value.value.GetClassField() )
 				the_class.fields_order[field->index]= name;
 		} );
 
@@ -626,7 +626,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( class_type );
 		OverloadedFunctionsSetPtr destructors_set= std::make_shared<OverloadedFunctionsSet>();
 		destructors_set->functions.push_back( std::move(destructor_function_variable) );
-		the_class.members->AddName( Keyword( Keywords::destructor_ ), std::move(destructors_set) );
+		the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move(destructors_set), SrcLoc() ) );
 	}
 
 	if( the_class.kind == Class::Kind::Interface ||
@@ -636,10 +636,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		PrepareClassVirtualTable( the_class );
 
 	// Search for explicit noncopy constructors.
-	if( const Value* const constructors_value=
+	if( const NamesScopeValue* const constructors_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
-		const OverloadedFunctionsSetConstPtr constructors= constructors_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors= constructors_value->value.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
@@ -657,18 +657,18 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// * non-default copy-assignment operators
 	// * non-default copy constructors
 	// * non-default equality compare operators
-	if( const Value* const destructor_value=
+	if( const NamesScopeValue* const destructor_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 	{
-		const OverloadedFunctionsSetConstPtr destructors= destructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr destructors= destructor_value->value.GetFunctionsSet();
 		// Destructors may be invalid in case of error.
 		if( !destructors->functions.empty() && !destructors->functions[0].is_generated )
 			the_class.can_be_constexpr= false;
 	}
-	if( const Value* const constructor_value=
+	if( const NamesScopeValue* const constructor_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
-		const OverloadedFunctionsSetConstPtr constructors= constructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors= constructor_value->value.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
@@ -676,10 +676,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				the_class.can_be_constexpr= false;
 		}
 	}
-	if( const Value* const assignment_operator_value=
+	if( const NamesScopeValue* const assignment_operator_value=
 		the_class.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
 	{
-		const OverloadedFunctionsSetConstPtr operators= assignment_operator_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr operators= assignment_operator_value->value.GetFunctionsSet();
 		U_ASSERT( operators != nullptr );
 		for( const FunctionVariable& op : operators->functions )
 		{
@@ -687,10 +687,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				the_class.can_be_constexpr= false;
 		}
 	}
-	if( const Value* const compare_equal_value=
+	if( const NamesScopeValue* const compare_equal_value=
 		the_class.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ) )
 	{
-		const OverloadedFunctionsSetConstPtr operators= compare_equal_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr operators= compare_equal_value->value.GetFunctionsSet();
 		U_ASSERT( operators != nullptr );
 		for( const FunctionVariable& op : operators->functions )
 		{
@@ -785,15 +785,15 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	{
 		const auto parent_class= parent.class_;
 		parent_class->members->ForEachInThisScope(
-			[&]( const std::string_view name, const Value& value )
+			[&]( const std::string_view name, const NamesScopeValue& value )
 			{
 				const auto parent_member_visibility= parent_class->GetMemberVisibility( name );
 				if( parent_member_visibility == ClassMemberVisibility::Private )
 					return; // Do not inherit private members.
 
-				Value* const result_class_value= the_class.members->GetThisScopeValue(name);
+				NamesScopeValue* const result_class_value= the_class.members->GetThisScopeValue(name);
 
-				if( const auto functions= value.GetFunctionsSet() )
+				if( const auto functions= value.value.GetFunctionsSet() )
 				{
 					if( name == Keyword( Keywords::constructor_ ) ||
 						name == Keyword( Keywords::destructor_ ) ||
@@ -804,7 +804,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 					if( result_class_value != nullptr )
 					{
-						if( const auto result_class_functions= result_class_value->GetFunctionsSet() )
+						if( const auto result_class_functions= result_class_value->value.GetFunctionsSet() )
 						{
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 							{
@@ -843,18 +843,18 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						for( FunctionVariable& function : functions_set->functions )
 							function.is_inherited= true;
 
-						the_class.members->AddName( name, std::move(functions_set) );
+						the_class.members->AddName( name, NamesScopeValue( std::move(functions_set), SrcLoc() ) );
 						the_class.SetMemberVisibility( name, parent_member_visibility );
 					}
 				}
-				if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+				if( const auto type_templates_set= value.value.GetTypeTemplatesSet() )
 				{
 					if( result_class_value != nullptr )
 					{
-						if( const auto result_type_templates_set= result_class_value->GetTypeTemplatesSet() )
+						if( const auto result_type_templates_set= result_class_value->value.GetTypeTemplatesSet() )
 						{
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
-								REPORT_ERROR( TypeTemplatesVisibilityMismatch, the_class.members->GetErrors(), result_class_value->GetSrcLoc(), name );
+								REPORT_ERROR( TypeTemplatesVisibilityMismatch, the_class.members->GetErrors(), result_class_value->src_loc, name );
 
 							for( const TypeTemplatePtr& parent_type_template : type_templates_set->type_templates )
 							{
@@ -905,9 +905,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 	// Immediately build constexpr functions.
 	the_class.members->ForEachInThisScope(
-		[&]( const std::string_view name, Value& value )
+		[&]( const std::string_view name, NamesScopeValue& value )
 		{
-			const OverloadedFunctionsSetPtr functions_set= value.GetFunctionsSet();
+			const OverloadedFunctionsSetPtr functions_set= value.value.GetFunctionsSet();
 			if( functions_set == nullptr )
 				return;
 
@@ -986,7 +986,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 				mangler_->MangleGlobalVariable( enum_->members, in_member.name, enum_, true ),
 				var->constexpr_value );
 
-		if( enum_->members.AddName( in_member.name, Value( var, in_member.src_loc ) ) == nullptr )
+		if( enum_->members.AddName( in_member.name, NamesScopeValue( Value( var, in_member.src_loc ), in_member.src_loc ) ) == nullptr )
 			REPORT_ERROR( Redefinition, names_scope.GetErrors(), in_member.src_loc, in_member.name );
 
 		++enum_->element_count;

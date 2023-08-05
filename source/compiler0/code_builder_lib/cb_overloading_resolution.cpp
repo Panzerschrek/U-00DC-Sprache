@@ -614,7 +614,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 			if( value_in_class.first == nullptr )
 				continue;
 
-			const OverloadedFunctionsSetPtr operators_set= value_in_class.first->GetFunctionsSet();
+			const OverloadedFunctionsSetPtr operators_set= value_in_class.first->value.GetFunctionsSet();
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
 			GlobalThingBuildFunctionsSet( *class_->members, *operators_set, false ); // Make sure functions set is complete.
 
@@ -648,11 +648,11 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	if( dst_class_type == nullptr )
 		return nullptr;
 
-	const Value* const constructors_value= dst_class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+	const NamesScopeValue* const constructors_value= dst_class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 	if( constructors_value == nullptr )
 		return nullptr;
 
-	const OverloadedFunctionsSet& constructors= *constructors_value->GetFunctionsSet();
+	const OverloadedFunctionsSet& constructors= *constructors_value->value.GetFunctionsSet();
 
 	ArgsVector<FunctionType::Param> actual_args;
 	actual_args.resize(2u);

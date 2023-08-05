@@ -129,9 +129,9 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 		const llvm::APInt num_value= variable.constexpr_value->getUniqueInteger();
 		std::string_view enum_member_name;
 		enum_type->members.ForEachInThisScope(
-			[&]( const std::string_view name, const Value& enum_member )
+			[&]( const std::string_view name, const NamesScopeValue& enum_member )
 			{
-				if( const VariablePtr enum_variable= enum_member.GetVariable() )
+				if( const VariablePtr enum_variable= enum_member.value.GetVariable() )
 				{
 					U_ASSERT( enum_variable->constexpr_value != nullptr );
 					if( enum_variable->constexpr_value->getUniqueInteger().getLimitedValue() == num_value )

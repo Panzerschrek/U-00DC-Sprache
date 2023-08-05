@@ -273,4 +273,13 @@ private:
 	SrcLoc src_loc_;
 };
 
+struct NamesScopeValue
+{
+	Value value;
+	SrcLoc src_loc;
+
+	NamesScopeValue()= default;
+	NamesScopeValue( Value in_value, const SrcLoc& in_src_loc ) : value(std::move(in_value)), src_loc(in_src_loc) {}
+};
+
 } // namespace U

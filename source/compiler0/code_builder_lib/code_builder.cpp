@@ -216,7 +216,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
 	SetupDereferenceableFunctionParamsAndRetAttributes_r( *compiled_sources_.front().names_map );
 	for( auto& name_value_pair : generated_template_things_storage_ )
-		if( const auto names_scope= name_value_pair.second.GetNamespace() )
+		if( const auto names_scope= name_value_pair.second.value.GetNamespace() )
 			SetupDereferenceableFunctionParamsAndRetAttributes_r( *names_scope );
 
 	global_function->eraseFromParent(); // Kill global function.
@@ -306,7 +306,7 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	// It's important to use an index instead of iterators during iteration because this vector may be chaged in process.
 	for( size_t i= 0; i < generated_template_things_sequence_.size(); ++i )
 	{
-		if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].GetNamespace() )
+		if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].value.GetNamespace() )
 			GlobalThingBuildNamespace( *namespace_ );
 	}
 	generated_template_things_sequence_.clear();
@@ -322,30 +322,30 @@ void CodeBuilder::MergeNameScopes(
 	const ClassesMembersNamespacesTable& src_classes_members_namespaces_table )
 {
 	src.ForEachInThisScope(
-		[&]( const std::string_view src_name, const Value& src_member )
+		[&]( const std::string_view src_name, const NamesScopeValue& src_member )
 		{
-			Value* const dst_member= dst.GetThisScopeValue(src_name );
+			NamesScopeValue* const dst_member= dst.GetThisScopeValue(src_name );
 			if( dst_member == nullptr )
 			{
 				// All ok - name form "src" does not exists in "dst".
-				if( const NamesScopePtr names_scope= src_member.GetNamespace() )
+				if( const NamesScopePtr names_scope= src_member.value.GetNamespace() )
 				{
 					// We copy namespaces, instead of taking same shared pointer,
 					// because using same shared pointer we can change state of "src".
 					const NamesScopePtr names_scope_copy= std::make_shared<NamesScope>( names_scope->GetThisNamespaceName(), &dst );
 					MergeNameScopes( *names_scope_copy, *names_scope, src_classes_members_namespaces_table );
-					dst.AddName( src_name, Value( names_scope_copy, src_member.GetSrcLoc() ) );
+					dst.AddName( src_name, NamesScopeValue( Value( names_scope_copy, src_member.src_loc ), src_member.src_loc ) );
 
 					names_scope_copy->CopyAccessRightsFrom( *names_scope );
 				}
-				else if( const OverloadedFunctionsSetConstPtr functions_set= src_member.GetFunctionsSet() )
+				else if( const OverloadedFunctionsSetConstPtr functions_set= src_member.value.GetFunctionsSet() )
 				{
 					// Take copy of value, stored as shared_ptr to avoid modification of source value.
-					dst.AddName( src_name, Value( std::make_shared<OverloadedFunctionsSet>(*functions_set) ) );
+					dst.AddName( src_name, NamesScopeValue( Value( std::make_shared<OverloadedFunctionsSet>(*functions_set) ), SrcLoc() ) );
 				}
 				else
 				{
-					if( const Type* const type= src_member.GetTypeName() )
+					if( const Type* const type= src_member.value.GetTypeName() )
 					{
 						if( const ClassPtr class_= type->GetClassType() )
 						{
@@ -374,25 +374,25 @@ void CodeBuilder::MergeNameScopes(
 				return;
 			}
 
-			if( dst_member->GetKindIndex() != src_member.GetKindIndex() )
+			if( dst_member->value.GetKindIndex() != src_member.value.GetKindIndex() )
 			{
 				// Different kind of symbols - 100% error.
-				REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetSrcLoc(), src_name );
+				REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.src_loc, src_name );
 				return;
 			}
 
-			if( const NamesScopePtr sub_namespace= src_member.GetNamespace() )
+			if( const NamesScopePtr sub_namespace= src_member.value.GetNamespace() )
 			{
 				// Merge namespaces.
 				// TODO - detect here template instantiation namespaces.
-				const NamesScopePtr dst_sub_namespace= dst_member->GetNamespace();
+				const NamesScopePtr dst_sub_namespace= dst_member->value.GetNamespace();
 				U_ASSERT( dst_sub_namespace != nullptr );
 				MergeNameScopes( *dst_sub_namespace, *sub_namespace, src_classes_members_namespaces_table );
 				return;
 			}
-			else if( const OverloadedFunctionsSetPtr dst_funcs_set= dst_member->GetFunctionsSet() )
+			else if( const OverloadedFunctionsSetPtr dst_funcs_set= dst_member->value.GetFunctionsSet() )
 			{
-				const OverloadedFunctionsSetConstPtr src_funcs_set= src_member.GetFunctionsSet();
+				const OverloadedFunctionsSetConstPtr src_funcs_set= src_member.value.GetFunctionsSet();
 				U_ASSERT( src_funcs_set != nullptr );
 
 				for( const FunctionVariable& src_func : src_funcs_set->functions )
@@ -428,14 +428,14 @@ void CodeBuilder::MergeNameScopes(
 
 				return;
 			}
-			else if( const Type* const type= dst_member->GetTypeName() )
+			else if( const Type* const type= dst_member->value.GetTypeName() )
 			{
 				const auto dst_class= type->GetClassType();
-				const auto src_class= src_member.GetTypeName()->GetClassType();
+				const auto src_class= src_member.value.GetTypeName()->GetClassType();
 				if( dst_class != src_class )
 				{
 					// Different pointer value means 100% different classes.
-					REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetSrcLoc(), src_name );
+					REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.src_loc, src_name );
 					return;
 				}
 				if( dst_class != nullptr && src_class != nullptr )
@@ -452,9 +452,9 @@ void CodeBuilder::MergeNameScopes(
 						MergeNameScopes( *dst_class->members, *src_members_namespace, src_classes_members_namespaces_table );
 				}
 			}
-			else if( const auto dst_type_templates_set= dst_member->GetTypeTemplatesSet() )
+			else if( const auto dst_type_templates_set= dst_member->value.GetTypeTemplatesSet() )
 			{
-				if( const auto src_type_templates_set= src_member.GetTypeTemplatesSet() )
+				if( const auto src_type_templates_set= src_member.value.GetTypeTemplatesSet() )
 				{
 					for( const TypeTemplatePtr& src_type_template : src_type_templates_set->type_templates )
 					{
@@ -481,11 +481,11 @@ void CodeBuilder::MergeNameScopes(
 				}
 			}
 
-			if( dst_member->GetSrcLoc() == src_member.GetSrcLoc() )
+			if( dst_member->src_loc == src_member.src_loc )
 				return; // All ok - things from one source.
 
 			// Can not merge other kinds of values.
-			REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.GetSrcLoc(), src_name );
+			REPORT_ERROR( Redefinition, dst.GetErrors(), src_member.src_loc, src_name );
 		} );
 }
 
@@ -498,12 +498,12 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 		const U_FundamentalType fundamental_type= U_FundamentalType(i);
 		global_names_scope.AddName(
 			GetFundamentalTypeName(fundamental_type),
-			Value(
+			NamesScopeValue( Value(
 				FundamentalType( fundamental_type, GetFundamentalLLVMType( fundamental_type ) ),
-				fundamental_globals_src_loc ) );
+				fundamental_globals_src_loc ), fundamental_globals_src_loc ) );
 	}
 
-	global_names_scope.AddName( Keyword( Keywords::size_type_ ), Value( size_type_, fundamental_globals_src_loc ) );
+	global_names_scope.AddName( Keyword( Keywords::size_type_ ), NamesScopeValue( Value( size_type_, fundamental_globals_src_loc ), fundamental_globals_src_loc ) );
 }
 
 void CodeBuilder::TryCallCopyConstructor(
@@ -523,9 +523,9 @@ void CodeBuilder::TryCallCopyConstructor(
 	}
 
 	// Search for copy-constructor.
-	const Value* const constructos_value= class_.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+	const NamesScopeValue* const constructos_value= class_.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
 	U_ASSERT( constructos_value != nullptr );
-	const OverloadedFunctionsSetConstPtr constructors= constructos_value->GetFunctionsSet();
+	const OverloadedFunctionsSetConstPtr constructors= constructos_value->value.GetFunctionsSet();
 	U_ASSERT(constructors != nullptr );
 	const FunctionVariable* constructor= nullptr;
 	for( const FunctionVariable& candidate : constructors->functions )
@@ -646,9 +646,9 @@ void CodeBuilder::CallDestructor(
 
 	if( const Class* const class_= type.GetClassType() )
 	{
-		const Value* const destructor_value= class_->members->GetThisScopeValue( Keyword( Keywords::destructor_ ) );
+		const NamesScopeValue* const destructor_value= class_->members->GetThisScopeValue( Keyword( Keywords::destructor_ ) );
 		U_ASSERT( destructor_value != nullptr );
-		const OverloadedFunctionsSetConstPtr destructors= destructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr destructors= destructor_value->value.GetFunctionsSet();
 		U_ASSERT(destructors != nullptr && destructors->functions.size() == 1u );
 
 		const FunctionVariable& destructor= destructors->functions.front();
@@ -731,7 +731,7 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 		if( field_name.empty() )
 			continue;
 
-		const ClassField& field= *class_->members->GetThisScopeValue( field_name )->GetClassField();
+		const ClassField& field= *class_->members->GetThisScopeValue( field_name )->value.GetClassField();
 		if( !field.type.HaveDestructor() || field.is_reference )
 			continue;
 
@@ -1437,8 +1437,8 @@ Type CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
-			const Value* const inserted_arg=
-				function_names.AddName( arg_name, Value( variable_reference, declaration_arg.src_loc_ ) );
+			const NamesScopeValue* const inserted_arg=
+				function_names.AddName( arg_name, NamesScopeValue( Value( variable_reference, declaration_arg.src_loc_ ), declaration_arg.src_loc_ ) );
 			if( inserted_arg == nullptr )
 				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.src_loc_, arg_name );
 		}

@@ -336,8 +336,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( variable_reference->value_type == ValueType::ReferenceMut )
 			variable_reference->constexpr_value= nullptr;
 
-		const Value* const inserted_value=
-			names.AddName( variable_declaration.name, Value( variable_reference, variable_declaration.src_loc ) );
+		const NamesScopeValue* const inserted_value=
+			names.AddName( variable_declaration.name, NamesScopeValue( Value( variable_reference, variable_declaration.src_loc ), variable_declaration.src_loc ) );
 		if( inserted_value == nullptr )
 		{
 			REPORT_ERROR( Redefinition, names.GetErrors(), variables_declaration.src_loc_, variable_declaration.name );
@@ -501,8 +501,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( variable_reference->value_type != ValueType::ReferenceImut )
 		variable_reference->constexpr_value= nullptr;
 
-	const Value* const inserted_value=
-		names.AddName( auto_variable_declaration.name, Value( variable_reference, auto_variable_declaration.src_loc_ ) );
+	const NamesScopeValue* const inserted_value=
+		names.AddName( auto_variable_declaration.name, NamesScopeValue( Value( variable_reference, auto_variable_declaration.src_loc_ ), auto_variable_declaration.src_loc_ ) );
 	if( inserted_value == nullptr )
 		REPORT_ERROR( Redefinition, names.GetErrors(), auto_variable_declaration.src_loc_, auto_variable_declaration.name );
 
@@ -873,7 +873,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
 
-			loop_names.AddName( range_for_operator.loop_variable_name_, Value( variable_reference, range_for_operator.src_loc_ ) );
+			loop_names.AddName( range_for_operator.loop_variable_name_, NamesScopeValue( Value( variable_reference, range_for_operator.src_loc_ ), range_for_operator.src_loc_ ) );
 
 			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
 			llvm::BasicBlock* const next_basic_block=
@@ -1389,7 +1389,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	// Create separate namespace for variable. Redefinition here is not possible.
 	NamesScope variable_names_scope( "", &names );
-	variable_names_scope.AddName( with_operator.variable_name_, Value( variable_reference, with_operator.src_loc_ ) );
+	variable_names_scope.AddName( with_operator.variable_name_, NamesScopeValue( Value( variable_reference, with_operator.src_loc_ ), with_operator.src_loc_ ) );
 
 	// Build block. Do not create names scope, reuce names scope of "with" variable.
 	const BlockBuildInfo block_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block_.elements_ );
@@ -1737,7 +1737,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		coro_result_variables_storage.RegisterVariable( variable_reference );
 
 		NamesScope variable_names_scope( "", &names );
-		variable_names_scope.AddName( if_coro_advance.variable_name, Value( variable_reference, if_coro_advance.src_loc_ ) );
+		variable_names_scope.AddName( if_coro_advance.variable_name, NamesScopeValue( Value( variable_reference, if_coro_advance.src_loc_ ), if_coro_advance.src_loc_ ) );
 
 		// Reuse variable names scope for block.
 		if_block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance.block.elements_ );
@@ -2557,7 +2557,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		REPORT_ERROR( UsingKeywordAsName, names.GetErrors(), type_alias.src_loc_ );
 
 	Type type= PrepareType( type_alias.value, names, function_context );
-	if( names.AddName( type_alias.name, Value( std::move(type), type_alias.src_loc_ ) ) == nullptr )
+	if( names.AddName( type_alias.name, NamesScopeValue( Value( std::move(type), type_alias.src_loc_ ), type_alias.src_loc_ ) ) == nullptr )
 		REPORT_ERROR( Redefinition, names.GetErrors(), type_alias.src_loc_, type_alias.name );
 
 	return block_info;
