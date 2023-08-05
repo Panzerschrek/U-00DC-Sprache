@@ -160,7 +160,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	if( class_type->have_explicit_noncopy_constructors )
 		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.src_loc_ );
 
-	ProgramStringSet initialized_members_names;
+	ClassFieldsVector<bool> initialized_fields;
+	initialized_fields.resize( class_type->llvm_type->getNumElements(), false );
 
 	ClassFieldsVector<llvm::Constant*> constant_initializers;
 	bool all_fields_are_constant= false;
@@ -172,12 +173,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 	for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 	{
-		if( initialized_members_names.count( member_initializer.name ) != 0 )
-		{
-			REPORT_ERROR( DuplicatedStructMemberInitializer, names.GetErrors(), initializer.src_loc_, member_initializer.name );
-			continue;
-		}
-
 		const NamesScopeValue* const class_member= class_type->members->GetThisScopeValue( member_initializer.name );
 		if( class_member == nullptr )
 		{
@@ -196,7 +191,15 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			continue;
 		}
 
-		initialized_members_names.insert( member_initializer.name );
+		if( field->index < initialized_fields.size() )
+		{
+			if( initialized_fields[field->index] )
+			{
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names.GetErrors(), initializer.src_loc_, member_initializer.name );
+				continue;
+			}
+			initialized_fields[field->index]= true;
+		}
 
 		llvm::Constant* constant_initializer= nullptr;
 		if( field->is_reference )
@@ -227,13 +230,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			constant_initializers[field->index]= constant_initializer;
 	}
 
-	U_ASSERT( initialized_members_names.size() <= class_type->field_count );
 	for( const ClassFieldPtr& field : class_type->fields_order )
 	{
 		if( field == nullptr )
 			continue;
 
-		if( initialized_members_names.count( field->GetName() ) != 0 )
+		if( field->index < initialized_fields.size() && initialized_fields[ field->index ] )
 			continue;
 
 		llvm::Constant* constant_initializer= nullptr;
@@ -952,7 +954,8 @@ void CodeBuilder::BuildConstructorInitialization(
 	FunctionContext& function_context,
 	const Synt::StructNamedInitializer& constructor_initialization_list )
 {
-	std::unordered_set<ClassFieldPtr> initialized_fields;
+	ClassFieldsVector<bool> initialized_fields;
+	initialized_fields.resize( base_class.llvm_type->getNumElements(), false );
 
 	// Check for errors, build list of initialized fields.
 	bool have_fields_errors= false;
@@ -1000,14 +1003,17 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		if( initialized_fields.find( field ) != initialized_fields.end() )
+		if( field->index < initialized_fields.size() )
 		{
-			have_fields_errors= true;
-			REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
-			continue;
-		}
+			if( initialized_fields[ field->index ] )
+			{
+				have_fields_errors= true;
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+				continue;
+			}
 
-		initialized_fields.insert( field );
+			initialized_fields[ field->index ]= true;
+		}
 	} // for fields initializers
 
 	if( have_fields_errors )
@@ -1021,7 +1027,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	// Initialize fields, missing in initializer list.
 	for( const ClassFieldPtr& field : base_class.fields_order )
 	{
-		if( field == nullptr || initialized_fields.count(field) != 0 )
+		if( field == nullptr || ( field->index < initialized_fields.size() && initialized_fields[field->index] ) )
 			continue;
 
 		if( field->is_reference )
