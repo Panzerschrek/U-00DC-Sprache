@@ -358,7 +358,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 			const auto member =
 				builder_->createMemberType(
 					di_file,
-					class_field->syntax_element->name,
+					class_field->GetName(),
 					di_file,
 					0u, // TODO - src_loc
 					data_layout_.getTypeAllocSizeInBits( field_type_llvm ),

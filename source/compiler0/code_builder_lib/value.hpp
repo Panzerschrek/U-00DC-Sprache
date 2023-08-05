@@ -164,6 +164,10 @@ struct ClassField final
 
 	ClassField()= default;
 	ClassField( ClassPtr in_class, Type in_type, uint32_t in_index, bool in_is_mutable, bool in_is_reference );
+
+	const std::string& GetName() const { return syntax_element != nullptr ? syntax_element->name : c_generated_field_name; }
+
+	static const std::string c_generated_field_name;
 };
 
 using ClassFieldPtr= std::shared_ptr<ClassField>;

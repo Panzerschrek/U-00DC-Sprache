@@ -233,14 +233,14 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		if( field == nullptr )
 			continue;
 
-		if( initialized_members_names.count( field->syntax_element->name ) != 0 )
+		if( initialized_members_names.count( field->GetName() ) != 0 )
 			continue;
 
 		llvm::Constant* constant_initializer= nullptr;
 		if( field->is_reference )
 		{
-			if( field->syntax_element->initializer == nullptr )
-				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), initializer.src_loc_, field->syntax_element->name ); // References is not default-constructible.
+			if( field->syntax_element == nullptr || field->syntax_element->initializer == nullptr )
+				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), initializer.src_loc_, field->GetName() ); // References is not default-constructible.
 			else
 				constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
 		}
@@ -251,18 +251,18 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					variable->name + "." + field->syntax_element->name,
+					variable->name + "." + field->GetName(),
 					CreateClassFieldGEP( function_context, *variable, field->index ) );
 
 			function_context.variables_state.AddNode( struct_member );
 			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc_ );
 
-			if( field->syntax_element->initializer != nullptr )
+			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				constant_initializer=
 					InitializeClassFieldWithInClassIninitalizer( struct_member, *field, function_context );
 			else
 				constant_initializer=
-					ApplyEmptyInitializer( field->syntax_element->name, initializer.src_loc_, struct_member, names, function_context );
+					ApplyEmptyInitializer( field->GetName(), initializer.src_loc_, struct_member, names, function_context );
 
 			function_context.variables_state.RemoveNode( struct_member );
 		}
@@ -510,7 +510,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					variable->name + "." + field->syntax_element->name,
+					variable->name + "." + field->GetName(),
 					CreateClassFieldGEP( function_context, *variable, field->index ) );
 
 			function_context.variables_state.AddNode( struct_member );
@@ -1026,9 +1026,9 @@ void CodeBuilder::BuildConstructorInitialization(
 
 		if( field->is_reference )
 		{
-			if( field->syntax_element->initializer == nullptr )
+			if( field->syntax_element == nullptr || field->syntax_element->initializer == nullptr )
 			{
-				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field->syntax_element->name );
+				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field->GetName() );
 				continue;
 			}
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_, *field, function_context );
@@ -1042,29 +1042,29 @@ void CodeBuilder::BuildConstructorInitialization(
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					this_->name + "." + field->syntax_element->name,
+					this_->name + "." + field->GetName(),
 					CreateClassFieldGEP( function_context, *this_, field->index ) );
 
 			function_context.variables_state.AddNode( field_variable );
 			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc_ );
 
-			if( field->syntax_element->initializer != nullptr )
+			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 			else
-				ApplyEmptyInitializer( field->syntax_element->name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
+				ApplyEmptyInitializer( field->GetName(), constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
 
 			function_context.variables_state.RemoveNode( field_variable );
 		}
 		else
 		{
 			const VariablePtr field_variable=
-				AccessClassField( names_scope, function_context, this_, *field, field->syntax_element->name, constructor_initialization_list.src_loc_ ).GetVariable();
+				AccessClassField( names_scope, function_context, this_, *field, field->GetName(), constructor_initialization_list.src_loc_ ).GetVariable();
 			U_ASSERT( field_variable != nullptr );
 
-			if( field->syntax_element->initializer != nullptr )
+			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 			else
-				ApplyEmptyInitializer( field->syntax_element->name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
+				ApplyEmptyInitializer( field->GetName(), constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
 		}
 
 		function_context.initialized_this_fields[ field->index ]= true;
@@ -1403,7 +1403,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 		if( field == nullptr )
 			continue;
 
-		if( field->syntax_element->initializer == nullptr )
+		if( field->syntax_element == nullptr || field->syntax_element->initializer == nullptr )
 			continue;
 
 		if( field->is_reference )
@@ -1413,7 +1413,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					field->syntax_element->name );
+					field->GetName() );
 			function_context.variables_state.AddNode( this_variable );
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, *field, function_context );
 			function_context.variables_state.RemoveNode( this_variable );
@@ -1425,7 +1425,7 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					field->syntax_element->name );
+					field->GetName() );
 			function_context.variables_state.AddNode( field_variable );
 			InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 			function_context.variables_state.RemoveNode( field_variable );
