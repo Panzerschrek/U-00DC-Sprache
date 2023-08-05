@@ -195,7 +195,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.variables_state.RemoveNode( variable_lock );
 
 		RegisterTemporaryVariable( function_context, result );
-		return Value( result, indexation_operator.src_loc_ );
+		return result;
 	}
 	else if( const TupleType* const tuple_type= variable->type.GetTupleType() )
 	{
@@ -252,7 +252,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		if( const auto prev_node= variable->children[ size_t(index_value) ] )
 		{
 			function_context.variables_state.AddNodeIfNotExists( prev_node );
-			return Value( prev_node, indexation_operator.src_loc_ ); // Child node already created.
+			return prev_node; // Child node already created.
 		}
 
 		// Create variable child node.
@@ -273,7 +273,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 		function_context.variables_state.AddNode( result );
 
-		return Value( result, indexation_operator.src_loc_ );
+		return result;
 	}
 	else
 	{
@@ -398,7 +398,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, unary_minus.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -442,7 +442,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, logical_not.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -483,7 +483,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result);
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, bitwise_not.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -536,7 +536,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 				function_context.variables_state.AddNode( variable );
 				RegisterTemporaryVariable( function_context, variable );
-				return Value( variable, overloaded_operator_call_try->GetSrcLoc() );
+				return variable;
 
 			}
 			else if( overloaded_operator == OverloadedOperator::CompareOrder &&
@@ -569,7 +569,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 				function_context.variables_state.AddNode( variable );
 				RegisterTemporaryVariable( function_context, variable );
-				return Value( variable, overloaded_operator_call_try->GetSrcLoc() );
+				return variable;
 			}
 		}
 
@@ -631,7 +631,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				REPORT_ERROR( ThisUnavailable, names.GetErrors(), name_lookup->src_loc_ );
 				return ErrorValue();
 			}
-			return Value( function_context.this_, name_lookup->src_loc_ );
+			return function_context.this_;
 		}
 		else if( start_name == Keywords::base_ )
 		{
@@ -669,7 +669,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			RegisterTemporaryVariable( function_context, base );
 
-			return Value( base, name_lookup->src_loc_ );
+			return base;
 		}
 	}
 
@@ -938,7 +938,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->constexpr_value= condition->constexpr_value->getUniqueInteger().getLimitedValue() != 0u ? branches_constexpr_values[0] : branches_constexpr_values[1];
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, ternary_operator.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -979,7 +979,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( result, reference_to_raw_pointer_operator.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1011,7 +1011,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( result, raw_pointer_to_reference_operator.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1070,7 +1070,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, numeric_constant.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1092,7 +1092,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, boolean_constant.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1214,7 +1214,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result );
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( result, string_literal.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1311,7 +1311,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.MoveNode( variable_for_move );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, move_operator.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1321,7 +1321,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *take_operator.expression_, names, function_context );
 	if( expression_result->value_type == ValueType::Value ) // If it is value - just pass it.
-		return Value( expression_result, take_operator.src_loc_ );
+		return expression_result;
 
 	if( expression_result->value_type != ValueType::ReferenceMut )
 	{
@@ -1376,7 +1376,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	ApplyEmptyInitializer( expression_result->name, take_operator.src_loc_, expression_result, names, function_context );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, take_operator.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1412,7 +1412,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_mut.src_loc_ );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, cast_mut.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1446,7 +1446,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_imut.src_loc_ );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, cast_imut.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1491,7 +1491,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	function_context.variables_state.AddNodeIfNotExists( var_ptr );
 
-	return Value( var_ptr, typeinfo.src_loc_ );
+	return var_ptr;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1514,7 +1514,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	function_context.variables_state.AddNode( result);
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, non_sync_expression.src_loc_ );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1577,7 +1577,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			RegisterTemporaryVariable( function_context, variable_copy );
 
-			return Value( variable_copy, result.GetSrcLoc() );
+			return variable_copy;
 		}
 	}
 
@@ -1589,7 +1589,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::ArrayTypeName& type_name )
 {
-	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
+	return PrepareTypeImpl( names, function_context, type_name );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1597,7 +1597,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::FunctionTypePtr& type_name )
 {
-	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name->src_loc_ );
+	return PrepareTypeImpl( names, function_context, type_name );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1605,7 +1605,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::TupleType& type_name )
 {
-	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
+	return PrepareTypeImpl( names, function_context, type_name );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1613,7 +1613,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::RawPointerType& type_name )
 {
-	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name.src_loc_ );
+	return PrepareTypeImpl( names, function_context, type_name );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1621,9 +1621,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::GeneratorTypePtr& type_name )
 {
-	return Value( PrepareTypeImpl( names, function_context, type_name ), type_name->src_loc_ );
+	return PrepareTypeImpl( names, function_context, type_name );
 }
-
 
 VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionContext& function_context )
 {
@@ -1754,7 +1753,7 @@ Value CodeBuilder::AccessClassField(
 			function_context.variables_state.TryAddLink( inner_reference, result, names.GetErrors(), src_loc );
 
 		RegisterTemporaryVariable( function_context, result );
-		return Value( result, src_loc );
+		return result;
 	}
 	else
 	{
@@ -1762,7 +1761,7 @@ Value CodeBuilder::AccessClassField(
 		if( const auto prev_node= variable->children[ field.index ] )
 		{
 			function_context.variables_state.AddNodeIfNotExists( prev_node );
-			return Value( prev_node, src_loc ); // Child node already created.
+			return prev_node; // Child node already created.
 		}
 
 		// Create variable child node.
@@ -1783,7 +1782,7 @@ Value CodeBuilder::AccessClassField(
 
 		function_context.variables_state.AddNode( result );
 
-		return Value( result, src_loc );
+		return result;
 	}
 }
 
@@ -1861,7 +1860,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		const VariablePtr move_result=
 			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
-		return Value( move_result, src_loc );
+		return move_result;
 	}
 	else if( args.front().type == args.back().type && ( args.front().type.GetArrayType() != nullptr || args.front().type.GetTupleType() != nullptr ) )
 		return CallBinaryOperatorForArrayOrTuple( op, left_expr, right_expr, src_loc, names, function_context );
@@ -1946,7 +1945,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 
 		const VariablePtr result=
 			std::make_shared<Variable>( void_type_, ValueType::Value, Variable::Location::LLVMRegister );
-		return Value( result, src_loc );
+		return result;
 	}
 	else if( op == OverloadedOperator::CompareEqual )
 	{
@@ -2032,7 +2031,7 @@ Value CodeBuilder::CallBinaryOperatorForArrayOrTuple(
 		function_context.variables_state.AddNode( result );
 
 		RegisterTemporaryVariable( function_context, result );
-		return Value( result, src_loc );
+		return result;
 	}
 	else
 	{
@@ -2570,7 +2569,7 @@ Value CodeBuilder::BuildBinaryOperator(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, src_loc );
+	return result;
 }
 
 Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
@@ -2738,7 +2737,7 @@ Value CodeBuilder::BuildBinaryArithmeticOperatorForRawPointers(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, src_loc );
+	return result;
 }
 
 Value CodeBuilder::BuildLazyBinaryOperator(
@@ -2839,7 +2838,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	function_context.variables_state.AddNode( result );
 
 	RegisterTemporaryVariable( function_context, result );
-	return Value( result, src_loc );
+	return result;
 }
 
 Value CodeBuilder::DoReferenceCast(
@@ -2903,7 +2902,7 @@ Value CodeBuilder::DoReferenceCast(
 
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( result, src_loc );
+	return result;
 }
 
 Value CodeBuilder::CallFunction(
@@ -2916,7 +2915,7 @@ Value CodeBuilder::CallFunction(
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
 	if( const Type* const type= function_value.GetTypeName() )
-		return Value( BuildTempVariableConstruction( *type, synt_args, src_loc, names, function_context ), src_loc );
+		return BuildTempVariableConstruction( *type, synt_args, src_loc, names, function_context );
 
 	VariablePtr this_;
 	OverloadedFunctionsSetConstPtr functions_set= function_value.GetFunctionsSet();
@@ -3595,7 +3594,7 @@ Value CodeBuilder::DoCallFunction(
 	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), call_src_loc );
 	RegisterTemporaryVariable( function_context, result );
 
-	return Value( result, call_src_loc );
+	return result;
 }
 
 VariablePtr CodeBuilder::BuildTempVariableConstruction(

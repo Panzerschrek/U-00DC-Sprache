@@ -986,7 +986,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 				mangler_->MangleGlobalVariable( enum_->members, in_member.name, enum_, true ),
 				var->constexpr_value );
 
-		if( enum_->members.AddName( in_member.name, NamesScopeValue( Value( var, in_member.src_loc ), in_member.src_loc ) ) == nullptr )
+		if( enum_->members.AddName( in_member.name, NamesScopeValue( var, in_member.src_loc ) ) == nullptr )
 			REPORT_ERROR( Redefinition, names_scope.GetErrors(), in_member.src_loc, in_member.name );
 
 		++enum_->element_count;
@@ -1029,7 +1029,7 @@ void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& type_
 	DETECT_GLOBALS_LOOP( &type_alias_value, syntax_element.name, syntax_element.src_loc_ );
 
 	// Replace value in names map, when typedef is comlete.
-	type_alias_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.src_loc_ );
+	type_alias_value= PrepareType( syntax_element.value, names_scope, *global_function_context_ );
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
@@ -1191,7 +1191,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		// Do not call destructors, because global variable initializer must be constexpr and any constexpr type have trivial destructor.
 
-		global_variable_value= Value( variable_reference, variable_declaration.src_loc );
+		global_variable_value= variable_reference;
 	}
 	else if( const auto auto_variable_declaration= incomplete_global_variable.auto_variable_declaration )
 	{
@@ -1270,7 +1270,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
 
-		global_variable_value= Value( variable_reference, auto_variable_declaration->src_loc_ );
+		global_variable_value= variable_reference;
 	}
 	else U_ASSERT(false);
 

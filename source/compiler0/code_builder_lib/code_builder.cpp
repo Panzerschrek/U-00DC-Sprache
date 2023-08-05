@@ -334,7 +334,7 @@ void CodeBuilder::MergeNameScopes(
 					// because using same shared pointer we can change state of "src".
 					const NamesScopePtr names_scope_copy= std::make_shared<NamesScope>( names_scope->GetThisNamespaceName(), &dst );
 					MergeNameScopes( *names_scope_copy, *names_scope, src_classes_members_namespaces_table );
-					dst.AddName( src_name, NamesScopeValue( Value( names_scope_copy, src_member.src_loc ), src_member.src_loc ) );
+					dst.AddName( src_name, NamesScopeValue( names_scope_copy, src_member.src_loc ) );
 
 					names_scope_copy->CopyAccessRightsFrom( *names_scope );
 				}
@@ -498,12 +498,12 @@ void CodeBuilder::FillGlobalNamesScope( NamesScope& global_names_scope )
 		const U_FundamentalType fundamental_type= U_FundamentalType(i);
 		global_names_scope.AddName(
 			GetFundamentalTypeName(fundamental_type),
-			NamesScopeValue( Value(
-				FundamentalType( fundamental_type, GetFundamentalLLVMType( fundamental_type ) ),
-				fundamental_globals_src_loc ), fundamental_globals_src_loc ) );
+			NamesScopeValue(
+				Type( FundamentalType( fundamental_type, GetFundamentalLLVMType( fundamental_type ) ) ),
+				fundamental_globals_src_loc ) );
 	}
 
-	global_names_scope.AddName( Keyword( Keywords::size_type_ ), NamesScopeValue( Value( size_type_, fundamental_globals_src_loc ), fundamental_globals_src_loc ) );
+	global_names_scope.AddName( Keyword( Keywords::size_type_ ), NamesScopeValue( size_type_, fundamental_globals_src_loc ) );
 }
 
 void CodeBuilder::TryCallCopyConstructor(
@@ -1438,7 +1438,7 @@ Type CodeBuilder::BuildFuncCode(
 		else
 		{
 			const NamesScopeValue* const inserted_arg=
-				function_names.AddName( arg_name, NamesScopeValue( Value( variable_reference, declaration_arg.src_loc_ ), declaration_arg.src_loc_ ) );
+				function_names.AddName( arg_name, NamesScopeValue( variable_reference, declaration_arg.src_loc_ ) );
 			if( inserted_arg == nullptr )
 				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.src_loc_, arg_name );
 		}

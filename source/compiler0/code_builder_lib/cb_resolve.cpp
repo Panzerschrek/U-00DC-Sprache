@@ -17,7 +17,7 @@ Value CodeBuilder::ResolveValue(
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name )
 {
-	return Value( PrepareTypeImpl( names_scope, function_context, typeof_type_name ), typeof_type_name.src_loc_ );
+	return PrepareTypeImpl( names_scope, function_context, typeof_type_name );
 }
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup )

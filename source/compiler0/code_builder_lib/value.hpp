@@ -203,22 +203,22 @@ class Value final
 {
 public:
 	Value() = default;
-	Value( VariablePtr variable, const SrcLoc& src_loc );
+	Value( VariablePtr variable );
+	Value( VariableMutPtr variable );
 	Value( OverloadedFunctionsSetPtr functions_set );
-	Value( Type type, const SrcLoc& src_loc );
-	Value( ClassField class_field, const SrcLoc& src_loc );
+	Value( Type type );
+	Value( ClassField class_field );
 	Value( ThisOverloadedMethodsSet class_field );
-	Value( const NamesScopePtr& namespace_, const SrcLoc& src_loc );
-	Value( TypeTemplatesSet type_templates, const SrcLoc& src_loc );
-	Value( StaticAssert static_assert_, const SrcLoc& src_loc );
-	Value( Typedef typedef_, const SrcLoc& src_loc );
-	Value( IncompleteGlobalVariable incomplete_global_variable, const SrcLoc& src_loc );
+	Value( const NamesScopePtr& namespace_ );
+	Value( TypeTemplatesSet type_templates );
+	Value( StaticAssert static_assert_ );
+	Value( Typedef typedef_ );
+	Value( IncompleteGlobalVariable incomplete_global_variable );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
 	size_t GetKindIndex() const;
 	std::string_view GetKindName() const;
-	const SrcLoc& GetSrcLoc() const;
 
 	VariablePtr GetVariable() const;
 	// Function set
@@ -267,15 +267,15 @@ private:
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
 
-	// SrcLoc used as unique id for entry, needed for imports merging.
-	// Two values are 100% same, if their src_loc are identical.
-	// Not for all values SrcLoc required, so, fill it with zeros for it.
-	SrcLoc src_loc_;
 };
 
 struct NamesScopeValue
 {
 	Value value;
+
+	// SrcLoc used as unique id for entry, needed for imports merging.
+	// Two values are 100% same, if their src_loc are identical.
+	// Not for all values SrcLoc required, so, fill it with zeros for it.
 	SrcLoc src_loc;
 
 	NamesScopeValue()= default;

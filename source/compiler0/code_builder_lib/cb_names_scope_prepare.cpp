@@ -35,7 +35,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Namespace
 			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_->src_loc_ );
 
 		const auto new_names_scope= std::make_shared<NamesScope>( namespace_->name_, &names_scope );
-		names_scope.AddName( namespace_->name_, NamesScopeValue( Value( new_names_scope, namespace_->src_loc_ ), namespace_->src_loc_ ) );
+		names_scope.AddName( namespace_->name_, NamesScopeValue( new_names_scope, namespace_->src_loc_ ) );
 		result_scope= new_names_scope.get();
 	}
 
@@ -54,7 +54,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Variables
 		incomplete_global_variable.element_index= size_t( &variable_declaration - variables_declaration.variables.data() );
 		incomplete_global_variable.name= variable_declaration.name;
 
-		if( names_scope.AddName( variable_declaration.name, NamesScopeValue( Value( incomplete_global_variable, variable_declaration.src_loc ), variable_declaration.src_loc ) ) == nullptr )
+		if( names_scope.AddName( variable_declaration.name, NamesScopeValue( incomplete_global_variable, variable_declaration.src_loc ) ) == nullptr )
 			REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.src_loc, variable_declaration.name );
 	}
 }
@@ -68,7 +68,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 	incomplete_global_variable.auto_variable_declaration= &variable_declaration;
 	incomplete_global_variable.name= variable_declaration.name;
 
-	if( names_scope.AddName( variable_declaration.name, NamesScopeValue( Value( incomplete_global_variable, variable_declaration.src_loc_ ), variable_declaration.src_loc_ ) ) == nullptr )
+	if( names_scope.AddName( variable_declaration.name, NamesScopeValue( incomplete_global_variable, variable_declaration.src_loc_ ) ) == nullptr )
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), variable_declaration.src_loc_, variable_declaration.name );
 }
 
@@ -181,7 +181,7 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 	const ClassPtr class_type= class_type_ptr.get();
 	classes_table_.push_back( std::move(class_type_ptr) );
 
-	names_scope.AddName( class_name, NamesScopeValue( Value( Type( class_type ), class_declaration.src_loc_ ), class_declaration.src_loc_ ) );
+	names_scope.AddName( class_name, NamesScopeValue( Type( class_type ), class_declaration.src_loc_ ) );
 	class_type->syntax_element= &class_declaration;
 	class_type->body_src_loc= class_declaration.src_loc_;
 	class_type->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_type ) );
@@ -213,7 +213,7 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 
 			if( IsKeyword( in_class_field.name ) )
 				REPORT_ERROR( UsingKeywordAsName, class_type->members->GetErrors(), in_class_field.src_loc_ );
-			if( class_type->members->AddName( in_class_field.name, NamesScopeValue( Value( class_field, in_class_field.src_loc_ ), in_class_field.src_loc_ ) ) == nullptr )
+			if( class_type->members->AddName( in_class_field.name, NamesScopeValue( class_field, in_class_field.src_loc_ ) ) == nullptr )
 				REPORT_ERROR( Redefinition, class_type->members->GetErrors(), in_class_field.src_loc_, in_class_field.name );
 
 			++field_number;
@@ -303,7 +303,7 @@ void CodeBuilder::NamesScopeFill(
 
 		TypeTemplatesSet type_templates_set;
 		type_templates_set.syntax_elements.push_back( &type_template_declaration );
-		names_scope.AddName( type_template_name, NamesScopeValue( Value( std::move(type_templates_set), type_template_declaration.src_loc_ ), type_template_declaration.src_loc_  ) );
+		names_scope.AddName( type_template_name, NamesScopeValue( std::move(type_templates_set), type_template_declaration.src_loc_  ) );
 	}
 }
 
@@ -317,7 +317,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enu
 
 	enum_->syntax_element= &enum_declaration;
 
-	if( names_scope.AddName( enum_declaration.name, NamesScopeValue( Value( Type( enum_ ), enum_declaration.src_loc_ ), enum_declaration.src_loc_ ) ) == nullptr )
+	if( names_scope.AddName( enum_declaration.name, NamesScopeValue( Type( enum_ ), enum_declaration.src_loc_ ) ) == nullptr )
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration.src_loc_, enum_declaration.name );
 }
 
@@ -329,7 +329,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias
 	Typedef typedef_;
 	typedef_.syntax_element= &typedef_declaration;
 
-	if( names_scope.AddName( typedef_declaration.name, NamesScopeValue( Value( typedef_, typedef_declaration.src_loc_ ), typedef_declaration.src_loc_ ) ) == nullptr )
+	if( names_scope.AddName( typedef_declaration.name, NamesScopeValue( typedef_, typedef_declaration.src_loc_ ) ) == nullptr )
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), typedef_declaration.src_loc_, typedef_declaration.name );
 }
 
@@ -340,7 +340,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAss
 
 	names_scope.AddName(
 		"_sa_" + std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)),
-		NamesScopeValue( Value( static_assert_, static_assert_declaration.src_loc_ ), static_assert_declaration.src_loc_ ) );
+		NamesScopeValue( static_assert_, static_assert_declaration.src_loc_ ) );
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElements(

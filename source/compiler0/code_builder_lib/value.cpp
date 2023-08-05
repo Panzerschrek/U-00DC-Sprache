@@ -161,8 +161,12 @@ ClassField::ClassField( const ClassPtr in_class, Type in_type, const uint32_t in
 
 static_assert( sizeof(Value) <= 72u, "Value is too heavy!" );
 
-Value::Value( VariablePtr variable, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( VariablePtr variable )
+{
+	something_= std::move(variable);
+}
+
+Value::Value( VariableMutPtr variable )
 {
 	something_= std::move(variable);
 }
@@ -172,14 +176,12 @@ Value::Value( OverloadedFunctionsSetPtr functions_set )
 	something_= std::move(functions_set);
 }
 
-Value::Value( Type type, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( Type type )
 {
 	something_= std::move(type);
 }
 
-Value::Value( ClassField class_field, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( ClassField class_field )
 {
 	something_= std::move( class_field );
 }
@@ -189,34 +191,29 @@ Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
 	something_= std::move( this_overloaded_methods_set );
 }
 
-Value::Value( const NamesScopePtr& namespace_, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( const NamesScopePtr& namespace_ )
 {
 	U_ASSERT( namespace_ != nullptr );
 	something_= namespace_;
 }
 
-Value::Value( TypeTemplatesSet type_templates, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( TypeTemplatesSet type_templates )
 {
 	something_= std::move(type_templates);
 }
 
 
-Value::Value( StaticAssert static_assert_, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( StaticAssert static_assert_ )
 {
 	something_= std::move(static_assert_);
 }
 
-Value::Value( Typedef typedef_, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( Typedef typedef_ )
 {
 	something_= std::move(typedef_);
 }
 
-Value::Value( IncompleteGlobalVariable incomplete_global_variable, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( IncompleteGlobalVariable incomplete_global_variable )
 {
 	something_= std::move(incomplete_global_variable);
 }
@@ -256,11 +253,6 @@ std::string_view Value::GetKindName() const
 	};
 
 	return std::visit( Visitor(), something_ );
-}
-
-const SrcLoc& Value::GetSrcLoc() const
-{
-	return src_loc_;
 }
 
 VariablePtr Value::GetVariable() const
