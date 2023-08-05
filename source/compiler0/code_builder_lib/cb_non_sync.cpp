@@ -164,9 +164,9 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 
 		for( const std::string& field_name : class_type->fields_order )
 		{
-			if( const auto value= class_type->members->GetThisScopeValue( field_name ) )
+			if( const NamesScopeValue* const value= class_type->members->GetThisScopeValue( field_name ) )
 			{
-				if( const auto class_field= value->GetClassField() )
+				if( const auto class_field= value->value.GetClassField() )
 				{
 					// Check non_sync tag for both reference and non-reference fields.
 					if( GetTypeNonSyncImpl( prev_types_stack, class_field->type, names_scope, src_loc ) )

@@ -129,9 +129,9 @@ std::string ConstantVariableToString( const TemplateVariableArg& variable )
 		const llvm::APInt num_value= variable.constexpr_value->getUniqueInteger();
 		std::string_view enum_member_name;
 		enum_type->members.ForEachInThisScope(
-			[&]( const std::string_view name, const Value& enum_member )
+			[&]( const std::string_view name, const NamesScopeValue& enum_member )
 			{
-				if( const VariablePtr enum_variable= enum_member.GetVariable() )
+				if( const VariablePtr enum_variable= enum_member.value.GetVariable() )
 				{
 					U_ASSERT( enum_variable->constexpr_value != nullptr );
 					if( enum_variable->constexpr_value->getUniqueInteger().getLimitedValue() == num_value )
@@ -159,10 +159,15 @@ ClassField::ClassField( const ClassPtr in_class, Type in_type, const uint32_t in
 // Value
 //
 
-static_assert( sizeof(Value) <= 72u, "Value is too heavy!" );
+static_assert( sizeof(Value) <= 56u, "Value is too heavy!" );
+static_assert( sizeof(NamesScopeValue) <= 64u, "NamesScopeValue is too heavy!" );
 
-Value::Value( VariablePtr variable, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( VariablePtr variable )
+{
+	something_= std::move(variable);
+}
+
+Value::Value( VariableMutPtr variable )
 {
 	something_= std::move(variable);
 }
@@ -172,14 +177,12 @@ Value::Value( OverloadedFunctionsSetPtr functions_set )
 	something_= std::move(functions_set);
 }
 
-Value::Value( Type type, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( Type type )
 {
 	something_= std::move(type);
 }
 
-Value::Value( ClassField class_field, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( ClassFieldPtr class_field )
 {
 	something_= std::move( class_field );
 }
@@ -189,34 +192,28 @@ Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
 	something_= std::move( this_overloaded_methods_set );
 }
 
-Value::Value( const NamesScopePtr& namespace_, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( NamesScopePtr namespace_ )
 {
 	U_ASSERT( namespace_ != nullptr );
-	something_= namespace_;
+	something_= std::move(namespace_);
 }
 
-Value::Value( TypeTemplatesSet type_templates, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( TypeTemplatesSet type_templates )
 {
 	something_= std::move(type_templates);
 }
 
-
-Value::Value( StaticAssert static_assert_, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( StaticAssert static_assert_ )
 {
 	something_= std::move(static_assert_);
 }
 
-Value::Value( Typedef typedef_, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( Typedef typedef_ )
 {
 	something_= std::move(typedef_);
 }
 
-Value::Value( IncompleteGlobalVariable incomplete_global_variable, const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+Value::Value( IncompleteGlobalVariable incomplete_global_variable )
 {
 	something_= std::move(incomplete_global_variable);
 }
@@ -244,7 +241,7 @@ std::string_view Value::GetKindName() const
 		std::string_view operator()( const FunctionVariable& ) const { return "function variable"; }
 		std::string_view operator()( const OverloadedFunctionsSetPtr& ) const { return "functions set"; }
 		std::string_view operator()( const Type& ) const { return "typename"; }
-		std::string_view operator()( const ClassField& ) const { return "class field"; }
+		std::string_view operator()( const ClassFieldPtr& ) const { return "class field"; }
 		std::string_view operator()( const ThisOverloadedMethodsSet& ) const { return "this + functions set"; }
 		std::string_view operator()( const NamesScopePtr& ) const { return "namespace"; }
 		std::string_view operator()( const TypeTemplatesSet& ) const { return "type templates set"; }
@@ -256,11 +253,6 @@ std::string_view Value::GetKindName() const
 	};
 
 	return std::visit( Visitor(), something_ );
-}
-
-const SrcLoc& Value::GetSrcLoc() const
-{
-	return src_loc_;
 }
 
 VariablePtr Value::GetVariable() const
@@ -289,14 +281,12 @@ const Type* Value::GetTypeName() const
 	return std::get_if<Type>( &something_ );
 }
 
-ClassField* Value::GetClassField()
+ClassFieldPtr Value::GetClassField() const
 {
-	return std::get_if<ClassField>( &something_ );
-}
+	if( const auto ptr= std::get_if<ClassFieldPtr>( &something_ ) )
+		return *ptr;
 
-const ClassField* Value::GetClassField() const
-{
-	return std::get_if<ClassField>( &something_ );
+	return nullptr;
 }
 
 ThisOverloadedMethodsSet* Value::GetThisOverloadedMethodsSet()

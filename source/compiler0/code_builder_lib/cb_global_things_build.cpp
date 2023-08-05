@@ -45,14 +45,14 @@ private:
 void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm_types, const llvm::DataLayout& data_layout )
 {
 	// Fields in original order
-	using FieldsMap= std::map< uint32_t, ClassField* >;
+	using FieldsMap= std::map< uint32_t, ClassFieldPtr >;
 	FieldsMap fields;
 
 	bool fields_is_ok= true;
 	class_.members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
-			if( ClassField* const field= value.GetClassField() )
+			if( const ClassFieldPtr field= value.GetClassField() )
 			{
 				fields[field->index]= field;
 				if( !field->is_reference && !field->type.GetLLVMType()->isSized() )
@@ -463,7 +463,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	the_class.members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
-			ClassField* const class_field= value.GetClassField();
+			ClassFieldPtr const class_field= value.GetClassField();
 			if( class_field == nullptr )
 				return;
 
@@ -512,7 +512,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	the_class.members->ForEachValueInThisScope(
 		[&]( const Value& value )
 		{
-			const ClassField* const field= value.GetClassField();
+			const ClassFieldPtr field= value.GetClassField();
 			if( field == nullptr )
 				return;
 
@@ -563,18 +563,18 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	}
 
 	{ // Create fields.
-		std::map< uint32_t, ClassField* > class_fields_in_original_order;
+		std::map< uint32_t, ClassFieldPtr > class_fields_in_original_order;
 
 		the_class.members->ForEachValueInThisScope(
 			[&]( Value& value )
 			{
-				if( ClassField* const class_field= value.GetClassField() )
+				if( const ClassFieldPtr class_field= value.GetClassField() )
 					class_fields_in_original_order[class_field->original_index]= class_field;
 			});
 
 		for( const auto& field_entry : class_fields_in_original_order )
 		{
-			ClassField* const class_field= field_entry.second;
+			const ClassFieldPtr& class_field= field_entry.second;
 			class_field->index= uint32_t(fields_llvm_types.size());
 			if( class_field->is_reference )
 				fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
@@ -594,9 +594,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// Fill container with fields names.
 	the_class.fields_order.resize( fields_llvm_types.size() );
 	the_class.members->ForEachInThisScope(
-		[&]( const std::string_view name, const Value& value )
+		[&]( const std::string_view name, const NamesScopeValue& value )
 		{
-			if( const auto field= value.GetClassField() )
+			if( const auto field= value.value.GetClassField() )
 				the_class.fields_order[field->index]= name;
 		} );
 
@@ -626,7 +626,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( class_type );
 		OverloadedFunctionsSetPtr destructors_set= std::make_shared<OverloadedFunctionsSet>();
 		destructors_set->functions.push_back( std::move(destructor_function_variable) );
-		the_class.members->AddName( Keyword( Keywords::destructor_ ), std::move(destructors_set) );
+		the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move(destructors_set), SrcLoc() ) );
 	}
 
 	if( the_class.kind == Class::Kind::Interface ||
@@ -636,10 +636,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		PrepareClassVirtualTable( the_class );
 
 	// Search for explicit noncopy constructors.
-	if( const Value* const constructors_value=
+	if( const NamesScopeValue* const constructors_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
-		const OverloadedFunctionsSetConstPtr constructors= constructors_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors= constructors_value->value.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
@@ -657,18 +657,18 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	// * non-default copy-assignment operators
 	// * non-default copy constructors
 	// * non-default equality compare operators
-	if( const Value* const destructor_value=
+	if( const NamesScopeValue* const destructor_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) ) )
 	{
-		const OverloadedFunctionsSetConstPtr destructors= destructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr destructors= destructor_value->value.GetFunctionsSet();
 		// Destructors may be invalid in case of error.
 		if( !destructors->functions.empty() && !destructors->functions[0].is_generated )
 			the_class.can_be_constexpr= false;
 	}
-	if( const Value* const constructor_value=
+	if( const NamesScopeValue* const constructor_value=
 		the_class.members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
 	{
-		const OverloadedFunctionsSetConstPtr constructors= constructor_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr constructors= constructor_value->value.GetFunctionsSet();
 		U_ASSERT( constructors != nullptr );
 		for( const FunctionVariable& constructor : constructors->functions )
 		{
@@ -676,10 +676,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				the_class.can_be_constexpr= false;
 		}
 	}
-	if( const Value* const assignment_operator_value=
+	if( const NamesScopeValue* const assignment_operator_value=
 		the_class.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ) )
 	{
-		const OverloadedFunctionsSetConstPtr operators= assignment_operator_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr operators= assignment_operator_value->value.GetFunctionsSet();
 		U_ASSERT( operators != nullptr );
 		for( const FunctionVariable& op : operators->functions )
 		{
@@ -687,10 +687,10 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 				the_class.can_be_constexpr= false;
 		}
 	}
-	if( const Value* const compare_equal_value=
+	if( const NamesScopeValue* const compare_equal_value=
 		the_class.members->GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ) )
 	{
-		const OverloadedFunctionsSetConstPtr operators= compare_equal_value->GetFunctionsSet();
+		const OverloadedFunctionsSetConstPtr operators= compare_equal_value->value.GetFunctionsSet();
 		U_ASSERT( operators != nullptr );
 		for( const FunctionVariable& op : operators->functions )
 		{
@@ -785,15 +785,15 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	{
 		const auto parent_class= parent.class_;
 		parent_class->members->ForEachInThisScope(
-			[&]( const std::string_view name, const Value& value )
+			[&]( const std::string_view name, const NamesScopeValue& value )
 			{
 				const auto parent_member_visibility= parent_class->GetMemberVisibility( name );
 				if( parent_member_visibility == ClassMemberVisibility::Private )
 					return; // Do not inherit private members.
 
-				Value* const result_class_value= the_class.members->GetThisScopeValue(name);
+				NamesScopeValue* const result_class_value= the_class.members->GetThisScopeValue(name);
 
-				if( const auto functions= value.GetFunctionsSet() )
+				if( const auto functions= value.value.GetFunctionsSet() )
 				{
 					if( name == Keyword( Keywords::constructor_ ) ||
 						name == Keyword( Keywords::destructor_ ) ||
@@ -804,7 +804,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 					if( result_class_value != nullptr )
 					{
-						if( const auto result_class_functions= result_class_value->GetFunctionsSet() )
+						if( const auto result_class_functions= result_class_value->value.GetFunctionsSet() )
 						{
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
 							{
@@ -843,18 +843,18 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 						for( FunctionVariable& function : functions_set->functions )
 							function.is_inherited= true;
 
-						the_class.members->AddName( name, std::move(functions_set) );
+						the_class.members->AddName( name, NamesScopeValue( std::move(functions_set), SrcLoc() ) );
 						the_class.SetMemberVisibility( name, parent_member_visibility );
 					}
 				}
-				if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+				if( const auto type_templates_set= value.value.GetTypeTemplatesSet() )
 				{
 					if( result_class_value != nullptr )
 					{
-						if( const auto result_type_templates_set= result_class_value->GetTypeTemplatesSet() )
+						if( const auto result_type_templates_set= result_class_value->value.GetTypeTemplatesSet() )
 						{
 							if( the_class.GetMemberVisibility( name ) != parent_class->GetMemberVisibility( name ) )
-								REPORT_ERROR( TypeTemplatesVisibilityMismatch, the_class.members->GetErrors(), result_class_value->GetSrcLoc(), name );
+								REPORT_ERROR( TypeTemplatesVisibilityMismatch, the_class.members->GetErrors(), result_class_value->src_loc, name );
 
 							for( const TypeTemplatePtr& parent_type_template : type_templates_set->type_templates )
 							{
@@ -905,9 +905,9 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 	// Immediately build constexpr functions.
 	the_class.members->ForEachInThisScope(
-		[&]( const std::string_view name, Value& value )
+		[&]( const std::string_view name, NamesScopeValue& value )
 		{
-			const OverloadedFunctionsSetPtr functions_set= value.GetFunctionsSet();
+			const OverloadedFunctionsSetPtr functions_set= value.value.GetFunctionsSet();
 			if( functions_set == nullptr )
 				return;
 
@@ -986,7 +986,7 @@ void CodeBuilder::GlobalThingBuildEnum( const EnumPtr enum_ )
 				mangler_->MangleGlobalVariable( enum_->members, in_member.name, enum_, true ),
 				var->constexpr_value );
 
-		if( enum_->members.AddName( in_member.name, Value( var, in_member.src_loc ) ) == nullptr )
+		if( enum_->members.AddName( in_member.name, NamesScopeValue( var, in_member.src_loc ) ) == nullptr )
 			REPORT_ERROR( Redefinition, names_scope.GetErrors(), in_member.src_loc, in_member.name );
 
 		++enum_->element_count;
@@ -1029,7 +1029,7 @@ void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& type_
 	DETECT_GLOBALS_LOOP( &type_alias_value, syntax_element.name, syntax_element.src_loc_ );
 
 	// Replace value in names map, when typedef is comlete.
-	type_alias_value= Value( PrepareType( syntax_element.value, names_scope, *global_function_context_ ), syntax_element.src_loc_ );
+	type_alias_value= PrepareType( syntax_element.value, names_scope, *global_function_context_ );
 }
 
 void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value )
@@ -1045,7 +1045,13 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 	const bool externally_available= src_loc.GetFileIndex() != 0;
 
-	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, src_loc );
+	std::string_view name;
+	if( incomplete_global_variable.variables_declaration != nullptr )
+		name= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].name;
+	if( incomplete_global_variable.auto_variable_declaration != nullptr )
+		name= incomplete_global_variable.auto_variable_declaration->name;
+
+	DETECT_GLOBALS_LOOP( &global_variable_value, std::string(name), src_loc );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
 	FunctionContext& function_context= *global_function_context_;
@@ -1191,7 +1197,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		// Do not call destructors, because global variable initializer must be constexpr and any constexpr type have trivial destructor.
 
-		global_variable_value= Value( variable_reference, variable_declaration.src_loc );
+		global_variable_value= variable_reference;
 	}
 	else if( const auto auto_variable_declaration= incomplete_global_variable.auto_variable_declaration )
 	{
@@ -1270,7 +1276,7 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 		// Do not call destructors, because global variables can be only constexpr and any constexpr type have trivial destructor.
 
-		global_variable_value= Value( variable_reference, auto_variable_declaration->src_loc_ );
+		global_variable_value= variable_reference;
 	}
 	else U_ASSERT(false);
 

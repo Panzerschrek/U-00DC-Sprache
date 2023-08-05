@@ -108,9 +108,9 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 	std::vector<ClassFunction> class_functions;
 
 	the_class.members->ForEachInThisScope(
-		[&]( const std::string_view name, Value& value )
+		[&]( const std::string_view name, NamesScopeValue& value )
 		{
-			if( const auto functions_set= value.GetFunctionsSet() )
+			if( const auto functions_set= value.value.GetFunctionsSet() )
 				for( FunctionVariable& function : functions_set->functions )
 					class_functions.emplace_back( ClassFunction{ &function, std::string(name) } );
 		});

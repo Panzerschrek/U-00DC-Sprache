@@ -45,7 +45,7 @@ std::string NamesScope::ToString() const
 	return parent_->ToString() + "::" + name_;
 }
 
-Value* NamesScope::AddName( const std::string_view name, Value value )
+NamesScopeValue* NamesScope::AddName( const std::string_view name, NamesScopeValue value )
 {
 	U_ASSERT( iterating_ == 0u );
 	auto it_bool_pair= names_map_.insert( std::make_pair( StringViewToStringRef(name), std::move( value ) ) );
@@ -56,7 +56,7 @@ Value* NamesScope::AddName( const std::string_view name, Value value )
 	return nullptr;
 }
 
-Value* NamesScope::GetThisScopeValue( const std::string_view name )
+NamesScopeValue* NamesScope::GetThisScopeValue( const std::string_view name )
 {
 	const auto it= names_map_.find( StringViewToStringRef(name) );
 	if( it != names_map_.end() )
@@ -64,7 +64,7 @@ Value* NamesScope::GetThisScopeValue( const std::string_view name )
 	return nullptr;
 }
 
-const Value* NamesScope::GetThisScopeValue( const std::string_view name ) const
+const NamesScopeValue* NamesScope::GetThisScopeValue( const std::string_view name ) const
 {
 	return const_cast<NamesScope*>(this)->GetThisScopeValue( name );
 }

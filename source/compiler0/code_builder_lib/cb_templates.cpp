@@ -612,9 +612,9 @@ bool CodeBuilder::MatchTemplateArgImpl(
 {
 	const std::string& name= template_.template_params[ template_param.index ].name;
 
-	Value* const value= args_names_scope.GetThisScopeValue( name );
+	NamesScopeValue* const value= args_names_scope.GetThisScopeValue( name );
 	U_ASSERT( value != nullptr );
-	if( value->GetYetNotDeducedTemplateArg() != nullptr )
+	if( value->value.GetYetNotDeducedTemplateArg() != nullptr )
 	{
 		const auto& param_type= template_.template_params[ template_param.index ].type;
 		const bool is_variable_param= param_type != std::nullopt;
@@ -624,7 +624,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( is_variable_param )
 				return false;
 
-			*value= Value( *given_type, src_loc );
+			value->value= *given_type;
 			return true;
 		}
 		if( const auto given_variable= std::get_if<TemplateVariableArg>( &template_arg ) )
@@ -657,16 +657,16 @@ bool CodeBuilder::MatchTemplateArgImpl(
 					CreateGlobalConstantVariable( given_variable->type, name, given_variable->constexpr_value ),
 					given_variable->constexpr_value );
 
-			*value= Value( variable_for_insertion, src_loc );
+			value->value= variable_for_insertion;
 			return true;
 		}
 	}
-	else if( const auto prev_type= value->GetTypeName() )
+	else if( const auto prev_type= value->value.GetTypeName() )
 	{
 		if( const auto given_type= std::get_if<Type>( &template_arg ) )
 			return *given_type == *prev_type;
 	}
-	else if( const auto prev_variable= value->GetVariable() )
+	else if( const auto prev_variable= value->value.GetVariable() )
 	{
 		if( const auto given_variable= std::get_if<TemplateVariableArg>( &template_arg ) )
 		{
@@ -856,7 +856,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	return false;
 }
 
-Value* CodeBuilder::GenTemplateType(
+NamesScopeValue* CodeBuilder::GenTemplateType(
 	const SrcLoc& src_loc,
 	const TypeTemplatesSet& type_templates_set,
 	const llvm::ArrayRef<Synt::Expression> template_arguments,
@@ -925,7 +925,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 
 	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, &template_names_scope );
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_params )
-		result.template_args_namespace->AddName( param.name, YetNotDeducedTemplateArg() );
+		result.template_args_namespace->AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), SrcLoc() ) );
 
 	result.signature_args.resize( type_template.signature_params.size() );
 	for( size_t i= 0u; i < type_template.signature_params.size(); ++i )
@@ -950,11 +950,11 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 
 	for( const auto& template_param : type_template.template_params )
 	{
-		const Value* const value= result.template_args_namespace->GetThisScopeValue( template_param.name );
+		const NamesScopeValue* const value= result.template_args_namespace->GetThisScopeValue( template_param.name );
 
-		if( const auto type= value->GetTypeName() )
+		if( const auto type= value->value.GetTypeName() )
 			result.template_args.push_back( *type );
-		else if( const auto variable= value->GetVariable() )
+		else if( const auto variable= value->value.GetVariable() )
 			result.template_args.push_back( TemplateVariableArg( *variable ) );
 		else
 		{
@@ -970,7 +970,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	return result;
 }
 
-Value* CodeBuilder::FinishTemplateTypeGeneration(
+NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 	const SrcLoc& src_loc,
 	NamesScope& arguments_names_scope,
 	const TemplateTypePreparationResult& template_type_preparation_result )
@@ -987,11 +987,11 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 	// Check, if type already generated.
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
 	{
-		const NamesScopePtr template_parameters_space= it->second.GetNamespace();
+		const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
 		U_ASSERT( template_parameters_space != nullptr );
 		return template_parameters_space->GetThisScopeValue( Class::c_template_class_name );
 	}
-	AddNewTemplateThing( name_encoded, Value( template_args_namespace, type_template.syntax_element->src_loc_ ) );
+	AddNewTemplateThing( name_encoded, NamesScopeValue( template_args_namespace, type_template.syntax_element->src_loc_ ) );
 
 	CreateTemplateErrorsContext(
 		arguments_names_scope.GetErrors(),
@@ -1010,7 +1010,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 			return
 				template_args_namespace->AddName(
 					Class::c_template_class_name,
-					Value( cache_class_it->second, type_template.syntax_element->src_loc_ /* TODO - check src_loc */ ) );
+					NamesScopeValue( Type( cache_class_it->second ), type_template.syntax_element->src_loc_ /* TODO - check src_loc */ ) );
 		}
 
 		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, *class_ptr );
@@ -1036,7 +1036,7 @@ Value* CodeBuilder::FinishTemplateTypeGeneration(
 		if( type == invalid_type_ )
 			return nullptr;
 
-		return template_args_namespace->AddName( Class::c_template_class_name, Value( type, src_loc /* TODO - check src_loc */ ) );
+		return template_args_namespace->AddName( Class::c_template_class_name, NamesScopeValue( type, src_loc /* TODO - check src_loc */ ) );
 	}
 	else U_ASSERT(false);
 
@@ -1109,7 +1109,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 		}
 		else if( const auto template_param= signature_param.GetTemplateParam() )
 		{
-			if( const auto type= result.template_args_namespace->GetThisScopeValue( function_template.template_params[ template_param->index ].name )->GetTypeName() )
+			if( const auto type= result.template_args_namespace->GetThisScopeValue( function_template.template_params[ template_param->index ].name )->value.GetTypeName() )
 			{
 				if( *type == given_type || ReferenceIsConvertible( given_type, *type, errors_container, src_loc ) ||
 					( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_type, *type, errors_container, src_loc ) != nullptr ) )
@@ -1124,11 +1124,11 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 
 	for( const auto& template_param : function_template.template_params )
 	{
-		const Value* const value= result.template_args_namespace->GetThisScopeValue( template_param.name );
+		const NamesScopeValue* const value= result.template_args_namespace->GetThisScopeValue( template_param.name );
 
-		if( const auto type= value->GetTypeName() )
+		if( const auto type= value->value.GetTypeName() )
 			result.template_args.push_back( *type );
-		else if( const auto variable= value->GetVariable() )
+		else if( const auto variable= value->value.GetVariable() )
 			result.template_args.push_back( TemplateVariableArg( *variable ) );
 		else
 		{
@@ -1184,21 +1184,21 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
 	{
 		//Function for this template arguments already generated.
-		const NamesScopePtr template_parameters_space= it->second.GetNamespace();
+		const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
 		U_ASSERT( template_parameters_space != nullptr );
-		OverloadedFunctionsSet& result_functions_set= *template_parameters_space->GetThisScopeValue( func_name )->GetFunctionsSet();
+		OverloadedFunctionsSet& result_functions_set= *template_parameters_space->GetThisScopeValue( func_name )->value.GetFunctionsSet();
 		if( !result_functions_set.functions.empty() )
 			return &result_functions_set.functions.front();
 		else
 			return nullptr; // May be in case of error or in case of "enable_if".
 	}
-	AddNewTemplateThing( std::move(name_encoded), Value( template_args_namespace, function_declaration.src_loc_ ) );
+	AddNewTemplateThing( std::move(name_encoded), NamesScopeValue( template_args_namespace, function_declaration.src_loc_ ) );
 
 	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name, template_args );
 
 	// First, prepare only as prototype.
 	NamesScopeFill( *template_args_namespace, function_template.syntax_element->function_, function_template.base_class );
-	OverloadedFunctionsSet& result_functions_set= *template_args_namespace->GetThisScopeValue( func_name )->GetFunctionsSet();
+	OverloadedFunctionsSet& result_functions_set= *template_args_namespace->GetThisScopeValue( func_name )->value.GetFunctionsSet();
 	GlobalThingBuildFunctionsSet( *template_args_namespace, result_functions_set, false );
 
 	if( result_functions_set.functions.empty() )
@@ -1235,7 +1235,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	return &function_variable;
 }
 
-Value* CodeBuilder::ParametrizeFunctionTemplate(
+NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	const SrcLoc& src_loc,
 	const OverloadedFunctionsSet& functions_set,
 	const llvm::ArrayRef<Synt::Expression> template_arguments,
@@ -1300,7 +1300,7 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 
 		NamesScope args_names_scope("", function_template.parent_namespace );
 		for( const TemplateBase::TemplateParameter& param : function_template.template_params )
-			args_names_scope.AddName( param.name, YetNotDeducedTemplateArg() );
+			args_names_scope.AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), SrcLoc() ) );
 
 		bool ok= true;
 		for( size_t i= 0u; i < template_args.size(); ++i )
@@ -1332,7 +1332,7 @@ Value* CodeBuilder::ParametrizeFunctionTemplate(
 		return nullptr;
 	}
 
-	return AddNewTemplateThing( std::move(name_encoded), std::make_shared<OverloadedFunctionsSet>(std::move(result)) );
+	return AddNewTemplateThing( std::move(name_encoded), NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(std::move(result)), SrcLoc() ) );
 }
 
 bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
@@ -1369,7 +1369,7 @@ void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 			const TemplateArg& known_template_arg= function_template.known_template_args[i];
 
 			if( const auto type= std::get_if<Type>( &known_template_arg ) )
-				v= Value( *type, src_loc );
+				v= *type;
 			else if( const auto variable= std::get_if<TemplateVariableArg>( &known_template_arg ) )
 			{
 				const VariablePtr variable_for_insertion=
@@ -1380,18 +1380,18 @@ void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 						name,
 						CreateGlobalConstantVariable( variable->type, name, variable->constexpr_value ),
 						variable->constexpr_value );
-				v= Value( variable_for_insertion, src_loc );
+				v= variable_for_insertion;
 			}
 			else U_ASSERT(false);
 		}
 		else
 			v= YetNotDeducedTemplateArg();
 
-		target_namespace.AddName( name, std::move(v) );
+		target_namespace.AddName( name, NamesScopeValue( std::move(v), src_loc ) );
 	}
 }
 
-Value* CodeBuilder::AddNewTemplateThing( std::string key, Value thing )
+NamesScopeValue* CodeBuilder::AddNewTemplateThing( std::string key, NamesScopeValue thing )
 {
 	generated_template_things_sequence_.push_back( key );
 	return & generated_template_things_storage_.insert( std::make_pair( std::move(key), std::move(thing) ) ).first->second;

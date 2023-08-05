@@ -123,7 +123,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 
 		OverloadedFunctionsSetPtr functions_set= std::make_shared<OverloadedFunctionsSet>();
 		functions_set->functions.push_back( std::move( destructor_variable ) );
-		coroutine_class->members->AddName( Keyword( Keywords::destructor_ ), std::move( functions_set ) );
+		coroutine_class->members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move( functions_set ), SrcLoc() ) );
 	}
 
 	// Generate equality-comparison operator.
@@ -163,7 +163,7 @@ ClassPtr CodeBuilder::GetCoroutineType( NamesScope& root_namespace, const Corout
 		// Insert operator.
 		OverloadedFunctionsSetPtr operators= std::make_shared<OverloadedFunctionsSet>();
 		operators->functions.push_back( std::move( op_variable ) );
-		coroutine_class->members->AddName( op_name, std::move( operators ) );
+		coroutine_class->members->AddName( op_name, NamesScopeValue( std::move( operators ), SrcLoc() ) );
 	}
 
 	coroutine_classes_table_[coroutine_type_description]= std::move(coroutine_class);

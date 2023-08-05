@@ -26,11 +26,11 @@ public:
 	std::string ToString() const;
 
 	// Returns nullptr, if name already exists in this scope.
-	Value* AddName( std::string_view name, Value value );
+	NamesScopeValue* AddName( std::string_view name, NamesScopeValue value );
 
 	// Resolve simple name only in this scope.
-	Value* GetThisScopeValue( std::string_view name );
-	const Value* GetThisScopeValue( std::string_view name ) const;
+	NamesScopeValue* GetThisScopeValue( std::string_view name );
+	const NamesScopeValue* GetThisScopeValue( std::string_view name ) const;
 
 	NamesScope* GetParent();
 	const NamesScope* GetParent() const;
@@ -74,7 +74,7 @@ public:
 	{
 		++iterating_;
 		for( auto& inserted_name : names_map_ )
-			func( inserted_name.second );
+			func( inserted_name.second.value );
 		--iterating_;
 	}
 
@@ -83,7 +83,7 @@ public:
 	{
 		++iterating_;
 		for( const auto& inserted_name : names_map_ )
-			func( inserted_name.second );
+			func( inserted_name.second.value );
 		--iterating_;
 	}
 
@@ -93,7 +93,7 @@ private:
 
 	ClassPtr class_= nullptr;
 
-	llvm::StringMap< Value > names_map_;
+	llvm::StringMap< NamesScopeValue > names_map_;
 
 	mutable size_t iterating_= 0u;
 	std::unordered_map<ClassPtr, ClassMemberVisibility> access_rights_;

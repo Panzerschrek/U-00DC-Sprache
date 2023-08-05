@@ -166,6 +166,8 @@ struct ClassField final
 	ClassField( ClassPtr in_class, Type in_type, uint32_t in_index, bool in_is_mutable, bool in_is_reference );
 };
 
+using ClassFieldPtr= std::shared_ptr<ClassField>;
+
 // "this" + functions set of class of "this"
 struct ThisOverloadedMethodsSet final
 {
@@ -190,7 +192,6 @@ struct IncompleteGlobalVariable
 	const Synt::AutoVariableDeclaration* auto_variable_declaration= nullptr;
 
 	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
-	std::string name;
 };
 
 struct YetNotDeducedTemplateArg final
@@ -203,22 +204,22 @@ class Value final
 {
 public:
 	Value() = default;
-	Value( VariablePtr variable, const SrcLoc& src_loc );
+	Value( VariablePtr variable );
+	Value( VariableMutPtr variable );
 	Value( OverloadedFunctionsSetPtr functions_set );
-	Value( Type type, const SrcLoc& src_loc );
-	Value( ClassField class_field, const SrcLoc& src_loc );
+	Value( Type type );
+	Value( ClassFieldPtr class_field );
 	Value( ThisOverloadedMethodsSet class_field );
-	Value( const NamesScopePtr& namespace_, const SrcLoc& src_loc );
-	Value( TypeTemplatesSet type_templates, const SrcLoc& src_loc );
-	Value( StaticAssert static_assert_, const SrcLoc& src_loc );
-	Value( Typedef typedef_, const SrcLoc& src_loc );
-	Value( IncompleteGlobalVariable incomplete_global_variable, const SrcLoc& src_loc );
+	Value( NamesScopePtr namespace_ );
+	Value( TypeTemplatesSet type_templates );
+	Value( StaticAssert static_assert_ );
+	Value( Typedef typedef_ );
+	Value( IncompleteGlobalVariable incomplete_global_variable );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
 
 	size_t GetKindIndex() const;
 	std::string_view GetKindName() const;
-	const SrcLoc& GetSrcLoc() const;
 
 	VariablePtr GetVariable() const;
 	// Function set
@@ -227,8 +228,7 @@ public:
 	Type* GetTypeName();
 	const Type* GetTypeName() const;
 	// Class fields
-	ClassField* GetClassField();
-	const ClassField* GetClassField() const;
+	ClassFieldPtr GetClassField() const;
 	// This + methods set
 	ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet();
 	const ThisOverloadedMethodsSet* GetThisOverloadedMethodsSet() const;
@@ -257,7 +257,7 @@ private:
 		VariablePtr,
 		OverloadedFunctionsSetPtr,
 		Type,
-		ClassField,
+		ClassFieldPtr,
 		ThisOverloadedMethodsSet,
 		NamesScopePtr,
 		TypeTemplatesSet,
@@ -266,11 +266,20 @@ private:
 		IncompleteGlobalVariable,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
+};
+
+// Store additional information for value in NamesScope.
+struct NamesScopeValue
+{
+	Value value;
 
 	// SrcLoc used as unique id for entry, needed for imports merging.
 	// Two values are 100% same, if their src_loc are identical.
 	// Not for all values SrcLoc required, so, fill it with zeros for it.
-	SrcLoc src_loc_;
+	SrcLoc src_loc;
+
+	NamesScopeValue()= default;
+	NamesScopeValue( Value in_value, const SrcLoc& in_src_loc ) : value(std::move(in_value)), src_loc(in_src_loc) {}
 };
 
 } // namespace U

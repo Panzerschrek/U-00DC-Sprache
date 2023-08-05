@@ -342,7 +342,7 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 			if( name.empty() )
 				continue;
 
-			const ClassField& class_field= *the_class.members->GetThisScopeValue( name )->GetClassField();
+			const ClassField& class_field= *the_class.members->GetThisScopeValue( name )->value.GetClassField();
 
 			llvm::Type* field_type_llvm= class_field.type.GetLLVMType();
 			llvm::DIType* field_type_di= CreateDIType( class_field.type );
@@ -423,9 +423,9 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 
 	llvm::SmallVector<llvm::Metadata*, 16> elements;
 	type->members.ForEachInThisScope(
-		[&]( const std::string_view name, const Value& value )
+		[&]( const std::string_view name, const NamesScopeValue& value )
 		{
-			const VariablePtr variable= value.GetVariable();
+			const VariablePtr variable= value.value.GetVariable();
 			if( variable == nullptr )
 				return;
 
