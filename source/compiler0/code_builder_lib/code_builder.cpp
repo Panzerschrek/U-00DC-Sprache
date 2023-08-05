@@ -341,7 +341,7 @@ void CodeBuilder::MergeNameScopes(
 				else if( const OverloadedFunctionsSetConstPtr functions_set= src_member.value.GetFunctionsSet() )
 				{
 					// Take copy of value, stored as shared_ptr to avoid modification of source value.
-					dst.AddName( src_name, NamesScopeValue( Value( std::make_shared<OverloadedFunctionsSet>(*functions_set) ), SrcLoc() ) );
+					dst.AddName( src_name, NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(*functions_set), SrcLoc() ) );
 				}
 				else
 				{

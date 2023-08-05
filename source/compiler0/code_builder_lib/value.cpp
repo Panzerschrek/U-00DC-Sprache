@@ -159,7 +159,8 @@ ClassField::ClassField( const ClassPtr in_class, Type in_type, const uint32_t in
 // Value
 //
 
-static_assert( sizeof(Value) <= 72u, "Value is too heavy!" );
+static_assert( sizeof(Value) <= 64u, "Value is too heavy!" );
+static_assert( sizeof(NamesScopeValue) <= 72u, "NamesScopeValue is too heavy!" );
 
 Value::Value( VariablePtr variable )
 {
@@ -191,17 +192,16 @@ Value::Value( ThisOverloadedMethodsSet this_overloaded_methods_set )
 	something_= std::move( this_overloaded_methods_set );
 }
 
-Value::Value( const NamesScopePtr& namespace_ )
+Value::Value( NamesScopePtr namespace_ )
 {
 	U_ASSERT( namespace_ != nullptr );
-	something_= namespace_;
+	something_= std::move(namespace_);
 }
 
 Value::Value( TypeTemplatesSet type_templates )
 {
 	something_= std::move(type_templates);
 }
-
 
 Value::Value( StaticAssert static_assert_ )
 {

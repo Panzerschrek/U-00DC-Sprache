@@ -119,7 +119,7 @@ void CodeBuilder::NamesScopeFill(
 		functions_set.base_class= base_class;
 		functions_set.syntax_elements.push_back( &function_declaration );
 
-		names_scope.AddName( func_name, NamesScopeValue( Value( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ) ), SrcLoc() ) );
+		names_scope.AddName( func_name, NamesScopeValue( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ), SrcLoc() ) );
 	}
 }
 
@@ -159,7 +159,7 @@ void CodeBuilder::NamesScopeFill(
 		functions_set.base_class= base_class;
 		functions_set.template_syntax_elements.push_back( &function_template_declaration );
 
-		names_scope.AddName( function_template_name, NamesScopeValue( Value( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ) ), SrcLoc() ) );
+		names_scope.AddName( function_template_name, NamesScopeValue( std::make_shared<OverloadedFunctionsSet>( std::move(functions_set) ), SrcLoc() ) );
 	}
 }
 

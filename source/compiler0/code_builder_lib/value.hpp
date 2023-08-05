@@ -209,7 +209,7 @@ public:
 	Value( Type type );
 	Value( ClassField class_field );
 	Value( ThisOverloadedMethodsSet class_field );
-	Value( const NamesScopePtr& namespace_ );
+	Value( NamesScopePtr namespace_ );
 	Value( TypeTemplatesSet type_templates );
 	Value( StaticAssert static_assert_ );
 	Value( Typedef typedef_ );
@@ -266,9 +266,9 @@ private:
 		IncompleteGlobalVariable,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;
-
 };
 
+// Store additional information for value in NamesScope.
 struct NamesScopeValue
 {
 	Value value;

@@ -433,7 +433,7 @@ void CodeBuilder::TryGenerateDestructor( const ClassPtr class_type )
 	OverloadedFunctionsSetPtr destructors= std::make_shared<OverloadedFunctionsSet>();
 	destructors->functions.push_back( std::move( destructor_variable ) );
 
-	the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( Value( std::move( destructors ) ), SrcLoc() ) );
+	the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move( destructors ), SrcLoc() ) );
 
 	// Say "we have destructor".
 	the_class.have_destructor= true;
