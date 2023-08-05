@@ -1045,7 +1045,13 @@ void CodeBuilder::GlobalThingBuildVariable( NamesScope& names_scope, Value& glob
 
 	const bool externally_available= src_loc.GetFileIndex() != 0;
 
-	DETECT_GLOBALS_LOOP( &global_variable_value, incomplete_global_variable.name, src_loc );
+	std::string_view name;
+	if( incomplete_global_variable.variables_declaration != nullptr )
+		name= incomplete_global_variable.variables_declaration->variables[ incomplete_global_variable.element_index ].name;
+	if( incomplete_global_variable.auto_variable_declaration != nullptr )
+		name= incomplete_global_variable.auto_variable_declaration->name;
+
+	DETECT_GLOBALS_LOOP( &global_variable_value, std::string(name), src_loc );
 	#define FAIL_RETURN { global_variable_value= ErrorValue(); return; }
 
 	FunctionContext& function_context= *global_function_context_;

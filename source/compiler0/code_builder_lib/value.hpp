@@ -190,7 +190,6 @@ struct IncompleteGlobalVariable
 	const Synt::AutoVariableDeclaration* auto_variable_declaration= nullptr;
 
 	size_t element_index= ~0u; // For VariablesDeclaration - index of variable.
-	std::string name;
 };
 
 struct YetNotDeducedTemplateArg final
