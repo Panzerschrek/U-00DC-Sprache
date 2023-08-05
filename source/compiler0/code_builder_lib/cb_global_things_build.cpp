@@ -593,11 +593,11 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 	// Fill container with fields names.
 	the_class.fields_order.resize( fields_llvm_types.size() );
-	the_class.members->ForEachInThisScope(
-		[&]( const std::string_view name, const NamesScopeValue& value )
+	the_class.members->ForEachValueInThisScope(
+		[&]( const Value& value )
 		{
-			if( const auto field= value.value.GetClassField() )
-				the_class.fields_order[field->index]= name;
+			if( const auto field= value.GetClassField() )
+				the_class.fields_order[field->index]= field;
 		} );
 
 	// Complete another body elements.

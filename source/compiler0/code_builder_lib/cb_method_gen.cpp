@@ -49,15 +49,13 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 	// Generate default constructor, if all fields is default constructible.
 	bool all_fields_is_default_constructible= true;
 
-	for( const std::string& field_name : the_class.fields_order )
+	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->value.GetClassField();
-
-		if( field.syntax_element->initializer == nullptr &&
-			( field.is_reference || !field.type.IsDefaultConstructible() ) )
+		if( field->syntax_element->initializer == nullptr &&
+			( field->is_reference || !field->type.IsDefaultConstructible() ) )
 			all_fields_is_default_constructible= false;
 	}
 
@@ -133,27 +131,25 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		function_context.variables_state.RemoveNode( base_variable );
 	}
 
-	for( const std::string& field_name : the_class.fields_order )
+	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->value.GetClassField();
-
-		if( field.is_reference )
+		if( field->is_reference )
 		{
-			U_ASSERT( field.syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
+			U_ASSERT( field->syntax_element->initializer != nullptr ); // Can initialize reference field only with class field initializer.
 
 			const VariablePtr this_variable=
 				std::make_shared<Variable>(
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					field_name,
+					field->syntax_element->name,
 					this_llvm_value );
 			function_context.variables_state.AddNode( this_variable );
 
-			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, field, function_context );
+			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, *field, function_context );
 
 			function_context.variables_state.RemoveNode( this_variable );
 		}
@@ -161,18 +157,18 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		{
 			const VariablePtr field_variable=
 				std::make_shared<Variable>(
-					field.type,
+					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					field_name,
-					CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index ) );
+					field->syntax_element->name,
+					CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field->index ) );
 
 			function_context.variables_state.AddNode( field_variable );
 
-			if( field.syntax_element->initializer != nullptr )
-				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
+			if( field->syntax_element->initializer != nullptr )
+				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 			else
-				ApplyEmptyInitializer( field_name, SrcLoc()/*TODO*/, field_variable, *the_class.members, function_context );
+				ApplyEmptyInitializer( field->syntax_element->name, SrcLoc()/*TODO*/, field_variable, *the_class.members, function_context );
 
 			function_context.variables_state.RemoveNode( field_variable );
 		}
@@ -223,14 +219,12 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 
 	bool all_fields_is_copy_constructible= true;
 
-	for( const std::string& field_name : the_class.fields_order )
+	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->value.GetClassField();
-
-		if( !field.is_reference && !field.type.IsCopyConstructible() )
+		if( !field->is_reference && !field->type.IsCopyConstructible() )
 			all_fields_is_copy_constructible= false;
 	}
 
@@ -314,26 +308,24 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 			function_context );
 	}
 
-	for( const std::string& field_name : the_class.fields_order )
+	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->value.GetClassField();
+		const auto dst= CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field->index );
+		const auto src= CreateClassFieldGEP( function_context, *class_type, src_llvm_value,  field->index );
 
-		const auto dst= CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index );
-		const auto src= CreateClassFieldGEP( function_context, *class_type, src_llvm_value,  field.index );
-
-		if( field.is_reference )
+		if( field->is_reference )
 		{
 			// Create simple load-store for references.
-			llvm::Value* const val= CreateTypedReferenceLoad( function_context, field.type, src );
-			CreateTypedReferenceStore( function_context, field.type, val, dst );
+			llvm::Value* const val= CreateTypedReferenceLoad( function_context, field->type, src );
+			CreateTypedReferenceStore( function_context, field->type, val, dst );
 		}
 		else
 		{
-			U_ASSERT( field.type.IsCopyConstructible() );
-			BuildCopyConstructorPart( dst, src, field.type, function_context );
+			U_ASSERT( field->type.IsCopyConstructible() );
+			BuildCopyConstructorPart( dst, src, field->type, function_context );
 		}
 	}
 
@@ -474,15 +466,13 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 
 	bool all_fields_is_copy_assignable= true;
 
-	for( const std::string& field_name : the_class.fields_order )
+	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->value.GetClassField();
-
 		// We can not generate assignment operator for classes with references, for classes with immutable fields, for classes with noncopyable fields.
-		if( field.is_reference || !field.type.IsCopyAssignable() || !field.is_mutable )
+		if( field->is_reference || !field->type.IsCopyAssignable() || !field->is_mutable )
 			all_fields_is_copy_assignable= false;
 	}
 
@@ -565,18 +555,17 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 			function_context );
 	}
 
-	for( const std::string& field_name : the_class.fields_order )
+	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->value.GetClassField();
-		U_ASSERT( field.type.IsCopyAssignable() );
+		U_ASSERT( field->type.IsCopyAssignable() );
 
 		BuildCopyAssignmentOperatorPart(
-			CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field.index ),
-			CreateClassFieldGEP( function_context, *class_type, src_llvm_value,  field.index ),
-			field.type,
+			CreateClassFieldGEP( function_context, *class_type, this_llvm_value, field->index ),
+			CreateClassFieldGEP( function_context, *class_type, src_llvm_value,  field->index ),
+			field->type,
 			function_context );
 	}
 
@@ -633,15 +622,13 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 	}
 
 	bool all_fields_are_equality_comparable= true;
-	for( const std::string& field_name : the_class.fields_order )
+	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->value.GetClassField();
-
 		// It's unclear how to compare references, so, disable "==" operator generation for fields with references.
-		if( !( field.type.IsEqualityComparable() && !field.is_reference ) )
+		if( !( field->type.IsEqualityComparable() && !field->is_reference ) )
 			all_fields_are_equality_comparable= false;
 	}
 
@@ -721,18 +708,17 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 			function_context );
 	}
 
-	for( const std::string& field_name : the_class.fields_order )
+	for( const ClassFieldPtr& field : the_class.fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& field= *the_class.members->GetThisScopeValue( field_name )->value.GetClassField();
-		U_ASSERT( field.type.IsEqualityComparable() );
+		U_ASSERT( field->type.IsEqualityComparable() );
 
 		BuildEqualityCompareOperatorPart(
-			CreateClassFieldGEP( function_context, *class_type, l_address, field.index ),
-			CreateClassFieldGEP( function_context, *class_type, r_address, field.index ),
-			field.type,
+			CreateClassFieldGEP( function_context, *class_type, l_address, field->index ),
+			CreateClassFieldGEP( function_context, *class_type, r_address, field->index ),
+			field->type,
 			false_basic_block,
 			function_context );
 	}
@@ -1167,12 +1153,13 @@ void CodeBuilder::MoveConstantToMemory(
 		U_ASSERT( class_type->parents.empty() ); // Constexpr structs should not have parents.
 		U_ASSERT( class_type->kind == Class::Kind::Struct || class_type->kind == Class::Kind::NonPolymorph ); // It's not possible for polymproh class to be constexpr.
 
-		for( const std::string& field_name : class_type->fields_order )
+		for( const ClassFieldPtr& field : class_type->fields_order )
 		{
-			const size_t field_index= size_t(&field_name - class_type->fields_order.data());
-			const auto field= class_type->members->GetThisScopeValue(field_name)->value.GetClassField();
-			llvm::Constant* const field_element= constant->getAggregateElement(uint32_t(field_index));
-			llvm::Value* const field_ptr= CreateClassFieldGEP( function_context, *class_type, ptr, field_index );
+			if( field == nullptr )
+				continue;
+
+			llvm::Constant* const field_element= constant->getAggregateElement( field->index );
+			llvm::Value* const field_ptr= CreateClassFieldGEP( function_context, *class_type, ptr, field->index );
 
 			if( field->is_reference )
 				CreateTypedReferenceStore( function_context, field->type, field_element, field_ptr );
