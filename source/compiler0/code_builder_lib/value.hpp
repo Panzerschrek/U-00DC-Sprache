@@ -282,6 +282,9 @@ struct NamesScopeValue
 	// Not for all values SrcLoc required, so, fill it with zeros for it.
 	SrcLoc src_loc;
 
+	// Used to detect unused code.
+	bool referenced= false;
+
 	NamesScopeValue()= default;
 	NamesScopeValue( Value in_value, const SrcLoc& in_src_loc ) : value(std::move(in_value)), src_loc(in_src_loc) {}
 };

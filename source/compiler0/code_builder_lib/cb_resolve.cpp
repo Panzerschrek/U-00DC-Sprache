@@ -35,6 +35,8 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 	BuildGlobalThingDuringResolveIfNecessary( *root_namespace, value );
 
+	value->referenced= true;
+
 	return value->value;
 }
 
@@ -48,6 +50,8 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 	if( result.space != nullptr )
 		BuildGlobalThingDuringResolveIfNecessary( *result.space, result.value );
+
+	result.value->referenced= true;
 
 	return result.value->value;
 }
@@ -92,6 +96,8 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		return ErrorValue();
 	}
 
+	value->referenced= true;
+
 	return value->value;
 }
 
@@ -127,6 +133,8 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 	if( value == nullptr )
 		return ErrorValue();
+
+	value->referenced= true;
 
 	return value->value;
 }
