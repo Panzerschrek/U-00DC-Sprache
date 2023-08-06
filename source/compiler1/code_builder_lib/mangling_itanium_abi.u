@@ -1,6 +1,8 @@
+import "/helpers.u"
 import "/string_conversions.u"
 import "/keywords.uh"
 import "mangling.uh"
+
 ?macro <? ADD_NODE:block( ?mangler_state:ident ) ?b:block?>
 ->
 <?
@@ -73,6 +75,8 @@ fn ManglerItaniumABI::MangleFunction(
 
 fn ManglerItaniumABI::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8
 {
+	ust::ignore_unused( is_constant );
+
 	// Variables inside global namespace have simple names.
 	if( parent_scope.GetParent().empty() )
 	{

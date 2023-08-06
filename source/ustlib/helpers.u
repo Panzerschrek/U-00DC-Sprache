@@ -1,0 +1,15 @@
+namespace ust
+{
+
+// Use this function to suspend "unused name" error for variables.
+template</type T/>
+fn ignore_unused(T& t)
+{
+	// Use clever trick to avoid "unused name" error in this function - recursively call self, but with false condition.
+	if(false)
+	{
+		ignore_unused(t);
+	}
+}
+
+} // namespace ust

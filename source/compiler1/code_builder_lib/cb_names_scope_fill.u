@@ -1,3 +1,4 @@
+import "/helpers.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -444,6 +445,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust::shared_ptr_final</Synt::StaticAssert/>& static_asert, ust::shared_ptr_nullable_mut</ClassType/>& class_type, Synt::ClassVisibility visibility )
 {
+	ust::ignore_unused( visibility );
 	NamesScopeFill( names_scope_ptr, static_asert );
 }
 

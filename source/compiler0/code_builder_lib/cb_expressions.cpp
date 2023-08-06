@@ -1222,9 +1222,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
-	const NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name_, move_operator.src_loc_ ).value;
+	NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name_, move_operator.src_loc_ ).value;
 	if( resolved_value_ptr == nullptr )
 		return ErrorValue();
+
+	resolved_value_ptr->referenced= true;
 
 	const Value& resolved_value= resolved_value_ptr->value;
 	const VariablePtr resolved_variable= resolved_value.GetVariable();

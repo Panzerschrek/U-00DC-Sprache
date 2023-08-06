@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/helpers.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -50,6 +51,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value
 {
 	// "EmptyVariant" used only as stub during expression building in syntax analyzer. It should never be in final result.
+	ust::ignore_unused( empty_variant );
 	halt;
 }
 

@@ -1,3 +1,4 @@
+import "/helpers.u"
 import "/string_conversions.u"
 import "/keywords.uh"
 import "structs_combined.uh"
@@ -49,7 +50,6 @@ fn ToString( TupleType& tuple_type ) : ust::string8
 	foreach( &element_type : tuple_type.element_types )
 	{
 		result+= element_type.ToString();
-		var bool mut is_last_element= false;
 		if( ust::ref_cmp_ne( element_type, tuple_type.element_types.back() ) )
 		{
 			result+= ", ";
@@ -1020,6 +1020,7 @@ fn GetValueKind( ust::shared_ptr_imut</TypeTemplatesSet/>& v ) : ust::string_vie
 
 fn GetValueKind( ErrorValue& v ) : ust::string_view8
 {
+	ust::ignore_unused( v );
 	return "error value";
 }
 

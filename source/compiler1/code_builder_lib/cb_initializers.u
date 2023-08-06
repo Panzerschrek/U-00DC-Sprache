@@ -1,3 +1,4 @@
+import "/helpers.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -16,6 +17,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::EmptyVariant& empty_initializer ) : LLVMValueRef
 {
+	ust::ignore_unused( empty_initializer );
 	halt;
 }
 

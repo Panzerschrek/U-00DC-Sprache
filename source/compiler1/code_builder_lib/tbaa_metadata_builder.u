@@ -13,9 +13,6 @@ fn TBAAMetadataBuilder::constructor( LLVMContextRef llvm_context, LLVMTargetData
 	{
 		auto tbaa_root= CreateMetadataNode( llvm_context_, ust::make_array( CreateMetadataString(llvm_context_, "__U_tbaa_root" ) ) );
 
-		auto zero_offset_value= LLVMConstInt( LLVMInt64TypeInContext( llvm_context ), 0u64, LLVMBool::False );
-		auto zero_offset_metadata= LLVMValueAsMetadata( zero_offset_value );
-
 		type_descriptors_.byte8_  = MakeTBAATypeDescriptor( llvm_context_, tbaa_root, KeywordToString( Keyword::byte8_ ) );
 		type_descriptors_.byte16_ = MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte8_ , KeywordToString( Keyword::byte16_  ) );
 		type_descriptors_.byte32_ = MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.byte16_, KeywordToString( Keyword::byte32_  ) );
