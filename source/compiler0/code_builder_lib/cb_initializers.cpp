@@ -160,7 +160,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	if( class_type->have_explicit_noncopy_constructors )
 		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.src_loc_ );
 
-	ProgramStringSet initialized_members_names;
+	ClassFieldsVector<bool> initialized_fields;
+	initialized_fields.resize( class_type->llvm_type->getNumElements(), false );
 
 	ClassFieldsVector<llvm::Constant*> constant_initializers;
 	bool all_fields_are_constant= false;
@@ -172,12 +173,6 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 	for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 	{
-		if( initialized_members_names.count( member_initializer.name ) != 0 )
-		{
-			REPORT_ERROR( DuplicatedStructMemberInitializer, names.GetErrors(), initializer.src_loc_, member_initializer.name );
-			continue;
-		}
-
 		const NamesScopeValue* const class_member= class_type->members->GetThisScopeValue( member_initializer.name );
 		if( class_member == nullptr )
 		{
@@ -196,7 +191,15 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			continue;
 		}
 
-		initialized_members_names.insert( member_initializer.name );
+		if( field->index < initialized_fields.size() )
+		{
+			if( initialized_fields[field->index] )
+			{
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names.GetErrors(), initializer.src_loc_, member_initializer.name );
+				continue;
+			}
+			initialized_fields[field->index]= true;
+		}
 
 		llvm::Constant* constant_initializer= nullptr;
 		if( field->is_reference )
@@ -227,43 +230,41 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			constant_initializers[field->index]= constant_initializer;
 	}
 
-	U_ASSERT( initialized_members_names.size() <= class_type->field_count );
-	for( const std::string& field_name : class_type->fields_order )
+	for( const ClassFieldPtr& field : class_type->fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& field= *class_type->members->GetThisScopeValue( field_name )->value.GetClassField();
-		if( initialized_members_names.count( field_name ) != 0 )
+		if( field->index < initialized_fields.size() && initialized_fields[ field->index ] )
 			continue;
 
 		llvm::Constant* constant_initializer= nullptr;
-		if( field.is_reference )
+		if( field->is_reference )
 		{
-			if( field.syntax_element->initializer == nullptr )
-				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), initializer.src_loc_, field_name ); // References is not default-constructible.
+			if( field->syntax_element == nullptr || field->syntax_element->initializer == nullptr )
+				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), initializer.src_loc_, field->GetName() ); // References is not default-constructible.
 			else
-				constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, field, function_context );
+				constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
 		}
 		else
 		{
 			const VariablePtr struct_member=
 				std::make_shared<Variable>(
-					field.type,
+					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					variable->name + "." +field_name,
-					CreateClassFieldGEP( function_context, *variable, field.index ) );
+					variable->name + "." + field->GetName(),
+					CreateClassFieldGEP( function_context, *variable, field->index ) );
 
 			function_context.variables_state.AddNode( struct_member );
 			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc_ );
 
-			if( field.syntax_element->initializer != nullptr )
+			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				constant_initializer=
-					InitializeClassFieldWithInClassIninitalizer( struct_member, field, function_context );
+					InitializeClassFieldWithInClassIninitalizer( struct_member, *field, function_context );
 			else
 				constant_initializer=
-					ApplyEmptyInitializer( field_name, initializer.src_loc_, struct_member, names, function_context );
+					ApplyEmptyInitializer( field->GetName(), initializer.src_loc_, struct_member, names, function_context );
 
 			function_context.variables_state.RemoveNode( struct_member );
 		}
@@ -271,7 +272,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		if( constant_initializer == nullptr )
 			all_fields_are_constant= false;
 		if( all_fields_are_constant )
-			constant_initializers[field.index]= constant_initializer;
+			constant_initializers[field->index]= constant_initializer;
 	}
 
 	if( all_fields_are_constant && constant_initializers.size() == class_type->field_count )
@@ -494,13 +495,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			REPORT_ERROR( ZeroInitializerForClass, names.GetErrors(), initializer.src_loc_ );
 
 		bool all_fields_are_constant= variable->type.CanBeConstexpr();
-		for( const std::string& field_name : class_type->fields_order )
+		for( const ClassFieldPtr& field : class_type->fields_order )
 		{
-			if( field_name.empty() )
+			if( field == nullptr )
 				continue;
 
-			const ClassField& field= *class_type->members->GetThisScopeValue( field_name )->value.GetClassField();
-			if( field.is_reference )
+			if( field->is_reference )
 			{
 				all_fields_are_constant= false;
 				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), initializer.src_loc_ );
@@ -509,11 +509,11 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 			const VariablePtr struct_member=
 				std::make_shared<Variable>(
-					field.type,
+					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					variable->name + "." + field_name,
-					CreateClassFieldGEP( function_context, *variable, field.index ) );
+					variable->name + "." + field->GetName(),
+					CreateClassFieldGEP( function_context, *variable, field->index ) );
 
 			function_context.variables_state.AddNode( struct_member );
 			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc_ );
@@ -954,7 +954,8 @@ void CodeBuilder::BuildConstructorInitialization(
 	FunctionContext& function_context,
 	const Synt::StructNamedInitializer& constructor_initialization_list )
 {
-	ProgramStringSet initialized_fields;
+	ClassFieldsVector<bool> initialized_fields;
+	initialized_fields.resize( base_class.llvm_type->getNumElements(), false );
 
 	// Check for errors, build list of initialized fields.
 	bool have_fields_errors= false;
@@ -1002,14 +1003,17 @@ void CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		if( initialized_fields.find( field_initializer.name ) != initialized_fields.end() )
+		if( field->index < initialized_fields.size() )
 		{
-			have_fields_errors= true;
-			REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
-			continue;
-		}
+			if( initialized_fields[ field->index ] )
+			{
+				have_fields_errors= true;
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+				continue;
+			}
 
-		initialized_fields.insert( field_initializer.name );
+			initialized_fields[ field->index ]= true;
+		}
 	} // for fields initializers
 
 	if( have_fields_errors )
@@ -1021,57 +1025,55 @@ void CodeBuilder::BuildConstructorInitialization(
 	function_context.initialized_this_fields.resize( base_class.llvm_type->getNumElements(), false );
 
 	// Initialize fields, missing in initializer list.
-	for( const std::string& field_name : base_class.fields_order )
+	for( const ClassFieldPtr& field : base_class.fields_order )
 	{
-		if( field_name.empty() || initialized_fields.count(field_name) != 0 )
+		if( field == nullptr || ( field->index < initialized_fields.size() && initialized_fields[field->index] ) )
 			continue;
 
-		const ClassField& field= *base_class.members->GetThisScopeValue( field_name )->value.GetClassField();
-
-		if( field.is_reference )
+		if( field->is_reference )
 		{
-			if( field.syntax_element->initializer == nullptr )
+			if( field->syntax_element == nullptr || field->syntax_element->initializer == nullptr )
 			{
-				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_name );
+				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field->GetName() );
 				continue;
 			}
-			InitializeReferenceClassFieldWithInClassIninitalizer( this_, field, function_context );
+			InitializeReferenceClassFieldWithInClassIninitalizer( this_, *field, function_context );
 		}
-		else if( !field.is_mutable )
+		else if( !field->is_mutable )
 		{
 			// HACK! Can't use "AccessClassField" here, since it returns immtable reference.
 			// So, just create derived reference field, not a child node for the field.
 			const VariablePtr field_variable=
 				std::make_shared<Variable>(
-					field.type,
+					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					this_->name + "." + field_name,
-					CreateClassFieldGEP( function_context, *this_, field.index ) );
+					this_->name + "." + field->GetName(),
+					CreateClassFieldGEP( function_context, *this_, field->index ) );
 
 			function_context.variables_state.AddNode( field_variable );
 			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc_ );
 
-			if( field.syntax_element->initializer != nullptr )
-				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
+			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
+				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 			else
-				ApplyEmptyInitializer( field_name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
+				ApplyEmptyInitializer( field->GetName(), constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
 
 			function_context.variables_state.RemoveNode( field_variable );
 		}
 		else
 		{
 			const VariablePtr field_variable=
-				AccessClassField( names_scope, function_context, this_, field, field_name, constructor_initialization_list.src_loc_ ).GetVariable();
+				AccessClassField( names_scope, function_context, this_, *field, field->GetName(), constructor_initialization_list.src_loc_ ).GetVariable();
 			U_ASSERT( field_variable != nullptr );
 
-			if( field.syntax_element->initializer != nullptr )
-				InitializeClassFieldWithInClassIninitalizer( field_variable, field, function_context );
+			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
+				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 			else
-				ApplyEmptyInitializer( field_name, constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
+				ApplyEmptyInitializer( field->GetName(), constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
 		}
 
-		function_context.initialized_this_fields[ field.index ]= true;
+		function_context.initialized_this_fields[ field->index ]= true;
 	}
 
 	// Initialize base (if it is not listed).
@@ -1402,38 +1404,36 @@ void CodeBuilder::CheckClassFieldsInitializers( const ClassPtr class_type )
 	FunctionContext& function_context= *global_function_context_;
 	const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
-	for( const std::string& field_name : class_.fields_order )
+	for( const ClassFieldPtr& field : class_.fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& class_field= *class_.members->GetThisScopeValue( field_name )->value.GetClassField();
-
-		if( class_field.syntax_element->initializer == nullptr )
+		if( field->syntax_element == nullptr || field->syntax_element->initializer == nullptr )
 			continue;
 
-		if( class_field.is_reference )
+		if( field->is_reference )
 		{
 			const VariablePtr this_variable=
 				std::make_shared<Variable>(
 					class_type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					field_name );
+					field->GetName() );
 			function_context.variables_state.AddNode( this_variable );
-			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, class_field, function_context );
+			InitializeReferenceClassFieldWithInClassIninitalizer( this_variable, *field, function_context );
 			function_context.variables_state.RemoveNode( this_variable );
 		}
 		else
 		{
 			const VariablePtr field_variable=
 				std::make_shared<Variable>(
-					class_field.type,
+					field->type,
 					ValueType::ReferenceMut,
 					Variable::Location::Pointer,
-					field_name );
+					field->GetName() );
 			function_context.variables_state.AddNode( field_variable );
-			InitializeClassFieldWithInClassIninitalizer( field_variable, class_field, function_context );
+			InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 			function_context.variables_state.RemoveNode( field_variable );
 		}
 	}

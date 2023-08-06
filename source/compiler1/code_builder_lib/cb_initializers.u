@@ -288,26 +288,20 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		REPORT_ERROR( StructInitializerForNonStruct, names_scope, struct_named_initializer.src_loc )
 	}
 
+	var size_type num_llvm_fields( unsafe( LLVMCountStructElementTypes( class_type.llvm_type ) ) );
+
 	var ust::vector</LLVMValueRef/> mut constant_initializers;
 	auto mut is_constexpr= class_type.can_be_constexpr;
 	if( is_constexpr )
 	{
-		constant_initializers.resize(
-			size_type( unsafe( LLVMCountStructElementTypes( class_type.llvm_type ) ) ),
-			LLVMValueRef::Null );
+		constant_initializers.resize( num_llvm_fields, LLVMValueRef::Null );
 	}
+
+	var ust::vector</bool/> mut initialized_fields;
+	initialized_fields.resize( num_llvm_fields, false );
 
 	foreach( &member_initializer : struct_named_initializer.members_initializers )
 	{
-		// TODO - use unordered_set
-		foreach( &prev_initializer : struct_named_initializer.members_initializers )
-		{
-			if( ust::ref_cmp_lt( prev_initializer, member_initializer ) && member_initializer.name == prev_initializer.name )
-			{
-				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
-			}
-		}
-
 		auto member_ref= class_members.GetThisScopeValue( member_initializer.name );
 		if( member_ref.empty() )
 		{
@@ -322,6 +316,16 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 		}
 		auto field_lock= field_ptr.try_lock_imut();
 		var ClassField& class_field= field_lock.deref();
+
+		var size_type field_index( class_field.index );
+		if( field_index < initialized_fields.size() )
+		{
+			if( initialized_fields[field_index] )
+			{
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
+			}
+			initialized_fields[field_index]= true;
+		}
 
 		if( class_field.source_class != class_type_ptr )
 		{
@@ -376,20 +380,18 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	auto class_members_initial= class_type.members_initial;
 
 	// Apply default initializer for fields, missing in struct named initializer.
-	foreach( &field_pair : class_type.fields_order ) label fields_search
+	foreach( &field_pair : class_type.fields_order )
 	{
 		var ust::string8& field_name= field_pair[0];
 
-		foreach( &member_initializer : struct_named_initializer.members_initializers )
-		{
-			if( member_initializer.name == field_name )
-			{
-				continue label fields_search;
-			}
-		}
-
 		auto field_lock= field_pair[1].lock_imut();
-		var ClassField & field= field_lock.deref();
+		var ClassField& field= field_lock.deref();
+
+		var size_type field_index( field.index );
+		if( field_index < initialized_fields.size() && initialized_fields[ field_index ] )
+		{
+			continue;
+		}
 
 		if( field.index == ~0u ){ continue; } // May be in case of error
 
@@ -1294,7 +1296,9 @@ fn CodeBuilder::BuildConstructorInitialization(
 	auto base_class= class_type.lock_imut().deref().base_class;
 
 	// Check for errors, build list of initialized fields.
-	var ust::unordered_set</ust::string8/> mut initialized_fields;
+	var ust::vector</bool/> mut initialized_fields;
+	initialized_fields.resize( size_type( unsafe( LLVMCountStructElementTypes( class_type.lock_imut().deref().llvm_type ) ) ), false );
+
 	auto mut have_fields_errors= false;
 	auto mut base_initialized= false;
 	foreach( &member_initializer : constructor_initialization_list.members_initializers )
@@ -1338,14 +1342,17 @@ fn CodeBuilder::BuildConstructorInitialization(
 			continue;
 		}
 
-		if( initialized_fields.exists( member_initializer.name ) )
+		var size_type field_index( class_field_ptr.try_lock_imut().deref().index );
+		if( field_index < initialized_fields.size() )
 		{
-			have_fields_errors= true;
-			REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
-			continue;
+			if( initialized_fields[ field_index ] )
+			{
+				have_fields_errors= true;
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
+				continue;
+			}
+			initialized_fields[ field_index ]= true;
 		}
-
-		initialized_fields.insert( member_initializer.name );
 	}
 
 	if( have_fields_errors )
@@ -1372,12 +1379,15 @@ fn CodeBuilder::BuildConstructorInitialization(
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
 		var ust::string8& field_name= field_pair[0];
-		if( initialized_fields.exists( field_name ) )
+
+		auto field_lock= field_pair[1].lock_imut();
+		var ClassField& class_field= field_lock.deref();
+
+		var size_type field_index( class_field.index );
+		if( field_index < initialized_fields.size() && initialized_fields[ field_index ] )
 		{
 			continue;
 		}
-		auto field_lock= field_pair[1].lock_imut();
-		var ClassField & class_field= field_lock.deref();
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 

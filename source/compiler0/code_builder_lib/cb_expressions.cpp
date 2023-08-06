@@ -681,7 +681,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		if( function_context.this_ == nullptr )
 		{
-			REPORT_ERROR( ClassFieldAccessInStaticMethod, names.GetErrors(), src_loc, field->syntax_element->name );
+			REPORT_ERROR( ClassFieldAccessInStaticMethod, names.GetErrors(), src_loc, field->GetName() );
 			return ErrorValue();
 		}
 
@@ -695,7 +695,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				if( field->index < function_context.initialized_this_fields.size() &&
 					!function_context.initialized_this_fields[ field->index ] )
 				{
-					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, field->syntax_element->name );
+					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, field->GetName() );
 					return ErrorValue();
 				}
 			}

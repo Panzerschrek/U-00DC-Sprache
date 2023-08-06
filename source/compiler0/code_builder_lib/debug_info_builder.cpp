@@ -337,16 +337,14 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 	ClassFieldsVector<llvm::Metadata*> fields;
 	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
 	{
-		for( const std::string& name : the_class.fields_order )
+		for( const ClassFieldPtr& class_field : the_class.fields_order )
 		{
-			if( name.empty() )
+			if( class_field == nullptr )
 				continue;
 
-			const ClassField& class_field= *the_class.members->GetThisScopeValue( name )->value.GetClassField();
-
-			llvm::Type* field_type_llvm= class_field.type.GetLLVMType();
-			llvm::DIType* field_type_di= CreateDIType( class_field.type );
-			if( class_field.is_reference )
+			llvm::Type* field_type_llvm= class_field->type.GetLLVMType();
+			llvm::DIType* field_type_di= CreateDIType( class_field->type );
+			if( class_field->is_reference )
 			{
 				field_type_llvm= field_type_llvm->getPointerTo();
 				field_type_di=
@@ -360,12 +358,12 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 			const auto member =
 				builder_->createMemberType(
 					di_file,
-					name,
+					class_field->GetName(),
 					di_file,
 					0u, // TODO - src_loc
 					data_layout_.getTypeAllocSizeInBits( field_type_llvm ),
 					uint32_t(8u * data_layout_.getABITypeAlignment( field_type_llvm )),
-					struct_layout.getElementOffsetInBits(class_field.index),
+					struct_layout.getElementOffsetInBits(class_field->index),
 					llvm::DINode::DIFlags(),
 					field_type_di );
 			fields.push_back(member);

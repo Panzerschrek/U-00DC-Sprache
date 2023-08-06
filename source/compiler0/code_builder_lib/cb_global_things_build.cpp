@@ -48,7 +48,7 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 	using FieldsMap= std::map< uint32_t, ClassFieldPtr >;
 	FieldsMap fields;
 
-	bool fields_is_ok= true;
+	bool fields_are_ok= true;
 	class_.members->ForEachValueInThisScope(
 		[&]( Value& value )
 		{
@@ -56,11 +56,11 @@ void SortClassFields( Class& class_, ClassFieldsVector<llvm::Type*>& fields_llvm
 			{
 				fields[field->index]= field;
 				if( !field->is_reference && !field->type.GetLLVMType()->isSized() )
-					fields_is_ok= false;
+					fields_are_ok= false;
 			}
 		} );
 
-	if( fields.empty() || !fields_is_ok )
+	if( fields.empty() || !fields_are_ok )
 		return;
 
 	uint32_t field_index= fields.begin()->first;
@@ -563,18 +563,21 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	}
 
 	{ // Create fields.
-		std::map< uint32_t, ClassFieldPtr > class_fields_in_original_order;
+		ClassFieldsVector< ClassFieldPtr > class_fields_in_original_order;
 
 		the_class.members->ForEachValueInThisScope(
 			[&]( Value& value )
 			{
 				if( const ClassFieldPtr class_field= value.GetClassField() )
-					class_fields_in_original_order[class_field->original_index]= class_field;
+					class_fields_in_original_order.push_back( class_field );
 			});
 
-		for( const auto& field_entry : class_fields_in_original_order )
+		std::sort(
+			class_fields_in_original_order.begin(), class_fields_in_original_order.end(),
+			[](const ClassFieldPtr& l, const ClassFieldPtr& r) { return l->original_index < r->original_index; } );
+
+		for( const ClassFieldPtr& class_field : class_fields_in_original_order )
 		{
-			const ClassFieldPtr& class_field= field_entry.second;
 			class_field->index= uint32_t(fields_llvm_types.size());
 			if( class_field->is_reference )
 				fields_llvm_types.emplace_back( class_field->type.GetLLVMType()->getPointerTo() );
@@ -593,11 +596,11 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 
 	// Fill container with fields names.
 	the_class.fields_order.resize( fields_llvm_types.size() );
-	the_class.members->ForEachInThisScope(
-		[&]( const std::string_view name, const NamesScopeValue& value )
+	the_class.members->ForEachValueInThisScope(
+		[&]( const Value& value )
 		{
-			if( const auto field= value.value.GetClassField() )
-				the_class.fields_order[field->index]= name;
+			if( const auto field= value.GetClassField() )
+				the_class.fields_order[field->index]= field;
 		} );
 
 	// Complete another body elements.

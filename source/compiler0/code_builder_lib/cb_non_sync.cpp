@@ -162,19 +162,13 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 			return false;
 		}
 
-		for( const std::string& field_name : class_type->fields_order )
+		for( const ClassFieldPtr& field : class_type->fields_order )
 		{
-			if( const NamesScopeValue* const value= class_type->members->GetThisScopeValue( field_name ) )
+			// Check non_sync tag for both reference and non-reference fields.
+			if( field != nullptr && GetTypeNonSyncImpl( prev_types_stack, field->type, names_scope, src_loc ) )
 			{
-				if( const auto class_field= value->value.GetClassField() )
-				{
-					// Check non_sync tag for both reference and non-reference fields.
-					if( GetTypeNonSyncImpl( prev_types_stack, class_field->type, names_scope, src_loc ) )
-					{
-						prev_types_stack.pop_back();
-						return true;
-					}
-				}
+				prev_types_stack.pop_back();
+				return true;
 			}
 		}
 

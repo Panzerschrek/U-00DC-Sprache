@@ -726,18 +726,17 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 			src_loc );
 	}
 
-	for( const std::string& field_name : class_->fields_order )
+	for( const ClassFieldPtr& field : class_->fields_order )
 	{
-		if( field_name.empty() )
+		if( field == nullptr )
 			continue;
 
-		const ClassField& field= *class_->members->GetThisScopeValue( field_name )->value.GetClassField();
-		if( !field.type.HaveDestructor() || field.is_reference )
+		if( !field->type.HaveDestructor() || field->is_reference )
 			continue;
 
 		CallDestructor(
-			CreateClassFieldGEP( function_context, *function_context.this_, field.index ),
-			field.type,
+			CreateClassFieldGEP( function_context, *function_context.this_, field->index ),
+			field->type,
 			function_context,
 			errors_container,
 			src_loc );
