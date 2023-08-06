@@ -1,3 +1,5 @@
+import "helpers.u"
+
 namespace ust
 {
 
@@ -197,6 +199,8 @@ struct is_same_type_impl
 template</ type A, type B />
 fn constexpr args_are_same( A& a, B& b ) : bool
 {
+	ignore_unused(a);
+	ignore_unused(b);
 	return is_same_type_impl</A/>::same</B/>::value;
 }
 

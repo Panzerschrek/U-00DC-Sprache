@@ -213,6 +213,9 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 		CheckClassNonSyncTagInheritance( class_type.get() );
 	}
 
+	// Check for unused names in root file.
+	CheckForUnusedGlobalNames( *compiled_sources_[0].names_map );
+
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
 	SetupDereferenceableFunctionParamsAndRetAttributes_r( *compiled_sources_.front().names_map );
@@ -744,7 +747,8 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 	};
 }
 
-void CodeBuilder::CheckForUnusedNames( const NamesScope& names_scope )
+
+void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
 {
 	if( !report_about_unused_names_ )
 		return;
@@ -758,19 +762,11 @@ void CodeBuilder::CheckForUnusedNames( const NamesScope& names_scope )
 				return; // Ignore imported names.
 
 			const Value& value= names_scope_value.value;
-			if( const auto variable= value.GetVariable() )
+			if( value.GetVariable() != nullptr )
 			{
-				// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
-				// For example, "ust::string8" has non-trivial destructor, but it just fees memory.
-				// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
-				const bool destructor_is_trivial=
-					// Constexpr types are fundamentals, enums, function pointers, some structs.
-					variable->type.CanBeConstexpr() ||
-					// Raw pointers are non-constexpr, but trivially-destructible.
-					variable->type.GetRawPointerType() != nullptr;
-
-				if( destructor_is_trivial )
-					REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+				// All global variables/references have trivial destructor.
+				// So, there is a reason to report error about all unreferenced global variables/references.
+				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
 			}
 			else if( const auto functions_set= value.GetFunctionsSet() )
 			{
@@ -795,11 +791,63 @@ void CodeBuilder::CheckForUnusedNames( const NamesScope& names_scope )
 				U_ASSERT(false);
 			}
 			else if( const auto namespace_= value.GetNamespace() )
-				CheckForUnusedNames( *namespace_ ); // Recursively check children.
+				CheckForUnusedGlobalNames( *namespace_ ); // Recursively check children.
 			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
 			{
 				// TODO - check each type template individually?
 				(void) type_templates_set;
+			}
+			else if(
+				value.GetStaticAssert() != nullptr ||
+				value.GetIncompleteGlobalVariable() != nullptr ||
+				value.GetYetNotDeducedTemplateArg() != nullptr ||
+				value.GetErrorValue() != nullptr )
+			{} // Ignore these kinds if values.
+			else U_ASSERT(false);
+		} );
+}
+
+void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
+{
+	if( !report_about_unused_names_ )
+		return;
+
+	names_scope.ForEachInThisScope(
+		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
+		{
+			if( names_scope_value.referenced )
+				return; // Value is referenced.
+
+			const Value& value= names_scope_value.value;
+			if( const auto variable= value.GetVariable() )
+			{
+				// TODO - report error if variable is only a reference.
+
+				// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
+				// For example, "ust::string8" has non-trivial destructor, but it just fees memory.
+				// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
+				const bool destructor_is_trivial=
+					// Constexpr types are fundamentals, enums, function pointers, some structs.
+					variable->type.CanBeConstexpr() ||
+					// Raw pointers are non-constexpr, but trivially-destructible.
+					variable->type.GetRawPointerType() != nullptr;
+
+				if( destructor_is_trivial )
+					REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+			}
+			else if( value.GetTypeName() != nullptr || value.GetTypedef() != nullptr )
+			{
+				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+			}
+			else if(
+				value.GetNamespace() != nullptr ||
+				value.GetTypeTemplatesSet() ||
+				value.GetThisOverloadedMethodsSet() != nullptr ||
+				value.GetClassField() ||
+				value.GetFunctionsSet() )
+			{
+				// Local NamesScope can't contain this.
+				U_ASSERT(false);
 			}
 			else if(
 				value.GetStaticAssert() != nullptr ||
@@ -1660,7 +1708,7 @@ Type CodeBuilder::BuildFuncCode(
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
-	CheckForUnusedNames( function_names );
+	CheckForUnusedLocalNames( function_names );
 
 	TryToPerformReturnValueAllocationOptimization( *llvm_function );
 

@@ -5,11 +5,11 @@ namespace ust
 template</type T/>
 fn ignore_unused(T& t)
 {
-	// Use clever trick to avoid "unused name" error in this function - recursively call self, but with false condition.
-	if(false)
-	{
-		ignore_unused(t);
-	}
+	// Force use unused variable in "typeof" context.
+	ignore_unused_impl</ typeof(t) />();
 }
+
+template</type T/>
+fn constexpr ignore_unused_impl(){}
 
 } // namespace ust

@@ -1,3 +1,5 @@
+import "helpers.u"
+
 namespace ust
 {
 
@@ -72,6 +74,7 @@ fn hash( T& x ) : size_type
 	else
 	{
 		// Other kinds of types not supported.
+		ignore_unused(x);
 		halt;
 	}
 }

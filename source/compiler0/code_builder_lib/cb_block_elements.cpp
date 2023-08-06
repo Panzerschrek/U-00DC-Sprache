@@ -910,7 +910,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			function_context.loops_stack.pop_back();
 
-			CheckForUnusedNames( loop_names );
+			CheckForUnusedLocalNames( loop_names );
 
 			if( !continue_branches_is_empty )
 			{
@@ -1402,7 +1402,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		CallDestructors( variables_storage, variable_names_scope, function_context, with_operator.src_loc_ );
 	}
 
-	CheckForUnusedNames( variable_names_scope );
+	CheckForUnusedLocalNames( variable_names_scope );
 
 	return block_build_info;
 }
@@ -1751,7 +1751,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			CallDestructors( coro_result_variables_storage, variable_names_scope, function_context, if_coro_advance.src_loc_ );
 		}
 
-		CheckForUnusedNames( variable_names_scope );
+		CheckForUnusedLocalNames( variable_names_scope );
 	}
 
 	llvm::SmallVector<ReferencesGraph, 2> branches_variable_states;
@@ -2647,7 +2647,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 
 	debug_info_builder_->EndBlock( function_context );
 
-	CheckForUnusedNames( block_names );
+	CheckForUnusedLocalNames( block_names );
 
 	return block_build_info;
 }

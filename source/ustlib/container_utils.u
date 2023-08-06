@@ -1,3 +1,4 @@
+import "helpers.u"
 import "memory.u"
 
 namespace ust
@@ -41,6 +42,10 @@ fn call_destructor( T&mut t ) unsafe
 		{
 			unsafe( ust::call_destructor( el ) );
 		}
+	}
+	else
+	{
+		ignore_unused(t);
 	}
 }
 
