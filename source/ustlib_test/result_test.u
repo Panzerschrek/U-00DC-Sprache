@@ -3,7 +3,6 @@ import "../ustlib/result.u"
 import "../ustlib/shared_ptr.u"
 
 enum SomeErrorEnum{ NotOk, CompleteDisaster }
-struct SomeErrorStruct{}
 
 type IntRes= ust::result</ i32, SomeErrorEnum />;
 
@@ -303,21 +302,21 @@ fn nomangle main() : i32
 	result_match( RetRes(42) )
 	{
 		Ok(r) -> { halt if( r != 42); },
-		Err(e) -> { halt; },
+		Err(e) -> { ust::ignore_unused(e); halt; },
 	}
 	result_match( RetRes(0) )
 	{
 		Ok(mut r) -> { ++r; }, // Can declare result variable as mutable.
-		Err(e) -> { halt; },
+		Err(e) -> { ust::ignore_unused(e); halt; },
 	}
 	result_match( RetErr(SomeErrorEnum::CompleteDisaster) )
 	{
-		Ok(r) -> { halt; },
+		Ok(r) -> { ust::ignore_unused(r); halt; },
 		Err(e) -> { halt if( e != SomeErrorEnum::CompleteDisaster ); },
 	}
 	result_match( RetErr(SomeErrorEnum::CompleteDisaster) )
 	{
-		Ok(r) -> { halt; },
+		Ok(r) -> { ust::ignore_unused(r); halt; },
 		Err(mut e) -> { e= SomeErrorEnum::NotOk; }, // Can declare error variable as mutable.
 	}
 	return 0;

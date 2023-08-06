@@ -19,7 +19,7 @@ fn nomangle main() : i32
 	{
 		var VecType mut vec;
 		var size_type mut iterations(0);
-		foreach( x : vec ){ ++iterations; }
+		foreach( x : vec ){ ust::ignore_unused(x); ++iterations; }
 		halt if( iterations > 0s );
 	}
 	{

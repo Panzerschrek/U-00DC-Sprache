@@ -105,7 +105,7 @@ fn nomangle main() : i32
 
 		var IntSet s;
 		auto mut i= 0s;
-		foreach( &key : s ){ ++i; }
+		foreach( &key : s ){ ust::ignore_unused(key); ++i; }
 
 		halt if( i != 0s );
 	}

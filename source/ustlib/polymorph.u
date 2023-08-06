@@ -56,6 +56,7 @@ fn polymorph_is_instance_of( B& b ) : bool
 	}
 	else
 	{
+		ust::ignore_unused(b);
 		return false;
 	}
 }

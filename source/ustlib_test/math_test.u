@@ -1,4 +1,5 @@
 //##success_test
+import "../ustlib/helpers.u"
 import "../ustlib/math.u"
 
 auto constexpr MyNan= ust::nan</f32/>();
@@ -360,6 +361,8 @@ fn DoFloatsTest()
 
 fn nomangle main() : i32
 {
+	ust::ignore_unused( MyNan );
+
 	DoFloatsTest</f32/>();
 	DoFloatsTest</f64/>();
 
