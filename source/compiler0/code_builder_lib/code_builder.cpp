@@ -819,21 +819,10 @@ void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
 				return; // Value is referenced.
 
 			const Value& value= names_scope_value.value;
-			if( const auto variable= value.GetVariable() )
+			if( value.GetVariable() != nullptr )
 			{
-				// TODO - report error if variable is only a reference.
-
-				// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
-				// For example, "ust::string8" has non-trivial destructor, but it just fees memory.
-				// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
-				const bool destructor_is_trivial=
-					// Constexpr types are fundamentals, enums, function pointers, some structs.
-					variable->type.CanBeConstexpr() ||
-					// Raw pointers are non-constexpr, but trivially-destructible.
-					variable->type.GetRawPointerType() != nullptr;
-
-				if( destructor_is_trivial )
-					REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+				// Variable with side-effects of their existence should be marked as referenced before.
+				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
 			}
 			else if( value.GetTypeName() != nullptr || value.GetTypedef() != nullptr )
 			{
@@ -857,6 +846,20 @@ void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
 			{} // Ignore these kinds if values.
 			else U_ASSERT(false);
 		} );
+}
+
+bool CodeBuilder::VariableExistanceMayHaveSideEffects( const Type& variable_type )
+{
+	// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
+	// For example, "ust::string8" has non-trivial destructor, but it just fees memory.
+	// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
+	const bool destructor_is_trivial=
+		// Constexpr types are fundamentals, enums, function pointers, some structs.
+		variable_type.CanBeConstexpr() ||
+		// Raw pointers are non-constexpr, but trivially-destructible.
+		variable_type.GetRawPointerType() != nullptr;
+
+	return !destructor_is_trivial;
 }
 
 size_t CodeBuilder::PrepareFunction(
@@ -1552,8 +1555,10 @@ Type CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
+			const bool force_referenced= param.value_type == ValueType::Value && VariableExistanceMayHaveSideEffects(variable_reference->type);
+
 			const NamesScopeValue* const inserted_arg=
-				function_names.AddName( arg_name, NamesScopeValue( variable_reference, declaration_arg.src_loc_ ) );
+				function_names.AddName( arg_name, NamesScopeValue( variable_reference, declaration_arg.src_loc_, force_referenced ) );
 			if( inserted_arg == nullptr )
 				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.src_loc_, arg_name );
 		}

@@ -286,7 +286,8 @@ struct NamesScopeValue
 	bool referenced= false;
 
 	NamesScopeValue()= default;
-	NamesScopeValue( Value in_value, const SrcLoc& in_src_loc ) : value(std::move(in_value)), src_loc(in_src_loc) {}
+	NamesScopeValue( Value in_value, const SrcLoc& in_src_loc, const bool in_referenced= false )
+		: value(std::move(in_value)), src_loc(in_src_loc), referenced(in_referenced) {}
 };
 
 } // namespace U
