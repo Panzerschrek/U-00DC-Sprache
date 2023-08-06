@@ -27,7 +27,9 @@ fn RetErr( SomeErrorEnum e ) : IntRes
 }
 
 fn PassResult( IntRes r )
-{}
+{
+	ust::ignore_unused(r);
+}
 
 type IntSharedPtr= ust::shared_ptr_mut</i32/>;
 

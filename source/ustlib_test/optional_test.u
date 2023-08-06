@@ -58,7 +58,7 @@ fn nomangle main() : i32
 	}
 	{ // optional is copyable (if contained type is copyable)
 		var ust::optional</f32/> pi( 3.14f );
-		var ust::optional</f32/> pi_copy( 3.14f );
+		var ust::optional</f32/> pi_copy( pi );
 		halt if( pi_copy.empty() );
 		halt if( pi_copy.try_deref() != 3.14f );
 	}
