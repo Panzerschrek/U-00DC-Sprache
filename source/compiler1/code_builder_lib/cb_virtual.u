@@ -27,6 +27,7 @@ fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	FunctionVariable& new_function,
 	ClassType& new_class_type )
 {
+	ust::ignore_unused( new_function ); // TODO - use it?
 	var ClassTypePtr src_function_this_type= src_function.t.params.front().t.GetClassType().try_deref();
 
 	auto src_class_inner_reference_kind= src_function_this_type.lock_imut().deref().inner_reference_kind;
@@ -476,8 +477,6 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 fn CodeBuilder::BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, ClassType& dst_class, u64 offset ) : LLVMValueRef
 {
 	var ust::vector</LLVMValueRef/> mut initializer_values;
-
-	auto mut function_context= CreateGlobalFunctionContext();
 
 	foreach( &parent : ancestor_class.parents )
 	{

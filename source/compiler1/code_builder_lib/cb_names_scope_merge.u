@@ -162,6 +162,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalAutoVariable
 fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</GlobalStaticAssertsSet/>& global_static_asserts ) : NamesScopeValue
 {
 	// Just ignore imported static asserts and create value for new static asserts.
+	ust::ignore_unused( global_static_asserts );
 	return GlobalStaticAssertsSet();
 }
 

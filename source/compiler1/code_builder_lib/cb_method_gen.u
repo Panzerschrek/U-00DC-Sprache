@@ -1179,8 +1179,6 @@ fn CodeBuilder::BuildDestructorPart( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildMembersDestructors( mut this, FunctionContext &mut function_context, LLVMValueRef value, ClassTypePtr& class_type )
 {
 	auto class_members_ptr= class_type.lock_imut().deref().members;
-	auto class_members_lock= class_members_ptr.lock_imut();
-	auto& class_members= class_members_lock.deref();
 
 	var SrcLoc mut src_loc;
 	if_var( &syntax_element : class_type.lock_imut().deref().syntax_element )

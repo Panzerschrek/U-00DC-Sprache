@@ -486,6 +486,7 @@ public:
 		ust::string8& file_path,
 		ust::string8& parent_file_path_normalized ) : ust::string8
 	{
+		ust::ignore_unused(parent_file_path_normalized);
 		return file_path;
 	}
 

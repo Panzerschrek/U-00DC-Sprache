@@ -7,6 +7,7 @@ import "code_builder.uh"
 <?
 	if( DetectGlobalsLoop( ?value ) ){ return; }
 	var GlobalThingHolder ??holder( global_things_stack_ptr_, ?value );
+	ust::ignore_unused( ??holder ); // TODO - remove it, this should be unnecessary for type with non-trivial destructor.
 ?>
 
 namespace U1
@@ -627,8 +628,6 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 				class_inner_reference_kind= parent_inner_reference_kind;
 			}
 		}
-
-		auto class_members_lock= class_members.lock_imut();
 
 		foreach( &field_pair : class_.fields_order )
 		{

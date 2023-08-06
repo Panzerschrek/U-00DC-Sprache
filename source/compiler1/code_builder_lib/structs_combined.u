@@ -995,26 +995,31 @@ namespace ValueKindHelper
 
 fn GetValueKind( VariablePtr& v ) : ust::string_view8
 {
+	ust::ignore_unused(v);
 	return "variable";
 }
 
 fn GetValueKind( Type& v ) : ust::string_view8
 {
+	ust::ignore_unused(v);
 	return "type";
 }
 
 fn GetValueKind( FunctionsSet& v ) : ust::string_view8
 {
+	ust::ignore_unused(v);
 	return "functions set";
 }
 
 fn GetValueKind( ThisMethodsSet& v ) : ust::string_view8
 {
+	ust::ignore_unused(v);
 	return "this + methods set";
 }
 
 fn GetValueKind( ust::shared_ptr_imut</TypeTemplatesSet/>& v ) : ust::string_view8
 {
+	ust::ignore_unused(v);
 	return "type templates set";
 }
 

@@ -138,6 +138,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value
 {
+	ust::ignore_unused( names_scope );
 	var Variable mut result
 	{
 		.t= bool_type_,
@@ -1844,6 +1845,10 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::AccessClassBase( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, VariablePtr& variable_ptr, SrcLoc& src_loc ) : VariablePtr
 {
+	// TODO - remove these args at all?
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( src_loc );
+
 	var size_type base_field_index(0); // Base is always first field.
 
 	auto mut variable_lock= variable_ptr.lock_mut();
@@ -1924,8 +1929,6 @@ fn CodeBuilder::AccessDirectClassField(
 	var ust::string8 mut node_name= variable_ptr.lock_imut().deref().name;
 	node_name+= ".";
 	node_name+= field_name;
-
-	auto op_name_nt= "." + field_name + "\0";
 
 	if( field.is_reference )
 	{

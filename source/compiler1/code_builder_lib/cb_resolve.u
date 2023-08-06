@@ -217,6 +217,8 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RootNamespaceNameLookup& root_namespace_name_lookup ) : ust::optional</NamesScopeValue/>
 {
+	ust::ignore_unused( function_context );
+
 	var NamesScopePtr root_namespace= GetRootNamespace( names_scope );
 	if_var( &names_scope_value : root_namespace.lock_imut().deref().GetThisScopeValue( root_namespace_name_lookup.name ) )
 	{

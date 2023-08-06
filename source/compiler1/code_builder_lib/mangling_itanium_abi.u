@@ -75,6 +75,7 @@ fn ManglerItaniumABI::MangleFunction(
 
 fn ManglerItaniumABI::MangleGlobalVariable( mut this, NamesScope& parent_scope, ust::string8& variable_name, Type& t, bool is_constant ) : ust::string8
 {
+	ust::ignore_unused( t );
 	ust::ignore_unused( is_constant );
 
 	// Variables inside global namespace have simple names.

@@ -423,8 +423,6 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadat
 
 	if( class_type.typeinfo_src_type_.empty() ) // Skip typeinfo struucts because of potential dependency loops.
 	{
-		auto class_members_lock= class_type.members.lock_imut();
-		var NamesScope& class_members= class_members_lock.deref();
 		foreach( &field_pair : class_type.fields_order )
 		{
 			var ust::string8& field_name= field_pair[0];

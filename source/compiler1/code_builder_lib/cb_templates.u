@@ -753,7 +753,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 			auto arg= BuildExpressionCode( args_names_scope, function_context, template_args[i] );
 			if( arg.get</Type/>().empty() && arg.get</VariablePtr/>().empty() )
 			{
-				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, Synt::GetSrcLoc(template_args[i]), GetValueKindName(arg) )
+				REPORT_ERROR( InvalidValueAsTemplateArgument, args_names_scope, template_instantiation_src_loc, GetValueKindName(arg) )
 				all_ok= false;
 				continue;
 			}
@@ -1432,6 +1432,10 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateArgFinished& given_arg,
 	SrcLoc& src_loc ) : bool
 {
+	ust::ignore_unused(names_scope);
+	ust::ignore_unused(template_);
+	ust::ignore_unused(src_loc);
+
 	if_var( &given_type : given_arg.get</Type/>() )
 	{
 		return type_param.t == given_type;
@@ -1447,6 +1451,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	TemplateArgFinished& given_arg,
 	SrcLoc& src_loc ) : bool
 {
+	ust::ignore_unused( template_ );
 	if_var( &given_variable_ptr : given_arg.get</VariablePtr/>() )
 	{
 		auto given_variable_lock= given_variable_ptr.lock_imut();

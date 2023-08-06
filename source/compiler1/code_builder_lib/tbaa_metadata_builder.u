@@ -126,11 +126,11 @@ fn TBAAMetadataBuilder::CreateTypeDescriptor( mut this, Type& t ) : LLVMMetadata
 	{
 		return unsafe( MakeTBAATypeDescriptor( llvm_context_, GetEnumTypeBaseTypeDescriptor(enum_type), name.range() ) );
 	}
-	if_var( &raw_pointer_type : t.GetRawPointerType() )
+	if( !t.GetRawPointerType().empty() )
 	{
 		return unsafe( MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.ptr, name.range() ) );
 	}
-	if_var( &function_pointer_type : t.GetFunctionPointerType() )
+	if( !t.GetFunctionPointerType().empty() )
 	{
 		return unsafe( MakeTBAATypeDescriptor( llvm_context_, type_descriptors_.ptr, name.range() ) );
 	}

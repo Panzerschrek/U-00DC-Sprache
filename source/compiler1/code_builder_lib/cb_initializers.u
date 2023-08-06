@@ -546,9 +546,6 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			REPORT_ERROR( ZeroInitializerForClass, names_scope, zero_initializer.src_loc )
 		}
 
-		auto members_lock= class_type.members.lock_imut();
-		var NamesScope& class_members= members_lock.deref();
-
 		foreach( &field_pair : class_type.fields_order )
 		{
 			auto field_lock= field_pair[1].lock_imut();
@@ -591,6 +588,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, VariablePtr& variable_ptr, Synt::UninitializedInitializer& uninitialized_initializer ) : LLVMValueRef
 {
+	ust::ignore_unused( variable_ptr );
+
 	if( !function_context.is_in_unsafe_block )
 	{
 		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, names_scope, uninitialized_initializer.src_loc )
@@ -608,7 +607,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 		return LLVMValueRef::Null;
 	}
 
-	if_var( &fundamental_type : variable.t.GetFundamentalType() )
+	if( !variable.t.GetFundamentalType().empty() )
 	{
 		// This is void type.
 		return unsafe( LLVMConstNull( fundamental_llvm_types_.void_ ) );
@@ -1521,8 +1520,6 @@ fn CodeBuilder::BuildConstructorInitialization(
 fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type )
 {
 	auto class_members_ptr= class_type.lock_imut().deref().members;
-	auto class_members_lock= class_members_ptr.lock_imut();
-	var NamesScope& class_members= class_members_lock.deref();
 
 	auto mut global_function_context= CreateGlobalFunctionContext();
 	var VariablesFrameHolder temp_variables_frame_hodler(global_function_context);
