@@ -93,6 +93,7 @@ static CodeBuilderOptions GetCodeBuilderOptionsForTests()
 	options.build_debug_info= true;
 	options.generate_tbaa_metadata= true;
 	options.create_lifetimes= true;
+	options.report_about_unused_names= false; // It is easier to silence such errors, rather than fixing a lot of tests.
 	return options;
 }
 

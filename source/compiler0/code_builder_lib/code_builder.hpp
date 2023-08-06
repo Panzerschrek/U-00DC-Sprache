@@ -31,6 +31,7 @@ struct CodeBuilderOptions
 	bool create_lifetimes= true;
 	bool generate_lifetime_start_end_debug_calls= false;
 	bool generate_tbaa_metadata= false;
+	bool report_about_unused_names= true;
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
@@ -1028,6 +1029,7 @@ private:
 	const bool create_lifetimes_;
 	const bool generate_lifetime_start_end_debug_calls_;
 	const bool generate_tbaa_metadata_;
+	const bool report_about_unused_names_;
 
 	struct
 	{
