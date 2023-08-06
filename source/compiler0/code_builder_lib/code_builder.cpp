@@ -743,6 +743,70 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 	};
 }
 
+void CodeBuilder::CheckForUnusedNames( const NamesScope& names_scope )
+{
+	names_scope.ForEachInThisScope(
+		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
+		{
+			if( names_scope_value.referenced )
+				return; // Value is referenced.
+			if( names_scope_value.src_loc.GetFileIndex() != 0 )
+				return; // Ignore imported names.
+
+			const Value& value= names_scope_value.value;
+			if( const auto variable= value.GetVariable() )
+			{
+				// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
+				// For example, "ust::string8" has non-trivial destructor, but it just fees memory.
+				// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
+				const bool destructor_is_trivial=
+					// Constexpr types are fundamentals, enums, function pointers, some structs.
+					variable->type.CanBeConstexpr() ||
+					// Raw pointers are non-constexpr, but trivially-destructible.
+					variable->type.GetRawPointerType() != nullptr;
+
+				if( destructor_is_trivial )
+					REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+			}
+			else if( const auto functions_set= value.GetFunctionsSet() )
+			{
+				// TODO - check each function individually.
+				(void) functions_set;
+			}
+			else if(
+				value.GetTypeName() != nullptr ||
+				value.GetTypedef() != nullptr )
+			{
+				// TODO - check internals of classes.
+				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+			}
+			else if( const auto class_field= value.GetClassField() )
+			{
+				// TODO - decide what to do with class fields.
+				(void)class_field;
+			}
+			else if( value.GetThisOverloadedMethodsSet() != nullptr )
+			{
+				// NamesScope can't contain this.
+				U_ASSERT(false);
+			}
+			else if( const auto namespace_= value.GetNamespace() )
+				CheckForUnusedNames( *namespace_ ); // Recursively check children.
+			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+			{
+				// TODO - check each type template individually?
+				(void) type_templates_set;
+			}
+			else if(
+				value.GetStaticAssert() != nullptr ||
+				value.GetIncompleteGlobalVariable() != nullptr ||
+				value.GetYetNotDeducedTemplateArg() != nullptr ||
+				value.GetErrorValue() != nullptr )
+			{} // Ignore these kinds if values.
+			else U_ASSERT(false);
+		} );
+}
+
 size_t CodeBuilder::PrepareFunction(
 	NamesScope& names_scope,
 	const ClassPtr base_class,
@@ -1591,6 +1655,8 @@ Type CodeBuilder::BuildFuncCode(
 	}
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+
+	CheckForUnusedNames( function_names );
 
 	TryToPerformReturnValueAllocationOptimization( *llvm_function );
 
