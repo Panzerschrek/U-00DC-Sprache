@@ -60,12 +60,13 @@ void PrintLexSyntErrors( const SourceGraph& source_graph )
 
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
-std::unique_ptr<CodeBuilder> CreateCodeBuilder()
+std::unique_ptr<CodeBuilder> CreateCodeBuilder(const bool enable_unused_name_errors)
 {
 	CodeBuilderOptions options;
 	options.build_debug_info= true;
 	options.generate_tbaa_metadata= true;
 	options.report_about_unused_names= false; // It is easier to silence such errors, rather than fixing a lot of tests.
+	options.report_about_unused_names= enable_unused_name_errors;
 
 	return
 		std::make_unique<CodeBuilder>(
@@ -86,7 +87,7 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	if( !source_graph.errors.empty() )
 		return nullptr;
 
-	CodeBuilder::BuildResult build_result= CreateCodeBuilder()->BuildProgram( source_graph );
+	CodeBuilder::BuildResult build_result= CreateCodeBuilder(false)->BuildProgram( source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cerr << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << " " << error.text << "\n";
@@ -352,10 +353,19 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
 	U_UNUSED(self);
 
-	const char* program_text= nullptr;
+	PyObject* prorgam_text_arg= nullptr;
+	PyObject* enable_unused_variable_errors_arg= nullptr;
 
-	if( !PyArg_ParseTuple( args, "s", &program_text ) )
-		return nullptr;
+	if( !PyArg_UnpackTuple( args, "", 1, 2, &prorgam_text_arg, &enable_unused_variable_errors_arg ) )
+		return nullptr; // Parse will raise
+
+	const char* program_text= nullptr;
+	if( !PyArg_Parse( prorgam_text_arg, "s", &program_text ) )
+		return nullptr; // Parse will raise
+
+	int enable_unused_variable_errors= 0;
+	if( enable_unused_variable_errors_arg != nullptr && !PyArg_Parse( enable_unused_variable_errors_arg, "p", &enable_unused_variable_errors ) )
+		return nullptr; // Parse will raise
 
 	const std::string file_path= "_";
 	SingeFileVfs vfs( file_path, program_text );
@@ -369,7 +379,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 		return nullptr;
 	}
 
-	PyObject* const list= BuildErrorsList( CreateCodeBuilder()->BuildProgram( source_graph ).errors );
+	PyObject* const list= BuildErrorsList( CreateCodeBuilder(enable_unused_variable_errors != 0)->BuildProgram( source_graph ).errors );
 	llvm::llvm_shutdown();
 
 	return list;
