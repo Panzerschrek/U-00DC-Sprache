@@ -51,6 +51,8 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value
 {
 	// "EmptyVariant" used only as stub during expression building in syntax analyzer. It should never be in final result.
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( function_context );
 	ust::ignore_unused( empty_variant );
 	halt;
 }

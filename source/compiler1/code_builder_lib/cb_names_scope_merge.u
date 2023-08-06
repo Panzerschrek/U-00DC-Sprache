@@ -106,6 +106,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : Name
 fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</Variable/>& variable ) : NamesScopeValue
 {
 	// Global namespaces should not contain "Variable", only "GlobalVariable" or "GlobalAutoVariable"
+	ust::ignore_unused( variable );
 	halt;
 }
 
@@ -144,6 +145,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeTemplatesSet/>
 fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</TemplateArg/>& template_arg ) : NamesScopeValue
 {
 	// Only template args namespaces may contain template args. We should not process them here.
+	ust::ignore_unused( template_arg );
 	halt;
 }
 
