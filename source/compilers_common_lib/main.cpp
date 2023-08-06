@@ -183,6 +183,12 @@ cl::opt<bool> generate_debug_info(
 	cl::init(false),
 	cl::cat(options_category) );
 
+cl::opt<bool> enable_unused_names(
+	"enable-unused-names",
+	cl::desc("Enable declaration of unused names (variables, type aliases, etc.)."),
+	cl::init(false),
+	cl::cat(options_category) );
+
 cl::opt<std::string> architecture(
 	"march",
 	cl::desc("Architecture to generate code for (see --version)"),
@@ -553,6 +559,7 @@ int Main( int argc, const char* argv[] )
 					target_triple,
 					Options::generate_debug_info,
 					generate_tbaa_metadata,
+					Options::enable_unused_names,
 					mangling_scheme,
 					prelude_code );
 

@@ -115,9 +115,12 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::Triple& target_triple,
 	const bool generate_debug_info,
 	const bool generate_tbaa_metadata,
+	const bool enable_unused_names,
 	const ManglingScheme mangling_scheme,
 	const std::string_view prelude_code )
 {
+	(void)enable_unused_names; // TODO - use it.
+
 	CodeBuilderLaunchResult result;
 
 	const LLVMModuleRef llvm_module=
