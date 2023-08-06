@@ -1,7 +1,5 @@
 import "dep_included.u"
 
-auto x= 0;
-
 fn nomangle main() : i32
 {
 	return 0;

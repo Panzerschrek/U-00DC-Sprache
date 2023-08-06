@@ -9,6 +9,7 @@ add_custom_command(
 		${SPRACHE_COMPILER_PIC_OPTIONS}
 		-O0 # Disable optimization
 		-g # Generate debug info
+		--enable-unused-names # Enable unused variables in order to inspect debug info for them.
 		--verify-module
 	)
 
