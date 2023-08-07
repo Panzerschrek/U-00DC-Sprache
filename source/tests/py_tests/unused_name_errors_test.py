@@ -3,7 +3,7 @@ from py_tests_common import *
 
 def UnusedLocalTypeAlias_Test0():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			type I= i32;
 		}
@@ -15,7 +15,7 @@ def UnusedLocalTypeAlias_Test0():
 
 def UnusedLocalTypeAlias_Test1():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			type SS= SomeStruct;
 		}
@@ -28,7 +28,7 @@ def UnusedLocalTypeAlias_Test1():
 
 def UnusedLocalTypeAlias_Test2():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			type SC= SomeClass;
 		}
@@ -41,7 +41,7 @@ def UnusedLocalTypeAlias_Test2():
 
 def UnusedLocalTypeAlias_Test3():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			{
 				type AliasInsideScope= void;
@@ -54,7 +54,7 @@ def UnusedLocalTypeAlias_Test3():
 
 def UnusedLocalTypeAlias_Test4():
 	c_program_text= """
-		fn Foo(bool cond)
+		fn nomangle Foo(bool cond)
 		{
 			if(cond)
 			{
@@ -69,7 +69,7 @@ def UnusedLocalTypeAlias_Test4():
 
 def UnusedLocalTypeAlias_Test5():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			while(Bar())
 			{
@@ -85,7 +85,7 @@ def UnusedLocalTypeAlias_Test5():
 
 def UnusedValueArgument_Test0():
 	c_program_text= """
-		fn Foo(void v) // Void arg. Technically it is just regular arg, so, error about unused name must be produced.
+		fn nomangle Foo(void v) // Void arg. Technically it is just regular arg, so, error about unused name must be produced.
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -95,7 +95,7 @@ def UnusedValueArgument_Test0():
 
 def UnusedValueArgument_Test1():
 	c_program_text= """
-		fn Foo(i32 x)
+		fn nomangle Foo(i32 x)
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -105,7 +105,7 @@ def UnusedValueArgument_Test1():
 
 def UnusedValueArgument_Test2():
 	c_program_text= """
-		fn Foo(f64 x)
+		fn nomangle Foo(f64 x)
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -115,7 +115,7 @@ def UnusedValueArgument_Test2():
 
 def UnusedValueArgument_Test3():
 	c_program_text= """
-		fn Foo(E e) // Enum value arg. Still must be referenced.
+		fn nomangle Foo(E e) // Enum value arg. Still must be referenced.
 		{}
 		enum E{ A, B, C }
 	"""
@@ -126,7 +126,7 @@ def UnusedValueArgument_Test3():
 
 def UnusedValueArgument_Test4():
 	c_program_text= """
-		fn Foo( (fn()) f_ptr ) // Function pointer arg also must be referenced.
+		fn nomangle Foo( (fn()) f_ptr ) // Function pointer arg also must be referenced.
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -136,7 +136,7 @@ def UnusedValueArgument_Test4():
 
 def UnusedValueArgument_Test5():
 	c_program_text= """
-		fn Foo($(u64) ptr) // Raw pointer arg must be referenced.
+		fn nomangle Foo($(u64) ptr) // Raw pointer arg must be referenced.
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -146,7 +146,7 @@ def UnusedValueArgument_Test5():
 
 def UnusedValueArgument_Test6():
 	c_program_text= """
-		fn Foo([i16, 8] a) // Aray of fundamental type elements arg should be referenced.
+		fn nomangle Foo([i16, 8] a) // Aray of fundamental type elements arg should be referenced.
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -156,7 +156,7 @@ def UnusedValueArgument_Test6():
 
 def UnusedValueArgument_Test7():
 	c_program_text= """
-		fn Foo( tup[ bool, void, f32, [i32, 7], char16, tup[ u32, i16 ] ] t ) // Tuple of trivial element types arg should be referenced.
+		fn nomangle Foo( tup[ bool, void, f32, [i32, 7], char16, tup[ u32, i16 ] ] t ) // Tuple of trivial element types arg should be referenced.
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -166,7 +166,7 @@ def UnusedValueArgument_Test7():
 
 def UnusedValueArgument_Test8():
 	c_program_text= """
-		fn Foo(S s) // Trivial struct arg - must be referenced.
+		fn nomangle Foo(S s) // Trivial struct arg - must be referenced.
 		{}
 		struct S{ i32 x; i32 y; }
 	"""
@@ -177,7 +177,7 @@ def UnusedValueArgument_Test8():
 
 def UnusedValueArgument_Test9():
 	c_program_text= """
-		fn Foo([S, 16] s) // Array of trivial struct arg - must be referenced.
+		fn nomangle Foo([S, 16] s) // Array of trivial struct arg - must be referenced.
 		{}
 		struct S{ i32 x; i32 y; }
 	"""
@@ -188,43 +188,43 @@ def UnusedValueArgument_Test9():
 
 def UnusedValueArgument_Test10():
 	c_program_text= """
-		fn Foo(C c) // Classes considered to be non-trivial and possibly may have non-trivial destructor. Avoid reporting about unreferenced arg.
+		fn nomangle Foo(C c) // Classes considered to be non-trivial and possibly may have non-trivial destructor. Avoid reporting about unreferenced arg.
 		{}
 		class C{ i32 x; i32 y; }
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def UnusedValueArgument_Test11():
 	c_program_text= """
-		fn Foo(tup[C, bool] c) // Classes considered to be non-trivial and possibly may have non-trivial destructor. Avoid reporting about unreferenced arg.
+		fn nomangle Foo(tup[C, bool] c) // Classes considered to be non-trivial and possibly may have non-trivial destructor. Avoid reporting about unreferenced arg.
 		{}
 		class C{ i32 x; i32 y; }
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def UnusedValueArgument_Test12():
 	c_program_text= """
-		fn Foo(S s) // Avoid reporting about unreferenced arg, since its destructor is not trivial.
+		fn nomangle Foo(S s) // Avoid reporting about unreferenced arg, since its destructor is not trivial.
 		{}
 		struct S{ fn destructor(); }
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def UnusedValueArgument_Test13():
 	c_program_text= """
-		fn Foo([S, 7] s) // Avoid reporting about unreferenced arg, since its destructor is not trivial.
+		fn nomangle Foo([S, 7] s) // Avoid reporting about unreferenced arg, since its destructor is not trivial.
 		{}
 		struct S{ fn destructor(); }
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def UnusedReferenceArgument_Test0():
 	c_program_text= """
-		fn Foo(void& v)
+		fn nomangle Foo(void& v)
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -234,7 +234,7 @@ def UnusedReferenceArgument_Test0():
 
 def UnusedReferenceArgument_Test1():
 	c_program_text= """
-		fn Foo(i32& x)
+		fn nomangle Foo(i32& x)
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -244,7 +244,7 @@ def UnusedReferenceArgument_Test1():
 
 def UnusedReferenceArgument_Test2():
 	c_program_text= """
-		fn Foo(f64 &mut x)
+		fn nomangle Foo(f64 &mut x)
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -254,7 +254,7 @@ def UnusedReferenceArgument_Test2():
 
 def UnusedReferenceArgument_Test3():
 	c_program_text= """
-		fn Foo(E& e)
+		fn nomangle Foo(E& e)
 		{}
 		enum E{ A, B, C }
 	"""
@@ -265,7 +265,7 @@ def UnusedReferenceArgument_Test3():
 
 def UnusedReferenceArgument_Test4():
 	c_program_text= """
-		fn Foo( (fn()) &mut f_ptr )
+		fn nomangle Foo( (fn()) &mut f_ptr )
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -275,7 +275,7 @@ def UnusedReferenceArgument_Test4():
 
 def UnusedReferenceArgument_Test5():
 	c_program_text= """
-		fn Foo($(u64) & ptr)
+		fn nomangle Foo($(u64) & ptr)
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -285,7 +285,7 @@ def UnusedReferenceArgument_Test5():
 
 def UnusedReferenceArgument_Test6():
 	c_program_text= """
-		fn Foo([i16, 8] &mut a)
+		fn nomangle Foo([i16, 8] &mut a)
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -295,7 +295,7 @@ def UnusedReferenceArgument_Test6():
 
 def UnusedReferenceArgument_Test7():
 	c_program_text= """
-		fn Foo( tup[ bool, void, f32, [i32, 7], char16, tup[ u32, i16 ] ] & t )
+		fn nomangle Foo( tup[ bool, void, f32, [i32, 7], char16, tup[ u32, i16 ] ] & t )
 		{}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
@@ -305,7 +305,7 @@ def UnusedReferenceArgument_Test7():
 
 def UnusedReferenceArgument_Test8():
 	c_program_text= """
-		fn Foo(S &mut s)
+		fn nomangle Foo(S &mut s)
 		{}
 		struct S{ i32 x; i32 y; }
 	"""
@@ -316,7 +316,7 @@ def UnusedReferenceArgument_Test8():
 
 def UnusedReferenceArgument_Test9():
 	c_program_text= """
-		fn Foo([S, 16] & s)
+		fn nomangle Foo([S, 16] & s)
 		{}
 		struct S{ i32 x; i32 y; }
 	"""
@@ -327,7 +327,7 @@ def UnusedReferenceArgument_Test9():
 
 def UnusedReferenceArgument_Test10():
 	c_program_text= """
-		fn Foo(C & c) // Even if type is non-trivial, error about unreferenced arg should be produced, since it is a reference arg.
+		fn nomangle Foo(C & c) // Even if type is non-trivial, error about unreferenced arg should be produced, since it is a reference arg.
 		{}
 		class C{ i32 x; i32 y; }
 	"""
@@ -338,7 +338,7 @@ def UnusedReferenceArgument_Test10():
 
 def UnusedReferenceArgument_Test11():
 	c_program_text= """
-		fn Foo(tup[C, bool] &mut c) // Even if type is non-trivial, error about unreferenced arg should be produced, since it is a reference arg.
+		fn nomangle Foo(tup[C, bool] &mut c) // Even if type is non-trivial, error about unreferenced arg should be produced, since it is a reference arg.
 		{}
 		class C{ i32 x; i32 y; }
 	"""
@@ -349,7 +349,7 @@ def UnusedReferenceArgument_Test11():
 
 def UnusedReferenceArgument_Test12():
 	c_program_text= """
-		fn Foo(S &imut s)  // Even if type is non-trivial, error about unreferenced arg should be produced, since it is a reference arg.
+		fn nomangle Foo(S &imut s)  // Even if type is non-trivial, error about unreferenced arg should be produced, since it is a reference arg.
 		{}
 		struct S{ fn destructor(); }
 	"""
@@ -360,7 +360,7 @@ def UnusedReferenceArgument_Test12():
 
 def UnusedReferenceArgument_Test13():
 	c_program_text= """
-		fn Foo([S, 7] &mut s) // Even if type is non-trivial, error about unreferenced arg should be produced, since it is a reference arg.
+		fn nomangle Foo([S, 7] &mut s) // Even if type is non-trivial, error about unreferenced arg should be produced, since it is a reference arg.
 		{}
 		struct S{ fn destructor(); }
 	"""
@@ -371,7 +371,7 @@ def UnusedReferenceArgument_Test13():
 
 def UnusedLocalVariable_Test0():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var i32 constexpr x= 0; // Trivial constexpr local variable.
 		}
@@ -383,7 +383,7 @@ def UnusedLocalVariable_Test0():
 
 def UnusedLocalVariable_Test1():
 	c_program_text= """
-		fn Foo(f32 in_x)
+		fn nomangle Foo(f32 in_x)
 		{
 			var f32 x= in_x; // Trivial immutable local variable.
 		}
@@ -395,7 +395,7 @@ def UnusedLocalVariable_Test1():
 
 def UnusedLocalVariable_Test2():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			auto mut ok= false; // Trivial mutable local auto-variable.
 		}
@@ -407,7 +407,7 @@ def UnusedLocalVariable_Test2():
 
 def UnusedLocalVariable_Test3():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var [ f64, 16 ] arr= zero_init; // Trivial constexpr array.
 		}
@@ -419,7 +419,7 @@ def UnusedLocalVariable_Test3():
 
 def UnusedLocalVariable_Test4():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var tup[ bool, char8, f32 ] mut t[ false, "&"c8, 0.25f ]; // Trivial mutable tuple.
 		}
@@ -431,7 +431,7 @@ def UnusedLocalVariable_Test4():
 
 def UnusedLocalVariable_Test5():
 	c_program_text= """
-		fn Foo(S s)
+		fn nomangle Foo(S s)
 		{
 			auto s_copy= s; // Trivial immutable struct.
 		}
@@ -444,7 +444,7 @@ def UnusedLocalVariable_Test5():
 
 def UnusedLocalVariable_Test6():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var S mut s{ .x= 6, .y= 675.8f }; // Trivial mutable struct.
 		}
@@ -457,29 +457,29 @@ def UnusedLocalVariable_Test6():
 
 def UnusedLocalVariable_Test7():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var S s{}; // Non-trivial immutable struct.
 		}
 		struct S{ fn destructor(); }
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def UnusedLocalVariable_Test8():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var C mut c; // Non-trivial class.
 		}
 		class C{}
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def UnusedLocalVariable_Test9():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			{
 				auto x= 675; // Trivial constexpr auto-variable inside block.
@@ -493,7 +493,7 @@ def UnusedLocalVariable_Test9():
 
 def UnusedLocalVariable_Test10():
 	c_program_text= """
-		fn Foo(bool cond)
+		fn nomangle Foo(bool cond)
 		{
 			if(cond)
 			{
@@ -509,7 +509,7 @@ def UnusedLocalVariable_Test10():
 
 def UnusedLocalVariable_Test11():
 	c_program_text= """
-		fn Foo(bool cond)
+		fn nomangle Foo(bool cond)
 		{
 			if(cond) {}
 			else
@@ -525,7 +525,7 @@ def UnusedLocalVariable_Test11():
 
 def UnusedLocalVariable_Test12():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var tup[ i32, f32 ] t[ 0, 0.0f ];
 			for( v : t ) // Unused tuple iteration variable.
@@ -539,7 +539,7 @@ def UnusedLocalVariable_Test12():
 
 def UnusedLocalVariable_Test13():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			with( x : 42 ) // Unused "with" operator variable.
 			{}
@@ -552,7 +552,7 @@ def UnusedLocalVariable_Test13():
 
 def UnusedLocalVariable_Test14():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			auto mut gen= SomeGen();
 			if_coro_advance( mut x : gen ) // Unused "if_coro_advance" operator variable.
@@ -567,7 +567,7 @@ def UnusedLocalVariable_Test14():
 
 def UnusedLocalVariable_Test15():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			unsafe
 			{
@@ -583,7 +583,7 @@ def UnusedLocalVariable_Test15():
 
 def UnusedLocalReference_Test0():
 	c_program_text= """
-		fn Foo(i32 x)
+		fn nomangle Foo(i32 x)
 		{
 			auto& x_ref= x; // Unused auto-reference to arg.
 		}
@@ -595,7 +595,7 @@ def UnusedLocalReference_Test0():
 
 def UnusedLocalReference_Test1():
 	c_program_text= """
-		fn Foo([f64, 4] vec)
+		fn nomangle Foo([f64, 4] vec)
 		{
 			var [f64, 4] & vec_ref= vec; // Unused reference to arg.
 		}
@@ -607,7 +607,7 @@ def UnusedLocalReference_Test1():
 
 def UnusedLocalReference_Test2():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var $(i32) ptr= zero_init;
 			auto& ptr_ref= ptr; // Auto-reference for local variable.
@@ -620,7 +620,7 @@ def UnusedLocalReference_Test2():
 
 def UnusedLocalReference_Test3():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var S mut s= zero_init;
 			var S &mut s_ref= s; // Unused mutable reference to local variable.
@@ -634,7 +634,7 @@ def UnusedLocalReference_Test3():
 
 def UnusedLocalReference_Test4():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var S s= zero_init;
 			var S & s_ref= s; // Unused reference to local variable of non-trivial type.
@@ -648,7 +648,7 @@ def UnusedLocalReference_Test4():
 
 def UnusedLocalReference_Test5():
 	c_program_text= """
-		fn Foo( (fn() : i32) mut fn_ptr )
+		fn nomangle Foo( (fn() : i32) mut fn_ptr )
 		{
 			while(true)
 			{
@@ -663,7 +663,7 @@ def UnusedLocalReference_Test5():
 
 def UnusedLocalReference_Test6():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var tup[ f32, bool ] t= zero_init;
 			for( &el : t ) // Unreferenced reference in tuple iteration.
@@ -677,7 +677,7 @@ def UnusedLocalReference_Test6():
 
 def UnusedLocalReference_Test7():
 	c_program_text= """
-		fn Foo(C& c)
+		fn nomangle Foo(C& c)
 		{
 			with( &c_ref : c ) // Unused reference to a non-trivial type reference argument inside "with".
 			{}
@@ -691,7 +691,7 @@ def UnusedLocalReference_Test7():
 
 def UnusedLocalReference_Test8():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			auto mut gen= Gen();
 			if_coro_advance( &x : gen ) // Unused reference inside "if_coro_advance".
@@ -706,40 +706,40 @@ def UnusedLocalReference_Test8():
 
 def VariableUsage_Test0():
 	c_program_text= """
-		fn Foo(i32 x)
+		fn nomangle Foo(i32 x)
 		{
 			Bar(x); // Use variable - pass it as argument to another function.
 		}
 		fn Bar(i32 x);
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def VariableUsage_Test1():
 	c_program_text= """
-		fn Foo(f32 &mut x)
+		fn nomangle Foo(f32 &mut x)
 		{
 			x += 0.25f; // Use variable - change it.
 		}
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def VariableUsage_Test2():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			auto size= 4s;
 			var [ C, size ] arr; // Use local constexpr variable inside type name.
 		}
 		class C{}
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def VariableUsage_Test3():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			auto size= 4s;
 			auto& size_ref= size;
@@ -747,12 +747,12 @@ def VariableUsage_Test3():
 		}
 		template</size_type s/> class C{}
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def VariableUsage_Test4():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var i32 mut x= 0;
 			var typeof(x) x_copy= zero_init; // Use local variable inside "typeof".
@@ -760,30 +760,30 @@ def VariableUsage_Test4():
 		}
 		fn Bar(i32 x);
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def VariableUsage_Test5():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var S mut s= zero_init;
 			move(s); // Use local variable inside "move".
 		}
 		struct S{ i32 x; }
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def VariableUsage_Test6():
 	c_program_text= """
-		fn Foo()
+		fn nomangle Foo()
 		{
 			var i32 mut x= 1;
 			x+= x; // Use variable to modify itself.
 		}
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def VariableUsage_Test7():
@@ -791,7 +791,7 @@ def VariableUsage_Test7():
 		auto x= 0;
 		fn nomangle Foo() : i32 { return x; } // Ok - use global variable.
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def VariableUsage_Test8():
@@ -800,7 +800,7 @@ def VariableUsage_Test8():
 		type I= typeof(x); // Ok - use global variable for "typeof".
 		fn nomangle Foo() : I { return 0; }
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def UnusedGlobalVariable_Test0():
@@ -1185,7 +1185,7 @@ def UnusedFunction_Test8():
 	c_program_text= """
 		fn nomangle Foo() {} // Do not generate error - this function is available externally.
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def UnusedFunction_Test9():
@@ -1203,7 +1203,7 @@ def UnusedFunction_Test10():
 		fn Bar(){} // Ok - reference it in "Foo".
 		fn nomangle Foo(){ Bar(); }
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def UnusedFunction_Test11():
@@ -1211,7 +1211,7 @@ def UnusedFunction_Test11():
 		fn Bar(); // Ok - reference it in "Foo".
 		fn nomangle Foo(){ Bar(); }
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
 def UnusedFunction_Test12():
@@ -1224,4 +1224,4 @@ def UnusedFunction_Test12():
 			Bar(0.0f);
 		}
 	"""
-	tests_lib.build_program( c_program_text )
+	tests_lib.build_program_unused_errors_enabled( c_program_text )

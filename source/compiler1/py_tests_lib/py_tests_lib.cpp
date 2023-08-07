@@ -418,6 +418,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 PyMethodDef g_methods[]=
 {
 	{ "build_program"             , BuildProgram          , METH_VARARGS, "Build program."             },
+	{ "build_program_unused_errors_enabled", BuildProgram, METH_VARARGS, "Build program with enabled unused names errors." },
 	{ "free_program"              , FreeProgram           , METH_VARARGS, "Free program."              },
 	{ "run_function"              , RunFunction           , METH_VARARGS, "Run function."              },
 	{ "build_program_with_errors" , BuildProgramWithErrors, METH_VARARGS, "Build program with errors." },
