@@ -1225,3 +1225,100 @@ def UnusedFunction_Test12():
 		}
 	"""
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassVariable_Test0():
+	c_program_text= """
+		struct S
+		{
+			var i32 c_zero= 0;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassVariable_Test1():
+	c_program_text= """
+		class C
+		{
+			auto c_zero= 0;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassVariable_Test2():
+	c_program_text= """
+		struct S
+		{
+			auto& c_x= g_x;
+		}
+		var i32 g_x= 0;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassTypeAlias_Test0():
+	c_program_text= """
+		struct S
+		{
+			type I= i32;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassTypeAlias_Test1():
+	c_program_text= """
+		class C
+		{
+			type this_type= C;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassTypeAlias_Test2():
+	c_program_text= """
+		class C interface
+		{
+			type SomeUnused= f32;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassInternalClass_Test0():
+	c_program_text= """
+		struct S
+		{
+			struct Inner{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassInternalClass_Test1():
+	c_program_text= """
+		class C
+		{
+			class InnerC{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )

@@ -948,6 +948,16 @@ U_TEST( UnusedNameErrorIsNotGeneratedForImportedFiles_Test0 )
 		fn UnusedFunctionPrototype();
 
 		fn ExternalPrototypeForFunctionDefinedLater();
+
+		struct StructWithUnusedContents
+		{
+			var i32 x = 0;
+			auto y= 0.0f;
+			fn UnusedStaticMethod() {}
+			fn UnusedThisCallMethod(this) {}
+
+			f64 unused_field;
+		}
 	)";
 
 	static const char c_program_text_root[]=

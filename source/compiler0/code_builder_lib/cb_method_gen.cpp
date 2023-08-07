@@ -94,6 +94,7 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 		{
 			OverloadedFunctionsSetPtr constructors= std::make_shared<OverloadedFunctionsSet>();
 			constructors->functions.push_back( std::move( new_constructor_variable ) );
+			constructors->base_class= class_type;
 			NamesScopeValue* const inserted_value= the_class.members->AddName( Keyword( Keywords::constructor_ ), NamesScopeValue( std::move( constructors ), SrcLoc() ) );
 			constructor_variable= &inserted_value->value.GetFunctionsSet()->functions.back();
 		}
@@ -276,6 +277,7 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 		{
 			OverloadedFunctionsSetPtr constructors= std::make_shared<OverloadedFunctionsSet>();
 			constructors->functions.push_back( std::move( new_constructor_variable ) );
+			constructors->base_class= class_type;
 			NamesScopeValue* const inserted_value= the_class.members->AddName( Keyword( Keywords::constructor_ ), NamesScopeValue( std::move( constructors ), SrcLoc() ) );
 			constructor_variable= &inserted_value->value.GetFunctionsSet()->functions.back();
 		}
@@ -424,6 +426,7 @@ void CodeBuilder::TryGenerateDestructor( const ClassPtr class_type )
 	// TODO - destructor have no overloads. Maybe store it as FunctionVariable, not as FunctionsSet?
 	OverloadedFunctionsSetPtr destructors= std::make_shared<OverloadedFunctionsSet>();
 	destructors->functions.push_back( std::move( destructor_variable ) );
+	destructors->base_class= class_type;
 
 	the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move( destructors ), SrcLoc() ) );
 
@@ -524,6 +527,7 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 		{
 			OverloadedFunctionsSetPtr operators= std::make_shared<OverloadedFunctionsSet>();
 			operators->functions.push_back( std::move( new_op_variable ) );
+			operators->base_class= class_type;
 			NamesScopeValue* const inserted_value= the_class.members->AddName( op_name, NamesScopeValue( std::move( operators ), SrcLoc() ) );
 			operator_variable= &inserted_value->value.GetFunctionsSet()->functions.back();
 		}
@@ -672,6 +676,7 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 		{
 			OverloadedFunctionsSetPtr operators= std::make_shared<OverloadedFunctionsSet>();
 			operators->functions.push_back( std::move( new_op_variable ) );
+			operators->base_class= class_type;
 			NamesScopeValue* const inserted_value= the_class.members->AddName( op_name, NamesScopeValue( std::move( operators ), SrcLoc() ) );
 			operator_variable= &inserted_value->value.GetFunctionsSet()->functions.back();
 		}

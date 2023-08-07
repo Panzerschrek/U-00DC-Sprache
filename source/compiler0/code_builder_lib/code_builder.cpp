@@ -767,13 +767,35 @@ void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
 						function.body_src_loc.GetFileIndex() == 0 &&
 						function.prototype_src_loc.GetFileIndex() == 0 )
 					{
+						bool is_special_method= false;
+						if( functions_set->base_class != nullptr )
+						{
+							if( name == Keyword( Keywords::destructor_ ) ||
+								( name == Keyword( Keywords::constructor_ ) &&
+									( IsCopyConstructor( function.type, functions_set->base_class ) || IsDefaultConstructor( function.type, functions_set->base_class ) ) ) ||
+								( name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function.type, functions_set->base_class ) ) ||
+								( name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function.type, functions_set->base_class ) ) )
+								is_special_method= true;
+						}
+
 						// Report about unused function, only if it is defined in main file, have no prototype in one of imported files, is not "nomangle" and (obviously) not referenced.
 						// Ignore special methods.
-						REPORT_ERROR( UnusedName, names_scope.GetErrors(), function.body_src_loc, name );
+						if( !is_special_method )
+							REPORT_ERROR( UnusedName, names_scope.GetErrors(), function.body_src_loc, name );
 					}
 				}
 
 				return;
+			}
+
+			// Check namespace of classes, but only for place where this class was defined.
+			if( const auto type= value.GetTypeName() )
+			{
+				if( const auto class_type= type->GetClassType() )
+				{
+					if( class_type->members->GetParent() == &names_scope )
+						CheckForUnusedGlobalNames( *class_type->members );
+				}
 			}
 
 			if( names_scope_value.referenced )
@@ -791,7 +813,6 @@ void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
 				value.GetTypeName() != nullptr ||
 				value.GetTypedef() != nullptr )
 			{
-				// TODO - check internals of classes.
 				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
 			}
 			else if( const auto class_field= value.GetClassField() )
