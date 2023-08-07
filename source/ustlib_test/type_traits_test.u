@@ -26,9 +26,9 @@ class L abstract {}
 
 class LargeClassWithMethods
 {
-	fn Bar( mut this );
-	fn EmptyStatic();
-	fn SomeUnsafe( this ) unsafe;
+	fn Bar( mut this ){}
+	fn EmptyStatic(){}
+	fn SomeUnsafe( this ) unsafe{}
 }
 
 //
@@ -172,5 +172,10 @@ static_assert(  ust::class_have_method</ LargeClassWithMethods, fn( LargeClassWi
 
 fn nomangle main() : i32
 {
+	var LargeClassWithMethods mut c;
+	c.Bar();
+	c.EmptyStatic();
+	unsafe( c.SomeUnsafe() );
+
 	return 0;
 }
