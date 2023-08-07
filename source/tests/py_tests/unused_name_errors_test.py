@@ -961,3 +961,44 @@ def UnusedGlobalReference_Test5():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnusedName", 5 ) )
+
+
+def UnusedGlobaTypeAlias_Test0():
+	c_program_text= """
+		type I= i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobaTypeAlias_Test1():
+	c_program_text= """
+		type I= J;
+		type J= u32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobaTypeAlias_Test2():
+	c_program_text= """
+		namespace SomeNamespace
+		{
+			type Vec= [ f32, 3 ];
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedGlobaTypeAlias_Test3():
+	c_program_text= """
+		type IBox= Box</i32/>;
+		template</type T/> struct Box{ T t; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
