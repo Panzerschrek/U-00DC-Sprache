@@ -1322,3 +1322,157 @@ def UnusedClassInternalClass_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassFunction_Test0():
+	c_program_text= """
+		struct S{} // Some generated methods are unreferences, but is it ok.
+		fn nomangle Foo() : size_type { return typeinfo</S/>.size_of; }
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassFunction_Test1():
+	c_program_text= """
+		struct S
+		{
+			// It is still ok to declare special methods manually with "default".
+			fn constructor(mut this)= default;
+			fn constructor(mut this, S &imut other)= default;
+			op=(mut this, S &imut other)= default;
+			op==(S &imut l, S &imut r) : bool = default;
+
+		}
+		fn nomangle Foo() : size_type { return typeinfo</S/>.size_of; }
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassFunction_Test2():
+	c_program_text= """
+		struct S
+		{
+			// It is still ok to define special methods manually.
+			fn constructor(mut this) (x= 0) {}
+			fn constructor(mut this, S &imut other) (x= other.x) {}
+			fn destructor() {}
+			op=(mut this, S &imut other) { x= other.x; }
+			op==(S &imut l, S &imut r) : bool { return l.x == r.x; }
+
+			i32 x;
+		}
+		fn nomangle Foo() : size_type { return typeinfo</S/>.size_of; }
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassFunction_Test3():
+	c_program_text= """
+		struct S
+		{
+			fn Bar() {} // Unused static method.
+		}
+		fn nomangle Foo() : size_type { return typeinfo</S/>.size_of; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassFunction_Test4():
+	c_program_text= """
+		struct S
+		{
+			fn Bar(imut this) {} // Unused imut-this method.
+		}
+		fn nomangle Foo() : size_type { return typeinfo</S/>.size_of; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassFunction_Test5():
+	c_program_text= """
+		struct S
+		{
+			fn Bar(mut this) {} // Unused mut-this method.
+		}
+		fn nomangle Foo() : size_type { return typeinfo</S/>.size_of; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassFunction_Test6():
+	c_program_text= """
+		struct S
+		{
+			fn Bar( mut this) : i32 { return 2; } // Unused overloading.
+			fn Bar(imut this) : i32 { return 3; }
+		}
+		fn nomangle Foo() : i32
+		{
+			var S s;
+			return s.Bar(); // use "imut" overloading.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassFunction_Test7():
+	c_program_text= """
+		struct S
+		{
+			fn Bar( mut this) : i32 { return 2; }
+			fn Bar(imut this) : i32 { return 3; } // Unused overloading.
+		}
+		fn nomangle Foo() : i32
+		{
+			var S mut s;
+			return s.Bar(); // use "mut" overloading.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 5 ) )
+
+
+def UnusedClassFunction_Test8():
+	c_program_text= """
+		class S polymorph
+		{
+			fn virtual Foo(this) : i32 { return 0; } // Unused virtual mehod. For now ignore virtual methods.
+		}
+		fn nomangle Foo() : size_type { return typeinfo</S/>.size_of; }
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassFunction_Test9():
+	c_program_text= """
+		class S interface
+		{
+			fn virtual pure Foo(this) : i32; // Unused virtual pure. For now ignore virtual methods.
+		}
+		fn nomangle Foo() : size_type { return typeinfo</S/>.size_of; }
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassFunction_Test10():
+	c_program_text= """
+		class A interface
+		{
+			fn virtual pure Foo(this) : i32; // Ok - use it by overloading.
+		}
+		class B : A
+		{
+			fn virtual override Foo(this) : i32;
+		}
+		fn nomangle GetB() : B { return B(); }
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )

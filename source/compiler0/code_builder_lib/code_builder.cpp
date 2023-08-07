@@ -764,6 +764,7 @@ void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
 				{
 					if( !function.referenced &&
 						!function.no_mangle &&
+						function.virtual_table_index == ~0u &&
 						function.body_src_loc.GetFileIndex() == 0 &&
 						function.prototype_src_loc.GetFileIndex() == 0 )
 					{
