@@ -1002,3 +1002,81 @@ def UnusedGlobaTypeAlias_Test3():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedClass_Test0():
+	c_program_text= """
+		struct S{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedClass_Test1():
+	c_program_text= """
+		struct S{ i32 x; i32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedClass_Test2():
+	c_program_text= """
+		struct S{ fn destructor(); }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedClass_Test3():
+	c_program_text= """
+		class C{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedClass_Test4():
+	c_program_text= """
+		namespace SomeNamespace
+		{
+			class C polymorph {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClass_Test5():
+	c_program_text= """
+		class C interface {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedEnum_Test0():
+	c_program_text= """
+		enum E{ A, B, C }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedEnum_Test1():
+	c_program_text= """
+		namespace SomeNamespace
+		{
+			enum E{ A, B, C }
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
