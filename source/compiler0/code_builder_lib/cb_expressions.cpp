@@ -2065,6 +2065,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	if( overloaded_operator == nullptr )
 		return std::nullopt;
 
+	overloaded_operator->referenced= true;
+
 	if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
@@ -2115,6 +2117,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 
 	if( !( function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
+	function->referenced= true;
 
 	ArgsVector<const Synt::Expression*> synt_args_ptrs;
 	synt_args_ptrs.reserve( synt_args.size() );
