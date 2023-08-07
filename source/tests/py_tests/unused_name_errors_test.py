@@ -784,3 +784,180 @@ def VariableUsage_Test6():
 		}
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def VariableUsage_Test7():
+	c_program_text= """
+		auto x= 0;
+		fn nomangle Foo() : i32 { return x; } // Ok - use global variable.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariableUsage_Test8():
+	c_program_text= """
+		var i32 x= 0;
+		type I= typeof(x); // Ok - use global variable for "typeof".
+		fn nomangle Foo() : I { return 0; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UnusedGlobalVariable_Test0():
+	c_program_text= """
+		var i32 x= 0;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobalVariable_Test1():
+	c_program_text= """
+		var i32 x= 0, y= 0; // Only "y" is unused here
+		var f32 z(x);
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobalVariable_Test2():
+	c_program_text= """
+		auto must_be_true= true;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobalVariable_Test3():
+	c_program_text= """
+		var (fn()) f_ptr(Foo);
+		fn Foo();
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobalVariable_Test4():
+	c_program_text= """
+		var [ i8, 64 ] arr= zero_init;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobalVariable_Test5():
+	c_program_text= """
+		var tup[ char8, bool ] t[ "a"c8, false ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobalVariable_Test6():
+	c_program_text= """
+		auto qwerty = "qwerty";
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobalVariable_Test7():
+	c_program_text= """
+		var S s{ .x= 1, .y= 2 };
+		struct S{ i32 x; i32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobalVariable_Test8():
+	c_program_text= """
+		var i32 mut x= 0; // Even for mutable global variable unused name error still must be generated.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedGlobalVariable_Test9():
+	c_program_text= """
+		namespace SomeNamespace
+		{
+			var u8 x= zero_init;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedGlobalReference_Test0():
+	c_program_text= """
+		var i32 x= 0;
+		var i32& x_ref= x;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 3 ) )
+
+
+def UnusedGlobalReference_Test1():
+	c_program_text= """
+		var i32 x= 0;
+		auto& x_ref= x;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 3 ) )
+
+
+def UnusedGlobalReference_Test2():
+	c_program_text= """
+		var S s{};
+		auto& s_ref= s;
+		struct S{}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 3 ) )
+
+
+def UnusedGlobalReference_Test3():
+	c_program_text= """
+		var [ i32, 3 ] x[ 5, 6, 7 ];
+		var [ i32, 3 ] & x_ref= x;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 3 ) )
+
+
+def UnusedGlobalReference_Test4():
+	c_program_text= """
+		var tup[] t[];
+		auto& t_ref= t;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 3 ) )
+
+
+def UnusedGlobalReference_Test5():
+	c_program_text= """
+		namespace SomeNamespace
+		{
+			var f32 x(7.5f);
+			auto& x_ref= x;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 5 ) )
