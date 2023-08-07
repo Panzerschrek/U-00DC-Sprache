@@ -35,7 +35,7 @@ struct SourceEntry
 	const char* text;
 };
 
-std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path );
+std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path, bool report_about_unused_names= false );
 ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry> sources, const std::string& root_file_path );
 
 std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text );

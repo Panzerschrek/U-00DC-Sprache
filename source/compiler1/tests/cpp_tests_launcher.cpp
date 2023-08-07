@@ -113,8 +113,10 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 	return build_result;
 }
 
-std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path )
+std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path, const bool report_about_unused_names )
 {
+	(void)report_about_unused_names; // TODO - use it.
+
 	std::vector<U1_SourceFile> source_files;
 	source_files.reserve(sources.size());
 	for (const SourceEntry& entry : sources)
