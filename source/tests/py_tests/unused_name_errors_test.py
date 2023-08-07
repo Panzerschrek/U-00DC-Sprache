@@ -702,3 +702,85 @@ def UnusedLocalReference_Test8():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnusedName", 5 ) )
+
+
+def VariableUsage_Test0():
+	c_program_text= """
+		fn Foo(i32 x)
+		{
+			Bar(x); // Use variable - pass it as argument to another function.
+		}
+		fn Bar(i32 x);
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariableUsage_Test1():
+	c_program_text= """
+		fn Foo(f32 &mut x)
+		{
+			x += 0.25f; // Use variable - change it.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariableUsage_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto size= 4s;
+			var [ C, size ] arr; // Use local constexpr variable inside type name.
+		}
+		class C{}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariableUsage_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			auto size= 4s;
+			auto& size_ref= size;
+			var C</size_ref/> c; // Use local constexpr reference as template argument.
+		}
+		template</size_type s/> class C{}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariableUsage_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 0;
+			var typeof(x) x_copy= zero_init; // Use local variable inside "typeof".
+			Bar(x_copy);
+		}
+		fn Bar(i32 x);
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariableUsage_Test5():
+	c_program_text= """
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			move(s); // Use local variable inside "move".
+		}
+		struct S{ i32 x; }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def VariableUsage_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 mut x= 1;
+			x+= x; // Use variable to modify itself.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
