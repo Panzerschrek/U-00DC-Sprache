@@ -942,11 +942,20 @@ U_TEST( UnusedNameErrorIsNotGeneratedForImportedFiles_Test0 )
 		class UnusedClass{}
 
 		enum UnusedEnum{ A, B, C }
+
+		fn UnusedFunction() {}
+
+		fn UnusedFunctionPrototype();
+
+		fn ExternalPrototypeForFunctionDefinedLater();
 	)";
 
 	static const char c_program_text_root[]=
 	R"(
 		import "a"
+
+		fn ExternalPrototypeForFunctionDefinedLater()
+		{}
 	)";
 
 	BuildMultisourceProgram(

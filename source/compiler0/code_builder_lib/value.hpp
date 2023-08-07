@@ -62,6 +62,7 @@ struct FunctionVariable final
 	bool return_type_is_auto= false; // true, if return type must be deduced and not deduced yet.
 	bool is_inherited= false;
 	bool is_generator= false;
+	mutable bool referenced= false;
 
 	ConstexprKind constexpr_kind= ConstexprKind::NonConstexpr;
 

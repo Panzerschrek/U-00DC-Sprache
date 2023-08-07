@@ -1080,3 +1080,148 @@ def UnusedEnum_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedFunction_Test0():
+	c_program_text= """
+		fn Foo() {}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedFunction_Test1():
+	c_program_text= """
+		fn Foo(); // Unused local prototype.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedFunction_Test2():
+	c_program_text= """
+		fn Foo( i32 &mut x ) { x= 0; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedFunction_Test3():
+	c_program_text= """
+		fn Bar( i32 x ){}
+		fn Bar( f32 x ){}
+		fn Foo()
+		{
+			var i32 x= 0;
+			Bar(x); // Call only "i32" overloading. "f32" variant is unused.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 3 ) )
+
+
+def UnusedFunction_Test4():
+	c_program_text= """
+		fn Bar( i32 x ){}
+		fn Bar( f32 x ){}
+		fn Foo()
+		{
+			var f32 x= 0.0;
+			Bar(x); // Call only "f32" overloading. "i32" variant is unused.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedFunction_Test5():
+	c_program_text= """
+		fn Bar( i32 x );
+		fn Bar( f32 x ); // Unused local prototype.
+		fn Foo()
+		{
+			var i32 x= 0;
+			Bar(x); // Call only "i32" overloading. "f32" variant is unused.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 3 ) )
+
+
+def UnusedFunction_Test6():
+	c_program_text= """
+		fn Bar( i32 x ); // Unused local prototype.
+		fn Bar( f32 x );
+		fn Foo()
+		{
+			var f32 x= 0.0;
+			Bar(x); // Call only "f32" overloading. "i32" variant is unused.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedFunction_Test7():
+	c_program_text= """
+		namespace SomeNamespace
+		{
+			fn Foo() {}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedFunction_Test8():
+	c_program_text= """
+		fn nomangle Foo() {} // Do not generate error - this function is available externally.
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UnusedFunction_Test9():
+	c_program_text= """
+		fn Foo();
+		fn Foo() {} // Generate error - only local prototype exists - thus the function is not externally-available.
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 3 ) )
+
+
+def UnusedFunction_Test10():
+	c_program_text= """
+		fn Bar(){} // Ok - reference it in "Foo".
+		fn nomangle Foo(){ Bar(); }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UnusedFunction_Test11():
+	c_program_text= """
+		fn Bar(); // Ok - reference it in "Foo".
+		fn nomangle Foo(){ Bar(); }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UnusedFunction_Test12():
+	c_program_text= """
+		fn Bar(i32 x); // Ok - reference it in "Foo".
+		fn Bar(f32 x); // Ok - reference it in "Foo".
+		fn nomangle Foo()
+		{
+			Bar(0);
+			Bar(0.0f);
+		}
+	"""
+	tests_lib.build_program( c_program_text )

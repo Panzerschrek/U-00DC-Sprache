@@ -1880,6 +1880,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "calling virtual binary operators" );
 		}
 
+		overloaded_operator->referenced= true;
+
 		return
 			DoCallFunction(
 				EnsureLLVMFunctionCreated( *overloaded_operator ),
@@ -3008,6 +3010,8 @@ Value CodeBuilder::CallFunction(
 	const FunctionVariable& function= *function_ptr;
 	const FunctionType& function_type= function.type;
 
+	function.referenced= true;
+
 	if( this_ != nullptr && !function.is_this_call )
 	{
 		// Static function call via "this".
@@ -3661,6 +3665,8 @@ VariablePtr CodeBuilder::ConvertVariable(
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, dst_type );
 		return nullptr;
 	}
+
+	conversion_constructor.referenced= true;
 
 	const VariableMutPtr result=
 		std::make_shared<Variable>(

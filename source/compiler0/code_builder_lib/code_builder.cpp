@@ -756,22 +756,36 @@ void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
 	names_scope.ForEachInThisScope(
 		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
 		{
+			const Value& value= names_scope_value.value;
+			if( const auto functions_set= value.GetFunctionsSet() )
+			{
+				// Process each function individually.
+				for( const FunctionVariable& function : functions_set->functions )
+				{
+					if( !function.referenced &&
+						!function.no_mangle &&
+						function.body_src_loc.GetFileIndex() == 0 &&
+						function.prototype_src_loc.GetFileIndex() == 0 )
+					{
+						// Report about unused function, only if it is defined in main file, have no prototype in one of imported files, is not "nomangle" and (obviously) not referenced.
+						// Ignore special methods.
+						REPORT_ERROR( UnusedName, names_scope.GetErrors(), function.body_src_loc, name );
+					}
+				}
+
+				return;
+			}
+
 			if( names_scope_value.referenced )
 				return; // Value is referenced.
 			if( names_scope_value.src_loc.GetFileIndex() != 0 )
 				return; // Ignore imported names.
 
-			const Value& value= names_scope_value.value;
 			if( value.GetVariable() != nullptr )
 			{
 				// All global variables/references have trivial destructor.
 				// So, there is a reason to report error about all unreferenced global variables/references.
 				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
-			}
-			else if( const auto functions_set= value.GetFunctionsSet() )
-			{
-				// TODO - check each function individually.
-				(void) functions_set;
 			}
 			else if(
 				value.GetTypeName() != nullptr ||
