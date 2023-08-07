@@ -312,10 +312,19 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
 	U_UNUSED(self);
 
-	const char* program_text= nullptr;
+	PyObject* prorgam_text_arg= nullptr;
+	PyObject* enable_unused_variable_errors_arg= nullptr;
 
-	if( !PyArg_ParseTuple( args, "s", &program_text ) )
-		return nullptr;
+	if( !PyArg_UnpackTuple( args, "", 1, 2, &prorgam_text_arg, &enable_unused_variable_errors_arg ) )
+		return nullptr; // Parse will raise
+
+	const char* program_text= nullptr;
+	if( !PyArg_Parse( prorgam_text_arg, "s", &program_text ) )
+		return nullptr; // Parse will raise
+
+	int enable_unused_variable_errors= 0;
+	if( enable_unused_variable_errors_arg != nullptr && !PyArg_Parse( enable_unused_variable_errors_arg, "p", &enable_unused_variable_errors ) )
+		return nullptr; // Parse will raise
 
 	const U1_StringView text_view{ program_text, std::strlen(program_text) };
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
