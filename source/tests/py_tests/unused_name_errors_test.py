@@ -367,3 +367,338 @@ def UnusedReferenceArgument_Test13():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedLocalVariable_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			var i32 constexpr x= 0; // Trivial constexpr local variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalVariable_Test1():
+	c_program_text= """
+		fn Foo(f32 in_x)
+		{
+			var f32 x= in_x; // Trivial immutable local variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalVariable_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut ok= false; // Trivial mutable local auto-variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalVariable_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var [ f64, 16 ] arr= zero_init; // Trivial constexpr array.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalVariable_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ bool, char8, f32 ] mut t[ false, "&"c8, 0.25f ]; // Trivial mutable tuple.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalVariable_Test5():
+	c_program_text= """
+		fn Foo(S s)
+		{
+			auto s_copy= s; // Trivial immutable struct.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalVariable_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var S mut s{ .x= 6, .y= 675.8f }; // Trivial mutable struct.
+		}
+		struct S{ i32 x; f32 y; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalVariable_Test7():
+	c_program_text= """
+		fn Foo()
+		{
+			var S s{}; // Non-trivial immutable struct.
+		}
+		struct S{ fn destructor(); }
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UnusedLocalVariable_Test8():
+	c_program_text= """
+		fn Foo()
+		{
+			var C mut c; // Non-trivial class.
+		}
+		class C{}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def UnusedLocalVariable_Test9():
+	c_program_text= """
+		fn Foo()
+		{
+			{
+				auto x= 675; // Trivial constexpr auto-variable inside block.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 5 ) )
+
+
+def UnusedLocalVariable_Test10():
+	c_program_text= """
+		fn Foo(bool cond)
+		{
+			if(cond)
+			{
+				var u64 mut z= Bar(); // Mutable variable inside "if" block.
+			}
+		}
+		fn Bar() : u64;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 6 ) )
+
+
+def UnusedLocalVariable_Test11():
+	c_program_text= """
+		fn Foo(bool cond)
+		{
+			if(cond) {}
+			else
+			{
+				var void mut v= zero_init; // Mutable variable inside "else" block.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 7 ) )
+
+
+def UnusedLocalVariable_Test12():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ i32, f32 ] t[ 0, 0.0f ];
+			for( v : t ) // Unused tuple iteration variable.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 5 ) )
+
+
+def UnusedLocalVariable_Test13():
+	c_program_text= """
+		fn Foo()
+		{
+			with( x : 42 ) // Unused "with" operator variable.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalVariable_Test14():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut gen= SomeGen();
+			if_coro_advance( mut x : gen ) // Unused "if_coro_advance" operator variable.
+			{}
+		}
+		fn generator SomeGen() : i32;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 5 ) )
+
+
+def UnusedLocalVariable_Test15():
+	c_program_text= """
+		fn Foo()
+		{
+			unsafe
+			{
+				var char8 c= Bar(); // Unused unsafe labeled block variable.
+			} label some_label
+		}
+		fn Bar() : char8;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 6 ) )
+
+
+def UnusedLocalReference_Test0():
+	c_program_text= """
+		fn Foo(i32 x)
+		{
+			auto& x_ref= x; // Unused auto-reference to arg.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalReference_Test1():
+	c_program_text= """
+		fn Foo([f64, 4] vec)
+		{
+			var [f64, 4] & vec_ref= vec; // Unused reference to arg.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalReference_Test2():
+	c_program_text= """
+		fn Foo()
+		{
+			var $(i32) ptr= zero_init;
+			auto& ptr_ref= ptr; // Auto-reference for local variable.
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 5 ) )
+
+
+def UnusedLocalReference_Test3():
+	c_program_text= """
+		fn Foo()
+		{
+			var S mut s= zero_init;
+			var S &mut s_ref= s; // Unused mutable reference to local variable.
+		}
+		struct S{ i32 x; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 5 ) )
+
+
+def UnusedLocalReference_Test4():
+	c_program_text= """
+		fn Foo()
+		{
+			var S s= zero_init;
+			var S & s_ref= s; // Unused reference to local variable of non-trivial type.
+		}
+		struct S{ fn destructor(); }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 5 ) )
+
+
+def UnusedLocalReference_Test5():
+	c_program_text= """
+		fn Foo( (fn() : i32) mut fn_ptr )
+		{
+			while(true)
+			{
+				auto &mut ptr= fn_ptr; // Unused mutable reference to arg inside a loop.
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 6 ) )
+
+
+def UnusedLocalReference_Test6():
+	c_program_text= """
+		fn Foo()
+		{
+			var tup[ f32, bool ] t= zero_init;
+			for( &el : t ) // Unreferenced reference in tuple iteration.
+			{}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 5 ) )
+
+
+def UnusedLocalReference_Test7():
+	c_program_text= """
+		fn Foo(C& c)
+		{
+			with( &c_ref : c ) // Unused reference to a non-trivial type reference argument inside "with".
+			{}
+		}
+		class C{ fn destructor(); }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedLocalReference_Test8():
+	c_program_text= """
+		fn Foo()
+		{
+			auto mut gen= Gen();
+			if_coro_advance( &x : gen ) // Unused reference inside "if_coro_advance".
+			{}
+		}
+		fn generator Gen() : i32 &;
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 5 ) )
