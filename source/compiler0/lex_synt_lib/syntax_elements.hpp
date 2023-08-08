@@ -999,6 +999,7 @@ struct TemplateBase : public SyntaxElementBase
 
 	struct Param
 	{
+		SrcLoc src_loc;
 		std::optional<ComplexName> param_type; // For variable params.
 		std::string name;
 	};

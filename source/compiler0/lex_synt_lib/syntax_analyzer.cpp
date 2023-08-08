@@ -3526,6 +3526,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		}
 
 		params.back().name= it_->text;
+		params.back().src_loc= it_->src_loc;
 		NextLexem();
 
 		if( it_->type == Lexem::Type::Comma )

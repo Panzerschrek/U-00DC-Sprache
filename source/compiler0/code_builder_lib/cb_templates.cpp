@@ -226,6 +226,7 @@ void CodeBuilder::ProcessTemplateParams(
 
 		template_parameters.emplace_back();
 		template_parameters.back().name= param.name;
+		template_parameters.back().src_loc= param.src_loc;
 		template_parameters_usage_flags.push_back(false);
 	}
 
@@ -893,7 +894,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 
 	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, type_template.parent_namespace );
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_params )
-		result.template_args_namespace->AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), SrcLoc() ) );
+		result.template_args_namespace->AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), param.src_loc ) );
 
 	result.signature_args.resize( type_template.signature_params.size() );
 
@@ -1018,7 +1019,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 		return result;
 
 	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template.parent_namespace );
-	FillKnownFunctionTemplateArgsIntoNamespace( function_template, *result.template_args_namespace, src_loc );
+	FillKnownFunctionTemplateArgsIntoNamespace( function_template, *result.template_args_namespace );
 
 	for( size_t i= 0u; i < function_declaration.type_.params_.size(); ++i )
 	{
@@ -1080,7 +1081,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionParametrization(
 	TemplateFunctionPreparationResult result;
 	result.function_template= function_template_ptr;
 	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template.parent_namespace );
-	FillKnownFunctionTemplateArgsIntoNamespace( function_template, *result.template_args_namespace, src_loc );
+	FillKnownFunctionTemplateArgsIntoNamespace( function_template, *result.template_args_namespace );
 
 	return FinishTemplateFunctionGeneration( errors_container, src_loc, result );
 }
@@ -1214,7 +1215,7 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 
 		NamesScope args_names_scope("", function_template.parent_namespace );
 		for( const TemplateBase::TemplateParameter& param : function_template.template_params )
-			args_names_scope.AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), SrcLoc() ) );
+			args_names_scope.AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), param.src_loc ) );
 
 		bool ok= true;
 		for( size_t i= 0u; i < arguments_calculated.size(); ++i )
@@ -1316,8 +1317,7 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 
 void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 	const FunctionTemplate& function_template,
-	NamesScope& target_namespace,
-	const SrcLoc& src_loc )
+	NamesScope& target_namespace )
 {
 	for( size_t i= 0u; i < function_template.template_params.size(); ++i )
 	{
@@ -1347,7 +1347,7 @@ void CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 		else
 			v= YetNotDeducedTemplateArg();
 
-		target_namespace.AddName( name, NamesScopeValue( std::move(v), src_loc ) );
+		target_namespace.AddName( name, NamesScopeValue( std::move(v), function_template.template_params[i].src_loc ) );
 	}
 }
 

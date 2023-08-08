@@ -428,8 +428,7 @@ private:
 
 	void FillKnownFunctionTemplateArgsIntoNamespace(
 		const FunctionTemplate& function_template,
-		NamesScope& target_namespace,
-		const SrcLoc& src_loc );
+		NamesScope& target_namespace );
 
 	NamesScopeValue* AddNewTemplateThing( std::string key, NamesScopeValue thing );
 
