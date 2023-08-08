@@ -289,6 +289,7 @@ private:
 	var bool constexpr c_is_equality_comparable= typeinfo</OkT/>.is_equality_comparable && typeinfo</ErrorT/>.is_equality_comparable;
 
 private:
+	ContainerTag</ tup[ OkT, ErrorT ] /> container_tag_;
 	aligned_storage</ c_storage_size, c_storage_align /> storage_;
 	bool is_ok_;
 }

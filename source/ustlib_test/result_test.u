@@ -2,10 +2,17 @@
 import "../ustlib/result.u"
 import "../ustlib/shared_ptr.u"
 
+struct SomeNonSync non_sync{}
+static_assert( non_sync</SomeNonSync/> );
+static_assert( non_sync</ ust::result</ SomeNonSync, i32/> /> );
+static_assert( non_sync</ ust::result</ i32, SomeNonSync /> /> );
+
 enum SomeErrorEnum{ NotOk, CompleteDisaster }
 struct SomeErrorStruct{}
 
 type IntRes= ust::result</ i32, SomeErrorEnum />;
+
+static_assert( !non_sync</IntRes/> );
 
 // Maximum size of result/error + value kind flag + possible padding for alignment.
 static_assert( typeinfo</IntRes/>.size_of == 8s );
