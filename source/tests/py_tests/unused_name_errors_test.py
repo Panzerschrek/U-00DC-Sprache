@@ -1554,3 +1554,18 @@ def UnusedClassFunction_Test10():
 		fn nomangle GetB() : B { return B(); }
 	"""
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassFunction_Test11():
+	c_program_text= """
+		class S
+		{
+			fn Foo(this){}
+		}
+		fn nomangle Bar()
+		{
+			var S s;
+			S::Foo(s); // Ok - use method by accessing it directly.
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
