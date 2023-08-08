@@ -22,7 +22,7 @@ namespace
 
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
-std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
+std::unique_ptr<llvm::Module> BuildProgramImpl( const char* const text, const bool enable_unsed_name_errors )
 {
 	const U1_StringView text_view{ text, std::strlen(text) };
 
@@ -34,7 +34,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		U1_BuildProgram(
 			text_view,
 			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout) );
+			llvm::wrap(&data_layout),
+			enable_unsed_name_errors );
 
 	if( ptr == nullptr )
 		return nullptr;
@@ -68,7 +69,7 @@ PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 		return nullptr;
 	}
 
-	std::unique_ptr<llvm::Module> module= BuildProgram( program_text );
+	std::unique_ptr<llvm::Module> module= BuildProgramImpl( program_text, false );
 
 	if( module == nullptr )
 	{
@@ -78,6 +79,43 @@ PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 	}
 
 	g_current_engine= CreateEngine( std::move(module), print_llvm_asm != 0 );
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+
+PyObject* BuildProgramUnusedErrorsEnabled( PyObject* const self, PyObject* const args )
+{
+	U_UNUSED(self);
+
+	const char* program_text= nullptr;
+
+	if( !PyArg_ParseTuple( args, "s", &program_text ) )
+		return nullptr;
+
+	if( g_current_engine != nullptr )
+	{
+		PyErr_SetString( PyExc_RuntimeError, "can not have more then one program in one time" );
+		return nullptr;
+	}
+
+	if( g_current_engine != nullptr )
+	{
+		PyErr_SetString( PyExc_RuntimeError, "can not have more then one program in one time" );
+		return nullptr;
+	}
+
+	std::unique_ptr<llvm::Module> module= BuildProgramImpl( program_text, true );
+
+	if( module == nullptr )
+	{
+		llvm::llvm_shutdown();
+		PyErr_SetString( PyExc_RuntimeError, "program build failed" );
+		return nullptr;
+	}
+
+	g_current_engine= CreateEngine( std::move(module) );
 
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -418,7 +456,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 PyMethodDef g_methods[]=
 {
 	{ "build_program"             , BuildProgram          , METH_VARARGS, "Build program."             },
-	{ "build_program_unused_errors_enabled", BuildProgram, METH_VARARGS, "Build program with enabled unused names errors." },
+	{ "build_program_unused_errors_enabled", BuildProgramUnusedErrorsEnabled, METH_VARARGS, "Build program with enabled unused names errors." },
 	{ "free_program"              , FreeProgram           , METH_VARARGS, "Free program."              },
 	{ "run_function"              , RunFunction           , METH_VARARGS, "Run function."              },
 	{ "build_program_with_errors" , BuildProgramWithErrors, METH_VARARGS, "Build program with errors." },

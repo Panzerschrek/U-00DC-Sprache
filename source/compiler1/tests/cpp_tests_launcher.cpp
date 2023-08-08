@@ -85,7 +85,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		U1_BuildProgram(
 			text_view,
 			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout) );
+			llvm::wrap(&data_layout),
+			false );
 	U_TEST_ASSERT( ptr != nullptr );
 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );

@@ -74,6 +74,7 @@ struct CodeBuilderOptions
 	bool create_lifetimes= true;
 	bool generate_lifetime_start_end_debug_calls= false;
 	bool generate_tbaa_metadata= false;
+	bool report_about_unused_names= true;
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 }
 
@@ -1022,6 +1023,7 @@ private:
 	ust::string8 imut target_triple_str_; // null-terminated
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	bool imut generate_tbaa_metadata_;
+	bool imut report_about_unused_names_;
 	TBAAMetadataBuilder tbaa_metadata_builder_;
 	ust::box</IMangler/> mangler_;
 

@@ -119,8 +119,6 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const ManglingScheme mangling_scheme,
 	const std::string_view prelude_code )
 {
-	(void)enable_unused_names; // TODO - use it.
-
 	CodeBuilderLaunchResult result;
 
 	const LLVMModuleRef llvm_module=
@@ -132,6 +130,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			StringToStringView(target_triple.normalize()),
 			generate_debug_info,
 			generate_tbaa_metadata,
+			enable_unused_names,
 			mangling_scheme,
 			StringToStringView(prelude_code),
 			SourceFilePathProcessingFunction,

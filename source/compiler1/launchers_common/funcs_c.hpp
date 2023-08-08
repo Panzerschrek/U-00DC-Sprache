@@ -47,7 +47,8 @@ using U1_LexSyntErrorCallback= void(*)( U1_UserHandle data, uint32_t file_index,
 LLVMModuleRef U1_BuildProgram(
 	const U1_StringView& program_text_start,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout );
+	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors );
 
 bool U1_BuildProgramWithErrors(
 	const U1_StringView& program_text_start,
@@ -95,6 +96,7 @@ LLVMModuleRef U1_BuildProgramUsingVFS(
 	const U1_StringView& target_triple_str,
 	bool build_debug_info,
 	bool generate_tbaa_metadata,
+	bool enable_unused_names,
 	U::ManglingScheme mangling_scheme,
 	const U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,

@@ -8,7 +8,8 @@ import "funcs_u.uh"
 fn nomangle U1_BuildProgram(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
+	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
 {
 	unsafe
 	{
@@ -25,7 +26,10 @@ fn nomangle U1_BuildProgram(
 				return LLVMModuleRef::Null;
 			}
 
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
+			auto mut options= U1::GetCodeBuilderOptionsForTests();
+			options.report_about_unused_names= enable_unsed_name_errors;
+
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -108,6 +112,7 @@ fn nomangle U1_BuildProgramUsingVFS(
 	U1_StringView& target_triple_str,
 	bool build_debug_info,
 	bool generate_tbaa_metadata,
+	bool enable_unused_names,
 	U1::ManglingScheme mangling_scheme,
 	U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,
@@ -157,6 +162,7 @@ fn nomangle U1_BuildProgramUsingVFS(
 			.build_debug_info= build_debug_info,
 			.mangling_scheme= mangling_scheme,
 			.generate_tbaa_metadata= generate_tbaa_metadata,
+			.report_about_unused_names= !enable_unused_names,
 		};
 
 		var U1::CodeBuilder mut code_builder( llvm_context, data_layout, target_triple, options );
