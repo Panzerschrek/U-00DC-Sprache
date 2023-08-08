@@ -26,7 +26,7 @@ namespace ust
 
 // Param - nonempty tuple with unique types.
 template</ type Y />
-class variant non_sync( non_sync</Y/> )
+class variant
 {
 public:
 	static_assert( typeinfo</Y/>.is_tuple, "this container accepts types list in form of tuple" );
@@ -255,6 +255,8 @@ public: // Methods for internal usage.
 	}
 
 private:
+	ContainerTag</ Y /> container_tag_;
+
 	aligned_storage</
 		variant_impl::get_max_tuple_element_size</Y/>(),
 		variant_impl::get_max_tuple_element_alignment</Y/>()

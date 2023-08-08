@@ -3,9 +3,13 @@ import "memory.u"
 namespace ust
 {
 
-// Place this struct inside each containter.
+// Place this struct inside containers, that store some type indirectly - vai internal buffer or heap memory.
+// This is needed in order to propagate reference tags and non_sync tags.
+// Avoid using this for containers, that are used for recursive structs (including indirectly-recursive), use manual non_sync tag propagation instead.
 template</ type T /> struct ContainerTag{ [ T, 0 ] dummy; }
 
+// Use reference tag for types, that are logically store reference to some type.
+// This is needed to ensure reference tags and non_sync tags propagation.
 template</ type T />
 struct ReferenceContainerTag</ T, false />
 {

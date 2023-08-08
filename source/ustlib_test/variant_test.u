@@ -57,6 +57,11 @@ type VariantDCOrIntVec4= ust::variant</ tup[ DC, IntVec4 ] />;
 static_assert( typeinfo</ VariantDCOrIntVec4 />.size_of == ConstexprMax( typeinfo</ DC />.size_of, typeinfo</ IntVec4 />.align_of ) + ConstexprMax( typeinfo</ DC />.align_of,  typeinfo</ IntVec4 />.align_of ) );
 static_assert( typeinfo</ VariantDCOrIntVec4 />.align_of == ConstexprMax( typeinfo</ DC />.align_of, typeinfo</ IntVec4 />.align_of ) );
 
+struct SomeNonSync non_sync {}
+static_assert( non_sync</ SomeNonSync /> );
+static_assert( non_sync</ ust::variant</ tup[ u32, SomeNonSync ] /> /> );
+static_assert( non_sync</ ust::variant</ tup[ SomeNonSync, bool, $(char8) ] /> /> );
+
 fn nomangle main() : i32
 {
 	{
