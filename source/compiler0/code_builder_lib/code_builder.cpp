@@ -785,6 +785,16 @@ void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
 							REPORT_ERROR( UnusedName, names_scope.GetErrors(), function.body_src_loc, name );
 					}
 				}
+				// TODO - process function templates here.
+
+				return;
+			}
+			if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+			{
+				// Process each type template individually.
+				for( const TypeTemplatePtr& type_template : type_templates_set->type_templates )
+					if( !type_template->used  && type_template->src_loc.GetFileIndex() == 0 )
+						REPORT_ERROR( UnusedName, names_scope.GetErrors(), type_template->src_loc, name );
 
 				return;
 			}
@@ -828,11 +838,6 @@ void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
 			}
 			else if( const auto namespace_= value.GetNamespace() )
 				CheckForUnusedGlobalNames( *namespace_ ); // Recursively check children.
-			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
-			{
-				// TODO - check each type template individually?
-				(void) type_templates_set;
-			}
 			else if(
 				value.GetStaticAssert() != nullptr ||
 				value.GetIncompleteGlobalVariable() != nullptr ||
@@ -887,7 +892,7 @@ void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
 bool CodeBuilder::VariableExistanceMayHaveSideEffects( const Type& variable_type )
 {
 	// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
-	// For example, "ust::string8" has non-trivial destructor, but it just fees memory.
+	// For example, "ust::string8" has non-trivial destructor, but it just frees memory.
 	// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
 	const bool destructor_is_trivial=
 		// Constexpr types are fundamentals, enums, function pointers, some structs.

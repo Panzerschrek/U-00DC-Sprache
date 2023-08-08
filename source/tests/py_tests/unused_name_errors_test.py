@@ -1227,6 +1227,84 @@ def UnusedFunction_Test12():
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
+def UnusedTypeTemplate_Test0():
+	c_program_text= """
+		template</type T/> type Vec3= [ T, 3 ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedTypeTemplate_Test1():
+	c_program_text= """
+		template</size_type S/> type IVec= [ i32, S ];
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedTypeTemplate_Test1():
+	c_program_text= """
+		template</type T/> struct Box { T t; }
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+
+
+def UnusedTypeTemplate_Test2():
+	c_program_text= """
+		template</size_type S/> struct ArraySizeHelper</ [ i32, S ] /> { auto size= S; }  // This is unused.
+		template</size_type S/> struct ArraySizeHelper</ [ f32, S ] /> { auto size= S; }
+		auto size= ArraySizeHelper</ [ f32, 66 ] />; // Use only "f32" variant.
+		static_assert( size == 66 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 2 ) )
+	assert( not HaveError( errors_list, "UnusedName", 3 ) )
+
+
+def UnusedTypeTemplate_Test3():
+	c_program_text= """
+		template</size_type S/> struct ArraySizeHelper</ [ i32, S ] /> { auto size= S; }
+		template</size_type S/> struct ArraySizeHelper</ [ f32, S ] /> { auto size= S; } // This is unused.
+		auto size= ArraySizeHelper</ [ i32, 66 ] />; // Use only "i32" variant.
+		static_assert( size == 66 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( not HaveError( errors_list, "UnusedName", 2 ) )
+	assert( HaveError( errors_list, "UnusedName", 3 ) )
+
+
+def UnusedTypeTemplate_Test4():
+	c_program_text= """
+		template</type T/> struct Box { T t; } // Ok - type template is used.
+		fn nomangle MakeBox(i32 x) : Box</i32/>
+		{
+			var Box</i32/> res{ .t= x };
+			return res;
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedTypeTemplate_Test5():
+	c_program_text= """
+		template</type T/> struct Box { T t; } // Ok - type template is used.
+		type FBox= Box</f32/>;
+		fn nomangle MakeBox(f32 x) : FBox
+		{
+			var FBox res{ .t= x };
+			return res;
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
 def UnusedClassVariable_Test0():
 	c_program_text= """
 		struct S

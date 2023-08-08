@@ -958,6 +958,9 @@ U_TEST( UnusedNameErrorIsNotGeneratedForImportedFiles_Test0 )
 
 			f64 unused_field;
 		}
+
+		template</type T/> struct UnusedStructTemplate { T t; }
+		template</type T/> type UnusedTypeAliasTemplate= [ T, 3 ];
 	)";
 
 	static const char c_program_text_root[]=
