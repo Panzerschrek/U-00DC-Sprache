@@ -392,6 +392,7 @@ struct LazyLLVMFunction
 {
 	ust::string8 name_mangled;
 	LLVMValueRef function= LLVMValueRef::Null;
+	bool referenced= false; // HACK! Store function referenced flag here, because we need to have immutable FunctionVariable struct.
 
 	fn constructor( ust::string8 mut name ) ( name_mangled= move(name) ) {}
 

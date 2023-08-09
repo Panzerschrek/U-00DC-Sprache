@@ -677,7 +677,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		auto mut class_members_lock= class_members_ptr.lock_mut();
 		auto &mut class_members= class_members_lock.deref();
 
-		var FunctionsSet mut functions_set;
+		var FunctionsSet mut functions_set{ .class_= class_type };
 		operators_ptr= class_members.AddName( ust::string8(op_name), NamesScopeValue( move(functions_set) ) ).try_deref().Get</FunctionsSet/>();
 	}
 	auto mut operators_lock= operators_ptr.try_lock_mut();

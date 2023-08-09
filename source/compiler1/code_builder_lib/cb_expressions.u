@@ -1433,7 +1433,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	auto function= BuildExpressionCode( names_scope, function_context, call_operator.value.deref() );
 
-	var ust::shared_ptr_nullable_imut</ FunctionsSet /> mut functions_set;
+	var ust::shared_ptr_nullable_mut</ FunctionsSet /> mut functions_set;
 	var VariableNullablePtr mut this_;
 
 	if_var( &t : function.get</Type/>() )
@@ -1484,7 +1484,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	return CallFunctionsSet( names_scope, function_context, this_, functions_set.try_lock_imut().deref(), call_operator.args.range(), call_operator.src_loc );
+	return CallFunctionsSet( names_scope, function_context, this_, functions_set.try_to_non_nullable(), call_operator.args.range(), call_operator.src_loc );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
@@ -3233,7 +3233,7 @@ fn CodeBuilder::CallFunctionsSet(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	VariableNullablePtr mut this_,
-	FunctionsSet& functions_set,
+	FunctionsSetPtr& functions_set,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	SrcLoc& src_loc ) : Value
 {
@@ -3277,7 +3277,7 @@ fn CodeBuilder::CallFunctionsSet(
 
 	auto function_selected_opt=
 		GetOverloadedFunction(
-			functions_set,
+			functions_set.lock_imut().deref(),
 			args_evaluated.range(),
 			!this_.empty(),
 			names_scope,
@@ -3302,6 +3302,11 @@ fn CodeBuilder::CallFunctionsSet(
 	if( !( function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 	{
 		function_context.have_non_constexpr_operations_inside= true;
+	}
+
+	with( mut lock : function_selected.llvm_function.lock_mut() )
+	{
+		lock.deref().referenced= true;
 	}
 
 	var bool is_constexpr= function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete;

@@ -702,7 +702,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			names_scope,
 			function_context,
 			variable_ptr,
-			constructors_ptr.try_lock_imut().deref(),
+			constructors_ptr.try_to_non_nullable(),
 			ust::empty_range,
 			src_loc );
 
@@ -1021,7 +1021,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			names_scope,
 			function_context,
 			variable_ptr,
-			constructors_ptr.try_lock_imut().deref(),
+			constructors_ptr.try_to_non_nullable(),
 			args.range(),
 			src_loc );
 

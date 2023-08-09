@@ -1420,6 +1420,53 @@ fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
 			CheckForUnusedGlobalNames( inner_namespace.try_to_non_nullable() );
 		}
 
+		auto functions_set_ptr= names_scope_value.Get</FunctionsSet/>();
+		if( !functions_set_ptr.empty() )
+		{
+			with( &functions_set : functions_set_ptr.try_lock_imut().deref() )
+			{
+				foreach( &function : functions_set.functions )
+				{
+					var SrcLoc mut body_src_loc, mut prototye_src_loc;
+					if( !function.prototype_syntax_element.empty() )
+					{
+						body_src_loc= function.prototype_syntax_element.try_deref().src_loc;
+						prototye_src_loc= body_src_loc;
+					}
+					if( !function.body_syntax_element.empty() )
+					{
+						body_src_loc= function.body_syntax_element.try_deref().src_loc;
+					}
+
+					if( !function.llvm_function.lock_imut().deref().referenced &&
+						!function.no_mangle &&
+						function.virtual_table_index == ~0u &&
+						body_src_loc.GetFileIndex() == 0u &&
+						prototye_src_loc.GetFileIndex() == 0u )
+					{
+						var bool mut is_special_method= false;
+						if( !functions_set.class_.empty() )
+						{
+							auto class_= functions_set.class_.try_to_non_nullable();
+							if( name == KeywordToString( Keyword::destructor_ ) ||
+								( name == KeywordToString( Keyword::constructor_ ) &&
+									( IsCopyConstructor( function, class_ ) || IsDefaultConstructor( function, class_ ) ) ) ||
+								( name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function, class_ ) ) ||
+								( name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function, class_ ) ) )
+							{
+								is_special_method= true;
+							}
+						}
+
+						if( !is_special_method )
+						{
+							REPORT_ERROR( UnusedName, names_scope, body_src_loc, name )
+						}
+					}
+				}
+			}
+		}
+
 		auto global_variable_ptr= names_scope_value.Get</GlobalVariable/>();
 		if( !global_variable_ptr.empty() )
 		{

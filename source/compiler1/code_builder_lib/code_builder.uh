@@ -469,7 +469,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		VariableNullablePtr this_,
-		FunctionsSet& functions_set,
+		FunctionsSetPtr& functions_set,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
 
