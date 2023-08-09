@@ -2946,6 +2946,11 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			function_context.have_non_constexpr_operations_inside= true;
 		}
 
+		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
 		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( overloaded_operator );
 
 		return DoCallFunction(
@@ -3152,6 +3157,11 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 			function_context.have_non_constexpr_operations_inside= true;
 		}
 
+		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
 		return DoCallFunction(
 			names_scope,
 			function_context,
@@ -3212,6 +3222,11 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 		if( !( overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		{
 			function_context.have_non_constexpr_operations_inside= true;
+		}
+
+		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+		{
+			lock.deref().referenced= true;
 		}
 
 		return DoCallFunction(

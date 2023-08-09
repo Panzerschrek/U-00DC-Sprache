@@ -2876,6 +2876,11 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 				function_context.have_non_constexpr_operations_inside= true;
 			}
 
+			with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+			{
+				lock.deref().referenced= true;
+			}
+
 			DoCallFunction(
 				names_scope,
 				function_context,

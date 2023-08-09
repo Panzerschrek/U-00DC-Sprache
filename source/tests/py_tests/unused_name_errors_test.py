@@ -1631,3 +1631,23 @@ def UnusedClassFunction_Test14():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassFunction_Test15():
+	c_program_text= """
+		struct S
+		{
+			op()(this) {}
+			op+(S a, S b) : S { return S(); }
+			op++(mut this) {}
+			fn destructor() {}
+		}
+		fn nomangle Foo()
+		{
+			var S mut s0, mut s1;
+			++s0; // Ok, use ++ operator
+			var S s2= s0 + s1; // Ok, use binary + operator
+			s2(); // Ok - use () operator
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
