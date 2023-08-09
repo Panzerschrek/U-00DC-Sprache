@@ -716,6 +716,7 @@ struct GlobalVariable
 
 	ust::shared_ptr_final</ Synt::VariablesDeclaration /> syntax_element;
 	u32 variable_index;
+	bool referenced= false;
 }
 
 struct GlobalAutoVariable
@@ -723,6 +724,7 @@ struct GlobalAutoVariable
 	VariableNullablePtr variable; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::AutoVariableDeclaration /> syntax_element;
+	bool referenced= false;
 }
 
 // Empty vector if all static asserts are complete.

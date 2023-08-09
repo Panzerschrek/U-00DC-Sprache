@@ -54,6 +54,7 @@ bool U1_BuildProgramWithErrors(
 	const U1_StringView& program_text_start,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors,
 	const U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data );
 
@@ -67,7 +68,8 @@ LLVMModuleRef U1_BuildMultisourceProgram(
 	size_t source_file_count,
 	const U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout );
+	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors );
 
 bool U1_BuildMultisourceProgramWithErrors(
 	const U1_SourceFile* source_files,

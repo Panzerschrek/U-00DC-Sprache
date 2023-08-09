@@ -127,7 +127,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto global_variable_ptr= names_scope_value.Get</GlobalVariable/>();
 	if( !global_variable_ptr.empty() )
 	{
-		var VariableNullablePtr v_ptr= global_variable_ptr.try_lock_imut().deref().variable;
+		auto global_variable_ptr_non_null= global_variable_ptr.try_to_non_nullable();
+		with( mut lock : global_variable_ptr_non_null.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
+		var VariableNullablePtr v_ptr= global_variable_ptr_non_null.lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
 			var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();
@@ -145,7 +151,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto global_auto_variable_ptr= names_scope_value.Get</GlobalAutoVariable/>();
 	if( !global_auto_variable_ptr.empty() )
 	{
-		var VariableNullablePtr v_ptr= global_auto_variable_ptr.try_lock_imut().deref().variable;
+		auto global_auto_variable_ptr_non_null= global_auto_variable_ptr.try_to_non_nullable();
+		with( mut lock : global_auto_variable_ptr_non_null.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
+		var VariableNullablePtr v_ptr= global_auto_variable_ptr_non_null.lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
 			var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();

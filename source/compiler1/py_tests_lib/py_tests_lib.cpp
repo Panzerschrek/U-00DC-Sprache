@@ -375,6 +375,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
+			enable_unused_variable_errors != 0,
 			g_error_handling_callbacks,
 			reinterpret_cast<U1_UserHandle>(errors_list) );
 

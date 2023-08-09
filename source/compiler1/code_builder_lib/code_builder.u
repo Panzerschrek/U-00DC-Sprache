@@ -225,6 +225,12 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 		}
 	}
 
+	// Check for unused names in root file.
+	{
+		auto main_file_root_namespace= source_graph_nodes_build_results_.front().names_scope.try_to_non_nullable();
+		CheckForUnusedGlobalNames( main_file_root_namespace );
+	}
+
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
 	SetupDereferenceableFunctionParamsAndRetAttributes_r( cast_imut(source_graph_nodes_build_results_).front().names_scope.try_lock_imut().deref() );
@@ -1390,6 +1396,43 @@ fn CodeBuilder::TryCallCopyConstructor(
 	// TODO - what if copy constructor is unsafe?
 
 	BuildCopyConstructorPart( names_scope, function_context, dst, src, class_type, src_loc );
+}
+
+fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
+{
+	if( !report_about_unused_names_ )
+	{
+		return;
+	}
+
+	foreach( &name_pair : names_scope.lock_imut().deref() )
+	{
+		auto global_variable_ptr= name_pair.value().Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			with( &global_variable : global_variable_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= global_variable.syntax_element.deref().variables[global_variable.variable_index].src_loc;
+				if( !global_variable.referenced && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name_pair.key() )
+				}
+			}
+		}
+
+		auto global_auto_variable_ptr= name_pair.value().Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			with( &global_auto_variable : global_auto_variable_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= global_auto_variable.syntax_element.deref().src_loc;
+				if( !global_auto_variable.referenced && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name_pair.key() )
+				}
+			}
+		}
+	}
 }
 
 fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc )

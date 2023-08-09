@@ -48,6 +48,7 @@ fn nomangle U1_BuildProgramWithErrors(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors,
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data ) unsafe : bool
 {
@@ -66,7 +67,10 @@ fn nomangle U1_BuildProgramWithErrors(
 				return false;
 			}
 
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
+			auto mut options= U1::GetCodeBuilderOptionsForTests();
+			options.report_about_unused_names= enable_unsed_name_errors;
+
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
@@ -185,7 +189,8 @@ fn nomangle U1_BuildMultisourceProgram(
 	size_type source_file_count,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef
+	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef
 {
 	var ust::string8 root_file_path_str= unsafe( U1::StringToArrayView( root_file_path.data, root_file_path.size ) );
 
@@ -197,7 +202,10 @@ fn nomangle U1_BuildMultisourceProgram(
 		return LLVMModuleRef::Null;
 	}
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
+	auto mut options= U1::GetCodeBuilderOptionsForTests();
+	options.report_about_unused_names= enable_unsed_name_errors;
+
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -295,7 +303,13 @@ fn nomangle U1_BuildProgramForMSVCManglingTest(
 				return LLVMModuleRef::Null;
 			}
 
-			var U1::CodeBuilderOptions options{ .build_debug_info= true, .mangling_scheme= U1::ManglingScheme::MSVC64 };
+			var U1::CodeBuilderOptions options
+			{
+				.build_debug_info= true,
+				.mangling_scheme= U1::ManglingScheme::MSVC64,
+				.report_about_unused_names= false
+			};
+
 			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
