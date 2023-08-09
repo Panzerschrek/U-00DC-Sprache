@@ -40,7 +40,11 @@ fn constexpr hash( f64 x ) : size_type { return hash( byte64(x) ); }
 template</ type T />
 fn hash( T& x ) : size_type
 {
-	static_if( typeinfo</T/>.is_class )
+	static_if( typeinfo</T/>.is_fundamental )
+	{
+		return default_hasher::hash(x);
+	}
+	else static_if( typeinfo</T/>.is_class )
 	{
 		static_if( typeinfo</T/>.is_coroutine )
 		{
@@ -73,8 +77,9 @@ fn hash( T& x ) : size_type
 	// TODO - support hashing of tuples.
 	else
 	{
-		// Other kinds of types not supported.
+		// Other kinds of types are not supported.
 		ignore_unused(x);
+		static_assert( false, "Unsupported type for hashing!" );
 		halt;
 	}
 }

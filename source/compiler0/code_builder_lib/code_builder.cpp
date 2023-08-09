@@ -747,12 +747,16 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 	};
 }
 
-
 void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
 {
 	if( !report_about_unused_names_ )
 		return;
 
+	CheckForUnusedGlobalNamesImpl( names_scope );
+}
+
+void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
+{
 	names_scope.ForEachInThisScope(
 		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
 		{
@@ -805,7 +809,7 @@ void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
 				if( const auto class_type= type->GetClassType() )
 				{
 					if( class_type->members->GetParent() == &names_scope )
-						CheckForUnusedGlobalNames( *class_type->members );
+						CheckForUnusedGlobalNamesImpl( *class_type->members );
 				}
 			}
 
@@ -837,7 +841,7 @@ void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
 				U_ASSERT(false);
 			}
 			else if( const auto namespace_= value.GetNamespace() )
-				CheckForUnusedGlobalNames( *namespace_ ); // Recursively check children.
+				CheckForUnusedGlobalNamesImpl( *namespace_ ); // Recursively check children.
 			else if(
 				value.GetStaticAssert() != nullptr ||
 				value.GetIncompleteGlobalVariable() != nullptr ||

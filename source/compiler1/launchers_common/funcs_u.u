@@ -26,10 +26,7 @@ fn nomangle U1_BuildProgram(
 				return LLVMModuleRef::Null;
 			}
 
-			auto mut options= U1::GetCodeBuilderOptionsForTests();
-			options.report_about_unused_names= enable_unsed_name_errors;
-
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors) );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -67,10 +64,7 @@ fn nomangle U1_BuildProgramWithErrors(
 				return false;
 			}
 
-			auto mut options= U1::GetCodeBuilderOptionsForTests();
-			options.report_about_unused_names= enable_unsed_name_errors;
-
-			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
+			var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors) );
 			auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 			unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
@@ -202,10 +196,7 @@ fn nomangle U1_BuildMultisourceProgram(
 		return LLVMModuleRef::Null;
 	}
 
-	auto mut options= U1::GetCodeBuilderOptionsForTests();
-	options.report_about_unused_names= enable_unsed_name_errors;
-
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(enable_unsed_name_errors) );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	U1::PrintCodeBuilderErrors( source_graph, code_builder_res.errors );
@@ -237,10 +228,7 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 		return false;
 	}
 
-	auto mut options= U1::GetCodeBuilderOptionsForTests();
-	options.report_about_unused_names= false;
-
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests(false) );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );
@@ -379,9 +367,15 @@ fn ProcessCodeBuilderErrors(
 	}
 }
 
-fn GetCodeBuilderOptionsForTests() : CodeBuilderOptions
+fn GetCodeBuilderOptionsForTests(bool enable_unsed_name_errors) : CodeBuilderOptions
 {
-	var CodeBuilderOptions mut options{ .build_debug_info= true, .create_lifetimes= true, .generate_tbaa_metadata= true };
+	var CodeBuilderOptions mut options
+	{
+		.build_debug_info= true,
+		.create_lifetimes= true,
+		.generate_tbaa_metadata= true,
+		.report_about_unused_names= enable_unsed_name_errors,
+	};
 	return move(options);
 }
 

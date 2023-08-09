@@ -482,6 +482,7 @@ private:
 
 	// Unused name error generation stuff.
 	void CheckForUnusedGlobalNames( const NamesScope& names_scope );
+	void CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope );
 	void CheckForUnusedLocalNames( const NamesScope& names_scope );
 	bool VariableExistanceMayHaveSideEffects( const Type& variable_type );
 

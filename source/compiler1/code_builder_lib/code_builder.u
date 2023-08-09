@@ -1409,6 +1409,11 @@ fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
 		return;
 	}
 
+	CheckForUnusedGlobalNamesImpl( names_scope );
+}
+
+fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
+{
 	foreach( &name_pair : names_scope.lock_imut().deref() )
 	{
 		var ust::string8& name= name_pair.key();
@@ -1417,7 +1422,7 @@ fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
 		auto inner_namespace= names_scope_value.Get</NamesScope/>();
 		if( !inner_namespace.empty() )
 		{
-			CheckForUnusedGlobalNames( inner_namespace.try_to_non_nullable() );
+			CheckForUnusedGlobalNamesImpl( inner_namespace.try_to_non_nullable() );
 		}
 
 		auto functions_set_ptr= names_scope_value.Get</FunctionsSet/>();
@@ -1511,7 +1516,7 @@ fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
 			var NamesScopePtr class_members= class_type_ptr.try_lock_imut().deref().members;
 			if( class_members.lock_imut().deref().GetParent() == names_scope )
 			{
-				CheckForUnusedGlobalNames( class_members );
+				CheckForUnusedGlobalNamesImpl( class_members );
 			}
 		}
 

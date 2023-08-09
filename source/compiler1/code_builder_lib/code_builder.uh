@@ -909,6 +909,7 @@ private:
 
 	// Unused name error generation stuff.
 	fn CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope );
+	fn CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope );
 	fn CheckForUnusedLocalNames( this, NamesScopePtr& names_scope );
 	fn VariableExistanceMayHaveSideEffects( Type& variable_type ) : bool;
 
