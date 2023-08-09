@@ -194,7 +194,8 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 		U1_BuildProgramForLifetimesTest(
 			text_view,
 			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout) );
+			llvm::wrap(&data_layout),
+			false );
 	U_TEST_ASSERT( ptr != nullptr );
 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );

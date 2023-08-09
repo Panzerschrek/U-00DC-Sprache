@@ -1975,7 +1975,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::type_ ) )
 		{
-			block_elements.push_back( ParseTypeAlias() );
+			block_elements.push_back( ust::make_shared_ptr_final( ParseTypeAlias() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::halt_ ) )
 		{

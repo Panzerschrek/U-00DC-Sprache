@@ -83,7 +83,8 @@ bool U1_BuildMultisourceProgramWithErrors(
 LLVMModuleRef U1_BuildProgramForLifetimesTest(
 	const U1_StringView& program_text_start,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout );
+	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors );
 
 LLVMModuleRef U1_BuildProgramForMSVCManglingTest(
 	const U1_StringView& program_text_start,

@@ -49,6 +49,8 @@ fn CodeBuilder::BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContex
 
 	debug_info_builder_.try_deref().EndBlock( function_context, prev_debug_info_block );
 
+	CheckForUnusedLocalNames( block_names_scope );
+
 	return block_element_build_info;
 }
 
@@ -176,6 +178,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.name= variable_declaration.name,
+			.src_loc= variable_declaration.src_loc,
 		};
 		auto mut variable_reference= VariablePtr( move(variable_reference_variable) );
 		// Do not forget to remove node in case of error-return!!!
@@ -368,6 +371,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		.location= Variable::Location::Pointer,
 		.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ),
 		.name= auto_variable_declaration.name,
+		.src_loc= auto_variable_declaration.src_loc,
 	};
 	var VariablePtr mut variable_reference( move(variable_reference_variable) );
 	// Do not forget to remove node in case of errror-return!!!
@@ -1109,6 +1113,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			.value_type= select( if_coro_advance_operator.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.name= if_coro_advance_operator.variable_name,
+			.src_loc= if_coro_advance_operator.src_loc,
 		};
 		var VariablePtr mut variable_reference( move(variable_reference_variable) );
 		function_context.references_graph.AddNode( variable_reference );
@@ -1246,6 +1251,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			// Destroy coro result variable.
 			CallDestructorsForTopVariablesFrame( variable_names_scope, function_context, if_coro_advance_operator.src_loc );
 		}
+
+		CheckForUnusedLocalNames( variable_names_scope );
 	}
 
 	var ust::vector</ReferencesGraph/> mut references_graphs;
@@ -2055,6 +2062,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 							? LLVMValueRef::Null
 							: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
 				.name= range_for_operator.loop_variable_name,
+				.src_loc= range_for_operator.src_loc,
 			};
 			var VariablePtr mut variable_reference( move(variable_reference_variable) );
 			// Do not forget to remove node in case of error-return!!!
@@ -2175,6 +2183,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			// Clear args preevaluation cache because we evaluationg same expressions multiple times in different context.
 			function_context.args_preevaluation_cache.clear();
+
+			CheckForUnusedLocalNames( names_scope );
 
 			if( !continue_branches_is_empty )
 			{
@@ -2424,6 +2434,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		.location= Variable::Location::Pointer,
 		.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ), // Constexpr is preserved for move/copy.
 		.name= with_operator.variable_name,
+		.src_loc= with_operator.src_loc,
 	};
 	var VariablePtr mut variable_reference( move(variable_reference_variable) );
 	// Do not forget to remove node in case of error-return!!!
@@ -2569,20 +2580,22 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	// Create separate namespace for variable. Redefinition here is not possible.
-	var NamesScopeMutPtr varaible_names_scope( NamesScope( "", names_scope ) );
-	with( mut lock : varaible_names_scope.lock_mut() )
+	var NamesScopeMutPtr variable_names_scope( NamesScope( "", names_scope ) );
+	with( mut lock : variable_names_scope.lock_mut() )
 	{
 		lock.deref().AddName( with_operator.variable_name, move(variable_reference) ).empty();
 	}
 
 	// Build block. Reuse scope of with variable for this block.
-	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( varaible_names_scope, function_context, with_operator.block.deref().elements.range() );
+	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block.deref().elements.range() );
 
 	if( !block_element_build_info.have_terminal_instruction_inside )
 	{
 		// Destroy loop variable and linked temporaries.
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, with_operator.src_loc );
 	}
+
+	CheckForUnusedLocalNames( variable_names_scope );
 
 	return block_element_build_info;
 }
@@ -2634,19 +2647,25 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::TypeAlias& type_alias ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias_ptr ) : BlockElementBuildInfo
 {
+	auto& type_alias= type_alias_ptr.deref();
+
 	if( IsKeyword( type_alias.name ) )
 	{
 		REPORT_ERROR( UsingKeywordAsName, names_scope, type_alias.src_loc )
 	}
 
-	var Type mut t= PrepareType( names_scope, function_context, type_alias.type_name );
+	var TypeAlias mut out_type_alias
+	{
+		.t( PrepareType( names_scope, function_context, type_alias.type_name ) ),
+		.syntax_element= type_alias_ptr,
+	};
 
 	var bool mut insert_not_ok= false;
 	with( mut lock : names_scope.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( type_alias.name, NamesScopeValue( move(t) ) ).empty();
+		insert_not_ok= lock.deref().AddName( type_alias.name, NamesScopeValue( move(out_type_alias) ) ).empty();
 	}
 	if( insert_not_ok )
 	{

@@ -309,11 +309,14 @@ struct Variable
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 
 	ust::string8 name; // Used only for error reporting and derived variables names.
+	SrcLoc src_loc;
 
 	// May be non-null for struct or tuple member nodes.
 	ust::weak_ptr_mut</Variable/> parent;
 	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
 	ust::vector</VariableNullablePtr/> children;
+
+	bool referenced= false;
 
 	// This struct is non-copyable.
 	fn constructor( mut this, Variable& other )= delete;

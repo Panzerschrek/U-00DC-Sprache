@@ -75,7 +75,8 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 fn nomangle U1_BuildProgramForLifetimesTest(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
+	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef;
 
 fn nomangle U1_BuildProgramForMSVCManglingTest(
 	U1_StringView& program_text,

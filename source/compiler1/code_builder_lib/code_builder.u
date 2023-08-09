@@ -1186,6 +1186,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				.location= Variable::Location::Pointer,
 				.llvm_value= variable.llvm_value,
 				.name= in_param.name,
+				.src_loc= in_param.src_loc,
 			};
 
 			var VariablePtr variable_ptr( move(variable) );
@@ -1334,6 +1335,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
+	CheckForUnusedLocalNames( args_names_scope_ptr );
+
 	unsafe( U1_TryToPerformReturnValueAllocationOptimization( llvm_function ) );
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
@@ -1472,6 +1475,45 @@ fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
 			{
 				var SrcLoc& src_loc= type_alias.syntax_element.deref().src_loc;
 				if( !type_alias.referenced && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+				}
+			}
+		}
+	}
+}
+
+fn CodeBuilder::CheckForUnusedLocalNames( this, NamesScopePtr& names_scope )
+{
+	if( !report_about_unused_names_ )
+	{
+		return;
+	}
+
+	foreach( &name_pair : names_scope.lock_imut().deref() )
+	{
+		var ust::string8& name= name_pair.key();
+		var NamesScopeValue& names_scope_value= name_pair.value();
+
+		auto variable_ptr= names_scope_value.Get</Variable/>();
+		if( !variable_ptr.empty() )
+		{
+			with( &variable : variable_ptr.try_lock_imut().deref() )
+			{
+				if( !variable.referenced && variable.src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, variable.src_loc, name )
+				}
+			}
+		}
+
+		auto type_alias_ptr= names_scope_value.Get</TypeAlias/>();
+		if( !type_alias_ptr.empty() )
+		{
+			with( &type_alias : type_alias_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= type_alias.syntax_element.deref().src_loc;
+				if( !type_alias.referenced )
 				{
 					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
 				}
