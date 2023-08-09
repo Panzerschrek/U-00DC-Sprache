@@ -636,6 +636,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 	var VariablePtr variable_reference_ptr= variable_ptr.try_to_non_nullable();
 
+	with( mut lock : variable_reference_ptr.lock_mut() )
+	{
+		lock.deref().referenced= true;
+	}
+
 	if( IsGlobalVariable( variable_reference_ptr ) )
 	{
 		REPORT_ERROR( ExpectedVariable, names_scope, move_operator.src_loc, "global variable" )
