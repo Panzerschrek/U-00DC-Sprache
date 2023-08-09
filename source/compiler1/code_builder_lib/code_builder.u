@@ -1407,7 +1407,16 @@ fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
 
 	foreach( &name_pair : names_scope.lock_imut().deref() )
 	{
-		auto global_variable_ptr= name_pair.value().Get</GlobalVariable/>();
+		var ust::string8& name= name_pair.key();
+		var NamesScopeValue& names_scope_value= name_pair.value();
+
+		auto inner_namespace= names_scope_value.Get</NamesScope/>();
+		if( !inner_namespace.empty() )
+		{
+			CheckForUnusedGlobalNames( inner_namespace.try_to_non_nullable() );
+		}
+
+		auto global_variable_ptr= names_scope_value.Get</GlobalVariable/>();
 		if( !global_variable_ptr.empty() )
 		{
 			with( &global_variable : global_variable_ptr.try_lock_imut().deref() )
@@ -1415,12 +1424,12 @@ fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
 				var SrcLoc& src_loc= global_variable.syntax_element.deref().variables[global_variable.variable_index].src_loc;
 				if( !global_variable.referenced && src_loc.GetFileIndex() == 0u )
 				{
-					REPORT_ERROR( UnusedName, names_scope, src_loc, name_pair.key() )
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
 				}
 			}
 		}
 
-		auto global_auto_variable_ptr= name_pair.value().Get</GlobalVariable/>();
+		auto global_auto_variable_ptr= names_scope_value.Get</GlobalVariable/>();
 		if( !global_variable_ptr.empty() )
 		{
 			with( &global_auto_variable : global_auto_variable_ptr.try_lock_imut().deref() )
@@ -1428,7 +1437,43 @@ fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
 				var SrcLoc& src_loc= global_auto_variable.syntax_element.deref().src_loc;
 				if( !global_auto_variable.referenced && src_loc.GetFileIndex() == 0u )
 				{
-					REPORT_ERROR( UnusedName, names_scope, src_loc, name_pair.key() )
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+				}
+			}
+		}
+
+		auto class_type_ptr= names_scope_value.Get</ClassType/>();
+		if( !class_type_ptr.empty() )
+		{
+			var NamesScopePtr class_members= class_type_ptr.try_lock_imut().deref().members;
+			if( class_members.lock_imut().deref().GetParent() == names_scope )
+			{
+				CheckForUnusedGlobalNames( class_members );
+			}
+		}
+
+		auto enum_type_ptr= names_scope_value.Get</Enum/>();
+		if( !enum_type_ptr.empty() )
+		{
+			with( &enum_ : enum_type_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= enum_.syntax_element.deref().src_loc;
+				if( !enum_.referenced && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+				}
+			}
+		}
+
+		auto type_alias_ptr= names_scope_value.Get</TypeAlias/>();
+		if( !type_alias_ptr.empty() )
+		{
+			with( &type_alias : type_alias_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= type_alias.syntax_element.deref().src_loc;
+				if( !type_alias.referenced && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
 				}
 			}
 		}

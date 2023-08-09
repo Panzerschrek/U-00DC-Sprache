@@ -112,15 +112,25 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	if( !enum_type_ptr.empty() )
 	{
 		auto ptr_non_null= enum_type_ptr.try_to_non_nullable();
+		with( mut lock : ptr_non_null.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
 		return Type( ptr_non_null );
 	}
 
 	auto type_alias_ptr= names_scope_value.Get</TypeAlias/>();
 	if( !type_alias_ptr.empty() )
 	{
-		if_var( &t : type_alias_ptr.try_lock_imut().deref().t )
+		with( mut lock : type_alias_ptr.try_lock_mut() )
 		{
-			return t;
+			lock.deref().referenced= true;
+
+			if_var( &t : lock.deref().t )
+			{
+				return t;
+			}
 		}
 	}
 

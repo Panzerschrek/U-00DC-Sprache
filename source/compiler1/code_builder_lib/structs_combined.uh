@@ -466,6 +466,8 @@ struct Enum
 	ust::unordered_map</ ust::string8, Element /> elements;
 
 	ust::shared_ptr_final</ Synt::Enum /> syntax_element;
+
+	bool referenced= false;
 }
 
 type EnumTypePtr= ust::shared_ptr_mut</Enum/>;
@@ -473,8 +475,8 @@ type EnumTypePtr= ust::shared_ptr_mut</Enum/>;
 struct TypeAlias
 {
 	ust::optional</ Type /> t; // empty if incomplete
-
 	ust::shared_ptr_final</ Synt::TypeAlias /> syntax_element;
+	bool referenced= false;
 }
 
 enum CoroutineKind
