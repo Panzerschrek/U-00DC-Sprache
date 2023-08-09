@@ -1433,8 +1433,8 @@ fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
 			}
 		}
 
-		auto global_auto_variable_ptr= names_scope_value.Get</GlobalVariable/>();
-		if( !global_variable_ptr.empty() )
+		auto global_auto_variable_ptr= names_scope_value.Get</GlobalAutoVariable/>();
+		if( !global_auto_variable_ptr.empty() )
 		{
 			with( &global_auto_variable : global_auto_variable_ptr.try_lock_imut().deref() )
 			{
