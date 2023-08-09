@@ -179,6 +179,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			.location= Variable::Location::Pointer,
 			.name= variable_declaration.name,
 			.src_loc= variable_declaration.src_loc,
+			.referenced= variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(t)
 		};
 		auto mut variable_reference= VariablePtr( move(variable_reference_variable) );
 		// Do not forget to remove node in case of error-return!!!
@@ -372,6 +373,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ),
 		.name= auto_variable_declaration.name,
 		.src_loc= auto_variable_declaration.src_loc,
+		.referenced= auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
 	};
 	var VariablePtr mut variable_reference( move(variable_reference_variable) );
 	// Do not forget to remove node in case of errror-return!!!
@@ -1114,6 +1116,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			.location= Variable::Location::Pointer,
 			.name= if_coro_advance_operator.variable_name,
 			.src_loc= if_coro_advance_operator.src_loc,
+			.referenced=
+				( result_value_type == ValueType::Value || if_coro_advance_operator.reference_modifier == Synt::ReferenceModifier::None ) &&
+				VariableExistanceMayHaveSideEffects(result_type)
 		};
 		var VariablePtr mut variable_reference( move(variable_reference_variable) );
 		function_context.references_graph.AddNode( variable_reference );
@@ -2063,6 +2068,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 							: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
 				.name= range_for_operator.loop_variable_name,
 				.src_loc= range_for_operator.src_loc,
+				.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_type)
 			};
 			var VariablePtr mut variable_reference( move(variable_reference_variable) );
 			// Do not forget to remove node in case of error-return!!!
@@ -2435,6 +2441,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ), // Constexpr is preserved for move/copy.
 		.name= with_operator.variable_name,
 		.src_loc= with_operator.src_loc,
+		.referenced= with_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
 	};
 	var VariablePtr mut variable_reference( move(variable_reference_variable) );
 	// Do not forget to remove node in case of error-return!!!

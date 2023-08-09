@@ -1187,6 +1187,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				.llvm_value= variable.llvm_value,
 				.name= in_param.name,
 				.src_loc= in_param.src_loc,
+				.referenced= type_param.value_type == ValueType::Value && VariableExistanceMayHaveSideEffects(type_param.t)
 			};
 
 			var VariablePtr variable_ptr( move(variable) );
@@ -1532,6 +1533,20 @@ fn CodeBuilder::CheckForUnusedLocalNames( this, NamesScopePtr& names_scope )
 			}
 		}
 	}
+}
+
+fn CodeBuilder::VariableExistanceMayHaveSideEffects( Type& variable_type ) : bool
+{
+	// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
+	// For example, "ust::string8" has non-trivial destructor, but it just frees memory.
+	// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
+	var bool destructor_is_trivial=
+		// Constexpr types are fundamentals, enums, function pointers, some structs.
+		variable_type.CanBeConstexpr() ||
+		// Raw pointers are non-constexpr, but trivially-destructible.
+		!variable_type.GetRawPointerType().empty();
+
+	return !destructor_is_trivial;
 }
 
 fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc )
