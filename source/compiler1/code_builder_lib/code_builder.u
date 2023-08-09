@@ -2170,10 +2170,10 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( this, Name
 		{
 			SetupDereferenceableFunctionParamsAndRetAttributes_r( class_type.lock_imut().deref().members.lock_imut().deref() );
 		}
-		if_var( &functions_set_ptr : value.something_.get</ ust::shared_ptr_mut</NamesScopeFunctionsSet/> />() )
+		if_var( &functions_set_ptr : value.something_.get</ ust::shared_ptr_mut</FunctionsSet/> />() )
 		{
 			auto mut lock= functions_set_ptr.lock_mut();
-			foreach( &mut function : lock.deref().functions_set.functions )
+			foreach( &mut function : lock.deref().functions )
 			{
 				SetupDereferenceableFunctionParamsAndRetAttributes( function );
 			}
@@ -2741,7 +2741,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 
 		// Search for "==" operator.
 		auto operators_value= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ).try_deref();
-		foreach( &op_ : operators_value.Get</NamesScopeFunctionsSet/>().try_lock_imut().deref().functions_set.functions )
+		foreach( &op_ : operators_value.Get</FunctionsSet/>().try_lock_imut().deref().functions )
 		{
 			if( !IsEqualityCompareOperator( op_, class_type ) )
 			{

@@ -405,12 +405,21 @@ struct FunctionsSet
 	ust::vector</FunctionVariable/> functions;
 	ust::vector</FunctionTemplatePtr/> function_templates;
 	ust::vector</ParametrizedFunctionTemplate/> parametrized_function_templates;
+
+	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
+
+	// Is incomplete, if there are some syntax elements in containers.
+	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
+	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> out_of_line_syntax_elements;
+	ust::vector</ ust::shared_ptr_final</ Synt::FunctionTemplate /> /> function_templates_syntax_elements;
 }
+
+type FunctionsSetPtr= ust::shared_ptr_mut</FunctionsSet/>;
 
 struct ThisMethodsSet
 {
 	VariablePtr this_;
-	FunctionsSet functions_set;
+	FunctionsSetPtr functions_set;
 }
 
 struct ErrorValue{}
@@ -419,7 +428,7 @@ type Value= ust::variant</ tup[
 	ErrorValue,
 	VariablePtr,
 	Type,
-	FunctionsSet,
+	FunctionsSetPtr,
 	ThisMethodsSet,
 	ust::shared_ptr_imut</TypeTemplatesSet/>
 	] />;
@@ -429,17 +438,6 @@ fn GetValueKindName( Value& v ) : ust::string_view8;
 //
 // NamesScopeValue
 //
-
-struct NamesScopeFunctionsSet
-{
-	FunctionsSet functions_set;
-	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
-
-	// Is incomplete, if there are some syntax elements in containers.
-	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
-	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> out_of_line_syntax_elements;
-	ust::vector</ ust::shared_ptr_final</ Synt::FunctionTemplate /> /> function_templates_syntax_elements;
-}
 
 struct ClassField
 {
@@ -779,7 +777,7 @@ public:
 		NamesScopeMutPtr,
 		ust::shared_ptr_mut</Type/>,
 		ust::shared_ptr_mut</Variable/>,
-		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
+		ust::shared_ptr_mut</FunctionsSet/>,
 		ClassTypePtr,
 		ClassFieldPtr,
 		EnumTypePtr,

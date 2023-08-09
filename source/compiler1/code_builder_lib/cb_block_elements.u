@@ -865,7 +865,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 	}
 	if( !value.get</Type/>().empty() ||
-		!value.get</FunctionsSet/>().empty() ||
+		!value.get</FunctionsSetPtr/>().empty() ||
 		!value.get</ThisMethodsSet/>().empty() ||
 		!value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
 	{

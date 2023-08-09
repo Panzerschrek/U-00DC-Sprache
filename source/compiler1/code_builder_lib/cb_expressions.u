@@ -1433,20 +1433,20 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	auto function= BuildExpressionCode( names_scope, function_context, call_operator.value.deref() );
 
-	var ust::optional_ref_imut</ FunctionsSet /> mut functions_set;
+	var ust::shared_ptr_nullable_imut</ FunctionsSet /> mut functions_set;
 	var VariableNullablePtr mut this_;
 
 	if_var( &t : function.get</Type/>() )
 	{
 		return BuildTempVariableConstruction( names_scope, function_context, t, call_operator.args.range(), call_operator.src_loc );
 	}
-	if_var( & in_functions_set : function.get</FunctionsSet/>() )
+	if_var( & in_functions_set : function.get</FunctionsSetPtr/>() )
 	{
-		functions_set.reset(in_functions_set);
+		functions_set= in_functions_set;
 	}
 	if_var( & this_methods_set : function.get</ThisMethodsSet/>() )
 	{
-		functions_set.reset(this_methods_set.functions_set);
+		functions_set= this_methods_set.functions_set;
 		this_= this_methods_set.this_;
 	}
 	if_var( &variable_ptr : function.get</VariablePtr/>() )
@@ -1484,7 +1484,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	return CallFunctionsSet( names_scope, function_context, this_, functions_set.try_deref(), call_operator.args.range(), call_operator.src_loc );
+	return CallFunctionsSet( names_scope, function_context, this_, functions_set.try_lock_imut().deref(), call_operator.args.range(), call_operator.src_loc );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
@@ -1539,17 +1539,15 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return AccessClassField( names_scope, function_context, variable_ptr, field_ptr.try_lock_imut().deref(), member_access_operator.member_name, member_access_operator.src_loc );
 	}
 
-	auto functions_set_ptr= class_member[0].Get</NamesScopeFunctionsSet/>();
+	auto functions_set_ptr= class_member[0].Get</FunctionsSet/>();
 	if( !functions_set_ptr.empty() )
 	{
 		BuildFunctionsSet( class_member[2], functions_set_ptr.try_to_non_nullable(), false );
 
-		var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr };
-
 		if( !member_access_operator.template_args.empty() )
 		{
 			auto functions_set_lock= functions_set_ptr.try_lock_imut();
-			auto& functions_set= functions_set_lock.deref().functions_set;
+			var FunctionsSet& functions_set= functions_set_lock.deref();
 
 			if( functions_set.function_templates.empty() )
 			{
@@ -1584,14 +1582,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				return ErrorValue();
 			}
 
-			this_methods_set.functions_set= val.try_deref().Get</NamesScopeFunctionsSet/>().try_lock_imut().deref().functions_set;
+			var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr, .functions_set= val.try_deref().Get</FunctionsSet/>().try_to_non_nullable() };
+			return move(this_methods_set);
 		}
 		else
 		{
-			this_methods_set.functions_set= functions_set_ptr.try_lock_imut().deref().functions_set;
+			var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr, .functions_set= functions_set_ptr.try_to_non_nullable() };
+			return move(this_methods_set);
 		}
-
-		return move(this_methods_set);
 	}
 
 	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, ust::string8("class members, except fields or methods") )

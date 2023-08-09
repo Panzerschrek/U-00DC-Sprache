@@ -101,7 +101,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 	if_var( &prev_name : names_scope.GetThisScopeValue( func_name) )
 	{
-		auto prev_functions_set_ptr= prev_name.Get</ NamesScopeFunctionsSet />();
+		auto prev_functions_set_ptr= prev_name.Get</ FunctionsSet />();
 		if( prev_functions_set_ptr.empty() )
 		{
 			auto errors_container= names_scope.GetErrors();
@@ -123,7 +123,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var NamesScopeFunctionsSet mut functions_set;
+	var FunctionsSet mut functions_set;
 
 	functions_set.class_= class_type;
 	functions_set.syntax_elements.push_back( function );
@@ -172,7 +172,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 
 	if_var( &prev_name : names_scope.GetThisScopeValue( func_name ) )
 	{
-		auto prev_functions_set_ptr= prev_name.Get</ NamesScopeFunctionsSet />();
+		auto prev_functions_set_ptr= prev_name.Get</ FunctionsSet />();
 		if( prev_functions_set_ptr.empty() )
 		{
 			auto errors_container= names_scope.GetErrors();
@@ -194,7 +194,7 @@ fn CodeBuilder::NamesScopeFill( mut this, NamesScopeMutPtr& names_scope_ptr, ust
 		return;
 	}
 
-	var NamesScopeFunctionsSet mut functions_set;
+	var FunctionsSet mut functions_set;
 
 	functions_set.class_= class_type;
 	functions_set.function_templates_syntax_elements.push_back( function_template );
@@ -620,7 +620,7 @@ fn CodeBuilder::NamesScopeFillOutOfLineElements( this, NamesScopePtr& names_scop
 
 			if( !current_value.empty() )
 			{
-				auto functions_set= current_value.try_deref().Get</NamesScopeFunctionsSet/>();
+				auto functions_set= current_value.try_deref().Get</FunctionsSet/>();
 				if( !functions_set.empty() )
 				{
 					auto mut lock= functions_set.try_lock_mut();
@@ -674,7 +674,7 @@ fn CodeBuilder::NamesScopeAddClass( mut this, NamesScopeMutPtr& names_scope_ptr,
 	{
 		// Create functions set for constructors/destructors/assignment operators. It's needed for later methods generation.
 		// TODO - what about user-specified non-public constructors and assignment operators?
-		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
+		var FunctionsSet functions_set{ .class_= class_type_ptr };
 		lock.deref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
 		lock.deref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
 		lock.deref().AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );

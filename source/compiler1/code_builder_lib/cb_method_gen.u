@@ -15,10 +15,10 @@ fn CodeBuilder::TryGenerateDefaultConstructor( mut this, ClassTypePtr& class_typ
 	// Search for explicit default constructor.
 	auto mut have_explicit_noncopy_constructors= false;
 
-	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
-	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+	// Constructors value should always exists and should always be FunctionsSet.
+	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>();
 	auto mut constructors_lock= constructors_ptr.try_lock_mut();
-	auto &mut constructors= constructors_lock.deref().functions_set;
+	var FunctionsSet &mut constructors= constructors_lock.deref();
 
 	// Search for copy constructor.
 	auto mut constructor_index= ~0s;
@@ -225,10 +225,10 @@ fn CodeBuilder::TryGenerateCopyConstructor( mut this, ClassTypePtr& class_type )
 	auto class_members_lock= class_members_ptr.lock_imut();
 	auto& class_members= class_members_lock.deref();
 
-	// Constructors value should always exists and should always be NamesScopeFunctionsSet.
-	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+	// Constructors value should always exists and should always be FunctionsSet.
+	auto constructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>();
 	auto mut constructors_lock= constructors_ptr.try_lock_mut();
-	auto &mut constructors= constructors_lock.deref().functions_set;
+	var FunctionsSet &mut constructors= constructors_lock.deref();
 
 	// Search for copy constructor.
 	auto mut constructor_index= ~0s;
@@ -405,10 +405,10 @@ fn CodeBuilder::TryGenerateCopyAssignmentOperator( mut this, ClassTypePtr& class
 	auto class_members_lock= class_members_ptr.lock_imut();
 	auto& class_members= class_members_lock.deref();
 
-	// Assignment operators value should always exists and should always be NamesScopeFunctionsSet.
-	auto operators_ptr= class_members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+	// Assignment operators value should always exists and should always be FunctionsSet.
+	auto operators_ptr= class_members.GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</FunctionsSet/>();
 	auto mut operators_lock= operators_ptr.try_lock_mut();
-	auto &mut operators= operators_lock.deref().functions_set;
+	var FunctionsSet &mut operators= operators_lock.deref();
 
 	// Search for copy assignment operator.
 	auto mut operator_index= ~0s;
@@ -578,15 +578,15 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 
 	auto op_name= OverloadedOperatorToString( OverloadedOperator::CompareEqual );
 
-	var ust::shared_ptr_nullable_mut</NamesScopeFunctionsSet/> mut operators_ptr;
+	var ust::shared_ptr_nullable_mut</FunctionsSet/> mut operators_ptr;
 	if_var( &val : class_members_ptr.lock_imut().deref().GetThisScopeValue( op_name ) )
 	{
-		operators_ptr= val.Get</NamesScopeFunctionsSet/>();
+		operators_ptr= val.Get</FunctionsSet/>();
 	}
 	if( !operators_ptr.empty() )
 	{
 		auto mut operators_lock= operators_ptr.try_lock_mut();
-		auto &mut operators= operators_lock.deref().functions_set;
+		var FunctionsSet &mut operators= operators_lock.deref();
 
 		// Search for copy "==" operator.
 		for( auto mut i= 0s; i < operators.functions.size(); ++i )
@@ -642,7 +642,7 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		if( operator_index != ~0s )
 		{
 			auto operators_lock= operators_ptr.try_lock_imut();
-			auto& operators= operators_lock.deref().functions_set;
+			auto& operators= operators_lock.deref();
 			REPORT_ERROR( MethodBodyGenerationFailed, class_members_ptr, operators.functions[operator_index].prototype_syntax_element.try_deref().src_loc )
 		}
 		return;
@@ -677,11 +677,11 @@ fn CodeBuilder::TryGenerateEqualityCompareOperator( mut this, ClassTypePtr& clas
 		auto mut class_members_lock= class_members_ptr.lock_mut();
 		auto &mut class_members= class_members_lock.deref();
 
-		var NamesScopeFunctionsSet mut functions_set;
-		operators_ptr= class_members.AddName( ust::string8(op_name), NamesScopeValue( move(functions_set) ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+		var FunctionsSet mut functions_set;
+		operators_ptr= class_members.AddName( ust::string8(op_name), NamesScopeValue( move(functions_set) ) ).try_deref().Get</FunctionsSet/>();
 	}
 	auto mut operators_lock= operators_ptr.try_lock_mut();
-	auto &mut operators= operators_lock.deref().functions_set;
+	var FunctionsSet &mut operators= operators_lock.deref();
 
 	if( operator_index == ~0s )
 	{
@@ -790,10 +790,10 @@ fn CodeBuilder::TryGenerateDestructorPrototype( mut this, ClassTypePtr& class_ty
 	auto class_members_lock= class_members_ptr.lock_imut();
 	auto& class_members= class_members_lock.deref();
 
-	// Destructors value should always exists and should always be NamesScopeFunctionsSet.
-	auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+	// Destructors value should always exists and should always be FunctionsSet.
+	auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</FunctionsSet/>();
 	auto mut destructors_lock= destructors_ptr.try_lock_mut();
-	auto &mut destructors= destructors_lock.deref().functions_set;
+	var FunctionsSet &mut destructors= destructors_lock.deref();
 
 	if( !destructors.functions.empty() )
 	{
@@ -837,10 +837,10 @@ fn CodeBuilder::TryGenerateDestructor( mut this, ClassTypePtr& class_type )
 	auto class_members_lock= class_members_ptr.lock_imut();
 	auto& class_members= class_members_lock.deref();
 
-	// Destructors value should always exists and should always be NamesScopeFunctionsSet.
-	auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+	// Destructors value should always exists and should always be FunctionsSet.
+	auto destructors_ptr= class_members.GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</FunctionsSet/>();
 	auto mut destructors_lock= destructors_ptr.try_lock_mut();
-	auto &mut destructors= destructors_lock.deref().functions_set;
+	var FunctionsSet &mut destructors= destructors_lock.deref();
 
 	if( !destructors.functions.back().is_generated ) // Should be nonempty - contain user-specified destructor of prepared prototype.
 	{
@@ -933,11 +933,11 @@ fn CodeBuilder::BuildCopyConstructorPart( mut this, NamesScopePtr& names_scope, 
 			return;
 		}
 
-		// Constructors value should always exists and should always be NamesScopeFunctionsSet.
-		auto constructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+		// Constructors value should always exists and should always be FunctionsSet.
+		auto constructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>();
 
 		// Search for copy constructor.
-		foreach( &constructor_ : constructors_ptr.try_lock_imut().deref().functions_set.functions )
+		foreach( &constructor_ : constructors_ptr.try_lock_imut().deref().functions )
 		{
 			if( IsCopyConstructor( constructor_, class_type ) )
 			{
@@ -1004,11 +1004,11 @@ fn CodeBuilder::BuildCopyAssignmentOperatorPart( mut this, NamesScopePtr& names_
 			return;
 		}
 
-		// Assignment operators value should always exists and should always be NamesScopeFunctionsSet.
-		auto operators_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+		// Assignment operators value should always exists and should always be FunctionsSet.
+		auto operators_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::Assign ) ).try_deref().Get</FunctionsSet/>();
 
 		// Search for copy assignment operator.
-		foreach( &operator_ : operators_ptr.try_lock_imut().deref().functions_set.functions )
+		foreach( &operator_ : operators_ptr.try_lock_imut().deref().functions )
 		{
 			if( IsCopyAssignmentOperator( operator_, class_type ) )
 			{
@@ -1102,7 +1102,7 @@ fn CodeBuilder::BuildEqualityCompareOperatorPart( mut this, NamesScopePtr& names
 
 		// Search for "==" operator.
 		auto operators_value= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ).try_deref();
-		foreach( &op_ : operators_value.Get</NamesScopeFunctionsSet/>().try_lock_imut().deref().functions_set.functions )
+		foreach( &op_ : operators_value.Get</FunctionsSet/>().try_lock_imut().deref().functions )
 		{
 			if( !IsEqualityCompareOperator( op_, class_type ) )
 			{
@@ -1162,12 +1162,12 @@ fn CodeBuilder::BuildDestructorPart( mut this, NamesScopePtr& names_scope, Funct
 	}
 	else if_var( &class_type : t.GetClassType() )
 	{
-		// Destructors value should always exists and should always be NamesScopeFunctionsSet.
-		auto destructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</NamesScopeFunctionsSet/>();
+		// Destructors value should always exists and should always be FunctionsSet.
+		auto destructors_ptr= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::destructor_ ) ).try_deref().Get</FunctionsSet/>();
 
 		// Destructors set should contain exactly one function.
 		auto destructors_lock= destructors_ptr.try_lock_imut();
-		var FunctionVariable& destructor_= destructors_lock.deref().functions_set.functions.front();
+		var FunctionVariable& destructor_= destructors_lock.deref().functions.front();
 
 		// Call it.
 		auto mut v= value;

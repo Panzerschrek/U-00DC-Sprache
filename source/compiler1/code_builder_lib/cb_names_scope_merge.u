@@ -110,7 +110,7 @@ fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</Variable/>& variab
 	halt;
 }
 
-fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set ) : NamesScopeValue
+fn CodeBuilder::DeepCopyNamesScopeValue( ust::shared_ptr_mut</FunctionsSet/>& functions_set ) : NamesScopeValue
 {
 	// Functions set may be extended, so, copy it.
 	return NamesScopeValue( functions_set.lock_imut().deref() );
@@ -208,8 +208,8 @@ fn CodeBuilder::NamesScopeMergeValues(
 		}
 	}
 	{ // Functions sets.
-		auto dst_functions_set_ptr= dst.Get</NamesScopeFunctionsSet/>();
-		auto src_functions_set_ptr= src.Get</NamesScopeFunctionsSet/>();
+		auto dst_functions_set_ptr= dst.Get</FunctionsSet/>();
+		auto src_functions_set_ptr= src.Get</FunctionsSet/>();
 		if( !dst_functions_set_ptr.empty() )
 		{
 			auto mut dst_lock= dst_functions_set_ptr.try_lock_mut();
@@ -218,7 +218,7 @@ fn CodeBuilder::NamesScopeMergeValues(
 			auto mut src_lock= src_functions_set_ptr.try_lock_mut();
 			auto& src= src_lock.deref();
 
-			foreach( &function : src.functions_set.functions )
+			foreach( &function : src.functions )
 			{
 				var SrcLoc mut func_src_loc;
 				if( !function.prototype_syntax_element.empty() )
@@ -230,7 +230,7 @@ fn CodeBuilder::NamesScopeMergeValues(
 					func_src_loc= function.body_syntax_element.try_deref().src_loc;
 				}
 
-				if_var( &mut prev_function : GetFunctionWithSameType( dst.functions_set, function.t ) )
+				if_var( &mut prev_function : GetFunctionWithSameType( dst, function.t ) )
 				{
 					if( function.prototype_syntax_element == prev_function.prototype_syntax_element )
 					{
@@ -262,13 +262,13 @@ fn CodeBuilder::NamesScopeMergeValues(
 					continue;
 				}
 
-				ApplyOverloadedFunction( dst.functions_set, function, target_names_scope, func_src_loc );
+				ApplyOverloadedFunction( dst, function, target_names_scope, func_src_loc );
 			}
 
-			foreach( &function_template : src.functions_set.function_templates )
+			foreach( &function_template : src.function_templates )
 			{
 				var bool mut prev_found= false;
-				foreach( &prev_function_template : dst.functions_set.function_templates )
+				foreach( &prev_function_template : dst.function_templates )
 				{
 					if( function_template == prev_function_template )
 					{
@@ -279,7 +279,7 @@ fn CodeBuilder::NamesScopeMergeValues(
 
 				if( !prev_found )
 				{
-					dst.functions_set.function_templates.push_back( function_template );
+					dst.function_templates.push_back( function_template );
 				}
 			}
 
@@ -412,13 +412,13 @@ fn CodeBuilder::NamesScopeMergeValues(
 fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 {
 	{
-		auto functions_set_ptr= value.Get</NamesScopeFunctionsSet/>();
+		auto functions_set_ptr= value.Get</FunctionsSet/>();
 		if( !functions_set_ptr.empty() )
 		{
 			var SrcLoc mut min_src_loc( SrcLoc::c_max_file_index, SrcLoc::c_max_line, SrcLoc::c_max_column );
 
 			auto lock= functions_set_ptr.try_lock_imut();
-			var NamesScopeFunctionsSet& functions_set= lock.deref();
+			var FunctionsSet& functions_set= lock.deref();
 
 			foreach( &syntax_element : functions_set.syntax_elements )
 			{
@@ -433,7 +433,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 				min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.deref().src_loc );
 			}
 
-			foreach( &function : functions_set.functions_set.functions )
+			foreach( &function : functions_set.functions )
 			{
 				if_var( &syntax_element : function.prototype_syntax_element )
 				{
@@ -444,7 +444,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 					min_src_loc= ust::min( SrcLoc(min_src_loc), syntax_element.src_loc );
 				}
 			}
-			foreach( &function_template_ptr : functions_set.functions_set.function_templates )
+			foreach( &function_template_ptr : functions_set.function_templates )
 			{
 				min_src_loc= ust::min( SrcLoc(min_src_loc), function_template_ptr.deref().syntax_element.deref().src_loc );
 			}

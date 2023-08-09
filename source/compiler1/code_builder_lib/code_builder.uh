@@ -159,7 +159,7 @@ private:
 
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Variable/>& variable ) : NamesScopeValue;
-	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</FunctionsSet/>& functions_set ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</ClassField/>& class_field ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( EnumTypePtr& enum_type ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeAlias/>& type_alias ) : NamesScopeValue;
@@ -207,7 +207,7 @@ private:
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScope/>& namespace_ );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Type/>& t );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Variable/>& variable );
-	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/>& functions_set );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassField/>& class_field );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Enum/>& enum_type );
@@ -222,7 +222,7 @@ private:
 
 	fn DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool;
 
-	fn BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set, bool build_body );
+	fn BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/> functions_set, bool build_body );
 	fn PrepareClassParentsList( mut this, ClassTypePtr& class_type );
 	fn BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
 	fn BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type );

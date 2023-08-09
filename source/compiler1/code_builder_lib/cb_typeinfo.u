@@ -471,7 +471,7 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 	with( mut lock : class_members.lock_mut() )
 	{
 		// Create functions set for constructors/destructors/assignment operators.
-		var NamesScopeFunctionsSet functions_set{ .class_= class_type_ptr };
+		var FunctionsSet functions_set{ .class_= class_type_ptr };
 		lock.deref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
 		lock.deref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
 		lock.deref().AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
@@ -636,13 +636,13 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 	{
 		foreach( &class_member : class_members_ptr.lock_imut().deref() )
 		{
-			auto functions_set_ptr= class_member.value().Get</NamesScopeFunctionsSet/>();
+			auto functions_set_ptr= class_member.value().Get</FunctionsSet/>();
 			if( functions_set_ptr.empty() )
 			{
 				continue;
 			}
 
-			foreach( &function : functions_set_ptr.try_lock_imut().deref().functions_set.functions )
+			foreach( &function : functions_set_ptr.try_lock_imut().deref().functions )
 			{
 				var ClassFunctionForTypeinfo mut f
 				{

@@ -1083,13 +1083,13 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	{
 		auto namespace_value= prev_names_scope.lock_imut().deref().GetThisScopeValue( function_name ).try_deref();
 
-		auto functions_set_ptr= namespace_value.Get</NamesScopeFunctionsSet/>();
+		auto functions_set_ptr= namespace_value.Get</FunctionsSet/>();
 		auto functions_set_lock= functions_set_ptr.try_lock_imut();
 		auto & functions_set= functions_set_lock.deref();
 
-		if( functions_set.functions_set.functions.size() == 1s )
+		if( functions_set.functions.size() == 1s )
 		{
-			return functions_set.functions_set.functions.front();
+			return functions_set.functions.front();
 		}
 
 		return ust::null_optional;
@@ -1105,16 +1105,16 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 	NamesScopeFill( result_names_scope, template_syntax_element.function, function_template.class_, Synt::ClassVisibility::Public /* TODO - set correct visibility */ );
 	auto result_namespace_value= result_names_scope.lock_imut().deref().GetThisScopeValue( function_name ).try_deref();
 
-	auto result_functions_set_ptr= result_namespace_value.Get</NamesScopeFunctionsSet/>();
+	auto result_functions_set_ptr= result_namespace_value.Get</FunctionsSet/>();
 	BuildFunctionsSet( result_names_scope, result_functions_set_ptr.try_to_non_nullable(), false );
 
-	if( result_functions_set_ptr.try_lock_imut().deref().functions_set.functions.size() != 1s )
+	if( result_functions_set_ptr.try_lock_imut().deref().functions.size() != 1s )
 	{
 		return ust::null_optional;
 	}
 
 	// Set base template and mangled name.
-	auto mut function_variable= result_functions_set_ptr.try_lock_imut().deref().functions_set.functions.front();
+	auto mut function_variable= result_functions_set_ptr.try_lock_imut().deref().functions.front();
 	function_variable.base_template= function_template_ptr;
 
 	auto name_mangled=
@@ -1130,7 +1130,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 	with( mut lock : result_functions_set_ptr.try_lock_mut() )
 	{
-		lock.deref().functions_set.functions.front()= function_variable;
+		lock.deref().functions.front()= function_variable;
 	}
 
 	// Build func code to know constexpr-ness.
@@ -1143,7 +1143,7 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 	with( mut lock : result_functions_set_ptr.try_lock_mut() )
 	{
-		lock.deref().functions_set.functions.front()= function_variable;
+		lock.deref().functions.front()= function_variable;
 	}
 
 	return move(function_variable);
@@ -1208,7 +1208,7 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 		return lock.deref().GetThisScopeValue( names_scope_value_key ).try_deref();
 	}
 
-	var NamesScopeFunctionsSet mut result_functions_set;
+	var FunctionsSet mut result_functions_set;
 	result_functions_set.class_= move(functions_set_class);
 	foreach( &function_template_ptr : functions_set.function_templates )
 	{
@@ -1257,10 +1257,10 @@ fn CodeBuilder::ParametrizeTemplateFunctions(
 			.instantiation_point_names_scope= args_names_scope,
 		};
 
-		result_functions_set.functions_set.parametrized_function_templates.push_back( move(parametrized_function_template) );
+		result_functions_set.parametrized_function_templates.push_back( move(parametrized_function_template) );
 	}
 
-	if( result_functions_set.functions_set.parametrized_function_templates.empty() )
+	if( result_functions_set.parametrized_function_templates.empty() )
 	{
 		REPORT_ERROR( TemplateFunctionGenerationFailed, args_names_scope, src_loc, ust::string8("TODO - name") )
 		return ust::null_optional;

@@ -13,12 +13,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		return t.try_lock_imut().deref();
 	}
 
-	auto f_ptr= names_scope_value.Get</NamesScopeFunctionsSet/>();
+	auto f_ptr= names_scope_value.Get</FunctionsSet/>();
 	if( !f_ptr.empty() )
 	{
-		with( &names_scope_functions_set : f_ptr.try_lock_imut().deref() )
+		auto mut f_ptr_non_null= f_ptr.try_to_non_nullable();
+		with( &functions_set : f_ptr_non_null.lock_imut().deref() )
 		{
-			if( !names_scope_functions_set.class_.empty() )
+			if( !functions_set.class_.empty() )
 			{
 				// Append "this" to functions set of this class.
 				if( !function_context.this_.empty() && !function_context.whole_this_is_unavailable )
@@ -28,14 +29,14 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					{
 						if_var( &this_class_type : this_.t.GetClassType() )
 						{
-							auto functions_set_class_non_null= names_scope_functions_set.class_.try_to_non_nullable();
+							auto functions_set_class_non_null= functions_set.class_.try_to_non_nullable();
 							if( functions_set_class_non_null == this_class_type ||
 								this_class_type.lock_imut().deref().HasAncestor( functions_set_class_non_null ) )
 							{
 								var ThisMethodsSet mut this_methods_set
 								{
 									.this_= this_non_null,
-									.functions_set= names_scope_functions_set.functions_set,
+									.functions_set= f_ptr_non_null,
 								};
 								return move(this_methods_set);
 							}
@@ -43,9 +44,9 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					}
 				}
 			}
-
-			return names_scope_functions_set.functions_set;
 		}
+
+		return f_ptr_non_null;
 	}
 
 	auto var_ptr= names_scope_value.Get</Variable/>();
@@ -403,7 +404,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	var NamesScopeValue& base_= base_opt.try_deref();
 
 	auto type_templates_set= base_.Get</TypeTemplatesSet/>();
-	auto functions_set= base_.Get</NamesScopeFunctionsSet/>();
+	auto functions_set= base_.Get</FunctionsSet/>();
 	if( !type_templates_set.empty() )
 	{
 		auto generated_type= GenTemplateType(
@@ -424,7 +425,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 		auto lock= functions_set.try_lock_imut();
 		auto& f= lock.deref();
 
-		if( f.functions_set.function_templates.empty() )
+		if( f.function_templates.empty() )
 		{
 			REPORT_ERROR( ValueIsNotTemplate, names_scope, template_parametrization.src_loc )
 			return ust::null_optional;
@@ -434,7 +435,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			ParametrizeTemplateFunctions(
 				names_scope,
 				function_context,
-				f.functions_set,
+				f,
 				f.class_,
 				template_parametrization.template_args.deref(),
 				template_parametrization.src_loc );
@@ -474,7 +475,7 @@ fn CodeBuilder::BuildGlobalThingDuringResolveIfNecessary(mut this, NamesScopePtr
 	// Build almost everything except classes.
 	// Classes building will be triggered later - during class usage or class name lookup (if it is necessary).
 
-	auto f_ptr= value.Get</NamesScopeFunctionsSet/>();
+	auto f_ptr= value.Get</FunctionsSet/>();
 	if( !f_ptr.empty() )
 	{
 		// In case of access to functions set using function name, build only prototype, not full body.
@@ -598,7 +599,7 @@ fn CodeBuilder::ResolveClassValueImpl(
 	{
 		auto visibility= class_type.lock_imut().deref().GetMemberVisibility( name );
 
-		if( !value.Get</NamesScopeFunctionsSet/>().empty() ||
+		if( !value.Get</FunctionsSet/>().empty() ||
 			!value.Get</TypeTemplatesSet/>().empty() )
 		{
 			if( !class_type.lock_imut().deref().is_complete )
@@ -638,7 +639,7 @@ fn CodeBuilder::ResolveClassValueImpl(
 			if( current_parent_class_value[1] != Synt::ClassVisibility::Private )
 			{
 				var bool current_thing_is_mergable=
-					!current_parent_class_value[0].Get</NamesScopeFunctionsSet/>().empty() ||
+					!current_parent_class_value[0].Get</FunctionsSet/>().empty() ||
 					!current_parent_class_value[0].Get</TypeTemplatesSet/>().empty();
 
 				if( current_thing_is_mergable && has_mergable_thing && !class_type.lock_imut().deref().is_complete && !recursive_call )

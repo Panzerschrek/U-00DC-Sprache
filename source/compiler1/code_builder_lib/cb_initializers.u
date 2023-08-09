@@ -694,7 +694,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			return LLVMValueRef::Null;
 		}
 
-		auto constructors_ptr= member.try_deref().Get</NamesScopeFunctionsSet/>();
+		auto constructors_ptr= member.try_deref().Get</FunctionsSet/>();
 		// Should be functions set 100%
 		// Should be complete here.
 
@@ -702,7 +702,7 @@ fn CodeBuilder::BuildEmptyInitializer( mut this, NamesScopePtr& names_scope, Fun
 			names_scope,
 			function_context,
 			variable_ptr,
-			constructors_ptr.try_lock_imut().deref().functions_set,
+			constructors_ptr.try_lock_imut().deref(),
 			ust::empty_range,
 			src_loc );
 
@@ -1013,7 +1013,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			return LLVMValueRef::Null;
 		}
 
-		auto constructors_ptr= member.try_deref().Get</NamesScopeFunctionsSet/>();
+		auto constructors_ptr= member.try_deref().Get</FunctionsSet/>();
 		// Should be functions set 100%
 		// Should be complete here.
 
@@ -1021,7 +1021,7 @@ fn CodeBuilder::BuildConstructorInitializer( mut this, NamesScopePtr& names_scop
 			names_scope,
 			function_context,
 			variable_ptr,
-			constructors_ptr.try_lock_imut().deref().functions_set,
+			constructors_ptr.try_lock_imut().deref(),
 			args.range(),
 			src_loc );
 
@@ -1069,18 +1069,21 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 		return initializer_variable.constexpr_value;
 	}
 
-	var ust::optional_ref_imut</FunctionsSet/> mut functions_set_opt;
-	if_var( &functions_set : initializer_value.get</FunctionsSet/>() )
+	var ust::shared_ptr_nullable_imut</FunctionsSet/> mut functions_set_opt;
+	if_var( &functions_set : initializer_value.get</FunctionsSetPtr/>() )
 	{
-		functions_set_opt.reset( functions_set );
+		functions_set_opt= functions_set;
 	}
 	if_var( &this_methods_set : initializer_value.get</ThisMethodsSet/>() )
 	{
-		functions_set_opt.reset( this_methods_set.functions_set );
+		functions_set_opt= this_methods_set.functions_set;
 	}
 
-	if_var( &functions_set : functions_set_opt )
+	if( !functions_set_opt.empty() )
 	{
+		auto lock= functions_set_opt.try_lock_imut();
+		var FunctionsSet& functions_set= lock.deref();
+
 		var ust::vector</ FunctionVariable /> mut exact_type_functions;
 		var ust::vector</ FunctionVariable /> mut functions_with_conversion;
 		foreach( &function_variable : functions_set.functions )
