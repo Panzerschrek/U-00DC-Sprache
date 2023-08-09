@@ -237,7 +237,10 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 		return false;
 	}
 
-	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), U1::GetCodeBuilderOptionsForTests() );
+	auto mut options= U1::GetCodeBuilderOptionsForTests();
+	options.report_about_unused_names= false;
+
+	var U1::CodeBuilder mut code_builder( llvm_context, data_layout, U1::GetTestsTargetTripleStr(), options );
 	auto code_builder_res= code_builder.BuildProgram( source_graph );
 
 	unsafe( LLVMDisposeModule( code_builder_res.llvm_module ) );

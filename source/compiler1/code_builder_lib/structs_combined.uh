@@ -146,6 +146,7 @@ struct ClassType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	bool is_complete= false;
+	bool referenced= false;
 
 	bool is_default_constructible= false;
 	bool is_copy_constructible= false;

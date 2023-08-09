@@ -110,7 +110,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto class_type_ptr= names_scope_value.Get</ClassType/>();
 	if( !class_type_ptr.empty() )
 	{
-		return Type( class_type_ptr.try_to_non_nullable() );
+		auto mut class_type_ptr_non_null= class_type_ptr.try_to_non_nullable();
+		with( mut lock : class_type_ptr_non_null.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
+		return Type( move(class_type_ptr_non_null) );
 	}
 
 	auto enum_type_ptr= names_scope_value.Get</Enum/>();
