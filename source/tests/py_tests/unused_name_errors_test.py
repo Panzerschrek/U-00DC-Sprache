@@ -1227,6 +1227,17 @@ def UnusedFunction_Test12():
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
 
+def UnusedFunction_Test13():
+	c_program_text= """
+		fn Bar();
+		fn nomangle Foo() : (fn())
+		{
+			return (fn())(Bar); // Ok - take pointer to function.
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
 def UnusedTypeTemplate_Test0():
 	c_program_text= """
 		template</type T/> type Vec3= [ T, 3 ];
@@ -1569,3 +1580,54 @@ def UnusedClassFunction_Test11():
 		}
 	"""
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassFunction_Test12():
+	c_program_text= """
+		struct S
+		{
+			op()(this) {} // Unused overloaded postfix operator.
+			fn destructor() {}
+		}
+		fn nomangle Foo() : size_type
+		{
+			return typeinfo</S/>.size_if;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassFunction_Test12():
+	c_program_text= """
+		struct S
+		{
+			op++(mut this) {} // Unused overloaded prefix operator.
+			fn destructor() {}
+		}
+		fn nomangle Foo() : size_type
+		{
+			return typeinfo</S/>.size_if;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassFunction_Test14():
+	c_program_text= """
+		struct S
+		{
+			op+(S a, S b) { return S(); } // Unused binary operator
+			fn destructor() {}
+		}
+		fn nomangle Foo() : size_type
+		{
+			return typeinfo</S/>.size_if;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )

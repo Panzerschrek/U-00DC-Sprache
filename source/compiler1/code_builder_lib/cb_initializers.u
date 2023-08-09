@@ -1152,6 +1152,11 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 				return LLVMValueRef::Null;
 			}
 
+			with( mut lock : function_variable.llvm_function.lock_mut() )
+			{
+				lock.deref().referenced= true;
+			}
+
 			var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( function_variable );
 			CreateTypedStore( function_context, variable.t, llvm_function, variable.llvm_value );
 
@@ -1168,6 +1173,11 @@ fn CodeBuilder::InitializeFunctionPointer( mut this,  NamesScopePtr& names_scope
 			{
 				REPORT_ERROR( AccessingDeletedMethod, names_scope, initializer_src_loc )
 				return LLVMValueRef::Null;
+			}
+
+			with( mut lock : function_variable.llvm_function.lock_mut() )
+			{
+				lock.deref().referenced= true;
 			}
 
 			// TODO - maybe disable conversion for expression initializer?
