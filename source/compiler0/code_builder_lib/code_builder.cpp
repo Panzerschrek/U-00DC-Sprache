@@ -830,10 +830,9 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 			{
 				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
 			}
-			else if( const auto class_field= value.GetClassField() )
+			else if( value.GetClassField() != nullptr )
 			{
-				// TODO - decide what to do with class fields.
-				(void)class_field;
+				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
 			}
 			else if( value.GetThisOverloadedMethodsSet() != nullptr )
 			{

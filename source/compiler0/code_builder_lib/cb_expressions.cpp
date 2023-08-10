@@ -303,7 +303,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	const auto class_value= ResolveClassValue( class_type, member_access_operator.member_name_ );
-	const NamesScopeValue* const class_member= class_value.first;
+	NamesScopeValue* const class_member= class_value.first;
 	if( class_member == nullptr )
 	{
 		REPORT_ERROR( NameNotFound, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_ );
@@ -348,7 +348,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc_ );
 
 	if( const ClassFieldPtr field= class_member->value.GetClassField() )
+	{
+		class_member->referenced= true;
 		return AccessClassField( names, function_context, variable, *field, member_access_operator.member_name_, member_access_operator.src_loc_ );
+	}
 
 	REPORT_ERROR( NotImplemented, names.GetErrors(), member_access_operator.src_loc_, "class members, except fields or methods" );
 	return ErrorValue();

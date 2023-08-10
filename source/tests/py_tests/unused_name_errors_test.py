@@ -190,7 +190,7 @@ def UnusedValueArgument_Test10():
 	c_program_text= """
 		fn nomangle Foo(C c) // Classes considered to be non-trivial and possibly may have non-trivial destructor. Avoid reporting about unreferenced arg.
 		{}
-		class C{ i32 x; i32 y; }
+		class C{}
 	"""
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
@@ -199,7 +199,7 @@ def UnusedValueArgument_Test11():
 	c_program_text= """
 		fn nomangle Foo(tup[C, bool] c) // Classes considered to be non-trivial and possibly may have non-trivial destructor. Avoid reporting about unreferenced arg.
 		{}
-		class C{ i32 x; i32 y; }
+		class C{}
 	"""
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
@@ -770,7 +770,7 @@ def VariableUsage_Test5():
 			var S mut s= zero_init;
 			move(s); // Use local variable inside "move".
 		}
-		struct S{ i32 x; }
+		struct S{ }
 	"""
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
 
@@ -1648,6 +1648,114 @@ def UnusedClassFunction_Test15():
 			++s0; // Ok, use ++ operator
 			var S s2= s0 + s1; // Ok, use binary + operator
 			s2(); // Ok - use () operator
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassField_Test0():
+	c_program_text= """
+		struct S
+		{
+			i32 x; // Totally unused.
+		}
+		fn nomangle Foo() : S
+		{
+			var S s= zero_init;
+			return s;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassField_Test1():
+	c_program_text= """
+		struct S
+		{
+			i32 x; // Used only for initialization - this counts as unused.
+		}
+		fn nomangle Foo() : S
+		{
+			var S s{ .x= 42 };
+			return s;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassField_Test2():
+	c_program_text= """
+		struct S
+		{
+			i32 x; // Used only for initialization via constructor initializer list  - this counts as unused.
+			fn constructor() ( x= 77 ) {}
+		}
+		fn nomangle Foo() : S
+		{
+			var S s;
+			return s;
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text, True ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "UnusedName", 4 ) )
+
+
+def UnusedClassFunction_Test3():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+		}
+		fn nomangle Foo() : S
+		{
+			var S mut s= zero_init;
+			s.x= 66; // Ok - used via member access operator.
+			return s;
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassFunction_Test4():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn SetX( mut this, i32 in_x )
+			{
+				x= in_x; // Ok - access via simple name.
+			}
+		}
+		fn nomangle Foo() : S
+		{
+			var S mut s= zero_init;
+			s.SetX( 123 );
+			return s;
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
+def UnusedClassFunction_Test5():
+	c_program_text= """
+		struct S
+		{
+			i32 x;
+			fn SetX( mut this, i32 in_x )
+			{
+				S::x= in_x; // Ok - access via complex name.
+			}
+		}
+		fn nomangle Foo() : S
+		{
+			var S mut s= zero_init;
+			s.SetX( 123 );
+			return s;
 		}
 	"""
 	tests_lib.build_program_unused_errors_enabled( c_program_text )
