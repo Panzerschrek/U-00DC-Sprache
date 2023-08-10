@@ -1004,6 +1004,23 @@ def UnusedGlobaTypeAlias_Test3():
 	assert( HaveError( errors_list, "UnusedName", 2 ) )
 
 
+def UnusedGlobaTypeAlias_Test4():
+	c_program_text= """
+		struct S
+		{
+			type Lol= i32;
+		}
+		type SAlias= S;
+		fn nomangle Foo() : S
+		{
+			var SAlias::Lol mut i= 0; // Use type alias here as name lookup base.
+			++i;
+			return S();
+		}
+	"""
+	tests_lib.build_program_unused_errors_enabled( c_program_text )
+
+
 def UnusedClass_Test0():
 	c_program_text= """
 		struct S{}

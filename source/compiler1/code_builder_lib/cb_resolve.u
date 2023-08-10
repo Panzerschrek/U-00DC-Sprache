@@ -299,6 +299,11 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	}
 	if( !type_alias.empty() )
 	{
+		with( mut lock : type_alias.try_lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
 		if_var( &t : type_alias.try_lock_imut().deref().t )
 		{
 			if_var( &class_type : t.GetClassType() )
