@@ -319,8 +319,8 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.src_loc, member_initializer.name )
 			return LLVMValueRef::Null;
 		}
-		auto field_lock= field_ptr.try_lock_imut();
-		var ClassField& class_field= field_lock.deref();
+
+		var ClassField class_field= field_ptr.try_lock_imut().deref(); // Copy to avoid holding lock object.
 
 		var size_type field_index( class_field.index );
 		if( field_index < initialized_fields.size() )
@@ -389,8 +389,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 	{
 		var ust::string8& field_name= field_pair[0];
 
-		auto field_lock= field_pair[1].lock_imut();
-		var ClassField& field= field_lock.deref();
+		var ClassField field= field_pair[1].lock_imut().deref(); // Copy to avoid holding lock object.
 
 		var size_type field_index( field.index );
 		if( field_index < initialized_fields.size() && initialized_fields[ field_index ] )
@@ -551,8 +550,7 @@ fn CodeBuilder::BuildInitializer( mut this, NamesScopePtr& names_scope, Function
 
 		foreach( &field_pair : class_type.fields_order )
 		{
-			auto field_lock= field_pair[1].lock_imut();
-			var ClassField& field= field_lock.deref();
+			var ClassField field= field_pair[1].lock_imut().deref(); // Copy to avoid holding lock object.
 
 			if( field.index == ~0u ){ continue; } // May be in case of error
 
@@ -1352,23 +1350,26 @@ fn CodeBuilder::BuildConstructorInitialization(
 			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope, member_initializer.src_loc, member_initializer.name )
 			continue;
 		}
-		if( class_field_ptr.try_lock_imut().deref().source_class != class_type )
+		with( &class_field : class_field_ptr.try_lock_imut().deref() )
 		{
-			have_fields_errors= true;
-			REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.src_loc, member_initializer.name )
-			continue;
-		}
-
-		var size_type field_index( class_field_ptr.try_lock_imut().deref().index );
-		if( field_index < initialized_fields.size() )
-		{
-			if( initialized_fields[ field_index ] )
+			if( class_field.source_class != class_type )
 			{
 				have_fields_errors= true;
-				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
+				REPORT_ERROR( InitializerForBaseClassField, names_scope, member_initializer.src_loc, member_initializer.name )
 				continue;
 			}
-			initialized_fields[ field_index ]= true;
+
+			var size_type field_index( class_field.index );
+			if( field_index < initialized_fields.size() )
+			{
+				if( initialized_fields[ field_index ] )
+				{
+					have_fields_errors= true;
+					REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope, member_initializer.src_loc, member_initializer.name )
+					continue;
+				}
+				initialized_fields[ field_index ]= true;
+			}
 		}
 	}
 
@@ -1397,8 +1398,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	{
 		var ust::string8& field_name= field_pair[0];
 
-		auto field_lock= field_pair[1].lock_imut();
-		var ClassField& class_field= field_lock.deref();
+		var ClassField class_field= field_pair[1].lock_imut().deref(); // Take copy in order to avoid holding lock object.
 
 		var size_type field_index( class_field.index );
 		if( field_index < initialized_fields.size() && initialized_fields[ field_index ] )
@@ -1491,8 +1491,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 		}
 
 		auto field_ptr= class_members.GetThisScopeValue( member_initializer.name ).try_deref().Get</ClassField/>();
-		auto field_lock= field_ptr.try_lock_imut();
-		var ClassField & class_field= field_lock.deref();
+		var ClassField class_field= field_ptr.try_lock_imut().deref(); // Take copy in order to avoid holding lock object.
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 
@@ -1554,8 +1553,7 @@ fn CodeBuilder::CheckClassFieldsInitializers( mut this, ClassTypePtr& class_type
 
 	foreach( &field_pair : class_type.lock_imut().deref().fields_order )
 	{
-		auto field_lock= field_pair[1].lock_imut();
-		var ClassField & class_field= field_lock.deref();
+		var ClassField class_field= field_pair[1].lock_imut().deref(); // Take copy in order to avoid holding lock object.
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 

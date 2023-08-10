@@ -447,6 +447,7 @@ struct ClassField
 	bool is_mutable;
 	u32 index= ~0u; // for "getelementptr" instruction
 	u32 original_index= ~0u; // Index of class field in class declaration
+	bool used= false;
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 
 	// Class, where this field is defined. May be not same class in case of inheritance.

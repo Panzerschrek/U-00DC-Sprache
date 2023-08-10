@@ -73,8 +73,12 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto class_field_ptr= names_scope_value.Get</ClassField/>();
 	if( !class_field_ptr.empty() )
 	{
-		auto field_lock= class_field_ptr.try_lock_imut();
-		var ClassField& field= field_lock.deref();
+		with( mut lock : class_field_ptr.try_lock_mut() )
+		{
+			lock.deref().used= true;
+		}
+
+		var ClassField field= class_field_ptr.try_lock_imut().deref(); // Take copy in order to avoid holding lock object.
 		var ust::string8& field_name= field.syntax_element.deref().name;
 
 		if( function_context.this_.empty() )

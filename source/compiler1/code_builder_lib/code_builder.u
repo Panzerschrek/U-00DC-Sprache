@@ -1545,6 +1545,19 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 				}
 			}
 		}
+
+		auto class_field_ptr= names_scope_value.Get</ClassField/>();
+		if( !class_field_ptr.empty() )
+		{
+			with( &class_field : class_field_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= class_field.syntax_element.deref().src_loc;
+				if( !class_field.used && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+				}
+			}
+		}
 	}
 }
 

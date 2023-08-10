@@ -1536,6 +1536,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
 		}
 
+		with( mut lock : field_ptr.try_lock_mut() )
+		{
+			lock.deref().used= true;
+		}
+
 		return AccessClassField( names_scope, function_context, variable_ptr, field_ptr.try_lock_imut().deref(), member_access_operator.member_name, member_access_operator.src_loc );
 	}
 
