@@ -910,13 +910,12 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	TemplateTypePreparationResult result;
 
 	const TypeTemplate& type_template= *type_template_ptr;
-	NamesScope& template_names_scope= *type_template.parent_namespace;
 
 	if( template_arguments.size() < type_template.first_optional_signature_param ||
 		template_arguments.size() > type_template.signature_params.size() )
 		return result;
 
-	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, &template_names_scope );
+	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, type_template.parent_namespace );
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_params )
 		result.template_args_namespace->AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), SrcLoc() ) );
 
@@ -933,7 +932,7 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 			const Value value= BuildExpressionCode( expr, *result.template_args_namespace, *global_function_context_ );
 			auto template_arg_opt= ValueToTemplateArg( value, result.template_args_namespace->GetErrors(), Synt::GetExpressionSrcLoc(expr) );
 			if( template_arg_opt != std::nullopt )
-				out_signature_arg= std::move( *template_arg_opt);
+				out_signature_arg= std::move( *template_arg_opt );
 		}
 
 		if( !MatchTemplateArg( type_template, *result.template_args_namespace, out_signature_arg, src_loc, type_template.signature_params[i] ) )
@@ -1211,10 +1210,10 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	const std::vector<FunctionTemplatePtr>& function_templates= functions_set.template_functions;
 	U_ASSERT( !function_templates.empty() );
 
-	TemplateArgs template_args;
-	EvaluateTemplateArgs( template_arguments, src_loc, arguments_names_scope, function_context, template_args );
+	llvm::SmallVector<TemplateArg, 8> arguments_calculated;
+	EvaluateTemplateArgs( template_arguments, src_loc, arguments_names_scope, function_context, arguments_calculated );
 
-	if( template_args.size() != template_arguments.size() )
+	if( arguments_calculated.size() != template_arguments.size() )
 		return nullptr;
 
 	// We needs unique name here, so use for it address of function templates set and template parameters.
@@ -1224,7 +1223,7 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 		name_encoded+= std::to_string( reinterpret_cast<uintptr_t>( &template_ ) );
 		name_encoded+= "_";
 	}
-	name_encoded+= mangler_->MangleTemplateArgs( template_args );
+	name_encoded+= mangler_->MangleTemplateArgs( arguments_calculated );
 
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
 		return &it->second; // Already generated.
@@ -1234,20 +1233,23 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	for( const FunctionTemplatePtr& function_template_ptr : function_templates )
 	{
 		const FunctionTemplate& function_template= *function_template_ptr;
-		if( template_args.size() > function_template.template_params.size() )
+		if( function_template.template_params.size() < arguments_calculated.size() )
+		{
+			// Ignore functions with number of template parameters less than number of specified arguments.
 			continue;
+		}
 
 		NamesScope args_names_scope("", function_template.parent_namespace );
 		for( const TemplateBase::TemplateParameter& param : function_template.template_params )
 			args_names_scope.AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), SrcLoc() ) );
 
 		bool ok= true;
-		for( size_t i= 0u; i < template_args.size(); ++i )
+		for( size_t i= 0u; i < arguments_calculated.size(); ++i )
 		{
 			ok&= MatchTemplateArg(
 				function_template,
 				args_names_scope,
-				template_args[i],
+				arguments_calculated[i],
 				src_loc,
 				TemplateSignatureParam::TemplateParam{ i } );
 		}
@@ -1257,10 +1259,7 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 
 		const auto new_template= std::make_shared<FunctionTemplate>(function_template);
 		new_template->parent= function_template_ptr;
-
-		// Reduce count of template arguments in new function template.
-		new_template->known_template_args= template_args;
-		new_template->known_template_args.resize( std::min( new_template->known_template_args.size(), function_template.template_params.size() ) );
+		new_template->known_template_args.insert( new_template->known_template_args.end(), arguments_calculated.begin(), arguments_calculated.end() );
 
 		result.template_functions.push_back( new_template );
 	} // for function templates
@@ -1293,7 +1292,7 @@ void CodeBuilder::EvaluateTemplateArgs(
 		const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
 		auto template_arg_opt= ValueToTemplateArg( value, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
 		if( template_arg_opt != std::nullopt )
-			out_args.push_back( std::move( *template_arg_opt) );
+			out_args.push_back( std::move( *template_arg_opt ) );
 	}
 
 	DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
