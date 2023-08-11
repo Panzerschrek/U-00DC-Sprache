@@ -74,7 +74,6 @@ private:
 	{
 		TypeTemplatePtr type_template;
 		NamesScopePtr template_args_namespace;
-		TemplateArgs template_args;
 		TemplateArgs signature_args;
 	};
 
@@ -341,8 +340,7 @@ private:
 	TemplateTypePreparationResult PrepareTemplateType(
 		const SrcLoc& src_loc,
 		const TypeTemplatePtr& type_template_ptr,
-		llvm::ArrayRef<TemplateArg> template_arguments,
-		NamesScope& arguments_names_scope );
+		llvm::ArrayRef<TemplateArg> template_arguments );
 
 	NamesScopeValue* FinishTemplateTypeGeneration(
 		const SrcLoc& src_loc,

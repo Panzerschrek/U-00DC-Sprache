@@ -21,34 +21,34 @@ namespace
 void CreateTemplateErrorsContext(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
-	const NamesScopePtr& template_parameters_namespace,
+	const NamesScopePtr& template_args_namespace,
 	const TemplateBase& template_,
-	const std::string_view template_name,
-	const llvm::ArrayRef<TemplateArg> template_args )
+	const std::string_view template_name )
 {
 	REPORT_ERROR( TemplateContext, errors_container, src_loc );
 	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
 	template_error_context->context_declaration_src_loc= template_.src_loc;
 	errors_container.back().template_context= template_error_context;
-	template_parameters_namespace->SetErrors( template_error_context->errors );
+	template_args_namespace->SetErrors( template_error_context->errors );
 
 	{
 		std::string args_description;
 		args_description+= "[ with ";
 
-		for( size_t i= 0u; i < template_args.size() ; ++i )
+		for( const auto& param : template_.template_params )
 		{
-			const TemplateArg& arg= template_args[i];
+			if( const auto value= template_args_namespace->GetThisScopeValue(param.name) )
+			{
+				args_description+= param.name + " = ";
+				if( const Type* const type= value->value.GetTypeName() )
+					args_description+= type->ToString();
+				else if( const auto variable= value->value.GetVariable() )
+					args_description+= ConstantVariableToString( TemplateVariableArg( *variable ) );
+				else {}
 
-			args_description+= template_.template_params[i].name + " = ";
-			if( const Type* const type= std::get_if<Type>( &arg ) )
-				args_description+= type->ToString();
-			else if( const auto variable= std::get_if<TemplateVariableArg>( &arg ) )
-				args_description+= ConstantVariableToString( *variable );
-			else U_ASSERT(false);
-
-			if( i + 1u < template_args.size() )
-				args_description+= ", ";
+				if( &param != &template_.template_params.back() )
+					args_description+= ", ";
+			}
 		}
 
 		args_description+= " ]";
@@ -876,8 +876,7 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 			PrepareTemplateType(
 				src_loc,
 				type_template,
-				arguments_calculated,
-				arguments_names_scope );
+				arguments_calculated );
 		if( generated_type.type_template != nullptr )
 			prepared_types.push_back( std::move(generated_type) );
 	}
@@ -901,8 +900,7 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	const SrcLoc& src_loc,
 	const TypeTemplatePtr& type_template_ptr,
-	const llvm::ArrayRef<TemplateArg> template_arguments,
-	NamesScope& arguments_names_scope )
+	const llvm::ArrayRef<TemplateArg> template_arguments )
 {
 	// This method does not generate some errors, because instantiation may fail
 	// for one class template, but success for other.
@@ -939,10 +937,6 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 			return result;
 	} // for signature arguments
 
-	result.template_args= ExtractTemplateArgs( type_template, *result.template_args_namespace, arguments_names_scope.GetErrors(), src_loc );
-	if( result.template_args.size() != type_template.template_params.size() )
-		return result;
-
 	result.type_template= type_template_ptr;
 
 	return result;
@@ -976,8 +970,7 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 		src_loc,
 		template_args_namespace,
 		type_template,
-		type_template.syntax_element->name_,
-		template_type_preparation_result.template_args );
+		type_template.syntax_element->name_ );
 
 	if( const auto class_ptr= std::get_if<Synt::ClassPtr>( &type_template.syntax_element->something_ ) )
 	{
@@ -1159,7 +1152,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	}
 	AddNewTemplateThing( std::move(name_encoded), NamesScopeValue( template_args_namespace, function_declaration.src_loc_ ) );
 
-	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name, template_args );
+	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name );
 
 	// First, prepare only as prototype.
 	NamesScopeFill( *template_args_namespace, function_template.syntax_element->function_, function_template.base_class );
