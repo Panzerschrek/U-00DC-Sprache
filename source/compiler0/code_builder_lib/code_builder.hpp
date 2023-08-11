@@ -353,14 +353,14 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
-		const ArgsVector<FunctionType::Param>& actual_args,
+		llvm::ArrayRef<FunctionType::Param> actual_args,
 		bool first_actual_arg_is_this );
 
 	TemplateFunctionPreparationResult PrepareTemplateFunction(
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
-		const ArgsVector<FunctionType::Param>& actual_args,
+		llvm::ArrayRef<FunctionType::Param> actual_args,
 		bool first_actual_arg_is_this );
 
 	const FunctionVariable* FinishTemplateFunctionParametrization(
@@ -379,6 +379,9 @@ private:
 		llvm::ArrayRef<Synt::Expression> template_arguments,
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );
+
+	// Returns vector with wrong size in cas of error.
+	std::vector<TemplateArg> ExtractTemplateArgs( const TemplateBase& template_, const NamesScope& template_args_namespace, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
 
 	std::optional<TemplateArg> ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
 

@@ -961,22 +961,9 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 			return result;
 	} // for signature arguments
 
-	for( const auto& template_param : type_template.template_params )
-	{
-		const NamesScopeValue* const value= result.template_args_namespace->GetThisScopeValue( template_param.name );
-
-		if( const auto type= value->value.GetTypeName() )
-			result.template_args.push_back( *type );
-		else if( const auto variable= value->value.GetVariable() )
-			result.template_args.push_back( TemplateVariableArg( *variable ) );
-		else
-		{
-			// SPRACHE_TODO - maybe not generate this error?
-			// Other function templates, for example, can match given aruments.
-			REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), src_loc );
-			return result;
-		}
-	}
+	result.template_args= ExtractTemplateArgs( type_template, *result.template_args_namespace, arguments_names_scope.GetErrors(), src_loc );
+	if( result.template_args.size() != type_template.template_params.size() )
+		return result;
 
 	result.type_template= type_template_ptr;
 
@@ -1060,7 +1047,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
-	const ArgsVector<FunctionType::Param>& actual_args,
+	const llvm::ArrayRef<FunctionType::Param> actual_args,
 	const bool first_actual_arg_is_this )
 {
 	const auto res= PrepareTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this );
@@ -1073,7 +1060,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
-	const ArgsVector<FunctionType::Param>& actual_args,
+	const llvm::ArrayRef<FunctionType::Param> actual_args,
 	const bool first_actual_arg_is_this )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
@@ -1135,22 +1122,9 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 
 	} // for template function arguments
 
-	for( const auto& template_param : function_template.template_params )
-	{
-		const NamesScopeValue* const value= result.template_args_namespace->GetThisScopeValue( template_param.name );
-
-		if( const auto type= value->value.GetTypeName() )
-			result.template_args.push_back( *type );
-		else if( const auto variable= value->value.GetVariable() )
-			result.template_args.push_back( TemplateVariableArg( *variable ) );
-		else
-		{
-			// SPRACHE_TODO - maybe not generate this error?
-			// Other function templates, for example, can match given aruments.
-			REPORT_ERROR( TemplateParametersDeductionFailed, result.template_args_namespace->GetErrors(), src_loc );
-			return result;
-		}
-	}
+	result.template_args= ExtractTemplateArgs( function_template, *result.template_args_namespace, result.template_args_namespace->GetErrors(), src_loc );
+	if( result.template_args.size() != function_template.template_params.size() )
+		return result;
 
 	result.function_template= function_template_ptr;
 	return result;
@@ -1336,6 +1310,28 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	}
 
 	return AddNewTemplateThing( std::move(name_encoded), NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(std::move(result)), SrcLoc() ) );
+}
+
+std::vector<TemplateArg> CodeBuilder::ExtractTemplateArgs( const TemplateBase& template_, const NamesScope& template_args_namespace, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
+{
+	std::vector<TemplateArg> template_args;
+	for( const auto& template_param : template_.template_params )
+	{
+		const NamesScopeValue* const value= template_args_namespace.GetThisScopeValue( template_param.name );
+
+		if( const auto type= value->value.GetTypeName() )
+			template_args.push_back( *type );
+		else if( const auto variable= value->value.GetVariable() )
+			template_args.push_back( TemplateVariableArg( *variable ) );
+		else
+		{
+			// SPRACHE_TODO - maybe not generate this error?
+			// Other templates, for example, can match given aruments.
+			REPORT_ERROR( TemplateParametersDeductionFailed, errors, src_loc );
+		}
+	}
+
+	return template_args;
 }
 
 std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
