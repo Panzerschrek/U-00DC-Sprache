@@ -22,7 +22,7 @@ namespace
 
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
-std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
+std::unique_ptr<llvm::Module> BuildProgramImpl( const char* const text, const bool enable_unsed_name_errors )
 {
 	const U1_StringView text_view{ text, std::strlen(text) };
 
@@ -34,7 +34,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		U1_BuildProgram(
 			text_view,
 			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout) );
+			llvm::wrap(&data_layout),
+			enable_unsed_name_errors );
 
 	if( ptr == nullptr )
 		return nullptr;
@@ -68,7 +69,7 @@ PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 		return nullptr;
 	}
 
-	std::unique_ptr<llvm::Module> module= BuildProgram( program_text );
+	std::unique_ptr<llvm::Module> module= BuildProgramImpl( program_text, false );
 
 	if( module == nullptr )
 	{
@@ -78,6 +79,43 @@ PyObject* BuildProgram( PyObject* const self, PyObject* const args )
 	}
 
 	g_current_engine= CreateEngine( std::move(module), print_llvm_asm != 0 );
+
+	Py_INCREF(Py_None);
+	return Py_None;
+}
+
+
+PyObject* BuildProgramUnusedErrorsEnabled( PyObject* const self, PyObject* const args )
+{
+	U_UNUSED(self);
+
+	const char* program_text= nullptr;
+
+	if( !PyArg_ParseTuple( args, "s", &program_text ) )
+		return nullptr;
+
+	if( g_current_engine != nullptr )
+	{
+		PyErr_SetString( PyExc_RuntimeError, "can not have more then one program in one time" );
+		return nullptr;
+	}
+
+	if( g_current_engine != nullptr )
+	{
+		PyErr_SetString( PyExc_RuntimeError, "can not have more then one program in one time" );
+		return nullptr;
+	}
+
+	std::unique_ptr<llvm::Module> module= BuildProgramImpl( program_text, true );
+
+	if( module == nullptr )
+	{
+		llvm::llvm_shutdown();
+		PyErr_SetString( PyExc_RuntimeError, "program build failed" );
+		return nullptr;
+	}
+
+	g_current_engine= CreateEngine( std::move(module) );
 
 	Py_INCREF(Py_None);
 	return Py_None;
@@ -312,10 +350,19 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 {
 	U_UNUSED(self);
 
-	const char* program_text= nullptr;
+	PyObject* prorgam_text_arg= nullptr;
+	PyObject* enable_unused_variable_errors_arg= nullptr;
 
-	if( !PyArg_ParseTuple( args, "s", &program_text ) )
-		return nullptr;
+	if( !PyArg_UnpackTuple( args, "", 1, 2, &prorgam_text_arg, &enable_unused_variable_errors_arg ) )
+		return nullptr; // Parse will raise
+
+	const char* program_text= nullptr;
+	if( !PyArg_Parse( prorgam_text_arg, "s", &program_text ) )
+		return nullptr; // Parse will raise
+
+	int enable_unused_variable_errors= 0;
+	if( enable_unused_variable_errors_arg != nullptr && !PyArg_Parse( enable_unused_variable_errors_arg, "p", &enable_unused_variable_errors ) )
+		return nullptr; // Parse will raise
 
 	const U1_StringView text_view{ program_text, std::strlen(program_text) };
 	llvm::LLVMContext& llvm_context= *g_llvm_context;
@@ -328,6 +375,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
+			enable_unused_variable_errors != 0,
 			g_error_handling_callbacks,
 			reinterpret_cast<U1_UserHandle>(errors_list) );
 
@@ -394,6 +442,10 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test11",
 		"TypesMismtach_ForAutoReturnValue_Test0",
 		"TypesMismtach_ForAutoReturnValue_Test1",
+		"UnusedTypeTemplate_Test0",
+		"UnusedTypeTemplate_Test1",
+		"UnusedTypeTemplate_Test2",
+		"UnusedTypeTemplate_Test3",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )
@@ -409,6 +461,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 PyMethodDef g_methods[]=
 {
 	{ "build_program"             , BuildProgram          , METH_VARARGS, "Build program."             },
+	{ "build_program_unused_errors_enabled", BuildProgramUnusedErrorsEnabled, METH_VARARGS, "Build program with enabled unused names errors." },
 	{ "free_program"              , FreeProgram           , METH_VARARGS, "Free program."              },
 	{ "run_function"              , RunFunction           , METH_VARARGS, "Run function."              },
 	{ "build_program_with_errors" , BuildProgramWithErrors, METH_VARARGS, "Build program with errors." },

@@ -53,9 +53,9 @@ fn CodeBuilder::PrepareType( mut this, NamesScopePtr& names_scope, FunctionConte
 				{
 					if_var( &fundamental_type : index_variable.t.GetFundamentalType() )
 					{
-						if( IsInteger( index_variable.t.GetFundamentalType().try_deref().fundamental_type ) )
+						if( IsInteger( fundamental_type.fundamental_type ) )
 						{
-							if( IsSignedInteger( index_variable.t.GetFundamentalType().try_deref().fundamental_type ) )
+							if( IsSignedInteger( fundamental_type.fundamental_type ) )
 							{
 								auto s= unsafe( LLVMConstIntGetSExtValue( index_variable.constexpr_value ) );
 								if( s >= 0i64 )

@@ -1,3 +1,4 @@
+import "/helpers.u"
 import "/string_conversions.u"
 import "/keywords.uh"
 import "structs_combined.uh"
@@ -7,8 +8,7 @@ namespace U1
 
 // Sizes for 8-bit pointers.
 static_assert( typeinfo</Type/>.size_of <= 24s, "size of Type is too big" ); // 1 pointer for variant, 2 pointers for variant contents
-static_assert( typeinfo</FunctionsSet/>.size_of <= 72s, "size of FunctionsSet is too big" ); // 3 vectors.
-static_assert( typeinfo</Value/>.size_of <= 72s + 16s + 8s, "size of Value is too big" ); // 1 pointer for variant + variable pointer + functions set.
+static_assert( typeinfo</Value/>.size_of <= 40s, "size of Value is too big" );
 static_assert( typeinfo</NamesScopeValue/>.size_of <= 24s, "size of NamesScopeValue is too big" ); // 1 pointer for variant and 2 pointers for contents.
 
 //
@@ -49,7 +49,6 @@ fn ToString( TupleType& tuple_type ) : ust::string8
 	foreach( &element_type : tuple_type.element_types )
 	{
 		result+= element_type.ToString();
-		var bool mut is_last_element= false;
 		if( ust::ref_cmp_ne( element_type, tuple_type.element_types.back() ) )
 		{
 			result+= ", ";
@@ -995,31 +994,37 @@ namespace ValueKindHelper
 
 fn GetValueKind( VariablePtr& v ) : ust::string_view8
 {
+	ust::ignore_unused(v);
 	return "variable";
 }
 
 fn GetValueKind( Type& v ) : ust::string_view8
 {
+	ust::ignore_unused(v);
 	return "type";
 }
 
-fn GetValueKind( FunctionsSet& v ) : ust::string_view8
+fn GetValueKind( FunctionsSetPtr& v ) : ust::string_view8
 {
+	ust::ignore_unused(v);
 	return "functions set";
 }
 
 fn GetValueKind( ThisMethodsSet& v ) : ust::string_view8
 {
+	ust::ignore_unused(v);
 	return "this + methods set";
 }
 
 fn GetValueKind( ust::shared_ptr_imut</TypeTemplatesSet/>& v ) : ust::string_view8
 {
+	ust::ignore_unused(v);
 	return "type templates set";
 }
 
 fn GetValueKind( ErrorValue& v ) : ust::string_view8
 {
+	ust::ignore_unused( v );
 	return "error value";
 }
 

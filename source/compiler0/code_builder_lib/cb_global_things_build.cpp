@@ -629,6 +629,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 		FunctionVariable destructor_function_variable= GenerateDestructorPrototype( class_type );
 		OverloadedFunctionsSetPtr destructors_set= std::make_shared<OverloadedFunctionsSet>();
 		destructors_set->functions.push_back( std::move(destructor_function_variable) );
+		destructors_set->base_class= class_type;
 		the_class.members->AddName( Keyword( Keywords::destructor_ ), NamesScopeValue( std::move(destructors_set), SrcLoc() ) );
 	}
 
@@ -843,6 +844,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 					{
 						// Take whole function set, but mark functions as inherited.
 						OverloadedFunctionsSetPtr functions_set= std::make_shared<OverloadedFunctionsSet>(*functions);
+						functions_set->base_class= class_type;
 						for( FunctionVariable& function : functions_set->functions )
 							function.is_inherited= true;
 

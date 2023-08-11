@@ -1,9 +1,10 @@
 import "/assert.u"
+import "/helpers.u"
 import "/sort.u"
+import "/string_conversions.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
-import "/string_conversions.u"
 
 namespace U1
 {
@@ -11,7 +12,7 @@ namespace U1
 fn CodeBuilder::BuildBlockElements( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::array_view_imut</Synt::BlockElement/>& elements ) : BlockElementBuildInfo
 {
 	var BlockElementBuildInfo mut block_element_build_info;
-	foreach( &block_element :elements )
+	foreach( &block_element : elements )
 	{
 		if( block_element_build_info.have_terminal_instruction_inside )
 		{
@@ -48,6 +49,8 @@ fn CodeBuilder::BuildBlock( mut this, NamesScopePtr& names_scope, FunctionContex
 
 	debug_info_builder_.try_deref().EndBlock( function_context, prev_debug_info_block );
 
+	CheckForUnusedLocalNames( block_names_scope );
+
 	return block_element_build_info;
 }
 
@@ -63,6 +66,9 @@ fn CodeBuilder::BuildIfAlternative( mut this, NamesScopePtr& names_scope, Functi
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : BlockElementBuildInfo
 {
 	// Empty variant - legal element kind for C style "for" operator variables declaration part.
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( function_context );
+	ust::ignore_unused( empty_variant );
 	return BlockElementBuildInfo();
 }
 
@@ -89,7 +95,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	var LLVMBasicBlockRef mut break_block= LLVMBasicBlockRef::Null;
-	if_var( &l : scope_block.label_ )
+	if( !scope_block.label_.empty() )
 	{
 		break_block= unsafe( LLVMCreateBasicBlockInContext( llvm_context_, g_null_string ) );
 		AddLoopFrame( names_scope, function_context, break_block, LLVMBasicBlockRef::Null, scope_block.label_ );
@@ -172,6 +178,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 			.value_type= select( is_mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.name= variable_declaration.name,
+			.src_loc= variable_declaration.src_loc,
+			.referenced= variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(t)
 		};
 		auto mut variable_reference= VariablePtr( move(variable_reference_variable) );
 		// Do not forget to remove node in case of error-return!!!
@@ -364,6 +372,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 		.location= Variable::Location::Pointer,
 		.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ),
 		.name= auto_variable_declaration.name,
+		.src_loc= auto_variable_declaration.src_loc,
+		.referenced= auto_variable_declaration.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
 	};
 	var VariablePtr mut variable_reference( move(variable_reference_variable) );
 	// Do not forget to remove node in case of errror-return!!!
@@ -855,7 +865,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		}
 	}
 	if( !value.get</Type/>().empty() ||
-		!value.get</FunctionsSet/>().empty() ||
+		!value.get</FunctionsSetPtr/>().empty() ||
 		!value.get</ThisMethodsSet/>().empty() ||
 		!value.get</ ust::shared_ptr_imut</TypeTemplatesSet/> />().empty() )
 	{
@@ -1105,6 +1115,10 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			.value_type= select( if_coro_advance_operator.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut ),
 			.location= Variable::Location::Pointer,
 			.name= if_coro_advance_operator.variable_name,
+			.src_loc= if_coro_advance_operator.src_loc,
+			.referenced=
+				( result_value_type == ValueType::Value || if_coro_advance_operator.reference_modifier == Synt::ReferenceModifier::None ) &&
+				VariableExistanceMayHaveSideEffects(result_type)
 		};
 		var VariablePtr mut variable_reference( move(variable_reference_variable) );
 		function_context.references_graph.AddNode( variable_reference );
@@ -1242,6 +1256,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 			// Destroy coro result variable.
 			CallDestructorsForTopVariablesFrame( variable_names_scope, function_context, if_coro_advance_operator.src_loc );
 		}
+
+		CheckForUnusedLocalNames( variable_names_scope );
 	}
 
 	var ust::vector</ReferencesGraph/> mut references_graphs;
@@ -1329,7 +1345,7 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 		var VariableLite expression= BuildExpressionCodeEnsureVariable( names_scope, function_context, switch_operator.value ).lock_imut().deref();
 		var bool mut type_ok= false;
-		if_var( &enum_type : expression.t.GetEnumType() )
+		if( !expression.t.GetEnumType().empty() )
 		{
 			type_ok= true;
 		}
@@ -2051,6 +2067,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 							? LLVMValueRef::Null
 							: unsafe( LLVMGetAggregateElement( sequence_expression.constexpr_value, u32(i) ) ) ),
 				.name= range_for_operator.loop_variable_name,
+				.src_loc= range_for_operator.src_loc,
+				.referenced= range_for_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_type)
 			};
 			var VariablePtr mut variable_reference( move(variable_reference_variable) );
 			// Do not forget to remove node in case of error-return!!!
@@ -2171,6 +2189,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 
 			// Clear args preevaluation cache because we evaluationg same expressions multiple times in different context.
 			function_context.args_preevaluation_cache.clear();
+
+			CheckForUnusedLocalNames( names_scope );
 
 			if( !continue_branches_is_empty )
 			{
@@ -2420,6 +2440,8 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		.location= Variable::Location::Pointer,
 		.constexpr_value= select( is_mutable ? LLVMValueRef::Null : expr.constexpr_value ), // Constexpr is preserved for move/copy.
 		.name= with_operator.variable_name,
+		.src_loc= with_operator.src_loc,
+		.referenced= with_operator.reference_modifier == Synt::ReferenceModifier::None && VariableExistanceMayHaveSideEffects(expr.t)
 	};
 	var VariablePtr mut variable_reference( move(variable_reference_variable) );
 	// Do not forget to remove node in case of error-return!!!
@@ -2565,20 +2587,22 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	}
 
 	// Create separate namespace for variable. Redefinition here is not possible.
-	var NamesScopeMutPtr varaible_names_scope( NamesScope( "", names_scope ) );
-	with( mut lock : varaible_names_scope.lock_mut() )
+	var NamesScopeMutPtr variable_names_scope( NamesScope( "", names_scope ) );
+	with( mut lock : variable_names_scope.lock_mut() )
 	{
 		lock.deref().AddName( with_operator.variable_name, move(variable_reference) ).empty();
 	}
 
 	// Build block. Reuse scope of with variable for this block.
-	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( varaible_names_scope, function_context, with_operator.block.deref().elements.range() );
+	var BlockElementBuildInfo block_element_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block.deref().elements.range() );
 
 	if( !block_element_build_info.have_terminal_instruction_inside )
 	{
 		// Destroy loop variable and linked temporaries.
 		CallDestructorsForTopVariablesFrame( names_scope, function_context, with_operator.src_loc );
 	}
+
+	CheckForUnusedLocalNames( variable_names_scope );
 
 	return block_element_build_info;
 }
@@ -2630,19 +2654,26 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 	return BlockElementBuildInfo();
 }
 
-fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::TypeAlias& type_alias ) : BlockElementBuildInfo
+fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias_ptr ) : BlockElementBuildInfo
 {
+	auto& type_alias= type_alias_ptr.deref();
+
 	if( IsKeyword( type_alias.name ) )
 	{
 		REPORT_ERROR( UsingKeywordAsName, names_scope, type_alias.src_loc )
 	}
 
-	var Type mut t= PrepareType( names_scope, function_context, type_alias.type_name );
+	// Insert "TypeAlias" instead of "type" into namespace in order to check usage (it is performed only for type aliases).
+	var TypeAlias mut out_type_alias
+	{
+		.t( PrepareType( names_scope, function_context, type_alias.type_name ) ),
+		.syntax_element= type_alias_ptr,
+	};
 
 	var bool mut insert_not_ok= false;
 	with( mut lock : names_scope.lock_mut() )
 	{
-		insert_not_ok= lock.deref().AddName( type_alias.name, NamesScopeValue( move(t) ) ).empty();
+		insert_not_ok= lock.deref().AddName( type_alias.name, NamesScopeValue( move(out_type_alias) ) ).empty();
 	}
 	if( insert_not_ok )
 	{
@@ -2654,6 +2685,9 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, Func
 
 fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo
 {
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( halt_ );
+
 	var BlockElementBuildInfo block_element_build_info{ .have_terminal_instruction_inside= true };
 
 	unsafe
@@ -2843,6 +2877,11 @@ fn CodeBuilder::BuildDeltaOneOperator( mut this, NamesScopePtr& names_scope, Fun
 				function_context.have_non_constexpr_operations_inside= true;
 			}
 
+			with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+			{
+				lock.deref().referenced= true;
+			}
+
 			DoCallFunction(
 				names_scope,
 				function_context,
@@ -2916,48 +2955,48 @@ fn SingleExpressionIsUseless( Synt::Expression& expression ) : bool
 	halt;
 }
 
-fn SingleExpressionIsUselessImpl( Synt::EmptyVariant& empty_variant ) : bool { return false; }
+fn SingleExpressionIsUselessImpl( Synt::EmptyVariant& e ) : bool { ust::ignore_unused( e ); return false; }
 // Calls generally are not useless. Useless may be constexpr calls.
 // But sometimes constexpr/non-constepxr call result may depend on template context.
 // So, in order to avoid generating too many errors, assume, that all calls are not useless.
-fn SingleExpressionIsUselessImpl( Synt::CallOperator& call_operator ) : bool { return false; }
+fn SingleExpressionIsUselessImpl( Synt::CallOperator& e ) : bool { ust::ignore_unused(e); return false; }
 // It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
-fn SingleExpressionIsUselessImpl( Synt::IndexationOperator& indexation_operator ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::MemberAccessOperator& member_access_operator ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::UnaryPlus& unary_plus ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::UnaryMinus& unary_minus ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::LogicalNot& logical_not ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::BitwiseNot& bitwise_not ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::BinaryOperator& binary_operator ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::TernaryOperator& ternary_operator ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::IndexationOperator& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::MemberAccessOperator& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::UnaryPlus& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::UnaryMinus& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::LogicalNot& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::BitwiseNot& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::BinaryOperator& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::TernaryOperator& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::ReferenceToRawPointerOperator& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::RawPointerToReferenceOperator& e ) : bool { ust::ignore_unused(e); return true; }
 // Name resolving itself has no side effects.
-fn SingleExpressionIsUselessImpl( Synt::ComplexName& complex_name ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::ComplexName& e ) : bool { ust::ignore_unused(e); return true; }
 // Simple constant expressions have no side effects.
-fn SingleExpressionIsUselessImpl( Synt::NumericConstant& numeric_constant ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::BooleanConstant& boolean_constant ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::StringLiteral& string_literal ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::NumericConstant& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::BooleanConstant& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::StringLiteral& e ) : bool { ust::ignore_unused(e); return true; }
 // Move and take have side effects.
-fn SingleExpressionIsUselessImpl( Synt::MoveOperator& move_operator ) : bool { return false; }
-fn SingleExpressionIsUselessImpl( Synt::TakeOperator& take_operator ) : bool { return false; }
+fn SingleExpressionIsUselessImpl( Synt::MoveOperator& e ) : bool { ust::ignore_unused(e); return false; }
+fn SingleExpressionIsUselessImpl( Synt::TakeOperator& e ) : bool { ust::ignore_unused(e); return false; }
 // Casts have no side effects.
-fn SingleExpressionIsUselessImpl( Synt::CastMut& cast_mut_ ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::CastImut& cast_imut_ ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::CastRef& cast_ref_ ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::CastRefUnsafe& cast_ref_unsafe_ ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::Typeinfo& typeinfo_ ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( Synt::NonSyncExpression& non_sync_expression ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastMut& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastImut& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastRef& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::CastRefUnsafe& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::Typeinfo& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( Synt::NonSyncExpression& e ) : bool { ust::ignore_unused(e); return true; }
 // safe/unsafe expressions needs to be visited deeply.
 // safe/unsafe expression can't be discarded, because it has meaning.
-fn SingleExpressionIsUselessImpl( Synt::SafeExpression& safe_expression ) : bool { return SingleExpressionIsUseless( safe_expression.expression.deref() ); }
-fn SingleExpressionIsUselessImpl( Synt::UnsafeExpression& unsafe_expression ) : bool { return SingleExpressionIsUseless( unsafe_expression.expression.deref() ); }
+fn SingleExpressionIsUselessImpl( Synt::SafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression.deref() ); }
+fn SingleExpressionIsUselessImpl( Synt::UnsafeExpression& e ) : bool { return SingleExpressionIsUseless( e.expression.deref() ); }
 // Type names have no side-effects.
-fn SingleExpressionIsUselessImpl( ust::box</Synt::ArrayType/>& array_type_name ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::FunctionType/>& function_type_name ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::TupleType/>& tuple_type ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::RawPointerType/>& raw_pointer_type ) : bool { return true; }
-fn SingleExpressionIsUselessImpl( ust::box</Synt::GeneratorType/>& generator_type ) : bool { return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::ArrayType/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::FunctionType/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::TupleType/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::RawPointerType/>& e ) : bool { ust::ignore_unused(e); return true; }
+fn SingleExpressionIsUselessImpl( ust::box</Synt::GeneratorType/>& e ) : bool { ust::ignore_unused(e); return true; }
 
 fn GetSwitchDefaultBranch( Synt::SwitchOperator&'a switch_operator ) : ust::optional_ref_imut</ Synt::Block />'a'
 {

@@ -95,6 +95,7 @@ fn ComplexNameToStringImpl( Synt::TemplateParametrization& template_parametrizat
 fn ComplexNameToStringImpl( Synt::Typeof& typeof_ ) : ust::string8
 {
 	// TODO - print typeof.
+	ust::ignore_unused( typeof_ );
 	return "typeof(...)";
 }
 

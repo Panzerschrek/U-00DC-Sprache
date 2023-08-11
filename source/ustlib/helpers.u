@@ -1,0 +1,15 @@
+namespace ust
+{
+
+// Use this function to suspend "unused name" error for variables.
+template</type T/>
+fn ignore_unused(T& t)
+{
+	// Force use unused variable in "typeof" context.
+	ignore_unused_impl</ typeof(t) />();
+}
+
+template</type T/>
+fn constexpr ignore_unused_impl(){}
+
+} // namespace ust

@@ -653,7 +653,7 @@ type BlockElement = ust::variant</ tup[
 	ContinueOperator,
 	WithOperator,
 	StaticAssert,
-	TypeAlias,
+	ust::shared_ptr_final</TypeAlias/>,
 	Halt,
 	HaltIf
 	] />;

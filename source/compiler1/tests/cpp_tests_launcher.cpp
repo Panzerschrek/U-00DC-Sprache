@@ -85,7 +85,8 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 		U1_BuildProgram(
 			text_view,
 			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout) );
+			llvm::wrap(&data_layout),
+			false );
 	U_TEST_ASSERT( ptr != nullptr );
 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
@@ -106,6 +107,7 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 			text_view,
 			llvm::wrap(&llvm_context),
 			llvm::wrap(&data_layout),
+			false,
 			g_error_handling_callbacks,
 			reinterpret_cast<U1_UserHandle>(&build_result.errors) );
 	U_TEST_ASSERT(ok);
@@ -113,7 +115,7 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 	return build_result;
 }
 
-std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path )
+std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path, const bool report_about_unused_names )
 {
 	std::vector<U1_SourceFile> source_files;
 	source_files.reserve(sources.size());
@@ -138,7 +140,8 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 			source_files.data(), source_files.size(),
 			root_file_path_view,
 			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout) );
+			llvm::wrap(&data_layout),
+			report_about_unused_names );
 	U_TEST_ASSERT( ptr != nullptr );
 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );
@@ -191,7 +194,8 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 		U1_BuildProgramForLifetimesTest(
 			text_view,
 			llvm::wrap(&llvm_context),
-			llvm::wrap(&data_layout) );
+			llvm::wrap(&data_layout),
+			false );
 	U_TEST_ASSERT( ptr != nullptr );
 
 	return std::unique_ptr<llvm::Module>( reinterpret_cast<llvm::Module*>(ptr) );

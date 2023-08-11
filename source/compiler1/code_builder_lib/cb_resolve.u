@@ -13,12 +13,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 		return t.try_lock_imut().deref();
 	}
 
-	auto f_ptr= names_scope_value.Get</NamesScopeFunctionsSet/>();
+	auto f_ptr= names_scope_value.Get</FunctionsSet/>();
 	if( !f_ptr.empty() )
 	{
-		with( &names_scope_functions_set : f_ptr.try_lock_imut().deref() )
+		auto mut f_ptr_non_null= f_ptr.try_to_non_nullable();
+		with( &functions_set : f_ptr_non_null.lock_imut().deref() )
 		{
-			if( !names_scope_functions_set.class_.empty() )
+			if( !functions_set.class_.empty() )
 			{
 				// Append "this" to functions set of this class.
 				if( !function_context.this_.empty() && !function_context.whole_this_is_unavailable )
@@ -28,14 +29,14 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					{
 						if_var( &this_class_type : this_.t.GetClassType() )
 						{
-							auto functions_set_class_non_null= names_scope_functions_set.class_.try_to_non_nullable();
+							auto functions_set_class_non_null= functions_set.class_.try_to_non_nullable();
 							if( functions_set_class_non_null == this_class_type ||
 								this_class_type.lock_imut().deref().HasAncestor( functions_set_class_non_null ) )
 							{
 								var ThisMethodsSet mut this_methods_set
 								{
 									.this_= this_non_null,
-									.functions_set= names_scope_functions_set.functions_set,
+									.functions_set= f_ptr_non_null,
 								};
 								return move(this_methods_set);
 							}
@@ -43,15 +44,20 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 					}
 				}
 			}
-
-			return names_scope_functions_set.functions_set;
 		}
+
+		return f_ptr_non_null;
 	}
 
 	auto var_ptr= names_scope_value.Get</Variable/>();
 	if( !var_ptr.empty() )
 	{
 		var VariablePtr mut var_ptr_non_null= var_ptr.try_to_non_nullable();
+		with( mut lock : var_ptr_non_null.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
 		if( IsGlobalVariable( var_ptr_non_null ) )
 		{
 			function_context.references_graph.AddNodeIfNotExists( var_ptr_non_null );
@@ -67,8 +73,12 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto class_field_ptr= names_scope_value.Get</ClassField/>();
 	if( !class_field_ptr.empty() )
 	{
-		auto field_lock= class_field_ptr.try_lock_imut();
-		var ClassField& field= field_lock.deref();
+		with( mut lock : class_field_ptr.try_lock_mut() )
+		{
+			lock.deref().used= true;
+		}
+
+		var ClassField field= class_field_ptr.try_lock_imut().deref(); // Take copy in order to avoid holding lock object.
 		var ust::string8& field_name= field.syntax_element.deref().name;
 
 		if( function_context.this_.empty() )
@@ -105,29 +115,51 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto class_type_ptr= names_scope_value.Get</ClassType/>();
 	if( !class_type_ptr.empty() )
 	{
-		return Type( class_type_ptr.try_to_non_nullable() );
+		auto mut class_type_ptr_non_null= class_type_ptr.try_to_non_nullable();
+		with( mut lock : class_type_ptr_non_null.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
+		return Type( move(class_type_ptr_non_null) );
 	}
 
 	auto enum_type_ptr= names_scope_value.Get</Enum/>();
 	if( !enum_type_ptr.empty() )
 	{
 		auto ptr_non_null= enum_type_ptr.try_to_non_nullable();
+		with( mut lock : ptr_non_null.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
 		return Type( ptr_non_null );
 	}
 
 	auto type_alias_ptr= names_scope_value.Get</TypeAlias/>();
 	if( !type_alias_ptr.empty() )
 	{
-		if_var( &t : type_alias_ptr.try_lock_imut().deref().t )
+		with( mut lock : type_alias_ptr.try_lock_mut() )
 		{
-			return t;
+			lock.deref().referenced= true;
+
+			if_var( &t : lock.deref().t )
+			{
+				return t;
+			}
 		}
 	}
 
 	auto global_variable_ptr= names_scope_value.Get</GlobalVariable/>();
 	if( !global_variable_ptr.empty() )
 	{
-		var VariableNullablePtr v_ptr= global_variable_ptr.try_lock_imut().deref().variable;
+		auto global_variable_ptr_non_null= global_variable_ptr.try_to_non_nullable();
+		with( mut lock : global_variable_ptr_non_null.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
+		var VariableNullablePtr v_ptr= global_variable_ptr_non_null.lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
 			var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();
@@ -145,7 +177,13 @@ fn CodeBuilder::NamesScopeValueToValue( mut this, NamesScopePtr& names_scope, Fu
 	auto global_auto_variable_ptr= names_scope_value.Get</GlobalAutoVariable/>();
 	if( !global_auto_variable_ptr.empty() )
 	{
-		var VariableNullablePtr v_ptr= global_auto_variable_ptr.try_lock_imut().deref().variable;
+		auto global_auto_variable_ptr_non_null= global_auto_variable_ptr.try_to_non_nullable();
+		with( mut lock : global_auto_variable_ptr_non_null.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
+		var VariableNullablePtr v_ptr= global_auto_variable_ptr_non_null.lock_imut().deref().variable;
 		if( !v_ptr.empty() )
 		{
 			var VariablePtr mut v_ptr_non_null= v_ptr.try_to_non_nullable();
@@ -217,6 +255,8 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 
 fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::RootNamespaceNameLookup& root_namespace_name_lookup ) : ust::optional</NamesScopeValue/>
 {
+	ust::ignore_unused( function_context );
+
 	var NamesScopePtr root_namespace= GetRootNamespace( names_scope );
 	if_var( &names_scope_value : root_namespace.lock_imut().deref().GetThisScopeValue( root_namespace_name_lookup.name ) )
 	{
@@ -259,6 +299,11 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	}
 	if( !type_alias.empty() )
 	{
+		with( mut lock : type_alias.try_lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
 		if_var( &t : type_alias.try_lock_imut().deref().t )
 		{
 			if_var( &class_type : t.GetClassType() )
@@ -334,18 +379,22 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	else if( !enum_.empty() )
 	{
 		var EnumTypePtr enum_non_null= enum_.try_to_non_nullable();
-		if_var( &element : enum_non_null.lock_imut().deref().elements.find( names_scope_fetch.name ) )
+		with( mut lock : enum_non_null.lock_mut() )
 		{
-			var Variable mut v
+			lock.deref().referenced= true;
+			if_var( &element : lock.deref().elements.find( names_scope_fetch.name ) )
 			{
-				.t= enum_non_null,
-				.value_type= ValueType::ReferenceImut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= element.llvm_value,
-				.constexpr_value= element.constexpr_value,
-				.name= names_scope_fetch.name,
-			};
-			return NamesScopeValue(move(v));
+				var Variable mut v
+				{
+					.t= enum_non_null,
+					.value_type= ValueType::ReferenceImut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= element.llvm_value,
+					.constexpr_value= element.constexpr_value,
+					.name= names_scope_fetch.name,
+				};
+				return NamesScopeValue(move(v));
+			}
 		}
 	}
 	else if( !type_templates_set.empty() )
@@ -368,7 +417,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	var NamesScopeValue& base_= base_opt.try_deref();
 
 	auto type_templates_set= base_.Get</TypeTemplatesSet/>();
-	auto functions_set= base_.Get</NamesScopeFunctionsSet/>();
+	auto functions_set= base_.Get</FunctionsSet/>();
 	if( !type_templates_set.empty() )
 	{
 		auto generated_type= GenTemplateType(
@@ -389,7 +438,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 		auto lock= functions_set.try_lock_imut();
 		auto& f= lock.deref();
 
-		if( f.functions_set.function_templates.empty() )
+		if( f.function_templates.empty() )
 		{
 			REPORT_ERROR( ValueIsNotTemplate, names_scope, template_parametrization.src_loc )
 			return ust::null_optional;
@@ -399,7 +448,7 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 			ParametrizeTemplateFunctions(
 				names_scope,
 				function_context,
-				f.functions_set,
+				f,
 				f.class_,
 				template_parametrization.template_args.deref(),
 				template_parametrization.src_loc );
@@ -439,7 +488,7 @@ fn CodeBuilder::BuildGlobalThingDuringResolveIfNecessary(mut this, NamesScopePtr
 	// Build almost everything except classes.
 	// Classes building will be triggered later - during class usage or class name lookup (if it is necessary).
 
-	auto f_ptr= value.Get</NamesScopeFunctionsSet/>();
+	auto f_ptr= value.Get</FunctionsSet/>();
 	if( !f_ptr.empty() )
 	{
 		// In case of access to functions set using function name, build only prototype, not full body.
@@ -563,7 +612,7 @@ fn CodeBuilder::ResolveClassValueImpl(
 	{
 		auto visibility= class_type.lock_imut().deref().GetMemberVisibility( name );
 
-		if( !value.Get</NamesScopeFunctionsSet/>().empty() ||
+		if( !value.Get</FunctionsSet/>().empty() ||
 			!value.Get</TypeTemplatesSet/>().empty() )
 		{
 			if( !class_type.lock_imut().deref().is_complete )
@@ -603,7 +652,7 @@ fn CodeBuilder::ResolveClassValueImpl(
 			if( current_parent_class_value[1] != Synt::ClassVisibility::Private )
 			{
 				var bool current_thing_is_mergable=
-					!current_parent_class_value[0].Get</NamesScopeFunctionsSet/>().empty() ||
+					!current_parent_class_value[0].Get</FunctionsSet/>().empty() ||
 					!current_parent_class_value[0].Get</TypeTemplatesSet/>().empty();
 
 				if( current_thing_is_mergable && has_mergable_thing && !class_type.lock_imut().deref().is_complete && !recursive_call )

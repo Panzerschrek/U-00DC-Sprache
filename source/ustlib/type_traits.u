@@ -1,3 +1,5 @@
+import "helpers.u"
+
 namespace ust
 {
 
@@ -89,6 +91,8 @@ fn constexpr class_have_field( ListType& fields_list, [ char8, name_size ]& name
 			return true;
 		}
 	}
+
+	ust::ignore_unused(name);
 	return false;
 }
 
@@ -197,6 +201,8 @@ struct is_same_type_impl
 template</ type A, type B />
 fn constexpr args_are_same( A& a, B& b ) : bool
 {
+	ignore_unused(a);
+	ignore_unused(b);
 	return is_same_type_impl</A/>::same</B/>::value;
 }
 

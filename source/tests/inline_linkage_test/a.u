@@ -16,6 +16,7 @@ fn PrivateA()
 
 fn GetGlobalAddressA() : $(i32)
 {
+	PrivateA();
 	unsafe{  return $<(global_x);  }
 }
 

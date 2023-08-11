@@ -1,5 +1,6 @@
 import "aligned_storage.u"
 import "container_utils.u"
+import "helpers.u"
 import "memory.u"
 
 namespace ust
@@ -20,7 +21,9 @@ public:
 
 	// Use this conversion constructor in order to use simple "ust::empty_range" to pass/return empty range, without specifying exact range type.
 	fn conversion_constructor( empty_range_type e )
-	{}
+	{
+		ignore_unused(e);
+	}
 
 	template</ size_type size />
 	fn enable_if( is_mutable )

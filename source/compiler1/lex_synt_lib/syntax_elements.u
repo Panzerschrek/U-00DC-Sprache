@@ -90,6 +90,10 @@ fn GetSrcLoc( BlockElement& block_element ) : SrcLoc
 		{
 			return el.deref().src_loc;
 		}
+		else static_if( ust::is_same_type</ ElementT, ust::shared_ptr_final</TypeAlias/> />() )
+		{
+			return el.deref().src_loc;
+		}
 		else
 		{
 			return el.src_loc;

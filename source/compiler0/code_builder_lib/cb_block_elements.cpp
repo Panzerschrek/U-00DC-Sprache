@@ -336,8 +336,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		if( variable_reference->value_type == ValueType::ReferenceMut )
 			variable_reference->constexpr_value= nullptr;
 
+		const bool force_referenced= variable_declaration.reference_modifier == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
+
 		const NamesScopeValue* const inserted_value=
-			names.AddName( variable_declaration.name, NamesScopeValue( variable_reference, variable_declaration.src_loc ) );
+			names.AddName( variable_declaration.name, NamesScopeValue( variable_reference, variable_declaration.src_loc, force_referenced ) );
 		if( inserted_value == nullptr )
 		{
 			REPORT_ERROR( Redefinition, names.GetErrors(), variables_declaration.src_loc_, variable_declaration.name );
@@ -501,8 +503,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	if( variable_reference->value_type != ValueType::ReferenceImut )
 		variable_reference->constexpr_value= nullptr;
 
+	const bool force_referenced= auto_variable_declaration.reference_modifier == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
+
 	const NamesScopeValue* const inserted_value=
-		names.AddName( auto_variable_declaration.name, NamesScopeValue( variable_reference, auto_variable_declaration.src_loc_ ) );
+		names.AddName( auto_variable_declaration.name, NamesScopeValue( variable_reference, auto_variable_declaration.src_loc_, force_referenced ) );
 	if( inserted_value == nullptr )
 		REPORT_ERROR( Redefinition, names.GetErrors(), auto_variable_declaration.src_loc_, auto_variable_declaration.name );
 
@@ -873,14 +877,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			function_context.stack_variables_stack.back()->RegisterVariable( variable_reference );
 
-			loop_names.AddName( range_for_operator.loop_variable_name_, NamesScopeValue( variable_reference, range_for_operator.src_loc_ ) );
+			const bool force_referenced= range_for_operator.reference_modifier_ == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
+
+			loop_names.AddName( range_for_operator.loop_variable_name_, NamesScopeValue( variable_reference, range_for_operator.src_loc_, force_referenced ) );
 
 			const bool is_last_iteration= element_index + 1u == tuple_type->element_types.size();
 			llvm::BasicBlock* const next_basic_block=
 				is_last_iteration ? finish_basic_block : llvm::BasicBlock::Create( llvm_context_ );
 
 			AddLoopFrame(
-				names,
+				loop_names,
 				function_context,
 				finish_basic_block,
 				next_basic_block,
@@ -909,6 +915,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			function_context.args_preevaluation_cache.clear();
 
 			function_context.loops_stack.pop_back();
+
+			CheckForUnusedLocalNames( loop_names );
 
 			if( !continue_branches_is_empty )
 			{
@@ -1387,9 +1395,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), with_operator.src_loc_ );
 	variables_storage.RegisterVariable( variable_reference );
 
+	const bool force_referenced= with_operator.reference_modifier_ == ReferenceModifier::None && VariableExistanceMayHaveSideEffects(variable_reference->type);
+
 	// Create separate namespace for variable. Redefinition here is not possible.
 	NamesScope variable_names_scope( "", &names );
-	variable_names_scope.AddName( with_operator.variable_name_, NamesScopeValue( variable_reference, with_operator.src_loc_ ) );
+	variable_names_scope.AddName( with_operator.variable_name_, NamesScopeValue( variable_reference, with_operator.src_loc_, force_referenced ) );
 
 	// Build block. Do not create names scope, reuce names scope of "with" variable.
 	const BlockBuildInfo block_build_info= BuildBlockElements( variable_names_scope, function_context, with_operator.block_.elements_ );
@@ -1399,6 +1409,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Destroy all temporaries.
 		CallDestructors( variables_storage, variable_names_scope, function_context, with_operator.src_loc_ );
 	}
+
+	CheckForUnusedLocalNames( variable_names_scope );
 
 	return block_build_info;
 }
@@ -1634,9 +1646,11 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		// Do not forget to remove node in case of error-return!!!
 		function_context.variables_state.AddNode( variable_reference );
 
+		bool is_variable= false;
 		if( result_value_type == ValueType::Value )
 		{
 			// Create variable for value result of coroutine.
+			is_variable= true;
 			const VariableMutPtr variable=
 				std::make_shared<Variable>(
 					result_type,
@@ -1683,6 +1697,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			if( if_coro_advance.reference_modifier == ReferenceModifier::None )
 			{
 				// Create variable and copy into it reference result of coroutine.
+				is_variable= true;
 
 				if( result_type.IsAbstract() )
 					REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), if_coro_advance.src_loc_, result_type );
@@ -1736,8 +1751,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 		coro_result_variables_storage.RegisterVariable( variable_reference );
 
+		const bool force_referenced= is_variable && VariableExistanceMayHaveSideEffects(variable_reference->type);
+
 		NamesScope variable_names_scope( "", &names );
-		variable_names_scope.AddName( if_coro_advance.variable_name, NamesScopeValue( variable_reference, if_coro_advance.src_loc_ ) );
+		variable_names_scope.AddName( if_coro_advance.variable_name, NamesScopeValue( variable_reference, if_coro_advance.src_loc_, force_referenced ) );
 
 		// Reuse variable names scope for block.
 		if_block_build_info= BuildBlockElements( variable_names_scope, function_context, if_coro_advance.block.elements_ );
@@ -1746,6 +1763,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Destroy coro result variable.
 			CallDestructors( coro_result_variables_storage, variable_names_scope, function_context, if_coro_advance.src_loc_ );
 		}
+
+		CheckForUnusedLocalNames( variable_names_scope );
 	}
 
 	llvm::SmallVector<ReferencesGraph, 2> branches_variable_states;
@@ -2641,6 +2660,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 
 	debug_info_builder_->EndBlock( function_context );
 
+	CheckForUnusedLocalNames( block_names );
+
 	return block_build_info;
 }
 
@@ -2789,6 +2810,8 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	{
 		if( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr )
 			function_context.have_non_constexpr_operations_inside= true;
+
+		overloaded_operator->referenced= true;
 
 		const auto fetch_result= TryFetchVirtualFunction( variable, *overloaded_operator, function_context, block_names.GetErrors(), src_loc );
 		DoCallFunction( fetch_result.second, overloaded_operator->type, src_loc, fetch_result.first, {}, false, block_names, function_context );

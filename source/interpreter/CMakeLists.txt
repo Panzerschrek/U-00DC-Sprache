@@ -45,8 +45,6 @@ add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_T
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/coro_test.u ) # Works only without JIT.
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/checked_math_test.u )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/checked_math_test.u --use-jit )
-add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/vector_test.u )
-add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/vector_test.u --use-jit )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/volatile_test.u )
 add_custom_command( TARGET Interpreter POST_BUILD COMMAND Interpreter ${USTLIB_TESTS_DIR}/volatile_test.u --use-jit )
 

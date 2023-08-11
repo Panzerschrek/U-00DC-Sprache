@@ -53,12 +53,14 @@ class Impl : I0, I1 { i32 x=0; }
 template</type T/>
 fn IsMut( T&  mut r ) : bool
 {
+	ust::ignore_unused(r);
 	return true ;
 }
 
 template</type T/>
 fn IsMut( T& imut r ) : bool
 {
+	ust::ignore_unused(r);
 	return false;
 }
 

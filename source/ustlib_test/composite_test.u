@@ -20,9 +20,11 @@ fn nomangle main() : i32
 
 	{ // 0 elements
 		var [bool, 0] constexpr arr = ust::make_array</bool/>();
+		ust::ignore_unused(arr);
 	}
 	{ // 0 elements
 		var [f64, 0] constexpr arr = ust::make_array</f64/>();
+		ust::ignore_unused(arr);
 	}
 	{ // 1 element
 		var [i32, 1] constexpr arr = ust::make_array(524);
@@ -113,6 +115,7 @@ fn nomangle main() : i32
 
 	{ // 0 elements
 		var tup[] constexpr t = ust::make_tuple();
+		ust::ignore_unused(t);
 	}
 	{ // 1 element
 		var tup[i32] constexpr t = ust::make_tuple(765i32);

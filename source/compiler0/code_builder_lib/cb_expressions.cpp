@@ -303,7 +303,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	const auto class_value= ResolveClassValue( class_type, member_access_operator.member_name_ );
-	const NamesScopeValue* const class_member= class_value.first;
+	NamesScopeValue* const class_member= class_value.first;
 	if( class_member == nullptr )
 	{
 		REPORT_ERROR( NameNotFound, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_ );
@@ -348,7 +348,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc_ );
 
 	if( const ClassFieldPtr field= class_member->value.GetClassField() )
+	{
+		class_member->referenced= true;
 		return AccessClassField( names, function_context, variable, *field, member_access_operator.member_name_, member_access_operator.src_loc_ );
+	}
 
 	REPORT_ERROR( NotImplemented, names.GetErrors(), member_access_operator.src_loc_, "class members, except fields or methods" );
 	return ErrorValue();
@@ -1222,9 +1225,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
-	const NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name_, move_operator.src_loc_ ).value;
+	NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name_, move_operator.src_loc_ ).value;
 	if( resolved_value_ptr == nullptr )
 		return ErrorValue();
+
+	resolved_value_ptr->referenced= true;
 
 	const Value& resolved_value= resolved_value_ptr->value;
 	const VariablePtr resolved_variable= resolved_value.GetVariable();
@@ -1878,6 +1883,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 			REPORT_ERROR( NotImplemented, names.GetErrors(), src_loc, "calling virtual binary operators" );
 		}
 
+		overloaded_operator->referenced= true;
+
 		return
 			DoCallFunction(
 				EnsureLLVMFunctionCreated( *overloaded_operator ),
@@ -2061,6 +2068,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	if( overloaded_operator == nullptr )
 		return std::nullopt;
 
+	overloaded_operator->referenced= true;
+
 	if( !( overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || overloaded_operator->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
@@ -2111,6 +2120,8 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 
 	if( !( function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
+
+	function->referenced= true;
 
 	ArgsVector<const Synt::Expression*> synt_args_ptrs;
 	synt_args_ptrs.reserve( synt_args.size() );
@@ -3006,6 +3017,8 @@ Value CodeBuilder::CallFunction(
 	const FunctionVariable& function= *function_ptr;
 	const FunctionType& function_type= function.type;
 
+	function.referenced= true;
+
 	if( this_ != nullptr && !function.is_this_call )
 	{
 		// Static function call via "this".
@@ -3659,6 +3672,8 @@ VariablePtr CodeBuilder::ConvertVariable(
 		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), src_loc, dst_type );
 		return nullptr;
 	}
+
+	conversion_constructor.referenced= true;
 
 	const VariableMutPtr result=
 		std::make_shared<Variable>(

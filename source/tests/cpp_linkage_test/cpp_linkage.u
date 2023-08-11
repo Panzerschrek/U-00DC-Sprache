@@ -16,6 +16,7 @@ fn NameSpace::Nested()
 
 fn TakeS( NameSpace::S &imut s )
 {
+	CallCPP( i32( typeinfo</typeof(s)/>.size_of ) ); // hack to make "s" used.
 }
 
 fn U32ToStr( u32 mut x, [ char8, 64 ] &mut out_str )

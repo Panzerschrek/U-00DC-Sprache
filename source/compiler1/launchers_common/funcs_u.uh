@@ -38,13 +38,15 @@ type U1_LexSyntErrorCallback= fn( U1_UserHandle data, u32 file_index, u32 line, 
 fn nomangle U1_BuildProgram(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
+	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef;
 
 // Returns false in case of lexical/syntax errors.
 fn nomangle U1_BuildProgramWithErrors(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
 	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors,
 	U1_ErrorsHandlingCallbacks& errors_handling_callbacks,
 	U1_UserHandle data ) unsafe : bool;
 
@@ -58,7 +60,8 @@ fn nomangle U1_BuildMultisourceProgram(
 	size_type source_file_count,
 	U1_StringView& root_file_path,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
+	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef;
 
 fn nomangle U1_BuildMultisourceProgramWithErrors(
 	U1_SourceFile& source_files,
@@ -72,7 +75,8 @@ fn nomangle U1_BuildMultisourceProgramWithErrors(
 fn nomangle U1_BuildProgramForLifetimesTest(
 	U1_StringView& program_text,
 	LLVMContextRef llvm_context,
-	LLVMTargetDataRef data_layout ) unsafe : LLVMModuleRef;
+	LLVMTargetDataRef data_layout,
+	bool enable_unsed_name_errors ) unsafe : LLVMModuleRef;
 
 fn nomangle U1_BuildProgramForMSVCManglingTest(
 	U1_StringView& program_text,
@@ -87,6 +91,7 @@ fn nomangle U1_BuildProgramUsingVFS(
 	U1_StringView& target_triple_str,
 	bool build_debug_info,
 	bool generate_tbaa_metadata,
+	bool enable_unused_names,
 	U1::ManglingScheme mangling_scheme,
 	U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,

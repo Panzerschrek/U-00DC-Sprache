@@ -54,6 +54,9 @@ struct TypeTemplate final : TemplateBase
 	// Store syntax tree element for instantiation.
 	// Syntax tree must live longer, than this struct.
 	const Synt::TypeTemplate* syntax_element= nullptr;
+
+	// Set to "true" if this type template was instantiated at least once.
+	mutable bool used= false;
 };
 
 struct FunctionTemplate final : public TemplateBase

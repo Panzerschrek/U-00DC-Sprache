@@ -74,6 +74,7 @@ struct CodeBuilderOptions
 	bool create_lifetimes= true;
 	bool generate_lifetime_start_end_debug_calls= false;
 	bool generate_tbaa_metadata= false;
+	bool report_about_unused_names= true;
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 }
 
@@ -158,7 +159,7 @@ private:
 
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Type/>& t ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</Variable/>& variable ) : NamesScopeValue;
-	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set ) : NamesScopeValue;
+	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</FunctionsSet/>& functions_set ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</ClassField/>& class_field ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( EnumTypePtr& enum_type ) : NamesScopeValue;
 	fn DeepCopyNamesScopeValue( ust::shared_ptr_mut</TypeAlias/>& type_alias ) : NamesScopeValue;
@@ -206,7 +207,7 @@ private:
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScope/>& namespace_ );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Type/>& t );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Variable/>& variable );
-	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/>& functions_set );
+	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/>& functions_set );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassType/>& class_type );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</ClassField/>& class_field );
 	fn NamesScopeBuildElement( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</Enum/>& enum_type );
@@ -221,7 +222,7 @@ private:
 
 	fn DetectGlobalsLoop( this, NamesScopeValue& global_thing ) : bool;
 
-	fn BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set, bool build_body );
+	fn BuildFunctionsSet( mut this, NamesScopePtr& names_scope_ptr, ust::shared_ptr_mut</FunctionsSet/> functions_set, bool build_body );
 	fn PrepareClassParentsList( mut this, ClassTypePtr& class_type );
 	fn BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypePtr& class_type );
 	fn BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr& enum_type );
@@ -338,7 +339,7 @@ private:
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::ContinueOperator& continue_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::WithOperator& with_operator ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::StaticAssert& static_assert_ ) : BlockElementBuildInfo;
-	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, Synt::TypeAlias& type_alias ) : BlockElementBuildInfo;
+	fn BuildBlockElement( mut this, NamesScopeMutPtr& names_scope, FunctionContext &mut function_context, ust::shared_ptr_final</Synt::TypeAlias/>& type_alias_ptr ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Halt& halt_ ) : BlockElementBuildInfo;
 	fn BuildBlockElement( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::HaltIf& halt_if ) : BlockElementBuildInfo;
 
@@ -468,7 +469,7 @@ private:
 		NamesScopePtr& names_scope,
 		FunctionContext &mut function_context,
 		VariableNullablePtr this_,
-		FunctionsSet& functions_set,
+		FunctionsSetPtr& functions_set,
 		ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 		SrcLoc& src_loc ) : Value;
 
@@ -906,6 +907,12 @@ private:
 		ClassTypePtr& class_type,
 		SrcLoc& src_loc );
 
+	// Unused name error generation stuff.
+	fn CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope );
+	fn CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope );
+	fn CheckForUnusedLocalNames( this, NamesScopePtr& names_scope );
+	fn VariableExistanceMayHaveSideEffects( Type& variable_type ) : bool;
+
 	fn CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc );
 	fn CallDestructorsForTopVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
 	fn CallDestructorsForAllVariablesFrames( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, SrcLoc& src_loc );
@@ -1022,6 +1029,7 @@ private:
 	ust::string8 imut target_triple_str_; // null-terminated
 	ConstexprFunctionEvaluator constexpr_function_evaluator_;
 	bool imut generate_tbaa_metadata_;
+	bool imut report_about_unused_names_;
 	TBAAMetadataBuilder tbaa_metadata_builder_;
 	ust::box</IMangler/> mangler_;
 

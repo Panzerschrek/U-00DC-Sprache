@@ -875,6 +875,8 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 		for( const Synt::Expression& expr : template_arguments )
 			arguments_calculated.push_back( BuildExpressionCode( expr, arguments_names_scope, function_context ) );
 
+		// TODO - convert args into TemplateArg here?
+
 		DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
 		function_context.is_functionless_context= prev_is_functionless_context;
 	}
@@ -899,7 +901,10 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 	}
 
 	if( const auto selected_template= SelectTemplateType( prepared_types, template_arguments.size() ) )
+	{
+		selected_template->type_template->used= true;
 		return FinishTemplateTypeGeneration( src_loc, arguments_names_scope, *selected_template );
+	}
 
 	REPORT_ERROR( CouldNotSelectMoreSpicializedTypeTemplate, arguments_names_scope.GetErrors(), src_loc );
 	return nullptr;

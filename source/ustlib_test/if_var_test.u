@@ -46,6 +46,7 @@ fn nomangle main() : i32
 		var IntBox box;
 		if_var( value : box )
 		{
+			ust::ignore_unused(value);
 			halt; // Must not be here, if box is empty.
 		}
 	}
@@ -54,6 +55,7 @@ fn nomangle main() : i32
 		box.reset();
 		if_var( value : box )
 		{
+			ust::ignore_unused(value);
 			halt; // Must not be here, if box is empty.
 		}
 	}
@@ -97,6 +99,7 @@ fn nomangle main() : i32
 		var IntOpt opt;
 		if_var( value : opt )
 		{
+			ust::ignore_unused(value);
 			halt; // Must not be here, if opt is empty.
 		}
 	}
@@ -105,6 +108,7 @@ fn nomangle main() : i32
 		opt.reset();
 		if_var( value : opt )
 		{
+			ust::ignore_unused(value);
 			halt; // Must not be here, if opt is empty.
 		}
 	}

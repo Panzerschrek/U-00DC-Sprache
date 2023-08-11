@@ -1338,6 +1338,8 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	if( function_variable->type != function_pointer_type.function_type )
 		function_value= function_context.llvm_ir_builder.CreatePointerCast( function_value, variable->type.GetLLVMType() );
 
+	function_variable->referenced= true;
+
 	CreateTypedStore( function_context, variable->type, function_value, variable->llvm_value );
 	return EnsureLLVMFunctionCreated( *function_variable );
 }

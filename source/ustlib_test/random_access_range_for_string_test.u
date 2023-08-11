@@ -6,7 +6,7 @@ fn nomangle main() : i32
 	{
 		var ust::string8 str= "ratata";
 		var size_type mut iterations(0);
-		foreach( c : str ){ ++iterations; }
+		foreach( c : str ){ ust::ignore_unused(c); ++iterations; }
 		halt if( iterations != str.size() );
 	}
 	{

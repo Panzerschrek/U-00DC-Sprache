@@ -24,7 +24,9 @@ public:
 	// Use this conversion constructor in order to use simple "ust::null_optional" to pass/return empty optional, without specifying exact optional type.
 	fn conversion_constructor( null_optional_type n )
 	( storage_= zero_init, has_value_= false ) // TODO - initialize with unsafe
-	{}
+	{
+		ignore_unused(n);
+	}
 	
 	// Construct with value.
 	fn conversion_constructor( mut this'a', T mut val'b' ) ' a <- b '
@@ -122,6 +124,7 @@ public:
 
 	op=( mut this, null_optional_type n )
 	{
+		ignore_unused(n);
 		reset();
 	}
 
@@ -219,11 +222,13 @@ public:
 
 	op==( this_type& l, null_optional_type n ) : bool
 	{
+		ignore_unused(n);
 		return l.empty();
 	}
 
 	op==( null_optional_type n, this_type& r ) : bool
 	{
+		ignore_unused(n);
 		return r.empty();
 	}
 

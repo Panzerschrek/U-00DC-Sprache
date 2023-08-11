@@ -93,6 +93,7 @@ static CodeBuilderOptions GetCodeBuilderOptionsForTests()
 	options.build_debug_info= true;
 	options.generate_tbaa_metadata= true;
 	options.create_lifetimes= true;
+	options.report_about_unused_names= false; // It is easier to silence such errors, rather than fixing a lot of tests.
 	return options;
 }
 
@@ -135,7 +136,7 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph ).errors };
 }
 
-std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path )
+std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path, const bool report_about_unused_names )
 {
 	MultiFileVfs vfs( std::move(sources) );
 	const SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, root_file_path );
@@ -143,12 +144,15 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 	PrintLexSyntErrors( source_graph );
 	U_TEST_ASSERT( source_graph.errors.empty() );
 
+	CodeBuilderOptions options= GetCodeBuilderOptionsForTests();
+	options.report_about_unused_names= report_about_unused_names;
+
 	CodeBuilder::BuildResult build_result=
 		CodeBuilder(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph );
+			options ).BuildProgram( source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );

@@ -1,3 +1,4 @@
+import "helpers.u"
 import "container_utils.u"
 
 namespace ust
@@ -24,7 +25,9 @@ public:
 	// Use this conversion constructor in order to use simple "ust::null_optional_ref" to pass/return empty optional_ref, without specifying exact optional_ref type.
 	fn conversion_constructor( null_optional_ref_type n )
 		( ptr_= zero_init )
-	{}
+	{
+		ignore_unused(n);
+	}
 
 	// Construct from reference
 	fn enable_if( is_mutable )
@@ -54,6 +57,7 @@ public:
 
 	op=( mut this, null_optional_ref_type n )
 	{
+		ignore_unused(n);
 		reset();
 	}
 
@@ -115,11 +119,13 @@ public:
 
 	op==( this_type& l, null_optional_ref_type n ) : bool
 	{
+		ignore_unused(n);
 		return l.empty();
 	}
 
 	op==( null_optional_ref_type n, this_type& r ) : bool
 	{
+		ignore_unused(n);
 		return r.empty();
 	}
 

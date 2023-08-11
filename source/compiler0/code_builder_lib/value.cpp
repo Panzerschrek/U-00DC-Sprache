@@ -162,7 +162,7 @@ const std::string ClassField::c_generated_field_name= "_generated";
 //
 
 static_assert( sizeof(Value) <= 56u, "Value is too heavy!" );
-static_assert( sizeof(NamesScopeValue) <= 64u, "NamesScopeValue is too heavy!" );
+static_assert( sizeof(NamesScopeValue) <= 72u, "NamesScopeValue is too heavy!" );
 
 Value::Value( VariablePtr variable )
 {

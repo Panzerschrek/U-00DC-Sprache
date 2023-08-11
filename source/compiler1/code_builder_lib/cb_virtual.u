@@ -8,7 +8,7 @@ namespace U1
 
 struct VirtualFunctionWithName
 {
-	ust::shared_ptr_mut</NamesScopeFunctionsSet/> functions_set;
+	ust::shared_ptr_mut</FunctionsSet/> functions_set;
 	size_type index;
 	ust::string8 name;
 	ust::string8 mangled_name;
@@ -27,6 +27,7 @@ fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	FunctionVariable& new_function,
 	ClassType& new_class_type )
 {
+	ust::ignore_unused( new_function ); // TODO - use it?
 	var ClassTypePtr src_function_this_type= src_function.t.params.front().t.GetClassType().try_deref();
 
 	auto src_class_inner_reference_kind= src_function_this_type.lock_imut().deref().inner_reference_kind;
@@ -134,14 +135,14 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 	auto class_members_ptr= class_type.members;
 	foreach( &class_member : class_members_ptr.lock_imut().deref() )
 	{
-		auto functions_set_ptr= class_member.value().Get</NamesScopeFunctionsSet/>();
+		auto functions_set_ptr= class_member.value().Get</FunctionsSet/>();
 		if( functions_set_ptr.empty() )
 		{
 			continue;
 		}
 
 		auto mut functions_set_lock= functions_set_ptr.try_lock_mut();
-		var FunctionsSet& functions_set= functions_set_lock.deref().functions_set;
+		var FunctionsSet& functions_set= functions_set_lock.deref();
 		for( auto mut i= 0s; i < functions_set.functions.size(); ++i )
 		{
 			if( !functions_set.functions[i].is_this_call )
@@ -170,7 +171,7 @@ fn CodeBuilder::PrepareClassVirtualTable( this, ClassTypePtr& class_type_ptr )
 		var ust::string8& function_name= f.name;
 
 		auto mut functions_set_lock= f.functions_set.lock_mut();
-		var FunctionVariable &mut function= functions_set_lock.deref().functions_set.functions[ f.index ];
+		var FunctionVariable &mut function= functions_set_lock.deref().functions[ f.index ];
 
 		var SrcLoc mut src_loc;
 		var Synt::Function::VirtualKind mut virtual_kind= Synt::Function::VirtualKind::None;
@@ -476,8 +477,6 @@ fn CodeBuilder::BuildClassPolymorphTypeId( mut this, ClassTypePtr& class_type_pt
 fn CodeBuilder::BuildClassVirtualTable_r( mut this, ClassType& ancestor_class, ClassType& dst_class, u64 offset ) : LLVMValueRef
 {
 	var ust::vector</LLVMValueRef/> mut initializer_values;
-
-	auto mut function_context= CreateGlobalFunctionContext();
 
 	foreach( &parent : ancestor_class.parents )
 	{

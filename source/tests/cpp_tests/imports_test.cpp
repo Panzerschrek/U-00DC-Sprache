@@ -926,6 +926,60 @@ U_TEST( ImportInClassFieldInitializer_Test2 )
 	engine->runFunction( function, {} );
 }
 
+U_TEST( UnusedNameErrorIsNotGeneratedForImportedFiles_Test0 )
+{
+	static const char c_program_text_a[]=
+	R"(
+		var i32 unused_variable= 0;
+
+		var f32 x= 0.0f;
+		auto& unused_reference= x;
+
+		type UnusedTypeAlias= i32;
+
+		struct UnusedStruct{}
+
+		class UnusedClass{}
+
+		enum UnusedEnum{ A, B, C }
+
+		fn UnusedFunction() {}
+
+		fn UnusedFunctionPrototype();
+
+		fn ExternalPrototypeForFunctionDefinedLater();
+
+		struct StructWithUnusedContents
+		{
+			var i32 x = 0;
+			auto y= 0.0f;
+			fn UnusedStaticMethod() {}
+			fn UnusedThisCallMethod(this) {}
+
+			f64 unused_field;
+		}
+
+		template</type T/> struct UnusedStructTemplate { T t; }
+		template</type T/> type UnusedTypeAliasTemplate= [ T, 3 ];
+	)";
+
+	static const char c_program_text_root[]=
+	R"(
+		import "a"
+
+		fn ExternalPrototypeForFunctionDefinedLater()
+		{}
+	)";
+
+	BuildMultisourceProgram(
+		{
+			{ "a", c_program_text_a },
+			{ "root", c_program_text_root }
+		},
+		"root",
+		true );
+}
+
 } // namespace
 
 } // namespace U

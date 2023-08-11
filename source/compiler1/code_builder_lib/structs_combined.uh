@@ -146,6 +146,7 @@ struct ClassType
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
 	bool is_complete= false;
+	bool referenced= false;
 
 	bool is_default_constructible= false;
 	bool is_copy_constructible= false;
@@ -309,11 +310,14 @@ struct Variable
 	LLVMValueRef constexpr_value= LLVMValueRef::Null; // Exists only for constant expressions.
 
 	ust::string8 name; // Used only for error reporting and derived variables names.
+	SrcLoc src_loc;
 
 	// May be non-null for struct or tuple member nodes.
 	ust::weak_ptr_mut</Variable/> parent;
 	// May be non-empty for struct or tuple nodes. Field index is used to access field node. Nodes are created lazily.
 	ust::vector</VariableNullablePtr/> children;
+
+	bool referenced= false;
 
 	// This struct is non-copyable.
 	fn constructor( mut this, Variable& other )= delete;
@@ -388,6 +392,7 @@ struct LazyLLVMFunction
 {
 	ust::string8 name_mangled;
 	LLVMValueRef function= LLVMValueRef::Null;
+	bool referenced= false; // HACK! Store function referenced flag here, because we need to have immutable FunctionVariable struct.
 
 	fn constructor( ust::string8 mut name ) ( name_mangled= move(name) ) {}
 
@@ -401,12 +406,21 @@ struct FunctionsSet
 	ust::vector</FunctionVariable/> functions;
 	ust::vector</FunctionTemplatePtr/> function_templates;
 	ust::vector</ParametrizedFunctionTemplate/> parametrized_function_templates;
+
+	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
+
+	// Is incomplete, if there are some syntax elements in containers.
+	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
+	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> out_of_line_syntax_elements;
+	ust::vector</ ust::shared_ptr_final</ Synt::FunctionTemplate /> /> function_templates_syntax_elements;
 }
+
+type FunctionsSetPtr= ust::shared_ptr_mut</FunctionsSet/>;
 
 struct ThisMethodsSet
 {
 	VariablePtr this_;
-	FunctionsSet functions_set;
+	FunctionsSetPtr functions_set;
 }
 
 struct ErrorValue{}
@@ -415,7 +429,7 @@ type Value= ust::variant</ tup[
 	ErrorValue,
 	VariablePtr,
 	Type,
-	FunctionsSet,
+	FunctionsSetPtr,
 	ThisMethodsSet,
 	ust::shared_ptr_imut</TypeTemplatesSet/>
 	] />;
@@ -426,17 +440,6 @@ fn GetValueKindName( Value& v ) : ust::string_view8;
 // NamesScopeValue
 //
 
-struct NamesScopeFunctionsSet
-{
-	FunctionsSet functions_set;
-	ust::shared_ptr_nullable_mut</ClassType/> class_; // Non-empty for function set in struct/class.
-
-	// Is incomplete, if there are some syntax elements in containers.
-	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> syntax_elements;
-	ust::vector</ ust::shared_ptr_final</ Synt::Function /> /> out_of_line_syntax_elements;
-	ust::vector</ ust::shared_ptr_final</ Synt::FunctionTemplate /> /> function_templates_syntax_elements;
-}
-
 struct ClassField
 {
 	Type t;
@@ -444,6 +447,7 @@ struct ClassField
 	bool is_mutable;
 	u32 index= ~0u; // for "getelementptr" instruction
 	u32 original_index= ~0u; // Index of class field in class declaration
+	bool used= false;
 	ust::shared_ptr_final</ Synt::ClassField /> syntax_element;
 
 	// Class, where this field is defined. May be not same class in case of inheritance.
@@ -466,6 +470,8 @@ struct Enum
 	ust::unordered_map</ ust::string8, Element /> elements;
 
 	ust::shared_ptr_final</ Synt::Enum /> syntax_element;
+
+	bool referenced= false;
 }
 
 type EnumTypePtr= ust::shared_ptr_mut</Enum/>;
@@ -473,8 +479,8 @@ type EnumTypePtr= ust::shared_ptr_mut</Enum/>;
 struct TypeAlias
 {
 	ust::optional</ Type /> t; // empty if incomplete
-
 	ust::shared_ptr_final</ Synt::TypeAlias /> syntax_element;
+	bool referenced= false;
 }
 
 enum CoroutineKind
@@ -716,6 +722,7 @@ struct GlobalVariable
 
 	ust::shared_ptr_final</ Synt::VariablesDeclaration /> syntax_element;
 	u32 variable_index;
+	bool referenced= false;
 }
 
 struct GlobalAutoVariable
@@ -723,6 +730,7 @@ struct GlobalAutoVariable
 	VariableNullablePtr variable; // empty if incomplete
 
 	ust::shared_ptr_final</ Synt::AutoVariableDeclaration /> syntax_element;
+	bool referenced= false;
 }
 
 // Empty vector if all static asserts are complete.
@@ -771,7 +779,7 @@ public:
 		NamesScopeMutPtr,
 		ust::shared_ptr_mut</Type/>,
 		ust::shared_ptr_mut</Variable/>,
-		ust::shared_ptr_mut</NamesScopeFunctionsSet/>,
+		ust::shared_ptr_mut</FunctionsSet/>,
 		ClassTypePtr,
 		ClassFieldPtr,
 		EnumTypePtr,

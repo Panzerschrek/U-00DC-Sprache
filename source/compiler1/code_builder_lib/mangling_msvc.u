@@ -191,7 +191,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 	{
 		mangler_state.PushElement( EncodeFundamentalTypeName( fundamental_type.fundamental_type ) );
 	}
-	else if_var( &array_type : t.GetArrayType() )
+	else if( !t.GetArrayType().empty() )
 	{
 		// Process nested arrays.
 		var ust::vector</u64/> mut dimensions;

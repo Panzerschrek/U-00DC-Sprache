@@ -29,7 +29,6 @@ fn IsIdentifierStartChar( sprache_char c ) : bool
 {
 	// HACK - manually define allowed "letters".
 	// TODO - use something, like symbol category from unicode.
-	var u32 cc(c);
 	switch(c)
 	{
 		"a"c32 ... "z"c32,

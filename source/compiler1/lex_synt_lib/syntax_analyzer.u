@@ -1975,7 +1975,7 @@ fn SyntaxAnalyzer::ParseBlockElements( mut this ) : BlockElements
 		}
 		else if( IsKeyword( it_.front(), Keyword::type_ ) )
 		{
-			block_elements.push_back( ParseTypeAlias() );
+			block_elements.push_back( ust::make_shared_ptr_final( ParseTypeAlias() ) );
 		}
 		else if( IsKeyword( it_.front(), Keyword::halt_ ) )
 		{
@@ -3957,6 +3957,7 @@ fn SyntaxAnalyzer::ExpandMacroBlock(
 				var Lexem mut result_lexem
 				{
 					.lexem_type= Lexem::Type::Identifier,
+					.src_loc= result_element.lexem.src_loc,
 					.text= unique_macro_indentifiers_map[ result_element.lexem.text ],
 				};
 				lexems_expanded.push_back( move(result_lexem) );

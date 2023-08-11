@@ -47,6 +47,7 @@ CodeBuilder::CodeBuilder(
 	, create_lifetimes_( options.create_lifetimes )
 	, generate_lifetime_start_end_debug_calls_( options.generate_lifetime_start_end_debug_calls )
 	, generate_tbaa_metadata_( options.generate_tbaa_metadata )
+	, report_about_unused_names_( options.report_about_unused_names )
 	, constexpr_function_evaluator_( data_layout_ )
 	, mangler_( CreateMangler( options.mangling_scheme, data_layout_ ) )
 	, tbaa_metadata_builder_( llvm_context_, data_layout, mangler_ )
@@ -211,6 +212,9 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 		CheckClassNonSyncTagExpression( class_type.get() );
 		CheckClassNonSyncTagInheritance( class_type.get() );
 	}
+
+	// Check for unused names in root file.
+	CheckForUnusedGlobalNames( *compiled_sources_[0].names_map );
 
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
@@ -741,6 +745,165 @@ void CodeBuilder::CallMembersDestructors( FunctionContext& function_context, Cod
 			errors_container,
 			src_loc );
 	};
+}
+
+void CodeBuilder::CheckForUnusedGlobalNames( const NamesScope& names_scope )
+{
+	if( !report_about_unused_names_ )
+		return;
+
+	CheckForUnusedGlobalNamesImpl( names_scope );
+}
+
+void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
+{
+	names_scope.ForEachInThisScope(
+		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
+		{
+			const Value& value= names_scope_value.value;
+			if( const auto functions_set= value.GetFunctionsSet() )
+			{
+				// Process each function individually.
+				for( const FunctionVariable& function : functions_set->functions )
+				{
+					if( !function.referenced &&
+						!function.no_mangle &&
+						function.virtual_table_index == ~0u &&
+						function.body_src_loc.GetFileIndex() == 0 &&
+						function.prototype_src_loc.GetFileIndex() == 0 )
+					{
+						bool is_special_method= false;
+						if( functions_set->base_class != nullptr )
+						{
+							if( name == Keyword( Keywords::destructor_ ) ||
+								( name == Keyword( Keywords::constructor_ ) &&
+									( IsCopyConstructor( function.type, functions_set->base_class ) || IsDefaultConstructor( function.type, functions_set->base_class ) ) ) ||
+								( name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function.type, functions_set->base_class ) ) ||
+								( name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function.type, functions_set->base_class ) ) )
+								is_special_method= true;
+						}
+
+						// Report about unused function, only if it is defined in main file, have no prototype in one of imported files, is not "nomangle" and (obviously) not referenced.
+						// Ignore special methods.
+						if( !is_special_method )
+							REPORT_ERROR( UnusedName, names_scope.GetErrors(), function.body_src_loc, name );
+					}
+				}
+				// TODO - process function templates here.
+
+				return;
+			}
+			if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+			{
+				// Process each type template individually.
+				for( const TypeTemplatePtr& type_template : type_templates_set->type_templates )
+					if( !type_template->used  && type_template->src_loc.GetFileIndex() == 0 )
+						REPORT_ERROR( UnusedName, names_scope.GetErrors(), type_template->src_loc, name );
+
+				return;
+			}
+
+			// Check namespace of classes, but only for place where this class was defined.
+			if( const auto type= value.GetTypeName() )
+			{
+				if( const auto class_type= type->GetClassType() )
+				{
+					if( class_type->members->GetParent() == &names_scope )
+						CheckForUnusedGlobalNamesImpl( *class_type->members );
+				}
+			}
+
+			if( names_scope_value.referenced )
+				return; // Value is referenced.
+			if( names_scope_value.src_loc.GetFileIndex() != 0 )
+				return; // Ignore imported names.
+
+			if( value.GetVariable() != nullptr )
+			{
+				// All global variables/references have trivial destructor.
+				// So, there is a reason to report error about all unreferenced global variables/references.
+				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+			}
+			else if(
+				value.GetTypeName() != nullptr ||
+				value.GetTypedef() != nullptr )
+			{
+				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+			}
+			else if( value.GetClassField() != nullptr )
+			{
+				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+			}
+			else if( value.GetThisOverloadedMethodsSet() != nullptr )
+			{
+				// NamesScope can't contain this.
+				U_ASSERT(false);
+			}
+			else if( const auto namespace_= value.GetNamespace() )
+				CheckForUnusedGlobalNamesImpl( *namespace_ ); // Recursively check children.
+			else if(
+				value.GetStaticAssert() != nullptr ||
+				value.GetIncompleteGlobalVariable() != nullptr ||
+				value.GetYetNotDeducedTemplateArg() != nullptr ||
+				value.GetErrorValue() != nullptr )
+			{} // Ignore these kinds if values.
+			else U_ASSERT(false);
+		} );
+}
+
+void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
+{
+	if( !report_about_unused_names_ )
+		return;
+
+	names_scope.ForEachInThisScope(
+		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
+		{
+			if( names_scope_value.referenced )
+				return; // Value is referenced.
+
+			const Value& value= names_scope_value.value;
+			if( value.GetVariable() != nullptr )
+			{
+				// Variable with side-effects of their existence should be marked as referenced before.
+				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+			}
+			else if( value.GetTypeName() != nullptr || value.GetTypedef() != nullptr )
+			{
+				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
+			}
+			else if(
+				value.GetNamespace() != nullptr ||
+				value.GetTypeTemplatesSet() ||
+				value.GetThisOverloadedMethodsSet() != nullptr ||
+				value.GetClassField() ||
+				value.GetFunctionsSet() )
+			{
+				// Local NamesScope can't contain this.
+				U_ASSERT(false);
+			}
+			else if(
+				value.GetStaticAssert() != nullptr ||
+				value.GetIncompleteGlobalVariable() != nullptr ||
+				value.GetYetNotDeducedTemplateArg() != nullptr ||
+				value.GetErrorValue() != nullptr )
+			{} // Ignore these kinds if values.
+			else U_ASSERT(false);
+		} );
+}
+
+bool CodeBuilder::VariableExistanceMayHaveSideEffects( const Type& variable_type )
+{
+	// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
+	// For example, "ust::string8" has non-trivial destructor, but it just frees memory.
+	// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
+	const bool destructor_is_trivial=
+		// Constexpr types are fundamentals, enums, function pointers, some structs.
+		variable_type.CanBeConstexpr() ||
+		// Raw pointers are non-constexpr, but trivially-destructible.
+		variable_type.GetRawPointerType() != nullptr;
+
+	return !destructor_is_trivial;
 }
 
 size_t CodeBuilder::PrepareFunction(
@@ -1436,8 +1599,10 @@ Type CodeBuilder::BuildFuncCode(
 		}
 		else
 		{
+			const bool force_referenced= param.value_type == ValueType::Value && VariableExistanceMayHaveSideEffects(variable_reference->type);
+
 			const NamesScopeValue* const inserted_arg=
-				function_names.AddName( arg_name, NamesScopeValue( variable_reference, declaration_arg.src_loc_ ) );
+				function_names.AddName( arg_name, NamesScopeValue( variable_reference, declaration_arg.src_loc_, force_referenced ) );
 			if( inserted_arg == nullptr )
 				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.src_loc_, arg_name );
 		}
@@ -1591,6 +1756,8 @@ Type CodeBuilder::BuildFuncCode(
 	}
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
+
+	CheckForUnusedLocalNames( function_names );
 
 	TryToPerformReturnValueAllocationOptimization( *llvm_function );
 

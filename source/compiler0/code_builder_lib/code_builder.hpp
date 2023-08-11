@@ -31,6 +31,7 @@ struct CodeBuilderOptions
 	bool create_lifetimes= true;
 	bool generate_lifetime_start_end_debug_calls= false;
 	bool generate_tbaa_metadata= false;
+	bool report_about_unused_names= true;
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
@@ -478,6 +479,12 @@ private:
 	void CallDestructorsForLoopInnerVariables( NamesScope& names_scope, FunctionContext& function_context, size_t stack_variables_stack_size, const SrcLoc& src_loc );
 	void CallDestructorsBeforeReturn( NamesScope& names_scope, FunctionContext& function_context, const SrcLoc& src_loc );
 	void CallMembersDestructors( FunctionContext& function_context, CodeBuilderErrorsContainer& errors_container, const SrcLoc& src_loc );
+
+	// Unused name error generation stuff.
+	void CheckForUnusedGlobalNames( const NamesScope& names_scope );
+	void CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope );
+	void CheckForUnusedLocalNames( const NamesScope& names_scope );
+	bool VariableExistanceMayHaveSideEffects( const Type& variable_type );
 
 	// Returns index of function in set, if function successfuly prepared and inserted. Returns ~0 on fail.
 	size_t PrepareFunction(
@@ -1026,6 +1033,7 @@ private:
 	const bool create_lifetimes_;
 	const bool generate_lifetime_start_end_debug_calls_;
 	const bool generate_tbaa_metadata_;
+	const bool report_about_unused_names_;
 
 	struct
 	{

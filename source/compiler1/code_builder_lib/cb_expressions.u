@@ -1,4 +1,5 @@
 import "/assert.u"
+import "/helpers.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -50,6 +51,9 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::EmptyVariant& empty_variant ) : Value
 {
 	// "EmptyVariant" used only as stub during expression building in syntax analyzer. It should never be in final result.
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( function_context );
+	ust::ignore_unused( empty_variant );
 	halt;
 }
 
@@ -136,6 +140,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::BooleanConstant& boolean_constant ) : Value
 {
+	ust::ignore_unused( names_scope );
 	var Variable mut result
 	{
 		.t= bool_type_,
@@ -630,6 +635,11 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 
 	var VariablePtr variable_reference_ptr= variable_ptr.try_to_non_nullable();
+
+	with( mut lock : variable_reference_ptr.lock_mut() )
+	{
+		lock.deref().referenced= true;
+	}
 
 	if( IsGlobalVariable( variable_reference_ptr ) )
 	{
@@ -1423,20 +1433,20 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 {
 	auto function= BuildExpressionCode( names_scope, function_context, call_operator.value.deref() );
 
-	var ust::optional_ref_imut</ FunctionsSet /> mut functions_set;
+	var ust::shared_ptr_nullable_mut</ FunctionsSet /> mut functions_set;
 	var VariableNullablePtr mut this_;
 
 	if_var( &t : function.get</Type/>() )
 	{
 		return BuildTempVariableConstruction( names_scope, function_context, t, call_operator.args.range(), call_operator.src_loc );
 	}
-	if_var( & in_functions_set : function.get</FunctionsSet/>() )
+	if_var( & in_functions_set : function.get</FunctionsSetPtr/>() )
 	{
-		functions_set.reset(in_functions_set);
+		functions_set= in_functions_set;
 	}
 	if_var( & this_methods_set : function.get</ThisMethodsSet/>() )
 	{
-		functions_set.reset(this_methods_set.functions_set);
+		functions_set= this_methods_set.functions_set;
 		this_= this_methods_set.this_;
 	}
 	if_var( &variable_ptr : function.get</VariablePtr/>() )
@@ -1474,7 +1484,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 		return ErrorValue();
 	}
 
-	return CallFunctionsSet( names_scope, function_context, this_, functions_set.try_deref(), call_operator.args.range(), call_operator.src_loc );
+	return CallFunctionsSet( names_scope, function_context, this_, functions_set.try_to_non_nullable(), call_operator.args.range(), call_operator.src_loc );
 }
 
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::MemberAccessOperator& member_access_operator ) : Value
@@ -1526,20 +1536,23 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			REPORT_ERROR( ValueIsNotTemplate, names_scope, member_access_operator.src_loc )
 		}
 
+		with( mut lock : field_ptr.try_lock_mut() )
+		{
+			lock.deref().used= true;
+		}
+
 		return AccessClassField( names_scope, function_context, variable_ptr, field_ptr.try_lock_imut().deref(), member_access_operator.member_name, member_access_operator.src_loc );
 	}
 
-	auto functions_set_ptr= class_member[0].Get</NamesScopeFunctionsSet/>();
+	auto functions_set_ptr= class_member[0].Get</FunctionsSet/>();
 	if( !functions_set_ptr.empty() )
 	{
 		BuildFunctionsSet( class_member[2], functions_set_ptr.try_to_non_nullable(), false );
 
-		var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr };
-
 		if( !member_access_operator.template_args.empty() )
 		{
 			auto functions_set_lock= functions_set_ptr.try_lock_imut();
-			auto& functions_set= functions_set_lock.deref().functions_set;
+			var FunctionsSet& functions_set= functions_set_lock.deref();
 
 			if( functions_set.function_templates.empty() )
 			{
@@ -1574,14 +1587,14 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				return ErrorValue();
 			}
 
-			this_methods_set.functions_set= val.try_deref().Get</NamesScopeFunctionsSet/>().try_lock_imut().deref().functions_set;
+			var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr, .functions_set= val.try_deref().Get</FunctionsSet/>().try_to_non_nullable() };
+			return move(this_methods_set);
 		}
 		else
 		{
-			this_methods_set.functions_set= functions_set_ptr.try_lock_imut().deref().functions_set;
+			var ThisMethodsSet mut this_methods_set{ .this_= variable_ptr, .functions_set= functions_set_ptr.try_to_non_nullable() };
+			return move(this_methods_set);
 		}
-
-		return move(this_methods_set);
 	}
 
 	REPORT_ERROR( NotImplemented, names_scope, member_access_operator.src_loc, ust::string8("class members, except fields or methods") )
@@ -1842,6 +1855,10 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 
 fn CodeBuilder::AccessClassBase( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, VariablePtr& variable_ptr, SrcLoc& src_loc ) : VariablePtr
 {
+	// TODO - remove these args at all?
+	ust::ignore_unused( names_scope );
+	ust::ignore_unused( src_loc );
+
 	var size_type base_field_index(0); // Base is always first field.
 
 	auto mut variable_lock= variable_ptr.lock_mut();
@@ -1922,8 +1939,6 @@ fn CodeBuilder::AccessDirectClassField(
 	var ust::string8 mut node_name= variable_ptr.lock_imut().deref().name;
 	node_name+= ".";
 	node_name+= field_name;
-
-	auto op_name_nt= "." + field_name + "\0";
 
 	if( field.is_reference )
 	{
@@ -2936,6 +2951,11 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 			function_context.have_non_constexpr_operations_inside= true;
 		}
 
+		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
 		var LLVMValueRef llvm_function= EnsureLLVMFunctionCreated( overloaded_operator );
 
 		return DoCallFunction(
@@ -3142,6 +3162,11 @@ fn CodeBuilder::TryCallOverloadedUnaryOperator(
 			function_context.have_non_constexpr_operations_inside= true;
 		}
 
+		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
 		return DoCallFunction(
 			names_scope,
 			function_context,
@@ -3204,6 +3229,11 @@ fn CodeBuilder::TryCallOverloadedPostfixOperator(
 			function_context.have_non_constexpr_operations_inside= true;
 		}
 
+		with( mut lock : overloaded_operator.llvm_function.lock_mut() )
+		{
+			lock.deref().referenced= true;
+		}
+
 		return DoCallFunction(
 			names_scope,
 			function_context,
@@ -3223,7 +3253,7 @@ fn CodeBuilder::CallFunctionsSet(
 	NamesScopePtr& names_scope,
 	FunctionContext &mut function_context,
 	VariableNullablePtr mut this_,
-	FunctionsSet& functions_set,
+	FunctionsSetPtr& functions_set,
 	ust::array_view_imut</ ust::shared_ptr_final</Synt::Expression/> />& args,
 	SrcLoc& src_loc ) : Value
 {
@@ -3267,7 +3297,7 @@ fn CodeBuilder::CallFunctionsSet(
 
 	auto function_selected_opt=
 		GetOverloadedFunction(
-			functions_set,
+			functions_set.lock_imut().deref(),
 			args_evaluated.range(),
 			!this_.empty(),
 			names_scope,
@@ -3292,6 +3322,11 @@ fn CodeBuilder::CallFunctionsSet(
 	if( !( function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 	{
 		function_context.have_non_constexpr_operations_inside= true;
+	}
+
+	with( mut lock : function_selected.llvm_function.lock_mut() )
+	{
+		lock.deref().referenced= true;
 	}
 
 	var bool is_constexpr= function_selected.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete;

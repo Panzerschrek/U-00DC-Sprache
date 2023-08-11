@@ -54,6 +54,7 @@ fn CodeBuilder::constructor(
 		constexpr_function_evaluator_(data_layout),
 		tbaa_metadata_builder_( llvm_context, data_layout, CreateMangler(options.mangling_scheme, data_layout) ),
 		generate_tbaa_metadata_( options.generate_tbaa_metadata ),
+		report_about_unused_names_( options.report_about_unused_names ),
 		global_things_stack_ptr_(GlobalThingsStack()),
 		build_debug_info_(options.build_debug_info),
 		mangler_(CreateMangler(options.mangling_scheme, data_layout))
@@ -222,6 +223,12 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 			CheckClassNonSyncTagExpression( class_type );
 			CheckClassNonSyncTagInheritance( class_type );
 		}
+	}
+
+	// Check for unused names in root file.
+	{
+		auto main_file_root_namespace= source_graph_nodes_build_results_.front().names_scope.try_to_non_nullable();
+		CheckForUnusedGlobalNames( main_file_root_namespace );
 	}
 
 	// Finalize "defererenceable" attributes.
@@ -1152,7 +1159,6 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				}
 				else
 				{
-					auto arg_name= "_arg_" + in_param.name;
 					variable.llvm_value= unsafe( LLVMBuildAlloca( function_context.alloca_ir_builder, type_param.t.GetLLVMType(), (in_param.name + "\0").front() ) );
 					CreateLifetimeStart( function_context, variable.llvm_value );
 					CreateTypedStore( function_context, type_param.t, arg_value, variable.llvm_value );
@@ -1180,6 +1186,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 				.location= Variable::Location::Pointer,
 				.llvm_value= variable.llvm_value,
 				.name= in_param.name,
+				.src_loc= in_param.src_loc,
+				.referenced= type_param.value_type == ValueType::Value && VariableExistanceMayHaveSideEffects(type_param.t)
 			};
 
 			var VariablePtr variable_ptr( move(variable) );
@@ -1328,6 +1336,8 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 		}
 	}
 
+	CheckForUnusedLocalNames( args_names_scope_ptr );
+
 	unsafe( U1_TryToPerformReturnValueAllocationOptimization( llvm_function ) );
 
 	if( func_variable.constexpr_kind != FunctionVariable::ConstexprKind::NonConstexpr )
@@ -1390,6 +1400,218 @@ fn CodeBuilder::TryCallCopyConstructor(
 	// TODO - what if copy constructor is unsafe?
 
 	BuildCopyConstructorPart( names_scope, function_context, dst, src, class_type, src_loc );
+}
+
+fn CodeBuilder::CheckForUnusedGlobalNames( this, NamesScopePtr& names_scope )
+{
+	if( !report_about_unused_names_ )
+	{
+		return;
+	}
+
+	CheckForUnusedGlobalNamesImpl( names_scope );
+}
+
+fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
+{
+	foreach( &name_pair : names_scope.lock_imut().deref() )
+	{
+		var ust::string8& name= name_pair.key();
+		var NamesScopeValue& names_scope_value= name_pair.value();
+
+		auto inner_namespace= names_scope_value.Get</NamesScope/>();
+		if( !inner_namespace.empty() )
+		{
+			CheckForUnusedGlobalNamesImpl( inner_namespace.try_to_non_nullable() );
+		}
+
+		auto functions_set_ptr= names_scope_value.Get</FunctionsSet/>();
+		if( !functions_set_ptr.empty() )
+		{
+			with( &functions_set : functions_set_ptr.try_lock_imut().deref() )
+			{
+				foreach( &function : functions_set.functions )
+				{
+					var SrcLoc mut body_src_loc, mut prototye_src_loc;
+					if( !function.prototype_syntax_element.empty() )
+					{
+						body_src_loc= function.prototype_syntax_element.try_deref().src_loc;
+						prototye_src_loc= body_src_loc;
+					}
+					if( !function.body_syntax_element.empty() )
+					{
+						body_src_loc= function.body_syntax_element.try_deref().src_loc;
+					}
+
+					if( !function.llvm_function.lock_imut().deref().referenced &&
+						!function.no_mangle &&
+						function.virtual_table_index == ~0u &&
+						body_src_loc.GetFileIndex() == 0u &&
+						prototye_src_loc.GetFileIndex() == 0u )
+					{
+						var bool mut is_special_method= false;
+						if( !functions_set.class_.empty() )
+						{
+							auto class_= functions_set.class_.try_to_non_nullable();
+							if( name == KeywordToString( Keyword::destructor_ ) ||
+								( name == KeywordToString( Keyword::constructor_ ) &&
+									( IsCopyConstructor( function, class_ ) || IsDefaultConstructor( function, class_ ) ) ) ||
+								( name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function, class_ ) ) ||
+								( name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function, class_ ) ) )
+							{
+								is_special_method= true;
+							}
+						}
+
+						if( !is_special_method )
+						{
+							REPORT_ERROR( UnusedName, names_scope, body_src_loc, name )
+						}
+					}
+				}
+			}
+		}
+
+		auto global_variable_ptr= names_scope_value.Get</GlobalVariable/>();
+		if( !global_variable_ptr.empty() )
+		{
+			with( &global_variable : global_variable_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= global_variable.syntax_element.deref().variables[global_variable.variable_index].src_loc;
+				if( !global_variable.referenced && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+				}
+			}
+		}
+
+		auto global_auto_variable_ptr= names_scope_value.Get</GlobalAutoVariable/>();
+		if( !global_auto_variable_ptr.empty() )
+		{
+			with( &global_auto_variable : global_auto_variable_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= global_auto_variable.syntax_element.deref().src_loc;
+				if( !global_auto_variable.referenced && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+				}
+			}
+		}
+
+		auto class_type_ptr= names_scope_value.Get</ClassType/>();
+		if( !class_type_ptr.empty() )
+		{
+			with( &class_type : class_type_ptr.try_lock_imut().deref() )
+			{
+				if( !class_type.referenced && !class_type.syntax_element.empty() )
+				{
+					var SrcLoc& src_loc= class_type.syntax_element.try_deref().src_loc;
+					if( src_loc.GetFileIndex() == 0u )
+					{
+						REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+					}
+				}
+			}
+
+			var NamesScopePtr class_members= class_type_ptr.try_lock_imut().deref().members;
+			if( class_members.lock_imut().deref().GetParent() == names_scope )
+			{
+				CheckForUnusedGlobalNamesImpl( class_members );
+			}
+		}
+
+		auto enum_type_ptr= names_scope_value.Get</Enum/>();
+		if( !enum_type_ptr.empty() )
+		{
+			with( &enum_ : enum_type_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= enum_.syntax_element.deref().src_loc;
+				if( !enum_.referenced && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+				}
+			}
+		}
+
+		auto type_alias_ptr= names_scope_value.Get</TypeAlias/>();
+		if( !type_alias_ptr.empty() )
+		{
+			with( &type_alias : type_alias_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= type_alias.syntax_element.deref().src_loc;
+				if( !type_alias.referenced && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+				}
+			}
+		}
+
+		auto class_field_ptr= names_scope_value.Get</ClassField/>();
+		if( !class_field_ptr.empty() )
+		{
+			with( &class_field : class_field_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= class_field.syntax_element.deref().src_loc;
+				if( !class_field.used && src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+				}
+			}
+		}
+	}
+}
+
+fn CodeBuilder::CheckForUnusedLocalNames( this, NamesScopePtr& names_scope )
+{
+	if( !report_about_unused_names_ )
+	{
+		return;
+	}
+
+	foreach( &name_pair : names_scope.lock_imut().deref() )
+	{
+		var ust::string8& name= name_pair.key();
+		var NamesScopeValue& names_scope_value= name_pair.value();
+
+		auto variable_ptr= names_scope_value.Get</Variable/>();
+		if( !variable_ptr.empty() )
+		{
+			with( &variable : variable_ptr.try_lock_imut().deref() )
+			{
+				if( !variable.referenced && variable.src_loc.GetFileIndex() == 0u )
+				{
+					REPORT_ERROR( UnusedName, names_scope, variable.src_loc, name )
+				}
+			}
+		}
+
+		auto type_alias_ptr= names_scope_value.Get</TypeAlias/>();
+		if( !type_alias_ptr.empty() )
+		{
+			with( &type_alias : type_alias_ptr.try_lock_imut().deref() )
+			{
+				var SrcLoc& src_loc= type_alias.syntax_element.deref().src_loc;
+				if( !type_alias.referenced )
+				{
+					REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+				}
+			}
+		}
+	}
+}
+
+fn CodeBuilder::VariableExistanceMayHaveSideEffects( Type& variable_type ) : bool
+{
+	// Normally we should perform deep inspection in order to know, that existance of the variable has sence.
+	// For example, "ust::string8" has non-trivial destructor, but it just frees memory.
+	// But such check is too hard to implement, so, assume, that only variables of types with trivial (no-op) destructor may be considered unused.
+	var bool destructor_is_trivial=
+		// Constexpr types are fundamentals, enums, function pointers, some structs.
+		variable_type.CanBeConstexpr() ||
+		// Raw pointers are non-constexpr, but trivially-destructible.
+		!variable_type.GetRawPointerType().empty();
+
+	return !destructor_is_trivial;
 }
 
 fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, size_type variables_frame_index, SrcLoc& src_loc )
@@ -2013,10 +2235,10 @@ fn CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( this, Name
 		{
 			SetupDereferenceableFunctionParamsAndRetAttributes_r( class_type.lock_imut().deref().members.lock_imut().deref() );
 		}
-		if_var( &functions_set_ptr : value.something_.get</ ust::shared_ptr_mut</NamesScopeFunctionsSet/> />() )
+		if_var( &functions_set_ptr : value.something_.get</ ust::shared_ptr_mut</FunctionsSet/> />() )
 		{
 			auto mut lock= functions_set_ptr.lock_mut();
-			foreach( &mut function : lock.deref().functions_set.functions )
+			foreach( &mut function : lock.deref().functions )
 			{
 				SetupDereferenceableFunctionParamsAndRetAttributes( function );
 			}
@@ -2584,7 +2806,7 @@ fn CodeBuilder::ConstexprCompareEqual(
 
 		// Search for "==" operator.
 		auto operators_value= class_type.lock_imut().deref().members.lock_imut().deref().GetThisScopeValue( OverloadedOperatorToString( OverloadedOperator::CompareEqual ) ).try_deref();
-		foreach( &op_ : operators_value.Get</NamesScopeFunctionsSet/>().try_lock_imut().deref().functions_set.functions )
+		foreach( &op_ : operators_value.Get</FunctionsSet/>().try_lock_imut().deref().functions )
 		{
 			if( !IsEqualityCompareOperator( op_, class_type ) )
 			{
