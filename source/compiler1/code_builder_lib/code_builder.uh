@@ -633,7 +633,6 @@ private:
 
 	fn EvaluateTemplateTypeArgs(
 		mut this,
-		FunctionContext &mut function_context,
 		TypeTemplatePtr& type_template_ptr,
 		TemplateArgsFinished& template_args,
 		SrcLoc& template_instantiation_src_loc ) : ust::optional</TemplateTypeArgsEvaluationResult/>;

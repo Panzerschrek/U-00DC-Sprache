@@ -674,7 +674,6 @@ fn CodeBuilder::GenTemplateType(
 	foreach( &type_template_ptr : type_templates_set.type_templates )
 	{
 		auto mut res= EvaluateTemplateTypeArgs(
-			function_context,
 			type_template_ptr,
 			template_args_finished,
 			template_instantiation_src_loc );
@@ -712,7 +711,6 @@ fn CodeBuilder::GenTemplateType(
 
 fn CodeBuilder::EvaluateTemplateTypeArgs(
 	mut this,
-	FunctionContext &mut function_context,
 	TypeTemplatePtr& type_template_ptr,
 	TemplateArgsFinished& template_args,
 	SrcLoc& template_instantiation_src_loc ) : ust::optional</TemplateTypeArgsEvaluationResult/>
@@ -761,18 +759,21 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	}
 	else
 	{
-		for( auto mut i= 0s; i < syntax_element.signature_params.size(); ++i )
+		// Copy and match passed args.
+		result_signature_template_args= template_args;
+		for( auto mut i= 0s; i < template_args.size(); ++i )
 		{
-			var SrcLoc mut src_loc;
-			if( i < template_args.size() )
-			{
-				result_signature_template_args.push_back( template_args[i] );
-			}
-			else
+			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args[i], template_instantiation_src_loc );
+		}
+
+		// Evaluate and match default args (if needed).
+		if( template_args.size() < syntax_element.signature_params.size() )
+		{
+			auto mut global_function_context= CreateGlobalFunctionContext();
+			for( auto mut i= template_args.size(); i < syntax_element.signature_params.size(); ++i )
 			{
 				var Synt::Expression& expr= syntax_element.signature_params[i].default_value;
-				// TODO - use global function context instead?
-				var Value value= BuildExpressionCode( result_names_scope, function_context, expr );
+				var Value value= BuildExpressionCode( result_names_scope, global_function_context, expr );
 				auto mut template_arg_opt= ValueToTemplateArg( result_names_scope, Synt::GetSrcLoc( expr ), value );
 				if( !template_arg_opt.empty() )
 				{
@@ -783,9 +784,9 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 					all_ok= false;
 					continue;
 				}
-			}
 
-			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), template_instantiation_src_loc );
+				all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), template_instantiation_src_loc );
+			}
 		}
 	}
 
