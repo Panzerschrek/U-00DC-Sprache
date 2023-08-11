@@ -151,7 +151,7 @@ fn CodeBuilder::PrepareTypeTemplate(
 	// Check for redefinition.
 	foreach( &prev_template_ptr : out_templates_set.type_templates )
 	{
-		if( type_template.signature_params == prev_template_ptr.deref().signature_params )
+		if( type_template.signature_params == prev_template_ptr.lock_imut().deref().signature_params )
 		{
 			REPORT_ERROR( TypeTemplateRedefinition, names_scope, syntax_element.src_loc, syntax_element.name )
 			return;
@@ -715,76 +715,79 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	TemplateArgsFinished& template_args,
 	SrcLoc& template_instantiation_src_loc ) : ust::optional</TemplateTypeArgsEvaluationResult/>
 {
-	var TypeTemplate& type_template= type_template_ptr.deref();
-
-	var Synt::TypeTemplate& syntax_element= type_template.syntax_element.deref();
-	if( syntax_element.is_short_form )
+	// Avoid performing single lock of type template pointer - use multiple lock instead.
+	// Do this in order to avoid holding lock in recursive calls.
+	with( &type_template : type_template_ptr.lock_imut().deref() )
 	{
-		if( template_args.size() != syntax_element.params.size() )
+		if( type_template.syntax_element.deref().is_short_form )
 		{
-			return ust::null_optional;
+			if( template_args.size() != type_template.syntax_element.deref().params.size() )
+			{
+				return ust::null_optional;
+			}
+		}
+		else
+		{
+			if( template_args.size() < type_template.first_default_param ||
+				template_args.size() > type_template.signature_params.size() )
+			{
+				return ust::null_optional;
+			}
 		}
 	}
-	else
-	{
-		if( template_args.size() < type_template.first_default_param ||
-			template_args.size() > type_template.signature_params.size() )
-		{
-			return ust::null_optional;
-		}
-	}
 
-	var NamesScopePtr names_scope= type_template.parent_names_scope.lock().try_to_non_nullable(); // Parent namespace of type template
+	var NamesScopePtr names_scope= type_template_ptr.lock_imut().deref().parent_names_scope.lock().try_to_non_nullable(); // Parent namespace of type template
 	var NamesScopeMutPtr result_names_scope( NamesScope( NamesScope::c_template_args_namespace_name, names_scope ) ); // Where we place template arguments
 
-	with( mut lock : result_names_scope.lock_mut() )
+	with( &type_template : type_template_ptr.lock_imut().deref() )
 	{
-		for( auto mut i= 0s; i < type_template.params.size(); ++i )
+		with( mut lock : result_names_scope.lock_mut() )
 		{
-			var TemplateArg mut template_arg{ .index= u32(i) };
-			lock.deref().AddName( type_template.params[i].name, move(template_arg) );
+			for( auto mut i= 0s; i < type_template.params.size(); ++i )
+			{
+				var TemplateArg mut template_arg{ .index= u32(i) };
+				lock.deref().AddName( type_template.params[i].name, move(template_arg) );
+			}
 		}
 	}
 
 	auto mut all_ok= true;
 	var TemplateArgsFinished mut result_signature_template_args;
 
-	if( syntax_element.is_short_form )
+	// Copy and match passed args.
+	result_signature_template_args= template_args;
+	with( &type_template : type_template_ptr.lock_imut().deref() )
 	{
-		result_signature_template_args= template_args;
 		for( auto mut i= 0s; i < template_args.size(); ++i )
 		{
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args[i], template_instantiation_src_loc );
 		}
 	}
-	else
+
+	auto syntax_element_ptr= type_template_ptr.lock_imut().deref().syntax_element;
+	var Synt::TypeTemplate& syntax_element= syntax_element_ptr.deref();
+
+	// Evaluate and match default args (if needed).
+	if( !syntax_element.is_short_form && template_args.size() < syntax_element.signature_params.size() )
 	{
-		// Copy and match passed args.
-		result_signature_template_args= template_args;
-		for( auto mut i= 0s; i < template_args.size(); ++i )
+		auto mut global_function_context= CreateGlobalFunctionContext();
+		for( auto mut i= template_args.size(); i < syntax_element.signature_params.size(); ++i )
 		{
-			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args[i], template_instantiation_src_loc );
-		}
-
-		// Evaluate and match default args (if needed).
-		if( template_args.size() < syntax_element.signature_params.size() )
-		{
-			auto mut global_function_context= CreateGlobalFunctionContext();
-			for( auto mut i= template_args.size(); i < syntax_element.signature_params.size(); ++i )
+			var Synt::Expression& expr= syntax_element.signature_params[i].default_value;
+			var Value value= BuildExpressionCode( result_names_scope, global_function_context, expr );
+			auto mut template_arg_opt= ValueToTemplateArg( result_names_scope, Synt::GetSrcLoc( expr ), value );
+			if( !template_arg_opt.empty() )
 			{
-				var Synt::Expression& expr= syntax_element.signature_params[i].default_value;
-				var Value value= BuildExpressionCode( result_names_scope, global_function_context, expr );
-				auto mut template_arg_opt= ValueToTemplateArg( result_names_scope, Synt::GetSrcLoc( expr ), value );
-				if( !template_arg_opt.empty() )
-				{
-					result_signature_template_args.push_back( template_arg_opt.try_take() );
-				}
-				else
-				{
-					all_ok= false;
-					continue;
-				}
+				result_signature_template_args.push_back( template_arg_opt.try_take() );
+			}
+			else
+			{
+				all_ok= false;
+				continue;
+			}
 
+			with( &type_template : type_template_ptr.lock_imut().deref() )
+			{
 				all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args.back(), template_instantiation_src_loc );
 			}
 		}
@@ -813,8 +816,13 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 {
 	var TypeTemplatePtr& type_template_ptr= template_args_evaluation_result.type_template;
 
+	with( mut lock : type_template_ptr.lock_mut() )
+	{
+		lock.deref().used= true;
+	}
+
 	auto template_key=
-		ust::to_string8( ust::ref_to_int( type_template_ptr.deref() ) ) +
+		ust::to_string8( ust::ref_to_int( type_template_ptr.lock_imut().deref() ) ) +
 		mangler_.deref().MangleTemplateArgs( template_args_evaluation_result.signature_args );
 
 	var ust::string8 template_class_name= "_";
@@ -836,11 +844,12 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 		}
 	}
 
-	var Synt::TypeTemplate& syntax_element= type_template_ptr.deref().syntax_element.deref();
+	auto syntax_element_ptr= type_template_ptr.lock_imut().deref().syntax_element;
+	var Synt::TypeTemplate& syntax_element= syntax_element_ptr.deref();
 	var NamesScopeMutPtr& args_names_scope= template_args_evaluation_result.args_names_scope;
 
 	CreateTemplateErrorsContext(
-		type_template_ptr.deref(),
+		type_template_ptr.lock_imut().deref(),
 		instantiation_point_names_scope,
 		args_names_scope,
 		template_instantiation_src_loc );

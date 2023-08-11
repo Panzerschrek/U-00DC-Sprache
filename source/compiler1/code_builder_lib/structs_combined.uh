@@ -542,6 +542,8 @@ class TypeTemplate final : TemplateBase
 
 	size_type first_default_param;
 
+	bool used= false;
+
 	fn constructor(
 		ust::vector</TemplateBase::Param/> mut in_params,
 		ust::vector</ TemplateSignatureParam /> mut in_signature_params,
@@ -556,7 +558,7 @@ class TypeTemplate final : TemplateBase
 	{}
 }
 
-type TypeTemplatePtr = ust::shared_ptr_final</TypeTemplate/>;
+type TypeTemplatePtr = ust::shared_ptr_mut</TypeTemplate/>;
 
 struct TypeTemplatesSet
 {

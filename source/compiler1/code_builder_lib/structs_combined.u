@@ -1272,43 +1272,44 @@ fn NamesScope::ToString( this ) : ust::string8
 		if_var( &base_template : class_type.base_template )
 		{
 			// This is class template. So, parent namespace is arguments names scope.
-
-			auto& type_template= base_template.class_template.deref();
-			auto parent= type_template.parent_names_scope.lock();
-			if( !parent.empty() )
+			with( &type_template : base_template.class_template.lock_imut().deref() )
 			{
-				var ust::string8 mut res;
-
-				auto parent_lock= parent.try_lock_imut();
-				if( !parent_lock.deref().GetParent().empty() )
+				auto parent= type_template.parent_names_scope.lock();
+				if( !parent.empty() )
 				{
-					res+= parent.try_lock_imut().deref().ToString();
-					res+= "::";
+					var ust::string8 mut res;
+
+					auto parent_lock= parent.try_lock_imut();
+					if( !parent_lock.deref().GetParent().empty() )
+					{
+						res+= parent.try_lock_imut().deref().ToString();
+						res+= "::";
+					}
+					res+= type_template.syntax_element.deref().name;
+
+					res+= "</";
+					foreach( &arg : base_template.signature_args )
+					{
+						if_var( &t : arg.get</Type/>() )
+						{
+							res+= t.ToString();
+						}
+						else if_var( &v_ptr : arg.get</VariablePtr/>() )
+						{
+							auto lock= v_ptr.lock_imut();
+							auto& v= lock.deref();
+							res+= ConstantVariableToString( v.t, v.constexpr_value );
+						}
+
+						if( ust::ref_cmp_ne( arg, base_template.signature_args.back() ) )
+						{
+							res+= ", ";
+						}
+					}
+					res+= "/>";
+
+					return move(res);
 				}
-				res+= type_template.syntax_element.deref().name;
-
-				res+= "</";
-				foreach( &arg : base_template.signature_args )
-				{
-					if_var( &t : arg.get</Type/>() )
-					{
-						res+= t.ToString();
-					}
-					else if_var( &v_ptr : arg.get</VariablePtr/>() )
-					{
-						auto lock= v_ptr.lock_imut();
-						auto& v= lock.deref();
-						res+= ConstantVariableToString( v.t, v.constexpr_value );
-					}
-
-					if( ust::ref_cmp_ne( arg, base_template.signature_args.back() ) )
-					{
-						res+= ", ";
-					}
-				}
-				res+= "/>";
-
-				return move(res);
 			}
 		}
 		if_var( &typeinfo_src_type : class_type.typeinfo_src_type_ )

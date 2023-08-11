@@ -814,13 +814,19 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 
 	for( auto mut arg_n= 0s; arg_n < signature_args_to_check; ++arg_n )
 	{
-		foreach( &candidate_l : type_templates ) label templates_search
+		foreach( &candidate_l_ptr : type_templates ) label templates_search
 		{
-			foreach( &candidate_r : type_templates )
+			auto l_lock= candidate_l_ptr.lock_imut();
+			auto& candidate_l= l_lock.deref();
+
+			foreach( &candidate_r_ptr : type_templates )
 			{
+				auto r_lock= candidate_r_ptr.lock_imut();
+				auto& candidate_r= r_lock.deref();
+
 				auto comp= CompareTemplateSpecialization(
-					candidate_l.deref().signature_params[arg_n],
-					candidate_r.deref().signature_params[arg_n] );
+					candidate_l.signature_params[arg_n],
+					candidate_r.signature_params[arg_n] );
 				if( comp == ConversionsCompareResult::Incomparable || comp == ConversionsCompareResult::RightIsBetter )
 				{
 					continue label templates_search;
@@ -829,10 +835,11 @@ fn CodeBuilder::SelectMoreSpecializedTemplate(
 
 			for( auto mut index_r= 0s; index_r < type_templates.size(); ++index_r )
 			{
-				auto& candidate_r= type_templates[index_r];
+				auto r_lock= type_templates[index_r].lock_imut();
+				auto& candidate_r= r_lock.deref();
 				auto comp= CompareTemplateSpecialization(
-					candidate_l.deref().signature_params[arg_n],
-					candidate_r.deref().signature_params[arg_n] );
+					candidate_l.signature_params[arg_n],
+					candidate_r.signature_params[arg_n] );
 
 				if( comp != ConversionsCompareResult::Same )
 				{

@@ -569,7 +569,8 @@ fn ManglerMSVC::EncodeNamespacePostfix_r( this, ManglerState &mut mangler_state,
 fn ManglerMSVC::EncodeTemplateClassName( this, ManglerState &mut mangler_state, ClassType& the_class )
 {
 	var TypeTemplatePtr& type_template_ptr= the_class.base_template.try_deref().class_template;
-	var TypeTemplate& type_template= type_template_ptr.deref();
+	auto lock= type_template_ptr.lock_imut();
+	var TypeTemplate& type_template= lock.deref();
 
 	// Use separate backreferences table.
 	{

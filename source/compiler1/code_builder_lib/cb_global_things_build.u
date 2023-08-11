@@ -106,7 +106,7 @@ fn GlobalValueToString( NamesScopeValue& global_thing ) : ust::string8
 			}
 			if( !type_templates_set.type_templates.empty() )
 			{
-				return type_templates_set.type_templates.front().deref().syntax_element.deref().name;
+				return type_templates_set.type_templates.front().lock_imut().deref().syntax_element.deref().name;
 			}
 		}
 	}
@@ -973,7 +973,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 							var SrcLoc mut src_loc;
 							if( !result_type_templates_set.type_templates.empty() )
 							{
-								src_loc= result_type_templates_set.type_templates.front().deref().syntax_element.deref().src_loc;
+								src_loc= result_type_templates_set.type_templates.front().lock_imut().deref().syntax_element.deref().src_loc;
 							}
 							REPORT_ERROR( TypeTemplatesVisibilityMismatch, names_scope_ptr, src_loc, member_value.key() )
 						}
@@ -983,7 +983,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 							var bool mut overrides= false;
 							foreach( &result_type_template : result_type_templates_set.type_templates )
 							{
-								if( src_type_template.deref().signature_params == result_type_template.deref().signature_params )
+								if( src_type_template.lock_imut().deref().signature_params == result_type_template.lock_imut().deref().signature_params )
 								{
 									overrides= true;
 									break;
