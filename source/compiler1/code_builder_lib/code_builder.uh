@@ -633,10 +633,9 @@ private:
 
 	fn EvaluateTemplateTypeArgs(
 		mut this,
-		NamesScopePtr& args_names_scope,
 		FunctionContext &mut function_context,
 		TypeTemplatePtr& type_template_ptr,
-		Synt::TemplateArgs& template_args,
+		TemplateArgsFinished& template_args,
 		SrcLoc& template_instantiation_src_loc ) : ust::optional</TemplateTypeArgsEvaluationResult/>;
 
 	fn FinishTypeTemplateGeneration(
@@ -763,6 +762,16 @@ private:
 		TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param,
 		TemplateArgFinished& given_arg,
 		SrcLoc& src_loc ) : bool;
+
+	// Returns vector with wrong size in case of error.
+	fn EvaluateTemplateArgs(
+		mut this,
+		NamesScopePtr& args_names_scope,
+		FunctionContext &mut function_context,
+		Synt::TemplateArgs& template_args,
+		SrcLoc& src_loc ) : TemplateArgsFinished;
+
+	fn ValueToTemplateArg( NamesScopePtr& names_scope, SrcLoc& src_loc, Value& value ) : ust::optional</TemplateArgFinished/>;
 
 	fn FillKnownFunctionTemplateArgsIntoNamespace(
 		mut this,
