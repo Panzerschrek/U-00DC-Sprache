@@ -24,7 +24,7 @@ void CreateTemplateErrorsContext(
 	const NamesScopePtr& template_parameters_namespace,
 	const TemplateBase& template_,
 	const std::string_view template_name,
-	const TemplateArgs& template_args )
+	const llvm::ArrayRef<TemplateArg> template_args )
 {
 	REPORT_ERROR( TemplateContext, errors_container, src_loc );
 	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
@@ -702,10 +702,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 						uint32_t(size_type_.GetFundamentalType()->GetSize() * 8),
 						given_array_type->element_count ) );
 
-			if( !MatchTemplateArg( template_, args_names_scope, size_variable, src_loc, *template_param.element_count ) )
-				return false;
-
-			return true;
+			return MatchTemplateArg( template_, args_names_scope, size_variable, src_loc, *template_param.element_count );
 		}
 	}
 
@@ -864,25 +861,7 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 	FunctionContext& function_context )
 {
 	llvm::SmallVector<TemplateArg, 8> arguments_calculated;
-	arguments_calculated.reserve( template_arguments.size() );
-
-	{
-		const bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
-
-		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
-		for( const Synt::Expression& expr : template_arguments )
-		{
-			const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
-			auto template_arg_opt= ValueToTemplateArg( value, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
-			if( template_arg_opt != std::nullopt )
-				arguments_calculated.push_back( std::move( *template_arg_opt) );
-		}
-
-		DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
-		function_context.is_functionless_context= prev_is_functionless_context;
-	}
+	EvaluateTemplateArgs( template_arguments, src_loc, arguments_names_scope, function_context, arguments_calculated );
 
 	if( arguments_calculated.size() != template_arguments.size() )
 	{
@@ -1233,24 +1212,7 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	U_ASSERT( !function_templates.empty() );
 
 	TemplateArgs template_args;
-
-	{
-		const bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
-
-		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
-		for( const Synt::Expression& expr : template_arguments )
-		{
-			const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
-			auto template_arg_opt= ValueToTemplateArg( value, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
-			if( template_arg_opt != std::nullopt )
-				template_args.push_back( std::move( *template_arg_opt) );
-		} // for given template arguments.
-
-		DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
-		function_context.is_functionless_context= prev_is_functionless_context;
-	}
+	EvaluateTemplateArgs( template_arguments, src_loc, arguments_names_scope, function_context, template_args );
 
 	if( template_args.size() != template_arguments.size() )
 		return nullptr;
@@ -1312,9 +1274,35 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	return AddNewTemplateThing( std::move(name_encoded), NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(std::move(result)), SrcLoc() ) );
 }
 
-std::vector<TemplateArg> CodeBuilder::ExtractTemplateArgs( const TemplateBase& template_, const NamesScope& template_args_namespace, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
+void CodeBuilder::EvaluateTemplateArgs(
+	const llvm::ArrayRef<Synt::Expression> template_arguments,
+	const SrcLoc& src_loc,
+	NamesScope& arguments_names_scope,
+	FunctionContext& function_context,
+	llvm::SmallVectorImpl<TemplateArg>& out_args )
 {
-	std::vector<TemplateArg> template_args;
+	out_args.reserve( template_arguments.size() );
+
+	const bool prev_is_functionless_context= function_context.is_functionless_context;
+	function_context.is_functionless_context= true;
+
+	const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+	for( const Synt::Expression& expr : template_arguments )
+	{
+		const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
+		auto template_arg_opt= ValueToTemplateArg( value, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
+		if( template_arg_opt != std::nullopt )
+			out_args.push_back( std::move( *template_arg_opt) );
+	}
+
+	DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
+	function_context.is_functionless_context= prev_is_functionless_context;
+}
+
+TemplateArgs CodeBuilder::ExtractTemplateArgs( const TemplateBase& template_, const NamesScope& template_args_namespace, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
+{
+	TemplateArgs template_args;
 	for( const auto& template_param : template_.template_params )
 	{
 		const NamesScopeValue* const value= template_args_namespace.GetThisScopeValue( template_param.name );

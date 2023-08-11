@@ -380,8 +380,15 @@ private:
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );
 
+	void EvaluateTemplateArgs(
+		llvm::ArrayRef<Synt::Expression> template_arguments,
+		const SrcLoc& src_loc,
+		NamesScope& arguments_names_scope,
+		FunctionContext& function_context,
+		llvm::SmallVectorImpl<TemplateArg>& out_args );
+
 	// Returns vector with wrong size in cas of error.
-	std::vector<TemplateArg> ExtractTemplateArgs( const TemplateBase& template_, const NamesScope& template_args_namespace, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
+	TemplateArgs ExtractTemplateArgs( const TemplateBase& template_, const NamesScope& template_args_namespace, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
 
 	std::optional<TemplateArg> ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
 

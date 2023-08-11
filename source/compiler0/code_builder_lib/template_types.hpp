@@ -26,7 +26,7 @@ struct TemplateVariableArg
 };
 
 using TemplateArg= std::variant< TemplateVariableArg, Type >;
-using TemplateArgs= std::vector<TemplateArg>;
+using TemplateArgs= llvm::SmallVector<TemplateArg, 2>;
 
 struct TemplateBase
 {
