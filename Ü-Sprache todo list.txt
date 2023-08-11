@@ -56,12 +56,7 @@ Compiler:
 *) Inline assembly/module level assembly support
 *) Precompiled modules
 *) More calling conventions (including platform-dependent)
-*) Unused local variable error
-*) Unused global variable error
-*) Unused function error
-*) Unused class error
-*) Unused enum error
-*) Unused type alias error
+*) Generate errors about unused function templates
 
 Interpreter:
 *)Support entry point with args and add possibility to provide such args (argc, argv?)
@@ -70,6 +65,7 @@ Interpreter:
 
 Compiler1:
 *) Support 128-bit types in switch operator
+*) Generate errors about unused type templates
 
 QtCreator plugin:
 *) Syntax errors highlighting
