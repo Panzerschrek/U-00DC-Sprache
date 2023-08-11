@@ -235,7 +235,7 @@ FunctionPointerType CodeBuilder::FunctionTypeToPointer( FunctionType function_ty
 
 llvm::FunctionType* CodeBuilder::GetLLVMFunctionType( const FunctionType& function_type )
 {
-	ArgsVector<llvm::Type*> args_llvm_types;
+	llvm::SmallVector<llvm::Type*, 16> args_llvm_types;
 
 	// Require complete type in order to know how to return values.
 	if( function_type.return_value_type == ValueType::Value )

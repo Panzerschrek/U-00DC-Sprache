@@ -350,7 +350,7 @@ void EncodeFunctionParam( ManglerState& mangler_state, const FunctionType::Param
 		EncodeTypeName( mangler_state, param.type );
 }
 
-void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params )
+void EncodeFunctionParams( ManglerState& mangler_state, const llvm::ArrayRef<FunctionType::Param> params )
 {
 	for( const FunctionType::Param& param : params )
 	{

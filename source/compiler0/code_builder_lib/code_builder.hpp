@@ -803,7 +803,7 @@ private:
 
 	const FunctionVariable* GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
-		const ArgsVector<FunctionType::Param>& actual_args,
+		llvm::ArrayRef<FunctionType::Param> actual_args,
 		bool first_actual_arg_is_this,
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
@@ -811,7 +811,7 @@ private:
 		bool enable_type_conversions= true);
 
 	const FunctionVariable* GetOverloadedOperator(
-		const ArgsVector<FunctionType::Param>& actual_args,
+		llvm::ArrayRef<FunctionType::Param> actual_args,
 		OverloadedOperator op,
 		NamesScope& names,
 		const SrcLoc& src_loc );

@@ -217,7 +217,7 @@ public: // IMangler
 private:
 	void EncodeType( ManglerState& mangler_state, const Type& type ) const;
 	void EncodeFunctionType( ManglerState& mangler_state, const FunctionType& function_type, bool encode_full_type ) const;
-	void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const;
+	void EncodeFunctionParams( ManglerState& mangler_state, llvm::ArrayRef<FunctionType::Param> params ) const;
 	void EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& template_args ) const;
 	void EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const;
 	void EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& scope ) const;
@@ -551,7 +551,7 @@ void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const Functio
 	mangler_state.PushElement( "Z" );
 }
 
-void ManglerMSVC::EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const
+void ManglerMSVC::EncodeFunctionParams( ManglerState& mangler_state, const llvm::ArrayRef<FunctionType::Param> params ) const
 {
 	ArgsVector<FunctionType::Param> back_references;
 

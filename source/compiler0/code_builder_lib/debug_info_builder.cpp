@@ -459,7 +459,7 @@ llvm::DISubroutineType* DebugInfoBuilder::CreateDIFunctionType( const FunctionTy
 {
 	U_ASSERT(builder_ != nullptr);
 
-	ArgsVector<llvm::Metadata*> args;
+	llvm::SmallVector<llvm::Metadata*, 16> args;
 	args.reserve( type.params.size() + 1u );
 
 	{

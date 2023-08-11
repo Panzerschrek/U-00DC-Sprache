@@ -375,7 +375,7 @@ bool CodeBuilder::ApplyOverloadedFunction(
 
 const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	const OverloadedFunctionsSet& functions_set,
-	const ArgsVector<FunctionType::Param>& actual_args,
+	const llvm::ArrayRef<FunctionType::Param> actual_args,
 	const bool first_actual_arg_is_this,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
@@ -590,7 +590,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 }
 
 const FunctionVariable* CodeBuilder::GetOverloadedOperator(
-	const ArgsVector<FunctionType::Param>& actual_args,
+	const llvm::ArrayRef<FunctionType::Param> actual_args,
 	OverloadedOperator op,
 	NamesScope& names,
 	const SrcLoc& src_loc )
@@ -654,8 +654,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 
 	const OverloadedFunctionsSet& constructors= *constructors_value->value.GetFunctionsSet();
 
-	ArgsVector<FunctionType::Param> actual_args;
-	actual_args.resize(2u);
+	FunctionType::Param actual_args[2];
 	actual_args[0u].type= dst_type;
 	actual_args[0u].value_type= ValueType::ReferenceMut;
 	actual_args[1u].type= src_type;
