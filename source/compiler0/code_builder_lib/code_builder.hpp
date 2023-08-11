@@ -341,7 +341,7 @@ private:
 	TemplateTypePreparationResult PrepareTemplateType(
 		const SrcLoc& src_loc,
 		const TypeTemplatePtr& type_template_ptr,
-		llvm::ArrayRef<Value> template_arguments,
+		llvm::ArrayRef<TemplateArg> template_arguments,
 		NamesScope& arguments_names_scope );
 
 	NamesScopeValue* FinishTemplateTypeGeneration(
@@ -379,6 +379,8 @@ private:
 		llvm::ArrayRef<Synt::Expression> template_arguments,
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );
+
+	std::optional<TemplateArg> ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
 
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 

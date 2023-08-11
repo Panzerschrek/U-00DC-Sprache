@@ -437,7 +437,7 @@ U_TEST( TemplateParametersDeductionFailed_Test9 )
 	)";
 
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
-	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 10u ) );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 10u ) || HaveError( build_result.errors, CodeBuilderErrorCode::TemplateParametersDeductionFailed, 10u ) );
 }
 
 U_TEST( TemplateParametersDeductionFailed_Test10 )

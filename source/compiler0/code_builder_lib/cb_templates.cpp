@@ -863,7 +863,7 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 	NamesScope& arguments_names_scope,
 	FunctionContext& function_context )
 {
-	llvm::SmallVector<Value, 8> arguments_calculated;
+	llvm::SmallVector<TemplateArg, 8> arguments_calculated;
 	arguments_calculated.reserve( template_arguments.size() );
 
 	{
@@ -873,12 +873,21 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
 
 		for( const Synt::Expression& expr : template_arguments )
-			arguments_calculated.push_back( BuildExpressionCode( expr, arguments_names_scope, function_context ) );
-
-		// TODO - convert args into TemplateArg here?
+		{
+			const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
+			auto template_arg_opt= ValueToTemplateArg( value, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
+			if( template_arg_opt != std::nullopt )
+				arguments_calculated.push_back( std::move( *template_arg_opt) );
+		}
 
 		DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
 		function_context.is_functionless_context= prev_is_functionless_context;
+	}
+
+	if( arguments_calculated.size() != template_arguments.size() )
+	{
+		REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), src_loc );
+		return nullptr;
 	}
 
 	llvm::SmallVector<TemplateTypePreparationResult, 4> prepared_types;
@@ -913,7 +922,7 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	const SrcLoc& src_loc,
 	const TypeTemplatePtr& type_template_ptr,
-	const llvm::ArrayRef<Value> template_arguments,
+	const llvm::ArrayRef<TemplateArg> template_arguments,
 	NamesScope& arguments_names_scope )
 {
 	// This method does not generate some errors, because instantiation may fail
@@ -933,23 +942,22 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 		result.template_args_namespace->AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), SrcLoc() ) );
 
 	result.signature_args.resize( type_template.signature_params.size() );
+
 	for( size_t i= 0u; i < type_template.signature_params.size(); ++i )
 	{
-		const Value value= i < template_arguments.size()
-			? template_arguments[i]
-			: BuildExpressionCode( type_template.syntax_element->signature_params_[i].default_value, *result.template_args_namespace, *global_function_context_ );
-
-		if( const Type* const type_name= value.GetTypeName() )
-			result.signature_args[i]= *type_name;
-		else if( const auto variable= value.GetVariable() )
-			result.signature_args[i]= TemplateVariableArg( *variable );
+		TemplateArg& out_signature_arg= result.signature_args[i];
+		if( i < template_arguments.size() )
+			out_signature_arg= template_arguments[i];
 		else
 		{
-			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), src_loc, value.GetKindName() );
-			continue;
+			const auto& expr= type_template.syntax_element->signature_params_[i].default_value;
+			const Value value= BuildExpressionCode( expr, *result.template_args_namespace, *global_function_context_ );
+			auto template_arg_opt= ValueToTemplateArg( value, result.template_args_namespace->GetErrors(), Synt::GetExpressionSrcLoc(expr) );
+			if( template_arg_opt != std::nullopt )
+				out_signature_arg= std::move( *template_arg_opt);
 		}
 
-		if( !MatchTemplateArg( type_template, *result.template_args_namespace, result.signature_args[i], src_loc, type_template.signature_params[i] ) )
+		if( !MatchTemplateArg( type_template, *result.template_args_namespace, out_signature_arg, src_loc, type_template.signature_params[i] ) )
 			return result;
 	} // for signature arguments
 
@@ -1261,19 +1269,9 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 		for( const Synt::Expression& expr : template_arguments )
 		{
 			const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
-			if( const auto type_name= value.GetTypeName() )
-				template_args.push_back( *type_name );
-			else if( const auto variable= value.GetVariable() )
-			{
-				if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
-					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr), variable->type );
-				else if( variable->constexpr_value == nullptr )
-					REPORT_ERROR( ExpectedConstantExpression, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
-				else
-					template_args.push_back( TemplateVariableArg( *variable ) );
-			}
-			else
-				REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), src_loc, value.GetKindName() );
+			auto template_arg_opt= ValueToTemplateArg( value, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
+			if( template_arg_opt != std::nullopt )
+				template_args.push_back( std::move( *template_arg_opt) );
 		} // for given template arguments.
 
 		DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
@@ -1338,6 +1336,25 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	}
 
 	return AddNewTemplateThing( std::move(name_encoded), NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(std::move(result)), SrcLoc() ) );
+}
+
+std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
+{
+	if( const Type* const type_name= value.GetTypeName() )
+		return TemplateArg( *type_name );
+
+	if( const auto variable= value.GetVariable() )
+	{
+		if( variable->constexpr_value == nullptr )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, errors, src_loc );
+			return std::nullopt;
+		}
+		return TemplateArg( TemplateVariableArg( *variable ) );
+	}
+
+	REPORT_ERROR( InvalidValueAsTemplateArgument, errors, src_loc, value.GetKindName() );
+	return std::nullopt;
 }
 
 bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
