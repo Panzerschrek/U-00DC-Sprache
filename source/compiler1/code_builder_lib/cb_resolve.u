@@ -379,18 +379,22 @@ fn CodeBuilder::ResolveValueImpl( mut this, NamesScopePtr& names_scope, Function
 	else if( !enum_.empty() )
 	{
 		var EnumTypePtr enum_non_null= enum_.try_to_non_nullable();
-		if_var( &element : enum_non_null.lock_imut().deref().elements.find( names_scope_fetch.name ) )
+		with( mut lock : enum_non_null.lock_mut() )
 		{
-			var Variable mut v
+			lock.deref().referenced= true;
+			if_var( &element : lock.deref().elements.find( names_scope_fetch.name ) )
 			{
-				.t= enum_non_null,
-				.value_type= ValueType::ReferenceImut,
-				.location= Variable::Location::Pointer,
-				.llvm_value= element.llvm_value,
-				.constexpr_value= element.constexpr_value,
-				.name= names_scope_fetch.name,
-			};
-			return NamesScopeValue(move(v));
+				var Variable mut v
+				{
+					.t= enum_non_null,
+					.value_type= ValueType::ReferenceImut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= element.llvm_value,
+					.constexpr_value= element.constexpr_value,
+					.name= names_scope_fetch.name,
+				};
+				return NamesScopeValue(move(v));
+			}
 		}
 	}
 	else if( !type_templates_set.empty() )
