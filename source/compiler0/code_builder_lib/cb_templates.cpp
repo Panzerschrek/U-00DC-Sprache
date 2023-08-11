@@ -1325,9 +1325,9 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 			IsByte( fundamental->fundamental_type ) ||
 			fundamental->fundamental_type == U_FundamentalType::bool_;
 	}
-	if( type.GetEnumType() != nullptr )
+	if( const auto enum_type= type.GetEnumType() )
 	{
-		U_ASSERT( TypeIsValidForTemplateVariableArgument( type.GetEnumType()->underlaying_type ) );
+		U_ASSERT( TypeIsValidForTemplateVariableArgument( enum_type->underlaying_type ) );
 		return true;
 	}
 
