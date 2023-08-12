@@ -38,6 +38,8 @@ DebugInfoBuilder::DebugInfoBuilder(
 			false, // optimized
 			"",
 			0 /* runtime version */ );
+
+	stub_type_= builder_->createBasicType( "_stub_debug_type", 8, llvm::dwarf::DW_ATE_signed );
 }
 
 DebugInfoBuilder::~DebugInfoBuilder()
@@ -184,7 +186,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const Type& type )
 	if( result_type != nullptr )
 		return result_type;
 
-	return builder_->createBasicType( "_stub_debug_type", 8, llvm::dwarf::DW_ATE_signed );
+	return stub_type_;
 }
 
 llvm::DIType* DebugInfoBuilder::CreateDIType( const FundamentalType& type )
@@ -246,12 +248,12 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ArrayType& type )
 			builder_->getOrCreateArray(subscripts) );
 }
 
-llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const TupleType& type )
+llvm::DIType* DebugInfoBuilder::CreateDIType( const TupleType& type )
 {
 	U_ASSERT(builder_ != nullptr);
 
 	if( !type.llvm_type->isSized() )
-		return nullptr;
+		return stub_type_;
 
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( type.llvm_type );
 
@@ -313,7 +315,7 @@ llvm::DIDerivedType* DebugInfoBuilder::CreateDIType( const FunctionPointerType& 
 			data_layout_.getTypeAllocSizeInBits(type.llvm_type) );
 }
 
-llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
+llvm::DIType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 {
 	U_ASSERT(builder_ != nullptr);
 
@@ -321,13 +323,13 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 
 	// Ignore incomplete type - do not create debug info for it.
 	if( !the_class.is_complete )
-		return nullptr;
+		return stub_type_;
 
 	if( const auto it= classes_di_cache_.find(type); it != classes_di_cache_.end() )
 		return it->second;
 
-	// Insert nullptr first, to prevent loops.
-	classes_di_cache_.insert( std::make_pair( type, nullptr ) );
+	// Insert stub first, to prevent loops.
+	classes_di_cache_.insert( std::make_pair( type, stub_type_ ) );
 
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
@@ -409,12 +411,12 @@ llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 	return result;
 }
 
-llvm::DICompositeType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
+llvm::DIType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
 {
 	U_ASSERT(builder_ != nullptr);
 
 	if( type->syntax_element != nullptr ) // Incomplete
-		return nullptr;
+		return stub_type_;
 
 	if( const auto it= enums_di_cache_.find(type); it != enums_di_cache_.end() )
 		return it->second;

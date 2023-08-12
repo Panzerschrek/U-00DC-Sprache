@@ -48,6 +48,14 @@ fn DebugInfoBuilder::constructor(
 			ust::nullptr</char8/>(), 0s, // SysRoot
 			ust::nullptr</char8/>(), 0s  // SDK
 		) );
+
+	var ust::string_view8 stub_type_name= "_stub_debug_type";
+	stub_type_= unsafe( LLVMDIBuilderCreateBasicType(
+		builder_,
+		stub_type_name.data(), stub_type_name.size(),
+		8u64,
+		LLVMDWARFTypeEncoding::unsigned,
+		0u ) );
 }
 
 fn DebugInfoBuilder::destructor()
@@ -267,14 +275,7 @@ fn DebugInfoBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 		}
 	}
 
-	var ust::string_view8 stub_type_name= "_stub_debug_type";
-
-	return unsafe( LLVMDIBuilderCreateBasicType(
-		builder_,
-		stub_type_name.data(), stub_type_name.size(),
-		8u64,
-		LLVMDWARFTypeEncoding::unsigned,
-		0u ) );
+	return stub_type_;
 }
 
 fn DebugInfoBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMetadataRef
@@ -406,8 +407,8 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, ClassTypePtr& t ) : LLVMMetadat
 		return cache_value;
 	}
 
-	// Insert null first to prevent loops.
-	classes_di_types_.insert( t, LLVMMetadataRef::Null );
+	// Insert stub first to prevent loops.
+	classes_di_types_.insert( t, stub_type_ );
 
 	auto class_lock= t.lock_imut();
 	var ClassType& class_type= class_lock.deref();

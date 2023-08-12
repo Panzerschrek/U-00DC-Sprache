@@ -49,11 +49,11 @@ private:
 	llvm::DIType* CreateDIType( const Type& type );
 	llvm::DIType* CreateDIType( const FundamentalType& type );
 	llvm::DICompositeType* CreateDIType( const ArrayType& type );
-	llvm::DICompositeType* CreateDIType( const TupleType& type );
+	llvm::DIType* CreateDIType( const TupleType& type );
 	llvm::DIDerivedType* CreateDIType( const RawPointerType& type );
 	llvm::DIDerivedType* CreateDIType( const FunctionPointerType& type );
-	llvm::DICompositeType* CreateDIType( ClassPtr type );
-	llvm::DICompositeType* CreateDIType( EnumPtr type );
+	llvm::DIType* CreateDIType( ClassPtr type );
+	llvm::DIType* CreateDIType( EnumPtr type );
 	llvm::DISubroutineType* CreateDIFunctionType( const FunctionType& type );
 
 private:
@@ -66,8 +66,10 @@ private:
 	std::unique_ptr<llvm::DIBuilder> builder_;
 	llvm::DICompileUnit* compile_unit_= nullptr;
 
+	llvm::DIType* stub_type_= nullptr;
+
 	// Build debug info for classes and enums once and put it to cache.
-	std::unordered_map<ClassPtr, llvm::DICompositeType*> classes_di_cache_;
+	std::unordered_map<ClassPtr, llvm::DIType*> classes_di_cache_;
 	std::unordered_map<EnumPtr, llvm::DICompositeType*> enums_di_cache_;
 };
 
