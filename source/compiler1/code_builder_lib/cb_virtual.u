@@ -27,7 +27,7 @@ fn CodeBuilder::CheckvirtualFunctionOverridingReferenceNotation(
 	FunctionVariable& new_function,
 	ClassType& new_class_type )
 {
-	ust::ignore_unused( new_function ); // TODO - use it?
+	ust::ignore_unused( new_function ); // Leave it for simmetry reasons.
 	var ClassTypePtr src_function_this_type= src_function.t.params.front().t.GetClassType().try_deref();
 
 	auto src_class_inner_reference_kind= src_function_this_type.lock_imut().deref().inner_reference_kind;

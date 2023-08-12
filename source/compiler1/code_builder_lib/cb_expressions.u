@@ -1853,12 +1853,8 @@ fn CodeBuilder::DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionC
 	return move(result_ptr);
 }
 
-fn CodeBuilder::AccessClassBase( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, VariablePtr& variable_ptr, SrcLoc& src_loc ) : VariablePtr
+fn CodeBuilder::AccessClassBase( mut this, FunctionContext& mut function_context, VariablePtr& variable_ptr ) : VariablePtr
 {
-	// TODO - remove these args at all?
-	ust::ignore_unused( names_scope );
-	ust::ignore_unused( src_loc );
-
 	var size_type base_field_index(0); // Base is always first field.
 
 	auto mut variable_lock= variable_ptr.lock_mut();
@@ -1912,7 +1908,7 @@ fn CodeBuilder::AccessClassField(
 	{
 		if( !class_type.lock_imut().deref().base_class.empty() )
 		{
-			var VariablePtr base_= AccessClassBase( names_scope, function_context, variable_ptr, src_loc );
+			var VariablePtr base_= AccessClassBase( function_context, variable_ptr );
 			return AccessClassField( names_scope, function_context, base_, field, field_name, src_loc );
 		}
 

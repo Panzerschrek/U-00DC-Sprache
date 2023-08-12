@@ -399,7 +399,7 @@ private:
 
 	fn DoReferenceCast( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::TypeName& type_name, Synt::Expression& expression, SrcLoc& src_loc, bool allow_unsafe ) : Value;
 
-	fn AccessClassBase( mut this, NamesScopePtr& names_scope, FunctionContext& mut function_context, VariablePtr& variable_ptr, SrcLoc& src_loc ) : VariablePtr;
+	fn AccessClassBase( mut this, FunctionContext& mut function_context, VariablePtr& variable_ptr ) : VariablePtr;
 	fn AccessClassField(
 		mut this,
 		NamesScopePtr& names_scope,

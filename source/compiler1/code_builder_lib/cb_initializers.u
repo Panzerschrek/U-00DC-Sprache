@@ -1386,7 +1386,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	// Initialize fields, missing in initializer list.
 	if( !base_class.empty() && !base_initialized )
 	{
-		var VariablePtr base_variable_ptr= AccessClassBase( names_scope, function_context, this_ptr, constructor_initialization_list.src_loc );
+		var VariablePtr base_variable_ptr= AccessClassBase( function_context, this_ptr );
 		BuildEmptyInitializer( names_scope, function_context, base_variable_ptr, KeywordToString( Keyword::base_ ), constructor_initialization_list.src_loc );
 		function_context.initialized_this_fields[ base_field_index ]= true;
 	}
@@ -1483,7 +1483,7 @@ fn CodeBuilder::BuildConstructorInitialization(
 	{
 		if( member_initializer.name == KeywordToString( Keyword::base_ ) )
 		{
-			var VariablePtr base_variable_ptr= AccessClassBase( names_scope, function_context, this_ptr, constructor_initialization_list.src_loc );
+			var VariablePtr base_variable_ptr= AccessClassBase( function_context, this_ptr );
 			BuildInitializer( names_scope, function_context, base_variable_ptr, member_initializer.initializer.deref() );
 
 			function_context.initialized_this_fields[ base_field_index ]= true;
