@@ -633,11 +633,8 @@ private:
 
 	fn EvaluateTemplateTypeArgs(
 		mut this,
-		NamesScopePtr& args_names_scope,
-		FunctionContext &mut function_context,
 		TypeTemplatePtr& type_template_ptr,
-		Synt::TemplateArgs& template_args,
-		SrcLoc& template_instantiation_src_loc ) : ust::optional</TemplateTypeArgsEvaluationResult/>;
+		TemplateArgsFinished& template_args ) : ust::optional</TemplateTypeArgsEvaluationResult/>;
 
 	fn FinishTypeTemplateGeneration(
 		mut this,
@@ -689,80 +686,80 @@ private:
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam& param,
-		TemplateArgFinished& given_arg,
-		SrcLoc& src_loc ) : bool;
+		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::TemplateParam& template_param,
-		TemplateArgFinished& given_arg,
-		SrcLoc& src_loc ) : bool;
+		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::TypeParam& type_param,
-		TemplateArgFinished& given_arg,
-		SrcLoc& src_loc ) : bool;
+		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::VariableParam& variable_param,
-		TemplateArgFinished& given_arg,
-		SrcLoc& src_loc ) : bool;
+		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::ArrayTypeParam& array_type_param,
-		TemplateArgFinished& given_arg,
-		SrcLoc& src_loc ) : bool;
+		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::TupleTypeParam& tuple_type_param,
-		TemplateArgFinished& given_arg,
-		SrcLoc& src_loc ) : bool;
+		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::RawPointerTypeParam& raw_pointer_type_param,
-		TemplateArgFinished& given_arg,
-		SrcLoc& src_loc ) : bool;
+		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::FunctionTypeParam& function_type_param,
-		TemplateArgFinished& given_arg,
-		SrcLoc& src_loc ) : bool;
+		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::CoroutineTypeParam& coroutine_type_param,
-		TemplateArgFinished& given_arg,
-		SrcLoc& src_loc ) : bool;
+		TemplateArgFinished& given_arg ) : bool;
 
 	fn MatchTemplateArgumentImpl(
 		mut this,
 		NamesScopePtr& names_scope,
 		TemplateBase& template_,
 		TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param,
-		TemplateArgFinished& given_arg,
-		SrcLoc& src_loc ) : bool;
+		TemplateArgFinished& given_arg ) : bool;
+
+	// Returns vector with wrong size in case of error.
+	fn EvaluateTemplateArgs(
+		mut this,
+		NamesScopePtr& args_names_scope,
+		FunctionContext &mut function_context,
+		Synt::TemplateArgs& template_args,
+		SrcLoc& src_loc ) : TemplateArgsFinished;
+
+	fn ValueToTemplateArg( NamesScopePtr& names_scope, SrcLoc& src_loc, Value& value ) : ust::optional</TemplateArgFinished/>;
 
 	fn FillKnownFunctionTemplateArgsIntoNamespace(
 		mut this,

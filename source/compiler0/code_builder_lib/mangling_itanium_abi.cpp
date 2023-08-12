@@ -58,7 +58,7 @@ public:
 		const TemplateArgs* template_args ) override;
 	std::string MangleGlobalVariable( const NamesScope& parent_scope, std::string_view variable_name, const Type& type, bool is_constant ) override;
 	std::string MangleType( const Type& type ) override;
-	std::string MangleTemplateArgs( const TemplateArgs& template_args ) override;
+	std::string MangleTemplateArgs( llvm::ArrayRef<TemplateArg> template_args ) override;
 	std::string MangleVirtualTable( const Type& type ) override;
 
 private:
@@ -188,7 +188,7 @@ void EncodeFunctionTypeName( ManglerState& mangler_state, const FunctionType& fu
 void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope );
 void EncodeCoroutineType( ManglerState& mangler_state, ClassPtr class_type );
 
-void EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& template_args )
+void EncodeTemplateArgs( ManglerState& mangler_state, const llvm::ArrayRef<TemplateArg> template_args )
 {
 	mangler_state.Push( "I" );
 
@@ -350,7 +350,7 @@ void EncodeFunctionParam( ManglerState& mangler_state, const FunctionType::Param
 		EncodeTypeName( mangler_state, param.type );
 }
 
-void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params )
+void EncodeFunctionParams( ManglerState& mangler_state, const llvm::ArrayRef<FunctionType::Param> params )
 {
 	for( const FunctionType::Param& param : params )
 	{
@@ -723,7 +723,7 @@ std::string ManglerItaniumABI::MangleType( const Type& type )
 	return state_.TakeResult();
 }
 
-std::string ManglerItaniumABI::MangleTemplateArgs( const TemplateArgs& template_parameters )
+std::string ManglerItaniumABI::MangleTemplateArgs( const llvm::ArrayRef<TemplateArg> template_parameters )
 {
 	EncodeTemplateArgs( state_, template_parameters );
 	return state_.TakeResult();

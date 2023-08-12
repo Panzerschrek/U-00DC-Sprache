@@ -2800,10 +2800,9 @@ void CodeBuilder::BuildDeltaOneOperatorCode(
 	if( function_context.variables_state.HaveOutgoingLinks( variable ) )
 		REPORT_ERROR( ReferenceProtectionError, block_names.GetErrors(), src_loc, variable->name );
 
-	ArgsVector<FunctionType::Param> args;
-	args.emplace_back();
-	args.back().type= variable->type;
-	args.back().value_type= variable->value_type;
+	FunctionType::Param args[1];
+	args[0].type= variable->type;
+	args[0].value_type= variable->value_type;
 	const FunctionVariable* const overloaded_operator=
 		GetOverloadedOperator( args, positive ? OverloadedOperator::Increment : OverloadedOperator::Decrement, block_names, src_loc );
 	if( overloaded_operator != nullptr )

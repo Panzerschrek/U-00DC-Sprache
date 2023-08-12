@@ -211,14 +211,14 @@ public: // IMangler
 		const TemplateArgs* template_args ) override;
 	std::string MangleGlobalVariable( const NamesScope& parent_scope, std::string_view variable_name, const Type& type, bool is_constant ) override;
 	std::string MangleType( const Type& type ) override;
-	std::string MangleTemplateArgs( const TemplateArgs& template_args ) override;
+	std::string MangleTemplateArgs( llvm::ArrayRef<TemplateArg> template_args ) override;
 	std::string MangleVirtualTable( const Type& type ) override;
 
 private:
 	void EncodeType( ManglerState& mangler_state, const Type& type ) const;
 	void EncodeFunctionType( ManglerState& mangler_state, const FunctionType& function_type, bool encode_full_type ) const;
-	void EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const;
-	void EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& template_args ) const;
+	void EncodeFunctionParams( ManglerState& mangler_state, llvm::ArrayRef<FunctionType::Param> params ) const;
+	void EncodeTemplateArgs( ManglerState& mangler_state, llvm::ArrayRef<TemplateArg> template_args ) const;
 	void EncodeFullName( ManglerState& mangler_state, const std::string_view name, const NamesScope& scope ) const;
 	void EncodeNamespacePostfix_r( ManglerState& mangler_state, const NamesScope& scope ) const;
 	void EncodeTemplateClassName( ManglerState& mangler_state, ClassPtr the_class ) const;
@@ -309,7 +309,7 @@ std::string ManglerMSVC::MangleType( const Type& type )
 	return res;
 }
 
-std::string ManglerMSVC::MangleTemplateArgs( const TemplateArgs& template_args )
+std::string ManglerMSVC::MangleTemplateArgs( const llvm::ArrayRef<TemplateArg> template_args )
 {
 	std::string res;
 	ManglerState mangler_state( res );
@@ -551,7 +551,7 @@ void ManglerMSVC::EncodeFunctionType( ManglerState& mangler_state, const Functio
 	mangler_state.PushElement( "Z" );
 }
 
-void ManglerMSVC::EncodeFunctionParams( ManglerState& mangler_state, const ArgsVector<FunctionType::Param>& params ) const
+void ManglerMSVC::EncodeFunctionParams( ManglerState& mangler_state, const llvm::ArrayRef<FunctionType::Param> params ) const
 {
 	ArgsVector<FunctionType::Param> back_references;
 
@@ -593,7 +593,7 @@ void ManglerMSVC::EncodeFunctionParams( ManglerState& mangler_state, const ArgsV
 	}
 }
 
-void ManglerMSVC::EncodeTemplateArgs( ManglerState& mangler_state, const TemplateArgs& template_args ) const
+void ManglerMSVC::EncodeTemplateArgs( ManglerState& mangler_state, const llvm::ArrayRef<TemplateArg> template_args ) const
 {
 	for( const TemplateArg& template_arg : template_args )
 	{

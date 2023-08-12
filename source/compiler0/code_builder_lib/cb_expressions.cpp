@@ -1801,7 +1801,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedBinaryOperator(
 	FunctionContext& function_context )
 {
 	// Know args types.
-	ArgsVector<FunctionType::Param> args;
+	llvm::SmallVector<FunctionType::Param, 2> args;
 	{
 		const bool prev_is_functionless_context= function_context.is_functionless_context;
 		function_context.is_functionless_context= true;
@@ -2058,11 +2058,9 @@ std::optional<Value> CodeBuilder::TryCallOverloadedUnaryOperator(
 	if( variable->type.GetClassType() == nullptr )
 		return std::nullopt;
 
-	ArgsVector<FunctionType::Param> args;
-	args.emplace_back();
-	args.back().type= variable->type;
-	args.back().value_type= variable->value_type;
-
+	FunctionType::Param args[1];
+	args[0].type= variable->type;
+	args[0].value_type= variable->value_type;
 	const FunctionVariable* const overloaded_operator= GetOverloadedOperator( args, op, names, src_loc );
 
 	if( overloaded_operator == nullptr )
@@ -2096,7 +2094,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 	NamesScope& names,
 	FunctionContext& function_context )
 {
-	ArgsVector<FunctionType::Param> actual_args;
+	llvm::SmallVector<FunctionType::Param, 16> actual_args;
 	actual_args.reserve( 1 + synt_args.size() );
 
 	{
@@ -2123,7 +2121,7 @@ std::optional<Value> CodeBuilder::TryCallOverloadedPostfixOperator(
 
 	function->referenced= true;
 
-	ArgsVector<const Synt::Expression*> synt_args_ptrs;
+	llvm::SmallVector<const Synt::Expression*, 16> synt_args_ptrs;
 	synt_args_ptrs.reserve( synt_args.size() );
 	for( const Synt::Expression& arg : synt_args )
 		synt_args_ptrs.push_back( &arg );
@@ -2985,7 +2983,7 @@ Value CodeBuilder::CallFunction(
 
 	// Make preevaluation af arguments for selection of overloaded function.
 	{
-		ArgsVector<FunctionType::Param> actual_args;
+		llvm::SmallVector<FunctionType::Param, 16> actual_args;
 		actual_args.reserve( total_args );
 
 		{
@@ -3033,7 +3031,7 @@ Value CodeBuilder::CallFunction(
 	if( !( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
 
-	ArgsVector<const Synt::Expression*> synt_args_ptrs;
+	llvm::SmallVector<const Synt::Expression*, 16> synt_args_ptrs;
 	synt_args_ptrs.reserve( synt_args.size() );
 	for( const Synt::Expression& arg : synt_args )
 		synt_args_ptrs.push_back( &arg );
@@ -3096,17 +3094,17 @@ Value CodeBuilder::DoCallFunction(
 	const size_t arg_count= preevaluated_args.size() + args.size();
 	U_ASSERT( arg_count == function_type.params.size() );
 
-	ArgsVector<llvm::Value*> llvm_args;
-	ArgsVector<llvm::Constant*> constant_llvm_args;
+	llvm::SmallVector<llvm::Value*, 16> llvm_args;
+	llvm::SmallVector<llvm::Constant*, 16> constant_llvm_args;
 	llvm_args.resize( arg_count, nullptr );
 
 	// TODO - use vector of pairs instead.
-	ArgsVector< VariablePtr > args_nodes;
+	llvm::SmallVector< VariablePtr, 16 > args_nodes;
 	args_nodes.resize( arg_count, nullptr );
-	ArgsVector< VariablePtr > locked_args_inner_references;
+	llvm::SmallVector< VariablePtr, 16 > locked_args_inner_references;
 	locked_args_inner_references.resize( arg_count, nullptr );
 
-	ArgsVector<llvm::Value*> value_args_for_lifetime_end_call;
+	llvm::SmallVector<llvm::Value*, 16> value_args_for_lifetime_end_call;
 
 	for( size_t i= 0u; i < arg_count; ++i )
 	{

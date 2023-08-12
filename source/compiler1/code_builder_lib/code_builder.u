@@ -1546,6 +1546,25 @@ fn CodeBuilder::CheckForUnusedGlobalNamesImpl( NamesScopePtr& names_scope )
 			}
 		}
 
+		auto type_templates_set_ptr= names_scope_value.Get</TypeTemplatesSet/>();
+		if( !type_templates_set_ptr.empty() )
+		{
+			with( &type_templates_set : type_templates_set_ptr.try_lock_imut().deref() )
+			{
+				foreach( &type_template_ptr : type_templates_set.type_templates )
+				{
+					with( &type_template : type_template_ptr.lock_imut().deref() )
+					{
+						var SrcLoc& src_loc= type_template.syntax_element.deref().src_loc;
+						if( !type_template.used && src_loc.GetFileIndex() == 0u )
+						{
+							REPORT_ERROR( UnusedName, names_scope, src_loc, name )
+						}
+					}
+				}
+			}
+		}
+
 		auto class_field_ptr= names_scope_value.Get</ClassField/>();
 		if( !class_field_ptr.empty() )
 		{

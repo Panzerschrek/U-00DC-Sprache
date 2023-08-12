@@ -45,6 +45,8 @@ private:
 	ust::vector</LLVMMetadataRef/> source_file_entries_; // Entry for each file in sources graph.
 	LLVMMetadataRef compile_unit_= LLVMMetadataRef::Null;
 
+	LLVMMetadataRef stub_type_= LLVMMetadataRef::Null;
+
 	// Cache of debug info types for classes and enums.
 	ust::unordered_map</ ClassTypePtr, LLVMMetadataRef /> classes_di_types_;
 	ust::unordered_map</ EnumTypePtr, LLVMMetadataRef /> enums_di_types_;

@@ -470,8 +470,7 @@ fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_ty
 			EncodeNamespacePrefix_r( mangler_state, parent.try_lock_imut().deref() );
 		}
 
-		auto& class_name= base_template.class_template.deref().syntax_element.deref().name;
-		mangler_state.PushLengthPrefixed( class_name.range() );
+		mangler_state.PushLengthPrefixed( base_template.class_template.lock_imut().deref().syntax_element.deref().name.range() );
 	}
 
 	EncodeTemplateArgs( mangler_state, base_template.signature_args );
@@ -598,7 +597,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 			ADD_NODE( mangler_state )
 			{
 				auto t= class_type.base_template.try_deref().class_template;
-				auto t_namespace= t.deref().parent_names_scope.lock();
+				auto t_namespace= t.lock_imut().deref().parent_names_scope.lock();
 				if( !t_namespace.empty() && !t_namespace.try_lock_imut().deref().GetParent().empty() )
 				{
 					mangler_state.Push( "N" );

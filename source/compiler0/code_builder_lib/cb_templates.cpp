@@ -21,34 +21,34 @@ namespace
 void CreateTemplateErrorsContext(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
-	const NamesScopePtr& template_parameters_namespace,
+	const NamesScopePtr& template_args_namespace,
 	const TemplateBase& template_,
-	const std::string_view template_name,
-	const TemplateArgs& template_args )
+	const std::string_view template_name )
 {
 	REPORT_ERROR( TemplateContext, errors_container, src_loc );
 	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
 	template_error_context->context_declaration_src_loc= template_.src_loc;
 	errors_container.back().template_context= template_error_context;
-	template_parameters_namespace->SetErrors( template_error_context->errors );
+	template_args_namespace->SetErrors( template_error_context->errors );
 
 	{
 		std::string args_description;
 		args_description+= "[ with ";
 
-		for( size_t i= 0u; i < template_args.size() ; ++i )
+		for( const auto& param : template_.template_params )
 		{
-			const TemplateArg& arg= template_args[i];
+			if( const auto value= template_args_namespace->GetThisScopeValue(param.name) )
+			{
+				args_description+= param.name + " = ";
+				if( const Type* const type= value->value.GetTypeName() )
+					args_description+= type->ToString();
+				else if( const auto variable= value->value.GetVariable() )
+					args_description+= ConstantVariableToString( TemplateVariableArg( *variable ) );
+				else {}
 
-			args_description+= template_.template_params[i].name + " = ";
-			if( const Type* const type= std::get_if<Type>( &arg ) )
-				args_description+= type->ToString();
-			else if( const auto variable= std::get_if<TemplateVariableArg>( &arg ) )
-				args_description+= ConstantVariableToString( *variable );
-			else U_ASSERT(false);
-
-			if( i + 1u < template_args.size() )
-				args_description+= ", ";
+				if( &param != &template_.template_params.back() )
+					args_description+= ", ";
+			}
 		}
 
 		args_description+= " ]";
@@ -555,14 +555,13 @@ bool CodeBuilder::MatchTemplateArg(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const SrcLoc& src_loc,
 	const TemplateSignatureParam& template_param )
 {
 	return
 		template_param.Visit(
 			[&]( const auto& param )
 			{
-				return MatchTemplateArgImpl( template_, args_names_scope, template_arg, src_loc, param );
+				return MatchTemplateArgImpl( template_, args_names_scope, template_arg, param );
 			} );
 }
 
@@ -570,12 +569,10 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const SrcLoc& src_loc,
 	const TemplateSignatureParam::TypeParam& template_param )
 {
 	(void)template_;
 	(void)args_names_scope;
-	(void)src_loc;
 
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
 		return *given_type == template_param.t;
@@ -586,12 +583,10 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const SrcLoc& src_loc,
 	const TemplateSignatureParam::VariableParam& template_param )
 {
 	(void)template_;
 	(void)args_names_scope;
-	(void)src_loc;
 
 	if( const auto given_variable= std::get_if<TemplateVariableArg>( &template_arg ) )
 	{
@@ -607,7 +602,6 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const SrcLoc& src_loc,
 	const TemplateSignatureParam::TemplateParam& template_param )
 {
 	const std::string& name= template_.template_params[ template_param.index ].name;
@@ -632,18 +626,13 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			if( !is_variable_param )
 				return false;
 
-			if( !TypeIsValidForTemplateVariableArgument( given_variable->type ) )
+			if( !TypeIsValidForTemplateVariableArgument( given_variable->type ) || given_variable->constexpr_value == nullptr )
 			{
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, args_names_scope.GetErrors(), src_loc, given_variable->type );
-				return false;
-			}
-			if( given_variable->constexpr_value == nullptr )
-			{
-				REPORT_ERROR( ExpectedConstantExpression, args_names_scope.GetErrors(), src_loc );
+				// May be in case of error.
 				return false;
 			}
 
-			if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, src_loc, *param_type ) )
+			if( !MatchTemplateArg( template_, args_names_scope, given_variable->type, *param_type ) )
 				return false;
 
 			// Create global variable for given variable.
@@ -683,14 +672,13 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const SrcLoc& src_loc,
 	const TemplateSignatureParam::ArrayParam& template_param )
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
 	{
 		if( const auto given_array_type= given_type->GetArrayType() )
 		{
-			if( !MatchTemplateArg( template_, args_names_scope, given_array_type->element_type, src_loc, *template_param.element_type ) )
+			if( !MatchTemplateArg( template_, args_names_scope, given_array_type->element_type, *template_param.element_type ) )
 				return false;
 
 			TemplateVariableArg size_variable;
@@ -702,10 +690,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 						uint32_t(size_type_.GetFundamentalType()->GetSize() * 8),
 						given_array_type->element_count ) );
 
-			if( !MatchTemplateArg( template_, args_names_scope, size_variable, src_loc, *template_param.element_count ) )
-				return false;
-
-			return true;
+			return MatchTemplateArg( template_, args_names_scope, size_variable, *template_param.element_count );
 		}
 	}
 
@@ -716,7 +701,6 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const SrcLoc& src_loc,
 	const TemplateSignatureParam::TupleParam& template_param )
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
@@ -728,7 +712,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 
 			for( size_t i= 0; i < template_param.element_types.size(); ++i )
 			{
-				if( !MatchTemplateArg( template_, args_names_scope, given_tuple_type->element_types[i], src_loc, template_param.element_types[i] ) )
+				if( !MatchTemplateArg( template_, args_names_scope, given_tuple_type->element_types[i], template_param.element_types[i] ) )
 					return false;
 			}
 
@@ -743,14 +727,13 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const SrcLoc& src_loc,
 	const TemplateSignatureParam::RawPointerParam& template_param )
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
 	{
 		if( const auto given_raw_ponter_type= given_type->GetRawPointerType() )
 		{
-			return MatchTemplateArg( template_, args_names_scope, given_raw_ponter_type->element_type, src_loc, *template_param.element_type );
+			return MatchTemplateArg( template_, args_names_scope, given_raw_ponter_type->element_type, *template_param.element_type );
 		}
 	}
 
@@ -761,7 +744,6 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const SrcLoc& src_loc,
 	const TemplateSignatureParam::FunctionParam& template_param )
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
@@ -774,7 +756,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 				given_function_type.unsafe == template_param.is_unsafe &&
 				given_function_type.calling_convention == template_param.calling_convention &&
 				given_function_type.return_value_type == template_param.return_value_type &&
-				MatchTemplateArg( template_, args_names_scope, given_function_type.return_type, src_loc, *template_param.return_type ) &&
+				MatchTemplateArg( template_, args_names_scope, given_function_type.return_type, *template_param.return_type ) &&
 				given_function_type.params.size() == template_param.params.size()
 				) )
 				return false;
@@ -783,7 +765,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 			{
 				if( !(
 					given_function_type.params[i].value_type == template_param.params[i].value_type &&
-					MatchTemplateArg( template_, args_names_scope, given_function_type.params[i].type, src_loc, *template_param.params[i].type )
+					MatchTemplateArg( template_, args_names_scope, given_function_type.params[i].type, *template_param.params[i].type )
 					) )
 					return false;
 			}
@@ -799,7 +781,6 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const SrcLoc& src_loc,
 	const TemplateSignatureParam::CoroutineParam& template_param )
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
@@ -813,7 +794,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 					given_class->coroutine_type_description->return_value_type == template_param.return_value_type &&
 					given_class->coroutine_type_description->inner_reference_type == template_param.inner_reference_type &&
 					given_class->coroutine_type_description->non_sync == template_param.non_sync &&
-					MatchTemplateArg( template_, args_names_scope, given_class->coroutine_type_description->return_type, src_loc, *template_param.return_type );
+					MatchTemplateArg( template_, args_names_scope, given_class->coroutine_type_description->return_type, *template_param.return_type );
 			}
 		}
 	}
@@ -824,7 +805,6 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	const TemplateBase& template_,
 	NamesScope& args_names_scope,
 	const TemplateArg& template_arg,
-	const SrcLoc& src_loc,
 	const TemplateSignatureParam::SpecializedTemplateParam& template_param )
 {
 	if( const auto given_type= std::get_if<Type>( &template_arg ) )
@@ -845,7 +825,7 @@ bool CodeBuilder::MatchTemplateArgImpl(
 
 			for( size_t i= 0; i < template_param.params.size(); ++i )
 			{
-				if( !MatchTemplateArg( template_, args_names_scope, given_class.base_template->signature_args[i], src_loc, template_param.params[i] ) )
+				if( !MatchTemplateArg( template_, args_names_scope, given_class.base_template->signature_args[i], template_param.params[i] ) )
 					return false;
 			}
 
@@ -863,33 +843,19 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 	NamesScope& arguments_names_scope,
 	FunctionContext& function_context )
 {
-	llvm::SmallVector<Value, 8> arguments_calculated;
-	arguments_calculated.reserve( template_arguments.size() );
+	llvm::SmallVector<TemplateArg, 8> arguments_calculated;
+	EvaluateTemplateArgs( template_arguments, src_loc, arguments_names_scope, function_context, arguments_calculated );
 
+	if( arguments_calculated.size() != template_arguments.size() )
 	{
-		const bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
-
-		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
-		for( const Synt::Expression& expr : template_arguments )
-			arguments_calculated.push_back( BuildExpressionCode( expr, arguments_names_scope, function_context ) );
-
-		// TODO - convert args into TemplateArg here?
-
-		DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
-		function_context.is_functionless_context= prev_is_functionless_context;
+		REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), src_loc );
+		return nullptr;
 	}
 
 	llvm::SmallVector<TemplateTypePreparationResult, 4> prepared_types;
 	for( const TypeTemplatePtr& type_template : type_templates_set.type_templates )
 	{
-		TemplateTypePreparationResult generated_type=
-			PrepareTemplateType(
-				src_loc,
-				type_template,
-				arguments_calculated,
-				arguments_names_scope );
+		TemplateTypePreparationResult generated_type= PrepareTemplateType( type_template, arguments_calculated );
 		if( generated_type.type_template != nullptr )
 			prepared_types.push_back( std::move(generated_type) );
 	}
@@ -911,10 +877,8 @@ NamesScopeValue* CodeBuilder::GenTemplateType(
 }
 
 CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
-	const SrcLoc& src_loc,
 	const TypeTemplatePtr& type_template_ptr,
-	const llvm::ArrayRef<Value> template_arguments,
-	NamesScope& arguments_names_scope )
+	const llvm::ArrayRef<TemplateArg> template_arguments )
 {
 	// This method does not generate some errors, because instantiation may fail
 	// for one class template, but success for other.
@@ -922,53 +886,34 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	TemplateTypePreparationResult result;
 
 	const TypeTemplate& type_template= *type_template_ptr;
-	NamesScope& template_names_scope= *type_template.parent_namespace;
 
 	if( template_arguments.size() < type_template.first_optional_signature_param ||
 		template_arguments.size() > type_template.signature_params.size() )
 		return result;
 
-	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, &template_names_scope );
+	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, type_template.parent_namespace );
 	for( const TypeTemplate::TemplateParameter& param : type_template.template_params )
 		result.template_args_namespace->AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), SrcLoc() ) );
 
 	result.signature_args.resize( type_template.signature_params.size() );
+
 	for( size_t i= 0u; i < type_template.signature_params.size(); ++i )
 	{
-		const Value value= i < template_arguments.size()
-			? template_arguments[i]
-			: BuildExpressionCode( type_template.syntax_element->signature_params_[i].default_value, *result.template_args_namespace, *global_function_context_ );
-
-		if( const Type* const type_name= value.GetTypeName() )
-			result.signature_args[i]= *type_name;
-		else if( const auto variable= value.GetVariable() )
-			result.signature_args[i]= TemplateVariableArg( *variable );
+		TemplateArg& out_signature_arg= result.signature_args[i];
+		if( i < template_arguments.size() )
+			out_signature_arg= template_arguments[i];
 		else
 		{
-			REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), src_loc, value.GetKindName() );
-			continue;
+			const auto& expr= type_template.syntax_element->signature_params_[i].default_value;
+			const Value value= BuildExpressionCode( expr, *result.template_args_namespace, *global_function_context_ );
+			auto template_arg_opt= ValueToTemplateArg( value, result.template_args_namespace->GetErrors(), Synt::GetExpressionSrcLoc(expr) );
+			if( template_arg_opt != std::nullopt )
+				out_signature_arg= std::move( *template_arg_opt );
 		}
 
-		if( !MatchTemplateArg( type_template, *result.template_args_namespace, result.signature_args[i], src_loc, type_template.signature_params[i] ) )
+		if( !MatchTemplateArg( type_template, *result.template_args_namespace, out_signature_arg, type_template.signature_params[i] ) )
 			return result;
 	} // for signature arguments
-
-	for( const auto& template_param : type_template.template_params )
-	{
-		const NamesScopeValue* const value= result.template_args_namespace->GetThisScopeValue( template_param.name );
-
-		if( const auto type= value->value.GetTypeName() )
-			result.template_args.push_back( *type );
-		else if( const auto variable= value->value.GetVariable() )
-			result.template_args.push_back( TemplateVariableArg( *variable ) );
-		else
-		{
-			// SPRACHE_TODO - maybe not generate this error?
-			// Other function templates, for example, can match given aruments.
-			REPORT_ERROR( TemplateParametersDeductionFailed, arguments_names_scope.GetErrors(), src_loc );
-			return result;
-		}
-	}
 
 	result.type_template= type_template_ptr;
 
@@ -1003,8 +948,7 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 		src_loc,
 		template_args_namespace,
 		type_template,
-		type_template.syntax_element->name_,
-		template_type_preparation_result.template_args );
+		type_template.syntax_element->name_ );
 
 	if( const auto class_ptr= std::get_if<Synt::ClassPtr>( &type_template.syntax_element->something_ ) )
 	{
@@ -1052,7 +996,7 @@ const FunctionVariable* CodeBuilder::GenTemplateFunction(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
-	const ArgsVector<FunctionType::Param>& actual_args,
+	const llvm::ArrayRef<FunctionType::Param> actual_args,
 	const bool first_actual_arg_is_this )
 {
 	const auto res= PrepareTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this );
@@ -1065,7 +1009,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
 	const FunctionTemplatePtr& function_template_ptr,
-	const ArgsVector<FunctionType::Param>& actual_args,
+	const llvm::ArrayRef<FunctionType::Param> actual_args,
 	const bool first_actual_arg_is_this )
 {
 	const FunctionTemplate& function_template= *function_template_ptr;
@@ -1122,27 +1066,14 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 			}
 		}
 
-		if( !deduced_specially && !MatchTemplateArg( function_template, *result.template_args_namespace, given_type, src_loc, signature_param ) )
+		if( !deduced_specially && !MatchTemplateArg( function_template, *result.template_args_namespace, given_type, signature_param ) )
 			return result;
 
 	} // for template function arguments
 
-	for( const auto& template_param : function_template.template_params )
-	{
-		const NamesScopeValue* const value= result.template_args_namespace->GetThisScopeValue( template_param.name );
-
-		if( const auto type= value->value.GetTypeName() )
-			result.template_args.push_back( *type );
-		else if( const auto variable= value->value.GetVariable() )
-			result.template_args.push_back( TemplateVariableArg( *variable ) );
-		else
-		{
-			// SPRACHE_TODO - maybe not generate this error?
-			// Other function templates, for example, can match given aruments.
-			REPORT_ERROR( TemplateParametersDeductionFailed, result.template_args_namespace->GetErrors(), src_loc );
-			return result;
-		}
-	}
+	result.template_args= ExtractTemplateArgs( function_template, *result.template_args_namespace, result.template_args_namespace->GetErrors(), src_loc );
+	if( result.template_args.size() != function_template.template_params.size() )
+		return result;
 
 	result.function_template= function_template_ptr;
 	return result;
@@ -1199,7 +1130,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	}
 	AddNewTemplateThing( std::move(name_encoded), NamesScopeValue( template_args_namespace, function_declaration.src_loc_ ) );
 
-	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name, template_args );
+	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name );
 
 	// First, prepare only as prototype.
 	NamesScopeFill( *template_args_namespace, function_template.syntax_element->function_, function_template.base_class );
@@ -1250,37 +1181,10 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	const std::vector<FunctionTemplatePtr>& function_templates= functions_set.template_functions;
 	U_ASSERT( !function_templates.empty() );
 
-	TemplateArgs template_args;
+	llvm::SmallVector<TemplateArg, 8> arguments_calculated;
+	EvaluateTemplateArgs( template_arguments, src_loc, arguments_names_scope, function_context, arguments_calculated );
 
-	{
-		const bool prev_is_functionless_context= function_context.is_functionless_context;
-		function_context.is_functionless_context= true;
-
-		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-
-		for( const Synt::Expression& expr : template_arguments )
-		{
-			const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
-			if( const auto type_name= value.GetTypeName() )
-				template_args.push_back( *type_name );
-			else if( const auto variable= value.GetVariable() )
-			{
-				if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
-					REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr), variable->type );
-				else if( variable->constexpr_value == nullptr )
-					REPORT_ERROR( ExpectedConstantExpression, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
-				else
-					template_args.push_back( TemplateVariableArg( *variable ) );
-			}
-			else
-				REPORT_ERROR( InvalidValueAsTemplateArgument, arguments_names_scope.GetErrors(), src_loc, value.GetKindName() );
-		} // for given template arguments.
-
-		DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
-		function_context.is_functionless_context= prev_is_functionless_context;
-	}
-
-	if( template_args.size() != template_arguments.size() )
+	if( arguments_calculated.size() != template_arguments.size() )
 		return nullptr;
 
 	// We needs unique name here, so use for it address of function templates set and template parameters.
@@ -1290,7 +1194,7 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 		name_encoded+= std::to_string( reinterpret_cast<uintptr_t>( &template_ ) );
 		name_encoded+= "_";
 	}
-	name_encoded+= mangler_->MangleTemplateArgs( template_args );
+	name_encoded+= mangler_->MangleTemplateArgs( arguments_calculated );
 
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
 		return &it->second; // Already generated.
@@ -1300,21 +1204,23 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	for( const FunctionTemplatePtr& function_template_ptr : function_templates )
 	{
 		const FunctionTemplate& function_template= *function_template_ptr;
-		if( template_args.size() > function_template.template_params.size() )
+		if( function_template.template_params.size() < arguments_calculated.size() )
+		{
+			// Ignore functions with number of template parameters less than number of specified arguments.
 			continue;
+		}
 
 		NamesScope args_names_scope("", function_template.parent_namespace );
 		for( const TemplateBase::TemplateParameter& param : function_template.template_params )
 			args_names_scope.AddName( param.name, NamesScopeValue( YetNotDeducedTemplateArg(), SrcLoc() ) );
 
 		bool ok= true;
-		for( size_t i= 0u; i < template_args.size(); ++i )
+		for( size_t i= 0u; i < arguments_calculated.size(); ++i )
 		{
 			ok&= MatchTemplateArg(
 				function_template,
 				args_names_scope,
-				template_args[i],
-				src_loc,
+				arguments_calculated[i],
 				TemplateSignatureParam::TemplateParam{ i } );
 		}
 
@@ -1323,10 +1229,7 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 
 		const auto new_template= std::make_shared<FunctionTemplate>(function_template);
 		new_template->parent= function_template_ptr;
-
-		// Reduce count of template arguments in new function template.
-		new_template->known_template_args= template_args;
-		new_template->known_template_args.resize( std::min( new_template->known_template_args.size(), function_template.template_params.size() ) );
+		new_template->known_template_args.insert( new_template->known_template_args.end(), arguments_calculated.begin(), arguments_calculated.end() );
 
 		result.template_functions.push_back( new_template );
 	} // for function templates
@@ -1340,6 +1243,78 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 	return AddNewTemplateThing( std::move(name_encoded), NamesScopeValue( std::make_shared<OverloadedFunctionsSet>(std::move(result)), SrcLoc() ) );
 }
 
+void CodeBuilder::EvaluateTemplateArgs(
+	const llvm::ArrayRef<Synt::Expression> template_arguments,
+	const SrcLoc& src_loc,
+	NamesScope& arguments_names_scope,
+	FunctionContext& function_context,
+	llvm::SmallVectorImpl<TemplateArg>& out_args )
+{
+	out_args.reserve( template_arguments.size() );
+
+	const bool prev_is_functionless_context= function_context.is_functionless_context;
+	function_context.is_functionless_context= true;
+
+	const StackVariablesStorage dummy_stack_variables_storage( function_context );
+
+	for( const Synt::Expression& expr : template_arguments )
+	{
+		const Value value= BuildExpressionCode( expr, arguments_names_scope, function_context );
+		auto template_arg_opt= ValueToTemplateArg( value, arguments_names_scope.GetErrors(), Synt::GetExpressionSrcLoc(expr) );
+		if( template_arg_opt != std::nullopt )
+			out_args.push_back( std::move( *template_arg_opt ) );
+	}
+
+	DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
+	function_context.is_functionless_context= prev_is_functionless_context;
+}
+
+TemplateArgs CodeBuilder::ExtractTemplateArgs( const TemplateBase& template_, const NamesScope& template_args_namespace, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
+{
+	TemplateArgs template_args;
+	for( const auto& template_param : template_.template_params )
+	{
+		const NamesScopeValue* const value= template_args_namespace.GetThisScopeValue( template_param.name );
+
+		if( const auto type= value->value.GetTypeName() )
+			template_args.push_back( *type );
+		else if( const auto variable= value->value.GetVariable() )
+			template_args.push_back( TemplateVariableArg( *variable ) );
+		else
+		{
+			// SPRACHE_TODO - maybe not generate this error?
+			// Other templates, for example, can match given aruments.
+			REPORT_ERROR( TemplateParametersDeductionFailed, errors, src_loc );
+		}
+	}
+
+	return template_args;
+}
+
+std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
+{
+	if( const Type* const type_name= value.GetTypeName() )
+		return TemplateArg( *type_name );
+
+	if( const auto variable= value.GetVariable() )
+	{
+		if( !TypeIsValidForTemplateVariableArgument( variable->type ) )
+		{
+			REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, errors, src_loc, variable->type );
+			return std::nullopt;
+		}
+		if( variable->constexpr_value == nullptr )
+		{
+			REPORT_ERROR( ExpectedConstantExpression, errors, src_loc );
+			return std::nullopt;
+		}
+		return TemplateArg( TemplateVariableArg( *variable ) );
+	}
+
+	REPORT_ERROR( InvalidValueAsTemplateArgument, errors, src_loc, value.GetKindName() );
+	return std::nullopt;
+}
+
 bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 {
 	if( const FundamentalType* const fundamental= type.GetFundamentalType() )
@@ -1350,9 +1325,9 @@ bool CodeBuilder::TypeIsValidForTemplateVariableArgument( const Type& type )
 			IsByte( fundamental->fundamental_type ) ||
 			fundamental->fundamental_type == U_FundamentalType::bool_;
 	}
-	if( type.GetEnumType() != nullptr )
+	if( const auto enum_type= type.GetEnumType() )
 	{
-		U_ASSERT( TypeIsValidForTemplateVariableArgument( type.GetEnumType()->underlaying_type ) );
+		U_ASSERT( TypeIsValidForTemplateVariableArgument( enum_type->underlaying_type ) );
 		return true;
 	}
 

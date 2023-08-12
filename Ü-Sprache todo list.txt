@@ -65,7 +65,6 @@ Interpreter:
 
 Compiler1:
 *) Support 128-bit types in switch operator
-*) Generate errors about unused type templates
 
 QtCreator plugin:
 *) Syntax errors highlighting

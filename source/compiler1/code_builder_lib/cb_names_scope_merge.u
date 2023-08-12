@@ -340,26 +340,29 @@ fn CodeBuilder::NamesScopeMergeValues(
 			auto mut dst_lock= dst_type_templates_set_ptr.try_lock_mut();
 			auto &mut dst= dst_lock.deref();
 
-			foreach( &type_template : src.type_templates )
+			foreach( &type_template_ptr : src.type_templates )
 			{
 				auto mut same_found= false;
-				foreach( &dst_type_template : dst.type_templates )
+				foreach( &dst_type_template_ptr : dst.type_templates )
 				{
-					if( type_template == dst_type_template )
+					if( type_template_ptr == dst_type_template_ptr )
 					{
 						same_found= true;
 						break;
 					}
-					if( type_template.deref().signature_params == dst_type_template.deref().signature_params  )
+					with( &type_template : type_template_ptr.lock_imut().deref() )
 					{
-						REPORT_ERROR( TypeTemplateRedefinition, target_names_scope, type_template.deref().syntax_element.deref().src_loc, name )
-						same_found= true;
-						break;
+						if( type_template.signature_params == dst_type_template_ptr.lock_imut().deref().signature_params )
+						{
+							REPORT_ERROR( TypeTemplateRedefinition, target_names_scope, type_template.syntax_element.deref().src_loc, name )
+							same_found= true;
+							break;
+						}
 					}
 				}
 				if( !same_found )
 				{
-					dst.type_templates.push_back( type_template );
+					dst.type_templates.push_back( type_template_ptr );
 				}
 			}
 
@@ -474,7 +477,7 @@ fn CodeBuilder::GetValueSrcLoc( NamesScopeValue& value ) : SrcLoc
 			}
 			foreach( &type_template_ptr : type_templates_set.type_templates )
 			{
-				min_src_loc= ust::min( SrcLoc(min_src_loc), type_template_ptr.deref().syntax_element.deref().src_loc );
+				min_src_loc= ust::min( SrcLoc(min_src_loc), type_template_ptr.lock_imut().deref().syntax_element.deref().src_loc );
 			}
 
 			return min_src_loc;

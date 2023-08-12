@@ -74,7 +74,6 @@ private:
 	{
 		TypeTemplatePtr type_template;
 		NamesScopePtr template_args_namespace;
-		TemplateArgs template_args;
 		TemplateArgs signature_args;
 	};
 
@@ -263,70 +262,60 @@ private:
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& src_loc,
 		const TemplateSignatureParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& src_loc,
 		const TemplateSignatureParam::TypeParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& src_loc,
 		const TemplateSignatureParam::VariableParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& src_loc,
 		const TemplateSignatureParam::TemplateParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& src_loc,
 		const TemplateSignatureParam::ArrayParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& src_loc,
 		const TemplateSignatureParam::TupleParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& src_loc,
 		const TemplateSignatureParam::RawPointerParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& src_loc,
 		const TemplateSignatureParam::FunctionParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& src_loc,
 		const TemplateSignatureParam::CoroutineParam& template_param );
 
 	bool MatchTemplateArgImpl(
 		const TemplateBase& template_,
 		NamesScope& args_names_scope,
 		const TemplateArg& template_arg,
-		const SrcLoc& src_loc,
 		const TemplateSignatureParam::SpecializedTemplateParam& template_param );
 
 	// Returns nullptr in case of fail.
@@ -339,10 +328,8 @@ private:
 
 	// Returns nullptr in case of fail.
 	TemplateTypePreparationResult PrepareTemplateType(
-		const SrcLoc& src_loc,
 		const TypeTemplatePtr& type_template_ptr,
-		llvm::ArrayRef<Value> template_arguments,
-		NamesScope& arguments_names_scope );
+		llvm::ArrayRef<TemplateArg> template_arguments );
 
 	NamesScopeValue* FinishTemplateTypeGeneration(
 		const SrcLoc& src_loc,
@@ -353,14 +340,14 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
-		const ArgsVector<FunctionType::Param>& actual_args,
+		llvm::ArrayRef<FunctionType::Param> actual_args,
 		bool first_actual_arg_is_this );
 
 	TemplateFunctionPreparationResult PrepareTemplateFunction(
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr,
-		const ArgsVector<FunctionType::Param>& actual_args,
+		llvm::ArrayRef<FunctionType::Param> actual_args,
 		bool first_actual_arg_is_this );
 
 	const FunctionVariable* FinishTemplateFunctionParametrization(
@@ -379,6 +366,18 @@ private:
 		llvm::ArrayRef<Synt::Expression> template_arguments,
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context );
+
+	void EvaluateTemplateArgs(
+		llvm::ArrayRef<Synt::Expression> template_arguments,
+		const SrcLoc& src_loc,
+		NamesScope& arguments_names_scope,
+		FunctionContext& function_context,
+		llvm::SmallVectorImpl<TemplateArg>& out_args );
+
+	// Returns vector with wrong size in case of error.
+	TemplateArgs ExtractTemplateArgs( const TemplateBase& template_, const NamesScope& template_args_namespace, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
+
+	std::optional<TemplateArg> ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
 
 	bool TypeIsValidForTemplateVariableArgument( const Type& type );
 
@@ -798,7 +797,7 @@ private:
 
 	const FunctionVariable* GetOverloadedFunction(
 		const OverloadedFunctionsSet& functions_set,
-		const ArgsVector<FunctionType::Param>& actual_args,
+		llvm::ArrayRef<FunctionType::Param> actual_args,
 		bool first_actual_arg_is_this,
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
@@ -806,7 +805,7 @@ private:
 		bool enable_type_conversions= true);
 
 	const FunctionVariable* GetOverloadedOperator(
-		const ArgsVector<FunctionType::Param>& actual_args,
+		llvm::ArrayRef<FunctionType::Param> actual_args,
 		OverloadedOperator op,
 		NamesScope& names,
 		const SrcLoc& src_loc );
