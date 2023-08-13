@@ -795,21 +795,42 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
-	const FunctionVariable* GetOverloadedFunction(
+	// Fetch all functions (including instantiations of function template), that match given args.
+	// Adds functions into output container (but does not clear it).
+	void FetchMatchedOverloadedFunctions(
 		const OverloadedFunctionsSet& functions_set,
 		llvm::ArrayRef<FunctionType::Param> actual_args,
 		bool first_actual_arg_is_this,
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
-		bool produce_errors= true,
-		bool enable_type_conversions= true);
+		bool enable_type_conversions,
+		llvm::SmallVectorImpl<const FunctionVariable*>& out_match_functions );
 
+	// Select single (best) matched overloaded function.
+	// Returns nullptr and produced an error if can't properly select.
+	const FunctionVariable* SelectOverloadedFunction(
+		llvm::ArrayRef<FunctionType::Param> actual_args,
+		bool first_actual_arg_is_this,
+		CodeBuilderErrorsContainer& errors_container,
+		const SrcLoc& src_loc,
+		llvm::ArrayRef<const FunctionVariable*> matched_functions );
+
+	// Fetch and select overloaded function.
+	const FunctionVariable* GetOverloadedFunction(
+		const OverloadedFunctionsSet& functions_set,
+		llvm::ArrayRef<FunctionType::Param> actual_args,
+		bool first_actual_arg_is_this,
+		CodeBuilderErrorsContainer& errors_container,
+		const SrcLoc& src_loc );
+
+	// Fetch and select overloaded operator.
 	const FunctionVariable* GetOverloadedOperator(
 		llvm::ArrayRef<FunctionType::Param> actual_args,
 		OverloadedOperator op,
 		NamesScope& names,
 		const SrcLoc& src_loc );
 
+	// Fetch and select overloaded conversion constructor.
 	const FunctionVariable* GetConversionConstructor(
 		const Type& src_type,
 		const Type& dst_type,
