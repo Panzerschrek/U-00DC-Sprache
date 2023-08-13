@@ -435,7 +435,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				else if(
 					enable_type_conversions && parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
 					!function.is_conversion_constructor && !( function.is_constructor && IsCopyConstructor( function_type, function_type.params.front().type ) ) && // Disable convesin constructors call for copy constructors and conversion constructors
-					GetConversionConstructor( actual_args_begin[i].type, function_type.params[i].type, errors_container, src_loc ) != nullptr )
+					HasConversionConstructor( actual_args_begin[i].type, function_type.params[i].type, errors_container, src_loc ) )
 				{}
 				else
 				{
@@ -665,6 +665,15 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 		return func;
 
 	return nullptr;
+}
+
+bool CodeBuilder::HasConversionConstructor(
+	const Type& src_type,
+	const Type& dst_type,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	return GetConversionConstructor( src_type, dst_type, errors_container, src_loc ) != nullptr;
 }
 
 const CodeBuilder::TemplateTypePreparationResult* CodeBuilder::SelectTemplateType(

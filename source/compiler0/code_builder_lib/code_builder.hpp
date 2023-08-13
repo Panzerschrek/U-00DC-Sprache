@@ -816,6 +816,12 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
+	bool HasConversionConstructor(
+		const Type& src_type,
+		const Type& dst_type,
+		CodeBuilderErrorsContainer& errors_container,
+		const SrcLoc& src_loc );
+
 	const TemplateTypePreparationResult* SelectTemplateType(
 		llvm::ArrayRef<TemplateTypePreparationResult> candidate_templates,
 		size_t arg_count );

@@ -1053,7 +1053,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 		{
 			const Type& type= type_param->t;
 			if( type == given_type || ReferenceIsConvertible( given_type, type, errors_container, src_loc ) ||
-				( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_type, type, errors_container, src_loc ) != nullptr ) )
+				( !expected_arg_is_mutalbe_reference && HasConversionConstructor( given_type, type, errors_container, src_loc ) ) )
 				deduced_specially= true;
 		}
 		else if( const auto template_param= signature_param.GetTemplateParam() )
@@ -1061,7 +1061,7 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 			if( const auto type= result.template_args_namespace->GetThisScopeValue( function_template.template_params[ template_param->index ].name )->value.GetTypeName() )
 			{
 				if( *type == given_type || ReferenceIsConvertible( given_type, *type, errors_container, src_loc ) ||
-					( !expected_arg_is_mutalbe_reference && GetConversionConstructor( given_type, *type, errors_container, src_loc ) != nullptr ) )
+					( !expected_arg_is_mutalbe_reference && HasConversionConstructor( given_type, *type, errors_container, src_loc ) ) )
 					deduced_specially= true;
 			}
 		}
