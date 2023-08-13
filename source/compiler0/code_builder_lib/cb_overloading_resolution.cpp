@@ -294,7 +294,6 @@ ConversionsCompareResult CompareConversions(
 	const TemplateSignatureParam& dst_right_template_parameter )
 {
 	const ConversionsCompareResult conversions_compare= CompareConversions( src, dst_left, dst_right );
-	const ConversionsCompareResult template_specialization_compare= TemplateSpecializationCompare( dst_left_template_parameter, dst_right_template_parameter );
 
 	if( conversions_compare == ConversionsCompareResult::Incomparable )
 		return ConversionsCompareResult::Incomparable;
@@ -302,7 +301,7 @@ ConversionsCompareResult CompareConversions(
 		conversions_compare == ConversionsCompareResult::RightIsBetter )
 		return conversions_compare;
 	// Compare template specializations, only if type conversions are not same.
-	return template_specialization_compare;
+	return TemplateSpecializationCompare( dst_left_template_parameter, dst_right_template_parameter );
 }
 
 } // namespace
