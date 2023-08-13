@@ -55,7 +55,7 @@ public:
 		const NamesScope& parent_scope,
 		std::string_view function_name,
 		const FunctionType& function_type,
-		const TemplateArgs* template_args ) override;
+		std::optional<llvm::ArrayRef<TemplateArg>> template_args ) override;
 	std::string MangleGlobalVariable( const NamesScope& parent_scope, std::string_view variable_name, const Type& type, bool is_constant ) override;
 	std::string MangleType( const Type& type ) override;
 	std::string MangleTemplateArgs( llvm::ArrayRef<TemplateArg> template_args ) override;
@@ -644,7 +644,7 @@ std::string ManglerItaniumABI::MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string_view function_name,
 	const FunctionType& function_type,
-	const TemplateArgs* const template_args )
+	const std::optional<llvm::ArrayRef<TemplateArg>> template_args )
 {
 	state_.Push( "_Z" );
 
@@ -657,7 +657,7 @@ std::string ManglerItaniumABI::MangleFunction(
 
 	// Normally we should use "T_" instead of "S_" for referencing template parameters in function signature.
 	// But without "T_" it works fine too.
-	if( template_args != nullptr )
+	if( template_args != std::nullopt )
 	{
 		const ManglerState::NodeHolder result_node( state_ );
 

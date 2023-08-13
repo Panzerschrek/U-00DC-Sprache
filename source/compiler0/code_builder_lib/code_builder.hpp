@@ -81,7 +81,6 @@ private:
 	{
 		FunctionTemplatePtr function_template;
 		NamesScopePtr template_args_namespace;
-		TemplateArgs template_args;
 	};
 
 	struct GlobalThing // TODO - move struct out of here
@@ -373,9 +372,6 @@ private:
 		NamesScope& arguments_names_scope,
 		FunctionContext& function_context,
 		llvm::SmallVectorImpl<TemplateArg>& out_args );
-
-	// Returns vector with wrong size in case of error.
-	TemplateArgs ExtractTemplateArgs( const TemplateBase& template_, const NamesScope& template_args_namespace, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
 
 	std::optional<TemplateArg> ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc );
 

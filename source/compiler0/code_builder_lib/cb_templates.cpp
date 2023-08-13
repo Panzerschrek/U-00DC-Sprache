@@ -1071,10 +1071,6 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 
 	} // for template function arguments
 
-	result.template_args= ExtractTemplateArgs( function_template, *result.template_args_namespace, result.template_args_namespace->GetErrors(), src_loc );
-	if( result.template_args.size() != function_template.template_params.size() )
-		return result;
-
 	result.function_template= function_template_ptr;
 	return result;
 }
@@ -1090,12 +1086,10 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionParametrization(
 		return nullptr;
 
 	TemplateFunctionPreparationResult result;
-
+	result.function_template= function_template_ptr;
 	result.template_args_namespace= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template.parent_namespace );
 	FillKnownFunctionTemplateArgsIntoNamespace( function_template, *result.template_args_namespace, src_loc );
 
-	result.template_args= function_template.known_template_args;
-	result.function_template= function_template_ptr;
 	return FinishTemplateFunctionGeneration( errors_container, src_loc, result );
 }
 
@@ -1110,7 +1104,24 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	const std::string& func_name= function_declaration.name_.back();
 
 	const NamesScopePtr& template_args_namespace= template_function_preparation_result.template_args_namespace;
-	const TemplateArgs& template_args= template_function_preparation_result.template_args;
+
+	llvm::SmallVector<TemplateArg, 8> template_args;
+	for( const auto& template_param : function_template.template_params )
+	{
+		const NamesScopeValue* const value= template_args_namespace->GetThisScopeValue( template_param.name );
+
+		if( const auto type= value->value.GetTypeName() )
+			template_args.push_back( *type );
+		else if( const auto variable= value->value.GetVariable() )
+			template_args.push_back( TemplateVariableArg( *variable ) );
+		else { /* generate error later */ }
+	}
+
+	if( template_args.size() != function_template.template_params.size() )
+	{
+		REPORT_ERROR( TemplateParametersDeductionFailed, template_args_namespace->GetErrors(), src_loc );
+		return nullptr;
+	}
 
 	// Encode name for caching. Name must be unique for each template and its parameters.
 	const std::string name_encoded=
@@ -1151,7 +1162,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 			*function_template.parent_namespace,
 			func_name,
 			function_variable.type,
-			&template_args );
+			template_args );
 	if( function_variable.llvm_function->function != nullptr )
 		function_variable.llvm_function->function->setName( function_variable.llvm_function->name_mangled );
 
@@ -1267,28 +1278,6 @@ void CodeBuilder::EvaluateTemplateArgs(
 
 	DestroyUnusedTemporaryVariables( function_context, arguments_names_scope.GetErrors(), src_loc );
 	function_context.is_functionless_context= prev_is_functionless_context;
-}
-
-TemplateArgs CodeBuilder::ExtractTemplateArgs( const TemplateBase& template_, const NamesScope& template_args_namespace, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )
-{
-	TemplateArgs template_args;
-	for( const auto& template_param : template_.template_params )
-	{
-		const NamesScopeValue* const value= template_args_namespace.GetThisScopeValue( template_param.name );
-
-		if( const auto type= value->value.GetTypeName() )
-			template_args.push_back( *type );
-		else if( const auto variable= value->value.GetVariable() )
-			template_args.push_back( TemplateVariableArg( *variable ) );
-		else
-		{
-			// SPRACHE_TODO - maybe not generate this error?
-			// Other templates, for example, can match given aruments.
-			REPORT_ERROR( TemplateParametersDeductionFailed, errors, src_loc );
-		}
-	}
-
-	return template_args;
 }
 
 std::optional<TemplateArg> CodeBuilder::ValueToTemplateArg( const Value& value, CodeBuilderErrorsContainer& errors, const SrcLoc& src_loc )

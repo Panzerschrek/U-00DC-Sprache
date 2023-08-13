@@ -208,7 +208,7 @@ public: // IMangler
 		const NamesScope& parent_scope,
 		std::string_view function_name,
 		const FunctionType& function_type,
-		const TemplateArgs* template_args ) override;
+		std::optional<llvm::ArrayRef<TemplateArg>> template_args ) override;
 	std::string MangleGlobalVariable( const NamesScope& parent_scope, std::string_view variable_name, const Type& type, bool is_constant ) override;
 	std::string MangleType( const Type& type ) override;
 	std::string MangleTemplateArgs( llvm::ArrayRef<TemplateArg> template_args ) override;
@@ -237,7 +237,7 @@ std::string ManglerMSVC::MangleFunction(
 	const NamesScope& parent_scope,
 	const std::string_view function_name,
 	const FunctionType& function_type,
-	const TemplateArgs* const template_args )
+	const std::optional<llvm::ArrayRef<TemplateArg>> template_args )
 {
 	// For class methods do not encode stuff like access labels, or methods-related stuff.
 	// Just encode class methods as regular functions inside namespaces, with "this" as regular param.
@@ -248,7 +248,7 @@ std::string ManglerMSVC::MangleFunction(
 	mangler_state.PushElement( g_name_prefix );
 
 	const std::string_view op_name= DecodeOperator( function_name );
-	if( template_args != nullptr )
+	if( template_args != std::nullopt )
 	{
 		// Use separate backreferences table.
 		std::string template_name;
