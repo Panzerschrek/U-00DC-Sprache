@@ -335,13 +335,6 @@ private:
 		NamesScope& arguments_names_scope,
 		const TemplateTypePreparationResult& template_type_preparation_result );
 
-	const FunctionVariable* GenTemplateFunction(
-		CodeBuilderErrorsContainer& errors_container,
-		const SrcLoc& src_loc,
-		const FunctionTemplatePtr& function_template_ptr,
-		llvm::ArrayRef<FunctionType::Param> actual_args,
-		bool first_actual_arg_is_this );
-
 	TemplateFunctionPreparationResult PrepareTemplateFunction(
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
@@ -791,6 +784,18 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
+	using OverloadingResolutionItem= std::variant<const FunctionVariable*, TemplateFunctionPreparationResult>;
+
+	FunctionType::Param OverloadingResolutionItemGetParamExtendedType( const OverloadingResolutionItem& item, size_t param_index );
+	const TemplateSignatureParam& OverloadingResolutionItemGetTemplateSignatureParam( const OverloadingResolutionItem& item, size_t param_index );
+	bool OverloadingResolutionItemIsThisCall( const OverloadingResolutionItem& item );
+
+	// This call may trigger template function building.
+	const FunctionVariable* FinalizeSelectedFunction(
+		const OverloadingResolutionItem& item,
+		CodeBuilderErrorsContainer& errors_container,
+		const SrcLoc& src_loc );
+
 	// Fetch all functions (including instantiations of function template), that match given args.
 	// Adds functions into output container (but does not clear it).
 	void FetchMatchedOverloadedFunctions(
@@ -800,16 +805,16 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
 		bool enable_type_conversions,
-		llvm::SmallVectorImpl<const FunctionVariable*>& out_match_functions );
+		llvm::SmallVectorImpl<OverloadingResolutionItem>& out_match_functions );
 
 	// Select single (best) matched overloaded function.
 	// Returns nullptr and produced an error if can't properly select.
-	const FunctionVariable* SelectOverloadedFunction(
+	const OverloadingResolutionItem* SelectOverloadedFunction(
 		llvm::ArrayRef<FunctionType::Param> actual_args,
 		bool first_actual_arg_is_this,
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,
-		llvm::ArrayRef<const FunctionVariable*> matched_functions );
+		llvm::ArrayRef<OverloadingResolutionItem> matched_functions );
 
 	// Fetch and select overloaded function.
 	const FunctionVariable* GetOverloadedFunction(

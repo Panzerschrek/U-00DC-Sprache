@@ -992,19 +992,6 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 	return nullptr;
 }
 
-const FunctionVariable* CodeBuilder::GenTemplateFunction(
-	CodeBuilderErrorsContainer& errors_container,
-	const SrcLoc& src_loc,
-	const FunctionTemplatePtr& function_template_ptr,
-	const llvm::ArrayRef<FunctionType::Param> actual_args,
-	const bool first_actual_arg_is_this )
-{
-	const auto res= PrepareTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this );
-	if( res.function_template != nullptr )
-		return FinishTemplateFunctionGeneration( errors_container, src_loc, res );
-	return nullptr;
-}
-
 CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunction(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
@@ -1070,6 +1057,11 @@ CodeBuilder::TemplateFunctionPreparationResult CodeBuilder::PrepareTemplateFunct
 			return result;
 
 	} // for template function arguments
+
+	// Process "enable_if" here - fail template function preparation if condition is false.
+	if( std::get_if<Synt::EmptyVariant>( &function_declaration.condition_ ) == nullptr &&
+		!EvaluateBoolConstantExpression( *result.template_args_namespace, *global_function_context_, function_declaration.condition_ ) )
+		return result;
 
 	result.function_template= function_template_ptr;
 	return result;
@@ -1152,7 +1144,6 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		return nullptr; // Function prepare failed
 
 	FunctionVariable& function_variable= result_functions_set.functions.front();
-	function_variable.base_template= function_template_ptr;
 	if( function_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprComplete )
 		function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
 
