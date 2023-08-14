@@ -393,7 +393,16 @@ FunctionType::Param CodeBuilder::OverloadingResolutionItemGetParamExtendedType( 
 		else
 			result.value_type= ValueType::Value;
 
-		result.type= PrepareType( param.type_, *template_function_preparation_result->template_args_namespace, *global_function_context_ );
+		if( param.name_ == Keyword( Keywords::this_ ) )
+		{
+			const auto base_class= template_function_preparation_result->function_template->base_class;
+			if( base_class != nullptr )
+				result.type= base_class;
+			else
+				result.type= invalid_type_; // May be in case of error.
+		}
+		else
+			result.type= PrepareType( param.type_, *template_function_preparation_result->template_args_namespace, *global_function_context_ );
 
 		return result;
 	}
