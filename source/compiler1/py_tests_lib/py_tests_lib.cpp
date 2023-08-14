@@ -442,6 +442,10 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TemplateParametersDeductionFailed_Test11",
 		"TypesMismtach_ForAutoReturnValue_Test0",
 		"TypesMismtach_ForAutoReturnValue_Test1",
+		// TODO - fix compiler1 to support these tests.
+		"TemplateFunctionBuildTriggeredOnlyIfItIsSelected_Test0",
+		"TemplateFunctionBuildTriggeredOnlyIfItIsSelected_Test1",
+		"TemplateFunctionBuildTriggeredOnlyIfItIsSelected_Test2",
 	};
 
 	if( c_test_to_disable.count( func_name_str ) > 0 )

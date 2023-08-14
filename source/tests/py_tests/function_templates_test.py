@@ -1077,3 +1077,52 @@ def TemplateFunction_UseLocalVariableForTemplateArgumentUsedAsReference():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def TemplateFunctionBuildTriggeredOnlyIfItIsSelected_Test0():
+	c_program_text= """
+		template</type T/> fn Bar( T & mut t ) {}
+		template</type T/> fn Bar( T &imut t ) { static_assert( false, "Should not trigger build of this function!" ); }
+		fn Foo()
+		{
+			auto mut x= 0;
+			Bar(x); // Two versions may be called - with "imut" and "mut" argument. But only version with "mut" param is selected and its build dtriggered - since it is more specialized.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TemplateFunctionBuildTriggeredOnlyIfItIsSelected_Test1():
+	c_program_text= """
+		template</type T/> fn Bar( T & t ) { static_assert( false, "Should not trigger build of this function!" ); }
+		template</type T, size_type S/> fn Bar( [ T, S ] & t ) {}
+		fn Foo()
+		{
+			var [ i32, 16 ] arr= zero_init;
+			Bar(arr);  // Two versions may be called, but only one is selected and its build is triggered - more specialized one.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
+
+
+def TemplateFunctionBuildTriggeredOnlyIfItIsSelected_Test2():
+	c_program_text= """
+		struct A
+		{
+			template</size_type S/> fn conversion_constructor( [char8, S]& str ) { static_assert( false, "Should not trigger build of this function!" ); }
+		}
+		struct B
+		{
+			op+=( mut this, A a ) { halt; }
+			template</size_type S/> op+=( mut this, [char8, S]& str ) {}
+		}
+		fn Foo()
+		{
+			var B mut b;
+			b += "lol"; // Should select second variant of "+=" operator since it requires no type conversion. Conversion constructor build for "A" should not be triggered.
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
