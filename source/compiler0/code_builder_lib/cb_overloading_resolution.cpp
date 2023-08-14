@@ -700,6 +700,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 
 	llvm::SmallVector<OverloadingResolutionItem, 8> matched_functions;
 	llvm::SmallVector<ClassPtr, 8> processed_classes;
+	llvm::SmallVector< std::pair<ClassPtr, ClassMemberVisibility>, 8> classes_visibility;
 	for( const FunctionType::Param& arg : actual_args )
 	{
 		if( (op == OverloadedOperator::Indexing || op == OverloadedOperator::Call) && &arg != &actual_args.front() )
@@ -735,9 +736,16 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
 			GlobalThingBuildFunctionsSet( *class_->members, *operators_set, false ); // Make sure functions set is complete.
 
+			const size_t prev_size= matched_functions.size();
 			FetchMatchedOverloadedFunctions( *operators_set, actual_args, false, names.GetErrors(), src_loc, true, matched_functions );
+			const size_t new_size= matched_functions.size();
+
+			for( size_t i= prev_size; i < new_size; ++i )
+				classes_visibility.push_back( std::make_pair( class_, value_in_class.second ) );
 		}
 	}
+
+	U_ASSERT( classes_visibility.size() == matched_functions.size() );
 
 	if( !matched_functions.empty() )
 	{
@@ -746,10 +754,11 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 			const FunctionVariable* const func= FinalizeSelectedFunction( *item, names.GetErrors(), src_loc );
 			if( func != nullptr )
 			{
-				// TODO - fix tihs
 				// Check access rights after function selection.
-				//if( names.GetAccessFor( arg.type.GetClassType() ) < value_in_class.second )
-				//	REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), src_loc, op_name, class_->members->GetThisNamespaceName() );
+				const auto& visibility= classes_visibility[ size_t( item - matched_functions.data() ) ];
+				const ClassPtr class_= visibility.first;
+				if( names.GetAccessFor( class_ ) < visibility.second )
+					REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), src_loc, op_name, class_->members->GetThisNamespaceName() );
 				return func;
 			}
 		}
@@ -788,6 +797,8 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	const OverloadedFunctionsSetPtr constructors= GetConstructors( dst_type, errors_container, src_loc );
 	if( constructors == nullptr )
 		return nullptr;
+
+	// TODO - what if conversion constructor is private?
 
 	FunctionType::Param actual_args[2];
 	actual_args[0u].type= dst_type;

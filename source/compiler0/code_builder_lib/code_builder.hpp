@@ -808,6 +808,7 @@ private:
 		llvm::SmallVectorImpl<OverloadingResolutionItem>& out_match_functions );
 
 	// Select single (best) matched overloaded function.
+	// Returns pointer to input array if single function is selected.
 	// Returns nullptr and produced an error if can't properly select.
 	const OverloadingResolutionItem* SelectOverloadedFunction(
 		llvm::ArrayRef<FunctionType::Param> actual_args,
