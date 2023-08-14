@@ -472,17 +472,16 @@ fn CodeBuilder::ApplyOverloadedFunction(
 	return true;
 }
 
-fn CodeBuilder::GetOverloadedFunctionImpl(
+fn CodeBuilder::FetchMatchedOverloadedFunctions(
 	mut this,
-	FunctionsSet & functions_set,
+	FunctionsSet& functions_set,
 	ust::array_view_imut</VariableTypeExtended/> actual_args,
 	bool first_actual_arg_is_this,
-	NamesScopePtr& names_scope,
+	NamesScopePtr& names_scope, // Needed only for errors reporting
 	SrcLoc& src_loc,
 	bool allow_type_conversions,
-	bool produce_errors ) : ust::optional</FunctionVariable/>
+	ust::vector</FunctionVariable/> &mut out_matched_functions )
 {
-	var ust::vector</FunctionVariable/> mut match_functions;
 	foreach( & function : functions_set.functions )
 	{
 		var FunctionType& function_type= function.t;
@@ -498,7 +497,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 			continue;
 		}
 
-		auto mut all_args_is_compatible= true;
+		auto mut all_args_are_compatible= true;
 		for( auto mut arg_n= 0s; arg_n < actual_args_corrected.size(); ++arg_n )
 		{
 			auto arg_overloading_class= GetArgOverloadingClass( actual_args_corrected[arg_n] );
@@ -510,11 +509,8 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 			{
 				if( !( EnsureTypeComplete( src_type ) && EnsureTypeComplete( dst_type ) ) )
 				{
-					if( produce_errors )
-					{
-						REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
-					}
-					all_args_is_compatible= false;
+					REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
+					all_args_are_compatible= false;
 					break;
 				}
 
@@ -529,7 +525,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				{} // Ok, can convert arg.
 				else
 				{
-					all_args_is_compatible= false;
+					all_args_are_compatible= false;
 					break;
 				}
 			}
@@ -540,7 +536,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				arg_overloading_class != ArgOverloadingClass::MutalbeReference )
 			{
 				// We can only bind nonconst-reference arg to nonconst-reference parameter.
-				all_args_is_compatible= false;
+				all_args_are_compatible= false;
 				break;
 			}
 			else if( parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
@@ -549,9 +545,9 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 			else{ halt; }
 		}
 
-		if( all_args_is_compatible )
+		if( all_args_are_compatible )
 		{
-			match_functions.push_back(function);
+			out_matched_functions.push_back(function);
 		}
 	}
 
@@ -559,7 +555,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 	{
 		if_var( mut generated_function : GenTemplateFunction( function_template, actual_args, first_actual_arg_is_this, names_scope, src_loc ) )
 		{
-			match_functions.push_back( move(generated_function) );
+			out_matched_functions.push_back( move(generated_function) );
 		}
 	}
 
@@ -575,21 +571,27 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 				src_loc );
 		if( !generated_function.empty() )
 		{
-			match_functions.push_back( generated_function.try_deref() );
+			out_matched_functions.push_back( generated_function.try_deref() );
 		}
 	}
+}
 
-	if( match_functions.empty() )
+fn CodeBuilder::SelectOverloadedFunction(
+	mut this,
+	ust::array_view_imut</VariableTypeExtended/> actual_args,
+	bool first_actual_arg_is_this,
+	NamesScopePtr& names_scope, // Needed only for errors reporting
+	SrcLoc& src_loc,
+	ust::array_view_imut</FunctionVariable/> matched_functions ) : ust::optional</FunctionVariable/>
+{
+	if( matched_functions.empty() )
 	{
-		if( produce_errors )
-		{
-			REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
-		}
+		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
 		return ust::null_optional;
 	}
 
 	var ust::vector</bool/> mut best_functions;
-	best_functions.resize( match_functions.size(), true );
+	best_functions.resize( matched_functions.size(), true );
 
 	// For each argument search functions, which is better, than another functions.
 	// For NOT better (four current arg) functions set flags to false.
@@ -598,7 +600,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 
 	for( auto mut arg_n= 0s; arg_n < actual_args.size(); ++arg_n )
 	{
-		foreach( &l_function : match_functions )
+		foreach( &l_function : matched_functions )
 		{
 			var FunctionType& l_type= l_function.t;
 
@@ -613,7 +615,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 			}
 
 			auto mut is_best_function_for_current_arg= true;
-			foreach( &r_function : match_functions )
+			foreach( &r_function : matched_functions )
 			{
 				var FunctionType& r_type= r_function.t;
 
@@ -647,9 +649,9 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 			// Set best functions bits.
 			if( is_best_function_for_current_arg )
 			{
-				for( auto mut func_n= 0s; func_n < match_functions.size(); ++func_n )
+				for( auto mut func_n= 0s; func_n < matched_functions.size(); ++func_n )
 				{
-					var FunctionVariable& r_function= cast_imut(match_functions)[func_n];
+					var FunctionVariable& r_function= cast_imut(matched_functions)[func_n];
 					var FunctionType& r_type= r_function.t;
 
 					auto mut r_arg_n= arg_n;
@@ -679,13 +681,13 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 	}
 
 	var ust::optional</FunctionVariable/> mut selected_function;
-	for( auto mut func_n= 0s; func_n < match_functions.size(); ++func_n )
+	for( auto mut func_n= 0s; func_n < matched_functions.size(); ++func_n )
 	{
 		if( best_functions[func_n] )
 		{
 			if( selected_function.empty() )
 			{
-				selected_function.reset( match_functions[func_n] );
+				selected_function.reset( matched_functions[func_n] );
 			}
 			else
 			{
@@ -695,7 +697,7 @@ fn CodeBuilder::GetOverloadedFunctionImpl(
 		}
 	}
 
-	if( selected_function.empty() && produce_errors )
+	if( selected_function.empty() )
 	{
 		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, src_loc, ActualArgsToString(actual_args) )
 	}
@@ -711,7 +713,9 @@ fn CodeBuilder::GetOverloadedFunction(
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	return GetOverloadedFunctionImpl( functions_set, actual_args, first_actual_arg_is_this, names_scope, src_loc, true, true );
+	var ust::vector</FunctionVariable/> mut match_functions;
+	FetchMatchedOverloadedFunctions( functions_set, actual_args, first_actual_arg_is_this, names_scope, src_loc, true, match_functions );
+	return SelectOverloadedFunction( actual_args, first_actual_arg_is_this, names_scope, src_loc, match_functions.range() );
 }
 
 fn CodeBuilder::GetOverloadedOperator(
@@ -733,16 +737,20 @@ fn CodeBuilder::GetOverloadedOperator(
 				{
 					BuildFunctionsSet( operators_value[2], functions_set_ptr.try_to_non_nullable(), false );
 
-					auto functions_set_lock= functions_set_ptr.try_lock_imut();
-					if_var( &function_selected : GetOverloadedFunctionImpl( functions_set_lock.deref(), args, false, names_scope, src_loc, true, false ) )
+					var ust::vector</FunctionVariable/> mut match_functions;
+					FetchMatchedOverloadedFunctions( functions_set_ptr.try_lock_imut().deref(), args, false, names_scope, src_loc, true, match_functions );
+					if( !match_functions.empty() )
 					{
-						// Check access rights after function selection.
-						if( u32( names_scope.lock_imut().deref().GetAccessFor(class_type ) ) < u32( operators_value[1] ) )
+						if_var( &function_selected : SelectOverloadedFunction( args, false, names_scope, src_loc, match_functions.range() ) )
 						{
-							REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, overloaded_operator_str, arg.t.ToString() )
-						}
+							// Check access rights after function selection.
+							if( u32( names_scope.lock_imut().deref().GetAccessFor(class_type ) ) < u32( operators_value[1] ) )
+							{
+								REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, overloaded_operator_str, arg.t.ToString() )
+							}
 
-						return function_selected;
+							return function_selected;
+						}
 					}
 				}
 			}
@@ -782,14 +790,19 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		{ .t= src, .value_type= ValueType::ReferenceImut },
 	];
 
-	auto mut function_selected= GetOverloadedFunctionImpl( constructors, constructor_args, true, names_scope, src_loc, false, false );
-	if( function_selected.empty() )
+	var ust::vector</FunctionVariable/> mut match_functions;
+	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, match_functions );
+	if( !match_functions.empty() )
 	{
-		return move(function_selected);
-	}
-	if( function_selected.try_deref().is_conversion_constructor )
-	{
-		return move(function_selected);
+		auto mut function_selected= SelectOverloadedFunction( constructor_args, true, names_scope, src_loc, match_functions.range() );
+		if( function_selected.empty() )
+		{
+			return move(function_selected);
+		}
+		if( function_selected.try_deref().is_conversion_constructor )
+		{
+			return move(function_selected);
+		}
 	}
 	return ust::null_optional;
 }

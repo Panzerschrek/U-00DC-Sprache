@@ -833,7 +833,7 @@ private:
 		NamesScopePtr& names_scope,
 		SrcLoc& src_loc ) : bool;
 
-	fn GetOverloadedFunctionImpl(
+	fn FetchMatchedOverloadedFunctions(
 		mut this,
 		FunctionsSet& functions_set,
 		ust::array_view_imut</VariableTypeExtended/> actual_args,
@@ -841,7 +841,15 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		SrcLoc& src_loc,
 		bool allow_type_conversions,
-		bool produce_errors ) : ust::optional</FunctionVariable/>;
+		ust::vector</FunctionVariable/> &mut out_match_functions );
+
+	fn SelectOverloadedFunction(
+		mut this,
+		ust::array_view_imut</VariableTypeExtended/> actual_args,
+		bool first_actual_arg_is_this,
+		NamesScopePtr& names_scope, // Needed only for errors reporting
+		SrcLoc& src_loc,
+		ust::array_view_imut</FunctionVariable/> matched_functions ) : ust::optional</FunctionVariable/>;
 
 	fn GetOverloadedFunction(
 		mut this,
