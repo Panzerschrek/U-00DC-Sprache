@@ -749,26 +749,36 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	return nullptr;
 }
 
+OverloadedFunctionsSetPtr CodeBuilder::GetConstructors(
+	const Type& type,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	if( !EnsureTypeComplete( type ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, type );
+		return nullptr;
+	}
+	const Class* const class_type= type.GetClassType();
+	if( class_type == nullptr )
+		return nullptr;
+
+	const NamesScopeValue* const constructors_value= class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+	if( constructors_value == nullptr )
+		return nullptr;
+
+	return constructors_value->value.GetFunctionsSet();
+}
+
 const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	const Type& src_type,
 	const Type& dst_type,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
-	if( !EnsureTypeComplete( dst_type ) )
-	{
-		REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, dst_type );
+	const OverloadedFunctionsSetPtr constructors= GetConstructors( dst_type, errors_container, src_loc );
+	if( constructors == nullptr )
 		return nullptr;
-	}
-	const Class* const dst_class_type= dst_type.GetClassType();
-	if( dst_class_type == nullptr )
-		return nullptr;
-
-	const NamesScopeValue* const constructors_value= dst_class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
-	if( constructors_value == nullptr )
-		return nullptr;
-
-	const OverloadedFunctionsSet& constructors= *constructors_value->value.GetFunctionsSet();
 
 	FunctionType::Param actual_args[2];
 	actual_args[0u].type= dst_type;
@@ -777,7 +787,7 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	actual_args[1u].value_type= ValueType::ReferenceImut;
 
 	llvm::SmallVector<OverloadingResolutionItem, 8> matched_functions;
-	FetchMatchedOverloadedFunctions( constructors, actual_args, false, errors_container, src_loc, false, matched_functions );
+	FetchMatchedOverloadedFunctions( *constructors, actual_args, false, errors_container, src_loc, false, matched_functions );
 
 	if( !matched_functions.empty() )
 	{
@@ -798,7 +808,22 @@ bool CodeBuilder::HasConversionConstructor(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
-	return GetConversionConstructor( src_type, dst_type, errors_container, src_loc ) != nullptr;
+	const OverloadedFunctionsSetPtr constructors= GetConstructors( dst_type, errors_container, src_loc );
+	if( constructors == nullptr )
+		return false;
+
+	FunctionType::Param actual_args[2];
+	actual_args[0u].type= dst_type;
+	actual_args[0u].value_type= ValueType::ReferenceMut;
+	actual_args[1u].type= src_type;
+	actual_args[1u].value_type= ValueType::ReferenceImut;
+
+	// Perform fetch of conversions constructors, but do not trigger its building.
+	// This is needed, since check for conversion constructor existence may be requested without further conversion constructor usage.
+	llvm::SmallVector<OverloadingResolutionItem, 8> matched_functions;
+	FetchMatchedOverloadedFunctions( *constructors, actual_args, false, errors_container, src_loc, false, matched_functions );
+
+	return !matched_functions.empty();
 }
 
 const CodeBuilder::TemplateTypePreparationResult* CodeBuilder::SelectTemplateType(

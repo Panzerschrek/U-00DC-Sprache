@@ -831,6 +831,12 @@ private:
 		NamesScope& names,
 		const SrcLoc& src_loc );
 
+	// Returns non-null, if type is class and has constructors.
+	OverloadedFunctionsSetPtr GetConstructors(
+		const Type& type,
+		CodeBuilderErrorsContainer& errors_container,
+		const SrcLoc& src_loc );
+
 	// Fetch and select overloaded conversion constructor.
 	const FunctionVariable* GetConversionConstructor(
 		const Type& src_type,
