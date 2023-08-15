@@ -642,22 +642,19 @@ private:
 		NamesScopePtr& instantiation_point_names_scope,
 		SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>;
 
-	fn GenTemplateFunction(
-		mut this,
-		FunctionTemplatePtr& function_template_ptr,
-		ust::array_view_imut</VariableTypeExtended/> args,
-		bool first_arg_is_this,
-		NamesScopePtr& instantiation_point_names_scope,
-		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
+	struct TemplateFunctionPreparationResult
+	{
+		FunctionTemplatePtr function_template;
+		NamesScopeMutPtr args_names_scope; // Where we place template arguments
+	}
 
-	fn GenTemplateFunction(
+	fn PrepareTemplateFunction(
 		mut this,
 		FunctionTemplatePtr& function_template_ptr,
 		ust::array_view_imut</TemplateArgFinished/> known_template_args,
 		ust::array_view_imut</VariableTypeExtended/> args,
 		bool first_arg_is_this,
-		NamesScopePtr& instantiation_point_names_scope,
-		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
+		SrcLoc& src_loc ) : ust::optional</TemplateFunctionPreparationResult/>;
 
 	fn FinishFunctionTemplateParametrization(
 		mut this,

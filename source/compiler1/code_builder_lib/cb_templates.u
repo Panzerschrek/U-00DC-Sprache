@@ -905,31 +905,14 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 	halt; // Unhandled type template kind.
 }
 
-fn CodeBuilder::GenTemplateFunction(
-	mut this,
-	FunctionTemplatePtr& function_template_ptr,
-	ust::array_view_imut</VariableTypeExtended/> args,
-	bool first_arg_is_this,
-	NamesScopePtr& instantiation_point_names_scope,
-	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
-{
-	return GenTemplateFunction(
-		function_template_ptr,
-		ust::empty_range,
-		args,
-		first_arg_is_this,
-		instantiation_point_names_scope,
-		src_loc );
-}
 
-fn CodeBuilder::GenTemplateFunction(
+fn CodeBuilder::PrepareTemplateFunction(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
 	ust::array_view_imut</TemplateArgFinished/> known_template_args,
 	ust::array_view_imut</VariableTypeExtended/> mut args,
 	bool first_arg_is_this,
-	NamesScopePtr& instantiation_point_names_scope,
-	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
+	SrcLoc& src_loc ) : ust::optional</TemplateFunctionPreparationResult/>
 {
 	var FunctionTemplate& function_template= function_template_ptr.deref();
 
@@ -1003,7 +986,8 @@ fn CodeBuilder::GenTemplateFunction(
 		return ust::null_optional;
 	}
 
-	return FinishTemplateFunctionGeneration( function_template_ptr, result_names_scope, instantiation_point_names_scope, src_loc );
+	var TemplateFunctionPreparationResult mut result{ .function_template= function_template_ptr, .args_names_scope= result_names_scope };
+	return move(result);
 }
 
 fn CodeBuilder::FinishFunctionTemplateParametrization(

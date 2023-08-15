@@ -553,25 +553,23 @@ fn CodeBuilder::FetchMatchedOverloadedFunctions(
 
 	foreach( &function_template : functions_set.function_templates )
 	{
-		if_var( mut generated_function : GenTemplateFunction( function_template, actual_args, first_actual_arg_is_this, names_scope, src_loc ) )
+		if_var( preparation_result : PrepareTemplateFunction( function_template, ust::empty_range, actual_args, first_actual_arg_is_this, src_loc ) )
 		{
-			out_matched_functions.push_back( move(generated_function) );
+			if_var( mut generated_function : FinishTemplateFunctionGeneration( preparation_result.function_template, preparation_result.args_names_scope, names_scope, src_loc ) )
+			{
+				out_matched_functions.push_back( move(generated_function) );
+			}
 		}
 	}
 
 	foreach( &parametrized_function_template : functions_set.parametrized_function_templates )
 	{
-		auto generated_function=
-			GenTemplateFunction(
-				parametrized_function_template.base_template,
-				parametrized_function_template.known_args.range(),
-				actual_args,
-				first_actual_arg_is_this,
-				names_scope,
-				src_loc );
-		if( !generated_function.empty() )
+		if_var( preparation_result : PrepareTemplateFunction( parametrized_function_template.base_template, parametrized_function_template.known_args.range(), actual_args, first_actual_arg_is_this, src_loc ) )
 		{
-			out_matched_functions.push_back( generated_function.try_deref() );
+			if_var( mut generated_function : FinishTemplateFunctionGeneration( preparation_result.function_template, preparation_result.args_names_scope, names_scope, src_loc ) )
+			{
+				out_matched_functions.push_back( move(generated_function) );
+			}
 		}
 	}
 }
