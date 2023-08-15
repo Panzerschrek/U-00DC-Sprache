@@ -846,6 +846,7 @@ private:
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc );
 
+	// Check existance of conversion constuctor, but do not trigger its building.
 	bool HasConversionConstructor(
 		const Type& src_type,
 		const Type& dst_type,

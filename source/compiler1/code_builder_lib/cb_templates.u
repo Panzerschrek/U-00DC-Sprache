@@ -1103,7 +1103,6 @@ fn CodeBuilder::FinishTemplateFunctionGeneration(
 
 	// Set base template and mangled name.
 	auto mut function_variable= result_functions_set_ptr.try_lock_imut().deref().functions.front();
-	function_variable.base_template= function_template_ptr;
 
 	auto name_mangled=
 		mangler_.deref().MangleFunction( function_template.parent_names_scope.lock().try_lock_imut().deref(), function_name, function_variable.t, result_template_args );

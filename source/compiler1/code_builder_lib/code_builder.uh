@@ -844,6 +844,8 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
+	// Fetch all functions (including instantiations of function template), that match given args.
+	// Adds functions into output container (but does not clear it).
 	fn FetchMatchedOverloadedFunctions(
 		mut this,
 		FunctionsSet& functions_set,
@@ -852,9 +854,10 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		SrcLoc& src_loc,
 		bool allow_type_conversions,
-		ust::vector</OverloadingResolutionItem/> &mut out_match_functions );
+		ust::vector</OverloadingResolutionItem/> &mut out_matched_functions );
 
-	// Returns index of function in input array or invalid value.
+	// Select single (best) matched overloaded function.
+	// Returns index of function in input array or invalid index in case of error.
 	fn SelectOverloadedFunction(
 		mut this,
 		ust::array_view_imut</VariableTypeExtended/> actual_args,
@@ -863,6 +866,7 @@ private:
 		SrcLoc& src_loc,
 		ust::array_view_imut</OverloadingResolutionItem/> matched_functions ) : size_type;
 
+	// Fetch and select overloaded function.
 	fn GetOverloadedFunction(
 		mut this,
 		FunctionsSet& functions_set,
@@ -871,6 +875,7 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
+	// Fetch and select overloaded operator.
 	fn GetOverloadedOperator(
 		mut this,
 		ust::array_view_imut</VariableTypeExtended/> args,
@@ -878,7 +883,10 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
+	// Fetch and select overloaded conversion constructor.
 	fn GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
+
+	// Check existance of conversion constuctor, but do not trigger its building.
 	fn HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : bool;
 
 	// Returns index of more specialized or ~0s

@@ -801,12 +801,12 @@ fn CodeBuilder::GetOverloadedFunction(
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	var ust::vector</OverloadingResolutionItem/> mut match_functions;
-	FetchMatchedOverloadedFunctions( functions_set, actual_args, first_actual_arg_is_this, names_scope, src_loc, true, match_functions );
-	var size_type function_index= SelectOverloadedFunction( actual_args, first_actual_arg_is_this, names_scope, src_loc, match_functions.range() );
-	if( function_index < match_functions.size() )
+	var ust::vector</OverloadingResolutionItem/> mut matched_functions;
+	FetchMatchedOverloadedFunctions( functions_set, actual_args, first_actual_arg_is_this, names_scope, src_loc, true, matched_functions );
+	var size_type function_index= SelectOverloadedFunction( actual_args, first_actual_arg_is_this, names_scope, src_loc, matched_functions.range() );
+	if( function_index < matched_functions.size() )
 	{
-		return FinalizeSelectedFunction( match_functions[ function_index ], names_scope, src_loc );
+		return FinalizeSelectedFunction( matched_functions[ function_index ], names_scope, src_loc );
 	}
 	return ust::null_optional;
 }
@@ -818,7 +818,7 @@ fn CodeBuilder::GetOverloadedOperator(
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	var ust::vector</OverloadingResolutionItem/> mut match_functions;
+	var ust::vector</OverloadingResolutionItem/> mut matched_functions;
 	var ust::vector</ tup[ ClassTypePtr, Synt::ClassVisibility ] /> mut classes_visibility;
 	var ust::vector</ClassTypePtr/> mut processed_classes;
 	foreach( &arg : args ) label for_args
@@ -842,9 +842,9 @@ fn CodeBuilder::GetOverloadedOperator(
 				{
 					BuildFunctionsSet( operators_value[2], functions_set_ptr.try_to_non_nullable(), false );
 
-					var size_type prev_size= match_functions.size();
-					FetchMatchedOverloadedFunctions( functions_set_ptr.try_lock_imut().deref(), args, false, names_scope, src_loc, true, match_functions );
-					var size_type new_size= match_functions.size();
+					var size_type prev_size= matched_functions.size();
+					FetchMatchedOverloadedFunctions( functions_set_ptr.try_lock_imut().deref(), args, false, names_scope, src_loc, true, matched_functions );
+					var size_type new_size= matched_functions.size();
 
 					for( auto mut i= prev_size; i < new_size; ++i )
 					{
@@ -860,14 +860,14 @@ fn CodeBuilder::GetOverloadedOperator(
 		}
 	}
 
-	debug_assert( classes_visibility.size() == match_functions.size(), "Wrong size!" );
+	debug_assert( classes_visibility.size() == matched_functions.size(), "Wrong size!" );
 
-	if( !match_functions.empty() )
+	if( !matched_functions.empty() )
 	{
-		var size_type function_index= SelectOverloadedFunction( args, false, names_scope, src_loc, match_functions.range() );
-		if( function_index < match_functions.size() )
+		var size_type function_index= SelectOverloadedFunction( args, false, names_scope, src_loc, matched_functions.range() );
+		if( function_index < matched_functions.size() )
 		{
-			auto mut result= FinalizeSelectedFunction( match_functions[function_index], names_scope, src_loc );
+			auto mut result= FinalizeSelectedFunction( matched_functions[function_index], names_scope, src_loc );
 			if( !result.empty() )
 			{
 				// Check access rights after function selection.
@@ -910,14 +910,14 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		{ .t= src, .value_type= ValueType::ReferenceImut },
 	];
 
-	var ust::vector</OverloadingResolutionItem/> mut match_functions;
-	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, match_functions );
-	if( !match_functions.empty() )
+	var ust::vector</OverloadingResolutionItem/> mut matched_functions;
+	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, matched_functions );
+	if( !matched_functions.empty() )
 	{
-		var size_type function_index= SelectOverloadedFunction( constructor_args, true, names_scope, src_loc, match_functions.range() );
-		if( function_index < match_functions.size() )
+		var size_type function_index= SelectOverloadedFunction( constructor_args, true, names_scope, src_loc, matched_functions.range() );
+		if( function_index < matched_functions.size() )
 		{
-			if_var( mut function_selected : FinalizeSelectedFunction( match_functions[ function_index ], names_scope, src_loc ) )
+			if_var( mut function_selected : FinalizeSelectedFunction( matched_functions[ function_index ], names_scope, src_loc ) )
 			{
 				if( function_selected.is_conversion_constructor )
 				{
@@ -953,10 +953,10 @@ fn CodeBuilder::HasConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		{ .t= src, .value_type= ValueType::ReferenceImut },
 	];
 
-	var ust::vector</OverloadingResolutionItem/> mut match_functions;
-	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, match_functions );
+	var ust::vector</OverloadingResolutionItem/> mut matched_functions;
+	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, matched_functions );
 
-	foreach( &item : match_functions )
+	foreach( &item : matched_functions )
 	{
 		if( OverloadingResolutionItemIsConversionConstructor( item ) )
 		{

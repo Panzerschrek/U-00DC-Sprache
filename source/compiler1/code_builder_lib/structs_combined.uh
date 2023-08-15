@@ -381,8 +381,6 @@ struct FunctionVariable
 	ust::shared_ptr_final_nullable</ Synt::Function /> prototype_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;
 
-	ust::shared_ptr_final_nullable</ FunctionTemplate /> base_template;
-
 	fn VirtuallyEquals( this, FunctionVariable& other ) : bool;
 }
 
