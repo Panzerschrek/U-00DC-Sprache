@@ -634,7 +634,7 @@ private:
 	fn EvaluateTemplateTypeArgs(
 		mut this,
 		TypeTemplatePtr& type_template_ptr,
-		TemplateArgsFinished& template_args ) : ust::optional</TemplateTypeArgsEvaluationResult/>;
+		ust::array_view_imut</TemplateArgFinished/> template_args ) : ust::optional</TemplateTypeArgsEvaluationResult/>;
 
 	fn FinishTypeTemplateGeneration(
 		mut this,
@@ -645,7 +645,7 @@ private:
 	fn GenTemplateFunction(
 		mut this,
 		FunctionTemplatePtr& function_template_ptr,
-		ust::array_view_imut</VariableTypeExtended/> mut args,
+		ust::array_view_imut</VariableTypeExtended/> args,
 		bool first_arg_is_this,
 		NamesScopePtr& instantiation_point_names_scope,
 		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
@@ -653,8 +653,8 @@ private:
 	fn GenTemplateFunction(
 		mut this,
 		FunctionTemplatePtr& function_template_ptr,
-		TemplateArgsFinished& known_template_args,
-		ust::array_view_imut</VariableTypeExtended/> mut args,
+		ust::array_view_imut</TemplateArgFinished/> known_template_args,
+		ust::array_view_imut</VariableTypeExtended/> args,
 		bool first_arg_is_this,
 		NamesScopePtr& instantiation_point_names_scope,
 		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
@@ -764,7 +764,7 @@ private:
 	fn FillKnownFunctionTemplateArgsIntoNamespace(
 		mut this,
 		FunctionTemplate& function_template,
-		TemplateArgsFinished& known_template_args,
+		ust::array_view_imut</TemplateArgFinished/> known_template_args,
 		NamesScopeMutPtr& target_namespace );
 
 	fn AddNewTemplateThing( mut this, ust::string8 mut key, NamesScopePtr& thing );

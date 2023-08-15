@@ -564,7 +564,7 @@ fn CodeBuilder::FetchMatchedOverloadedFunctions(
 		auto generated_function=
 			GenTemplateFunction(
 				parametrized_function_template.base_template,
-				parametrized_function_template.known_args,
+				parametrized_function_template.known_args.range(),
 				actual_args,
 				first_actual_arg_is_this,
 				names_scope,

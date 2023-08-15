@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/keywords.uh"
 import "error_reporting.uh"
 import "code_builder.uh"
@@ -678,7 +679,7 @@ fn CodeBuilder::GenTemplateType(
 	var ust::vector</ TemplateTypeArgsEvaluationResult /> mut candidate_type_templates;
 	foreach( &type_template_ptr : type_templates_set.type_templates )
 	{
-		auto mut res= EvaluateTemplateTypeArgs( type_template_ptr, template_args_finished );
+		auto mut res= EvaluateTemplateTypeArgs( type_template_ptr, template_args_finished.range() );
 		if( !res.empty() )
 		{
 			candidate_type_templates.push_back( res.try_take() );
@@ -714,7 +715,7 @@ fn CodeBuilder::GenTemplateType(
 fn CodeBuilder::EvaluateTemplateTypeArgs(
 	mut this,
 	TypeTemplatePtr& type_template_ptr,
-	TemplateArgsFinished& template_args ) : ust::optional</TemplateTypeArgsEvaluationResult/>
+	ust::array_view_imut</TemplateArgFinished/> template_args ) : ust::optional</TemplateTypeArgsEvaluationResult/>
 {
 	// Avoid performing single lock of type template pointer - lock it multiple times instead where it is needed.
 	// Do this in order to avoid holding lock in recursive calls.
@@ -756,13 +757,14 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 	var TemplateArgsFinished mut result_signature_template_args;
 
 	// Copy and match passed args.
-	result_signature_template_args= template_args;
 	with( &type_template : type_template_ptr.lock_imut().deref() )
 	{
 		for( auto mut i= 0s; i < template_args.size(); ++i )
 		{
+			result_signature_template_args.push_back( template_args[i] );
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args[i] );
 		}
+		debug_assert( result_signature_template_args.size() == type_template.signature_params.size(), "Wrong args count!" );
 	}
 
 	auto syntax_element_ptr= type_template_ptr.lock_imut().deref().syntax_element;
@@ -906,14 +908,14 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 fn CodeBuilder::GenTemplateFunction(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
-	ust::array_view_imut</VariableTypeExtended/> mut args,
+	ust::array_view_imut</VariableTypeExtended/> args,
 	bool first_arg_is_this,
 	NamesScopePtr& instantiation_point_names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
 	return GenTemplateFunction(
 		function_template_ptr,
-		TemplateArgsFinished(),
+		ust::empty_range,
 		args,
 		first_arg_is_this,
 		instantiation_point_names_scope,
@@ -923,7 +925,7 @@ fn CodeBuilder::GenTemplateFunction(
 fn CodeBuilder::GenTemplateFunction(
 	mut this,
 	FunctionTemplatePtr& function_template_ptr,
-	TemplateArgsFinished& known_template_args,
+	ust::array_view_imut</TemplateArgFinished/> known_template_args,
 	ust::array_view_imut</VariableTypeExtended/> mut args,
 	bool first_arg_is_this,
 	NamesScopePtr& instantiation_point_names_scope,
@@ -1019,7 +1021,7 @@ fn CodeBuilder::FinishFunctionTemplateParametrization(
 			"",
 			function_template.parent_names_scope.lock().try_to_non_nullable() ) ); // Where we place template arguments
 
-	FillKnownFunctionTemplateArgsIntoNamespace( function_template, known_template_args, result_names_scope );
+	FillKnownFunctionTemplateArgsIntoNamespace( function_template, known_template_args.range(), result_names_scope );
 
 	return FinishTemplateFunctionGeneration(
 		parametrized_function_template.base_template,
@@ -1699,7 +1701,7 @@ fn CodeBuilder::ValueToTemplateArg( NamesScopePtr& names_scope, SrcLoc& src_loc,
 fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 	mut this,
 	FunctionTemplate& function_template,
-	TemplateArgsFinished& known_template_args,
+	ust::array_view_imut</TemplateArgFinished/> known_template_args,
 	NamesScopeMutPtr& target_namespace )
 {
 	auto mut lock= target_namespace.lock_mut();
