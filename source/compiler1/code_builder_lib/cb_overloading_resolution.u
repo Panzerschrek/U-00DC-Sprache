@@ -521,7 +521,7 @@ fn CodeBuilder::FetchMatchedOverloadedFunctions(
 					parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
 					!function.is_conversion_constructor && // Disable conversion for conversion constructor.
 					!( function.is_constructor && !dst_type.GetClassType().empty() && IsCopyConstructor( function, dst_type.GetClassType().try_deref() ) ) && // Disable conversion for copy constructor.
-					!GetConversionConstructor( names_scope, dst_type, src_type, src_loc ).empty() )
+					HasConversionConstructor( names_scope, dst_type, src_type, src_loc ) )
 				{} // Ok, can convert arg.
 				else
 				{
@@ -803,6 +803,12 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		}
 	}
 	return ust::null_optional;
+}
+
+fn CodeBuilder::HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : bool
+{
+	// TODO - avoid building conversion constructor here.
+	return !GetConversionConstructor( names_scope, dst, src, src_loc ).empty();
 }
 
 fn CodeBuilder::SelectMoreSpecializedTemplate(

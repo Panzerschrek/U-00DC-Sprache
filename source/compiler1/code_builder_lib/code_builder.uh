@@ -864,6 +864,7 @@ private:
 		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
 	fn GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
+	fn HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : bool;
 
 	// Returns index of more specialized or ~0s
 	fn SelectMoreSpecializedTemplate(
