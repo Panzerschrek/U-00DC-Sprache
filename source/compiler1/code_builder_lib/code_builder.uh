@@ -830,6 +830,19 @@ private:
 		NamesScopePtr& names_scope,
 		SrcLoc& src_loc ) : bool;
 
+	type OverloadingResolutionItem= ust::variant</ tup[ FunctionVariable, TemplateFunctionPreparationResult ] />;
+
+	fn OverloadingResolutionItemGetParamExtendedType( mut this, OverloadingResolutionItem& item, size_type param_index ) : VariableTypeExtended;
+	fn OverloadingResolutionItemGetTemplateSignatureParam( mut this, OverloadingResolutionItem& item, size_type param_index ) : TemplateSignatureParam;
+	fn OverloadingResolutionItemIsThisCall( mut this, OverloadingResolutionItem& item ) : bool;
+
+	// This call may trigger template function building.
+	fn FinalizeSelectedFunction(
+		mut this,
+		OverloadingResolutionItem& item,
+		NamesScopePtr& names_scope, // Needed only for errors reporting
+		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
+
 	fn FetchMatchedOverloadedFunctions(
 		mut this,
 		FunctionsSet& functions_set,
@@ -838,15 +851,16 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		SrcLoc& src_loc,
 		bool allow_type_conversions,
-		ust::vector</FunctionVariable/> &mut out_match_functions );
+		ust::vector</OverloadingResolutionItem/> &mut out_match_functions );
 
+	// Returns index of function in input array or invalid value.
 	fn SelectOverloadedFunction(
 		mut this,
 		ust::array_view_imut</VariableTypeExtended/> actual_args,
 		bool first_actual_arg_is_this,
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		SrcLoc& src_loc,
-		ust::array_view_imut</FunctionVariable/> matched_functions ) : ust::optional</FunctionVariable/>;
+		ust::array_view_imut</OverloadingResolutionItem/> matched_functions ) : size_type;
 
 	fn GetOverloadedFunction(
 		mut this,

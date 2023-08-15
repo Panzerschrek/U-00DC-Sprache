@@ -986,6 +986,16 @@ fn CodeBuilder::PrepareTemplateFunction(
 		return ust::null_optional;
 	}
 
+	// Process "enable_if" here - fail template function preparation if condition is false.
+	if_var( &expr : function_syntax_element.condition )
+	{
+		var FunctionContext mut global_function_context= CreateGlobalFunctionContext();
+		if( !EvaluateBoolConstantExpression( result_names_scope, global_function_context, expr ) )
+		{
+			return ust::null_optional; // Function disabled
+		}
+	}
+
 	var TemplateFunctionPreparationResult mut result{ .function_template= function_template_ptr, .args_names_scope= result_names_scope };
 	return move(result);
 }

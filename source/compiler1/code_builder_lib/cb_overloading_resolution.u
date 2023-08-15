@@ -472,6 +472,95 @@ fn CodeBuilder::ApplyOverloadedFunction(
 	return true;
 }
 
+
+fn CodeBuilder::OverloadingResolutionItemGetParamExtendedType( mut this, OverloadingResolutionItem& item, size_type param_index ) : VariableTypeExtended
+{
+	if_var( &variable : item.get</FunctionVariable/>() )
+	{
+		return variable.t.params[param_index];
+	}
+	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
+	{
+		auto& params= template_function.function_template.deref().syntax_element.deref().function.deref().function_type.params;
+		var Synt::FunctionType::Param& param= params[param_index];
+
+		var bool is_this= param.name == KeywordToString( Keyword::this_ );
+
+		var ValueType mut value_type= ValueType::Value;
+		if( param.reference_modifier == Synt::ReferenceModifier::Reference || is_this )
+		{
+			value_type= select( param.mutability_modifier == Synt::MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut );
+		}
+
+		var Type mut t;
+		if( is_this )
+		{
+			auto& class_type_opt= template_function.function_template.deref().class_;
+			if( !class_type_opt.empty() )
+			{
+				t= class_type_opt.try_to_non_nullable();
+			}
+			else
+			{
+				t= invalid_type_; // May be in case of error.
+			}
+		}
+		else
+		{
+			var FunctionContext mut global_function_context= CreateGlobalFunctionContext();
+			t= PrepareType( template_function.args_names_scope, global_function_context, param.t );
+		}
+
+		var VariableTypeExtended mut result{ .value_type= value_type, .t= move(t) };
+		return move(result);
+	}
+	halt;
+}
+
+fn CodeBuilder::OverloadingResolutionItemGetTemplateSignatureParam( mut this, OverloadingResolutionItem& item, size_type param_index ) : TemplateSignatureParam
+{
+	if( !item.get</FunctionVariable/>().empty() )
+	{
+		return TemplateSignatureParam::TypeParam();
+	}
+	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
+	{
+		return template_function.function_template.deref().signature_params[param_index];
+	}
+	halt;
+}
+
+fn CodeBuilder::OverloadingResolutionItemIsThisCall( mut this, OverloadingResolutionItem& item ) : bool
+{
+	if_var( &variable : item.get</FunctionVariable/>() )
+	{
+		return variable.is_this_call;
+	}
+	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
+	{
+		auto& params= template_function.function_template.deref().syntax_element.deref().function.deref().function_type.params;
+		return !params.empty() && params.front().name == KeywordToString( Keyword::this_ );
+	}
+	halt;
+}
+
+fn CodeBuilder::FinalizeSelectedFunction(
+	mut this,
+	OverloadingResolutionItem& item,
+	NamesScopePtr& names_scope, // Needed only for errors reporting
+	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
+{
+	if_var( &variable : item.get</FunctionVariable/>() )
+	{
+		return variable;
+	}
+	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
+	{
+		return FinishTemplateFunctionGeneration( template_function.function_template, template_function.args_names_scope, names_scope, src_loc );
+	}
+	halt;
+}
+
 fn CodeBuilder::FetchMatchedOverloadedFunctions(
 	mut this,
 	FunctionsSet& functions_set,
@@ -480,7 +569,7 @@ fn CodeBuilder::FetchMatchedOverloadedFunctions(
 	NamesScopePtr& names_scope, // Needed only for errors reporting
 	SrcLoc& src_loc,
 	bool allow_type_conversions,
-	ust::vector</FunctionVariable/> &mut out_matched_functions )
+	ust::vector</OverloadingResolutionItem/> &mut out_matched_functions )
 {
 	foreach( & function : functions_set.functions )
 	{
@@ -553,23 +642,17 @@ fn CodeBuilder::FetchMatchedOverloadedFunctions(
 
 	foreach( &function_template : functions_set.function_templates )
 	{
-		if_var( preparation_result : PrepareTemplateFunction( function_template, ust::empty_range, actual_args, first_actual_arg_is_this, src_loc ) )
+		if_var( mut preparation_result : PrepareTemplateFunction( function_template, ust::empty_range, actual_args, first_actual_arg_is_this, src_loc ) )
 		{
-			if_var( mut generated_function : FinishTemplateFunctionGeneration( preparation_result.function_template, preparation_result.args_names_scope, names_scope, src_loc ) )
-			{
-				out_matched_functions.push_back( move(generated_function) );
-			}
+			out_matched_functions.push_back( move(preparation_result) );
 		}
 	}
 
 	foreach( &parametrized_function_template : functions_set.parametrized_function_templates )
 	{
-		if_var( preparation_result : PrepareTemplateFunction( parametrized_function_template.base_template, parametrized_function_template.known_args.range(), actual_args, first_actual_arg_is_this, src_loc ) )
+		if_var( mut preparation_result : PrepareTemplateFunction( parametrized_function_template.base_template, parametrized_function_template.known_args.range(), actual_args, first_actual_arg_is_this, src_loc ) )
 		{
-			if_var( mut generated_function : FinishTemplateFunctionGeneration( preparation_result.function_template, preparation_result.args_names_scope, names_scope, src_loc ) )
-			{
-				out_matched_functions.push_back( move(generated_function) );
-			}
+			out_matched_functions.push_back( move(preparation_result) );
 		}
 	}
 }
@@ -580,12 +663,12 @@ fn CodeBuilder::SelectOverloadedFunction(
 	bool first_actual_arg_is_this,
 	NamesScopePtr& names_scope, // Needed only for errors reporting
 	SrcLoc& src_loc,
-	ust::array_view_imut</FunctionVariable/> matched_functions ) : ust::optional</FunctionVariable/>
+	ust::array_view_imut</OverloadingResolutionItem/> matched_functions ) : size_type
 {
 	if( matched_functions.empty() )
 	{
 		REPORT_ERROR( CouldNotSelectOverloadedFunction, names_scope, src_loc, ActualArgsToString(actual_args) )
-		return ust::null_optional;
+		return ~0s;
 	}
 
 	var ust::vector</bool/> mut best_functions;
@@ -594,16 +677,12 @@ fn CodeBuilder::SelectOverloadedFunction(
 	// For each argument search functions, which is better, than another functions.
 	// For NOT better (four current arg) functions set flags to false.
 
-	var TemplateSignatureParam dummy_template_param= TemplateSignatureParam::TypeParam();
-
 	for( auto mut arg_n= 0s; arg_n < actual_args.size(); ++arg_n )
 	{
 		foreach( &l_function : matched_functions )
 		{
-			var FunctionType& l_type= l_function.t;
-
 			auto mut l_arg_n= arg_n;
-			if( first_actual_arg_is_this && !l_function.is_this_call )
+			if( first_actual_arg_is_this && !OverloadingResolutionItemIsThisCall(l_function) )
 			{
 				if( l_arg_n == 0s )
 				{
@@ -615,10 +694,8 @@ fn CodeBuilder::SelectOverloadedFunction(
 			auto mut is_best_function_for_current_arg= true;
 			foreach( &r_function : matched_functions )
 			{
-				var FunctionType& r_type= r_function.t;
-
 				auto mut r_arg_n= arg_n;
-				if( first_actual_arg_is_this && !r_function.is_this_call )
+				if( first_actual_arg_is_this && !OverloadingResolutionItemIsThisCall(r_function) )
 				{
 					if( r_arg_n == 0s )
 					{
@@ -630,10 +707,10 @@ fn CodeBuilder::SelectOverloadedFunction(
 				auto comp=
 					CompareConversions(
 						actual_args[arg_n],
-						l_type.params[l_arg_n],
-						r_type.params[r_arg_n],
-						select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.try_deref().signature_params[l_arg_n] ),
-						select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.try_deref().signature_params[r_arg_n] ) );
+						OverloadingResolutionItemGetParamExtendedType( l_function, l_arg_n ),
+						OverloadingResolutionItemGetParamExtendedType( r_function, r_arg_n ),
+						OverloadingResolutionItemGetTemplateSignatureParam( l_function, l_arg_n ),
+						OverloadingResolutionItemGetTemplateSignatureParam( r_function, r_arg_n ) );
 
 				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
 				{}
@@ -649,11 +726,10 @@ fn CodeBuilder::SelectOverloadedFunction(
 			{
 				for( auto mut func_n= 0s; func_n < matched_functions.size(); ++func_n )
 				{
-					var FunctionVariable& r_function= cast_imut(matched_functions)[func_n];
-					var FunctionType& r_type= r_function.t;
+					var OverloadingResolutionItem& r_function= cast_imut(matched_functions)[func_n];
 
 					auto mut r_arg_n= arg_n;
-					if( first_actual_arg_is_this && !r_function.is_this_call )
+					if( first_actual_arg_is_this && !OverloadingResolutionItemIsThisCall(r_function) )
 					{
 						if( r_arg_n == 0s )
 						{
@@ -665,10 +741,10 @@ fn CodeBuilder::SelectOverloadedFunction(
 					auto comp=
 						CompareConversions(
 							actual_args[arg_n],
-							l_type.params[l_arg_n],
-							r_type.params[r_arg_n],
-							select( l_function.base_template.empty() ? dummy_template_param : l_function.base_template.try_deref().signature_params[l_arg_n] ),
-							select( r_function.base_template.empty() ? dummy_template_param : r_function.base_template.try_deref().signature_params[r_arg_n] ) );
+							OverloadingResolutionItemGetParamExtendedType( l_function, l_arg_n ),
+							OverloadingResolutionItemGetParamExtendedType( r_function, r_arg_n ),
+							OverloadingResolutionItemGetTemplateSignatureParam( l_function, l_arg_n ),
+							OverloadingResolutionItemGetTemplateSignatureParam( r_function, r_arg_n ) );
 					if( comp != ConversionsCompareResult::Same )
 					{
 						best_functions[func_n]= false;
@@ -678,24 +754,24 @@ fn CodeBuilder::SelectOverloadedFunction(
 		} // for functions left
 	}
 
-	var ust::optional</FunctionVariable/> mut selected_function;
+	var size_type mut selected_function= ~0s;
 	for( auto mut func_n= 0s; func_n < matched_functions.size(); ++func_n )
 	{
 		if( best_functions[func_n] )
 		{
-			if( selected_function.empty() )
+			if( selected_function >= matched_functions.size() )
 			{
-				selected_function.reset( matched_functions[func_n] );
+				selected_function= func_n;
 			}
 			else
 			{
-				selected_function.reset();
+				selected_function= ~0s;
 				break;
 			}
 		}
 	}
 
-	if( selected_function.empty() )
+	if( selected_function >= matched_functions.size() )
 	{
 		REPORT_ERROR( TooManySuitableOverloadedFunctions, names_scope, src_loc, ActualArgsToString(actual_args) )
 	}
@@ -711,9 +787,14 @@ fn CodeBuilder::GetOverloadedFunction(
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	var ust::vector</FunctionVariable/> mut match_functions;
+	var ust::vector</OverloadingResolutionItem/> mut match_functions;
 	FetchMatchedOverloadedFunctions( functions_set, actual_args, first_actual_arg_is_this, names_scope, src_loc, true, match_functions );
-	return SelectOverloadedFunction( actual_args, first_actual_arg_is_this, names_scope, src_loc, match_functions.range() );
+	var size_type function_index= SelectOverloadedFunction( actual_args, first_actual_arg_is_this, names_scope, src_loc, match_functions.range() );
+	if( function_index < match_functions.size() )
+	{
+		return FinalizeSelectedFunction( match_functions[ function_index ], names_scope, src_loc );
+	}
+	return ust::null_optional;
 }
 
 fn CodeBuilder::GetOverloadedOperator(
@@ -723,7 +804,7 @@ fn CodeBuilder::GetOverloadedOperator(
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	var ust::vector</FunctionVariable/> mut match_functions;
+	var ust::vector</OverloadingResolutionItem/> mut match_functions;
 	var ust::vector</ClassTypePtr/> mut processed_classes;
 	foreach( &arg : args ) label for_args
 	{
@@ -760,7 +841,8 @@ fn CodeBuilder::GetOverloadedOperator(
 
 	if( !match_functions.empty() )
 	{
-		if_var( &function_selected : SelectOverloadedFunction( args, false, names_scope, src_loc, match_functions.range() ) )
+		var size_type function_index= SelectOverloadedFunction( args, false, names_scope, src_loc, match_functions.range() );
+		if( function_index < match_functions.size() )
 		{
 			// TODO - fix this.
 			// Check access rights after function selection.
@@ -769,7 +851,7 @@ fn CodeBuilder::GetOverloadedOperator(
 			//	REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, overloaded_operator_str, arg.t.ToString() )
 			//}
 
-			return function_selected;
+			return FinalizeSelectedFunction( match_functions[function_index], names_scope, src_loc );
 		}
 	}
 
@@ -801,18 +883,20 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		{ .t= src, .value_type= ValueType::ReferenceImut },
 	];
 
-	var ust::vector</FunctionVariable/> mut match_functions;
+	var ust::vector</OverloadingResolutionItem/> mut match_functions;
 	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, match_functions );
 	if( !match_functions.empty() )
 	{
-		auto mut function_selected= SelectOverloadedFunction( constructor_args, true, names_scope, src_loc, match_functions.range() );
-		if( function_selected.empty() )
+		var size_type function_index= SelectOverloadedFunction( constructor_args, true, names_scope, src_loc, match_functions.range() );
+		if( function_index < match_functions.size() )
 		{
-			return move(function_selected);
-		}
-		if( function_selected.try_deref().is_conversion_constructor )
-		{
-			return move(function_selected);
+			if_var( mut function_selected : FinalizeSelectedFunction( match_functions[ function_index ], names_scope, src_loc ) )
+			{
+				if( function_selected.is_conversion_constructor )
+				{
+					return move(function_selected);
+				}
+			}
 		}
 	}
 	return ust::null_optional;

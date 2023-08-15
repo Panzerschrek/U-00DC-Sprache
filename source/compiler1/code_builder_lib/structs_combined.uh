@@ -676,6 +676,9 @@ public:
 		ust::vector</ TemplateSignatureParam /> params;
 	}
 
+	fn constructor( mut this, TemplateSignatureParam& other )= default;
+	op=( mut this, TemplateSignatureParam& other )= default;
+
 	fn conversion_constructor( TemplateParam mut template_param );
 	fn conversion_constructor( TypeParam mut type_param );
 	fn conversion_constructor( VariableParam mut variable_param );
@@ -703,12 +706,12 @@ private:
 		TemplateParam,
 		TypeParam,
 		VariableParam,
-		ust::box</ ArrayTypeParam />,
-		ust::box</ TupleTypeParam />,
-		ust::box</ RawPointerTypeParam />,
-		ust::box</ FunctionTypeParam />,
-		ust::box</ CoroutineTypeParam />,
-		ust::box</ SpecializedTemplateParam />
+		ust::shared_ptr_final</ ArrayTypeParam />,
+		ust::shared_ptr_final</ TupleTypeParam />,
+		ust::shared_ptr_final</ RawPointerTypeParam />,
+		ust::shared_ptr_final</ FunctionTypeParam />,
+		ust::shared_ptr_final</ CoroutineTypeParam />,
+		ust::shared_ptr_final</ SpecializedTemplateParam />
 		] />;
 
 	Container something_;

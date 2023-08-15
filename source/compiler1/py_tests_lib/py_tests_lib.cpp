@@ -443,10 +443,7 @@ PyObject* FilterTest( PyObject* const self, PyObject* const args )
 		"TypesMismtach_ForAutoReturnValue_Test0",
 		"TypesMismtach_ForAutoReturnValue_Test1",
 		// TODO - fix compiler1 to support these tests.
-		"TemplateFunctionBuildTriggeredOnlyIfItIsSelected_Test0",
-		"TemplateFunctionBuildTriggeredOnlyIfItIsSelected_Test1",
 		"TemplateFunctionBuildTriggeredOnlyIfItIsSelected_Test2",
-
 		"AccessingPrivateMemberOutsideClass_Test5",
 		"AccessingPrivateMemberOutsideClass_Test6",
 		"AccessingPrivateMemberOutsideClass_Test7",
