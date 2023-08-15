@@ -764,7 +764,7 @@ fn CodeBuilder::EvaluateTemplateTypeArgs(
 			result_signature_template_args.push_back( template_args[i] );
 			all_ok&= MatchTemplateArgument( result_names_scope, type_template, type_template.signature_params[i], result_signature_template_args[i] );
 		}
-		debug_assert( result_signature_template_args.size() == type_template.signature_params.size(), "Wrong args count!" );
+		debug_assert( result_signature_template_args.size() == template_args.size(), "Wrong args count!" );
 	}
 
 	auto syntax_element_ptr= type_template_ptr.lock_imut().deref().syntax_element;
