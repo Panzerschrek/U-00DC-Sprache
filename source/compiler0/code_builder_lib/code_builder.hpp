@@ -789,6 +789,7 @@ private:
 	FunctionType::Param OverloadingResolutionItemGetParamExtendedType( const OverloadingResolutionItem& item, size_t param_index );
 	const TemplateSignatureParam& OverloadingResolutionItemGetTemplateSignatureParam( const OverloadingResolutionItem& item, size_t param_index );
 	bool OverloadingResolutionItemIsThisCall( const OverloadingResolutionItem& item );
+	bool OverloadingResolutionItemIsConversionConstructor( const OverloadingResolutionItem& item );
 
 	// This call may trigger template function building.
 	const FunctionVariable* FinalizeSelectedFunction(

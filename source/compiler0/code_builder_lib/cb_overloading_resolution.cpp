@@ -448,6 +448,19 @@ bool CodeBuilder::OverloadingResolutionItemIsThisCall( const OverloadingResoluti
 	}
 }
 
+bool CodeBuilder::OverloadingResolutionItemIsConversionConstructor( const OverloadingResolutionItem& item )
+{
+	if( const auto function_variable= std::get_if<const FunctionVariable*>( &item ) )
+		return (*function_variable)->is_conversion_constructor;
+	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
+		return template_function_preparation_result->function_template->syntax_element->function_->is_conversion_constructor_;
+	else
+	{
+		U_ASSERT(false);
+		return false;
+	}
+}
+
 const FunctionVariable* CodeBuilder::FinalizeSelectedFunction(
 	const OverloadingResolutionItem& item,
 	CodeBuilderErrorsContainer& errors_container,
@@ -843,7 +856,11 @@ bool CodeBuilder::HasConversionConstructor(
 	llvm::SmallVector<OverloadingResolutionItem, 8> matched_functions;
 	FetchMatchedOverloadedFunctions( *constructors, actual_args, false, errors_container, src_loc, false, matched_functions );
 
-	return !matched_functions.empty();
+	for( const OverloadingResolutionItem& item : matched_functions )
+		if( OverloadingResolutionItemIsConversionConstructor( item ) )
+			return true;
+
+	return false;
 }
 
 const CodeBuilder::TemplateTypePreparationResult* CodeBuilder::SelectTemplateType(

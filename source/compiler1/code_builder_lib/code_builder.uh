@@ -835,6 +835,7 @@ private:
 	fn OverloadingResolutionItemGetParamExtendedType( mut this, OverloadingResolutionItem& item, size_type param_index ) : VariableTypeExtended;
 	fn OverloadingResolutionItemGetTemplateSignatureParam( mut this, OverloadingResolutionItem& item, size_type param_index ) : TemplateSignatureParam;
 	fn OverloadingResolutionItemIsThisCall( mut this, OverloadingResolutionItem& item ) : bool;
+	fn OverloadingResolutionItemIsConversionConstructor( mut this, OverloadingResolutionItem& item ) : bool;
 
 	// This call may trigger template function building.
 	fn FinalizeSelectedFunction(

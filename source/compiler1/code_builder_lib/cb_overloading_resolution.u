@@ -544,6 +544,19 @@ fn CodeBuilder::OverloadingResolutionItemIsThisCall( mut this, OverloadingResolu
 	halt;
 }
 
+fn CodeBuilder::OverloadingResolutionItemIsConversionConstructor( mut this, OverloadingResolutionItem& item ) : bool
+{
+	if_var( &variable : item.get</FunctionVariable/>() )
+	{
+		return variable.is_conversion_constructor;
+	}
+	if_var( &template_function : item.get</TemplateFunctionPreparationResult/>() )
+	{
+		return template_function.function_template.deref().syntax_element.deref().function.deref().is_conversion_constructor;
+	}
+	halt;
+}
+
 fn CodeBuilder::FinalizeSelectedFunction(
 	mut this,
 	OverloadingResolutionItem& item,
@@ -927,7 +940,15 @@ fn CodeBuilder::HasConversionConstructor( mut this, NamesScopePtr& names_scope, 
 
 	var ust::vector</OverloadingResolutionItem/> mut match_functions;
 	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, match_functions );
-	return !match_functions.empty();
+
+	foreach( &item : match_functions )
+	{
+		if( OverloadingResolutionItemIsConversionConstructor( item ) )
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 fn CodeBuilder::SelectMoreSpecializedTemplate(
