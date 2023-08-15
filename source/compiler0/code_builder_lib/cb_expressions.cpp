@@ -3128,7 +3128,7 @@ Value CodeBuilder::DoCallFunction(
 		if( param.value_type != ValueType::Value )
 		{
 			if( !ReferenceIsConvertible( expr->type, param.type, names.GetErrors(), call_src_loc ) &&
-				GetConversionConstructor( expr->type, param.type, names.GetErrors(), src_loc ) == nullptr )
+				!HasConversionConstructor( expr->type, param.type, names.GetErrors(), src_loc ) )
 			{
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, param.type, expr->type );
 				continue;
@@ -3229,7 +3229,7 @@ Value CodeBuilder::DoCallFunction(
 			function_context.variables_state.AddNode( args_nodes[arg_number] );
 
 			if( !ReferenceIsConvertible( expr->type, param.type, names.GetErrors(), call_src_loc ) &&
-				GetConversionConstructor( expr->type, param.type, names.GetErrors(), src_loc ) == nullptr )
+				!HasConversionConstructor( expr->type, param.type, names.GetErrors(), src_loc ) )
 			{
 				REPORT_ERROR( TypesMismatch, names.GetErrors(), src_loc, param.type, expr->type );
 				continue;

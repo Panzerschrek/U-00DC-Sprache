@@ -381,8 +381,6 @@ struct FunctionVariable
 	ust::shared_ptr_final_nullable</ Synt::Function /> prototype_syntax_element;
 	ust::shared_ptr_final_nullable</ Synt::Function /> body_syntax_element;
 
-	ust::shared_ptr_final_nullable</ FunctionTemplate /> base_template;
-
 	fn VirtuallyEquals( this, FunctionVariable& other ) : bool;
 }
 
@@ -676,6 +674,9 @@ public:
 		ust::vector</ TemplateSignatureParam /> params;
 	}
 
+	fn constructor( mut this, TemplateSignatureParam& other )= default;
+	op=( mut this, TemplateSignatureParam& other )= default;
+
 	fn conversion_constructor( TemplateParam mut template_param );
 	fn conversion_constructor( TypeParam mut type_param );
 	fn conversion_constructor( VariableParam mut variable_param );
@@ -703,12 +704,12 @@ private:
 		TemplateParam,
 		TypeParam,
 		VariableParam,
-		ust::box</ ArrayTypeParam />,
-		ust::box</ TupleTypeParam />,
-		ust::box</ RawPointerTypeParam />,
-		ust::box</ FunctionTypeParam />,
-		ust::box</ CoroutineTypeParam />,
-		ust::box</ SpecializedTemplateParam />
+		ust::shared_ptr_final</ ArrayTypeParam />,
+		ust::shared_ptr_final</ TupleTypeParam />,
+		ust::shared_ptr_final</ RawPointerTypeParam />,
+		ust::shared_ptr_final</ FunctionTypeParam />,
+		ust::shared_ptr_final</ CoroutineTypeParam />,
+		ust::shared_ptr_final</ SpecializedTemplateParam />
 		] />;
 
 	Container something_;
@@ -748,13 +749,15 @@ public:
 
 	// TODO - rework this class. It is ugly.
 
+	// Construct from value (make shared ptr in-place).
 	template</ type T />
-	fn enable_if( !IsSharedPtr</T/>::value ) conversion_constructor( T mut t )
+	fn conversion_constructor( T mut t )
 		( something_( ust::make_shared_ptr(move(t))) )
 	{}
 
-	template</ type T />
-	fn enable_if( IsSharedPtr</T/>::value ) conversion_constructor( T mut t )
+	// Use existing shared_ptr.
+	template</ type T, bool is_nullable, bool is_mutable />
+	fn conversion_constructor( ust::shared_ptr_base</T, is_nullable, is_mutable/> mut t )
 		( something_(move(t)) )
 	{}
 
@@ -771,10 +774,6 @@ public:
 
 	// Compare shared pointers
 	op==( NamesScopeValue&l, NamesScopeValue& r ) : bool = default;
-
-private:
-	template</type T/> struct IsSharedPtr{ auto value= false; }
-	template</type T, bool is_nullable, bool is_mutable/> struct IsSharedPtr</ ust::shared_ptr_base</T, is_nullable, is_mutable/> /> { auto value= true; }
 
 public:
 	ust::variant</ tup[

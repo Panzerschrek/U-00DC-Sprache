@@ -48,9 +48,6 @@ struct FunctionVariable final
 
 	FunctionType type;
 
-	// For functions generated from templates.
-	FunctionTemplatePtr base_template;
-
 	uint32_t virtual_table_index= ~0u; // For virtual functions number in virtual functions table in class of first arg(this).
 	bool have_body= false;
 	bool is_this_call= false;

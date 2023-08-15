@@ -634,7 +634,7 @@ private:
 	fn EvaluateTemplateTypeArgs(
 		mut this,
 		TypeTemplatePtr& type_template_ptr,
-		TemplateArgsFinished& template_args ) : ust::optional</TemplateTypeArgsEvaluationResult/>;
+		ust::array_view_imut</TemplateArgFinished/> template_args ) : ust::optional</TemplateTypeArgsEvaluationResult/>;
 
 	fn FinishTypeTemplateGeneration(
 		mut this,
@@ -642,22 +642,19 @@ private:
 		NamesScopePtr& instantiation_point_names_scope,
 		SrcLoc& template_instantiation_src_loc ) : ust::optional</Type/>;
 
-	fn GenTemplateFunction(
-		mut this,
-		FunctionTemplatePtr& function_template_ptr,
-		ust::array_view_imut</VariableTypeExtended/> mut args,
-		bool first_arg_is_this,
-		NamesScopePtr& instantiation_point_names_scope,
-		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
+	struct TemplateFunctionPreparationResult
+	{
+		FunctionTemplatePtr function_template;
+		NamesScopeMutPtr args_names_scope; // Where we place template arguments
+	}
 
-	fn GenTemplateFunction(
+	fn PrepareTemplateFunction(
 		mut this,
 		FunctionTemplatePtr& function_template_ptr,
-		TemplateArgsFinished& known_template_args,
-		ust::array_view_imut</VariableTypeExtended/> mut args,
+		ust::array_view_imut</TemplateArgFinished/> known_template_args,
+		ust::array_view_imut</VariableTypeExtended/> args,
 		bool first_arg_is_this,
-		NamesScopePtr& instantiation_point_names_scope,
-		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
+		SrcLoc& src_loc ) : ust::optional</TemplateFunctionPreparationResult/>;
 
 	fn FinishFunctionTemplateParametrization(
 		mut this,
@@ -764,7 +761,7 @@ private:
 	fn FillKnownFunctionTemplateArgsIntoNamespace(
 		mut this,
 		FunctionTemplate& function_template,
-		TemplateArgsFinished& known_template_args,
+		ust::array_view_imut</TemplateArgFinished/> known_template_args,
 		NamesScopeMutPtr& target_namespace );
 
 	fn AddNewTemplateThing( mut this, ust::string8 mut key, NamesScopePtr& thing );
@@ -833,7 +830,23 @@ private:
 		NamesScopePtr& names_scope,
 		SrcLoc& src_loc ) : bool;
 
-	fn GetOverloadedFunctionImpl(
+	type OverloadingResolutionItem= ust::variant</ tup[ FunctionVariable, TemplateFunctionPreparationResult ] />;
+
+	fn OverloadingResolutionItemGetParamExtendedType( mut this, OverloadingResolutionItem& item, size_type param_index ) : VariableTypeExtended;
+	fn OverloadingResolutionItemGetTemplateSignatureParam( mut this, OverloadingResolutionItem& item, size_type param_index ) : TemplateSignatureParam;
+	fn OverloadingResolutionItemIsThisCall( mut this, OverloadingResolutionItem& item ) : bool;
+	fn OverloadingResolutionItemIsConversionConstructor( mut this, OverloadingResolutionItem& item ) : bool;
+
+	// This call may trigger template function building.
+	fn FinalizeSelectedFunction(
+		mut this,
+		OverloadingResolutionItem& item,
+		NamesScopePtr& names_scope, // Needed only for errors reporting
+		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
+
+	// Fetch all functions (including instantiations of function template), that match given args.
+	// Adds functions into output container (but does not clear it).
+	fn FetchMatchedOverloadedFunctions(
 		mut this,
 		FunctionsSet& functions_set,
 		ust::array_view_imut</VariableTypeExtended/> actual_args,
@@ -841,8 +854,19 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		SrcLoc& src_loc,
 		bool allow_type_conversions,
-		bool produce_errors ) : ust::optional</FunctionVariable/>;
+		ust::vector</OverloadingResolutionItem/> &mut out_matched_functions );
 
+	// Select single (best) matched overloaded function.
+	// Returns index of function in input array or invalid index in case of error.
+	fn SelectOverloadedFunction(
+		mut this,
+		ust::array_view_imut</VariableTypeExtended/> actual_args,
+		bool first_actual_arg_is_this,
+		NamesScopePtr& names_scope, // Needed only for errors reporting
+		SrcLoc& src_loc,
+		ust::array_view_imut</OverloadingResolutionItem/> matched_functions ) : size_type;
+
+	// Fetch and select overloaded function.
 	fn GetOverloadedFunction(
 		mut this,
 		FunctionsSet& functions_set,
@@ -851,6 +875,7 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
+	// Fetch and select overloaded operator.
 	fn GetOverloadedOperator(
 		mut this,
 		ust::array_view_imut</VariableTypeExtended/> args,
@@ -858,7 +883,11 @@ private:
 		NamesScopePtr& names_scope, // Needed only for errors reporting
 		SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
 
+	// Fetch and select overloaded conversion constructor.
 	fn GetConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : ust::optional</FunctionVariable/>;
+
+	// Check existance of conversion constuctor, but do not trigger its building.
+	fn HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : bool;
 
 	// Returns index of more specialized or ~0s
 	fn SelectMoreSpecializedTemplate(

@@ -178,6 +178,32 @@ U_TEST( IndexationOperatorHaveFirstArgumentOfNonparentClass )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 4u );
 }
 
+U_TEST( CanNotSelectOverloadedOperator )
+{
+	static const char c_program_text[]=
+	R"(
+		struct A
+		{
+			op+(A a, B b) : i32;
+		}
+		struct B
+		{
+			op+(A a, B b) : i32;
+		}
+		fn Foo()
+		{
+			var A a;
+			var B b;
+			auto x = a + b; // Error - both classes contain overloaded operator with same signature. Can't select one of them.
+		}
+	)";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors,  CodeBuilderErrorCode::TooManySuitableOverloadedFunctions, 14 ) );
+}
+
 } // namespace
 
 } // namespace U

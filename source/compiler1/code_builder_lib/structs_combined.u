@@ -1057,27 +1057,27 @@ fn TemplateSignatureParam::conversion_constructor( VariableParam mut variable_pa
 {}
 
 fn TemplateSignatureParam::conversion_constructor( ArrayTypeParam mut array_type_param )
-	( something_( ust::make_box( move(array_type_param) ) ) )
+	( something_( ust::make_shared_ptr_final( move(array_type_param) ) ) )
 {}
 
 fn TemplateSignatureParam::conversion_constructor( TupleTypeParam mut tuple_type_param )
-	( something_( ust::make_box( move(tuple_type_param) ) ) )
+	( something_( ust::make_shared_ptr_final( move(tuple_type_param) ) ) )
 {}
 
 fn TemplateSignatureParam::conversion_constructor( RawPointerTypeParam mut raw_pointer_type_param )
-	( something_( ust::make_box( move(raw_pointer_type_param) ) ) )
+	( something_( ust::make_shared_ptr_final( move(raw_pointer_type_param) ) ) )
 {}
 
 fn TemplateSignatureParam::conversion_constructor( FunctionTypeParam mut function_type_param )
-	( something_( ust::make_box( move(function_type_param) ) ) )
+	( something_( ust::make_shared_ptr_final( move(function_type_param) ) ) )
 {}
 
 fn TemplateSignatureParam::conversion_constructor( CoroutineTypeParam mut coroutine_type_param )
-	( something_( ust::make_box( move(coroutine_type_param) ) ) )
+	( something_( ust::make_shared_ptr_final( move(coroutine_type_param) ) ) )
 {}
 
 fn TemplateSignatureParam::conversion_constructor( SpecializedTemplateParam mut specialized_template_param )
-	( something_( ust::make_box( move(specialized_template_param) ) ) )
+	( something_( ust::make_shared_ptr_final( move(specialized_template_param) ) ) )
 {}
 
 fn TemplateSignatureParam::GetTemplateParam(this) : ust::optional_ref_imut</ TemplateParam />'this'
@@ -1097,7 +1097,7 @@ fn TemplateSignatureParam::GetVariableParam(this) : ust::optional_ref_imut</ Var
 
 fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ ArrayTypeParam />'this'
 {
-	if_var( &array_type_param : something_.get</ ust::box</ArrayTypeParam/> />() )
+	if_var( &array_type_param : something_.get</ ust::shared_ptr_final</ArrayTypeParam/> />() )
 	{
 		return ust::optional_ref_imut</ ArrayTypeParam />(array_type_param.deref());
 	}
@@ -1107,7 +1107,7 @@ fn TemplateSignatureParam::GetArrayTypeParam(this) : ust::optional_ref_imut</ Ar
 
 fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ TupleTypeParam />'this'
 {
-	if_var( &tuple_type_param : something_.get</ ust::box</TupleTypeParam/> />() )
+	if_var( &tuple_type_param : something_.get</ ust::shared_ptr_final</TupleTypeParam/> />() )
 	{
 		return ust::optional_ref_imut</ TupleTypeParam />(tuple_type_param.deref());
 	}
@@ -1117,7 +1117,7 @@ fn TemplateSignatureParam::GetTupleTypeParam(this) : ust::optional_ref_imut</ Tu
 
 fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut</ RawPointerTypeParam />'this'
 {
-	if_var( &raw_pointer_type_param : something_.get</ ust::box</RawPointerTypeParam/> />() )
+	if_var( &raw_pointer_type_param : something_.get</ ust::shared_ptr_final</RawPointerTypeParam/> />() )
 	{
 		return ust::optional_ref_imut</ RawPointerTypeParam />(raw_pointer_type_param.deref());
 	}
@@ -1127,7 +1127,7 @@ fn TemplateSignatureParam::GetRawPointerTypeParam(this) : ust::optional_ref_imut
 
 fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</ FunctionTypeParam />'this'
 {
-	if_var( &function_type_param : something_.get</ ust::box</FunctionTypeParam/> />() )
+	if_var( &function_type_param : something_.get</ ust::shared_ptr_final</FunctionTypeParam/> />() )
 	{
 		return ust::optional_ref_imut</ FunctionTypeParam />(function_type_param.deref());
 	}
@@ -1137,7 +1137,7 @@ fn TemplateSignatureParam::GetFunctionTypeParam(this) : ust::optional_ref_imut</
 
 fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut</ CoroutineTypeParam />'this'
 {
-	if_var( &coroutine_type_param : something_.get</ ust::box</CoroutineTypeParam/> />() )
+	if_var( &coroutine_type_param : something_.get</ ust::shared_ptr_final</CoroutineTypeParam/> />() )
 	{
 		return ust::optional_ref_imut</ CoroutineTypeParam />(coroutine_type_param.deref());
 	}
@@ -1147,7 +1147,7 @@ fn TemplateSignatureParam::GetCoroutineTypeParam(this) : ust::optional_ref_imut<
 
 fn TemplateSignatureParam::GetSpecializedTemplateParam(this) : ust::optional_ref_imut</ SpecializedTemplateParam />'this'
 {
-	if_var( &specialized_template_param : something_.get</ ust::box</SpecializedTemplateParam/> />() )
+	if_var( &specialized_template_param : something_.get</ ust::shared_ptr_final</SpecializedTemplateParam/> />() )
 	{
 		return ust::optional_ref_imut</ SpecializedTemplateParam />(specialized_template_param.deref());
 	}
@@ -1171,12 +1171,12 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 	{
 		type LeftT= typeof(l_t);
 		static_if(
-			ust::is_same_type</ LeftT, ust::box</ArrayTypeParam/> />() ||
-			ust::is_same_type</ LeftT, ust::box</TupleTypeParam/> />() ||
-			ust::is_same_type</ LeftT, ust::box</RawPointerTypeParam/> />() ||
-			ust::is_same_type</ LeftT, ust::box</FunctionTypeParam/> />() ||
-			ust::is_same_type</ LeftT, ust::box</CoroutineTypeParam/> />() ||
-			ust::is_same_type</ LeftT, ust::box</SpecializedTemplateParam/> />() )
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</ArrayTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</TupleTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</RawPointerTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</FunctionTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</CoroutineTypeParam/> />() ||
+			ust::is_same_type</ LeftT, ust::shared_ptr_final</SpecializedTemplateParam/> />() )
 		{
 			return l_t.deref() == r.something_.get</ LeftT />().try_deref().deref();
 		}

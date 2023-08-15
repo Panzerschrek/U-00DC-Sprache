@@ -9,6 +9,8 @@ namespace U
 namespace
 {
 
+const TemplateSignatureParam g_dummy_template_signature_param = TemplateSignatureParam::TypeParam();
+
 // "Class" of function argument in terms of overloading.
 enum class ArgOverloadingClass
 {
@@ -294,7 +296,6 @@ ConversionsCompareResult CompareConversions(
 	const TemplateSignatureParam& dst_right_template_parameter )
 {
 	const ConversionsCompareResult conversions_compare= CompareConversions( src, dst_left, dst_right );
-	const ConversionsCompareResult template_specialization_compare= TemplateSpecializationCompare( dst_left_template_parameter, dst_right_template_parameter );
 
 	if( conversions_compare == ConversionsCompareResult::Incomparable )
 		return ConversionsCompareResult::Incomparable;
@@ -302,7 +303,7 @@ ConversionsCompareResult CompareConversions(
 		conversions_compare == ConversionsCompareResult::RightIsBetter )
 		return conversions_compare;
 	// Compare template specializations, only if type conversions are not same.
-	return template_specialization_compare;
+	return TemplateSpecializationCompare( dst_left_template_parameter, dst_right_template_parameter );
 }
 
 } // namespace
@@ -373,19 +374,118 @@ bool CodeBuilder::ApplyOverloadedFunction(
 	return true;
 }
 
-const FunctionVariable* CodeBuilder::GetOverloadedFunction(
+FunctionType::Param CodeBuilder::OverloadingResolutionItemGetParamExtendedType( const OverloadingResolutionItem& item, const size_t param_index )
+{
+	if( const auto function_variable= std::get_if<const FunctionVariable*>( &item ) )
+	{
+		U_ASSERT( param_index < (*function_variable)->type.params.size() );
+		return (*function_variable)->type.params[ param_index ];
+	}
+	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
+	{
+		const Synt::FunctionParams& params= template_function_preparation_result->function_template->syntax_element->function_->type_.params_;
+		U_ASSERT( param_index < params.size() );
+		const Synt::FunctionParam& param= params[ param_index ];
+
+		FunctionType::Param result;
+		if( param.reference_modifier_ == ReferenceModifier::Reference || param.name_ == Keyword( Keywords::this_ ) )
+			result.value_type= param.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		else
+			result.value_type= ValueType::Value;
+
+		if( param.name_ == Keyword( Keywords::this_ ) )
+		{
+			const auto base_class= template_function_preparation_result->function_template->base_class;
+			if( base_class != nullptr )
+				result.type= base_class;
+			else
+				result.type= invalid_type_; // May be in case of error.
+		}
+		else
+			result.type= PrepareType( param.type_, *template_function_preparation_result->template_args_namespace, *global_function_context_ );
+
+		return result;
+	}
+	else
+	{
+		U_ASSERT(false);
+		return FunctionType::Param();
+	}
+}
+
+const TemplateSignatureParam& CodeBuilder::OverloadingResolutionItemGetTemplateSignatureParam( const OverloadingResolutionItem& item, const size_t param_index )
+{
+	if( std::get_if<const FunctionVariable*>( &item ) != nullptr )
+		return g_dummy_template_signature_param;
+	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
+	{
+		const auto& params= template_function_preparation_result->function_template->signature_params;
+		U_ASSERT( param_index < params.size() );
+		return params[ param_index ];
+	}
+	else
+	{
+		U_ASSERT(false);
+		return g_dummy_template_signature_param;
+	}
+}
+
+bool CodeBuilder::OverloadingResolutionItemIsThisCall( const OverloadingResolutionItem& item )
+{
+	if( const auto function_variable= std::get_if<const FunctionVariable*>( &item ) )
+	{
+		return (*function_variable)->is_this_call;
+	}
+	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
+	{
+		const Synt::FunctionParams& params= template_function_preparation_result->function_template->syntax_element->function_->type_.params_;
+		return !params.empty() && params.front().name_ == Keyword( Keywords::this_ );
+	}
+	else
+	{
+		U_ASSERT(false);
+		return false;
+	}
+}
+
+bool CodeBuilder::OverloadingResolutionItemIsConversionConstructor( const OverloadingResolutionItem& item )
+{
+	if( const auto function_variable= std::get_if<const FunctionVariable*>( &item ) )
+		return (*function_variable)->is_conversion_constructor;
+	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
+		return template_function_preparation_result->function_template->syntax_element->function_->is_conversion_constructor_;
+	else
+	{
+		U_ASSERT(false);
+		return false;
+	}
+}
+
+const FunctionVariable* CodeBuilder::FinalizeSelectedFunction(
+	const OverloadingResolutionItem& item,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	if( const auto function_variable= std::get_if<const FunctionVariable*>( &item ) )
+		return *function_variable;
+	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
+		return FinishTemplateFunctionGeneration( errors_container, src_loc, *template_function_preparation_result );
+	else
+	{
+		U_ASSERT(false);
+		return nullptr;
+	}
+}
+
+void CodeBuilder::FetchMatchedOverloadedFunctions(
 	const OverloadedFunctionsSet& functions_set,
 	const llvm::ArrayRef<FunctionType::Param> actual_args,
 	const bool first_actual_arg_is_this,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
-	const bool produce_errors,
-	const bool enable_type_conversions )
+	const bool enable_type_conversions,
+	llvm::SmallVectorImpl<OverloadingResolutionItem>& out_match_functions )
 {
-	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
-
-	llvm::SmallVector<const FunctionVariable*, 8> match_functions;
-
 	// First, found functions, compatible with given arguments.
 	for( const FunctionVariable& function : functions_set.functions )
 	{
@@ -409,7 +509,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 		if( function_type.params.size() != actial_arg_count )
 			continue;
 
-		bool all_args_is_compatible= true;
+		bool all_args_are_compatible= true;
 		for( uint32_t i= 0u; i < actial_arg_count; i++ )
 		{
 			const ArgOverloadingClass arg_overloading_class= GetArgOverloadingClass( actual_args_begin[i] );
@@ -423,9 +523,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				// We can not just skip this function, if types are incomplete, because it will break "template instantiation equality rule".
 				if( !( EnsureTypeComplete( function_type.params[i].type ) && EnsureTypeComplete( actual_args_begin[i].type ) ) )
 				{
-					if( produce_errors )
-						REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc, FunctionParamsToString(actual_args) );
-					all_args_is_compatible= false;
+					all_args_are_compatible= false;
 					break;
 				}
 
@@ -435,11 +533,11 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				else if(
 					enable_type_conversions && parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
 					!function.is_conversion_constructor && !( function.is_constructor && IsCopyConstructor( function_type, function_type.params.front().type ) ) && // Disable convesin constructors call for copy constructors and conversion constructors
-					GetConversionConstructor( actual_args_begin[i].type, function_type.params[i].type, errors_container, src_loc ) != nullptr )
+					HasConversionConstructor( actual_args_begin[i].type, function_type.params[i].type, errors_container, src_loc ) )
 				{}
 				else
 				{
-					all_args_is_compatible= false;
+					all_args_are_compatible= false;
 					break;
 				}
 			}
@@ -450,7 +548,7 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 				arg_overloading_class != ArgOverloadingClass::MutalbeReference )
 			{
 				// We can only bind nonconst-reference arg to nonconst-reference parameter.
-				all_args_is_compatible= false;
+				all_args_are_compatible= false;
 				break;
 			}
 			else if( parameter_overloading_class == ArgOverloadingClass::ImmutableReference &&
@@ -460,70 +558,66 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 
 		} // for candidate function args.
 
-
-		if( all_args_is_compatible )
-			match_functions.push_back( &function );
+		if( all_args_are_compatible )
+			out_match_functions.push_back( &function );
 
 	} // for functions
 
 	// Try select also template functions.
 	for( const FunctionTemplatePtr& function_template_ptr : functions_set.template_functions )
 	{
-		const FunctionVariable* const generated_function=
-			GenTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this );
-		if( generated_function != nullptr )
-			match_functions.push_back( generated_function );
+		// Only prepare template function.
+		// Finalize (and trigger its build) later - only if this function is selected.
+		TemplateFunctionPreparationResult result= PrepareTemplateFunction( errors_container, src_loc, function_template_ptr, actual_args, first_actual_arg_is_this );
+		if( result.function_template != nullptr )
+			out_match_functions.push_back( std::move(result) );
 	}
+}
 
-	if( match_functions.empty() )
-	{
-		if( produce_errors )
-			REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc, FunctionParamsToString(actual_args) );
-		return nullptr;
-	}
-	else if( match_functions.size() == 1u )
-		return match_functions.front();
+const CodeBuilder::OverloadingResolutionItem* CodeBuilder::SelectOverloadedFunction(
+	llvm::ArrayRef<FunctionType::Param> actual_args,
+	const bool first_actual_arg_is_this,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc,
+	const llvm::ArrayRef<OverloadingResolutionItem> matched_functions )
+{
+	if( matched_functions.size() == 1u )
+		return &matched_functions.front();
 
-	llvm::SmallVector<bool, 16> best_functions( match_functions.size(), true );
-
-	const TemplateSignatureParam dummy_type_param = TemplateSignatureParam::TypeParam();
+	llvm::SmallVector<bool, 16> best_functions( matched_functions.size(), true );
 
 	// For each argument search functions, which is better, than another functions.
 	// For NOT better (four current arg) functions set flags to false.
 	for( size_t arg_n= 0; arg_n < actual_args.size(); ++arg_n )
 	{
-		for( const FunctionVariable* const function_l : match_functions )
+		for( const OverloadingResolutionItem& function_l : matched_functions )
 		{
 			size_t l_arg_n= arg_n;
-			if( first_actual_arg_is_this && !function_l->is_this_call )
+			if( first_actual_arg_is_this && !OverloadingResolutionItemIsThisCall(function_l) )
 			{
 				if( arg_n == 0 )
 					continue;
 				l_arg_n= arg_n - 1u;
 			}
 
-			const FunctionType& l_type= function_l->type;
-
 			bool is_best_function_for_current_arg= true;
-			for( const FunctionVariable* const function_r : match_functions )
+			for( const OverloadingResolutionItem& function_r : matched_functions )
 			{
 				size_t r_arg_n= arg_n;
-				if( first_actual_arg_is_this && !function_r->is_this_call )
+				if( first_actual_arg_is_this && !OverloadingResolutionItemIsThisCall(function_r) )
 				{
 					if( arg_n == 0 )
 						continue;
 					r_arg_n= arg_n - 1u;
 				}
 
-				const FunctionType& r_type= function_r->type;
-
 				const ConversionsCompareResult comp=
 					CompareConversions(
 						actual_args[arg_n],
-						l_type.params[l_arg_n],
-						r_type.params[r_arg_n],
-						function_l->base_template == nullptr ? dummy_type_param : function_l->base_template->signature_params[l_arg_n],
-						function_r->base_template == nullptr ? dummy_type_param : function_r->base_template->signature_params[r_arg_n] );
+						OverloadingResolutionItemGetParamExtendedType( function_l, l_arg_n ),
+						OverloadingResolutionItemGetParamExtendedType( function_r, r_arg_n ),
+						OverloadingResolutionItemGetTemplateSignatureParam( function_l, l_arg_n ),
+						OverloadingResolutionItemGetTemplateSignatureParam( function_r, r_arg_n ) );
 
 				if( comp == ConversionsCompareResult::Same || comp == ConversionsCompareResult::LeftIsBetter )
 					continue;
@@ -536,26 +630,24 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 			// Set best functions bits.
 			if( is_best_function_for_current_arg )
 			{
-				for( size_t func_n= 0u; func_n < match_functions.size(); ++func_n )
+				for( size_t func_n= 0u; func_n < matched_functions.size(); ++func_n )
 				{
-					const FunctionVariable function_r= *match_functions[func_n];
+					const OverloadingResolutionItem& function_r= matched_functions[func_n];
 					size_t r_arg_n= arg_n;
-					if( first_actual_arg_is_this && !function_r.is_this_call )
+					if( first_actual_arg_is_this && !OverloadingResolutionItemIsThisCall(function_r) )
 					{
 						if( arg_n == 0 )
 							continue;
 						r_arg_n= arg_n - 1u;
 					}
 
-					const FunctionType& r_type= function_r.type;
-
 					const ConversionsCompareResult comp=
 						CompareConversions(
 							actual_args[arg_n],
-							l_type.params[l_arg_n],
-							r_type.params[r_arg_n],
-							function_l->base_template == nullptr ? dummy_type_param : function_l->base_template->signature_params[l_arg_n],
-							function_r. base_template == nullptr ? dummy_type_param : function_r. base_template->signature_params[r_arg_n] );
+							OverloadingResolutionItemGetParamExtendedType( function_l, l_arg_n ),
+							OverloadingResolutionItemGetParamExtendedType( function_r, r_arg_n ),
+							OverloadingResolutionItemGetTemplateSignatureParam( function_l, l_arg_n ),
+							OverloadingResolutionItemGetTemplateSignatureParam( function_r, r_arg_n ) );
 
 					U_ASSERT( comp != ConversionsCompareResult::Incomparable && comp != ConversionsCompareResult::RightIsBetter );
 
@@ -567,13 +659,13 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	} // for args
 
 	// For succsess resolution we must get just one function with flag=true.
-	const FunctionVariable* selected_function= nullptr;
-	for( size_t func_n= 0u; func_n < match_functions.size(); ++func_n )
+	const OverloadingResolutionItem* selected_function= nullptr;
+	for( size_t func_n= 0u; func_n < matched_functions.size(); ++func_n )
 	{
 		if( best_functions[func_n] )
 		{
 			if( selected_function == nullptr )
-				selected_function= match_functions[func_n];
+				selected_function= &matched_functions[func_n];
 			else
 			{
 				selected_function= nullptr;
@@ -583,20 +675,45 @@ const FunctionVariable* CodeBuilder::GetOverloadedFunction(
 	}
 
 	if( selected_function == nullptr )
-		if( produce_errors )
-			REPORT_ERROR( TooManySuitableOverloadedFunctions, errors_container, src_loc, FunctionParamsToString(actual_args) );
+		REPORT_ERROR( TooManySuitableOverloadedFunctions, errors_container, src_loc, FunctionParamsToString(actual_args) );
 
 	return selected_function;
 }
 
+const FunctionVariable* CodeBuilder::GetOverloadedFunction(
+	const OverloadedFunctionsSet& functions_set,
+	const llvm::ArrayRef<FunctionType::Param> actual_args,
+	const bool first_actual_arg_is_this,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	U_ASSERT( !( first_actual_arg_is_this && actual_args.empty() ) );
+
+	llvm::SmallVector<OverloadingResolutionItem, 8> matched_functions;
+	FetchMatchedOverloadedFunctions( functions_set, actual_args, first_actual_arg_is_this, errors_container, src_loc, true, matched_functions );
+	if( matched_functions.empty() )
+	{
+		REPORT_ERROR( CouldNotSelectOverloadedFunction, errors_container, src_loc, FunctionParamsToString(actual_args) );
+		return nullptr;
+	}
+
+	if( const auto item= SelectOverloadedFunction( actual_args, first_actual_arg_is_this, errors_container, src_loc, matched_functions ) )
+		return FinalizeSelectedFunction( *item, errors_container, src_loc );
+
+	return nullptr;
+}
+
 const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	const llvm::ArrayRef<FunctionType::Param> actual_args,
-	OverloadedOperator op,
+	const OverloadedOperator op,
 	NamesScope& names,
 	const SrcLoc& src_loc )
 {
 	const std::string_view op_name= OverloadedOperatorToString( op );
 
+	llvm::SmallVector<OverloadingResolutionItem, 8> matched_functions;
+	llvm::SmallVector<ClassPtr, 8> processed_classes;
+	llvm::SmallVector< std::pair<ClassPtr, ClassMemberVisibility>, 8> classes_visibility;
 	for( const FunctionType::Param& arg : actual_args )
 	{
 		if( (op == OverloadedOperator::Indexing || op == OverloadedOperator::Call) && &arg != &actual_args.front() )
@@ -610,6 +727,20 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 				return nullptr;
 			}
 
+			// Process each class exactly once - in order to fetch only single functions set for each class, even if arguments have same class type.
+			bool already_processed= false;
+			for( const ClassPtr prev_class : processed_classes )
+			{
+				if( class_ == prev_class )
+				{
+					already_processed= true;
+					break;
+				}
+			}
+			if( already_processed )
+				continue;
+			processed_classes.push_back( class_ );
+
 			const auto value_in_class= ResolveClassValue( class_, op_name );
 			if( value_in_class.first == nullptr )
 				continue;
@@ -618,13 +749,29 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 			U_ASSERT( operators_set != nullptr ); // If we found something in names map with operator name, it must be operator.
 			GlobalThingBuildFunctionsSet( *class_->members, *operators_set, false ); // Make sure functions set is complete.
 
-			const FunctionVariable* const func= GetOverloadedFunction( *operators_set, actual_args, false, names.GetErrors(), src_loc, false );
+			const size_t prev_size= matched_functions.size();
+			FetchMatchedOverloadedFunctions( *operators_set, actual_args, false, names.GetErrors(), src_loc, true, matched_functions );
+			const size_t new_size= matched_functions.size();
+
+			for( size_t i= prev_size; i < new_size; ++i )
+				classes_visibility.push_back( std::make_pair( class_, value_in_class.second ) );
+		}
+	}
+
+	U_ASSERT( classes_visibility.size() == matched_functions.size() );
+
+	if( !matched_functions.empty() )
+	{
+		if( const auto item= SelectOverloadedFunction( actual_args, false, names.GetErrors(), src_loc, matched_functions ) )
+		{
+			const FunctionVariable* const func= FinalizeSelectedFunction( *item, names.GetErrors(), src_loc );
 			if( func != nullptr )
 			{
 				// Check access rights after function selection.
-				if( names.GetAccessFor( arg.type.GetClassType() ) < value_in_class.second )
+				const auto& visibility= classes_visibility[ size_t( item - matched_functions.data() ) ];
+				const ClassPtr class_= visibility.first;
+				if( names.GetAccessFor( class_ ) < visibility.second )
 					REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), src_loc, op_name, class_->members->GetThisNamespaceName() );
-
 				return func;
 			}
 		}
@@ -633,26 +780,38 @@ const FunctionVariable* CodeBuilder::GetOverloadedOperator(
 	return nullptr;
 }
 
+OverloadedFunctionsSetPtr CodeBuilder::GetConstructors(
+	const Type& type,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	if( !EnsureTypeComplete( type ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, type );
+		return nullptr;
+	}
+	const Class* const class_type= type.GetClassType();
+	if( class_type == nullptr )
+		return nullptr;
+
+	const NamesScopeValue* const constructors_value= class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
+	if( constructors_value == nullptr )
+		return nullptr;
+
+	return constructors_value->value.GetFunctionsSet();
+}
+
 const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	const Type& src_type,
 	const Type& dst_type,
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc )
 {
-	if( !EnsureTypeComplete( dst_type ) )
-	{
-		REPORT_ERROR( UsingIncompleteType, errors_container, src_loc, dst_type );
-		return nullptr;
-	}
-	const Class* const dst_class_type= dst_type.GetClassType();
-	if( dst_class_type == nullptr )
+	const OverloadedFunctionsSetPtr constructors= GetConstructors( dst_type, errors_container, src_loc );
+	if( constructors == nullptr )
 		return nullptr;
 
-	const NamesScopeValue* const constructors_value= dst_class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) );
-	if( constructors_value == nullptr )
-		return nullptr;
-
-	const OverloadedFunctionsSet& constructors= *constructors_value->value.GetFunctionsSet();
+	// TODO - what if conversion constructor is private?
 
 	FunctionType::Param actual_args[2];
 	actual_args[0u].type= dst_type;
@@ -660,11 +819,48 @@ const FunctionVariable* CodeBuilder::GetConversionConstructor(
 	actual_args[1u].type= src_type;
 	actual_args[1u].value_type= ValueType::ReferenceImut;
 
-	const FunctionVariable* const func= GetOverloadedFunction( constructors, actual_args, true, errors_container, src_loc, false, false );
-	if( func != nullptr && func->is_conversion_constructor )
-		return func;
+	llvm::SmallVector<OverloadingResolutionItem, 8> matched_functions;
+	FetchMatchedOverloadedFunctions( *constructors, actual_args, false, errors_container, src_loc, false, matched_functions );
+
+	if( !matched_functions.empty() )
+	{
+		if( const auto item= SelectOverloadedFunction( actual_args, true, errors_container, src_loc, matched_functions ) )
+		{
+			const auto func= FinalizeSelectedFunction( *item, errors_container, src_loc );
+			if( func != nullptr && func->is_conversion_constructor )
+				return func;
+		}
+	}
 
 	return nullptr;
+}
+
+bool CodeBuilder::HasConversionConstructor(
+	const Type& src_type,
+	const Type& dst_type,
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc )
+{
+	const OverloadedFunctionsSetPtr constructors= GetConstructors( dst_type, errors_container, src_loc );
+	if( constructors == nullptr )
+		return false;
+
+	FunctionType::Param actual_args[2];
+	actual_args[0u].type= dst_type;
+	actual_args[0u].value_type= ValueType::ReferenceMut;
+	actual_args[1u].type= src_type;
+	actual_args[1u].value_type= ValueType::ReferenceImut;
+
+	// Perform fetch of conversions constructors, but do not trigger its building.
+	// This is needed, since check for conversion constructor existence may be requested without further conversion constructor usage.
+	llvm::SmallVector<OverloadingResolutionItem, 8> matched_functions;
+	FetchMatchedOverloadedFunctions( *constructors, actual_args, false, errors_container, src_loc, false, matched_functions );
+
+	for( const OverloadingResolutionItem& item : matched_functions )
+		if( OverloadingResolutionItemIsConversionConstructor( item ) )
+			return true;
+
+	return false;
 }
 
 const CodeBuilder::TemplateTypePreparationResult* CodeBuilder::SelectTemplateType(
