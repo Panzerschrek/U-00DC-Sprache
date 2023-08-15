@@ -723,10 +723,22 @@ fn CodeBuilder::GetOverloadedOperator(
 	NamesScopePtr& names_scope,
 	SrcLoc& src_loc ) : ust::optional</FunctionVariable/>
 {
-	foreach( &arg : args )
+	var ust::vector</FunctionVariable/> mut match_functions;
+	var ust::vector</ClassTypePtr/> mut processed_classes;
+	foreach( &arg : args ) label for_args
 	{
 		if_var( &class_type : arg.t.GetClassType() )
 		{
+			// Process each class exactly once - in order to fetch only single functions set for each class, even if arguments have same class type.
+			foreach( &prev_class : processed_classes )
+			{
+				if( class_type == prev_class )
+				{
+					continue label for_args;
+				}
+			}
+			processed_classes.push_back( class_type );
+
 			auto overloaded_operator_str= OverloadedOperatorToString( operator );
 			if_var( &operators_value : ResolveClassValue( class_type, overloaded_operator_str ) )
 			{
@@ -735,21 +747,7 @@ fn CodeBuilder::GetOverloadedOperator(
 				{
 					BuildFunctionsSet( operators_value[2], functions_set_ptr.try_to_non_nullable(), false );
 
-					var ust::vector</FunctionVariable/> mut match_functions;
 					FetchMatchedOverloadedFunctions( functions_set_ptr.try_lock_imut().deref(), args, false, names_scope, src_loc, true, match_functions );
-					if( !match_functions.empty() )
-					{
-						if_var( &function_selected : SelectOverloadedFunction( args, false, names_scope, src_loc, match_functions.range() ) )
-						{
-							// Check access rights after function selection.
-							if( u32( names_scope.lock_imut().deref().GetAccessFor(class_type ) ) < u32( operators_value[1] ) )
-							{
-								REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, overloaded_operator_str, arg.t.ToString() )
-							}
-
-							return function_selected;
-						}
-					}
 				}
 			}
 		}
@@ -757,6 +755,21 @@ fn CodeBuilder::GetOverloadedOperator(
 		if( operator == OverloadedOperator::Indexing || operator == OverloadedOperator::Call )
 		{
 			break; // For indexing and call operators only check first argument.
+		}
+	}
+
+	if( !match_functions.empty() )
+	{
+		if_var( &function_selected : SelectOverloadedFunction( args, false, names_scope, src_loc, match_functions.range() ) )
+		{
+			// TODO - fix this.
+			// Check access rights after function selection.
+			//if( u32( names_scope.lock_imut().deref().GetAccessFor(class_type ) ) < u32( operators_value[1] ) )
+			//{
+			//	REPORT_ERROR( AccessingNonpublicClassMember, names_scope, src_loc, overloaded_operator_str, arg.t.ToString() )
+			//}
+
+			return function_selected;
 		}
 	}
 
