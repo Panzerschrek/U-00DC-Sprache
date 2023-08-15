@@ -52,3 +52,24 @@ def AutoConstexprFunctionTemplate_Test3():
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "StaticAssertExpressionIsNotConstant" )
 	assert( errors_list[0].src_loc.line == 9 )
+
+
+def AutoConstexprFunctionTemplate_Test4():
+	# Recursive template function can't be auto-constexpr, since self-call inside its body considered to be non-constexpr.
+	c_program_text= """
+		template</type T/>
+		fn Factorial( T t ) : T
+		{
+			if( t <= T(1) )
+			{
+				return 1;
+			}
+
+			return t * Factorial(t - T(1));
+		}
+
+		static_assert( Factorial(5) == 120 );
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "StaticAssertExpressionIsNotConstant", 13 ) )
