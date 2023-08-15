@@ -870,8 +870,7 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 		return ust::null_optional;
 	}
 
-	auto dst_class= dst.GetClassType().try_deref();
-	auto dst_class_members= dst_class.lock_imut().deref().members;
+	auto dst_class_members= dst.GetClassType().try_deref().lock_imut().deref().members;
 
 	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>();
 	auto constructors_lock= constructors_ptr.try_lock_imut();
@@ -904,8 +903,31 @@ fn CodeBuilder::GetConversionConstructor( mut this, NamesScopePtr& names_scope, 
 
 fn CodeBuilder::HasConversionConstructor( mut this, NamesScopePtr& names_scope, Type& dst, Type& src, SrcLoc& src_loc ) : bool
 {
-	// TODO - avoid building conversion constructor here.
-	return !GetConversionConstructor( names_scope, dst, src, src_loc ).empty();
+	if( !EnsureTypeComplete( dst ) )
+	{
+		REPORT_ERROR( UsingIncompleteType, names_scope, src_loc, dst )
+		return false;
+	}
+	if( dst.GetClassType().empty() )
+	{
+		return false;
+	}
+
+	auto dst_class_members= dst.GetClassType().try_deref().lock_imut().deref().members;
+
+	auto constructors_ptr= dst_class_members.lock_imut().deref().GetThisScopeValue( KeywordToString( Keyword::constructor_ ) ).try_deref().Get</FunctionsSet/>();
+	auto constructors_lock= constructors_ptr.try_lock_imut();
+	var FunctionsSet& constructors= constructors_lock.deref();
+
+	var [ VariableTypeExtended, 2 ] constructor_args
+	[
+		{ .t= dst, .value_type= ValueType::ReferenceMut },
+		{ .t= src, .value_type= ValueType::ReferenceImut },
+	];
+
+	var ust::vector</OverloadingResolutionItem/> mut match_functions;
+	FetchMatchedOverloadedFunctions( constructors, constructor_args, true, names_scope, src_loc, false, match_functions );
+	return !match_functions.empty();
 }
 
 fn CodeBuilder::SelectMoreSpecializedTemplate(
