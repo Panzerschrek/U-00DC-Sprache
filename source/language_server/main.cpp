@@ -5,7 +5,6 @@
 #include <llvm/Support/JSON.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
-#include "connection.hpp"
 #include "server.hpp"
 
 namespace U
