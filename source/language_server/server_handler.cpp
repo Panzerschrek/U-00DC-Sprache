@@ -33,6 +33,8 @@ void ServerHandler::HandleNotification( const std::string_view method, const Jso
 
 Json::Value ServerHandler::ProcessInitialize( const Json::Value& params )
 {
+	(void)params;
+
 	Json::Object result;
 
 	{

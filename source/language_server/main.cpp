@@ -25,7 +25,7 @@ void PlatformInit()
 	U_ASSERT(res != -1);
 }
 #else
-void platform_init() { }
+void PlatformInit() { }
 #endif
 
 int Main( int argc, const char* argv[] )

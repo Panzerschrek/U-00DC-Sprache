@@ -12,8 +12,8 @@ bool Connection::ReadMessageHeaderPart( MessageHeader& header )
 {
 	if( in_.peek() == '\r' )
 	{
-		const char c1= in_.get();
-		const char c2= in_.get();
+		const auto c1= in_.get();
+		const auto c2= in_.get();
 		U_ASSERT(c1 == '\r' && c2 == '\n');
 		return false;
 	}
@@ -35,13 +35,13 @@ bool Connection::ReadMessageHeaderPart( MessageHeader& header )
 		header.content_type.clear();
 		while( in_.peek() != '\r' )
 		{
-			header.content_type += in_.get();
+			header.content_type += char(in_.get());
 		}
 	}
 
 	// Assume good delimeters
-	const char c1= in_.get();
-	const char c2= in_.get();
+	const auto c1= in_.get();
+	const auto c2= in_.get();
 	U_ASSERT(c1 == '\r' && c2 == '\n');
 	return true;
 }
