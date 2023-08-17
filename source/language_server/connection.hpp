@@ -1,7 +1,8 @@
 #pragma once
-#include <string>
 #include <istream>
 #include <ostream>
+#include <string>
+#include <string_view>
 
 namespace U
 {
@@ -17,6 +18,7 @@ public:
 	{}
 
 	std::string Read();
+	void Write( std::string_view str );
 
 private:
 	struct MessageHeader

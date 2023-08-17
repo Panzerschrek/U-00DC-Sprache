@@ -65,6 +65,16 @@ std::string Connection::Read()
 	return content;
 }
 
+void Connection::Write( const std::string_view str )
+{
+	out_
+		<< "Content-Length: "
+		<< str.length()
+		<< "\r\n\r\n"
+		<< str
+		<< std::flush;
+}
+
 } // namespace LangServer
 
 } // namespace U

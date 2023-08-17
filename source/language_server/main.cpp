@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/JSON.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
@@ -47,6 +48,17 @@ int Main()
 			if( const auto request= ParseRequestMessage( value ) )
 			{
 				log_file << "request with id= " << request->id << " and method= " << request->method << std::endl;
+
+				llvm::json::Object response_obj;
+				response_obj["id"]= request->id;
+
+				std::string response_str;
+				llvm::raw_string_ostream stream(response_str);
+				stream << llvm::json::Object( std::move(response_obj) );
+				stream.flush();
+
+				log_file << "Response: " << response_str;
+				connection.Write( response_str );
 			}
 			else
 			{
