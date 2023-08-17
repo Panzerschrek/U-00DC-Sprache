@@ -13,6 +13,10 @@ struct RequestMessage
 	std::string method;
 };
 
+struct NotifyMessage
+{
+};
+
 } // namespace LangServer
 
 } // namespace U

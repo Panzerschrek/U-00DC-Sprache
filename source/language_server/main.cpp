@@ -6,7 +6,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
 #include "connection.hpp"
-#include "parser.hpp"
+#include "server.hpp"
 
 namespace U
 {
@@ -33,43 +33,12 @@ int Main()
 {
 	PlatformInit();
 
-	std::ofstream log_file( "C:/Users/user/Documents/Projects/other/U-00DC-Sprache/other/sprache_lang_server.txt", std::ios::app );
+	std::ofstream log_file( "C:/Users/user/Documents/Projects/other/U-00DC-Sprache/other/sprache_lang_server.txt", std::ios::app  );
 
-	Connection connection( std::cin, std::cout );
-	while(true)
-	{
-		const std::string message= connection.Read();
-		log_file << "Message: " << message << std::endl;
-		llvm::Expected<llvm::json::Value> parse_result= llvm::json::parse( message );
-		if( parse_result )
-		{
-			const llvm::json::Value& value= parse_result.get();
-			log_file << "JSON parsed successfully" << std::endl;
-			if( const auto request= ParseRequestMessage( value ) )
-			{
-				log_file << "request with id= " << request->id << " and method= " << request->method << std::endl;
+	ServerHandler handler;
 
-				llvm::json::Object response_obj;
-				response_obj["id"]= request->id;
-
-				std::string response_str;
-				llvm::raw_string_ostream stream(response_str);
-				stream << llvm::json::Object( std::move(response_obj) );
-				stream.flush();
-
-				log_file << "Response: " << response_str;
-				connection.Write( response_str );
-			}
-			else
-			{
-				log_file << "Request parse error" << std::endl;
-			}
-		}
-		else
-		{
-			log_file << "JSON parse error" << std::endl;
-		}
-	}
+	Server server( Connection( std::cin, std::cout ), handler, log_file );
+	server.Run();
 
 	return 0;
 }

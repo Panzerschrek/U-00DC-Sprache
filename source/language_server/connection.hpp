@@ -17,6 +17,11 @@ public:
 		: in_(in), out_(out)
 	{}
 
+	Connection( const Connection& )= delete;
+	Connection( Connection&& )= default;
+	Connection& operator=( const Connection& )= delete;
+	Connection& operator=( Connection&& )= default;
+
 	std::string Read();
 	void Write( std::string_view str );
 
