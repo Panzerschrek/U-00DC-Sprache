@@ -95,10 +95,7 @@ void ServerHandler::ProcessTextDocumentDidOpen( const Json::Value& params )
 
 	log_ << "open a document " << uri_str->str() << std::endl;
 
-	Document document;
-	document.text= text_str->str();
-
-	documents_[ uri_str->str() ]= std::move(document);
+	documents_.insert( std::make_pair( uri_str->str(), Document( text_str->str() ) ) );
 }
 
 void ServerHandler::ProcessTextDocumentDidClose( const Json::Value& params )
@@ -140,7 +137,6 @@ void ServerHandler::ProcessTextDocumentDidClose( const Json::Value& params )
 
 	documents_.erase( uri_str->str() );
 }
-
 
 void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 {
@@ -228,7 +224,7 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 		return;
 	}
 
-	it->second.text= change_text_str->str();
+	it->second.SetText( change_text_str->str() );
 }
 
 } // namespace LangServer
