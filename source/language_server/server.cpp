@@ -16,13 +16,12 @@ Server::Server( Connection connection, ServerHandler& handler, std::ostream& log
 
 void Server::Run()
 {
-	while(true)
+	while( ProcessStep() )
 	{
-		ProcessStep();
 	}
 }
 
-void Server::ProcessStep()
+bool Server::ProcessStep()
 {
 	const std::string message= connection_.Read();
 	log_ << "Message: " << message << std::endl;
@@ -31,7 +30,7 @@ void Server::ProcessStep()
 	if( !parse_result )
 	{
 		log_ << "JSON parse error" << std::endl;
-		return;
+		return false;
 	}
 
 	log_ << "JSON parsed successfully" << std::endl;
@@ -41,7 +40,7 @@ void Server::ProcessStep()
 	if( obj == nullptr )
 	{
 		log_ << "JSON is not an object" << std::endl;
-		return;
+		return false;
 	}
 
 	std::string id;
@@ -68,25 +67,45 @@ void Server::ProcessStep()
 	{
 		log_ << "Notification " << method << std::endl;
 
-		handler_.HandleNotification( method, params );
+		if( method == "exit" )
+			return false;
+		else
+			handler_.HandleNotification( method, params );
 	}
 	else
 	{
 		log_ << "Request " << method << std::endl;
-		Json::Value result= handler_.HandleRequest( method, params );
+		if( method == "shutdown" )
+		{
+			llvm::json::Object response_obj;
+			response_obj["id"]= id;
 
-		llvm::json::Object response_obj;
-		response_obj["id"]= id;
-		response_obj["result"]= std::move(result);
+			std::string response_str;
+			llvm::raw_string_ostream stream(response_str);
+			stream << llvm::json::Object( std::move(response_obj) );
+			stream.flush();
 
-		std::string response_str;
-		llvm::raw_string_ostream stream(response_str);
-		stream << llvm::json::Object( std::move(response_obj) );
-		stream.flush();
+			connection_.Write( response_str );
+		}
+		else
+		{
+			Json::Value result= handler_.HandleRequest( method, params );
 
-		log_ << "Response: " << response_str;
-		connection_.Write( response_str );
+			llvm::json::Object response_obj;
+			response_obj["id"]= id;
+			response_obj["result"]= std::move(result);
+
+			std::string response_str;
+			llvm::raw_string_ostream stream(response_str);
+			stream << llvm::json::Object( std::move(response_obj) );
+			stream.flush();
+
+			log_ << "Response: " << response_str;
+			connection_.Write( response_str );
+		}
 	}
+
+	return true;
 }
 
 } // namespace LangServer

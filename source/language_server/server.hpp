@@ -16,7 +16,8 @@ public:
 	void Run();
 
 private:
-	void ProcessStep();
+	// Returns true, if should continue.
+	bool ProcessStep();
 
 private:
 	Connection connection_;
