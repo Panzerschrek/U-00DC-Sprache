@@ -25,6 +25,7 @@ private:
 	// Notofications.
 	void ProcessTextDocumentDidOpen( const Json::Value& params );
 	void ProcessTextDocumentDidClose( const Json::Value& params );
+	void ProcessTextDocumentDidChange( const Json::Value& params );
 
 private:
 	std::ostream& log_;
