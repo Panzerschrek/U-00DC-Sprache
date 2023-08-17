@@ -1,9 +1,16 @@
 #include <iostream>
 #include <fstream>
+#include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/JSON.h>
+#include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
 #include "connection.hpp"
+#include "parser.hpp"
 
 namespace U
+{
+
+namespace LangServer
 {
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -21,17 +28,45 @@ void PlatformInit()
 void platform_init() { }
 #endif
 
+int Main()
+{
+	PlatformInit();
+
+	std::ofstream log_file( "C:/Users/user/Documents/Projects/other/U-00DC-Sprache/other/sprache_lang_server.txt", std::ios::app );
+
+	Connection connection( std::cin, std::cout );
+	while(true)
+	{
+		const std::string message= connection.Read();
+		log_file << "Message: " << message << std::endl;
+		llvm::Expected<llvm::json::Value> parse_result= llvm::json::parse( message );
+		if( parse_result )
+		{
+			const llvm::json::Value& value= parse_result.get();
+			log_file << "JSON parsed successfully" << std::endl;
+			if( const auto request= ParseRequestMessage( value ) )
+			{
+				log_file << "request with id= " << request->id << " and method= " << request->method << std::endl;
+			}
+			else
+			{
+				log_file << "Request parse error" << std::endl;
+			}
+		}
+		else
+		{
+			log_file << "JSON parse error" << std::endl;
+		}
+	}
+
+	return 0;
+}
+
+} // namespace LangServer
+
 } // namespace U
 
 int main()
 {
-	U::PlatformInit();
-
-	std::ofstream log_file( "C:/Users/user/Documents/Projects/other/U-00DC-Sprache/other/sprache_lang_server.txt", std::ios::app );
-
-	U::Connection connection( std::cin, std::cout );
-	while(true)
-	{
-		log_file << "Message: " << connection.Read() << std::endl;
-	}
+	return U::LangServer::Main();
 }

@@ -5,6 +5,9 @@
 namespace U
 {
 
+namespace LangServer
+{
+
 bool Connection::ReadMessageHeaderPart( MessageHeader& header )
 {
 	if( in_.peek() == '\r' )
@@ -61,5 +64,7 @@ std::string Connection::Read()
 
 	return content;
 }
+
+} // namespace LangServer
 
 } // namespace U

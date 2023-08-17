@@ -6,6 +6,9 @@
 namespace U
 {
 
+namespace LangServer
+{
+
 class Connection
 {
 public:
@@ -30,5 +33,7 @@ private:
 	std::istream& in_;
 	std::ostream& out_;
 };
+
+} // namespace LangServer
 
 } // namespace U
