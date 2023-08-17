@@ -47,7 +47,7 @@ int Main( int argc, const char* argv[] )
 
 	PlatformInit();
 
-	std::ofstream log_file( log_file_path, std::ios::app );
+	std::ofstream log_file( log_file_path );
 
 	ServerHandler handler( log_file );
 	Server server( Connection( std::cin, std::cout ), handler, log_file );
