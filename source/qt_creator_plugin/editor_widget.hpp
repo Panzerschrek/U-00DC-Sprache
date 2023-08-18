@@ -39,6 +39,9 @@ public:
 private:
 	virtual void finalizeInitialization() override;
 
+protected:
+	virtual void contextMenuEvent( QContextMenuEvent* event ) override;
+
 private:
 	void OnTextChanged();
 	void OnTimerExpired();
