@@ -13,6 +13,9 @@ namespace U
 namespace LangServer
 {
 
+namespace
+{
+
 #if defined(_WIN32) || defined(_WIN64)
 #include <fcntl.h>
 #include <io.h>
@@ -59,6 +62,8 @@ int Main( int argc, const char* argv[] )
 
 	return 0;
 }
+
+} // namespace
 
 } // namespace LangServer
 
