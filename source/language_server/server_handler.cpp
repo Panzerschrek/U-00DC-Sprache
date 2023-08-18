@@ -21,16 +21,24 @@ Json::Value ServerHandler::HandleRequest( const std::string_view method, const J
 	return result;
 }
 
-std::optional<Json::Value> ServerHandler::HandleNotification( const std::string_view method, const Json::Value& params )
+void ServerHandler::HandleNotification( const std::string_view method, const Json::Value& params )
 {
 	if( method == "textDocument/didOpen" )
-		ProcessTextDocumentDidOpen( params );
+		return ProcessTextDocumentDidOpen( params );
 	else if( method == "textDocument/didClose" )
-		ProcessTextDocumentDidClose( params );
+		return ProcessTextDocumentDidClose( params );
 	else if( method == "textDocument/didChange" )
 		return ProcessTextDocumentDidChange( params );
+}
 
-	return std::nullopt;
+std::optional<ServerNotification> ServerHandler::TakeNotification()
+{
+	if( notifications_queue_.empty() )
+		return std::nullopt;
+
+	std::optional<ServerNotification> result( notifications_queue_.front() );
+	notifications_queue_.pop();
+	return result;
 }
 
 Json::Value ServerHandler::ProcessInitialize( const Json::Value& params )
@@ -140,39 +148,39 @@ void ServerHandler::ProcessTextDocumentDidClose( const Json::Value& params )
 	documents_.erase( uri_str->str() );
 }
 
-std::optional<Json::Value> ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
+void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
 	{
 		log_ << "Not an object!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 
 	const auto text_document= obj->get("textDocument" );
 	if( text_document == nullptr )
 	{
 		log_ << "No textDocument!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 	const auto text_document_obj= text_document->getAsObject();
 	if( text_document_obj == nullptr )
 	{
 		log_ << "Text document is not an object!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 
 	const auto uri= text_document_obj->get( "uri" );
 	if( uri == nullptr )
 	{
 		log_ << "No uri!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 	const auto uri_str= uri->getAsString();
 	if( !uri_str )
 	{
 		log_ << "URI is not a string!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 
 	log_ << "Change document " << uri_str->str() << std::endl;
@@ -181,19 +189,19 @@ std::optional<Json::Value> ServerHandler::ProcessTextDocumentDidChange( const Js
 	if( content_changes == nullptr )
 	{
 		log_ << "No contentChanges!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 	const auto content_changes_arr= content_changes->getAsArray();
 	if( content_changes_arr == nullptr )
 	{
 		log_ << "contentChanges is not an array!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 
 	if( content_changes_arr->size() == 0 )
 	{
 		log_ << "Empty changes!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 
 	const Json::Value& change= content_changes_arr->back();
@@ -202,28 +210,28 @@ std::optional<Json::Value> ServerHandler::ProcessTextDocumentDidChange( const Js
 	if( change_obj == nullptr )
 	{
 		log_ << "change is not an object!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 
 	const auto change_text= change_obj->get("text");
 	if( change_text == nullptr )
 	{
 		log_ << "No change text!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 
 	const auto change_text_str= change_text->getAsString();
 	if( !change_text_str )
 	{
 		log_ << "Change text is not a string!" << std::endl;
-		return std::nullopt;
+		return;
 	}
 
 	const auto it= documents_.find( uri_str->str() );
 	if( it == documents_.end() )
 	{
 		log_ << "Can't find document " << uri_str->str() << std::endl;
-		return std::nullopt;
+		return;
 	}
 
 	it->second.SetText( change_text_str->str() );
@@ -263,7 +271,8 @@ std::optional<Json::Value> ServerHandler::ProcessTextDocumentDidChange( const Js
 		result["diagnostics"]= std::move(diagnostics);
 	}
 
-	return result;
+	ServerNotification notification{ "textDocument/publishDiagnostics", std::move(result) };
+	notifications_queue_.push( std::move(notification) );
 }
 
 } // namespace LangServer

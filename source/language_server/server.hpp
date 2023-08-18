@@ -17,7 +17,8 @@ public:
 
 private:
 	// Returns true, if should continue.
-	bool ProcessStep();
+	bool ReadAndProcessInputMessage();
+	void PushNotifications();
 
 private:
 	Connection connection_;

@@ -16,12 +16,16 @@ Server::Server( Connection connection, ServerHandler& handler, std::ostream& log
 
 void Server::Run()
 {
-	while( ProcessStep() )
+	// TODO - fix this.
+	// ReadAndProcessInputMessage is blocking.
+	// Make it nonblocking in order to have possibility to send notifications without waiting for another input message.
+	while( ReadAndProcessInputMessage() )
 	{
+		PushNotifications();
 	}
 }
 
-bool Server::ProcessStep()
+bool Server::ReadAndProcessInputMessage()
 {
 	const std::string message= connection_.Read();
 	log_ << "Message: " << message << std::endl;
@@ -70,24 +74,7 @@ bool Server::ProcessStep()
 		if( method == "exit" )
 			return false;
 		else
-		{
-			std::optional<Json::Value> val= handler_.HandleNotification( method, params );
-			if( val != std::nullopt )
-			{
-				// Push response notification.
-				// TODO - rework this.
-				llvm::json::Object notification_obj;
-				notification_obj["method"]= "textDocument/publishDiagnostics";
-				notification_obj["params"]= std::move(*val);
-
-				std::string response_str;
-				llvm::raw_string_ostream stream(response_str);
-				stream << llvm::json::Object( std::move(notification_obj) );
-				stream.flush();
-
-				connection_.Write( response_str );
-			}
-		}
+			handler_.HandleNotification( method, params );
 	}
 	else
 	{
@@ -123,6 +110,27 @@ bool Server::ProcessStep()
 	}
 
 	return true;
+}
+
+void Server::PushNotifications()
+{
+	while(true)
+	{
+		auto notification= handler_.TakeNotification();
+		if( notification == std::nullopt )
+			break;
+
+		llvm::json::Object notification_obj;
+		notification_obj["method"]= std::move(notification->method);
+		notification_obj["params"]= std::move(notification->params);
+
+		std::string response_str;
+		llvm::raw_string_ostream stream(response_str);
+		stream << llvm::json::Object( std::move(notification_obj) );
+		stream.flush();
+
+		connection_.Write( response_str );
+	}
 }
 
 } // namespace LangServer
