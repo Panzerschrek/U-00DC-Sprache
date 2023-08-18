@@ -33,6 +33,7 @@ private:
 	// Requests.
 	Json::Value ProcessInitialize( const Json::Value& params );
 	Json::Value ProcessTextDocumentSymbol( const Json::Value& params );
+	Json::Value ProcessTextDocumentDefinition( const Json::Value& params );
 
 	// Notofications.
 	void ProcessTextDocumentDidOpen( const Json::Value& params );

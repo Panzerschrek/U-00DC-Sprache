@@ -85,6 +85,8 @@ Json::Value ServerHandler::HandleRequest( const std::string_view method, const J
 		return ProcessInitialize( params );
 	if( method == "textDocument/documentSymbol" )
 		return ProcessTextDocumentSymbol( params );
+	if( method == "textDocument/definition" )
+		return ProcessTextDocumentDefinition( params );
 
 	Json::Object result;
 	return result;
@@ -121,6 +123,7 @@ Json::Value ServerHandler::ProcessInitialize( const Json::Value& params )
 		capabilities["textDocumentSync"]= 1; // Full.
 		capabilities["declarationProvider"]= true;
 		capabilities["definitionProvider"]= true;
+		capabilities["referencesProvider"]= true;
 		capabilities["documentHighlightProvider"]= true;
 		capabilities["documentSymbolProvider"]= true;
 
@@ -139,6 +142,52 @@ Json::Value ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params 
 	// TODO
 	(void)params;
 	Json::Object result;
+	return result;
+}
+
+Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& params )
+{
+	Json::Object result;
+
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+	{
+		log_ << "Not an object!" << std::endl;
+		return result;
+	}
+
+	const auto text_document= obj->getObject( "textDocument" );
+	if( text_document == nullptr )
+	{
+		log_ << "No textDocument!" << std::endl;
+		return result;
+	}
+
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
+	{
+		log_ << "No uri!" << std::endl;
+		return result;
+	}
+
+	const auto position= obj->getObject( "position" );
+	if( position == nullptr )
+	{
+		log_ << "No position!" << std::endl;
+		return result;
+	}
+
+	result["uri"]= uri->str();
+
+	// Fill dummy.
+	// TODO - perform real request.
+	{
+		Json::Object range;
+		range["start"]= SrcLocToPosition( SrcLoc( 0, 4, 5 ) );
+		range["end"]= SrcLocToPosition( SrcLoc( 0, 4, 7 ) );
+
+		result["range"]= std::move(range);
+	}
 	return result;
 }
 

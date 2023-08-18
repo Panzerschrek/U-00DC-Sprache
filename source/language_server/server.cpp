@@ -100,7 +100,7 @@ bool Server::ReadAndProcessInputMessage()
 			stream << llvm::json::Object( std::move(response_obj) );
 			stream.flush();
 
-			// log_ << "Response: " << response_str;
+			// log_ << "Response: " << response_str << std::endl;
 			connection_.Write( response_str );
 		}
 	}
