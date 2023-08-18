@@ -28,7 +28,7 @@ void Server::Run()
 bool Server::ReadAndProcessInputMessage()
 {
 	const std::string message= connection_.Read();
-	log_ << "Message: " << message << std::endl;
+	// log_ << "Message: " << message << std::endl;
 
 	llvm::Expected<llvm::json::Value> parse_result= llvm::json::parse( message );
 	if( !parse_result )
@@ -37,7 +37,6 @@ bool Server::ReadAndProcessInputMessage()
 		return false;
 	}
 
-	log_ << "JSON parsed successfully" << std::endl;
 	const llvm::json::Value& value= parse_result.get();
 
 	const Json::Object* const obj= value.getAsObject();
@@ -66,7 +65,7 @@ bool Server::ReadAndProcessInputMessage()
 
 	if( id.empty() )
 	{
-		log_ << "Notification " << method << std::endl;
+		// log_ << "Notification " << method << std::endl;
 
 		if( method == "exit" )
 			return false;
@@ -75,7 +74,7 @@ bool Server::ReadAndProcessInputMessage()
 	}
 	else
 	{
-		log_ << "Request " << method << std::endl;
+		// log_ << "Request " << method << std::endl;
 		if( method == "shutdown" )
 		{
 			llvm::json::Object response_obj;
@@ -101,7 +100,7 @@ bool Server::ReadAndProcessInputMessage()
 			stream << llvm::json::Object( std::move(response_obj) );
 			stream.flush();
 
-			log_ << "Response: " << response_str;
+			// log_ << "Response: " << response_str;
 			connection_.Write( response_str );
 		}
 	}
@@ -126,6 +125,7 @@ void Server::PushNotifications()
 		stream << llvm::json::Object( std::move(notification_obj) );
 		stream.flush();
 
+		// log_ << "Notification: " << response_str;
 		connection_.Write( response_str );
 	}
 }

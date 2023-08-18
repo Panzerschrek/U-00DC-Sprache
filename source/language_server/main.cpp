@@ -49,9 +49,13 @@ int Main( int argc, const char* argv[] )
 
 	std::ofstream log_file( log_file_path );
 
+	log_file << "Start language server" << std::endl;
+
 	ServerHandler handler( log_file );
 	Server server( Connection( std::cin, std::cout ), handler, log_file );
 	server.Run();
+
+	log_file << "End language server" << std::endl;
 
 	return 0;
 }
