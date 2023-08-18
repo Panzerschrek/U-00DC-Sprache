@@ -117,6 +117,16 @@ Json::Value ServerHandler::ProcessInitialize( const Json::Value& params )
 	{
 		Json::Object capabilities;
 		capabilities["textDocumentSync"]= 1; // Full.
+		capabilities["declarationProvider"]= true;
+		capabilities["definitionProvider"]= true;
+		capabilities["documentHighlightProvider"]= true;
+		capabilities["documentSymbolProvider"]= true;
+
+		{
+			Json::Object link_provider;
+			link_provider["resolveProvider"]= true;
+			capabilities["documentLinkProvider"]= std::move(link_provider);
+		}
 		result["capabilities"]= std::move(capabilities);
 	}
 	return result;
