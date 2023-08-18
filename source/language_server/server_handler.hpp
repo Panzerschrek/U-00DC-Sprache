@@ -16,7 +16,7 @@ public:
 
 public:
 	Json::Value HandleRequest( std::string_view method, const Json::Value& params );
-	void HandleNotification( std::string_view method, const Json::Value& params );
+	std::optional<Json::Value> HandleNotification( std::string_view method, const Json::Value& params );
 
 private:
 	// Requests.
@@ -25,7 +25,7 @@ private:
 	// Notofications.
 	void ProcessTextDocumentDidOpen( const Json::Value& params );
 	void ProcessTextDocumentDidClose( const Json::Value& params );
-	void ProcessTextDocumentDidChange( const Json::Value& params );
+	std::optional<Json::Value> ProcessTextDocumentDidChange( const Json::Value& params );
 
 private:
 	std::ostream& log_;
