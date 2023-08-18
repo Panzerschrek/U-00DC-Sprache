@@ -43,6 +43,35 @@ void CreateLexSyntErrorsDiagnostics( const LexSyntErrors& errors, Json::Array& o
 	}
 }
 
+void CreateCodeBuilderErrorsDiagnostics( const CodeBuilderErrorsContainer& errors, Json::Array& out_diagnostics )
+{
+	for( const CodeBuilderError& error : errors )
+	{
+		Json::Object diagnostic;
+		diagnostic["message"]= error.text;
+		diagnostic["severity"]= 1; // Means "error"
+		diagnostic["code"]= std::string( CodeBuilderErrorCodeToString( error.code ) );
+
+		{
+			Json::Object range;
+
+			range["start"]= SrcLocToPosition( error.src_loc );
+			{
+				// TODO - extract length of the lexem.
+				const SrcLoc src_loc( error.src_loc.GetFileIndex(), error.src_loc.GetLine(), error.src_loc.GetColumn() + 1 );
+				range["end"]= SrcLocToPosition( src_loc );
+			}
+
+			diagnostic["range"]= std::move(range);
+		}
+
+		out_diagnostics.push_back( std::move(diagnostic) );
+
+		if( error.template_context != nullptr )
+			CreateCodeBuilderErrorsDiagnostics( error.template_context->errors, out_diagnostics );
+	}
+}
+
 } // namespace
 
 ServerHandler::ServerHandler( std::ostream& log )
@@ -240,6 +269,7 @@ void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, co
 
 		CreateLexSyntErrorsDiagnostics( document.GetLexErrors(), diagnostics );
 		CreateLexSyntErrorsDiagnostics( document.GetSyntErrors(), diagnostics );
+		CreateCodeBuilderErrorsDiagnostics( document.GetCodeBuilderErrors(), diagnostics );
 
 		result["diagnostics"]= std::move(diagnostics);
 	}

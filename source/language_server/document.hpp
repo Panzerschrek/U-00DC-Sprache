@@ -2,6 +2,7 @@
 #include <string>
 #include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
 #include "../compiler0/lex_synt_lib/syntax_elements.hpp"
+#include "../code_builder_lib_common/code_builder_errors.hpp"
 
 namespace U
 {
@@ -23,13 +24,14 @@ public:
 
 	LexSyntErrors GetLexErrors() const;
 	LexSyntErrors GetSyntErrors() const;
+	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
 
 private:
 	std::string text_;
 	LexSyntErrors lex_errors_;
 	Lexems lexems_; // Last successful parse lexical analysis result.
 	LexSyntErrors synt_errors_;
-	Synt::ProgramElements program_elements_;
+	CodeBuilderErrorsContainer code_builder_errors_;
 };
 
 using DocumentURI= std::string;
