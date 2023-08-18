@@ -38,6 +38,9 @@ private:
 	void ProcessTextDocumentDidClose( const Json::Value& params );
 	void ProcessTextDocumentDidChange( const Json::Value& params );
 
+	// Other stuff.
+	void GenerateDocumentNotifications( const Json::Value& uri, const Document& document );
+
 private:
 	std::ostream& log_;
 	std::unordered_map<DocumentURI, Document> documents_;

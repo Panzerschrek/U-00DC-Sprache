@@ -21,9 +21,14 @@ public:
 
 	void SetText( std::string text );
 
+	LexSyntErrors GetLexErrors() const;
+	LexSyntErrors GetSyntErrors() const;
+
 private:
 	std::string text_;
+	LexSyntErrors lex_errors_;
 	Lexems lexems_; // Last successful parse lexical analysis result.
+	LexSyntErrors synt_errors_;
 	Synt::ProgramElements program_elements_;
 };
 

@@ -7,6 +7,44 @@ namespace U
 namespace LangServer
 {
 
+namespace
+{
+
+Json::Value SrcLocToPosition( const SrcLoc& src_loc )
+{
+	Json::Object position;
+	position["line"]= src_loc.GetLine() - 1; // LSP uses 0-based line numbers, Ü use 1-based line numbers.
+	position["character"]= src_loc.GetColumn();
+	return position;
+}
+
+void CreateLexSyntErrorsDiagnostics( const LexSyntErrors& errors, Json::Array& out_diagnostics )
+{
+	for( const LexSyntError& error : errors)
+	{
+		Json::Object diagnostic;
+		diagnostic["message"]= error.text;
+		diagnostic["severity"]= 1; // Means "error"
+
+		{
+			Json::Object range;
+
+			range["start"]= SrcLocToPosition( error.src_loc );
+			{
+				// TODO - extract length of the lexem.
+				const SrcLoc src_loc( error.src_loc.GetFileIndex(), error.src_loc.GetLine(), error.src_loc.GetColumn() + 1 );
+				range["end"]= SrcLocToPosition( src_loc );
+			}
+
+			diagnostic["range"]= std::move(range);
+		}
+
+		out_diagnostics.push_back( std::move(diagnostic) );
+	}
+}
+
+} // namespace
+
 ServerHandler::ServerHandler( std::ostream& log )
 	: log_(log)
 {
@@ -105,7 +143,9 @@ void ServerHandler::ProcessTextDocumentDidOpen( const Json::Value& params )
 
 	log_ << "open a document " << uri_str->str() << std::endl;
 
-	documents_.insert( std::make_pair( uri_str->str(), Document( text_str->str() ) ) );
+	const auto it_bool_pair= documents_.insert( std::make_pair( uri_str->str(), Document( text_str->str() ) ) );
+
+	GenerateDocumentNotifications( *uri, it_bool_pair.first->second );
 }
 
 void ServerHandler::ProcessTextDocumentDidClose( const Json::Value& params )
@@ -235,38 +275,19 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 	}
 
 	it->second.SetText( change_text_str->str() );
+	GenerateDocumentNotifications( *uri, it->second );
+}
 
+void ServerHandler::GenerateDocumentNotifications( const Json::Value& uri, const Document& document )
+{
 	Json::Object result;
-	result["uri"]= *uri;
+	result["uri"]= uri;
 
 	{
 		Json::Array diagnostics;
 
-		{
-			Json::Object diagnostic;
-			diagnostic["message"]= "shit happens";
-
-			{
-				Json::Object range;
-
-				{
-					Json::Object start;
-					start["line"]= 2;
-					start["character"]= 3;
-					range["start"]= std::move(start);
-				}
-				{
-					Json::Object end;
-					end["line"]= 2;
-					end["character"]= 7;
-					range["end"]= std::move(end);
-				}
-
-				diagnostic["range"]= std::move(range);
-			}
-
-			diagnostics.push_back( std::move(diagnostic) );
-		}
+		CreateLexSyntErrorsDiagnostics( document.GetLexErrors(), diagnostics );
+		CreateLexSyntErrorsDiagnostics( document.GetSyntErrors(), diagnostics );
 
 		result["diagnostics"]= std::move(diagnostics);
 	}

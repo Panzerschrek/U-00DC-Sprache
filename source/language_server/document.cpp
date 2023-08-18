@@ -12,6 +12,16 @@ Document::Document( std::string text )
 	: text_( std::move(text) )
 {}
 
+LexSyntErrors Document::GetLexErrors() const
+{
+	return lex_errors_;
+}
+
+LexSyntErrors Document::GetSyntErrors() const
+{
+	return synt_errors_;
+}
+
 void Document::SetText( std::string text )
 {
 	if( text == text_ )
@@ -19,8 +29,12 @@ void Document::SetText( std::string text )
 
 	text_= text;
 
-	auto lex_result= LexicalAnalysis( text_ );
-	if( !lex_result.errors.empty() )
+	lex_errors_.clear();
+	synt_errors_.clear();
+
+	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
+	lex_errors_= std::move( lex_result.errors );
+	if( !lex_errors_.empty() )
 		return;
 
 	lexems_= std::move( lex_result.lexems );
@@ -29,14 +43,15 @@ void Document::SetText( std::string text )
 	// TODO - provide options for import directories.
 	// TODO - fill macros from imported files.
 
-	auto synt_result=
+	Synt::SyntaxAnalysisResult synt_result=
 		Synt::SyntaxAnalysis(
 			lexems_,
 			Synt::MacrosByContextMap(),
 			std::make_shared<Synt::MacroExpansionContexts>(),
 			CalculateSourceFileContentsHash( text_ ) );
 
-	if( !synt_result.error_messages.empty() )
+	synt_errors_= std::move(synt_result.error_messages);
+	if( !synt_errors_.empty() )
 		return;
 
 	// TODO - add also generated prelude.
