@@ -11,8 +11,9 @@ namespace LangServer
 {
 
 Document::Document( std::string text )
-	: text_( std::move(text) )
-{}
+{
+	SetText( std::move(text) );
+}
 
 LexSyntErrors Document::GetLexErrors() const
 {
