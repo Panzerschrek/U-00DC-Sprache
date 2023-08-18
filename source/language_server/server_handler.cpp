@@ -83,6 +83,8 @@ Json::Value ServerHandler::HandleRequest( const std::string_view method, const J
 {
 	if( method == "initialize" )
 		return ProcessInitialize( params );
+	if( method == "textDocument/documentSymbol" )
+		return ProcessTextDocumentSymbol( params );
 
 	Json::Object result;
 	return result;
@@ -129,6 +131,14 @@ Json::Value ServerHandler::ProcessInitialize( const Json::Value& params )
 		}
 		result["capabilities"]= std::move(capabilities);
 	}
+	return result;
+}
+
+Json::Value ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
+{
+	// TODO
+	(void)params;
+	Json::Object result;
 	return result;
 }
 
