@@ -39,7 +39,7 @@ private:
 	void ProcessTextDocumentDidChange( const Json::Value& params );
 
 	// Other stuff.
-	void GenerateDocumentNotifications( const Json::Value& uri, const Document& document );
+	void GenerateDocumentNotifications( llvm::StringRef uri, const Document& document );
 
 private:
 	std::ostream& log_;

@@ -102,48 +102,30 @@ void ServerHandler::ProcessTextDocumentDidOpen( const Json::Value& params )
 		return;
 	}
 
-	const auto text_document= obj->get("textDocument" );
+	const auto text_document= obj->getObject( "textDocument" );
 	if( text_document == nullptr )
 	{
 		log_ << "No textDocument!" << std::endl;
 		return;
 	}
-	const auto text_document_obj= text_document->getAsObject();
-	if( text_document_obj == nullptr )
-	{
-		log_ << "Text document is not an object!" << std::endl;
-		return;
-	}
 
-	const auto uri= text_document_obj->get( "uri" );
-	if( uri == nullptr )
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
 	{
 		log_ << "No uri!" << std::endl;
 		return;
 	}
-	const auto uri_str= uri->getAsString();
-	if( !uri_str )
-	{
-		log_ << "URI is not a string!" << std::endl;
-		return;
-	}
 
-	const auto text= text_document_obj->get( "text" );
-	if( text == nullptr )
+	const auto text= text_document->getString( "text" );
+	if( text == llvm::None )
 	{
 		log_ << "No text!" << std::endl;
 		return;
 	}
-	const auto text_str= uri->getAsString();
-	if( !text_str )
-	{
-		log_ << "Text is not a string!" << std::endl;
-		return;
-	}
 
-	log_ << "open a document " << uri_str->str() << std::endl;
+	log_ << "open a document " << uri->str() << std::endl;
 
-	const auto it_bool_pair= documents_.insert( std::make_pair( uri_str->str(), Document( text_str->str() ) ) );
+	const auto it_bool_pair= documents_.insert( std::make_pair( uri->str(), Document( text->str() ) ) );
 
 	GenerateDocumentNotifications( *uri, it_bool_pair.first->second );
 }
@@ -157,35 +139,23 @@ void ServerHandler::ProcessTextDocumentDidClose( const Json::Value& params )
 		return;
 	}
 
-	const auto text_document= obj->get("textDocument" );
+	const auto text_document= obj->getObject( "textDocument" );
 	if( text_document == nullptr )
 	{
 		log_ << "No textDocument!" << std::endl;
 		return;
 	}
-	const auto text_document_obj= text_document->getAsObject();
-	if( text_document_obj == nullptr )
-	{
-		log_ << "Text document is not an object!" << std::endl;
-		return;
-	}
 
-	const auto uri= text_document_obj->get( "uri" );
-	if( uri == nullptr )
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
 	{
 		log_ << "No uri!" << std::endl;
 		return;
 	}
-	const auto uri_str= uri->getAsString();
-	if( !uri_str )
-	{
-		log_ << "URI is not a string!" << std::endl;
-		return;
-	}
 
-	log_ << "close a document " << uri_str->str() << std::endl;
+	log_ << "close a document " << uri->str() << std::endl;
 
-	documents_.erase( uri_str->str() );
+	documents_.erase( uri->str() );
 }
 
 void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
@@ -197,54 +167,36 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 		return;
 	}
 
-	const auto text_document= obj->get("textDocument" );
+	const auto text_document= obj->getObject("textDocument" );
 	if( text_document == nullptr )
 	{
 		log_ << "No textDocument!" << std::endl;
 		return;
 	}
-	const auto text_document_obj= text_document->getAsObject();
-	if( text_document_obj == nullptr )
-	{
-		log_ << "Text document is not an object!" << std::endl;
-		return;
-	}
 
-	const auto uri= text_document_obj->get( "uri" );
-	if( uri == nullptr )
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
 	{
 		log_ << "No uri!" << std::endl;
 		return;
 	}
-	const auto uri_str= uri->getAsString();
-	if( !uri_str )
-	{
-		log_ << "URI is not a string!" << std::endl;
-		return;
-	}
 
-	log_ << "Change document " << uri_str->str() << std::endl;
+	log_ << "Change document " << uri->str() << std::endl;
 
-	const auto content_changes= obj->get("contentChanges" );
+	const auto content_changes= obj->getArray("contentChanges" );
 	if( content_changes == nullptr )
 	{
 		log_ << "No contentChanges!" << std::endl;
 		return;
 	}
-	const auto content_changes_arr= content_changes->getAsArray();
-	if( content_changes_arr == nullptr )
-	{
-		log_ << "contentChanges is not an array!" << std::endl;
-		return;
-	}
 
-	if( content_changes_arr->size() == 0 )
+	if( content_changes->size() == 0 )
 	{
 		log_ << "Empty changes!" << std::endl;
 		return;
 	}
 
-	const Json::Value& change= content_changes_arr->back();
+	const Json::Value& change= content_changes->back();
 
 	const auto change_obj= change.getAsObject();
 	if( change_obj == nullptr )
@@ -267,10 +219,10 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 		return;
 	}
 
-	const auto it= documents_.find( uri_str->str() );
+	const auto it= documents_.find( uri->str() );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document " << uri_str->str() << std::endl;
+		log_ << "Can't find document " << uri->str() << std::endl;
 		return;
 	}
 
@@ -278,10 +230,10 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 	GenerateDocumentNotifications( *uri, it->second );
 }
 
-void ServerHandler::GenerateDocumentNotifications( const Json::Value& uri, const Document& document )
+void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, const Document& document )
 {
 	Json::Object result;
-	result["uri"]= uri;
+	result["uri"]= uri.str();
 
 	{
 		Json::Array diagnostics;

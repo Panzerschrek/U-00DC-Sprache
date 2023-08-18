@@ -57,11 +57,8 @@ bool Server::ReadAndProcessInputMessage()
 	}
 
 	std::string method;
-	if( const Json::Value* const method_json= obj->get( "method" ) )
-	{
-		if( const auto str= method_json->getAsString() )
-			method= str->str();
-	}
+	if( const auto method_json= obj->getString( "method" ) )
+		method= method_json->str();
 
 	Json::Value params= Json::Object();
 	if( const auto params_json= obj->get( "params" ) )
