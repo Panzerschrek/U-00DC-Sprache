@@ -1,6 +1,7 @@
 #include <coreplugin/coreconstants.h>
 #include <extensionsystem/pluginmanager.h>
 #include <coreplugin/editormanager/editormanager.h>
+#include <texteditor/texteditoractionhandler.h>
 #include "editor_widget.hpp"
 #include "syntax_highlighter.hpp"
 
@@ -48,6 +49,13 @@ EditorFactory::EditorFactory()
 	setDocumentCreator([]() { return new EditorDocument; });
 	setEditorWidgetCreator([]() { return new EditorWidget; });
 	setEditorCreator([]() { return new Editor; });
+
+	setEditorActionHandlers(
+		TextEditor::TextEditorActionHandler::Format |
+		TextEditor::TextEditorActionHandler::UnCommentSelection |
+		TextEditor::TextEditorActionHandler::UnCollapseAll |
+		TextEditor::TextEditorActionHandler::FollowSymbolUnderCursor |
+		TextEditor::TextEditorActionHandler::JumpToFileUnderCursor );
 }
 
 } // namespace UQtCreatorPlugin
