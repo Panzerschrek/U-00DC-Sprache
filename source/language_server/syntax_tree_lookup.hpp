@@ -1,5 +1,5 @@
 #pragma once
-#include "../compiler0/lex_synt_lib/syntax_elements.hpp"
+#include "../compiler0/code_builder_lib/code_builder.hpp"
 
 namespace U
 {
@@ -7,12 +7,7 @@ namespace U
 namespace LangServer
 {
 
-using NamedSyntaxElement= std::variant<
-	Synt::EmptyVariant,
-	const Synt::NameLookup*,
-	const Synt::RootNamespaceNameLookup*,
-	const Synt::NamesScopeNameFetch*,
-	const Synt::MemberAccessOperator* >;
+using NamedSyntaxElement= CodeBuilder::GetDefinitionRequestItem;
 
 // Complexity is linear.
 // TODO - return also path (namespace/class/class template + function + (maybe) blocks).

@@ -83,7 +83,15 @@ std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 	else
 		log_ << "Found no syntax element" << std::endl;
 
-	return lexem_position;
+	std::optional<SrcLoc> definition_point=
+		last_valid_state_->code_builder->GetDefinition( syntax_element );
+
+	if( definition_point != std::nullopt )
+		log_ << "Found definition point " <<  definition_point->GetLine() << ":" << definition_point->GetColumn() << std::endl;
+	else
+		log_ << "Can't find definition point" << std::endl;
+
+	return definition_point;
 }
 
 void Document::SetText( std::string text )

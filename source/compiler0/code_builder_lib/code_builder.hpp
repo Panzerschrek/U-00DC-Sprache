@@ -50,6 +50,13 @@ public:
 		std::unique_ptr<llvm::Module> module;
 	};
 
+	using GetDefinitionRequestItem= std::variant<
+		Synt::EmptyVariant,
+		const Synt::NameLookup*,
+		const Synt::RootNamespaceNameLookup*,
+		const Synt::NamesScopeNameFetch*,
+		const Synt::MemberAccessOperator*>;
+
 public:
 	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
 
@@ -73,6 +80,17 @@ public:
 
 public:
 	CodeBuilderErrorsContainer TakeErrors();
+
+	// Get definition for given syntax element.
+	// Syntax element must be present in syntax tree, for which code building was performed early.
+	// TODO - provide namespace path.
+	std::optional<SrcLoc> GetDefinition( const GetDefinitionRequestItem& item );
+
+	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::EmptyVariant& empty_variant );
+	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context,  const Synt::NameLookup* name_lookup );
+	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context,  const Synt::RootNamespaceNameLookup* root_namespace_lookup );
+	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context,  const Synt::NamesScopeNameFetch* names_scope_fetch );
+	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context,  const Synt::MemberAccessOperator* member_access_operator );
 
 private:
 	CodeBuilder(

@@ -80,6 +80,7 @@ Language server
 *) Create TargetMachine to obtain proper data layout
 *) Async requests handling
 *) A way to provide configuration (import directories, other compilation options)
+*) Tune SrcLoc of syntax elements in order to show name definition points properly
 
 CPP Header converter:
 *) White list of converted symbols
