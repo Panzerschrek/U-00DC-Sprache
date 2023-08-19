@@ -1,4 +1,5 @@
 #pragma once
+#include <ostream>
 #include <queue>
 #include <string_view>
 #include "json.hpp"

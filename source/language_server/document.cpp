@@ -1,6 +1,6 @@
+#include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
-#include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../tests/tests_common.hpp"
 #include "document.hpp"
 

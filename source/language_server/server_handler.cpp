@@ -1,4 +1,3 @@
-#include <ostream>
 #include "server_handler.hpp"
 
 namespace U

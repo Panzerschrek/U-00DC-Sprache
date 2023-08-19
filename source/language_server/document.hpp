@@ -1,5 +1,4 @@
 #pragma once
-#include <string>
 #include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
 #include "../compiler0/lex_synt_lib/syntax_elements.hpp"
 #include "../code_builder_lib_common/code_builder_errors.hpp"

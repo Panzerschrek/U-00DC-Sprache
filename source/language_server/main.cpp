@@ -1,5 +1,5 @@
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/CommandLine.h>
 #include <llvm/Support/InitLLVM.h>
@@ -7,15 +7,8 @@
 #include "../lex_synt_lib_common/assert.hpp"
 #include "server.hpp"
 
-namespace U
-{
-
-namespace LangServer
-{
-
-namespace
-{
-
+// Messy stuff.
+// Without it language server doesn't work on Windows.
 #if defined(_WIN32) || defined(_WIN64)
 #include <fcntl.h>
 #include <io.h>
@@ -28,8 +21,17 @@ void PlatformInit()
 	U_ASSERT(res != -1);
 }
 #else
-void PlatformInit() { }
+void PlatformInit() {}
 #endif
+
+namespace U
+{
+
+namespace LangServer
+{
+
+namespace
+{
 
 int Main( int argc, const char* argv[] )
 {
