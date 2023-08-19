@@ -1,4 +1,5 @@
 #pragma once
+#include <ostream>
 #include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
 #include "../compiler0/lex_synt_lib/syntax_elements.hpp"
 #include "../code_builder_lib_common/code_builder_errors.hpp"
@@ -13,7 +14,7 @@ namespace LangServer
 class Document
 {
 public:
-	explicit Document( std::string text );
+	Document( std::ostream& log, std::string text );
 
 	Document( const Document& )= delete;
 	Document( Document&& )= default;
@@ -37,6 +38,7 @@ private:
 	};
 
 private:
+	std::ostream& log_;
 	std::string text_;
 	std::optional<CompiledState> last_valid_state_;
 	LexSyntErrors lex_errors_;

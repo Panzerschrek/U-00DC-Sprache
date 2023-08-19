@@ -39,7 +39,8 @@ std::optional<SrcLoc> GetLexemSrcLocForPosition( const uint32_t line, const uint
 
 } // namespace
 
-Document::Document( std::string text )
+Document::Document( std::ostream& log, std::string text )
+	: log_(log)
 {
 	SetText( std::move(text) );
 }
@@ -69,12 +70,19 @@ std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 	if( lexem_position == std::nullopt )
 		return std::nullopt;
 
+	log_ << "Found lexem " << lexem_position->GetLine() << ":" << lexem_position->GetColumn() << std::endl;
+
 	// Find syntax element for given syntax element.
 	const NamedSyntaxElement syntax_element=
 		FindSyntaxElementForPosition( lexem_position->GetLine(), lexem_position->GetColumn(), last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
 
 	// TODO - perform actual lookup.
-	(void)syntax_element;
+	if( std::get_if<Synt::EmptyVariant>( &syntax_element ) == nullptr )
+	{
+		log_ << "Found syntax element of kind " << syntax_element.index() << std::endl;
+	}
+	else
+		log_ << "Found no syntax element" << std::endl;
 
 	return lexem_position;
 }

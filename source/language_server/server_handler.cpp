@@ -341,7 +341,7 @@ void ServerHandler::ProcessTextDocumentDidOpen( const Json::Value& params )
 
 	log_ << "open a document " << uri->str() << std::endl;
 
-	const auto it_bool_pair= documents_.insert( std::make_pair( uri->str(), Document( text->str() ) ) );
+	const auto it_bool_pair= documents_.insert( std::make_pair( uri->str(), Document( log_, text->str() ) ) );
 
 	GenerateDocumentNotifications( *uri, it_bool_pair.first->second );
 }
