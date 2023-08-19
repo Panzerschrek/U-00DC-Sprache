@@ -42,6 +42,7 @@ NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t col
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::UnsafeExpression& unsafe_expression );
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::ArrayTypeName& array_type_name );
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::FunctionTypePtr& function_type_ptr );
+NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::FunctionType& function_type );
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::TupleType& tuple_type );
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::RawPointerType& raw_pointer_type );
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::GeneratorTypePtr& generator_type_ptr );
@@ -51,6 +52,13 @@ NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t col
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::NameLookup& name_lookup );
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::NamesScopeNameFetch& names_scope_names_fetch );
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::TemplateParametrization& template_parametrization );
+
+NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::Initializer& initializer );
+NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::SequenceInitializer& sequence_initializer );
+NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::StructNamedInitializer& struct_named_initializer );
+NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::ConstructorInitializer& constructor_initializer );
+NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::ZeroInitializer& zero_initializer );
+NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::UninitializedInitializer& uninitialized_initializer );
 
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::ProgramElements& program_elements );
 NamedSyntaxElement FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::VariablesDeclaration& variables_declaration );
@@ -328,13 +336,19 @@ NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const 
 
 NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::FunctionTypePtr& function_type_ptr )
 {
+	return FindSyntaxElementForPositionImpl( line, column, *function_type_ptr );
+}
+
+NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::FunctionType& function_type )
+{
+	if( function_type.return_type_ != nullptr )
 	{
-		auto res= FindSyntaxElementForPositionImpl( line, column, *function_type_ptr->return_type_ );
+		auto res= FindSyntaxElementForPositionImpl( line, column, *function_type.return_type_ );
 		if( std::get_if<Synt::EmptyVariant>( &res ) == nullptr )
 			return res;
 	}
 
-	for( const Synt::FunctionParam& param : function_type_ptr->params_ )
+	for( const Synt::FunctionParam& param : function_type.params_ )
 	{
 		auto res= FindSyntaxElementForPositionImpl( line, column, param.type_ );
 		if( std::get_if<Synt::EmptyVariant>( &res ) == nullptr )
@@ -415,6 +429,64 @@ NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const 
 	return Synt::EmptyVariant{};
 }
 
+NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::Initializer& initializer )
+{
+	return std::visit( [&]( const auto& el ) { return FindSyntaxElementForPositionImpl( line, column, el ); }, initializer );
+}
+
+NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::SequenceInitializer& sequence_initializer )
+{
+	for( const Synt::Initializer& initializer : sequence_initializer.initializers )
+	{
+		NamedSyntaxElement res= FindSyntaxElementForPositionImpl( line, column, initializer );
+		if( std::get_if<Synt::EmptyVariant>( &res ) == nullptr )
+			return res;
+	}
+
+	return Synt::EmptyVariant{};
+}
+
+NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::StructNamedInitializer& struct_named_initializer )
+{
+	for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : struct_named_initializer.members_initializers )
+	{
+		// TODO - process also name of member itself.
+		NamedSyntaxElement res= FindSyntaxElementForPositionImpl( line, column, member_initializer.initializer );
+		if( std::get_if<Synt::EmptyVariant>( &res ) == nullptr )
+			return res;
+	}
+
+	return Synt::EmptyVariant{};
+}
+
+NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::ConstructorInitializer& constructor_initializer )
+{
+	for( const Synt::Expression& expression : constructor_initializer.arguments )
+	{
+		NamedSyntaxElement res= FindSyntaxElementForPositionImpl( line, column, expression );
+		if( std::get_if<Synt::EmptyVariant>( &res ) == nullptr )
+			return res;
+	}
+
+	return Synt::EmptyVariant{};
+}
+
+NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::ZeroInitializer& zero_initializer )
+{
+	(void)line;
+	(void)column;
+	(void)zero_initializer;
+	return Synt::EmptyVariant{};
+}
+
+NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::UninitializedInitializer& uninitialized_initializer )
+{
+	(void)line;
+	(void)column;
+	(void)uninitialized_initializer;
+	return Synt::EmptyVariant{};
+}
+
 NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::ProgramElements& program_elements )
 {
 	for( const Synt::ProgramElement& program_element : program_elements )
@@ -429,20 +501,28 @@ NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const 
 
 NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::VariablesDeclaration& variables_declaration )
 {
-	// TODO
-	(void)line;
-	(void)column;
-	(void)variables_declaration;
+	{
+		NamedSyntaxElement res= FindSyntaxElementForPositionImpl( line, column, variables_declaration.type );
+		if( std::get_if<Synt::EmptyVariant>( &res ) == nullptr )
+			return res;
+	}
+
+	for( const Synt::VariablesDeclaration::VariableEntry& entry : variables_declaration.variables )
+	{
+		if( entry.initializer != nullptr )
+		{
+			NamedSyntaxElement res= FindSyntaxElementForPositionImpl( line, column, *entry.initializer );
+			if( std::get_if<Synt::EmptyVariant>( &res ) == nullptr )
+				return res;
+		}
+	}
+
 	return Synt::EmptyVariant{};
 }
 
 NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::AutoVariableDeclaration& auto_variable_declaration )
 {
-	// TODO
-	(void)line;
-	(void)column;
-	(void)auto_variable_declaration;
-	return Synt::EmptyVariant{};
+	return FindSyntaxElementForPositionImpl( line, column, auto_variable_declaration.initializer_expression );
 }
 
 NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::StaticAssert& static_assert_ )
@@ -466,10 +546,19 @@ NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const 
 
 NamedSyntaxElement FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::FunctionPtr& function_ptr )
 {
-	// TODO
-	(void)line;
-	(void)column;
-	(void)function_ptr;
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, function_ptr->type_ );
+		if( std::get_if<Synt::EmptyVariant>( &res ) == nullptr )
+			return res;
+	}
+
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, function_ptr->coroutine_non_sync_tag );
+		if( std::get_if<Synt::EmptyVariant>( &res ) == nullptr )
+			return res;
+	}
+
+	// TODO - perform lookup from function body.
 	return Synt::EmptyVariant{};
 }
 
