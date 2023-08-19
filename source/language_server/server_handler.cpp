@@ -89,6 +89,8 @@ Json::Value ServerHandler::HandleRequest( const std::string_view method, const J
 		return ProcessTextDocumentDefinition( params );
 	if( method == "textDocument/completion" )
 		return ProcessTextDocumentCompletion( params );
+	if( method == "textDocument/documentHighlight" )
+		return ProcessTextDocumentHighlight( params );
 
 	Json::Object result;
 	return result;
@@ -241,6 +243,51 @@ Json::Value ServerHandler::ProcessTextDocumentCompletion( const Json::Value& par
 			items.push_back( std::move(item) );
 		}
 		result["items"]= std::move(items);
+	}
+
+	return result;
+}
+
+Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& params )
+{
+	Json::Object result;
+
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+	{
+		log_ << "Not an object!" << std::endl;
+		return result;
+	}
+
+	const auto text_document= obj->getObject( "textDocument" );
+	if( text_document == nullptr )
+	{
+		log_ << "No textDocument!" << std::endl;
+		return result;
+	}
+
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
+	{
+		log_ << "No uri!" << std::endl;
+		return result;
+	}
+
+	const auto position= obj->getObject( "position" );
+	if( position == nullptr )
+	{
+		log_ << "No position!" << std::endl;
+		return result;
+	}
+
+	// Fill dummy.
+	// TODO - perform real request.
+	{
+		Json::Object range;
+		range["start"]= SrcLocToPosition( SrcLoc( 0, 4, 5 ) );
+		range["end"]= SrcLocToPosition( SrcLoc( 0, 4, 7 ) );
+
+		result["range"]= std::move(range);
 	}
 
 	return result;
