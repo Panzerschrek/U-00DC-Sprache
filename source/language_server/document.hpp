@@ -25,6 +25,9 @@ public:
 	LexSyntErrors GetSyntErrors() const;
 	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
 
+	// TODO - return also URI for file
+	std::optional<SrcLoc> GetDefinitionPoint( const SrcLoc& src_loc );
+
 private:
 	std::string text_;
 	LexSyntErrors lex_errors_;

@@ -69,6 +69,7 @@ QtCreator plugin:
 *) Language server features support
 
 Language server
+*) Return requests errors properly
 *) Go to definition
 *) Completion
 *) Highlighting

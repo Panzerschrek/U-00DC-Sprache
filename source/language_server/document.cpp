@@ -30,6 +30,11 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 	return code_builder_errors_;
 }
 
+std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
+{
+	return std::nullopt;
+}
+
 void Document::SetText( std::string text )
 {
 	if( text == text_ )
