@@ -198,6 +198,8 @@ Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& par
 
 	if( const auto src_loc_opt= it->second.GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
+		log_ << "Find " << src_loc_opt->GetLine() << ":" << src_loc_opt->GetColumn() << std::endl;
+
 		Json::Object range;
 		range["start"]= SrcLocToPosition( *src_loc_opt );
 		range["end"]= SrcLocToPosition( SrcLoc( 0, src_loc_opt->GetLine(), src_loc_opt->GetColumn() + 1 ) );

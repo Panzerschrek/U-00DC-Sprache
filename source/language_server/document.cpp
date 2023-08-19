@@ -2,6 +2,7 @@
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../tests/tests_common.hpp"
+#include "syntax_tree_lookup.hpp"
 #include "document.hpp"
 
 namespace U
@@ -9,6 +10,34 @@ namespace U
 
 namespace LangServer
 {
+
+namespace
+{
+
+// Complexity is linear.
+std::optional<SrcLoc> GetLexemSrcLocForPosition( const uint32_t line, const uint32_t column, const Lexems& lexems )
+{
+	// TODO - return none, if position is between lexems.
+
+	const SrcLoc pos_loc( 0, line, column );
+	auto it= lexems.begin();
+	for( ; it < lexems.end(); ++it )
+	{
+		// Compare without file index and macro expansion context.
+		const SrcLoc lexem_loc( 0, it->src_loc.GetLine(), it->src_loc.GetColumn() );
+		if( pos_loc == lexem_loc )
+			return lexem_loc;
+		if( pos_loc < lexem_loc )
+		{
+			if( it != lexems.begin() )
+				return std::prev(it)->src_loc;
+		}
+	}
+
+	return std::nullopt;
+}
+
+} // namespace
 
 Document::Document( std::string text )
 {
@@ -32,7 +61,22 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 
 std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 {
-	return std::nullopt;
+	if( last_valid_state_ == std::nullopt )
+		return std::nullopt;
+
+	// Find lexem, where position is located.
+	const auto lexem_position= GetLexemSrcLocForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
+	if( lexem_position == std::nullopt )
+		return std::nullopt;
+
+	// Find syntax element for given syntax element.
+	const NamedSyntaxElement syntax_element=
+		FindSyntaxElementForPosition( lexem_position->GetLine(), lexem_position->GetColumn(), last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
+
+	// TODO - perform actual lookup.
+	(void)syntax_element;
+
+	return lexem_position;
 }
 
 void Document::SetText( std::string text )
@@ -51,8 +95,6 @@ void Document::SetText( std::string text )
 	if( !lex_errors_.empty() )
 		return;
 
-	lexems_= std::move( lex_result.lexems );
-
 	// TODO - parse imports and read files or request another opended documents.
 	// TODO - provide options for import directories.
 	// TODO - fill macros from imported files.
@@ -61,7 +103,7 @@ void Document::SetText( std::string text )
 
 	Synt::SyntaxAnalysisResult synt_result=
 		Synt::SyntaxAnalysis(
-			lexems_,
+			lex_result.lexems,
 			Synt::MacrosByContextMap(),
 			macro_expansion_contexts,
 			CalculateSourceFileContentsHash( text_ ) );
@@ -103,6 +145,9 @@ void Document::SetText( std::string text )
 			options ).BuildProgram( source_graph );
 
 	code_builder_errors_= std::move(build_result.errors);
+
+	last_valid_state_= std::nullopt;
+	last_valid_state_= CompiledState{ std::move( lex_result.lexems ), std::move( source_graph ) };
 }
 
 } // namespace LangServer

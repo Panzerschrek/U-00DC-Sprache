@@ -2,6 +2,7 @@
 #include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
 #include "../compiler0/lex_synt_lib/syntax_elements.hpp"
 #include "../code_builder_lib_common/code_builder_errors.hpp"
+#include "../lex_synt_lib/source_graph_loader.hpp"
 
 namespace U
 {
@@ -29,9 +30,16 @@ public:
 	std::optional<SrcLoc> GetDefinitionPoint( const SrcLoc& src_loc );
 
 private:
+	struct CompiledState
+	{
+		Lexems lexems;
+		SourceGraph source_graph;
+	};
+
+private:
 	std::string text_;
+	std::optional<CompiledState> last_valid_state_;
 	LexSyntErrors lex_errors_;
-	Lexems lexems_; // Last successful parse lexical analysis result.
 	LexSyntErrors synt_errors_;
 	CodeBuilderErrorsContainer code_builder_errors_;
 };
