@@ -60,7 +60,7 @@ void PrintLexSyntErrors( const SourceGraph& source_graph )
 
 llvm::ManagedStatic<llvm::LLVMContext> g_llvm_context;
 
-std::unique_ptr<CodeBuilder> CreateCodeBuilder(const bool enable_unused_name_errors)
+CodeBuilder::BuildResult RunCodeBuilder( const bool enable_unused_name_errors, const SourceGraph& source_graph )
 {
 	CodeBuilderOptions options;
 	options.build_debug_info= true;
@@ -69,11 +69,12 @@ std::unique_ptr<CodeBuilder> CreateCodeBuilder(const bool enable_unused_name_err
 	options.report_about_unused_names= enable_unused_name_errors;
 
 	return
-		std::make_unique<CodeBuilder>(
+		CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			options );
+			options,
+			source_graph );
 }
 
 std::unique_ptr<llvm::Module> BuildProgramImpl( const char* const text, const bool enable_unsed_name_errors )
@@ -87,7 +88,7 @@ std::unique_ptr<llvm::Module> BuildProgramImpl( const char* const text, const bo
 	if( !source_graph.errors.empty() )
 		return nullptr;
 
-	CodeBuilder::BuildResult build_result= CreateCodeBuilder(enable_unsed_name_errors)->BuildProgram( source_graph );
+	CodeBuilder::BuildResult build_result= RunCodeBuilder( enable_unsed_name_errors, source_graph );
 
 	for( const CodeBuilderError& error : build_result.errors )
 		std::cerr << error.src_loc.GetLine() << ":" << error.src_loc.GetColumn() << " " << error.text << "\n";
@@ -408,7 +409,7 @@ PyObject* BuildProgramWithErrors( PyObject* const self, PyObject* const args )
 		return nullptr;
 	}
 
-	PyObject* const list= BuildErrorsList( CreateCodeBuilder(enable_unused_variable_errors != 0)->BuildProgram( source_graph ).errors );
+	PyObject* const list= BuildErrorsList( RunCodeBuilder( enable_unused_variable_errors != 0, source_graph ).errors );
 	llvm::llvm_shutdown();
 
 	return list;

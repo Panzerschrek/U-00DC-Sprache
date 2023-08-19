@@ -1,6 +1,5 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
-#include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../tests/tests_common.hpp"
 #include "syntax_tree_lookup.hpp"
 #include "document.hpp"
@@ -129,7 +128,8 @@ void Document::SetText( std::string text )
 	source_graph.nodes_storage.push_back( std::move(source_graph_node) );
 	source_graph.macro_expansion_contexts= macro_expansion_contexts;
 
-	llvm::LLVMContext llvm_context;
+	// TODO - maybe avoid recreating context or even share it across multiple documents?
+	auto llvm_context= std::make_unique<llvm::LLVMContext>();
 
 	// TODO - create proper target machine.
 	llvm::DataLayout data_layout( GetTestsDataLayout() );
@@ -145,17 +145,18 @@ void Document::SetText( std::string text )
 	options.generate_tbaa_metadata= false;
 	options.report_about_unused_names= false;
 
-	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
-			llvm_context,
+	auto code_builder=
+		CodeBuilder::BuildProgramAndLeaveInternalState(
+			*llvm_context,
 			data_layout,
 			target_triple,
-			options ).BuildProgram( source_graph );
+			options,
+			source_graph );
 
-	code_builder_errors_= std::move(build_result.errors);
+	code_builder_errors_= code_builder->TakeErrors();
 
 	last_valid_state_= std::nullopt;
-	last_valid_state_= CompiledState{ std::move( lex_result.lexems ), std::move( source_graph ) };
+	last_valid_state_= CompiledState{ std::move( lex_result.lexems ), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
 }
 
 } // namespace LangServer

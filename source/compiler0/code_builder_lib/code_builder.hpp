@@ -44,18 +44,45 @@ struct TypeinfoPartVariable
 class CodeBuilder
 {
 public:
-	CodeBuilder(
-		llvm::LLVMContext& llvm_context,
-		const llvm::DataLayout& data_layout,
-		const llvm::Triple& target_triple,
-		const CodeBuilderOptions& options= CodeBuilderOptions() );
-
 	struct BuildResult
 	{
 		std::vector<CodeBuilderError> errors;
 		std::unique_ptr<llvm::Module> module;
 	};
-	BuildResult BuildProgram( const SourceGraph& source_graph );
+
+public:
+	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
+
+	// Build program and return result. Instance of this class is created and destroyed inside.
+	// Use this method for normal compilation.
+	static BuildResult BuildProgram(
+		llvm::LLVMContext& llvm_context,
+		const llvm::DataLayout& data_layout,
+		const llvm::Triple& target_triple,
+		const CodeBuilderOptions& options,
+		const SourceGraph& source_graph );
+
+	// Build program, but leave internal state and LLVM module.
+	// Use this for expecting program after its building (in IDE language server, for example).
+	static std::unique_ptr<CodeBuilder> BuildProgramAndLeaveInternalState(
+		llvm::LLVMContext& llvm_context,
+		const llvm::DataLayout& data_layout,
+		const llvm::Triple& target_triple,
+		const CodeBuilderOptions& options,
+		const SourceGraph& source_graph );
+
+public:
+	CodeBuilderErrorsContainer TakeErrors();
+
+private:
+	CodeBuilder(
+		llvm::LLVMContext& llvm_context,
+		const llvm::DataLayout& data_layout,
+		const llvm::Triple& target_triple,
+		const CodeBuilderOptions& options );
+
+	// This function may be called exactly once.
+	void BuildProgramInternal( const SourceGraph& source_graph );
 
 private:
 	using ClassesMembersNamespacesTable= std::unordered_map<ClassPtr, std::shared_ptr<const NamesScope>>;
@@ -1127,7 +1154,8 @@ private:
 	const std::shared_ptr<IMangler> mangler_;
 	TBAAMetadataBuilder tbaa_metadata_builder_;
 
-	FunctionContext* global_function_context_= nullptr;
+	std::unique_ptr<FunctionContext> global_function_context_;
+	std::unique_ptr<StackVariablesStorage> global_function_context_variables_storage_;
 
 	std::unique_ptr<llvm::Module> module_;
 	std::vector<CodeBuilderError> global_errors_; // Do not use directly. Use NamesScope::GetErrors() instead.

@@ -35,6 +35,53 @@ std::unique_ptr<IMangler> CreateMangler(const ManglingScheme scheme, const llvm:
 
 } // namespace
 
+
+CodeBuilder::BuildResult CodeBuilder::BuildProgram(
+	llvm::LLVMContext& llvm_context,
+	const llvm::DataLayout& data_layout,
+	const llvm::Triple& target_triple,
+	const CodeBuilderOptions& options,
+	const SourceGraph& source_graph )
+{
+	CodeBuilder code_builder(
+		llvm_context,
+		data_layout,
+		target_triple,
+		options );
+
+	code_builder.BuildProgramInternal( source_graph );
+
+	code_builder.global_function_context_->function->eraseFromParent(); // Kill global function.
+
+	return BuildResult{ code_builder.TakeErrors(), std::move(code_builder.module_) };
+}
+
+std::unique_ptr<CodeBuilder> CodeBuilder::BuildProgramAndLeaveInternalState(
+	llvm::LLVMContext& llvm_context,
+	const llvm::DataLayout& data_layout,
+	const llvm::Triple& target_triple,
+	const CodeBuilderOptions& options,
+	const SourceGraph& source_graph )
+{
+	std::unique_ptr<CodeBuilder> instance(
+		new CodeBuilder(
+			llvm_context,
+			data_layout,
+			target_triple,
+			options ) );
+
+	instance->BuildProgramInternal( source_graph );
+
+	return instance;
+}
+
+CodeBuilderErrorsContainer CodeBuilder::TakeErrors()
+{
+	CodeBuilderErrorsContainer result;
+	result.swap( global_errors_ );
+	return result;
+}
+
 CodeBuilder::CodeBuilder(
 	llvm::LLVMContext& llvm_context,
 	const llvm::DataLayout& data_layout,
@@ -107,10 +154,9 @@ CodeBuilder::CodeBuilder(
 	}
 }
 
-CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_graph )
+void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 {
-	global_errors_.clear();
-
+	U_ASSERT( module_ == nullptr );
 	module_=
 		std::make_unique<llvm::Module>(
 			source_graph.nodes_storage.front().file_path,
@@ -186,18 +232,18 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	llvm::Function* const global_function=
 		llvm::Function::Create(
 			GetLLVMFunctionType( global_function_type ),
-			llvm::Function::LinkageTypes::ExternalLinkage,
+			llvm::Function::LinkageTypes::PrivateLinkage,
 			"",
 			module_.get() );
 
-	FunctionContext global_function_context(
-		std::move(global_function_type),
-		void_type_,
-		llvm_context_,
-		global_function );
-	global_function_context.is_functionless_context= true;
-	const StackVariablesStorage global_function_variables_storage( global_function_context );
-	global_function_context_= &global_function_context;
+	global_function_context_=
+		std::make_unique<FunctionContext> (
+			std::move(global_function_type),
+			void_type_,
+			llvm_context_,
+			global_function );
+	global_function_context_->is_functionless_context= true;
+	global_function_context_variables_storage_= std::make_unique<StackVariablesStorage>( *global_function_context_ );
 
 	debug_info_builder_.emplace( llvm_context_, data_layout_, source_graph, *module_, build_debug_info_ );
 
@@ -222,8 +268,6 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	for( auto& name_value_pair : generated_template_things_storage_ )
 		if( const auto names_scope= name_value_pair.second.value.GetNamespace() )
 			SetupDereferenceableFunctionParamsAndRetAttributes_r( *names_scope );
-
-	global_function->eraseFromParent(); // Kill global function.
 
 	// Fix incomplete typeinfo.
 	for( const auto& typeinfo_entry : typeinfo_cache_ )
@@ -250,23 +294,10 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram( const SourceGraph& source_gr
 	// Reset debug info builder in order to finish deffered debug info construction.
 	debug_info_builder_= std::nullopt;
 
-	// Clear internal structures.
-	compiled_sources_.clear();
-	classes_table_.clear();
-	enums_table_.clear();
-	template_classes_cache_.clear();
-	typeinfo_cache_.clear();
-	typeinfo_class_table_.clear();
-	non_sync_expression_stack_.clear();
-	generated_template_things_storage_.clear();
-	generated_template_things_sequence_.clear();
-	coroutine_classes_table_.clear();
-	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
+	// Leave internal structures intact.
 
-	BuildResult build_result;
-	build_result.errors.swap( global_errors_ );
-	build_result.module.swap( module_ );
-	return build_result;
+	// Normalize result errors.
+	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
 }
 
 void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const size_t node_index )

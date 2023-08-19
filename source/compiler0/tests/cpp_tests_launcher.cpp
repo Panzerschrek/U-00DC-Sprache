@@ -107,11 +107,12 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
+		CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph );
+			GetCodeBuilderOptionsForTests(),
+			source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -129,11 +130,12 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	return
-		{ CodeBuilder(
+		{ CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph ).errors };
+			GetCodeBuilderOptionsForTests(),
+			source_graph ).errors };
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path, const bool report_about_unused_names )
@@ -148,11 +150,12 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 	options.report_about_unused_names= report_about_unused_names;
 
 	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
+		CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			options ).BuildProgram( source_graph );
+			options,
+			source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -169,11 +172,12 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	return
-		{ CodeBuilder(
+		{ CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph ).errors };
+			GetCodeBuilderOptionsForTests(),
+			source_graph ).errors };
 }
 
 std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
@@ -189,11 +193,12 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 	options.generate_lifetime_start_end_debug_calls= true;
 
 	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
+		CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			options ).BuildProgram( source_graph );
+			options,
+			source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -214,11 +219,12 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 	options.mangling_scheme= ManglingScheme::MSVC64; // Test only 64-bit scheme
 
 	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
+		CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			options ).BuildProgram( source_graph );
+			options,
+			source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );

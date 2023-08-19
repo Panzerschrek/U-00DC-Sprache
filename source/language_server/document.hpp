@@ -2,7 +2,7 @@
 #include <ostream>
 #include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
 #include "../compiler0/lex_synt_lib/syntax_elements.hpp"
-#include "../code_builder_lib_common/code_builder_errors.hpp"
+#include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 
 namespace U
@@ -35,6 +35,8 @@ private:
 	{
 		Lexems lexems;
 		SourceGraph source_graph;
+		std::unique_ptr<llvm::LLVMContext> llvm_context;
+		std::unique_ptr<CodeBuilder> code_builder;
 	};
 
 private:
