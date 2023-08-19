@@ -4,7 +4,7 @@ Delete the features from the list as soon as they are implemented.
 
 General:
 *) build-in "for" for array types.
-*) "Disassembly operator" - declare variables with initializer as members of value of structure type.
+*) Disassembly operator - declare variables with initializer as members of value of structure type.
 *) Function to function pointer assignment
 *) Functions references info in "typeinfo".
 *) More float types ( 16 bit, 128 bit )
@@ -24,8 +24,7 @@ References:
 
 Templates:
 *) Default template arguments for short type template form
-*) Template function body generation only if function is selected for call
-*) enable_if for templates
+*) enable_if for type templates
 *) Variadic templates
 *) Function templates with template-dependent reference and mutability modifiers for arguments. Conditional move for
 	such arguments.
@@ -59,7 +58,7 @@ Compiler:
 *) Generate errors about unused function templates
 
 Interpreter:
-*)Support entry point with args and add possibility to provide such args (argc, argv?)
+*) Support entry point with args and add possibility to provide such args (argc, argv?)
 *) Add possibility to optimize code
 *) Support math functions
 
@@ -67,13 +66,19 @@ Compiler1:
 *) Support 128-bit types in switch operator
 
 QtCreator plugin:
-*) Syntax errors highlighting
-*) Symbol table construction for document
-*) "go to defenition" possibility
-*) More advanced program model updating
+*) Language server features support
 
-*) Plugins for other IDEs
-*) Language server?
+Language server
+*) Go to definition
+*) Completion
+*) Highlighting
+*) Providing document symbols
+*) Imports handling
+*) Use prelude
+*) Handling of related documents (one impors another)
+*) Create TargetMachine to obtain proper data layout
+*) Async requests handling
+*) A way to provide configuration (import directories, other compilation options)
 
 CPP Header converter:
 *) White list of converted symbols
