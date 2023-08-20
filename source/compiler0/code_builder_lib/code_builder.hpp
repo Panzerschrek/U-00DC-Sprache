@@ -51,17 +51,6 @@ public:
 		std::unique_ptr<llvm::Module> module;
 	};
 
-	using DefinitionRequestPrefixComponent= std::variant<
-		const Synt::Namespace*,
-		const Synt::Class*,
-		const Synt::TypeTemplate*>;
-
-	using GetDefinitionRequestItem= std::variant<
-		const Synt::NameLookup*,
-		const Synt::RootNamespaceNameLookup*,
-		const Synt::NamesScopeNameFetch*,
-		const Synt::MemberAccessOperator*>;
-
 public:
 	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
 
@@ -86,12 +75,9 @@ public:
 public:
 	CodeBuilderErrorsContainer TakeErrors();
 
+	// Get definition for given location (of some name lexem ).
+	// Works only if definition collection is enabled in options.
 	std::optional<SrcLoc> GetDefinition( const SrcLoc& src_loc );
-
-	// Get definition for given syntax element.
-	// Syntax element must be present in syntax tree, for which code building was performed early.
-	// TODO - provide namespace path.
-	std::optional<SrcLoc> GetDefinition( llvm::ArrayRef<DefinitionRequestPrefixComponent> prefix, const GetDefinitionRequestItem& item );
 
 private:
 	CodeBuilder(
@@ -141,11 +127,6 @@ private:
 	};
 
 private:
-	NamesScope* EvaluateGetDefinitionRequestPrefix( NamesScope& start_scope, llvm::ArrayRef<DefinitionRequestPrefixComponent> prefix );
-	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup* name_lookup );
-	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup* root_namespace_lookup );
-	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch* names_scope_fetch );
-	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MemberAccessOperator* member_access_operator );
 	SrcLoc GetDefinitionFetchSrcLoc( const NamesScopeValue& value );
 
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "syntax_tree_lookup.hpp"
 
 namespace U

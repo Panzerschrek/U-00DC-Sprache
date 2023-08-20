@@ -3011,6 +3011,8 @@ Value CodeBuilder::CallFunction(
 			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, names.GetErrors(), src_loc );
 	}
 
+	// TODO - collect definition point for resolved function.
+
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
 	if( function_ptr == nullptr )
