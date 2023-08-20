@@ -1830,6 +1830,7 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 			return std::move(result);
 		}
 		std::string name= it_->text;
+		const SrcLoc src_loc= it_->src_loc;
 		NextLexem();
 
 		Initializer initializer= ParseVariableInitializer();
@@ -1837,6 +1838,7 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 			PushErrorMessage();
 
 		result.members_initializers.emplace_back();
+		result.members_initializers.back().src_loc= src_loc;
 		result.members_initializers.back().name= std::move(name);
 		result.members_initializers.back().initializer= std::move(initializer);
 

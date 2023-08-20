@@ -70,7 +70,8 @@ QtCreator plugin:
 
 Language server
 *) Return requests errors properly
-*) Go to definition
+*) Go to definition for values
+*) Go to definition for other stuff - loop labels, reference tags, imports, etc.
 *) Completion
 *) Highlighting
 *) Providing document symbols
