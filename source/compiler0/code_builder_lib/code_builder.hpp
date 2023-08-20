@@ -52,7 +52,8 @@ public:
 
 	using DefinitionRequestPrefixComponent= std::variant<
 		const Synt::Namespace*,
-		const Synt::Class*>;
+		const Synt::Class*,
+		const Synt::TypeTemplate*>;
 
 	using GetDefinitionRequestItem= std::variant<
 		const Synt::NameLookup*,

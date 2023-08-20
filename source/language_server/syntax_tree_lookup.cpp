@@ -65,6 +65,7 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint3
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::VariablesDeclaration& variables_declaration );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::AutoVariableDeclaration& auto_variable_declaration );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::StaticAssert& static_assert_ );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const std::unique_ptr<const Synt::TypeAlias>& type_alias_ptr );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::TypeAlias& type_alias );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::Enum& enum_ );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::FunctionPtr& function_ptr );
@@ -141,13 +142,17 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::MemberAccessOperator& member_access_operator )
 {
-	// TODO - check also "src_loc" of name itself.
 	if( member_access_operator.src_loc_.GetLine() == line && member_access_operator.src_loc_.GetColumn() == column )
 		return SyntaxTreeLookupResult{ {}, &member_access_operator };
 
 	if( member_access_operator.template_parameters != std::nullopt )
 	{
-		// TODO
+		for( const Synt::Expression& template_arg : *member_access_operator.template_parameters )
+		{
+			auto res= FindSyntaxElementForPositionImpl( line, column, template_arg );
+			if( res != std::nullopt )
+				return res;
+		}
 	}
 
 	return std::nullopt;
@@ -556,6 +561,11 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 	return FindSyntaxElementForPositionImpl( line, column, static_assert_.expression );
 }
 
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const std::unique_ptr<const Synt::TypeAlias>& type_alias_ptr )
+{
+	return FindSyntaxElementForPositionImpl( line, column, *type_alias_ptr );
+}
+
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::TypeAlias& type_alias )
 {
 	return FindSyntaxElementForPositionImpl( line, column, type_alias.value );
@@ -563,7 +573,7 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::Enum& enum_ )
 {
-	// TODO
+	// Nothing to do here.
 	(void)line;
 	(void)column;
 	(void)enum_;
@@ -617,10 +627,15 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::TypeTemplate& type_template )
 {
-	// TODO
-	(void)line;
-	(void)column;
-	(void)type_template;
+	auto res= std::visit( [&](const auto& el){ return FindSyntaxElementForPositionImpl( line, column, el ); }, type_template.something_ );
+	if( res != std::nullopt )
+	{
+		res->prefix.push_back( &type_template );
+		return res;
+	}
+
+	// TODO - process template arguments and signature arguments.
+
 	return std::nullopt;
 }
 

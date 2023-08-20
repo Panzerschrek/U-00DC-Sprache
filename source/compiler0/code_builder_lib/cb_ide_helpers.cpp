@@ -44,6 +44,24 @@ NamesScope* CodeBuilder::EvaluateGetDefinitionRequestPrefix( NamesScope& start_s
 			}
 		}
 	}
+	else if( const auto type_template= std::get_if<const Synt::TypeTemplate*>( &prefix_head ) )
+	{
+		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*type_template)->name_ ) )
+		{
+			if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
+			{
+				for( const TypeTemplatePtr& type_template_ptr : type_templates_set->type_templates )
+				{
+					if( type_template_ptr->syntax_element == *type_template )
+					{
+						// Found this type template.
+						// TODO - instantiate type template with dummy ags and search something inside it.
+						return nullptr;
+					}
+				}
+			}
+		}
+	}
 	else U_ASSERT(false);
 
 	return nullptr;
