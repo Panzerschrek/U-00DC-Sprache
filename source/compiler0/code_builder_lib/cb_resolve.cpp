@@ -36,7 +36,6 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	BuildGlobalThingDuringResolveIfNecessary( *root_namespace, value );
 
 	value->referenced= true;
-
 	CollectDefinition( *value, root_namespace_lookup.src_loc_ );
 
 	return value->value;

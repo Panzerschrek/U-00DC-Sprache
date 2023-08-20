@@ -38,7 +38,10 @@ void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc&
 	if( !collect_definition_points_ )
 		return;
 
-	// TODO - maybe store only definitions for main file (with 0 index)?
+	// Store only definitions for main file (in order to consume less memory), since this functionality is used only for main file.
+	// TODO - make this behaviour configurable?
+	if( src_loc.GetFileIndex() != 0 )
+		return;
 
 	DefinitionPoint point;
 	point.src_loc= GetDefinitionFetchSrcLoc( value );
