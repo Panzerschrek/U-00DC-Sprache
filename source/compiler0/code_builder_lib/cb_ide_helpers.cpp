@@ -64,9 +64,9 @@ std::optional<SrcLoc> CodeBuilder::GetDefinitionImpl( NamesScope& names_scope, F
 {
 	(void)function_context;
 
-	const NameLookupResult result= LookupName( *names_scope.GetRoot(), root_namespace_lookup->name, root_namespace_lookup->src_loc_ );
-	if( result.value != nullptr )
-		return result.value->src_loc;
+	const NamesScopeValue* const value= names_scope.GetRoot()->GetThisScopeValue( root_namespace_lookup->name );
+	if( value != nullptr )
+		return value->src_loc;
 
 	return std::nullopt;
 }

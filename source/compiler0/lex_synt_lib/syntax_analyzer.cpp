@@ -881,8 +881,8 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 	case Lexem::Type::Dot:
 		{
-			MemberAccessOperator member_access_operator( it_->src_loc );
 			NextLexem();
+			MemberAccessOperator member_access_operator( it_->src_loc );
 
 			member_access_operator.expression_= std::make_unique<Expression>(std::move(expr));
 
@@ -1522,8 +1522,8 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 {
 	if( it_->type == Lexem::Type::Scope )
 	{
-		RootNamespaceNameLookup root_namespace_lookup( it_->src_loc );
 		NextLexem(); // Skip ::
+		RootNamespaceNameLookup root_namespace_lookup( it_->src_loc );
 
 		if( it_->type != Lexem::Type::Identifier )
 			PushErrorMessage();
