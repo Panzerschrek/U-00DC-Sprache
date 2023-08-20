@@ -89,6 +89,9 @@ private:
 	// This function may be called exactly once.
 	void BuildProgramInternal( const SourceGraph& source_graph );
 
+	// Run code, necessary for result LLVM module finalization, but not (strictly) necessary for other purposes.
+	void FinalizeProgram();
+
 private:
 	using ClassesMembersNamespacesTable= std::unordered_map<ClassPtr, std::shared_ptr<const NamesScope>>;
 	struct SourceBuildResult

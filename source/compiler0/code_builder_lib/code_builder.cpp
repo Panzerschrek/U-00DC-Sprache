@@ -50,8 +50,7 @@ CodeBuilder::BuildResult CodeBuilder::BuildProgram(
 		options );
 
 	code_builder.BuildProgramInternal( source_graph );
-
-	code_builder.global_function_context_->function->eraseFromParent(); // Kill global function.
+	code_builder.FinalizeProgram();
 
 	return BuildResult{ code_builder.TakeErrors(), std::move(code_builder.module_) };
 }
@@ -71,6 +70,7 @@ std::unique_ptr<CodeBuilder> CodeBuilder::BuildProgramAndLeaveInternalState(
 			options ) );
 
 	instance->BuildProgramInternal( source_graph );
+	// Do not finalize program - save some time.
 
 	return instance;
 }
@@ -263,12 +263,22 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 	// Check for unused names in root file.
 	CheckForUnusedGlobalNames( *compiled_sources_[0].names_map );
 
+	// Leave internal structures intact.
+
+	// Normalize result errors.
+	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
+}
+
+void CodeBuilder::FinalizeProgram()
+{
 	// Finalize "defererenceable" attributes.
 	// Do this at end because we needs complete types for params/return values even for only prototypes.
 	SetupDereferenceableFunctionParamsAndRetAttributes_r( *compiled_sources_.front().names_map );
 	for( auto& name_value_pair : generated_template_things_storage_ )
 		if( const auto names_scope= name_value_pair.second.value.GetNamespace() )
 			SetupDereferenceableFunctionParamsAndRetAttributes_r( *names_scope );
+
+	global_function_context_->function->eraseFromParent(); // Kill global function.
 
 	// Fix incomplete typeinfo.
 	for( const auto& typeinfo_entry : typeinfo_cache_ )
@@ -294,11 +304,6 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 
 	// Reset debug info builder in order to finish deffered debug info construction.
 	debug_info_builder_= std::nullopt;
-
-	// Leave internal structures intact.
-
-	// Normalize result errors.
-	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
 }
 
 void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const size_t node_index )
