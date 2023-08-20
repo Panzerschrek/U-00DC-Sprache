@@ -3432,6 +3432,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				field.name= it_->text;
+				field.src_loc_= it_->src_loc;
 				NextLexem();
 			}
 			else

@@ -96,11 +96,18 @@ std::optional<SrcLoc> CodeBuilder::GetDefinitionImpl( NamesScope& names_scope, F
 
 std::optional<SrcLoc> CodeBuilder::GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context,  const Synt::MemberAccessOperator* const member_access_operator )
 {
-	// TODO
-	(void)names_scope;
-	(void)function_context;
-	(void)member_access_operator;
-	return std::nullopt;
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *member_access_operator->expression_, names_scope, function_context );
+
+	Class* const class_type= variable->type.GetClassType();
+	if( class_type == nullptr )
+		return std::nullopt;
+
+	const auto class_value= ResolveClassValue( class_type, member_access_operator->member_name_ );
+	NamesScopeValue* const class_member= class_value.first;
+	if( class_member == nullptr )
+		return std::nullopt;
+
+	return class_member->src_loc;
 }
 
 } // namespace U
