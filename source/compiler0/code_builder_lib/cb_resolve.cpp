@@ -37,6 +37,8 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 	value->referenced= true;
 
+	CollectDefinition( *value, root_namespace_lookup.src_loc_ );
+
 	return value->value;
 }
 
@@ -52,6 +54,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		BuildGlobalThingDuringResolveIfNecessary( *result.space, result.value );
 
 	result.value->referenced= true;
+	CollectDefinition( *result.value, name_lookup.src_loc_ );
 
 	return result.value->value;
 }
@@ -97,6 +100,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	}
 
 	value->referenced= true;
+	CollectDefinition( *value, names_scope_fetch.src_loc_ );
 
 	return value->value;
 }

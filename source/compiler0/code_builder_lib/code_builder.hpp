@@ -32,6 +32,7 @@ struct CodeBuilderOptions
 	bool generate_lifetime_start_end_debug_calls= false;
 	bool generate_tbaa_metadata= false;
 	bool report_about_unused_names= true;
+	bool collect_definition_points= false;
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
@@ -84,6 +85,8 @@ public:
 
 public:
 	CodeBuilderErrorsContainer TakeErrors();
+
+	std::optional<SrcLoc> GetDefinition( const SrcLoc& src_loc );
 
 	// Get definition for given syntax element.
 	// Syntax element must be present in syntax tree, for which code building was performed early.
@@ -144,6 +147,8 @@ private:
 	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch* names_scope_fetch );
 	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MemberAccessOperator* member_access_operator );
 	SrcLoc GetDefinitionFetchSrcLoc( const NamesScopeValue& value );
+
+	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );
@@ -1121,6 +1126,7 @@ private:
 	const bool generate_lifetime_start_end_debug_calls_;
 	const bool generate_tbaa_metadata_;
 	const bool report_about_unused_names_;
+	const bool collect_definition_points_;
 
 	struct
 	{
@@ -1213,6 +1219,16 @@ private:
 	std::optional<DebugInfoBuilder> debug_info_builder_;
 
 	std::unordered_map<CoroutineTypeDescription, std::unique_ptr<Class>, CoroutineTypeDescriptionHasher> coroutine_classes_table_;
+
+	// Definition points. Collected during code building (if it is required).
+	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.
+	struct DefinitionPoint
+	{
+		SrcLoc src_loc;
+		std::optional<Type> type; // Type (if present).
+	};
+	// Map usage point to definition point.
+	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

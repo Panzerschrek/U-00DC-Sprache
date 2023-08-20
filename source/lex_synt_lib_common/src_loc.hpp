@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstddef>
 #include <limits>
 
 namespace U
@@ -32,11 +33,18 @@ public:
 	bool operator< ( const SrcLoc& other ) const;
 	bool operator<=( const SrcLoc& other ) const;
 
+	size_t Hash() const;
+
 private:
 	uint16_t file_index_;
 	uint16_t macro_expansion_index_;
 	uint16_t line_; // from 1
 	uint16_t column_;
+};
+
+struct SrcLocHasher
+{
+	size_t operator()( const SrcLoc& src_loc ) const { return src_loc.Hash(); }
 };
 
 } // namespace U

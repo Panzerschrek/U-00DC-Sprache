@@ -95,6 +95,7 @@ CodeBuilder::CodeBuilder(
 	, generate_lifetime_start_end_debug_calls_( options.generate_lifetime_start_end_debug_calls )
 	, generate_tbaa_metadata_( options.generate_tbaa_metadata )
 	, report_about_unused_names_( options.report_about_unused_names )
+	, collect_definition_points_( options.collect_definition_points )
 	, constexpr_function_evaluator_( data_layout_ )
 	, mangler_( CreateMangler( options.mangling_scheme, data_layout_ ) )
 	, tbaa_metadata_builder_( llvm_context_, data_layout, mangler_ )

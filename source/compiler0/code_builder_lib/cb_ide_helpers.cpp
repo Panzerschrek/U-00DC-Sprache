@@ -4,6 +4,15 @@
 namespace U
 {
 
+std::optional<SrcLoc> CodeBuilder::GetDefinition( const SrcLoc& src_loc )
+{
+	const auto it= definition_points_.find( src_loc );
+	if( it == definition_points_.end() )
+		return std::nullopt;
+
+	return it->second.src_loc;
+}
+
 std::optional<SrcLoc> CodeBuilder::GetDefinition( const llvm::ArrayRef<DefinitionRequestPrefixComponent> prefix, const GetDefinitionRequestItem& item )
 {
 	// TODO - allow fetching from non-main file?
@@ -146,6 +155,30 @@ SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
 	}
 
 	return value.src_loc;
+}
+
+void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc )
+{
+	if( !collect_definition_points_ )
+		return;
+
+	// TODO - maybe store only definitions for main file (with 0 index)?
+
+	DefinitionPoint point;
+	point.src_loc= GetDefinitionFetchSrcLoc( value );
+
+	if( const auto variable_ptr= value.value.GetVariable() )
+	{
+		if( variable_ptr != nullptr )
+			point.type= variable_ptr->type;
+	}
+	if( const auto class_field= value.value.GetClassField() )
+	{
+		if( class_field != nullptr )
+			point.type= class_field->type;
+	}
+
+	definition_points_.insert( std::make_pair( src_loc, std::move(point) ) );
 }
 
 } // namespace U

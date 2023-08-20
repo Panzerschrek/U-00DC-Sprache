@@ -1,7 +1,6 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "../tests/tests_common.hpp"
-#include "syntax_tree_lookup.hpp"
 #include "document.hpp"
 
 namespace U
@@ -71,29 +70,14 @@ std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 
 	log_ << "Found lexem " << lexem_position->GetLine() << ":" << lexem_position->GetColumn() << std::endl;
 
-	// Find syntax element for given syntax element.
-	const SyntaxTreeLookupResultOpt lookup_result=
-		FindSyntaxElementForPosition( lexem_position->GetLine(), lexem_position->GetColumn(), last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
+	const auto definition_point= last_valid_state_->code_builder->GetDefinition( *lexem_position );
 
-	// TODO - perform actual lookup.
-	if( lookup_result != std::nullopt )
-	{
-		log_ << "Found syntax element of kind " << lookup_result->item.index() << std::endl;
-
-		std::optional<SrcLoc> definition_point=
-			last_valid_state_->code_builder->GetDefinition( lookup_result->prefix, lookup_result->item );
-
-		if( definition_point != std::nullopt )
-			log_ << "Found definition point " <<  definition_point->GetLine() << ":" << definition_point->GetColumn() << std::endl;
-		else
-			log_ << "Can't find definition point" << std::endl;
-
-		return definition_point;
-	}
+	if( definition_point != std::nullopt )
+		log_ << "Found definition point " <<  definition_point->GetLine() << ":" << definition_point->GetColumn() << std::endl;
 	else
-		log_ << "Found no syntax element" << std::endl;
+		log_ << "Can't find definition point" << std::endl;
 
-	return std::nullopt;
+	return definition_point;
 }
 
 void Document::SetText( std::string text )
@@ -154,6 +138,8 @@ void Document::SetText( std::string text )
 	options.generate_lifetime_start_end_debug_calls= false;
 	options.generate_tbaa_metadata= false;
 	options.report_about_unused_names= false;
+
+	options.collect_definition_points= true;
 
 	auto code_builder=
 		CodeBuilder::BuildProgramAndLeaveInternalState(
