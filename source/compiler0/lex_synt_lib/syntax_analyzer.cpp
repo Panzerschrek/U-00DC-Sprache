@@ -184,7 +184,7 @@ private:
 
 	TypeName ParseTypeNameInTemplateBrackets();
 
-	FunctionParam ParseFunctionArgument();
+	FunctionParam ParseFunctionParam();
 	void ParseFunctionTypeEnding( FunctionType& result );
 	FunctionTypePtr ParseFunctionType();
 
@@ -1147,7 +1147,7 @@ TypeName SyntaxAnalyzer::ParseTypeNameInTemplateBrackets()
 	return result;
 }
 
-FunctionParam SyntaxAnalyzer::ParseFunctionArgument()
+FunctionParam SyntaxAnalyzer::ParseFunctionParam()
 {
 	FunctionParam result( it_->src_loc );
 	result.type_= ParseTypeName();
@@ -1204,6 +1204,7 @@ FunctionParam SyntaxAnalyzer::ParseFunctionArgument()
 	}
 
 	result.name_= it_->text;
+	result.src_loc_= it_->src_loc;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Apostrophe )
@@ -1298,7 +1299,7 @@ FunctionTypePtr SyntaxAnalyzer::ParseFunctionType()
 			break;
 		}
 
-		result->params_.push_back( ParseFunctionArgument() );
+		result->params_.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -3184,7 +3185,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			break;
 		}
 
-		params.push_back( ParseFunctionArgument() );
+		params.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
