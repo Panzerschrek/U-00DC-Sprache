@@ -1,23 +1,52 @@
+#include "../../lex_synt_lib_common/assert.hpp"
 #include "code_builder.hpp"
 
 namespace U
 {
 
-std::optional<SrcLoc> CodeBuilder::GetDefinition( const GetDefinitionRequestItem& item )
+std::optional<SrcLoc> CodeBuilder::GetDefinition( const llvm::ArrayRef<DefinitionRequestPrefixComponent> prefix, const GetDefinitionRequestItem& item )
 {
 	// TODO - allow fetching from non-main file?
-	NamesScope& names_scope= *compiled_sources_.front().names_map;
+	NamesScope& start_names_scope= *compiled_sources_.front().names_map;
 	FunctionContext& function_context= *global_function_context_;
 
-	return std::visit( [&]( const auto& el ) { return GetDefinitionImpl( names_scope, function_context, el ); }, item );
+	NamesScope* const scope= EvaluateGetDefinitionRequestPrefix( start_names_scope, prefix );
+	if( scope == nullptr )
+		return std::nullopt;
+
+	return std::visit( [&]( const auto& el ) { return GetDefinitionImpl( *scope, function_context, el ); }, item );
 }
 
-std::optional<SrcLoc> CodeBuilder::GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::EmptyVariant& empty_variant )
+NamesScope* CodeBuilder::EvaluateGetDefinitionRequestPrefix( NamesScope& start_scope, const llvm::ArrayRef<DefinitionRequestPrefixComponent> prefix )
 {
-	(void)empty_variant;
-	(void)names_scope;
-	(void)function_context;
-	return std::nullopt;
+	if( prefix.empty() )
+		return &start_scope;
+
+	const DefinitionRequestPrefixComponent& prefix_head= prefix.front();
+	const auto prefix_tail= prefix.drop_front();
+
+	if( const auto namespace_= std::get_if<const Synt::Namespace*>( &prefix_head ) )
+	{
+		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*namespace_)->name_ ) )
+		{
+			if( const auto names_scope= value->value.GetNamespace() )
+				return EvaluateGetDefinitionRequestPrefix( *names_scope, prefix_tail );
+		}
+	}
+	else if( const auto class_= std::get_if<const Synt::Class*>( &prefix_head ) )
+	{
+		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*class_)->name_ ) )
+		{
+			if( const auto type_name= value->value.GetTypeName() )
+			{
+				if( const auto class_type= type_name->GetClassType() )
+					return EvaluateGetDefinitionRequestPrefix( *class_type->members, prefix_tail );
+			}
+		}
+	}
+	else U_ASSERT(false);
+
+	return nullptr;
 }
 
 std::optional<SrcLoc> CodeBuilder::GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup* const name_lookup )

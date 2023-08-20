@@ -7,11 +7,17 @@ namespace U
 namespace LangServer
 {
 
-using NamedSyntaxElement= CodeBuilder::GetDefinitionRequestItem;
+struct SyntaxTreeLookupResult
+{
+	llvm::SmallVector<CodeBuilder::DefinitionRequestPrefixComponent, 4> prefix;
+	CodeBuilder::GetDefinitionRequestItem item;
+};
+
+using SyntaxTreeLookupResultOpt= std::optional<SyntaxTreeLookupResult>;
 
 // Complexity is linear.
 // TODO - return also path (namespace/class/class template + function + (maybe) blocks).
-NamedSyntaxElement FindSyntaxElementForPosition( uint32_t line, uint32_t column, const Synt::ProgramElements& program_elements );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPosition( uint32_t line, uint32_t column, const Synt::ProgramElements& program_elements );
 
 } // namespace LangServer
 
