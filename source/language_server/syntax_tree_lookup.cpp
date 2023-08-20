@@ -78,6 +78,30 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint3
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::NonSyncTagNone& non_sync_tag_none );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::NonSyncTagTrue& non_sync_tag_true );
 
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::IfAlternative& if_alternative );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::Block& block );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::ScopeBlock& scope_block );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::ReturnOperator& return_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::YieldOperator& yield_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::WhileOperator& while_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::LoopOperator& loop_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::RangeForOperator& range_for_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::CStyleForOperator& c_style_for_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::BreakOperator& break_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::ContinueOperator& continue_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::WithOperator& with_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::IfOperator& if_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::StaticIfOperator& static_if_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::IfCoroAdvanceOperator& if_coro_advance_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::SwitchOperator& switch_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::SingleExpressionOperator& single_expression_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::AssignmentOperator& assignment_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::AdditiveAssignmentOperator& additive_assignment_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::IncrementOperator& increment_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::DecrementOperator& decrement_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::Halt& halt );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::HaltIf& halt_if );
+
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::Expression& expression )
 {
 	return std::visit( [&]( const auto& el ) { return FindSyntaxElementForPositionImpl( line, column, el ); }, expression );
@@ -594,7 +618,9 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 			return res;
 	}
 
-	// TODO - perform lookup from function body.
+	if( function_ptr->block_ != nullptr )
+		return FindSyntaxElementForPositionImpl( line, column, *function_ptr->block_ );
+
 	return std::nullopt;
 }
 
@@ -687,6 +713,275 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl(const uint32_t line, 
 	(void)column;
 	(void)non_sync_tag_true;
 	return std::nullopt;
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::IfAlternative& if_alternative )
+{
+	return std::visit( [&](const auto& el) { return FindSyntaxElementForPositionImpl( line, column, el ); }, if_alternative );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::Block& block )
+{
+	for( const Synt::BlockElement& block_element : block.elements_ )
+	{
+		auto res= std::visit( [&](const auto& el) { return FindSyntaxElementForPositionImpl( line, column, el ); }, block_element );
+		if( res != std::nullopt )
+			return res;
+	}
+
+	return std::nullopt;
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::ScopeBlock& scope_block )
+{
+	return FindSyntaxElementForPositionImpl( line, column, static_cast<const Synt::Block&>(scope_block) );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::ReturnOperator& return_operator )
+{
+	return FindSyntaxElementForPositionImpl( line, column, return_operator.expression_ );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::YieldOperator& yield_operator )
+{
+	return FindSyntaxElementForPositionImpl( line, column, yield_operator.expression );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::WhileOperator& while_operator )
+{
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, while_operator.condition_ );
+		if( res != std::nullopt )
+			return res;
+	}
+
+	return FindSyntaxElementForPositionImpl( line, column, *while_operator.block_ );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::LoopOperator& loop_operator )
+{
+	return FindSyntaxElementForPositionImpl( line, column, *loop_operator.block_ );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::RangeForOperator& range_for_operator )
+{
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, range_for_operator.sequence_ );
+		if( res != std::nullopt )
+			return res;
+	}
+
+	return FindSyntaxElementForPositionImpl( line, column, *range_for_operator.block_ );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::CStyleForOperator& c_style_for_operator )
+{
+	if( c_style_for_operator.variable_declaration_part_ != nullptr )
+	{
+		auto res= std::visit( [&](const auto& el) { return FindSyntaxElementForPositionImpl( line, column, el ); }, *c_style_for_operator.variable_declaration_part_ );
+		if( res != std::nullopt )
+			return res;
+	}
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, c_style_for_operator.loop_condition_ );
+		if( res != std::nullopt )
+			return res;
+	}
+	for( const auto& element : c_style_for_operator.iteration_part_elements_ )
+	{
+		auto res= std::visit( [&](const auto& el) { return FindSyntaxElementForPositionImpl( line, column, el ); }, element );
+		if( res != std::nullopt )
+			return res;
+	}
+
+	return FindSyntaxElementForPositionImpl( line, column, *c_style_for_operator.block_ );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::BreakOperator& break_operator )
+{
+	(void)line;
+	(void)column;
+	(void)break_operator;
+	return std::nullopt;
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::ContinueOperator& continue_operator )
+{
+	(void)line;
+	(void)column;
+	(void)continue_operator;
+	return std::nullopt;
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::WithOperator& with_operator )
+{
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, with_operator.expression_ );
+		if( res != std::nullopt )
+			return res;
+	}
+
+	return FindSyntaxElementForPositionImpl( line, column, with_operator.block_ );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::IfOperator& if_operator )
+{
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, if_operator.condition );
+		if( res != std::nullopt )
+			return res;
+	}
+	if( if_operator.alternative != nullptr )
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, *if_operator.alternative );
+		if( res != std::nullopt )
+			return res;
+	}
+
+	return FindSyntaxElementForPositionImpl( line, column, if_operator.block );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::StaticIfOperator& static_if_operator )
+{
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, static_if_operator.condition );
+		if( res != std::nullopt )
+			return res;
+	}
+	if( static_if_operator.alternative != nullptr )
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, *static_if_operator.alternative );
+		if( res != std::nullopt )
+			return res;
+	}
+
+	return FindSyntaxElementForPositionImpl( line, column, static_if_operator.block );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::IfCoroAdvanceOperator& if_coro_advance_operator )
+{
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, if_coro_advance_operator.expression );
+		if( res != std::nullopt )
+			return res;
+	}
+	if( if_coro_advance_operator.alternative != nullptr )
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, *if_coro_advance_operator.alternative );
+		if( res != std::nullopt )
+			return res;
+	}
+
+	return FindSyntaxElementForPositionImpl( line, column, if_coro_advance_operator.block );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::SwitchOperator& switch_operator )
+{
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, switch_operator.value );
+		if( res != std::nullopt )
+			return res;
+	}
+
+	for( const Synt::SwitchOperator::Case& case_ : switch_operator.cases )
+	{
+		if( const auto case_values= std::get_if< std::vector<Synt::SwitchOperator::CaseValue> >( &case_.values ) )
+		{
+			for( const auto& case_value : *case_values )
+			{
+				if( const auto single_value= std::get_if< Synt::Expression >( &case_value ) )
+				{
+					auto res= FindSyntaxElementForPositionImpl( line, column, *single_value );
+					if( res != std::nullopt )
+						return res;
+				}
+				else if( const auto range= std::get_if< Synt::SwitchOperator::CaseRange >( &case_value ) )
+				{
+					{
+						auto res= FindSyntaxElementForPositionImpl( line, column, range->low );
+						if( res != std::nullopt )
+							return res;
+					}
+					{
+						auto res= FindSyntaxElementForPositionImpl( line, column, range->high );
+						if( res != std::nullopt )
+							return res;
+					}
+				}
+				// else U_ASSERT(false);
+			}
+		}
+		else if( std::get_if< Synt::SwitchOperator::DefaultPlaceholder >( &case_.values ) != nullptr )
+		{}
+		// else U_ASSERT(false);
+
+		{
+			auto res= FindSyntaxElementForPositionImpl( line, column, case_.block );
+			if( res != std::nullopt )
+				return res;
+		}
+	}
+
+	return std::nullopt;
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::SingleExpressionOperator& single_expression_operator )
+{
+	return FindSyntaxElementForPositionImpl( line, column, single_expression_operator.expression_ );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::AssignmentOperator& assignment_operator )
+{
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, assignment_operator.l_value_ );
+		if( res != std::nullopt )
+			return res;
+	}
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, assignment_operator.r_value_ );
+		if( res != std::nullopt )
+			return res;
+	}
+	return std::nullopt;
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::AdditiveAssignmentOperator& additive_assignment_operator )
+{
+
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, additive_assignment_operator.l_value_ );
+		if( res != std::nullopt )
+			return res;
+	}
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, additive_assignment_operator.r_value_ );
+		if( res != std::nullopt )
+			return res;
+	}
+	return std::nullopt;
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::IncrementOperator& increment_operator )
+{
+	return FindSyntaxElementForPositionImpl( line, column, increment_operator.expression );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::DecrementOperator& decrement_operator )
+{
+	return FindSyntaxElementForPositionImpl( line, column, decrement_operator.expression );
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::Halt& halt )
+{
+	(void)line;
+	(void)column;
+	(void)halt;
+	return std::nullopt;
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::HaltIf& halt_if )
+{
+	return FindSyntaxElementForPositionImpl( line, column, halt_if.condition );
 }
 
 } // namespace
