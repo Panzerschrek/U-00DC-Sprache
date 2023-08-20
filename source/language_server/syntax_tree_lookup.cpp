@@ -414,6 +414,12 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::NamesScopeNameFetch& names_scope_names_fetch )
 {
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, *names_scope_names_fetch.base );
+		if( res != std::nullopt )
+			return res;
+	}
+
 	if( line == names_scope_names_fetch.src_loc_.GetLine() && column == names_scope_names_fetch.src_loc_.GetColumn() )
 		return SyntaxTreeLookupResult{ {}, &names_scope_names_fetch };
 	return std::nullopt;
@@ -421,6 +427,12 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::TemplateParametrization& template_parametrization )
 {
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, *template_parametrization.base );
+		if( res != std::nullopt )
+			return res;
+	}
+
 	for( const Synt::Expression& arg : template_parametrization.template_args )
 	{
 		auto res= FindSyntaxElementForPositionImpl( line, column, arg );
