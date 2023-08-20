@@ -70,8 +70,8 @@ QtCreator plugin:
 
 Language server
 *) Return requests errors properly
-*) Go to definition for values
-*) Go to definition for other stuff - loop labels, reference tags, imports, etc.
+*) Go to definition for non-value names - loop labels, reference tags, imports, etc.
+*) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
 *) Completion
 *) Highlighting
 *) Providing document symbols
