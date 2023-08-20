@@ -737,6 +737,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				name= it_->text;
+				namespace_->src_loc_= it_->src_loc;
 				NextLexem();
 			}
 			else
@@ -1973,6 +1974,7 @@ AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 	}
 
 	result.name= it_->text;
+	result.src_loc_= it_->src_loc;
 	NextLexem();
 
 	ExpectLexem( Lexem::Type::Assignment );
@@ -2499,6 +2501,7 @@ Enum SyntaxAnalyzer::ParseEnum()
 		return result;
 	}
 	result.name= it_->text;
+	result.src_loc_= it_->src_loc;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Colon )
@@ -2906,16 +2909,18 @@ TypeAlias SyntaxAnalyzer::ParseTypeAlias()
 	}
 
 	const std::string& name= it_->text;
+	const SrcLoc src_loc= it_->src_loc;
 	NextLexem();
 
 	TypeAlias result= ParseTypeAliasBody();
 	result.name= name;
+	result.src_loc_= src_loc;
 	return result;
 }
 
 TypeAlias SyntaxAnalyzer::ParseTypeAliasBody()
 {
-	// Parse something like "- i32;"
+	// Parse something like "= i32;"
 
 	TypeAlias result( it_->src_loc );
 
@@ -3001,6 +3006,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				return result;
 			}
 			result->name_.push_back(it_->text);
+			result->src_loc_= it_->src_loc;
 			NextLexem();
 
 			if( it_->type == Lexem::Type::Scope )
@@ -3040,6 +3046,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	}
 	else
 	{
+		result->src_loc_= it_->src_loc;
 		OverloadedOperator overloaded_operator= OverloadedOperator::None;
 		switch( it_->type )
 		{
@@ -3285,7 +3292,6 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 {
 	U_ASSERT( it_->text == Keywords::struct_ || it_->text == Keywords::class_ );
 	const bool is_class= it_->text == Keywords::class_;
-	const SrcLoc& class_src_loc= it_->src_loc;
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Identifier )
@@ -3294,6 +3300,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		return nullptr;
 	}
 	std::string name= it_->text;
+	const SrcLoc& class_src_loc= it_->src_loc;
 	NextLexem();
 
 	ClassKindAttribute class_kind_attribute= ClassKindAttribute::Struct;
