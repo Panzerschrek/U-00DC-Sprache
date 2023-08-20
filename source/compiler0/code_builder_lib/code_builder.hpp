@@ -142,6 +142,7 @@ private:
 	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup* root_namespace_lookup );
 	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch* names_scope_fetch );
 	std::optional<SrcLoc> GetDefinitionImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::MemberAccessOperator* member_access_operator );
+	SrcLoc GetDefinitionFetchSrcLoc( const NamesScopeValue& value );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );

@@ -55,7 +55,7 @@ std::optional<SrcLoc> CodeBuilder::GetDefinitionImpl( NamesScope& names_scope, F
 
 	const NameLookupResult result= LookupName( names_scope, name_lookup->name, name_lookup->src_loc_ );
 	if( result.value != nullptr )
-		return result.value->src_loc;
+		return GetDefinitionFetchSrcLoc( *result.value );
 
 	return std::nullopt;
 }
@@ -66,7 +66,7 @@ std::optional<SrcLoc> CodeBuilder::GetDefinitionImpl( NamesScope& names_scope, F
 
 	const NamesScopeValue* const value= names_scope.GetRoot()->GetThisScopeValue( root_namespace_lookup->name );
 	if( value != nullptr )
-		return value->src_loc;
+		return GetDefinitionFetchSrcLoc( *value );
 
 	return std::nullopt;
 }
@@ -89,7 +89,7 @@ std::optional<SrcLoc> CodeBuilder::GetDefinitionImpl( NamesScope& names_scope, F
 	}
 
 	if( value != nullptr )
-		return value->src_loc;
+		return GetDefinitionFetchSrcLoc( *value );
 
 	return std::nullopt;
 }
@@ -107,7 +107,22 @@ std::optional<SrcLoc> CodeBuilder::GetDefinitionImpl( NamesScope& names_scope, F
 	if( class_member == nullptr )
 		return std::nullopt;
 
-	return class_member->src_loc;
+	return GetDefinitionFetchSrcLoc( *class_member );
+}
+
+SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
+{
+	// Process functions set specially.
+	// TODO - maybe perform overloaidng resolution to fetch proper function?
+	if( const auto functions_set= value.value.GetFunctionsSet() )
+	{
+		if( !functions_set->functions.empty() )
+			return functions_set->functions.front().body_src_loc;
+		if( !functions_set->template_functions.empty() )
+			return functions_set->template_functions.front()->src_loc;
+	}
+
+	return value.src_loc;
 }
 
 } // namespace U
