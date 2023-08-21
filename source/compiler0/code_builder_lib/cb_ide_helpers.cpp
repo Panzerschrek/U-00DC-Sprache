@@ -20,8 +20,10 @@ std::vector<SrcLoc> CodeBuilder::GetUsagePoints( const SrcLoc& src_loc )
 
 	for( const auto& definition_point_pair : definition_points_ )
 	{
-		if( definition_point_pair.second.src_loc == src_loc )
+		if( src_loc == definition_point_pair.second.src_loc )
 			result.push_back( definition_point_pair.first );
+		if( src_loc == definition_point_pair.first )
+			result.push_back( definition_point_pair.second.src_loc );
 	}
 
 	std::sort( result.begin(), result.end() );

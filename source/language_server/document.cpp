@@ -63,16 +63,8 @@ std::vector<SrcLoc> Document::GetHighlightLocations( const SrcLoc& src_loc )
 	if( lexem_position == std::nullopt )
 		return {};
 
-	if( const auto definition= last_valid_state_->code_builder->GetDefinition( *lexem_position ) )
-	{
-		// TODO - filter-out locations from other documents.
-		return last_valid_state_->code_builder->GetUsagePoints( *definition );
-	}
-	else
-	{
-		// Gound nothing - return only lexem position itself.
-		return { *lexem_position };
-	}
+	// TODO - filter-out locations from other documents.
+	return last_valid_state_->code_builder->GetUsagePoints( *lexem_position );
 }
 
 void Document::SetText( std::string text )
