@@ -126,6 +126,149 @@ U_TEST( GoToDefinition_Test1 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 40, 29 ) == SrcLoc( 0, 29, 10 ) );
 }
 
+U_TEST( GoToDefinition_Test2 )
+{
+	// Go to definition for local variables.
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x, i32 y )
+		{
+			auto x_copy= x;
+			{
+				auto x_copy= y; // shadow previous x_copy
+				auto x= 42; // shadow previous x
+				var i32 kkk= 3 + 7 * x; // access x on previous line
+			}
+			var i32 ww= w; // Access global variable.
+			auto some = y + x; // Access local y, not global y.
+		}
+		auto y= w;
+		var i32 w= 0;
+	)";
+
+	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  4, 16 ) == SrcLoc( 0,  2, 14 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  6, 17 ) == SrcLoc( 0,  2, 21 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  8, 25 ) == SrcLoc( 0,  7,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 15 ) == SrcLoc( 0, 14, 10 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 15 ) == SrcLoc( 0,  2, 21 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 19 ) == SrcLoc( 0,  2, 14 ) );
+}
+
+U_TEST( GoToDefinition_Test3 )
+{
+	// Member access operator, field access.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			fn GetX( this ) : i32 { return x; }
+		}
+		struct T
+		{
+			Int x;
+			fn SetX( mut this, Int in_x ){ x= in_x; }
+		}
+		type Int= i32;
+		fn Foo( S &mut s, T& t )
+		{
+			var i32 x= t.x;
+			s.x= x;
+		}
+		struct SS
+		{
+			S s;
+		}
+		fn Bar() : SS;
+		fn Baz()
+		{
+			auto x= Bar().s.x;
+		}
+	)";
+
+	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  5, 34 ) == SrcLoc( 0,  4,  7 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9,  5 ) == SrcLoc( 0, 12,  7 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 22 ) == SrcLoc( 0, 12,  7 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 34 ) == SrcLoc( 0,  9,  7 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 39 ) == SrcLoc( 0, 10, 26 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 10 ) == SrcLoc( 0,  2,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 20 ) == SrcLoc( 0,  7,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 15, 14 ) == SrcLoc( 0, 13, 23 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 15, 16 ) == SrcLoc( 0,  9,  7 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 16,  3 ) == SrcLoc( 0, 13, 17 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 16,  5 ) == SrcLoc( 0,  4,  7 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 16,  8 ) == SrcLoc( 0, 15, 11 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 20,  3 ) == SrcLoc( 0,  2,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 22, 14 ) == SrcLoc( 0, 18,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 25, 17 ) == SrcLoc( 0, 20,  5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 25, 19 ) == SrcLoc( 0,  4,  7 ) );
+}
+
+U_TEST( GoToDefinition_Test4 )
+{
+	// Struct initializers.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		struct T
+		{
+			S s;
+			bool y;
+		}
+		struct Q
+		{
+			char8 ccc;
+			fn constructor()
+				( ccc= 42c8 )
+			{}
+		}
+		fn Foo()
+		{
+			var S s{ .x= 0, .y= 1.0f };
+			var T t{ .s= s, .y= false };
+		}
+	)";
+
+	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9,  3 ) == SrcLoc( 0,  2,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 16,  7 ) == SrcLoc( 0, 14,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 21,  7 ) == SrcLoc( 0,  2,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 21, 13 ) == SrcLoc( 0,  4,  7 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 21, 20 ) == SrcLoc( 0,  5,  7 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 22,  7 ) == SrcLoc( 0,  7,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 22, 13 ) == SrcLoc( 0,  9,  5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 22, 20 ) == SrcLoc( 0, 10,  8 ) );
+}
+
+U_TEST( GoToDefinition_Test5 )
+{
+	// Move operator
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 mut x )
+		{
+			move(x);
+		}
+	)";
+
+	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 4, 8 ) == SrcLoc( 0, 2, 18 ) );
+}
+
 } // namespace
 
 } // namespace U

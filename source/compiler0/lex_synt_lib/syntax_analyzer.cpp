@@ -1007,10 +1007,10 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		}
 		if( it_->text == Keywords::move_ )
 		{
-			MoveOperator move_operator( it_->src_loc );
 			NextLexem();
-
 			ExpectLexem( Lexem::Type::BracketLeft );
+
+			MoveOperator move_operator( it_->src_loc );
 
 			if( it_->type != Lexem::Type::Identifier )
 			{
@@ -3258,6 +3258,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				}
 				constructor_initialization_list->members_initializers.emplace_back();
 				constructor_initialization_list->members_initializers.back().name= it_->text;
+				constructor_initialization_list->members_initializers.back().src_loc= it_->src_loc;
 				Initializer& initializer= constructor_initialization_list->members_initializers.back().initializer;
 
 				NextLexem();
