@@ -80,6 +80,8 @@ void EditorWidget::contextMenuEvent( QContextMenuEvent* const event )
 	const QPointer<QMenu> menu(new QMenu(this));
 
 	menu->addAction( Core::ActionManager::command( TextEditor::Constants::FOLLOW_SYMBOL_UNDER_CURSOR)->action() );
+	menu->addAction( Core::ActionManager::command( TextEditor::Constants::FIND_USAGES)->action() );
+	menu->addAction( Core::ActionManager::command( TextEditor::Constants::RENAME_SYMBOL)->action() );
 
 	appendStandardContextMenuActions(menu);
 
