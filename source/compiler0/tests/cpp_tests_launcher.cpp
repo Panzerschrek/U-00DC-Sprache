@@ -5,14 +5,13 @@
 #include <llvm/Support/ManagedStatic.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../code_builder_lib/code_builder.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
-#include "../../tests/cpp_tests/tests.hpp"
 #include "../../tests/tests_common.hpp"
+#include "cpp_tests_launcher.hpp"
 
 namespace U
 {
@@ -107,11 +106,12 @@ std::unique_ptr<llvm::Module> BuildProgram( const char* const text )
 	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
+		CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph );
+			GetCodeBuilderOptionsForTests(),
+			source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -129,11 +129,12 @@ ErrorTestBuildResult BuildProgramWithErrors( const char* const text )
 	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	return
-		{ CodeBuilder(
+		{ CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph ).errors };
+			GetCodeBuilderOptionsForTests(),
+			source_graph ).errors };
 }
 
 std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> sources, const std::string& root_file_path, const bool report_about_unused_names )
@@ -148,11 +149,12 @@ std::unique_ptr<llvm::Module> BuildMultisourceProgram( std::vector<SourceEntry> 
 	options.report_about_unused_names= report_about_unused_names;
 
 	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
+		CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			options ).BuildProgram( source_graph );
+			options,
+			source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -169,11 +171,12 @@ ErrorTestBuildResult BuildMultisourceProgramWithErrors( std::vector<SourceEntry>
 	U_TEST_ASSERT( source_graph.errors.empty() );
 
 	return
-		{ CodeBuilder(
+		{ CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			GetCodeBuilderOptionsForTests() ).BuildProgram( source_graph ).errors };
+			GetCodeBuilderOptionsForTests(),
+			source_graph ).errors };
 }
 
 std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
@@ -189,11 +192,12 @@ std::unique_ptr<llvm::Module> BuildProgramForLifetimesTest( const char* text )
 	options.generate_lifetime_start_end_debug_calls= true;
 
 	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
+		CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			options ).BuildProgram( source_graph );
+			options,
+			source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -214,11 +218,12 @@ std::unique_ptr<llvm::Module> BuildProgramForMSVCManglingTest( const char* text 
 	options.mangling_scheme= ManglingScheme::MSVC64; // Test only 64-bit scheme
 
 	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
+		CodeBuilder::BuildProgram(
 			*g_llvm_context,
 			llvm::DataLayout( GetTestsDataLayout() ),
 			GetTestsTargetTriple(),
-			options ).BuildProgram( source_graph );
+			options,
+			source_graph );
 
 	PrinteErrors_r( build_result.errors );
 	U_TEST_ASSERT( build_result.errors.empty() );
@@ -236,6 +241,36 @@ bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderEr
 	return false;
 }
 
+std::unique_ptr<CodeBuilder> BuildProgramForGoToDefinitionTest( const char* const text )
+{
+	const std::string file_path= "_";
+	MultiFileVfs vfs( file_path, text );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+
+	PrintLexSyntErrors( source_graph );
+	U_TEST_ASSERT( source_graph.errors.empty() );
+
+	CodeBuilderOptions options;
+	options.build_debug_info= false;
+	options.generate_tbaa_metadata= false;
+	options.create_lifetimes= false;
+	options.report_about_unused_names= false;
+	options.collect_definition_points= true;
+
+	auto code_builder=
+		CodeBuilder::BuildProgramAndLeaveInternalState(
+			*g_llvm_context,
+			llvm::DataLayout( GetTestsDataLayout() ),
+			GetTestsTargetTriple(),
+			options,
+			source_graph );
+
+	const auto errors= code_builder->TakeErrors();
+	PrinteErrors_r( errors );
+	U_TEST_ASSERT( errors.empty() );
+
+	return code_builder;
+}
 
 } // namespace U
 

@@ -179,6 +179,8 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			REPORT_ERROR( NameNotFound, names.GetErrors(), initializer.src_loc_, member_initializer.name );
 			continue;
 		}
+		CollectDefinition( *class_member, member_initializer.src_loc );
+
 		const ClassFieldPtr field= class_member->value.GetClassField();
 		if( field == nullptr )
 		{
@@ -988,6 +990,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
 			continue;
 		}
+		CollectDefinition( *class_member, field_initializer.src_loc );
 
 		const ClassFieldPtr field= class_member->value.GetClassField();
 		if( field == nullptr )

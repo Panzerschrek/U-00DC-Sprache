@@ -601,6 +601,7 @@ struct UninitializedInitializer final : public SyntaxElementBase
 
 struct StructNamedInitializer::MemberInitializer
 {
+	SrcLoc src_loc;
 	std::string name;
 	Initializer initializer;
 };
@@ -998,6 +999,7 @@ struct TemplateBase : public SyntaxElementBase
 
 	struct Param
 	{
+		SrcLoc src_loc;
 		std::optional<ComplexName> param_type; // For variable params.
 		std::string name;
 	};

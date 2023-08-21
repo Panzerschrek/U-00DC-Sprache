@@ -37,11 +37,12 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	options.report_about_unused_names= !enable_unused_names;
 
 	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
+		CodeBuilder::BuildProgram(
 			llvm_context,
 			data_layout,
 			target_triple,
-			options ).BuildProgram( source_graph );
+			options,
+			source_graph );
 
 	result.code_builder_errors= std::move( build_result.errors );
 	result.llvm_module= std::move( build_result.module );

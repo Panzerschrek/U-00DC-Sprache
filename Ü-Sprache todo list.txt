@@ -69,7 +69,9 @@ QtCreator plugin:
 *) Language server features support
 
 Language server
-*) Go to definition
+*) Return requests errors properly
+*) Go to definition for non-value names - loop labels, reference tags, imports, etc.
+*) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
 *) Completion
 *) Highlighting
 *) Providing document symbols
@@ -79,6 +81,7 @@ Language server
 *) Create TargetMachine to obtain proper data layout
 *) Async requests handling
 *) A way to provide configuration (import directories, other compilation options)
+*) Tune SrcLoc of syntax elements in order to show name definition points properly
 
 CPP Header converter:
 *) White list of converted symbols

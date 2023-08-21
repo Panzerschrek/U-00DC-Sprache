@@ -374,6 +374,8 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 				continue;
 			}
 
+			// TODO - collect definition of component names here.
+
 			for( size_t i= component_index + 1u; value != nullptr && i < func.name_.size(); ++i )
 			{
 				if( const auto namespace_= value->value.GetNamespace() )

@@ -281,11 +281,12 @@ int Main( int argc, const char* argv[] )
 		}
 
 		CodeBuilder::BuildResult build_result=
-			CodeBuilder(
+			CodeBuilder::BuildProgram(
 				llvm_context,
 				data_layout,
 				target_triple,
-				CodeBuilderOptions() ).BuildProgram( source_graph );
+				CodeBuilderOptions(),
+				source_graph );
 
 		PrintErrors( dependent_files, build_result.errors, errors_format );
 

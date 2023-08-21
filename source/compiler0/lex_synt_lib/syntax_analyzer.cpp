@@ -184,7 +184,7 @@ private:
 
 	TypeName ParseTypeNameInTemplateBrackets();
 
-	FunctionParam ParseFunctionArgument();
+	FunctionParam ParseFunctionParam();
 	void ParseFunctionTypeEnding( FunctionType& result );
 	FunctionTypePtr ParseFunctionType();
 
@@ -737,6 +737,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				name= it_->text;
+				namespace_->src_loc_= it_->src_loc;
 				NextLexem();
 			}
 			else
@@ -881,8 +882,8 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 	case Lexem::Type::Dot:
 		{
-			MemberAccessOperator member_access_operator( it_->src_loc );
 			NextLexem();
+			MemberAccessOperator member_access_operator( it_->src_loc );
 
 			member_access_operator.expression_= std::make_unique<Expression>(std::move(expr));
 
@@ -1006,10 +1007,10 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		}
 		if( it_->text == Keywords::move_ )
 		{
-			MoveOperator move_operator( it_->src_loc );
 			NextLexem();
-
 			ExpectLexem( Lexem::Type::BracketLeft );
+
+			MoveOperator move_operator( it_->src_loc );
 
 			if( it_->type != Lexem::Type::Identifier )
 			{
@@ -1146,7 +1147,7 @@ TypeName SyntaxAnalyzer::ParseTypeNameInTemplateBrackets()
 	return result;
 }
 
-FunctionParam SyntaxAnalyzer::ParseFunctionArgument()
+FunctionParam SyntaxAnalyzer::ParseFunctionParam()
 {
 	FunctionParam result( it_->src_loc );
 	result.type_= ParseTypeName();
@@ -1203,6 +1204,7 @@ FunctionParam SyntaxAnalyzer::ParseFunctionArgument()
 	}
 
 	result.name_= it_->text;
+	result.src_loc_= it_->src_loc;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Apostrophe )
@@ -1297,7 +1299,7 @@ FunctionTypePtr SyntaxAnalyzer::ParseFunctionType()
 			break;
 		}
 
-		result->params_.push_back( ParseFunctionArgument() );
+		result->params_.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -1522,8 +1524,8 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 {
 	if( it_->type == Lexem::Type::Scope )
 	{
-		RootNamespaceNameLookup root_namespace_lookup( it_->src_loc );
 		NextLexem(); // Skip ::
+		RootNamespaceNameLookup root_namespace_lookup( it_->src_loc );
 
 		if( it_->type != Lexem::Type::Identifier )
 			PushErrorMessage();
@@ -1828,6 +1830,7 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 			return std::move(result);
 		}
 		std::string name= it_->text;
+		const SrcLoc src_loc= it_->src_loc;
 		NextLexem();
 
 		Initializer initializer= ParseVariableInitializer();
@@ -1835,6 +1838,7 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 			PushErrorMessage();
 
 		result.members_initializers.emplace_back();
+		result.members_initializers.back().src_loc= src_loc;
 		result.members_initializers.back().name= std::move(name);
 		result.members_initializers.back().initializer= std::move(initializer);
 
@@ -1973,6 +1977,7 @@ AutoVariableDeclaration SyntaxAnalyzer::ParseAutoVariableDeclaration()
 	}
 
 	result.name= it_->text;
+	result.src_loc_= it_->src_loc;
 	NextLexem();
 
 	ExpectLexem( Lexem::Type::Assignment );
@@ -2499,6 +2504,7 @@ Enum SyntaxAnalyzer::ParseEnum()
 		return result;
 	}
 	result.name= it_->text;
+	result.src_loc_= it_->src_loc;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Colon )
@@ -2906,16 +2912,18 @@ TypeAlias SyntaxAnalyzer::ParseTypeAlias()
 	}
 
 	const std::string& name= it_->text;
+	const SrcLoc src_loc= it_->src_loc;
 	NextLexem();
 
 	TypeAlias result= ParseTypeAliasBody();
 	result.name= name;
+	result.src_loc_= src_loc;
 	return result;
 }
 
 TypeAlias SyntaxAnalyzer::ParseTypeAliasBody()
 {
-	// Parse something like "- i32;"
+	// Parse something like "= i32;"
 
 	TypeAlias result( it_->src_loc );
 
@@ -2934,7 +2942,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	auto result= std::make_unique<Function>( it_->src_loc );
 
-	const std::string& function_defenition_lexem= it_->text;
+	const std::string& function_definition_lexem= it_->text;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::virtual_ )
@@ -3001,6 +3009,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				return result;
 			}
 			result->name_.push_back(it_->text);
+			result->src_loc_= it_->src_loc;
 			NextLexem();
 
 			if( it_->type == Lexem::Type::Scope )
@@ -3011,7 +3020,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					continue;
 				else
 				{
-					if( function_defenition_lexem == Keywords::op_ )
+					if( function_definition_lexem == Keywords::op_ )
 						break; // Allow op A::+
 					else
 					{
@@ -3025,7 +3034,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
-	if( function_defenition_lexem == Keywords::fn_ )
+	if( function_definition_lexem == Keywords::fn_ )
 	{
 		if( result->name_.empty() )
 		{
@@ -3040,6 +3049,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	}
 	else
 	{
+		result->src_loc_= it_->src_loc;
 		OverloadedOperator overloaded_operator= OverloadedOperator::None;
 		switch( it_->type )
 		{
@@ -3177,7 +3187,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			break;
 		}
 
-		params.push_back( ParseFunctionArgument() );
+		params.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -3248,6 +3258,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				}
 				constructor_initialization_list->members_initializers.emplace_back();
 				constructor_initialization_list->members_initializers.back().name= it_->text;
+				constructor_initialization_list->members_initializers.back().src_loc= it_->src_loc;
 				Initializer& initializer= constructor_initialization_list->members_initializers.back().initializer;
 
 				NextLexem();
@@ -3285,7 +3296,6 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 {
 	U_ASSERT( it_->text == Keywords::struct_ || it_->text == Keywords::class_ );
 	const bool is_class= it_->text == Keywords::class_;
-	const SrcLoc& class_src_loc= it_->src_loc;
 	NextLexem();
 
 	if( it_->type != Lexem::Type::Identifier )
@@ -3294,6 +3304,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 		return nullptr;
 	}
 	std::string name= it_->text;
+	const SrcLoc& class_src_loc= it_->src_loc;
 	NextLexem();
 
 	ClassKindAttribute class_kind_attribute= ClassKindAttribute::Struct;
@@ -3432,6 +3443,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				field.name= it_->text;
+				field.src_loc_= it_->src_loc;
 				NextLexem();
 			}
 			else
@@ -3515,6 +3527,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		}
 
 		params.back().name= it_->text;
+		params.back().src_loc= it_->src_loc;
 		NextLexem();
 
 		if( it_->type == Lexem::Type::Comma )

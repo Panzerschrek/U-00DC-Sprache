@@ -84,4 +84,18 @@ bool SrcLoc::operator<=( const SrcLoc& other ) const
 	return *this < other || *this == other;
 }
 
+size_t SrcLoc::Hash() const
+{
+	if( sizeof(size_t) >= 8 )
+	{
+		// Can pack all into hash.
+		return (uint64_t(file_index_) << 48) | (uint64_t(macro_expansion_index_) << 32) | (uint64_t(line_) << 16) | uint64_t(column_);
+	}
+	else
+	{
+		// xor low and high parts.
+		return ( (uint32_t(file_index_) << 16) | uint32_t(macro_expansion_index_) ) ^ ( (uint32_t(line_) << 16) | uint32_t(column_) );
+	}
+}
+
 } // namespace U

@@ -34,6 +34,7 @@ struct TemplateBase
 
 	struct TemplateParameter
 	{
+		SrcLoc src_loc;
 		std::string name;
 		std::optional<TemplateSignatureParam> type; // For variable params.
 	};

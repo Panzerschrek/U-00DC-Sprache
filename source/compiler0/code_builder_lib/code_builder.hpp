@@ -32,6 +32,7 @@ struct CodeBuilderOptions
 	bool generate_lifetime_start_end_debug_calls= false;
 	bool generate_tbaa_metadata= false;
 	bool report_about_unused_names= true;
+	bool collect_definition_points= false;
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
@@ -44,18 +45,52 @@ struct TypeinfoPartVariable
 class CodeBuilder
 {
 public:
-	CodeBuilder(
-		llvm::LLVMContext& llvm_context,
-		const llvm::DataLayout& data_layout,
-		const llvm::Triple& target_triple,
-		const CodeBuilderOptions& options= CodeBuilderOptions() );
-
 	struct BuildResult
 	{
 		std::vector<CodeBuilderError> errors;
 		std::unique_ptr<llvm::Module> module;
 	};
-	BuildResult BuildProgram( const SourceGraph& source_graph );
+
+public:
+	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
+
+	// Build program and return result. Instance of this class is created and destroyed inside.
+	// Use this method for normal compilation.
+	static BuildResult BuildProgram(
+		llvm::LLVMContext& llvm_context,
+		const llvm::DataLayout& data_layout,
+		const llvm::Triple& target_triple,
+		const CodeBuilderOptions& options,
+		const SourceGraph& source_graph );
+
+	// Build program, but leave internal state and LLVM module.
+	// Use this for expecting program after its building (in IDE language server, for example).
+	static std::unique_ptr<CodeBuilder> BuildProgramAndLeaveInternalState(
+		llvm::LLVMContext& llvm_context,
+		const llvm::DataLayout& data_layout,
+		const llvm::Triple& target_triple,
+		const CodeBuilderOptions& options,
+		const SourceGraph& source_graph );
+
+public:
+	CodeBuilderErrorsContainer TakeErrors();
+
+	// Get definition for given location (of some name lexem ).
+	// Works only if definition collection is enabled in options.
+	std::optional<SrcLoc> GetDefinition( const SrcLoc& src_loc );
+
+private:
+	CodeBuilder(
+		llvm::LLVMContext& llvm_context,
+		const llvm::DataLayout& data_layout,
+		const llvm::Triple& target_triple,
+		const CodeBuilderOptions& options );
+
+	// This function may be called exactly once.
+	void BuildProgramInternal( const SourceGraph& source_graph );
+
+	// Run code, necessary for result LLVM module finalization, but not (strictly) necessary for other purposes.
+	void FinalizeProgram();
 
 private:
 	using ClassesMembersNamespacesTable= std::unordered_map<ClassPtr, std::shared_ptr<const NamesScope>>;
@@ -93,6 +128,11 @@ private:
 			: thing_ptr(in_thing_ptr), name(std::move(in_name)), src_loc(in_src_loc)
 		{}
 	};
+
+private:
+	SrcLoc GetDefinitionFetchSrcLoc( const NamesScopeValue& value );
+
+	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );
@@ -372,8 +412,7 @@ private:
 
 	void FillKnownFunctionTemplateArgsIntoNamespace(
 		const FunctionTemplate& function_template,
-		NamesScope& target_namespace,
-		const SrcLoc& src_loc );
+		NamesScope& target_namespace );
 
 	NamesScopeValue* AddNewTemplateThing( std::string key, NamesScopeValue thing );
 
@@ -1070,6 +1109,7 @@ private:
 	const bool generate_lifetime_start_end_debug_calls_;
 	const bool generate_tbaa_metadata_;
 	const bool report_about_unused_names_;
+	const bool collect_definition_points_;
 
 	struct
 	{
@@ -1127,7 +1167,8 @@ private:
 	const std::shared_ptr<IMangler> mangler_;
 	TBAAMetadataBuilder tbaa_metadata_builder_;
 
-	FunctionContext* global_function_context_= nullptr;
+	std::unique_ptr<FunctionContext> global_function_context_;
+	std::unique_ptr<StackVariablesStorage> global_function_context_variables_storage_;
 
 	std::unique_ptr<llvm::Module> module_;
 	std::vector<CodeBuilderError> global_errors_; // Do not use directly. Use NamesScope::GetErrors() instead.
@@ -1161,6 +1202,16 @@ private:
 	std::optional<DebugInfoBuilder> debug_info_builder_;
 
 	std::unordered_map<CoroutineTypeDescription, std::unique_ptr<Class>, CoroutineTypeDescriptionHasher> coroutine_classes_table_;
+
+	// Definition points. Collected during code building (if it is required).
+	// Only single result is stored, that affects template stuff and other places in source code with multiple building passes.
+	struct DefinitionPoint
+	{
+		SrcLoc src_loc;
+		std::optional<Type> type; // Type (if present).
+	};
+	// Map usage point to definition point.
+	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

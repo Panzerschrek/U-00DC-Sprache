@@ -1,6 +1,6 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
-#include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../tests/tests_common.hpp"
 #include "document.hpp"
 
@@ -10,7 +10,8 @@ namespace U
 namespace LangServer
 {
 
-Document::Document( std::string text )
+Document::Document( std::ostream& log, std::string text )
+	: log_(log)
 {
 	SetText( std::move(text) );
 }
@@ -30,6 +31,28 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 	return code_builder_errors_;
 }
 
+std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
+{
+	if( last_valid_state_ == std::nullopt )
+		return std::nullopt;
+
+	// Find lexem, where position is located.
+	const auto lexem_position= GetLexemSrcLocForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
+	if( lexem_position == std::nullopt )
+		return std::nullopt;
+
+	log_ << "Found lexem " << lexem_position->GetLine() << ":" << lexem_position->GetColumn() << std::endl;
+
+	const auto definition_point= last_valid_state_->code_builder->GetDefinition( *lexem_position );
+
+	if( definition_point != std::nullopt )
+		log_ << "Found definition point " <<  definition_point->GetLine() << ":" << definition_point->GetColumn() << std::endl;
+	else
+		log_ << "Can't find definition point" << std::endl;
+
+	return definition_point;
+}
+
 void Document::SetText( std::string text )
 {
 	if( text == text_ )
@@ -46,8 +69,6 @@ void Document::SetText( std::string text )
 	if( !lex_errors_.empty() )
 		return;
 
-	lexems_= std::move( lex_result.lexems );
-
 	// TODO - parse imports and read files or request another opended documents.
 	// TODO - provide options for import directories.
 	// TODO - fill macros from imported files.
@@ -56,7 +77,7 @@ void Document::SetText( std::string text )
 
 	Synt::SyntaxAnalysisResult synt_result=
 		Synt::SyntaxAnalysis(
-			lexems_,
+			lex_result.lexems,
 			Synt::MacrosByContextMap(),
 			macro_expansion_contexts,
 			CalculateSourceFileContentsHash( text_ ) );
@@ -74,7 +95,8 @@ void Document::SetText( std::string text )
 	source_graph.nodes_storage.push_back( std::move(source_graph_node) );
 	source_graph.macro_expansion_contexts= macro_expansion_contexts;
 
-	llvm::LLVMContext llvm_context;
+	// TODO - maybe avoid recreating context or even share it across multiple documents?
+	auto llvm_context= std::make_unique<llvm::LLVMContext>();
 
 	// TODO - create proper target machine.
 	llvm::DataLayout data_layout( GetTestsDataLayout() );
@@ -90,14 +112,20 @@ void Document::SetText( std::string text )
 	options.generate_tbaa_metadata= false;
 	options.report_about_unused_names= false;
 
-	CodeBuilder::BuildResult build_result=
-		CodeBuilder(
-			llvm_context,
+	options.collect_definition_points= true;
+
+	auto code_builder=
+		CodeBuilder::BuildProgramAndLeaveInternalState(
+			*llvm_context,
 			data_layout,
 			target_triple,
-			options ).BuildProgram( source_graph );
+			options,
+			source_graph );
 
-	code_builder_errors_= std::move(build_result.errors);
+	code_builder_errors_= code_builder->TakeErrors();
+
+	last_valid_state_= std::nullopt;
+	last_valid_state_= CompiledState{ std::move( lex_result.lexems ), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
 }
 
 } // namespace LangServer

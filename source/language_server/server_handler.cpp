@@ -180,16 +180,33 @@ Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& par
 		return result;
 	}
 
-	result["uri"]= uri->str();
 
-	// Fill dummy.
-	// TODO - perform real request.
+	const auto line= position->getInteger( "line" );
+	const auto character= position->getInteger( "character" );
+	if( line == llvm::None || character == llvm::None )
 	{
+		log_ << "Invalid position!" << std::endl;
+		return result;
+	}
+
+	const auto it= documents_.find( uri->str() );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return result;
+	}
+
+	if( const auto src_loc_opt= it->second.GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	{
+		log_ << "Find " << src_loc_opt->GetLine() << ":" << src_loc_opt->GetColumn() << std::endl;
+
 		Json::Object range;
-		range["start"]= SrcLocToPosition( SrcLoc( 0, 4, 5 ) );
-		range["end"]= SrcLocToPosition( SrcLoc( 0, 4, 7 ) );
+		range["start"]= SrcLocToPosition( *src_loc_opt );
+		range["end"]= SrcLocToPosition( SrcLoc( 0, src_loc_opt->GetLine(), src_loc_opt->GetColumn() + 1 ) );
 
 		result["range"]= std::move(range);
+		result["uri"]= uri->str();
+
 	}
 	return result;
 }
@@ -324,7 +341,7 @@ void ServerHandler::ProcessTextDocumentDidOpen( const Json::Value& params )
 
 	log_ << "open a document " << uri->str() << std::endl;
 
-	const auto it_bool_pair= documents_.insert( std::make_pair( uri->str(), Document( text->str() ) ) );
+	const auto it_bool_pair= documents_.insert( std::make_pair( uri->str(), Document( log_, text->str() ) ) );
 
 	GenerateDocumentNotifications( *uri, it_bool_pair.first->second );
 }

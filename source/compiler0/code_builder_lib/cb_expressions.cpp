@@ -310,6 +310,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
+	CollectDefinition( *class_member, member_access_operator.src_loc_ );
+
 	if( !function_context.is_in_unsafe_block &&
 		( member_access_operator.member_name_ == Keywords::constructor_ || member_access_operator.member_name_ == Keywords::destructor_ ) )
 		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names.GetErrors(), member_access_operator.src_loc_,  member_access_operator.member_name_ );
@@ -1230,6 +1232,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 
 	resolved_value_ptr->referenced= true;
+	CollectDefinition( *resolved_value_ptr, move_operator.src_loc_ );
 
 	const Value& resolved_value= resolved_value_ptr->value;
 	const VariablePtr resolved_variable= resolved_value.GetVariable();
@@ -3007,6 +3010,8 @@ Value CodeBuilder::CallFunction(
 		function_ptr=
 			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, names.GetErrors(), src_loc );
 	}
+
+	// TODO - collect definition point for resolved function.
 
 	// SPRACHE_TODO - try get function with "this" parameter in signature and without it.
 	// We must support static functions call using "this".
