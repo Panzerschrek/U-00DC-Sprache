@@ -269,6 +269,136 @@ U_TEST( GoToDefinition_Test5 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 4, 8 ) == SrcLoc( 0, 2, 18 ) );
 }
 
+U_TEST( GoToDefinition_Test6 )
+{
+	// Functions.
+	// For now we can't distiguish between overloading functions.
+	static const char c_program_text[]=
+	R"(
+		fn Foo(i32 x);
+		fn Foo(f32 x);
+		fn Bar()
+		{
+			Foo(7);
+			Foo(4.5f);
+		}
+	)";
+
+	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	const auto foo_definition0= GetDefinition( lexems, *code_builder, 6, 3 );
+	const auto foo_definition1= GetDefinition( lexems, *code_builder, 7, 3 );
+	U_TEST_ASSERT( foo_definition0 == SrcLoc( 0, 2, 5 ) || foo_definition0 == SrcLoc( 0, 3, 5 ) );
+	U_TEST_ASSERT( foo_definition1 == SrcLoc( 0, 2, 5 ) || foo_definition1 == SrcLoc( 0, 3, 5 ) );
+}
+
+U_TEST( GoToDefinition_Test7 )
+{
+	// Should return definition, not prototype.
+	static const char c_program_text[]=
+	R"(
+		fn Foo(i32 x);
+		fn Bar()
+		{
+			Foo(7);
+		}
+		fn Foo(i32 x){}
+	)";
+
+	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 5, 3 ) == SrcLoc( 0, 7, 5 ) );
+}
+
+U_TEST( GoToDefinition_Test8 )
+{
+	// Call different functions in different scopes.
+	static const char c_program_text[]=
+	R"(
+		fn Foo();
+		namespace NS
+		{
+			fn Foo();
+		}
+		struct S
+		{
+			fn Foo(this);
+		}
+		struct T
+		{
+			fn Foo();
+		}
+		fn Bar()
+		{
+			Foo();
+			NS::Foo();
+			var S s;
+			s.Foo();
+			T::Foo();
+		}
+	)";
+
+	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 17,  3 ) == SrcLoc( 0,  2,  5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 18,  3 ) == SrcLoc( 0,  3, 12 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 18,  7 ) == SrcLoc( 0,  5,  6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 19,  7 ) == SrcLoc( 0,  7,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 20,  3 ) == SrcLoc( 0, 19,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 20,  5 ) == SrcLoc( 0,  9,  6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 21,  3 ) == SrcLoc( 0, 11,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 21,  6 ) == SrcLoc( 0, 13,  6 ) );
+}
+
+U_TEST( GoToDefinition_Test9 )
+{
+	// Type templates.
+	static const char c_program_text[]=
+	R"(
+		template</type T/>
+		struct Box
+		{
+			T t;
+		}
+		fn Foo( Box</Float/> b ) : Float
+		{
+			return b.t;
+		}
+		type Float= f32;
+	)";
+
+	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 5,  3 ) == SrcLoc( 0,  2, 17 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 7, 10 ) == SrcLoc( 0,  2,  2 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 7, 15 ) == SrcLoc( 0, 11,  7 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 9, 10 ) == SrcLoc( 0,  7, 23 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 9, 12 ) == SrcLoc( 0,  5,  5 ) );
+}
+
+U_TEST( GoToDefinition_Test10 )
+{
+	// Typeof.
+	static const char c_program_text[]=
+	R"(
+		type K= typeof(s)::K;
+		var S s{};
+		struct S
+		{
+			type K= char16;
+		}
+	)";
+
+	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 2, 17 ) == SrcLoc( 0, 3, 8 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 2, 21 ) == SrcLoc( 0, 6, 8 ) );
+}
+
 } // namespace
 
 } // namespace U
