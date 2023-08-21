@@ -21,6 +21,11 @@ std::optional<SrcLoc> GetDefinition( const Lexems& lexems, CodeBuilder& code_bui
 	return code_builder.GetDefinition( CorrectSrcLoc( lexems, line, column ) );
 }
 
+std::vector<SrcLoc> GetAllOccurrences( const Lexems& lexems, CodeBuilder& code_builder, const uint32_t line, const uint32_t column )
+{
+	return code_builder.GetAllOccurrences( CorrectSrcLoc( lexems, line, column ) );
+}
+
 U_TEST( GoToDefinition_Test0 )
 {
 	// Simple names in global namespace. Ugly formatting is intentional.
@@ -40,7 +45,7 @@ U_TEST( GoToDefinition_Test0 )
 					struct SomeStruct{}
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 3, 11 ) == SrcLoc( 0, 5, 7 ) );
@@ -95,7 +100,7 @@ U_TEST( GoToDefinition_Test1 )
 		type SomeStruct= Qwe::SomeStruct;
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	// Type aliases.
@@ -146,7 +151,7 @@ U_TEST( GoToDefinition_Test2 )
 		var i32 w= 0;
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  4, 16 ) == SrcLoc( 0,  2, 14 ) );
@@ -189,7 +194,7 @@ U_TEST( GoToDefinition_Test3 )
 		}
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  5, 34 ) == SrcLoc( 0,  4,  7 ) );
@@ -239,7 +244,7 @@ U_TEST( GoToDefinition_Test4 )
 		}
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9,  3 ) == SrcLoc( 0,  2,  9 ) );
@@ -263,7 +268,7 @@ U_TEST( GoToDefinition_Test5 )
 		}
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 4, 8 ) == SrcLoc( 0, 2, 18 ) );
@@ -284,7 +289,7 @@ U_TEST( GoToDefinition_Test6 )
 		}
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	const auto foo_definition0= GetDefinition( lexems, *code_builder, 6, 3 );
@@ -306,7 +311,7 @@ U_TEST( GoToDefinition_Test7 )
 		fn Foo(i32 x){}
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 5, 3 ) == SrcLoc( 0, 7, 5 ) );
 }
@@ -339,7 +344,7 @@ U_TEST( GoToDefinition_Test8 )
 		}
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 17,  3 ) == SrcLoc( 0,  2,  5 ) );
@@ -369,7 +374,7 @@ U_TEST( GoToDefinition_Test9 )
 		type Float= f32;
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 5,  3 ) == SrcLoc( 0,  2, 17 ) );
@@ -392,11 +397,57 @@ U_TEST( GoToDefinition_Test10 )
 		}
 	)";
 
-	const auto code_builder= BuildProgramForGoToDefinitionTest( c_program_text );
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 2, 17 ) == SrcLoc( 0, 3, 8 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 2, 21 ) == SrcLoc( 0, 6, 8 ) );
+}
+
+U_TEST( GetAllOccurrences_Test0 )
+{
+	static const char c_program_text[]=
+	R"(
+		type T= i32;
+		var T x= 0;
+		fn Foo( T x );
+		fn Bar( i32 y ); // "i32" as synonym for "T", but should not be listed.
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	const std::vector<SrcLoc> expected_result{ SrcLoc( 0, 2, 7 ), SrcLoc( 0, 3, 6 ), SrcLoc( 0, 4, 10 ) };
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 2,  7 ) == expected_result );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 3,  6 ) == expected_result );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 4, 10 ) == expected_result );
+}
+
+U_TEST( GetAllOccurrences_Test1 )
+{
+	static const char c_program_text[]=
+	R"(
+		fn Foo( i32 x )
+		{
+			auto y= x;
+			{
+				auto x= 42; // Shadow variable
+				auto z= x; // This reffers to other "x".
+			}
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	const std::vector<SrcLoc> expected_result{ SrcLoc( 0, 2, 14 ), SrcLoc( 0, 4, 11 ) };
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 2, 14 ) == expected_result );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 4, 11 ) == expected_result );
+
+	const std::vector<SrcLoc> expected_result_shadowed{ SrcLoc( 0, 6, 9 ), SrcLoc( 0, 7, 12 ) };
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 6,  9 ) == expected_result_shadowed );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 7, 12 ) == expected_result_shadowed );
 }
 
 } // namespace

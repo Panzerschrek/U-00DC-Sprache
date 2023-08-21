@@ -241,7 +241,7 @@ bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderEr
 	return false;
 }
 
-std::unique_ptr<CodeBuilder> BuildProgramForGoToDefinitionTest( const char* const text )
+std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const char* const text )
 {
 	const std::string file_path= "_";
 	MultiFileVfs vfs( file_path, text );

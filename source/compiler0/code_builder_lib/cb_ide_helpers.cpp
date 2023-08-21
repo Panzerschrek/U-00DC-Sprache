@@ -16,14 +16,26 @@ std::optional<SrcLoc> CodeBuilder::GetDefinition( const SrcLoc& src_loc )
 std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
 {
 	std::vector<SrcLoc> result;
-	result.push_back( src_loc );
 
-	for( const auto& definition_point_pair : definition_points_ )
+	if( const auto definition_point= GetDefinition( src_loc ) )
 	{
-		if( src_loc == definition_point_pair.second.src_loc )
-			result.push_back( definition_point_pair.first );
-		if( src_loc == definition_point_pair.first )
-			result.push_back( definition_point_pair.second.src_loc );
+		// Found a definition point. Find all usages of it.
+		result.push_back( *definition_point );
+		for( const auto& definition_point_pair : definition_points_ )
+		{
+			if( definition_point == definition_point_pair.second.src_loc )
+				result.push_back( definition_point_pair.first );
+		}
+	}
+	else
+	{
+		// Assume, that this is definition itself. Find all usages.
+		result.push_back( src_loc );
+		for( const auto& definition_point_pair : definition_points_ )
+		{
+			if( src_loc == definition_point_pair.second.src_loc )
+				result.push_back( definition_point_pair.first );
+		}
 	}
 
 	std::sort( result.begin(), result.end() );
