@@ -63,12 +63,12 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 	if( lexem_position == std::nullopt )
 		return {};
 
-	const std::vector<SrcLoc> usage_points= last_valid_state_->code_builder->GetUsagePoints( *lexem_position );
+	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *lexem_position );
 
 	std::vector<DocumentRange> result;
-	result.reserve( usage_points.size() );
+	result.reserve( occurrences.size() );
 
-	for( const SrcLoc& src_loc : usage_points )
+	for( const SrcLoc& src_loc : occurrences )
 	{
 		if( src_loc.GetFileIndex() != 0 )
 			continue; // Filter out symbols from imported files.

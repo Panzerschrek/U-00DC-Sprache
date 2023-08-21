@@ -13,7 +13,7 @@ std::optional<SrcLoc> CodeBuilder::GetDefinition( const SrcLoc& src_loc )
 	return it->second.src_loc;
 }
 
-std::vector<SrcLoc> CodeBuilder::GetUsagePoints( const SrcLoc& src_loc )
+std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
 {
 	std::vector<SrcLoc> result;
 	result.push_back( src_loc );
