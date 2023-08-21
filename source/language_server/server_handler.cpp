@@ -310,13 +310,13 @@ Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& para
 		return result;
 	}
 
-	for( const SrcLoc& src_loc : it->second.GetHighlightLocations( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	for( const DocumentRange& in_range : it->second.GetHighlightLocations( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
 		Json::Object highlight;
 		{
 			Json::Object range;
-			range["start"]= SrcLocToPosition( src_loc );
-			range["end"]= SrcLocToPosition( SrcLoc( 0, src_loc.GetLine(), src_loc.GetColumn() + 1 ) );
+			range["start"]= SrcLocToPosition( in_range.start );
+			range["end"]= SrcLocToPosition( in_range.end );
 
 			highlight["range"]= std::move(range);
 		}

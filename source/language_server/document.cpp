@@ -53,7 +53,7 @@ std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 	return definition_point;
 }
 
-std::vector<SrcLoc> Document::GetHighlightLocations( const SrcLoc& src_loc )
+std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
@@ -63,8 +63,24 @@ std::vector<SrcLoc> Document::GetHighlightLocations( const SrcLoc& src_loc )
 	if( lexem_position == std::nullopt )
 		return {};
 
-	// TODO - filter-out locations from other documents.
-	return last_valid_state_->code_builder->GetUsagePoints( *lexem_position );
+	const std::vector<SrcLoc> usage_points= last_valid_state_->code_builder->GetUsagePoints( *lexem_position );
+
+	std::vector<DocumentRange> result;
+	result.reserve( usage_points.size() );
+
+	for( const SrcLoc& src_loc : usage_points )
+	{
+		if( src_loc.GetFileIndex() != 0 )
+			continue; // Filter out symbols from imported files.
+
+		DocumentRange range;
+		range.start= src_loc;
+		range.end= GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
+
+		result.push_back( std::move(range) );
+	}
+
+	return result;
 }
 
 void Document::SetText( std::string text )

@@ -11,6 +11,14 @@ namespace U
 namespace LangServer
 {
 
+struct DocumentRange
+{
+	// TODO - use other structs.
+	// We do not need to use file index and macro expansion context index.
+	SrcLoc start;
+	SrcLoc end;
+};
+
 class Document
 {
 public:
@@ -31,7 +39,7 @@ public:
 	std::optional<SrcLoc> GetDefinitionPoint( const SrcLoc& src_loc );
 
 	// Returns highlights only for this document.
-	std::vector<SrcLoc> GetHighlightLocations( const SrcLoc& src_loc );
+	std::vector<DocumentRange> GetHighlightLocations( const SrcLoc& src_loc );
 
 private:
 	struct CompiledState
