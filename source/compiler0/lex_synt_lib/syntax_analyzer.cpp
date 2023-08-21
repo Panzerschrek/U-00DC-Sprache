@@ -2942,7 +2942,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	auto result= std::make_unique<Function>( it_->src_loc );
 
-	const std::string& function_defenition_lexem= it_->text;
+	const std::string& function_definition_lexem= it_->text;
 	NextLexem();
 
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::virtual_ )
@@ -3020,7 +3020,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 					continue;
 				else
 				{
-					if( function_defenition_lexem == Keywords::op_ )
+					if( function_definition_lexem == Keywords::op_ )
 						break; // Allow op A::+
 					else
 					{
@@ -3034,7 +3034,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		}
 	}
 
-	if( function_defenition_lexem == Keywords::fn_ )
+	if( function_definition_lexem == Keywords::fn_ )
 	{
 		if( result->name_.empty() )
 		{

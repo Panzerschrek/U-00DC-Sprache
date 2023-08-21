@@ -62,7 +62,7 @@ U_TEST( FunctionDeclarationOutsideItsScopeTest2 )
 	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
-U_TEST( Redefenition_ForNamespaces_Test0 )
+U_TEST( Redefinition_ForNamespaces_Test0 )
 {
 	// Namespace have same name, as differend thing in same scope.
 	static const char c_program_text[]=
