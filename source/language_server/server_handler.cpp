@@ -17,6 +17,22 @@ Json::Value SrcLocToPosition( const SrcLoc& src_loc )
 	return position;
 }
 
+Json::Value DocumentPositionToJson( const DocumentPosition& position )
+{
+	Json::Object out_position;
+	out_position["line"]= position.line - 1; // LSP uses 0-based line numbers, Ü use 1-based line numbers.
+	out_position["character"]= position.column;
+	return out_position;
+}
+
+Json::Value DocumentRangeToJson( const DocumentRange& range )
+{
+	Json::Object out_range;
+	out_range["start"]= DocumentPositionToJson( range.start );
+	out_range["end"]= DocumentPositionToJson( range.end );
+	return out_range;
+}
+
 void CreateLexSyntErrorsDiagnostics( const LexSyntErrors& errors, Json::Array& out_diagnostics )
 {
 	for( const LexSyntError& error : errors)
@@ -195,17 +211,10 @@ Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& par
 		return result;
 	}
 
-	if( const auto src_loc_opt= it->second.GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	if( const auto range= it->second.GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
-		log_ << "Find " << src_loc_opt->GetLine() << ":" << src_loc_opt->GetColumn() << std::endl;
-
-		Json::Object range;
-		range["start"]= SrcLocToPosition( *src_loc_opt );
-		range["end"]= SrcLocToPosition( SrcLoc( 0, src_loc_opt->GetLine(), src_loc_opt->GetColumn() + 1 ) );
-
-		result["range"]= std::move(range);
+		result["range"]= DocumentRangeToJson( *range );
 		result["uri"]= uri->str();
-
 	}
 	return result;
 }
@@ -310,16 +319,10 @@ Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& para
 		return result;
 	}
 
-	for( const DocumentRange& in_range : it->second.GetHighlightLocations( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	for( const DocumentRange& range : it->second.GetHighlightLocations( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
 		Json::Object highlight;
-		{
-			Json::Object range;
-			range["start"]= SrcLocToPosition( in_range.start );
-			range["end"]= SrcLocToPosition( in_range.end );
-
-			highlight["range"]= std::move(range);
-		}
+		highlight["range"]= DocumentRangeToJson( range );
 		result.push_back( std::move(highlight) );
 	}
 

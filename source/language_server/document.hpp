@@ -11,12 +11,17 @@ namespace U
 namespace LangServer
 {
 
+// Position within document, without specifying document instance (specific document depends on context).
+struct DocumentPosition
+{
+	uint32_t line= 0; // From 1, as in SrcLoc.
+	uint32_t column= 0; // From 0, as in SrcLoc.
+};
+
 struct DocumentRange
 {
-	// TODO - use other structs.
-	// We do not need to use file index and macro expansion context index.
-	SrcLoc start;
-	SrcLoc end;
+	DocumentPosition start;
+	DocumentPosition end;
 };
 
 class Document
@@ -36,7 +41,7 @@ public:
 	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
 
 	// TODO - return also URI for file
-	std::optional<SrcLoc> GetDefinitionPoint( const SrcLoc& src_loc );
+	std::optional<DocumentRange> GetDefinitionPoint( const SrcLoc& src_loc );
 
 	// Returns highlights only for this document.
 	std::vector<DocumentRange> GetHighlightLocations( const SrcLoc& src_loc );

@@ -10,6 +10,16 @@ namespace U
 namespace LangServer
 {
 
+namespace
+{
+
+DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc )
+{
+	return DocumentPosition{ src_loc.GetLine(), src_loc.GetColumn() };
+}
+
+} // namespace
+
 Document::Document( std::ostream& log, std::string text )
 	: log_(log)
 {
@@ -32,7 +42,7 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 	return code_builder_errors_;
 }
 
-std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
+std::optional<DocumentRange> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
@@ -42,7 +52,15 @@ std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 	if( lexem == nullptr )
 		return std::nullopt;
 
-	return last_valid_state_->code_builder->GetDefinition( lexem->src_loc );
+	if( const auto src_loc= last_valid_state_->code_builder->GetDefinition( lexem->src_loc ) )
+	{
+		DocumentRange range;
+		range.start= SrcLocToDocumentPosition(*src_loc);
+		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc->GetLine(), src_loc->GetColumn(), last_valid_state_->lexems ) );
+		return range;
+	}
+
+	return std::nullopt;
 }
 
 std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_loc )
@@ -73,8 +91,8 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 			continue; // Filter out symbols from imported files.
 
 		DocumentRange range;
-		range.start= src_loc;
-		range.end= GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
+		range.start= SrcLocToDocumentPosition(src_loc);
+		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
 
 		result.push_back( std::move(range) );
 	}
