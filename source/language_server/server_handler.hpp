@@ -37,6 +37,7 @@ private:
 	Json::Value ProcessTextDocumentDefinition( const Json::Value& params );
 	Json::Value ProcessTextDocumentCompletion( const Json::Value& params );
 	Json::Value ProcessTextDocumentHighlight( const Json::Value& params );
+	Json::Value ProcessTextDocumentRename( const Json::Value& params );
 
 	// Notofications.
 	void ProcessTextDocumentDidOpen( const Json::Value& params );

@@ -90,6 +90,8 @@ Json::Value ServerHandler::HandleRequest( const std::string_view method, const J
 		return ProcessTextDocumentCompletion( params );
 	if( method == "textDocument/documentHighlight" )
 		return ProcessTextDocumentHighlight( params );
+	if( method == "textDocument/rename" )
+		return ProcessTextDocumentRename( params );
 
 	Json::Object result;
 	return result;
@@ -129,6 +131,7 @@ Json::Value ServerHandler::ProcessInitialize( const Json::Value& params )
 		capabilities["referencesProvider"]= true;
 		capabilities["documentHighlightProvider"]= true;
 		capabilities["documentSymbolProvider"]= true;
+		capabilities["renameProvider"]= true;
 
 		{
 			Json::Object link_provider;
@@ -304,6 +307,56 @@ Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& para
 		range["end"]= SrcLocToPosition( SrcLoc( 0, 4, 7 ) );
 
 		result["range"]= std::move(range);
+	}
+
+	return result;
+}
+
+Json::Value ServerHandler::ProcessTextDocumentRename( const Json::Value& params )
+{
+	Json::Object result;
+
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+	{
+		log_ << "Not an object!" << std::endl;
+		return result;
+	}
+
+	const auto text_document= obj->getObject( "textDocument" );
+	if( text_document == nullptr )
+	{
+		log_ << "No textDocument!" << std::endl;
+		return result;
+	}
+
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
+	{
+		log_ << "No uri!" << std::endl;
+		return result;
+	}
+
+	const auto position= obj->getObject( "position" );
+	if( position == nullptr )
+	{
+		log_ << "No position!" << std::endl;
+		return result;
+	}
+
+	const auto line= position->getInteger( "line" );
+	const auto character= position->getInteger( "character" );
+	if( line == llvm::None || character == llvm::None )
+	{
+		log_ << "Invalid position!" << std::endl;
+		return result;
+	}
+
+	const auto it= documents_.find( uri->str() );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return result;
 	}
 
 	return result;
