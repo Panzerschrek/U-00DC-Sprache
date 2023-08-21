@@ -5,14 +5,13 @@
 #include <llvm/Support/ManagedStatic.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../code_builder_lib/code_builder.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 #include "../lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
-#include "../../tests/cpp_tests/tests.hpp"
 #include "../../tests/tests_common.hpp"
+#include "cpp_tests_launcher.hpp"
 
 namespace U
 {
@@ -242,6 +241,36 @@ bool HaveError( const std::vector<CodeBuilderError>& errors, const CodeBuilderEr
 	return false;
 }
 
+std::unique_ptr<CodeBuilder> BuildProgramForGoToDefinitionTest( const char* const text )
+{
+	const std::string file_path= "_";
+	MultiFileVfs vfs( file_path, text );
+	const SourceGraph source_graph= LoadSourceGraph( vfs, CalculateSourceFileContentsHash, file_path );
+
+	PrintLexSyntErrors( source_graph );
+	U_TEST_ASSERT( source_graph.errors.empty() );
+
+	CodeBuilderOptions options;
+	options.build_debug_info= false;
+	options.generate_tbaa_metadata= false;
+	options.create_lifetimes= false;
+	options.report_about_unused_names= false;
+	options.collect_definition_points= true;
+
+	auto code_builder=
+		CodeBuilder::BuildProgramAndLeaveInternalState(
+			*g_llvm_context,
+			llvm::DataLayout( GetTestsDataLayout() ),
+			GetTestsTargetTriple(),
+			options,
+			source_graph );
+
+	const auto errors= code_builder->TakeErrors();
+	PrinteErrors_r( errors );
+	U_TEST_ASSERT( errors.empty() );
+
+	return std::move( code_builder );
+}
 
 } // namespace U
 
