@@ -11,9 +11,9 @@ namespace
 
 SrcLoc CorrectSrcLoc( const Lexems& lexems, const uint32_t line, const uint32_t column )
 {
-	auto res= GetLexemSrcLocForPosition( line, column, lexems );
-	U_TEST_ASSERT( res != std::nullopt );
-	return *res;
+	const Lexem* const lexem= GetLexemForPosition( line, column, lexems );
+	U_TEST_ASSERT( lexem != nullptr );
+	return lexem->src_loc;
 }
 
 std::optional<SrcLoc> GetDefinition( const Lexems& lexems, CodeBuilder& code_builder, const uint32_t line, const uint32_t column )

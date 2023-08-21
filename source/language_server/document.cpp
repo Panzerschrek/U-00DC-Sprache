@@ -13,6 +13,7 @@ namespace LangServer
 Document::Document( std::ostream& log, std::string text )
 	: log_(log)
 {
+	(void)log_;
 	SetText( std::move(text) );
 }
 
@@ -37,20 +38,11 @@ std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 		return std::nullopt;
 
 	// Find lexem, where position is located.
-	const auto lexem_position= GetLexemSrcLocForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
-	if( lexem_position == std::nullopt )
+	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
+	if( lexem == nullptr )
 		return std::nullopt;
 
-	log_ << "Found lexem " << lexem_position->GetLine() << ":" << lexem_position->GetColumn() << std::endl;
-
-	const auto definition_point= last_valid_state_->code_builder->GetDefinition( *lexem_position );
-
-	if( definition_point != std::nullopt )
-		log_ << "Found definition point " <<  definition_point->GetLine() << ":" << definition_point->GetColumn() << std::endl;
-	else
-		log_ << "Can't find definition point" << std::endl;
-
-	return definition_point;
+	return last_valid_state_->code_builder->GetDefinition( lexem->src_loc );
 }
 
 std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_loc )
@@ -59,11 +51,18 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 		return {};
 
 	// Find lexem, where position is located.
-	const auto lexem_position= GetLexemSrcLocForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
-	if( lexem_position == std::nullopt )
+	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
+	if( lexem == nullptr )
 		return {};
 
-	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *lexem_position );
+	if( lexem->type != Lexem::Type::Identifier )
+	{
+		// There is no reason to highlight non-identifiers.
+		// TODO - maybe highlight at least overloaded operators?
+		return {};
+	}
+
+	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( lexem->src_loc );
 
 	std::vector<DocumentRange> result;
 	result.reserve( occurrences.size() );

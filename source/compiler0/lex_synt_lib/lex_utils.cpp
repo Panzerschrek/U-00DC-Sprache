@@ -4,7 +4,7 @@ namespace U
 {
 
 // Complexity is linear.
-std::optional<SrcLoc> GetLexemSrcLocForPosition( const uint32_t line, const uint32_t column, const Lexems& lexems )
+const Lexem* GetLexemForPosition( const uint32_t line, const uint32_t column, const Lexems& lexems )
 {
 	// TODO - return none, if position is between lexems.
 
@@ -15,15 +15,15 @@ std::optional<SrcLoc> GetLexemSrcLocForPosition( const uint32_t line, const uint
 		// Compare without file index and macro expansion context.
 		const SrcLoc lexem_loc( 0, it->src_loc.GetLine(), it->src_loc.GetColumn() );
 		if( pos_loc == lexem_loc )
-			return lexem_loc;
+			return &*it;
 		if( pos_loc < lexem_loc )
 		{
 			if( it != lexems.begin() )
-				return std::prev(it)->src_loc;
+				return &*std::prev(it);
 		}
 	}
 
-	return std::nullopt;
+	return nullptr;
 }
 
 // TODO - clear this ugly piece of shit.
