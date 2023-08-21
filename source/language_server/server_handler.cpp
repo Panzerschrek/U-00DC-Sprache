@@ -266,7 +266,7 @@ Json::Value ServerHandler::ProcessTextDocumentCompletion( const Json::Value& par
 
 Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& params )
 {
-	Json::Object result;
+	Json::Array result;
 
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -298,12 +298,16 @@ Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& para
 
 	// Fill dummy.
 	// TODO - perform real request.
-	{
-		Json::Object range;
-		range["start"]= SrcLocToPosition( SrcLoc( 0, 4, 5 ) );
-		range["end"]= SrcLocToPosition( SrcLoc( 0, 4, 7 ) );
 
-		result["range"]= std::move(range);
+	{
+		Json::Object highlight;
+		{
+			Json::Object range;
+			range["start"]= SrcLocToPosition( SrcLoc( 0, 4, 5 ) );
+			range["end"]= SrcLocToPosition( SrcLoc( 0, 4, 7 ) );
+			highlight["range"]= std::move(range);
+		}
+		result.push_back( std::move(highlight) );
 	}
 
 	return result;
