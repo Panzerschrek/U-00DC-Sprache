@@ -2293,6 +2293,7 @@ WithOperator SyntaxAnalyzer::ParseWithOperator()
 		return result;
 	}
 	result.variable_name_= it_->text;
+	result.src_loc_= it_->src_loc; // TODO - maybe create second src_loc for variable name itslef?
 	NextLexem();
 
 	ExpectLexem( Lexem::Type::Colon );
