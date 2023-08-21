@@ -269,7 +269,7 @@ std::unique_ptr<CodeBuilder> BuildProgramForGoToDefinitionTest( const char* cons
 	PrinteErrors_r( errors );
 	U_TEST_ASSERT( errors.empty() );
 
-	return std::move( code_builder );
+	return code_builder;
 }
 
 } // namespace U
