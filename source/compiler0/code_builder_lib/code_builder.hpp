@@ -79,6 +79,10 @@ public:
 	// Works only if definition collection is enabled in options.
 	std::optional<SrcLoc> GetDefinition( const SrcLoc& src_loc );
 
+	// Get all usage point for specified symbol (including symbol itself).
+	// Result is sorted.
+	std::vector<SrcLoc> GetUsagePoints( const SrcLoc& src_loc );
+
 private:
 	CodeBuilder(
 		llvm::LLVMContext& llvm_context,

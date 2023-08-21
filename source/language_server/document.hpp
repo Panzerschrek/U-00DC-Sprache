@@ -30,6 +30,9 @@ public:
 	// TODO - return also URI for file
 	std::optional<SrcLoc> GetDefinitionPoint( const SrcLoc& src_loc );
 
+	// Returns highlights only for this document.
+	std::vector<SrcLoc> GetHighlightLocations( const SrcLoc& src_loc );
+
 private:
 	struct CompiledState
 	{

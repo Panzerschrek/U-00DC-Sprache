@@ -180,7 +180,6 @@ Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& par
 		return result;
 	}
 
-
 	const auto line= position->getInteger( "line" );
 	const auto character= position->getInteger( "character" );
 	if( line == llvm::None || character == llvm::None )
@@ -296,15 +295,29 @@ Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& para
 		return result;
 	}
 
-	// Fill dummy.
-	// TODO - perform real request.
+	const auto line= position->getInteger( "line" );
+	const auto character= position->getInteger( "character" );
+	if( line == llvm::None || character == llvm::None )
+	{
+		log_ << "Invalid position!" << std::endl;
+		return result;
+	}
 
+	const auto it= documents_.find( uri->str() );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return result;
+	}
+
+	for( const SrcLoc& src_loc : it->second.GetHighlightLocations( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
 		Json::Object highlight;
 		{
 			Json::Object range;
-			range["start"]= SrcLocToPosition( SrcLoc( 0, 4, 5 ) );
-			range["end"]= SrcLocToPosition( SrcLoc( 0, 4, 7 ) );
+			range["start"]= SrcLocToPosition( src_loc );
+			range["end"]= SrcLocToPosition( SrcLoc( 0, src_loc.GetLine(), src_loc.GetColumn() + 1 ) );
+
 			highlight["range"]= std::move(range);
 		}
 		result.push_back( std::move(highlight) );

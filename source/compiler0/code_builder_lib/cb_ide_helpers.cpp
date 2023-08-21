@@ -13,6 +13,22 @@ std::optional<SrcLoc> CodeBuilder::GetDefinition( const SrcLoc& src_loc )
 	return it->second.src_loc;
 }
 
+std::vector<SrcLoc> CodeBuilder::GetUsagePoints( const SrcLoc& src_loc )
+{
+	std::vector<SrcLoc> result;
+	result.push_back( src_loc );
+
+	for( const auto& definition_point_pair : definition_points_ )
+	{
+		if( definition_point_pair.second.src_loc == src_loc )
+			result.push_back( definition_point_pair.first );
+	}
+
+	std::sort( result.begin(), result.end() );
+	result.erase( std::unique( result.begin(), result.end() ), result.end() );
+	return result;
+}
+
 SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
 {
 	// Process functions set specially.
