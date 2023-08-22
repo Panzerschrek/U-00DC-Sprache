@@ -120,6 +120,7 @@ public:
 	{
 		std::string name;
 		SrcLoc src_loc;
+		std::vector<Symbol> children;
 		SymbolKind kind= SymbolKind::None;
 	};
 
@@ -180,6 +181,8 @@ private:
 	SrcLoc GetDefinitionFetchSrcLoc( const NamesScopeValue& value );
 
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
+
+	std::vector<Symbol> GetMainFileSymbols_r( const NamesScope& names_scope );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );

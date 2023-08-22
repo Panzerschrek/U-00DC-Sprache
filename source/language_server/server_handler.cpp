@@ -43,6 +43,33 @@ Json::Value DocumentRangeToJson( const DocumentRange& range )
 	return out_range;
 }
 
+Json::Array SymbolsToJson( const std::vector<CodeBuilder::Symbol>& symbols )
+{
+	Json::Array result;
+
+	for( const CodeBuilder::Symbol& symbol : symbols )
+	{
+		Json::Object out_symbol;
+		out_symbol["name"]= symbol.name;
+		out_symbol["kind"]= int32_t(symbol.kind);
+
+		{
+			Json::Object position;
+			position["start"]= SrcLocToPosition( symbol.src_loc );
+			// TODO - extract full range.
+			position["end"]= SrcLocToPosition( SrcLoc( 0, symbol.src_loc.GetLine(), symbol.src_loc.GetColumn() + 1 ) );
+			out_symbol["range"]= std::move(position);
+		}
+
+		if( !symbol.children.empty() )
+			out_symbol["children"]= SymbolsToJson( symbol.children );
+
+		result.push_back( std::move(out_symbol) );
+	}
+
+	return result;
+}
+
 void CreateLexSyntErrorsDiagnostics( const LexSyntErrors& errors, Json::Array& out_diagnostics )
 {
 	for( const LexSyntError& error : errors)
@@ -203,23 +230,7 @@ ServerResponse ServerHandler::ProcessTextDocumentSymbol( const Json::Value& para
 		return result;
 	}
 
-	for( const CodeBuilder::Symbol& symbol : it->second.GetSymbols() )
-	{
-		Json::Object out_symbol;
-		out_symbol["name"]= symbol.name;
-		out_symbol["kind"]= int32_t(symbol.kind);
-
-		{
-			Json::Object position;
-			position["start"]= SrcLocToPosition( symbol.src_loc );
-			// TODO - extract full range.
-			position["end"]= SrcLocToPosition( SrcLoc( 0, symbol.src_loc.GetLine(), symbol.src_loc.GetColumn() + 1 ) );
-			out_symbol["range"]= std::move(position);
-		}
-		result.push_back( std::move(out_symbol) );
-	}
-
-	return result;
+	return SymbolsToJson( it->second.GetSymbols() );
 }
 
 ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )

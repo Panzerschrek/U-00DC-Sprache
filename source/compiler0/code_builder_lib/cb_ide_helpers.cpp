@@ -46,81 +46,9 @@ std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
 
 std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols()
 {
-	// TODO - perform recursive search.
-
-	std::vector<Symbol> result;
-
 	const NamesScope& root_names_scope= *compiled_sources_.front().names_map;
 
-	root_names_scope.ForEachInThisScope(
-		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
-		{
-			const Value& value= names_scope_value.value;
-			if( const auto functions_set= value.GetFunctionsSet() )
-			{
-				// Process function sets specially.
-				for( const FunctionVariable& function_variable : functions_set->functions )
-				{
-					Symbol symbol;
-					symbol.name= std::string(name);
-					// TODO - encode also params.
-					symbol.src_loc= function_variable.body_src_loc;
-
-					if( name == Keywords::constructor_ )
-						symbol.kind= SymbolKind::Constructor;
-					else if( functions_set->base_class != nullptr )
-						symbol.kind= SymbolKind::Method;
-					else
-						symbol.kind= SymbolKind::Function;
-
-					result.push_back( std::move(symbol) );
-				}
-
-				return;
-			}
-
-			if( names_scope_value.src_loc.GetFileIndex() != 0 )
-				return; // Imported or generated stuff.
-
-			Symbol symbol;
-			symbol.src_loc= names_scope_value.src_loc;
-
-			if( value.GetVariable() != nullptr )
-				symbol.kind= SymbolKind::Variable;
-			else if( const auto type= value.GetTypeName() )
-			{
-				if( const auto class_= type->GetClassType() )
-				{
-					if( class_->members->GetParent() == &root_names_scope )
-						symbol.kind= SymbolKind::Class;
-				}
-				else if( const auto enum_= type->GetEnumType() )
-				{
-					if( enum_->members.GetParent() == &root_names_scope )
-						symbol.kind= SymbolKind::Enum;
-				}
-
-				// TODO - set kind for type alias?
-			}
-			else if( value.GetClassField() != nullptr )
-				symbol.kind= SymbolKind::Field;
-			else if( value.GetNamespace() != nullptr )
-				symbol.kind= SymbolKind::Namespace;
-			else if( value.GetStaticAssert() != nullptr )
-				return;
-
-			symbol.name= std::string(name);
-
-			// TODO - handle each function each type template in set.
-
-			result.push_back( std::move(symbol) );
-		} );
-
-	std::sort(
-		result.begin(), result.end(),
-		[]( const Symbol& l, const Symbol& r ) { return l.src_loc < r.src_loc; } );
-
-	return result;
+	return GetMainFileSymbols_r( root_names_scope );
 }
 
 SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
@@ -172,6 +100,90 @@ void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc&
 	}
 
 	definition_points_.insert( std::make_pair( src_loc, std::move(point) ) );
+}
+
+std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesScope& names_scope )
+{
+	std::vector<Symbol> result;
+
+	names_scope.ForEachInThisScope(
+		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
+		{
+			const Value& value= names_scope_value.value;
+			if( const auto functions_set= value.GetFunctionsSet() )
+			{
+				// Process function sets specially.
+				for( const FunctionVariable& function_variable : functions_set->functions )
+				{
+					Symbol symbol;
+					symbol.name= std::string(name);
+					// TODO - encode also params.
+					symbol.src_loc= function_variable.body_src_loc;
+
+					if( name == Keywords::constructor_ )
+						symbol.kind= SymbolKind::Constructor;
+					else if( functions_set->base_class != nullptr )
+						symbol.kind= SymbolKind::Method;
+					else
+						symbol.kind= SymbolKind::Function;
+
+					result.push_back( std::move(symbol) );
+				}
+
+				return;
+			}
+
+			if( names_scope_value.src_loc.GetFileIndex() != 0 )
+				return; // Imported or generated stuff.
+
+			Symbol symbol;
+			symbol.src_loc= names_scope_value.src_loc;
+
+			if( value.GetVariable() != nullptr )
+				symbol.kind= SymbolKind::Variable;
+			else if( const auto type= value.GetTypeName() )
+			{
+				if( const auto class_= type->GetClassType() )
+				{
+					if( class_->members->GetParent() == &names_scope )
+					{
+						symbol.children= GetMainFileSymbols_r( *class_->members );
+						symbol.kind= SymbolKind::Class;
+					}
+				}
+				else if( const auto enum_= type->GetEnumType() )
+				{
+					if( enum_->members.GetParent() == &names_scope )
+					{
+						symbol.children= GetMainFileSymbols_r( enum_->members );
+						symbol.kind= SymbolKind::Enum;
+					}
+				}
+
+				// TODO - set kind for type alias?
+			}
+			else if( value.GetClassField() != nullptr )
+				symbol.kind= SymbolKind::Field;
+			else if( const auto child_namespace= value.GetNamespace() )
+			{
+				symbol.children= GetMainFileSymbols_r( *child_namespace );
+				symbol.kind= SymbolKind::Namespace;
+			}
+			else if( value.GetStaticAssert() != nullptr )
+				return;
+
+			symbol.name= std::string(name);
+
+			// TODO - handle each function each type template in set.
+
+			result.push_back( std::move(symbol) );
+		} );
+
+	std::sort(
+		result.begin(), result.end(),
+		[]( const Symbol& l, const Symbol& r ) { return l.src_loc < r.src_loc; } );
+
+	return result;
 }
 
 } // namespace U
