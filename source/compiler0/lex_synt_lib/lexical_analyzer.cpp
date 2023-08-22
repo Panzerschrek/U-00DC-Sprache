@@ -692,4 +692,42 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 	return result;
 }
 
+bool IsValidIdentifier( const std::string_view text )
+{
+	Iterator it= text.data();
+	const Iterator it_end= it + text.size();
+
+	// Skip starting whitespaces.
+	while( it < it_end )
+	{
+		const auto c= GetUTF8FirstChar( it, it_end );
+		if( !IsWhitespace( c ) )
+			break;
+		ReadNextUTF8Char( it, it_end );
+	}
+
+	if( it == it_end )
+		return false;
+
+	// Read start.
+	const auto start= GetUTF8FirstChar( it, it_end );
+	if( !IsIdentifierStartChar( start ) )
+		return false;
+
+	// Try to parse identifier.
+	ParseIdentifier( it, it_end );
+
+	// Skip trailing whitespaces.
+	while( it < it_end )
+	{
+		const auto c= GetUTF8FirstChar( it, it_end );
+		if( !IsWhitespace( c ) )
+			break;
+		ReadNextUTF8Char( it, it_end );
+	}
+
+	// Is valid if nothing left.
+	return it == it_end;
+}
+
 } // namespace U

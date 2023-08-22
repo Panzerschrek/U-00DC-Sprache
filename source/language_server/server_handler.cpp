@@ -9,6 +9,16 @@ namespace LangServer
 namespace
 {
 
+enum ErrorCode : int32_t
+{
+	ParseError = -32700,
+	InvalidRequest = -32600,
+	MethodNotFound = -32601,
+	InvalidParams = -32602,
+	InternalError = -32603,
+	RequestFailed = -32803,
+};
+
 Json::Value SrcLocToPosition( const SrcLoc& src_loc )
 {
 	Json::Object position;
@@ -94,12 +104,14 @@ ServerHandler::ServerHandler( std::ostream& log )
 {
 }
 
-Json::Value ServerHandler::HandleRequest( const std::string_view method, const Json::Value& params )
+ServerResponse ServerHandler::HandleRequest( const std::string_view method, const Json::Value& params )
 {
 	if( method == "initialize" )
 		return ProcessInitialize( params );
 	if( method == "textDocument/documentSymbol" )
 		return ProcessTextDocumentSymbol( params );
+	if( method == "textDocument/references" )
+		return ProcessTextDocumentReferences( params );
 	if( method == "textDocument/definition" )
 		return ProcessTextDocumentDefinition( params );
 	if( method == "textDocument/completion" )
@@ -133,7 +145,7 @@ std::optional<ServerNotification> ServerHandler::TakeNotification()
 	return result;
 }
 
-Json::Value ServerHandler::ProcessInitialize( const Json::Value& params )
+ServerResponse ServerHandler::ProcessInitialize( const Json::Value& params )
 {
 	(void)params;
 
@@ -159,7 +171,7 @@ Json::Value ServerHandler::ProcessInitialize( const Json::Value& params )
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
 {
 	// TODO
 	(void)params;
@@ -167,7 +179,67 @@ Json::Value ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params 
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )
+{
+	Json::Array result;
+
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+	{
+		log_ << "Not an object!" << std::endl;
+		return result;
+	}
+
+	const auto text_document= obj->getObject( "textDocument" );
+	if( text_document == nullptr )
+	{
+		log_ << "No textDocument!" << std::endl;
+		return result;
+	}
+
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
+	{
+		log_ << "No uri!" << std::endl;
+		return result;
+	}
+
+	const auto position= obj->getObject( "position" );
+	if( position == nullptr )
+	{
+		log_ << "No position!" << std::endl;
+		return result;
+	}
+
+	const auto line= position->getInteger( "line" );
+	const auto character= position->getInteger( "character" );
+	if( line == llvm::None || character == llvm::None )
+	{
+		log_ << "Invalid position!" << std::endl;
+		return result;
+	}
+
+	const auto it= documents_.find( uri->str() );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return result;
+	}
+
+	for( const DocumentRange& range : it->second.GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	{
+		Json::Object location;
+		location["range"]= DocumentRangeToJson( range );
+		// TODO - set proper URI for occurences in other files.
+		location["uri"]= uri->str();
+
+		result.push_back( std::move(location) );
+	}
+
+	return result;
+}
+
+ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& params )
 {
 	Json::Object result;
 
@@ -222,7 +294,7 @@ Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& par
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentCompletion( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& params )
 {
 	Json::Object result;
 
@@ -275,7 +347,7 @@ Json::Value ServerHandler::ProcessTextDocumentCompletion( const Json::Value& par
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentHighlight( const Json::Value& params )
 {
 	Json::Array result;
 
@@ -332,7 +404,7 @@ Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& para
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentRename( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& params )
 {
 	Json::Object result;
 
@@ -357,6 +429,13 @@ Json::Value ServerHandler::ProcessTextDocumentRename( const Json::Value& params 
 		return result;
 	}
 
+	const auto new_name= obj->getString( "newName" );
+	if( new_name == llvm::None )
+	{
+		log_ << "No newName!" << std::endl;
+		return result;
+	}
+
 	const auto position= obj->getObject( "position" );
 	if( position == nullptr )
 	{
@@ -377,6 +456,34 @@ Json::Value ServerHandler::ProcessTextDocumentRename( const Json::Value& params 
 	{
 		log_ << "Can't find document " << uri->str() << std::endl;
 		return result;
+	}
+
+	const std::string new_name_str= new_name->str();
+	if( !IsValidIdentifier( new_name_str ) )
+	{
+		Json::Object error;
+		error["code"]= int32_t(ErrorCode::RequestFailed);
+		error["message"]= "Not a valid identifier";
+		return ServerResponse( std::move(result), Json::Value(std::move(error)) );
+	}
+
+	{
+		Json::Object changes;
+		{
+			Json::Array edits;
+			for( const DocumentRange& range : it->second.GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+			{
+				Json::Object edit;
+				edit["range"]= DocumentRangeToJson( range );
+				edit["newText"]= new_name_str;
+
+				edits.push_back( std::move(edit) );
+			}
+
+			changes[ uri->str() ]= std::move(edits);
+		}
+
+		result["changes"]= std::move(changes);
 	}
 
 	return result;

@@ -100,6 +100,40 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 	return result;
 }
 
+std::vector<DocumentRange> Document::GetAllOccurrences( const SrcLoc& src_loc )
+{
+	if( last_valid_state_ == std::nullopt )
+		return {};
+
+	// Find lexem, where position is located.
+	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
+	if( lexem == nullptr )
+		return {};
+
+	if( lexem->type != Lexem::Type::Identifier )
+	{
+		// There is no reason to process non-identifiers.
+		return {};
+	}
+
+	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( lexem->src_loc );
+
+	std::vector<DocumentRange> result;
+	result.reserve( occurrences.size() );
+
+	for( const SrcLoc& src_loc : occurrences )
+	{
+		// TODO - fill also file.
+		DocumentRange range;
+		range.start= SrcLocToDocumentPosition(src_loc);
+		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
+
+		result.push_back( std::move(range) );
+	}
+
+	return result;
+}
+
 void Document::SetText( std::string text )
 {
 	if( text == text_ )

@@ -74,7 +74,6 @@ Language server
 *) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
 *) Completion
 *) Highlighting for overloaded operators
-*) Renaming
 *) Providing document symbols
 *) Imports handling
 *) Use prelude
