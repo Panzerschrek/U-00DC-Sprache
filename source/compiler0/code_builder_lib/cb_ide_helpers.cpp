@@ -1,3 +1,4 @@
+#include "keywords.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "code_builder.hpp"
 
@@ -54,15 +55,63 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols()
 	root_names_scope.ForEachInThisScope(
 		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
 		{
+			const Value& value= names_scope_value.value;
+			if( const auto functions_set= value.GetFunctionsSet() )
+			{
+				// Process function sets specially.
+				for( const FunctionVariable& function_variable : functions_set->functions )
+				{
+					Symbol symbol;
+					symbol.name= std::string(name);
+					// TODO - encode also params.
+					symbol.src_loc= function_variable.body_src_loc;
+
+					if( name == Keywords::constructor_ )
+						symbol.kind= SymbolKind::Constructor;
+					else if( functions_set->base_class != nullptr )
+						symbol.kind= SymbolKind::Method;
+					else
+						symbol.kind= SymbolKind::Function;
+
+					result.push_back( std::move(symbol) );
+				}
+
+				return;
+			}
+
 			if( names_scope_value.src_loc.GetFileIndex() != 0 )
 				return; // Imported or generated stuff.
 
 			Symbol symbol;
-			symbol.name= std::string(name);
 			symbol.src_loc= names_scope_value.src_loc;
 
-			// TODO - skip static_asserts and other stuff like that.
-			// TODO - handle each function and each type template in sets.
+			if( value.GetVariable() != nullptr )
+				symbol.kind= SymbolKind::Variable;
+			else if( const auto type= value.GetTypeName() )
+			{
+				if( const auto class_= type->GetClassType() )
+				{
+					if( class_->members->GetParent() == &root_names_scope )
+						symbol.kind= SymbolKind::Class;
+				}
+				else if( const auto enum_= type->GetEnumType() )
+				{
+					if( enum_->members.GetParent() == &root_names_scope )
+						symbol.kind= SymbolKind::Enum;
+				}
+
+				// TODO - set kind for type alias?
+			}
+			else if( value.GetClassField() != nullptr )
+				symbol.kind= SymbolKind::Field;
+			else if( value.GetNamespace() != nullptr )
+				symbol.kind= SymbolKind::Namespace;
+			else if( value.GetStaticAssert() != nullptr )
+				return;
+
+			symbol.name= std::string(name);
+
+			// TODO - handle each function each type template in set.
 
 			result.push_back( std::move(symbol) );
 		} );

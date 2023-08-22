@@ -207,6 +207,7 @@ ServerResponse ServerHandler::ProcessTextDocumentSymbol( const Json::Value& para
 	{
 		Json::Object out_symbol;
 		out_symbol["name"]= symbol.name;
+		out_symbol["kind"]= int32_t(symbol.kind);
 
 		{
 			Json::Object position;
