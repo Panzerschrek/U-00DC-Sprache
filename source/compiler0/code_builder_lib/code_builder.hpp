@@ -183,6 +183,7 @@ private:
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
 
 	std::vector<Symbol> GetMainFileSymbols_r( const NamesScope& names_scope );
+	std::string FunctionSymbolToString( std::string_view function_name, const FunctionVariable& function_variable );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );

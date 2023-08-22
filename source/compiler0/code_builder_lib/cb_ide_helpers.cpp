@@ -1,5 +1,7 @@
+#include <sstream>
 #include "keywords.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../lex_synt_lib/program_writer.hpp"
 #include "code_builder.hpp"
 
 namespace U
@@ -119,7 +121,6 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 						continue; // Skip generated stuff.
 
 					Symbol symbol;
-					// TODO - encode also params.
 					symbol.src_loc= function_variable.body_src_loc;
 
 					if( name == Keywords::constructor_ )
@@ -129,7 +130,8 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 					else
 						symbol.kind= SymbolKind::Function;
 
-					symbol.name= std::string(name);
+					// TODO - maybe just print a part of syntax tree with function declaration instead?
+					symbol.name= FunctionSymbolToString( name, function_variable );
 
 					result.push_back( std::move(symbol) );
 				}
@@ -150,7 +152,12 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 					else
 						symbol.kind= SymbolKind::Function;
 
-					symbol.name= std::string(name);
+					// TODO - prepend also template params.
+					{
+						std::ostringstream ss;
+						Synt::WriteFunctionDeclaration( *function_template->syntax_element->function_, ss );
+						symbol.name= ss.str();
+					}
 
 					result.push_back( std::move(symbol) );
 				}
@@ -165,6 +172,7 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 						continue;
 
 					Symbol symbol;
+					// TODO - prepend also template params.
 					symbol.name= std::string(name);
 					symbol.kind= SymbolKind::Class;
 
@@ -220,6 +228,41 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 	std::sort(
 		result.begin(), result.end(),
 		[]( const Symbol& l, const Symbol& r ) { return l.src_loc < r.src_loc; } );
+
+	return result;
+}
+
+std::string CodeBuilder::FunctionSymbolToString( const std::string_view function_name, const FunctionVariable& function_variable )
+{
+	const FunctionType& function_type= function_variable.type;
+
+	std::string result;
+	result= "fn ";
+	// TODO - decode operator names here.
+	result+= std::string(function_name);
+	result+= " ( ";
+	result+= FunctionParamsToString( function_type.params );
+	result+= " ) ";
+
+	// TODO - remove copy-paste, unite this code with Type::ToString()
+
+	if( function_type.unsafe )
+		result+= "unsafe ";
+
+	if( function_type.calling_convention == llvm::CallingConv::Fast )
+		result+= "call_conv(\"fast\") ";
+	if( function_type.calling_convention == llvm::CallingConv::Cold )
+		result+= "call_conv(\"cold\") ";
+	if( function_type.calling_convention == llvm::CallingConv::X86_StdCall )
+		result+= "call_conv(\"system\") ";
+
+	result+= ": ";
+	result+= function_type.return_type.ToString();
+
+	if( function_type.return_value_type == ValueType::ReferenceMut )
+		result += "&mut";
+	if( function_type.return_value_type == ValueType::ReferenceImut )
+		result += "&imut";
 
 	return result;
 }
