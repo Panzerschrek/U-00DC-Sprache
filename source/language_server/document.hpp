@@ -49,6 +49,8 @@ public:
 	// TODO - provide also URI.
 	std::vector<DocumentRange> GetAllOccurrences( const SrcLoc& src_loc );
 
+	std::vector<CodeBuilder::Symbol> GetSymbols();
+
 private:
 	struct CompiledState
 	{

@@ -43,6 +43,37 @@ std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
 	return result;
 }
 
+std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols()
+{
+	// TODO - perform recursive search.
+
+	std::vector<Symbol> result;
+
+	const NamesScope& root_names_scope= *compiled_sources_.front().names_map;
+
+	root_names_scope.ForEachInThisScope(
+		[&]( const std::string_view name, const NamesScopeValue& names_scope_value )
+		{
+			if( names_scope_value.src_loc.GetFileIndex() != 0 )
+				return; // Imported or generated stuff.
+
+			Symbol symbol;
+			symbol.name= std::string(name);
+			symbol.src_loc= names_scope_value.src_loc;
+
+			// TODO - skip static_asserts and other stuff like that.
+			// TODO - handle each function and each type template in sets.
+
+			result.push_back( std::move(symbol) );
+		} );
+
+	std::sort(
+		result.begin(), result.end(),
+		[]( const Symbol& l, const Symbol& r ) { return l.src_loc < r.src_loc; } );
+
+	return result;
+}
+
 SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
 {
 	// Process functions set specially.

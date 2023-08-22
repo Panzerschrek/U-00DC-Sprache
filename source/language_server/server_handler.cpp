@@ -203,13 +203,19 @@ ServerResponse ServerHandler::ProcessTextDocumentSymbol( const Json::Value& para
 		return result;
 	}
 
-	// Fill dummy.
-	// TODO - provide real symbols.
+	for( const CodeBuilder::Symbol& symbol : it->second.GetSymbols() )
 	{
-		Json::Object symbol;
-		symbol["name"]= "dummy_symbol";
-		symbol["range"]= DocumentRangeToJson( { {3, 14}, {4, 25} } );
-		result.push_back( std::move(symbol) );
+		Json::Object out_symbol;
+		out_symbol["name"]= symbol.name;
+
+		{
+			Json::Object position;
+			position["start"]= SrcLocToPosition( symbol.src_loc );
+			// TODO - extract full range.
+			position["end"]= SrcLocToPosition( SrcLoc( 0, symbol.src_loc.GetLine(), symbol.src_loc.GetColumn() + 1 ) );
+			out_symbol["range"]= std::move(position);
+		}
+		result.push_back( std::move(out_symbol) );
 	}
 
 	return result;

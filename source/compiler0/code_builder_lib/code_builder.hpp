@@ -84,6 +84,15 @@ public:
 	// Result lost is sorted and contains unique entrires.
 	std::vector<SrcLoc> GetAllOccurrences( const SrcLoc& src_loc );
 
+	struct Symbol
+	{
+		std::string name;
+		SrcLoc src_loc;
+	};
+
+	// Returns sorted vector of all main file symbols.
+	std::vector<Symbol> GetMainFileSymbols();
+
 private:
 	CodeBuilder(
 		llvm::LLVMContext& llvm_context,
