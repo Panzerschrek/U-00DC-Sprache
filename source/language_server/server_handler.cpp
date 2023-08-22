@@ -419,6 +419,13 @@ Json::Value ServerHandler::ProcessTextDocumentRename( const Json::Value& params 
 		return result;
 	}
 
+	const auto new_name= obj->getString( "newName" );
+	if( new_name == llvm::None )
+	{
+		log_ << "No newName!" << std::endl;
+		return result;
+	}
+
 	const auto position= obj->getObject( "position" );
 	if( position == nullptr )
 	{
@@ -439,6 +446,25 @@ Json::Value ServerHandler::ProcessTextDocumentRename( const Json::Value& params 
 	{
 		log_ << "Can't find document " << uri->str() << std::endl;
 		return result;
+	}
+
+	{
+		Json::Object changes;
+		{
+			Json::Array edits;
+			for( const DocumentRange& range : it->second.GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+			{
+				Json::Object edit;
+				edit["range"]= DocumentRangeToJson( range );
+				edit["newText"]= new_name->str();
+
+				edits.push_back( std::move(edit) );
+			}
+
+			changes[ uri->str() ]= std::move(edits);
+		}
+
+		result["changes"]= std::move(changes);
 	}
 
 	return result;
