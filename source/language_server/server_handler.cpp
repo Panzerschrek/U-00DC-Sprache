@@ -173,9 +173,45 @@ ServerResponse ServerHandler::ProcessInitialize( const Json::Value& params )
 
 ServerResponse ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
 {
-	// TODO
-	(void)params;
-	Json::Object result;
+	Json::Array result;
+
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+	{
+		log_ << "Not an object!" << std::endl;
+		return result;
+	}
+
+	const auto text_document= obj->getObject( "textDocument" );
+	if( text_document == nullptr )
+	{
+		log_ << "No textDocument!" << std::endl;
+		return result;
+	}
+
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
+	{
+		log_ << "No uri!" << std::endl;
+		return result;
+	}
+
+	const auto it= documents_.find( uri->str() );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return result;
+	}
+
+	// Fill dummy.
+	// TODO - provide real symbols.
+	{
+		Json::Object symbol;
+		symbol["name"]= "dummy_symbol";
+		symbol["range"]= DocumentRangeToJson( { {3, 14}, {4, 25} } );
+		result.push_back( std::move(symbol) );
+	}
+
 	return result;
 }
 
