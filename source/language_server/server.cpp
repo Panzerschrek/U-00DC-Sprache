@@ -85,7 +85,7 @@ bool Server::ReadAndProcessInputMessage()
 		}
 		else
 		{
-			ServerResponce response= handler_.HandleRequest( method, params );
+			ServerResponse response= handler_.HandleRequest( method, params );
 
 			llvm::json::Object response_obj;
 			response_obj["id"]= id;

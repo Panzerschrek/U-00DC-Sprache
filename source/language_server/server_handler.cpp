@@ -104,7 +104,7 @@ ServerHandler::ServerHandler( std::ostream& log )
 {
 }
 
-ServerResponce ServerHandler::HandleRequest( const std::string_view method, const Json::Value& params )
+ServerResponse ServerHandler::HandleRequest( const std::string_view method, const Json::Value& params )
 {
 	if( method == "initialize" )
 		return ProcessInitialize( params );
@@ -145,7 +145,7 @@ std::optional<ServerNotification> ServerHandler::TakeNotification()
 	return result;
 }
 
-ServerResponce ServerHandler::ProcessInitialize( const Json::Value& params )
+ServerResponse ServerHandler::ProcessInitialize( const Json::Value& params )
 {
 	(void)params;
 
@@ -171,7 +171,7 @@ ServerResponce ServerHandler::ProcessInitialize( const Json::Value& params )
 	return result;
 }
 
-ServerResponce ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
 {
 	// TODO
 	(void)params;
@@ -179,7 +179,7 @@ ServerResponce ServerHandler::ProcessTextDocumentSymbol( const Json::Value& para
 	return result;
 }
 
-ServerResponce ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )
 {
 	Json::Array result;
 
@@ -239,7 +239,7 @@ ServerResponce ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 	return result;
 }
 
-ServerResponce ServerHandler::ProcessTextDocumentDefinition( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& params )
 {
 	Json::Object result;
 
@@ -294,7 +294,7 @@ ServerResponce ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 	return result;
 }
 
-ServerResponce ServerHandler::ProcessTextDocumentCompletion( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& params )
 {
 	Json::Object result;
 
@@ -347,7 +347,7 @@ ServerResponce ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 	return result;
 }
 
-ServerResponce ServerHandler::ProcessTextDocumentHighlight( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentHighlight( const Json::Value& params )
 {
 	Json::Array result;
 
@@ -404,7 +404,7 @@ ServerResponce ServerHandler::ProcessTextDocumentHighlight( const Json::Value& p
 	return result;
 }
 
-ServerResponce ServerHandler::ProcessTextDocumentRename( const Json::Value& params )
+ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& params )
 {
 	Json::Object result;
 
@@ -464,7 +464,7 @@ ServerResponce ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 		Json::Object error;
 		error["code"]= int32_t(ErrorCode::RequestFailed);
 		error["message"]= "Not a valid identifier";
-		return ServerResponce( std::move(result), Json::Value(std::move(error)) );
+		return ServerResponse( std::move(result), Json::Value(std::move(error)) );
 	}
 
 	{

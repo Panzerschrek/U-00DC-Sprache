@@ -17,24 +17,24 @@ struct ServerNotification
 	Json::Value params;
 };
 
-struct ServerResponce
+struct ServerResponse
 {
 	Json::Value result;
 	Json::Value error;
 
-	ServerResponce( Json::Object in_result )
+	ServerResponse( Json::Object in_result )
 		: result(std::move(in_result)), error( nullptr )
 	{}
 
-	ServerResponce( Json::Array in_result )
+	ServerResponse( Json::Array in_result )
 		: result(std::move(in_result)), error( nullptr )
 	{}
 
-	ServerResponce( Json::Value in_result )
+	ServerResponse( Json::Value in_result )
 		: result(std::move(in_result)), error( nullptr )
 	{}
 
-	ServerResponce( Json::Value in_result, Json::Value in_error )
+	ServerResponse( Json::Value in_result, Json::Value in_error )
 		: result(std::move(in_result)), error(std::move(in_error))
 	{}
 };
@@ -45,7 +45,7 @@ public:
 	explicit ServerHandler( std::ostream& log );
 
 public:
-	ServerResponce HandleRequest( std::string_view method, const Json::Value& params );
+	ServerResponse HandleRequest( std::string_view method, const Json::Value& params );
 	void HandleNotification( std::string_view method, const Json::Value& params );
 
 	// Take first notification in queue.
@@ -54,15 +54,15 @@ public:
 
 private:
 	// Requests.
-	ServerResponce ProcessInitialize( const Json::Value& params );
-	ServerResponce ProcessTextDocumentSymbol( const Json::Value& params );
-	ServerResponce ProcessTextDocumentReferences( const Json::Value& params );
-	ServerResponce ProcessTextDocumentDefinition( const Json::Value& params );
-	ServerResponce ProcessTextDocumentCompletion( const Json::Value& params );
-	ServerResponce ProcessTextDocumentHighlight( const Json::Value& params );
-	ServerResponce ProcessTextDocumentRename( const Json::Value& params );
+	ServerResponse ProcessInitialize( const Json::Value& params );
+	ServerResponse ProcessTextDocumentSymbol( const Json::Value& params );
+	ServerResponse ProcessTextDocumentReferences( const Json::Value& params );
+	ServerResponse ProcessTextDocumentDefinition( const Json::Value& params );
+	ServerResponse ProcessTextDocumentCompletion( const Json::Value& params );
+	ServerResponse ProcessTextDocumentHighlight( const Json::Value& params );
+	ServerResponse ProcessTextDocumentRename( const Json::Value& params );
 
-	// Notofications.
+	// Notifications.
 	void ProcessTextDocumentDidOpen( const Json::Value& params );
 	void ProcessTextDocumentDidClose( const Json::Value& params );
 	void ProcessTextDocumentDidChange( const Json::Value& params );
