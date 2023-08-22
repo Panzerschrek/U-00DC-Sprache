@@ -134,7 +134,44 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 					result.push_back( std::move(symbol) );
 				}
 
+				for( const FunctionTemplatePtr& function_template : functions_set->template_functions )
+				{
+					if( function_template->syntax_element->src_loc_.GetFileIndex() != 0 )
+						continue;
+
+					Symbol symbol;
+					// TODO - encode also params.
+					symbol.src_loc= function_template->syntax_element->src_loc_;
+
+					if( name == Keywords::constructor_ )
+						symbol.kind= SymbolKind::Constructor;
+					else if( functions_set->base_class != nullptr )
+						symbol.kind= SymbolKind::Method;
+					else
+						symbol.kind= SymbolKind::Function;
+
+					symbol.name= std::string(name);
+
+					result.push_back( std::move(symbol) );
+				}
+
 				return;
+			}
+			if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+			{
+				for( const TypeTemplatePtr& type_template : type_templates_set->type_templates )
+				{
+					if( type_template->src_loc.GetFileIndex() != 0 )
+						continue;
+
+					Symbol symbol;
+					symbol.name= std::string(name);
+					symbol.kind= SymbolKind::Class;
+
+					// TODO - encode internals.
+
+					result.push_back( std::move(symbol) );
+				}
 			}
 
 			if( names_scope_value.src_loc.GetFileIndex() != 0 )
@@ -147,6 +184,7 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 				symbol.kind= SymbolKind::Variable;
 			else if( const auto type= value.GetTypeName() )
 			{
+				symbol.kind= SymbolKind::Class; // Use this as default kind for types.
 				if( const auto class_= type->GetClassType() )
 				{
 					if( class_->members->GetParent() == &names_scope )
@@ -163,8 +201,6 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 						symbol.kind= SymbolKind::Enum;
 					}
 				}
-
-				// TODO - set kind for type alias?
 			}
 			else if( value.GetClassField() != nullptr )
 				symbol.kind= SymbolKind::Field;
@@ -177,8 +213,6 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 				return;
 
 			symbol.name= std::string(name);
-
-			// TODO - handle each function each type template in set.
 
 			result.push_back( std::move(symbol) );
 		} );
