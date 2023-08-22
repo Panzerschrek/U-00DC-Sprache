@@ -158,4 +158,25 @@ Foo // scarry
 	TestLexResult( c_program_text, expected_result );
 }
 
+U_TEST( ValidIdentifierTest )
+{
+	U_TEST_ASSERT(  IsValidIdentifier( "foo" ) );
+	U_TEST_ASSERT(  IsValidIdentifier( "Foo" ) );
+	U_TEST_ASSERT(  IsValidIdentifier( "F00" ) );
+	U_TEST_ASSERT(  IsValidIdentifier( "q12345" ) );
+	U_TEST_ASSERT(  IsValidIdentifier( "ЭтоТожеВерныйИдентефикатор" ) );
+	U_TEST_ASSERT(  IsValidIdentifier( "   Foo   " ) );
+	U_TEST_ASSERT(  IsValidIdentifier( "   Фуу   " ) );
+	U_TEST_ASSERT(  IsValidIdentifier( " \n\r\t   швуте  \r\t\n " ) );
+	U_TEST_ASSERT( !IsValidIdentifier( "@foo" ) );
+	U_TEST_ASSERT( !IsValidIdentifier( "@ foo" ) );
+	U_TEST_ASSERT( !IsValidIdentifier( "foo%" ) );
+	U_TEST_ASSERT( !IsValidIdentifier( "1foo" ) );
+	U_TEST_ASSERT( !IsValidIdentifier( "foo  *" ) );
+	U_TEST_ASSERT( !IsValidIdentifier( "foo foo" ) );
+	U_TEST_ASSERT( !IsValidIdentifier( "\"foo\"" ) );
+	U_TEST_ASSERT( !IsValidIdentifier( "++" ) );
+	U_TEST_ASSERT( !IsValidIdentifier( "()" ) );
+}
+
 } // namespace U
