@@ -100,6 +100,8 @@ Json::Value ServerHandler::HandleRequest( const std::string_view method, const J
 		return ProcessInitialize( params );
 	if( method == "textDocument/documentSymbol" )
 		return ProcessTextDocumentSymbol( params );
+	if( method == "textDocument/references" )
+		return ProcessTextDocumentReferences( params );
 	if( method == "textDocument/definition" )
 		return ProcessTextDocumentDefinition( params );
 	if( method == "textDocument/completion" )
@@ -164,6 +166,66 @@ Json::Value ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params 
 	// TODO
 	(void)params;
 	Json::Object result;
+	return result;
+}
+
+Json::Value ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )
+{
+	Json::Array result;
+
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+	{
+		log_ << "Not an object!" << std::endl;
+		return result;
+	}
+
+	const auto text_document= obj->getObject( "textDocument" );
+	if( text_document == nullptr )
+	{
+		log_ << "No textDocument!" << std::endl;
+		return result;
+	}
+
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
+	{
+		log_ << "No uri!" << std::endl;
+		return result;
+	}
+
+	const auto position= obj->getObject( "position" );
+	if( position == nullptr )
+	{
+		log_ << "No position!" << std::endl;
+		return result;
+	}
+
+	const auto line= position->getInteger( "line" );
+	const auto character= position->getInteger( "character" );
+	if( line == llvm::None || character == llvm::None )
+	{
+		log_ << "Invalid position!" << std::endl;
+		return result;
+	}
+
+	const auto it= documents_.find( uri->str() );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return result;
+	}
+
+	for( const DocumentRange& range : it->second.GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	{
+		Json::Object location;
+		location["range"]= DocumentRangeToJson( range );
+		// TODO - set proper URI for occurences in other files.
+		location["uri"]= uri->str();
+
+		result.push_back( std::move(location) );
+	}
+
 	return result;
 }
 

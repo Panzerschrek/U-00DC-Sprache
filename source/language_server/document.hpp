@@ -46,6 +46,9 @@ public:
 	// Returns highlights only for this document.
 	std::vector<DocumentRange> GetHighlightLocations( const SrcLoc& src_loc );
 
+	// TODO - provide also URI.
+	std::vector<DocumentRange> GetAllOccurrences( const SrcLoc& src_loc );
+
 private:
 	struct CompiledState
 	{

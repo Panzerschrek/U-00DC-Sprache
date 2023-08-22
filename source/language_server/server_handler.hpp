@@ -34,6 +34,7 @@ private:
 	// Requests.
 	Json::Value ProcessInitialize( const Json::Value& params );
 	Json::Value ProcessTextDocumentSymbol( const Json::Value& params );
+	Json::Value ProcessTextDocumentReferences( const Json::Value& params );
 	Json::Value ProcessTextDocumentDefinition( const Json::Value& params );
 	Json::Value ProcessTextDocumentCompletion( const Json::Value& params );
 	Json::Value ProcessTextDocumentHighlight( const Json::Value& params );
