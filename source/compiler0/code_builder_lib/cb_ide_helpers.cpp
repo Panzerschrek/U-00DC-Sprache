@@ -115,8 +115,10 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 				// Process function sets specially.
 				for( const FunctionVariable& function_variable : functions_set->functions )
 				{
+					if( function_variable.is_generated && function_variable.prototype_src_loc == SrcLoc() && function_variable.body_src_loc == SrcLoc() )
+						continue; // Skip generated stuff.
+
 					Symbol symbol;
-					symbol.name= std::string(name);
 					// TODO - encode also params.
 					symbol.src_loc= function_variable.body_src_loc;
 
@@ -126,6 +128,8 @@ std::vector<CodeBuilder::Symbol> CodeBuilder::GetMainFileSymbols_r( const NamesS
 						symbol.kind= SymbolKind::Method;
 					else
 						symbol.kind= SymbolKind::Function;
+
+					symbol.name= std::string(name);
 
 					result.push_back( std::move(symbol) );
 				}
