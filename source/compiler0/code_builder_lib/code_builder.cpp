@@ -950,7 +950,7 @@ size_t CodeBuilder::PrepareFunction(
 	const Synt::Function& func,
 	const bool is_out_of_line_function )
 {
-	const std::string& func_name= func.name_.back();
+	const std::string& func_name= func.name_.back().name;
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
 	const bool is_special_method= is_constructor || is_destructor;

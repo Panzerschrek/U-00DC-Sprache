@@ -403,6 +403,33 @@ U_TEST( GoToDefinition_Test10 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 2, 21 ) == SrcLoc( 0, 6, 8 ) );
 }
 
+U_TEST( GoToDefinition_Test11 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Abc
+		{
+			namespace Def
+			{
+				class Qwerty
+				{
+					fn Foo();
+				}
+			}
+		}
+
+		fn Abc::Def::Qwerty::Foo() {}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13,  5 ) == SrcLoc( 0,  2, 12 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 10 ) == SrcLoc( 0,  4, 13 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 15 ) == SrcLoc( 0,  6, 10 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 23 ) == SrcLoc( 0,  8,  8 ) );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=
@@ -524,6 +551,45 @@ U_TEST( GetAllOccurrences_Test3 )
 	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  5,  7 ) == result_y );
 	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  9, 24 ) == result_y );
 	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 11, 13 ) == result_y );
+}
+
+U_TEST( GetAllOccurrences_Test4 )
+{
+	static const char c_program_text[]=
+	R"(
+		namespace Abc
+		{
+			namespace Def
+			{
+				class Qwerty
+				{
+					fn Foo();
+				}
+			}
+		}
+
+		fn Abc::Def::Qwerty::Foo() {}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	const std::vector<SrcLoc> result_abc   { SrcLoc( 0,  2, 12 ), SrcLoc( 0, 13,  5 ) };
+	const std::vector<SrcLoc> result_def   { SrcLoc( 0,  4, 13 ), SrcLoc( 0, 13, 10 ) };
+	const std::vector<SrcLoc> result_qwerty{ SrcLoc( 0,  6, 10 ), SrcLoc( 0, 13, 15 ) };
+	const std::vector<SrcLoc> result_foo   { SrcLoc( 0,  8,  8 ), SrcLoc( 0, 13, 23 ) };
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  2, 12 ) == result_abc );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 13,  5 ) == result_abc );
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  4, 13 ) == result_def );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 13, 10 ) == result_def );
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  6, 10 ) == result_qwerty );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 13, 15 ) == result_qwerty );
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  8,  8 ) == result_foo );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 13, 23 ) == result_foo );
 }
 
 } // namespace

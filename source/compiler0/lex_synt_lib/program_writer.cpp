@@ -643,9 +643,9 @@ void ElementWrite( const Function& function, std::ostream& stream )
 		stream << " ) ";
 	}
 
-	for( const std::string& component : function.name_ )
+	for( const Function::NameComponent& component : function.name_ )
 	{
-		stream << component;
+		stream << component.name;
 		if( &component != &function.name_.back() )
 			stream << "::";
 	}

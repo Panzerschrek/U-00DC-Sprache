@@ -2997,7 +2997,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	// Parse complex name before function name - such "fn MyStruct::A::B"
 	if( it_->type == Lexem::Type::Scope )
 	{
-		result->name_.push_back("");
+		result->name_.push_back(Function::NameComponent{});
 		NextLexem();
 	}
 	if( it_->type == Lexem::Type::Identifier )
@@ -3009,7 +3009,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				PushErrorMessage();
 				return result;
 			}
-			result->name_.push_back(it_->text);
+			result->name_.push_back(Function::NameComponent{ it_->text, it_->src_loc });
 			result->src_loc_= it_->src_loc;
 			NextLexem();
 
@@ -3040,11 +3040,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		if( result->name_.empty() )
 		{
 			PushErrorMessage();
-			result->name_.push_back("dummy");
+			result->name_.push_back(Function::NameComponent{ "dummy", SrcLoc() });
 		}
-		if( result->name_.back() == Keywords::conversion_constructor_ )
+		if( result->name_.back().name == Keywords::conversion_constructor_ )
 		{
-			result->name_.back()= Keyword( Keywords::constructor_ );
+			result->name_.back().name= Keyword( Keywords::constructor_ );
 			result->is_conversion_constructor_= true;
 		}
 	}
@@ -3107,7 +3107,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			return nullptr;
 		};
 
-		result->name_.emplace_back( OverloadedOperatorToString( overloaded_operator ) );
+		result->name_.emplace_back( Function::NameComponent{ std::string( OverloadedOperatorToString( overloaded_operator ) ), result->src_loc_ } );
 		result->overloaded_operator_= overloaded_operator;
 
 		NextLexem();
@@ -3208,7 +3208,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	// If method is constructor or destructor and "this" not explicitly specified, add it.
 	// It's easier add "this" here, than dealing with implicit "this" in CodeBuilder.
-	if( ( result->name_.back() == Keywords::constructor_ || result->name_.back() == Keywords::destructor_ ) &&
+	if( ( result->name_.back().name == Keywords::constructor_ || result->name_.back().name == Keywords::destructor_ ) &&
 		( params.empty() || params.front().name_ != Keywords::this_ ) )
 	{
 		FunctionParam this_argument( result->src_loc_ );

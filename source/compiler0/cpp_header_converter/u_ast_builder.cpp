@@ -486,7 +486,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 {
 	auto func= std::make_unique<Synt::Function>(g_dummy_src_loc);
 
-	func->name_.push_back( TranslateIdentifier( func_decl.getName() ) );
+	func->name_.push_back( Synt::Function::NameComponent{ TranslateIdentifier( func_decl.getName() ), g_dummy_src_loc } );
 	func->no_mangle_= externc;
 	func->type_.unsafe_= true; // All C/C++ functions are unsafe.
 

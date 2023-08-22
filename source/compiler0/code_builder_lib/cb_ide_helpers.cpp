@@ -53,6 +53,10 @@ SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
 			return functions_set->functions.front().body_src_loc;
 		if( !functions_set->template_functions.empty() )
 			return functions_set->template_functions.front()->src_loc;
+		if( !functions_set->syntax_elements.empty() )
+			return functions_set->syntax_elements.front()->src_loc_;
+		if( !functions_set->out_of_line_syntax_elements.empty() )
+			return functions_set->out_of_line_syntax_elements.front()->src_loc_;
 	}
 	if( const auto type_templates_set= value.value.GetTypeTemplatesSet() )
 	{
