@@ -1,7 +1,6 @@
 #include "../code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/lex_utils.hpp"
 #include "cpp_tests_launcher.hpp"
-#include <iostream>
 
 namespace U
 {
@@ -448,6 +447,83 @@ U_TEST( GetAllOccurrences_Test1 )
 	const std::vector<SrcLoc> expected_result_shadowed{ SrcLoc( 0, 6, 9 ), SrcLoc( 0, 7, 12 ) };
 	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 6,  9 ) == expected_result_shadowed );
 	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 7, 12 ) == expected_result_shadowed );
+}
+
+U_TEST( GetAllOccurrences_Test2 )
+{
+	static const char c_program_text[]=
+	R"(
+		type Abc= u16;
+		var Abc abc0= zero_init;
+		var Bar::Abc abc1= zero_init;
+		var Baz::Abc abc2= zero_init;
+		namespace Bar
+		{
+			type Abc= u32;
+			var Abc abc0= zero_init;
+			var ::Abc abc1= zero_init;
+			var Baz::Abc abc2= zero_init;
+		}
+		namespace Baz
+		{
+			type Abc= char8;
+			var Abc abc0= zero_init;
+			var ::Abc abc1= zero_init;
+			var Bar::Abc abc2= zero_init;
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	const std::vector<SrcLoc> abc_global{ SrcLoc( 0,  2,  7 ), SrcLoc( 0,  3,  6 ), SrcLoc( 0, 10,  9 ), SrcLoc( 0, 17,  9 ) };
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  2,  7 ) == abc_global );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  3,  6 ) == abc_global );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 10,  9 ) == abc_global );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 17,  9 ) == abc_global );
+
+	const std::vector<SrcLoc> abc_bar   { SrcLoc( 0,  4, 11 ), SrcLoc( 0,  8,  8 ), SrcLoc( 0,   9,  7 ), SrcLoc( 0, 18, 12 ) };
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  4, 11 ) == abc_bar );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  8,  8 ) == abc_bar );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  9,  7 ) == abc_bar );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 18, 12 ) == abc_bar );
+
+	const std::vector<SrcLoc> abc_baz   { SrcLoc( 0,  5, 11 ), SrcLoc( 0, 11, 12 ), SrcLoc( 0,  15,  8 ), SrcLoc( 0, 16,  7 ) };
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  5, 11 ) == abc_baz );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 11, 12 ) == abc_baz );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 15,  8 ) == abc_baz );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 16,  7 ) == abc_baz );
+}
+
+U_TEST( GetAllOccurrences_Test3 )
+{
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			i32 x;
+			f32 y;
+		}
+		fn Foo()
+		{
+			var S mut s{ .x= 0, .y= 1.0f };
+			s.x= 66;
+			auto y= s.y;
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	const std::vector<SrcLoc> result_x{ SrcLoc( 0,  4,  7 ), SrcLoc( 0,  9, 17 ), SrcLoc( 0, 10,  5 ) };
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  4,  7 ) == result_x );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  9, 17 ) == result_x );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 10,  5 ) == result_x );
+
+	const std::vector<SrcLoc> result_y{ SrcLoc( 0,  5,  7 ), SrcLoc( 0,  9, 24 ), SrcLoc( 0, 11, 13 ) };
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  5,  7 ) == result_y );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  9, 24 ) == result_y );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 11, 13 ) == result_y );
 }
 
 } // namespace

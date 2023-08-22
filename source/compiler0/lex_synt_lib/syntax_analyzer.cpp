@@ -1568,10 +1568,10 @@ ComplexName SyntaxAnalyzer::ParseComplexNameTail( ComplexName base )
 		return base;
 	NextLexem(); // Skip ::
 
-	NamesScopeNameFetch names_scope_fetch( it_->src_loc );
-
 	if( it_->type != Lexem::Type::Identifier )
 		PushErrorMessage();
+
+	NamesScopeNameFetch names_scope_fetch( it_->src_loc );
 	names_scope_fetch.name= it_->text;
 	NextLexem();
 
