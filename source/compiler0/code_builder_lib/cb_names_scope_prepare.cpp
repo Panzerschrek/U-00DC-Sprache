@@ -81,7 +81,7 @@ void CodeBuilder::NamesScopeFill(
 	if( function_declaration.name_.size() != 1u )
 		return; // process out of line functions later.
 
-	const std::string& func_name= function_declaration.name_.back();
+	const std::string& func_name= function_declaration.name_.back().name;
 	if( IsKeyword( func_name ) && func_name != Keywords::constructor_ && func_name != Keywords::destructor_ )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), function_declaration.src_loc_ );
 
@@ -128,7 +128,7 @@ void CodeBuilder::NamesScopeFill(
 	const ClassMemberVisibility visibility )
 {
 	const auto& full_name = function_template_declaration.function_->name_;
-	const std::string& function_template_name= full_name.front();
+	const std::string& function_template_name= full_name.front().name;
 
 	if( full_name.size() > 1u )
 		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.src_loc_ );
@@ -355,39 +355,43 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 
 			NamesScopeValue* value= nullptr;
 			size_t component_index= 0u;
-			if( func.name_.front().empty() )
+			if( func.name_.front().name.empty() )
 			{
 				// Perform function name lookup starting from root.
 				U_ASSERT( func.name_.size() >= 2u );
-				value= names_scope.GetRoot()->GetThisScopeValue( func.name_[1] );
+				value= names_scope.GetRoot()->GetThisScopeValue( func.name_[1].name );
 				++component_index;
+				if( value != nullptr )
+					CollectDefinition( *value, func.name_[1].src_loc );
 			}
 			else
 			{
 				// Perform regular name lookup.
-				value= LookupName( names_scope, func.name_[0], func.src_loc_ ).value;
+				value= LookupName( names_scope, func.name_[0].name, func.src_loc_ ).value;
+				if( value != nullptr )
+					CollectDefinition( *value, func.name_[0].src_loc );
 			}
 
 			if( value == nullptr )
 			{
-				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.src_loc_, func.name_.front() );
+				REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.src_loc_, func.name_.front().name );
 				continue;
 			}
-
-			// TODO - collect definition of component names here.
 
 			for( size_t i= component_index + 1u; value != nullptr && i < func.name_.size(); ++i )
 			{
 				if( const auto namespace_= value->value.GetNamespace() )
-					value= namespace_->GetThisScopeValue( func.name_[i] );
+					value= namespace_->GetThisScopeValue( func.name_[i].name );
 				else if( const auto type= value->value.GetTypeName() )
 				{
 					if( const auto class_= type->GetClassType() )
-						value= class_->members->GetThisScopeValue( func.name_[i] );
+						value= class_->members->GetThisScopeValue( func.name_[i].name );
 				}
 
 				if( value == nullptr )
-					REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.src_loc_, func.name_[i] );
+					REPORT_ERROR( NameNotFound, names_scope.GetErrors(), func.src_loc_, func.name_[i].name );
+				if( i + 1 < func.name_.size() )
+					CollectDefinition( *value, func.name_[i].src_loc );
 			}
 
 			if( value == nullptr || value->value.GetFunctionsSet() == nullptr )
@@ -396,6 +400,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 				continue;
 			}
 			value->value.GetFunctionsSet()->out_of_line_syntax_elements.push_back(&func);
+			CollectDefinition( *value, func.name_.back().src_loc ); // Collect value after populating vector of out of line syntax elements.
 		}
 		else if( const auto namespace_ptr= std::get_if<Synt::NamespacePtr>( &program_element ) )
 		{

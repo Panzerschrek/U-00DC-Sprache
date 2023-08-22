@@ -73,7 +73,8 @@ Language server
 *) Go to definition for non-value names - loop labels, reference tags, imports, etc.
 *) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
 *) Completion
-*) Highlighting
+*) Highlighting for overloaded operators
+*) Renaming
 *) Providing document symbols
 *) Imports handling
 *) Use prelude

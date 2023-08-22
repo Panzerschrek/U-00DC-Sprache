@@ -13,6 +13,36 @@ std::optional<SrcLoc> CodeBuilder::GetDefinition( const SrcLoc& src_loc )
 	return it->second.src_loc;
 }
 
+std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
+{
+	std::vector<SrcLoc> result;
+
+	if( const auto definition_point= GetDefinition( src_loc ) )
+	{
+		// Found a definition point. Find all usages of it.
+		result.push_back( *definition_point );
+		for( const auto& definition_point_pair : definition_points_ )
+		{
+			if( definition_point == definition_point_pair.second.src_loc )
+				result.push_back( definition_point_pair.first );
+		}
+	}
+	else
+	{
+		// Assume, that this is definition itself. Find all usages.
+		result.push_back( src_loc );
+		for( const auto& definition_point_pair : definition_points_ )
+		{
+			if( src_loc == definition_point_pair.second.src_loc )
+				result.push_back( definition_point_pair.first );
+		}
+	}
+
+	std::sort( result.begin(), result.end() );
+	result.erase( std::unique( result.begin(), result.end() ), result.end() );
+	return result;
+}
+
 SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
 {
 	// Process functions set specially.
@@ -23,6 +53,10 @@ SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
 			return functions_set->functions.front().body_src_loc;
 		if( !functions_set->template_functions.empty() )
 			return functions_set->template_functions.front()->src_loc;
+		if( !functions_set->syntax_elements.empty() )
+			return functions_set->syntax_elements.front()->src_loc_;
+		if( !functions_set->out_of_line_syntax_elements.empty() )
+			return functions_set->out_of_line_syntax_elements.front()->src_loc_;
 	}
 	if( const auto type_templates_set= value.value.GetTypeTemplatesSet() )
 	{

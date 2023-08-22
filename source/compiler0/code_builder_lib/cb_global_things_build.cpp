@@ -244,12 +244,12 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 		if( !functions_set.syntax_elements.empty() )
 		{
 			functions_set_src_loc= functions_set.syntax_elements.front()->src_loc_;
-			functions_set_name= functions_set.syntax_elements.front()->name_.back();
+			functions_set_name= functions_set.syntax_elements.front()->name_.back().name;
 		}
 		else if( !functions_set.template_syntax_elements.empty() )
 		{
 			functions_set_src_loc= functions_set.template_syntax_elements.front()->src_loc_;
-			functions_set_name= functions_set.template_syntax_elements.front()->function_->name_.back();
+			functions_set_name= functions_set.template_syntax_elements.front()->function_->name_.back().name;
 		}
 		DETECT_GLOBALS_LOOP( &functions_set, functions_set_name, functions_set_src_loc );
 
@@ -282,7 +282,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 				function_variable.have_body= false;
 				function_variable.return_type_is_auto= false;
 				function_variable.llvm_function->function->eraseFromParent();
-				function_variable.llvm_function= std::make_shared<LazyLLVMFunction>( function_variable.no_mangle ? function->name_.back() : mangler_->MangleFunction( names_scope, function->name_.back(), function_type ) );
+				function_variable.llvm_function= std::make_shared<LazyLLVMFunction>( function_variable.no_mangle ? function->name_.back().name : mangler_->MangleFunction( names_scope, function->name_.back().name, function_type ) );
 
 				function_variable.type= std::move(function_type);
 
@@ -320,7 +320,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					function_variable,
 					functions_set.base_class,
 					names_scope,
-					function_variable.syntax_element->name_.back(),
+					function_variable.syntax_element->name_.back().name,
 					function_variable.syntax_element->type_.params_,
 					*function_variable.syntax_element->block_,
 					function_variable.syntax_element->constructor_initialization_list_.get() );
@@ -339,7 +339,7 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 					function_variable,
 					functions_set.base_class,
 					names_scope,
-					function_variable.syntax_element->name_.back(),
+					function_variable.syntax_element->name_.back().name,
 					function_variable.syntax_element->type_.params_,
 					*function_variable.syntax_element->block_,
 					function_variable.syntax_element->constructor_initialization_list_.get() );

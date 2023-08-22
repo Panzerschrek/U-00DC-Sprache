@@ -10,9 +10,20 @@ namespace U
 namespace LangServer
 {
 
+namespace
+{
+
+DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc )
+{
+	return DocumentPosition{ src_loc.GetLine(), src_loc.GetColumn() };
+}
+
+} // namespace
+
 Document::Document( std::ostream& log, std::string text )
 	: log_(log)
 {
+	(void)log_;
 	SetText( std::move(text) );
 }
 
@@ -31,26 +42,62 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 	return code_builder_errors_;
 }
 
-std::optional<SrcLoc> Document::GetDefinitionPoint( const SrcLoc& src_loc )
+std::optional<DocumentRange> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
 	// Find lexem, where position is located.
-	const auto lexem_position= GetLexemSrcLocForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
-	if( lexem_position == std::nullopt )
+	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
+	if( lexem == nullptr )
 		return std::nullopt;
 
-	log_ << "Found lexem " << lexem_position->GetLine() << ":" << lexem_position->GetColumn() << std::endl;
+	if( const auto src_loc= last_valid_state_->code_builder->GetDefinition( lexem->src_loc ) )
+	{
+		DocumentRange range;
+		range.start= SrcLocToDocumentPosition(*src_loc);
+		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc->GetLine(), src_loc->GetColumn(), last_valid_state_->lexems ) );
+		return range;
+	}
 
-	const auto definition_point= last_valid_state_->code_builder->GetDefinition( *lexem_position );
+	return std::nullopt;
+}
 
-	if( definition_point != std::nullopt )
-		log_ << "Found definition point " <<  definition_point->GetLine() << ":" << definition_point->GetColumn() << std::endl;
-	else
-		log_ << "Can't find definition point" << std::endl;
+std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_loc )
+{
+	if( last_valid_state_ == std::nullopt )
+		return {};
 
-	return definition_point;
+	// Find lexem, where position is located.
+	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
+	if( lexem == nullptr )
+		return {};
+
+	if( lexem->type != Lexem::Type::Identifier )
+	{
+		// There is no reason to highlight non-identifiers.
+		// TODO - maybe highlight at least overloaded operators?
+		return {};
+	}
+
+	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( lexem->src_loc );
+
+	std::vector<DocumentRange> result;
+	result.reserve( occurrences.size() );
+
+	for( const SrcLoc& src_loc : occurrences )
+	{
+		if( src_loc.GetFileIndex() != 0 )
+			continue; // Filter out symbols from imported files.
+
+		DocumentRange range;
+		range.start= SrcLocToDocumentPosition(src_loc);
+		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
+
+		result.push_back( std::move(range) );
+	}
+
+	return result;
 }
 
 void Document::SetText( std::string text )

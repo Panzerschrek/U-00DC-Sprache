@@ -104,7 +104,8 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	FunctionType& function_type,
 	const ClassPtr base_class )
 {
-	if( func.name_.back() == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
+	const std::string& func_name= func.name_.back().name;
+	if( func_name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
 		if( !func.type_.references_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.src_loc_ );
@@ -117,7 +118,7 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		ref_pollution.src.second= 0u;
 		function_type.references_pollution.insert(ref_pollution);
 	}
-	else if( func.name_.back() == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
+	else if( func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
 		if( !func.type_.references_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.src_loc_ );
@@ -130,14 +131,14 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 		ref_pollution.src.second= 0u;
 		function_type.references_pollution.insert(ref_pollution);
 	}
-	else if( func.name_.back() == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function_type, base_class ) )
+	else if( func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function_type, base_class ) )
 	{
 		if( !func.type_.references_pollution_list_.empty() )
 			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, errors_container, func.src_loc_ );
 	}
 	else
 	{
-		if( func.name_.back() == Keywords::constructor_ )
+		if( func_name == Keywords::constructor_ )
 		{
 			for( const Synt::FunctionReferencesPollution& pollution : func.type_.references_pollution_list_ )
 				if( pollution.second == Keywords::this_ )

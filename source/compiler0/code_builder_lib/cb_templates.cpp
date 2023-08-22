@@ -154,7 +154,7 @@ void CodeBuilder::PrepareFunctionTemplate(
 	const ClassPtr base_class )
 {
 	const auto& full_name= function_template_declaration.function_->name_;
-	const std::string& function_template_name= full_name.front();
+	const std::string& function_template_name= full_name.front().name;
 
 	if( full_name.size() > 1u )
 		REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), function_template_declaration.src_loc_ );
@@ -1094,7 +1094,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	const FunctionTemplatePtr& function_template_ptr= template_function_preparation_result.function_template;
 	const FunctionTemplate& function_template= *function_template_ptr;
 	const Synt::Function& function_declaration= *function_template.syntax_element->function_;
-	const std::string& func_name= function_declaration.name_.back();
+	const std::string& func_name= function_declaration.name_.back().name;
 
 	const NamesScopePtr& template_args_namespace= template_function_preparation_result.template_args_namespace;
 
@@ -1239,7 +1239,7 @@ NamesScopeValue* CodeBuilder::ParametrizeFunctionTemplate(
 
 	if( result.template_functions.empty() )
 	{
-		REPORT_ERROR( TemplateFunctionGenerationFailed, arguments_names_scope.GetErrors(), src_loc, function_templates.front()->syntax_element->function_->name_.back() );
+		REPORT_ERROR( TemplateFunctionGenerationFailed, arguments_names_scope.GetErrors(), src_loc, function_templates.front()->syntax_element->function_->name_.back().name );
 		return nullptr;
 	}
 

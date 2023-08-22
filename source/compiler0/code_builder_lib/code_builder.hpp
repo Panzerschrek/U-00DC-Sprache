@@ -79,6 +79,11 @@ public:
 	// Works only if definition collection is enabled in options.
 	std::optional<SrcLoc> GetDefinition( const SrcLoc& src_loc );
 
+	// Get all usage points for specified symbol.
+	// For both symbol usage and symvol definition it returns definition point and all unsage points.
+	// Result lost is sorted and contains unique entrires.
+	std::vector<SrcLoc> GetAllOccurrences( const SrcLoc& src_loc );
+
 private:
 	CodeBuilder(
 		llvm::LLVMContext& llvm_context,

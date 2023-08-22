@@ -17,6 +17,22 @@ Json::Value SrcLocToPosition( const SrcLoc& src_loc )
 	return position;
 }
 
+Json::Value DocumentPositionToJson( const DocumentPosition& position )
+{
+	Json::Object out_position;
+	out_position["line"]= position.line - 1; // LSP uses 0-based line numbers, Ü use 1-based line numbers.
+	out_position["character"]= position.column;
+	return out_position;
+}
+
+Json::Value DocumentRangeToJson( const DocumentRange& range )
+{
+	Json::Object out_range;
+	out_range["start"]= DocumentPositionToJson( range.start );
+	out_range["end"]= DocumentPositionToJson( range.end );
+	return out_range;
+}
+
 void CreateLexSyntErrorsDiagnostics( const LexSyntErrors& errors, Json::Array& out_diagnostics )
 {
 	for( const LexSyntError& error : errors)
@@ -183,7 +199,6 @@ Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& par
 		return result;
 	}
 
-
 	const auto line= position->getInteger( "line" );
 	const auto character= position->getInteger( "character" );
 	if( line == llvm::None || character == llvm::None )
@@ -199,17 +214,10 @@ Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& par
 		return result;
 	}
 
-	if( const auto src_loc_opt= it->second.GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	if( const auto range= it->second.GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
-		log_ << "Find " << src_loc_opt->GetLine() << ":" << src_loc_opt->GetColumn() << std::endl;
-
-		Json::Object range;
-		range["start"]= SrcLocToPosition( *src_loc_opt );
-		range["end"]= SrcLocToPosition( SrcLoc( 0, src_loc_opt->GetLine(), src_loc_opt->GetColumn() + 1 ) );
-
-		result["range"]= std::move(range);
+		result["range"]= DocumentRangeToJson( *range );
 		result["uri"]= uri->str();
-
 	}
 	return result;
 }
@@ -269,7 +277,7 @@ Json::Value ServerHandler::ProcessTextDocumentCompletion( const Json::Value& par
 
 Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& params )
 {
-	Json::Object result;
+	Json::Array result;
 
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -299,14 +307,26 @@ Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& para
 		return result;
 	}
 
-	// Fill dummy.
-	// TODO - perform real request.
+	const auto line= position->getInteger( "line" );
+	const auto character= position->getInteger( "character" );
+	if( line == llvm::None || character == llvm::None )
 	{
-		Json::Object range;
-		range["start"]= SrcLocToPosition( SrcLoc( 0, 4, 5 ) );
-		range["end"]= SrcLocToPosition( SrcLoc( 0, 4, 7 ) );
+		log_ << "Invalid position!" << std::endl;
+		return result;
+	}
 
-		result["range"]= std::move(range);
+	const auto it= documents_.find( uri->str() );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return result;
+	}
+
+	for( const DocumentRange& range : it->second.GetHighlightLocations( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	{
+		Json::Object highlight;
+		highlight["range"]= DocumentRangeToJson( range );
+		result.push_back( std::move(highlight) );
 	}
 
 	return result;

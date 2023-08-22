@@ -929,7 +929,13 @@ struct Function final : public SyntaxElementBase
 		Generator,
 	};
 
-	std::vector<std::string> name_; // A, A::B, A::B::C::D, ::A, ::A::B
+	struct NameComponent
+	{
+		std::string name;
+		SrcLoc src_loc;
+	};
+
+	std::vector<NameComponent> name_; // A, A::B, A::B::C::D, ::A, ::A::B
 	Expression condition_;
 	FunctionType type_;
 	std::unique_ptr<const StructNamedInitializer> constructor_initialization_list_;

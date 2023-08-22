@@ -5,6 +5,6 @@
 namespace U
 {
 
-std::unique_ptr<CodeBuilder> BuildProgramForGoToDefinitionTest( const char* const text );
+std::unique_ptr<CodeBuilder> BuildProgramForIdeHelpersTest( const char* const text );
 
 } // namespace U
