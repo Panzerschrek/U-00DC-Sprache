@@ -9,6 +9,16 @@ namespace LangServer
 namespace
 {
 
+enum ErrorCode : int32_t
+{
+	ParseError = -32700,
+	InvalidRequest = -32600,
+	MethodNotFound = -32601,
+	InvalidParams = -32602,
+	InternalError = -32603,
+	RequestFailed = -32803,
+};
+
 Json::Value SrcLocToPosition( const SrcLoc& src_loc )
 {
 	Json::Object position;
@@ -94,7 +104,7 @@ ServerHandler::ServerHandler( std::ostream& log )
 {
 }
 
-Json::Value ServerHandler::HandleRequest( const std::string_view method, const Json::Value& params )
+ServerResponce ServerHandler::HandleRequest( const std::string_view method, const Json::Value& params )
 {
 	if( method == "initialize" )
 		return ProcessInitialize( params );
@@ -135,7 +145,7 @@ std::optional<ServerNotification> ServerHandler::TakeNotification()
 	return result;
 }
 
-Json::Value ServerHandler::ProcessInitialize( const Json::Value& params )
+ServerResponce ServerHandler::ProcessInitialize( const Json::Value& params )
 {
 	(void)params;
 
@@ -161,7 +171,7 @@ Json::Value ServerHandler::ProcessInitialize( const Json::Value& params )
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
+ServerResponce ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
 {
 	// TODO
 	(void)params;
@@ -169,7 +179,7 @@ Json::Value ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params 
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )
+ServerResponce ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )
 {
 	Json::Array result;
 
@@ -229,7 +239,7 @@ Json::Value ServerHandler::ProcessTextDocumentReferences( const Json::Value& par
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& params )
+ServerResponce ServerHandler::ProcessTextDocumentDefinition( const Json::Value& params )
 {
 	Json::Object result;
 
@@ -284,7 +294,7 @@ Json::Value ServerHandler::ProcessTextDocumentDefinition( const Json::Value& par
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentCompletion( const Json::Value& params )
+ServerResponce ServerHandler::ProcessTextDocumentCompletion( const Json::Value& params )
 {
 	Json::Object result;
 
@@ -337,7 +347,7 @@ Json::Value ServerHandler::ProcessTextDocumentCompletion( const Json::Value& par
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& params )
+ServerResponce ServerHandler::ProcessTextDocumentHighlight( const Json::Value& params )
 {
 	Json::Array result;
 
@@ -394,7 +404,7 @@ Json::Value ServerHandler::ProcessTextDocumentHighlight( const Json::Value& para
 	return result;
 }
 
-Json::Value ServerHandler::ProcessTextDocumentRename( const Json::Value& params )
+ServerResponce ServerHandler::ProcessTextDocumentRename( const Json::Value& params )
 {
 	Json::Object result;
 
@@ -448,6 +458,15 @@ Json::Value ServerHandler::ProcessTextDocumentRename( const Json::Value& params 
 		return result;
 	}
 
+	const std::string new_name_str= new_name->str();
+	if( !IsValidIdentifier( new_name_str ) )
+	{
+		Json::Object error;
+		error["code"]= int32_t(ErrorCode::RequestFailed);
+		error["message"]= "Not a valid identifier";
+		return ServerResponce( std::move(result), Json::Value(std::move(error)) );
+	}
+
 	{
 		Json::Object changes;
 		{
@@ -456,7 +475,7 @@ Json::Value ServerHandler::ProcessTextDocumentRename( const Json::Value& params 
 			{
 				Json::Object edit;
 				edit["range"]= DocumentRangeToJson( range );
-				edit["newText"]= new_name->str();
+				edit["newText"]= new_name_str;
 
 				edits.push_back( std::move(edit) );
 			}

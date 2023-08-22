@@ -129,4 +129,7 @@ struct LexicalAnalysisResult
 };
 
 LexicalAnalysisResult LexicalAnalysis( std::string_view program_text, bool collect_comments= false );
+
+bool IsValidIdentifier(  std::string_view text );
+
 } // namespace U

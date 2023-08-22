@@ -85,11 +85,13 @@ bool Server::ReadAndProcessInputMessage()
 		}
 		else
 		{
-			Json::Value result= handler_.HandleRequest( method, params );
+			ServerResponce response= handler_.HandleRequest( method, params );
 
 			llvm::json::Object response_obj;
 			response_obj["id"]= id;
-			response_obj["result"]= std::move(result);
+			response_obj["result"]= std::move(response.result);
+			if( response.error.kind() != Json::Value::Null )
+				response_obj["error"]= std::move(response.error);
 
 			std::string response_str;
 			llvm::raw_string_ostream stream(response_str);
