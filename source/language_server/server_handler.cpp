@@ -43,11 +43,11 @@ Json::Value DocumentRangeToJson( const DocumentRange& range )
 	return out_range;
 }
 
-Json::Array SymbolsToJson( const std::vector<CodeBuilder::Symbol>& symbols )
+Json::Array SymbolsToJson( const std::vector<Symbol>& symbols )
 {
 	Json::Array result;
 
-	for( const CodeBuilder::Symbol& symbol : symbols )
+	for( const Symbol& symbol : symbols )
 	{
 		Json::Object out_symbol;
 		out_symbol["name"]= symbol.name;

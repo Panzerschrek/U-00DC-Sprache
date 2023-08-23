@@ -151,15 +151,15 @@ std::string Stringify( const Synt::AutoVariableDeclaration& varaible )
 	return ss.str();
 }
 
-std::vector<CodeBuilder::Symbol> BuildProgramModel_r( const Synt::Enum& enum_ )
+std::vector<Symbol> BuildProgramModel_r( const Synt::Enum& enum_ )
 {
-	std::vector<CodeBuilder::Symbol> result;
+	std::vector<Symbol> result;
 
 	for( const Synt::Enum::Member& member : enum_.members )
 	{
-		CodeBuilder::Symbol element;
+		Symbol element;
 		element.name= member.name;
-		element.kind= CodeBuilder::SymbolKind::EnumMember;
+		element.kind= SymbolKind::EnumMember;
 		element.src_loc= member.src_loc;
 		result.push_back(element);
 	}
@@ -167,18 +167,18 @@ std::vector<CodeBuilder::Symbol> BuildProgramModel_r( const Synt::Enum& enum_ )
 	return result;
 }
 
-std::vector<CodeBuilder::Symbol> BuildProgramModel_r( const Synt::ClassElements& elements );
-std::vector<CodeBuilder::Symbol> BuildProgramModel_r( const Synt::ProgramElements& elements );
+std::vector<Symbol> BuildProgramModel_r( const Synt::ClassElements& elements );
+std::vector<Symbol> BuildProgramModel_r( const Synt::ProgramElements& elements );
 
 struct Visitor final
 {
-	std::vector<CodeBuilder::Symbol> result;
+	std::vector<Symbol> result;
 
 	void operator()( const Synt::ClassField& class_field_ )
 	{
-		CodeBuilder::Symbol symbol;
+		Symbol symbol;
 		symbol.name= Stringify( class_field_ );
-		symbol.kind= CodeBuilder::SymbolKind::Field;
+		symbol.kind= SymbolKind::Field;
 		symbol.src_loc= class_field_.src_loc_;
 		result.push_back( std::move(symbol) );
 	}
@@ -187,17 +187,17 @@ struct Visitor final
 		if( func == nullptr )
 			return;
 
-		CodeBuilder::Symbol symbol;
+		Symbol symbol;
 		symbol.name= Stringify( *func );
-		symbol.kind= CodeBuilder::SymbolKind::Function;
+		symbol.kind= SymbolKind::Function;
 		symbol.src_loc= func->src_loc_;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::FunctionTemplate& func_template )
 	{
-		CodeBuilder::Symbol symbol;
+		Symbol symbol;
 		symbol.name= Stringify( func_template );
-		symbol.kind= CodeBuilder::SymbolKind::Function;
+		symbol.kind= SymbolKind::Function;
 		symbol.src_loc= func_template.src_loc_;
 		result.push_back( std::move(symbol) );
 	}
@@ -206,17 +206,17 @@ struct Visitor final
 	}
 	void operator()( const Synt::TypeTemplate& type_template )
 	{
-		CodeBuilder::Symbol symbol;
+		Symbol symbol;
 		symbol.name= Stringify( type_template );
 
 		if( const auto class_= std::get_if<Synt::ClassPtr>( &type_template.something_ ) )
 		{
-			symbol.kind= CodeBuilder::SymbolKind::Class;
+			symbol.kind= SymbolKind::Class;
 			symbol.children= BuildProgramModel_r( (*class_)->elements_ );
 		}
 		if( std::get_if<std::unique_ptr<const Synt::TypeAlias>>( &type_template.something_ ) != nullptr )
 		{
-			symbol.kind= CodeBuilder::SymbolKind::Class;
+			symbol.kind= SymbolKind::Class;
 		}
 
 		symbol.src_loc= type_template.src_loc_;
@@ -224,9 +224,9 @@ struct Visitor final
 	}
 	void operator()( const Synt::Enum& enum_ )
 	{
-		CodeBuilder::Symbol symbol;
+		Symbol symbol;
 		symbol.name= enum_.name;
-		symbol.kind= CodeBuilder::SymbolKind::Enum;
+		symbol.kind= SymbolKind::Enum;
 		symbol.children= BuildProgramModel_r( enum_ );
 		symbol.src_loc= enum_.src_loc_;
 		result.push_back( std::move(symbol) );
@@ -236,9 +236,9 @@ struct Visitor final
 	}
 	void operator()( const Synt::TypeAlias& typedef_ )
 	{
-		CodeBuilder::Symbol symbol;
+		Symbol symbol;
 		symbol.name= typedef_.name;
-		symbol.kind= CodeBuilder::SymbolKind::Class;
+		symbol.kind= SymbolKind::Class;
 		symbol.src_loc= typedef_.src_loc_;
 		result.push_back( std::move(symbol) );
 	}
@@ -247,9 +247,9 @@ struct Visitor final
 		const std::string type_name= Stringify( variables_declaration.type );
 		for( const auto& variable : variables_declaration.variables )
 		{
-			CodeBuilder::Symbol symbol;
+			Symbol symbol;
 			symbol.name= Stringify( variable, type_name );
-			symbol.kind= CodeBuilder::SymbolKind::Variable;
+			symbol.kind= SymbolKind::Variable;
 
 			symbol.src_loc= variable.src_loc;
 			result.push_back( std::move(symbol) );
@@ -257,9 +257,9 @@ struct Visitor final
 	}
 	void operator()( const Synt::AutoVariableDeclaration& auto_variable_declaration )
 	{
-		CodeBuilder::Symbol symbol;
+		Symbol symbol;
 		symbol.name= Stringify( auto_variable_declaration );
-		symbol.kind= CodeBuilder::SymbolKind::Variable;
+		symbol.kind= SymbolKind::Variable;
 		symbol.src_loc= auto_variable_declaration.src_loc_;
 		result.push_back( std::move(symbol) );
 	}
@@ -268,9 +268,9 @@ struct Visitor final
 		if( class_ == nullptr )
 			return;
 
-		CodeBuilder::Symbol symbol;
+		Symbol symbol;
 		symbol.name= class_->name_;
-		symbol.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? CodeBuilder::SymbolKind::Struct : CodeBuilder::SymbolKind::Class;
+		symbol.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? SymbolKind::Struct : SymbolKind::Class;
 		symbol.children= BuildProgramModel_r( class_->elements_ );
 		symbol.src_loc= class_->src_loc_;
 		result.push_back( std::move(symbol) );
@@ -281,16 +281,16 @@ struct Visitor final
 			return;
 
 		// TODO - what if there are multiple declarations of same namespace in single source file?
-		CodeBuilder::Symbol symbol;
+		Symbol symbol;
 		symbol.name= namespace_->name_;
-		symbol.kind= CodeBuilder::SymbolKind::Namespace;
+		symbol.kind= SymbolKind::Namespace;
 		symbol.children= BuildProgramModel_r( namespace_->elements_ );
 		symbol.src_loc= namespace_->src_loc_;
 		result.push_back( std::move(symbol) );
 	}
 };
 
-std::vector<CodeBuilder::Symbol> BuildProgramModel_r( const Synt::ClassElements& elements )
+std::vector<Symbol> BuildProgramModel_r( const Synt::ClassElements& elements )
 {
 	Visitor visitor;
 	for( const Synt::ClassElement& class_element : elements )
@@ -299,7 +299,7 @@ std::vector<CodeBuilder::Symbol> BuildProgramModel_r( const Synt::ClassElements&
 	return std::move(visitor.result);
 }
 
-std::vector<CodeBuilder::Symbol> BuildProgramModel_r( const Synt::ProgramElements& elements )
+std::vector<Symbol> BuildProgramModel_r( const Synt::ProgramElements& elements )
 {
 	Visitor visitor;
 	for( const Synt::ProgramElement& program_element : elements )
@@ -310,7 +310,7 @@ std::vector<CodeBuilder::Symbol> BuildProgramModel_r( const Synt::ProgramElement
 
 } // namespace
 
-std::vector<CodeBuilder::Symbol> BuildSymbols( const Synt::ProgramElements& program_elements )
+std::vector<Symbol> BuildSymbols( const Synt::ProgramElements& program_elements )
 {
 	// TODO - include also macros.
 	return BuildProgramModel_r( program_elements );

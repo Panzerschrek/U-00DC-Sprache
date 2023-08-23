@@ -84,49 +84,6 @@ public:
 	// Result lost is sorted and contains unique entrires.
 	std::vector<SrcLoc> GetAllOccurrences( const SrcLoc& src_loc );
 
-	// use same values, as in LSP.
-	enum class SymbolKind : uint8_t
-	{
-		None= 0,
-		File = 1,
-		Module = 2,
-		Namespace = 3,
-		Package = 4,
-		Class = 5,
-		Method = 6,
-		Property = 7,
-		Field = 8,
-		Constructor = 9,
-		Enum = 10,
-		Interface = 11,
-		Function = 12,
-		Variable = 13,
-		Constant = 14,
-		String = 15,
-		Number = 16,
-		Boolean = 17,
-		Array = 18,
-		Object = 19,
-		Key = 20,
-		Null = 21,
-		EnumMember = 22,
-		Struct = 23,
-		Event = 24,
-		Operator = 25,
-		TypeParameter = 26,
-	};
-
-	struct Symbol
-	{
-		std::string name;
-		SrcLoc src_loc;
-		std::vector<Symbol> children;
-		SymbolKind kind= SymbolKind::None;
-	};
-
-	// Returns sorted vector of all main file symbols.
-	std::vector<Symbol> GetMainFileSymbols();
-
 private:
 	CodeBuilder(
 		llvm::LLVMContext& llvm_context,
@@ -181,9 +138,6 @@ private:
 	SrcLoc GetDefinitionFetchSrcLoc( const NamesScopeValue& value );
 
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
-
-	std::vector<Symbol> GetMainFileSymbols_r( const NamesScope& names_scope );
-	std::string FunctionSymbolToString( std::string_view function_name, const FunctionVariable& function_variable );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );

@@ -2,7 +2,6 @@
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "../tests/tests_common.hpp"
-#include "document_symbols.hpp"
 #include "document.hpp"
 
 namespace U
@@ -135,7 +134,7 @@ std::vector<DocumentRange> Document::GetAllOccurrences( const SrcLoc& src_loc )
 	return result;
 }
 
-std::vector<CodeBuilder::Symbol> Document::GetSymbols()
+std::vector<Symbol> Document::GetSymbols()
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};

@@ -4,6 +4,7 @@
 #include "../compiler0/lex_synt_lib/syntax_elements.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
+#include "document_symbols.hpp"
 
 namespace U
 {
@@ -49,7 +50,7 @@ public:
 	// TODO - provide also URI.
 	std::vector<DocumentRange> GetAllOccurrences( const SrcLoc& src_loc );
 
-	std::vector<CodeBuilder::Symbol> GetSymbols();
+	std::vector<Symbol> GetSymbols();
 
 private:
 	struct CompiledState
