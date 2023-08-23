@@ -2,6 +2,7 @@
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "../tests/tests_common.hpp"
+#include "document_symbols.hpp"
 #include "document.hpp"
 
 namespace U
@@ -139,7 +140,7 @@ std::vector<CodeBuilder::Symbol> Document::GetSymbols()
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	return last_valid_state_->code_builder->GetMainFileSymbols();
+	return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
 }
 
 void Document::SetText( std::string text )
