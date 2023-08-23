@@ -25,7 +25,7 @@ private:
 	class DocumentManagerVfs final : public IVfs
 	{
 	public:
-		explicit DocumentManagerVfs( DocumentManager& document_manager );
+		DocumentManagerVfs( DocumentManager& document_manager, std::ostream& log );
 
 		std::optional<IVfs::FileContent> LoadFileContent( const Path& full_file_path ) override;
 

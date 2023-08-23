@@ -1,4 +1,5 @@
 #include "../compilers_support_lib/vfs.hpp"
+#include "options.hpp"
 #include "document_manager.hpp"
 
 namespace U
@@ -7,10 +8,26 @@ namespace U
 namespace LangServer
 {
 
-DocumentManager::DocumentManagerVfs::DocumentManagerVfs( DocumentManager& document_manager )
+namespace
+{
+
+std::unique_ptr<IVfs> CreateBaseVfs( std::ostream& log )
+{
+	auto vfs_with_includes= CreateVfsOverSystemFS( Options::include_dir );
+	if( vfs_with_includes != nullptr )
+		return vfs_with_includes;
+
+	log << "Failed to create VFS." << std::endl;
+
+	// Something went wrong. Create fallback.
+	return CreateVfsOverSystemFS( {} );
+}
+
+} // namespace
+
+DocumentManager::DocumentManagerVfs::DocumentManagerVfs( DocumentManager& document_manager, std::ostream& log )
 	: document_manager_(document_manager)
-	// TODO - specify include directories.
-	, base_vfs_( CreateVfsOverSystemFS( {} ) )
+	, base_vfs_( CreateBaseVfs( log ) )
 {
 }
 
@@ -46,7 +63,7 @@ IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& fil
 DocumentManager::DocumentManager( std::ostream& log )
 	: log_(log)
 	// TODO - use individual VFS for different files.
-	, vfs_( *this )
+	, vfs_( *this, log_ )
 {}
 
 Document* DocumentManager::Open( const Uri& uri, std::string text )
