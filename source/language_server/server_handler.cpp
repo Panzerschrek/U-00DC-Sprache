@@ -357,8 +357,8 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 
 	if( const auto range= document->GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
-		result["range"]= DocumentRangeToJson( *range );
-		result["uri"]= uri->str();
+		result["range"]= DocumentRangeToJson( range->range );
+		result["uri"]= range->uri.ToString();
 	}
 	return result;
 }

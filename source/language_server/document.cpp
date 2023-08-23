@@ -41,7 +41,7 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 	return code_builder_errors_;
 }
 
-std::optional<DocumentRange> Document::GetDefinitionPoint( const SrcLoc& src_loc )
+std::optional<RangeInDocument> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
@@ -53,9 +53,16 @@ std::optional<DocumentRange> Document::GetDefinitionPoint( const SrcLoc& src_loc
 
 	if( const auto src_loc= last_valid_state_->code_builder->GetDefinition( lexem->src_loc ) )
 	{
-		DocumentRange range;
-		range.start= SrcLocToDocumentPosition(*src_loc);
-		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc->GetLine(), src_loc->GetColumn(), last_valid_state_->lexems ) );
+		RangeInDocument range;
+		range.range.start= SrcLocToDocumentPosition(*src_loc);
+		range.range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc->GetLine(), src_loc->GetColumn(), last_valid_state_->lexems ) );
+
+		const uint32_t file_index= src_loc->GetFileIndex();
+		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
+			range.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
+		else
+			range.uri= Uri::FromFilePath( path_ ); // TODO - maybe return std::nullopt instead?
+
 		return range;
 	}
 

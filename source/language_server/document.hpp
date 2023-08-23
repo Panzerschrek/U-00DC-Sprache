@@ -30,8 +30,7 @@ public:
 	LexSyntErrors GetSyntErrors() const;
 	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
 
-	// TODO - return also URI for file
-	std::optional<DocumentRange> GetDefinitionPoint( const SrcLoc& src_loc );
+	std::optional<RangeInDocument> GetDefinitionPoint( const SrcLoc& src_loc );
 
 	// Returns highlights only for this document.
 	std::vector<DocumentRange> GetHighlightLocations( const SrcLoc& src_loc );

@@ -8,6 +8,9 @@
 namespace U
 {
 
+namespace LangServer
+{
+
 namespace
 {
 
@@ -365,5 +368,6 @@ std::vector<Symbol> BuildSymbols( const Synt::ProgramElements& program_elements 
 	return result;
 }
 
+} // namespace LangServer
 
 } // namespace U
