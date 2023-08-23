@@ -52,6 +52,7 @@ struct Symbol
 {
 	std::string name;
 	DocumentRange range;
+	DocumentRange selection_range;
 	std::vector<Symbol> children;
 	SymbolKind kind= SymbolKind::None;
 };

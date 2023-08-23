@@ -53,6 +53,7 @@ Json::Array SymbolsToJson( const std::vector<Symbol>& symbols )
 		out_symbol["name"]= symbol.name;
 		out_symbol["kind"]= int32_t(symbol.kind);
 		out_symbol["range"]= DocumentRangeToJson( symbol.range );
+		out_symbol["selectionRange"]= DocumentRangeToJson( symbol.selection_range );
 
 		if( !symbol.children.empty() )
 			out_symbol["children"]= SymbolsToJson( symbol.children );
