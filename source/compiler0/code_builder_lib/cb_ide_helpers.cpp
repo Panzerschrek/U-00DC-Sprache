@@ -1,4 +1,7 @@
+#include <sstream>
+#include "keywords.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../lex_synt_lib/program_writer.hpp"
 #include "code_builder.hpp"
 
 namespace U

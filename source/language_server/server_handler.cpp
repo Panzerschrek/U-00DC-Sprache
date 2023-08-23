@@ -43,6 +43,27 @@ Json::Value DocumentRangeToJson( const DocumentRange& range )
 	return out_range;
 }
 
+Json::Array SymbolsToJson( const std::vector<Symbol>& symbols )
+{
+	Json::Array result;
+
+	for( const Symbol& symbol : symbols )
+	{
+		Json::Object out_symbol;
+		out_symbol["name"]= symbol.name;
+		out_symbol["kind"]= int32_t(symbol.kind);
+		out_symbol["range"]= DocumentRangeToJson( symbol.range );
+		out_symbol["selectionRange"]= DocumentRangeToJson( symbol.selection_range );
+
+		if( !symbol.children.empty() )
+			out_symbol["children"]= SymbolsToJson( symbol.children );
+
+		result.push_back( std::move(out_symbol) );
+	}
+
+	return result;
+}
+
 void CreateLexSyntErrorsDiagnostics( const LexSyntErrors& errors, Json::Array& out_diagnostics )
 {
 	for( const LexSyntError& error : errors)
@@ -173,10 +194,37 @@ ServerResponse ServerHandler::ProcessInitialize( const Json::Value& params )
 
 ServerResponse ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
 {
-	// TODO
-	(void)params;
-	Json::Object result;
-	return result;
+	Json::Array result;
+
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+	{
+		log_ << "Not an object!" << std::endl;
+		return result;
+	}
+
+	const auto text_document= obj->getObject( "textDocument" );
+	if( text_document == nullptr )
+	{
+		log_ << "No textDocument!" << std::endl;
+		return result;
+	}
+
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
+	{
+		log_ << "No uri!" << std::endl;
+		return result;
+	}
+
+	const auto it= documents_.find( uri->str() );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return result;
+	}
+
+	return SymbolsToJson( it->second.GetSymbols() );
 }
 
 ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )

@@ -4,25 +4,13 @@
 #include "../compiler0/lex_synt_lib/syntax_elements.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
+#include "document_symbols.hpp"
 
 namespace U
 {
 
 namespace LangServer
 {
-
-// Position within document, without specifying document instance (specific document depends on context).
-struct DocumentPosition
-{
-	uint32_t line= 0; // From 1, as in SrcLoc.
-	uint32_t column= 0; // From 0, as in SrcLoc.
-};
-
-struct DocumentRange
-{
-	DocumentPosition start;
-	DocumentPosition end;
-};
 
 class Document
 {
@@ -48,6 +36,8 @@ public:
 
 	// TODO - provide also URI.
 	std::vector<DocumentRange> GetAllOccurrences( const SrcLoc& src_loc );
+
+	std::vector<Symbol> GetSymbols();
 
 private:
 	struct CompiledState

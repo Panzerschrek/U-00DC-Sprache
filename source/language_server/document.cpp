@@ -134,6 +134,14 @@ std::vector<DocumentRange> Document::GetAllOccurrences( const SrcLoc& src_loc )
 	return result;
 }
 
+std::vector<Symbol> Document::GetSymbols()
+{
+	if( last_valid_state_ == std::nullopt )
+		return {};
+
+	return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
+}
+
 void Document::SetText( std::string text )
 {
 	if( text == text_ )
