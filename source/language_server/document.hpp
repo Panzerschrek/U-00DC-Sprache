@@ -13,10 +13,17 @@ namespace U
 namespace LangServer
 {
 
+struct DocumentBuildOptions
+{
+	llvm::DataLayout data_layout;
+	llvm::Triple target_triple;
+	std::string prelude;
+};
+
 class Document
 {
 public:
-	Document( IVfs::Path path, IVfs& vfs, std::ostream& log );
+	Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log );
 
 	Document( const Document& )= delete;
 	Document( Document&& )= default;
@@ -53,6 +60,7 @@ private:
 
 private:
 	const IVfs::Path path_;
+	const DocumentBuildOptions build_options_;
 	IVfs& vfs_;
 	std::ostream& log_;
 	std::string text_;

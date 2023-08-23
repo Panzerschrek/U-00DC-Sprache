@@ -1,8 +1,6 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
-#include "../compilers_support_lib/prelude.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
-#include "../tests/tests_common.hpp"
 #include "document.hpp"
 
 namespace U
@@ -21,8 +19,8 @@ DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc )
 
 } // namespace
 
-Document::Document( IVfs::Path path, IVfs& vfs, std::ostream& log )
-	: path_(std::move(path)), vfs_(vfs), log_(log)
+Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log )
+	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
 {
 	(void)log_;
 }
@@ -177,28 +175,7 @@ void Document::Rebuild()
 	synt_errors_.clear();
 	code_builder_errors_.clear();
 
-	// TODO - create proper target machine.
-	const llvm::DataLayout data_layout( GetTestsDataLayout() );
-	// TODO - use target triple, dependent on compilation options.
-	const llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
-
-	// TODO - cache prelude.
-	const llvm::StringRef features;
-	const llvm::StringRef cpu_name;
-	const char optimization_level= '0';
-	const bool generate_debug_info= 0;
-	const uint32_t compiler_generation= 0;
-	const std::string prelude=
-		GenerateCompilerPreludeCode(
-			target_triple,
-			data_layout,
-			features,
-			cpu_name,
-			optimization_level,
-			generate_debug_info,
-			compiler_generation );
-
-	SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, prelude );
+	SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
 
 	lex_errors_= std::move( source_graph.errors );
 	if( !lex_errors_.empty() )
@@ -240,8 +217,8 @@ void Document::Rebuild()
 	auto code_builder=
 		CodeBuilder::BuildProgramAndLeaveInternalState(
 			*llvm_context,
-			data_layout,
-			target_triple,
+			build_options_.data_layout,
+			build_options_.target_triple,
 			options,
 			source_graph );
 

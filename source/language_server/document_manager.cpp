@@ -1,4 +1,6 @@
+#include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/vfs.hpp"
+#include "../tests/tests_common.hpp"
 #include "options.hpp"
 #include "document_manager.hpp"
 
@@ -21,6 +23,36 @@ std::unique_ptr<IVfs> CreateBaseVfs( std::ostream& log )
 
 	// Something went wrong. Create fallback.
 	return CreateVfsOverSystemFS( {} );
+}
+
+DocumentBuildOptions CreateBuildOptions()
+{
+	DocumentBuildOptions build_options
+	{
+		// TODO - create proper target machine.
+		llvm::DataLayout( GetTestsDataLayout() ),
+		// TODO - use target triple, dependent on compilation options.
+		llvm::Triple( llvm::sys::getDefaultTargetTriple() ),
+		"",
+	};
+
+	// TODO - read params from options or some kind of config file.
+	const llvm::StringRef features;
+	const llvm::StringRef cpu_name;
+	const char optimization_level= '0';
+	const bool generate_debug_info= 0;
+	const uint32_t compiler_generation= 0;
+	build_options.prelude=
+		GenerateCompilerPreludeCode(
+			build_options.target_triple,
+			build_options.data_layout,
+			features,
+			cpu_name,
+			optimization_level,
+			generate_debug_info,
+			compiler_generation );
+
+	return build_options;
 }
 
 } // namespace
@@ -64,6 +96,8 @@ DocumentManager::DocumentManager( std::ostream& log )
 	: log_(log)
 	// TODO - use individual VFS for different files.
 	, vfs_( *this, log_ )
+	// TODO - create different build options for different files.
+	, build_options_( CreateBuildOptions() )
 {}
 
 Document* DocumentManager::Open( const Uri& uri, std::string text )
@@ -82,7 +116,7 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 		documents_.insert(
 			std::make_pair(
 				uri,
-				Document( std::move( *file_path ), vfs_, log_ ) ) );
+				Document( std::move( *file_path ), build_options_, vfs_, log_ ) ) );
 
 	// Than set text.
 	// This is needed, because document itself may be requested during "SetText" call - via DocumentManagerVfs.

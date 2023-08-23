@@ -40,6 +40,7 @@ private:
 private:
 	std::ostream& log_;
 	DocumentManagerVfs vfs_;
+	const DocumentBuildOptions build_options_;
 	// TODO - use unordered map.
 	std::map<Uri, Document> documents_;
 	std::map<Uri, std::optional<IVfs::FileContent>> unmanaged_files_;
