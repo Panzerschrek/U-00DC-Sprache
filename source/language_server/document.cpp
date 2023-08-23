@@ -46,6 +46,7 @@ std::optional<RangeInDocument> Document::GetDefinitionPoint( const SrcLoc& src_l
 		return std::nullopt;
 
 	// Find lexem, where position is located.
+	// TODO - use text directly, avoid storing additional lexems container.
 	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
 	if( lexem == nullptr )
 		return std::nullopt;
@@ -74,6 +75,7 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 		return {};
 
 	// Find lexem, where position is located.
+	// TODO - use text directly, avoid storing additional lexems container.
 	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
 	if( lexem == nullptr )
 		return {};
@@ -97,6 +99,7 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 
 		DocumentRange range;
 		range.start= SrcLocToDocumentPosition(src_loc);
+		// TODO - fix this, result is wrong for imported files.
 		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
 
 		result.push_back( std::move(range) );
@@ -133,6 +136,7 @@ std::vector<RangeInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc 
 	{
 		RangeInDocument range;
 		range.range.start= SrcLocToDocumentPosition(src_loc);
+		// TODO - fix this, result is wrong for imported files.
 		range.range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
 
 		const uint32_t file_index= src_loc.GetFileIndex();
