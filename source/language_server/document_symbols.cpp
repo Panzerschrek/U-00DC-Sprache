@@ -25,6 +25,17 @@ std::string Stringify( const Synt::Function& function )
 	return ss.str();
 }
 
+void WriteMutabilityModifier( const Synt::MutabilityModifier mutability_modifier, std::ostream& stream )
+{
+	switch( mutability_modifier )
+	{
+	case Synt::MutabilityModifier::None: break;
+	case Synt::MutabilityModifier::Mutable  : stream << Keyword( Keywords::mut_       ); break;
+	case Synt::MutabilityModifier::Immutable: stream << Keyword( Keywords::imut_      ); break;
+	case Synt::MutabilityModifier::Constexpr: stream << Keyword( Keywords::constexpr_ );break;
+	}
+}
+
 void WriteTemplateParams( const std::vector<Synt::TypeTemplate::Param>& params, std::ostream& stream )
 {
 	for( const Synt::TypeTemplate::Param& param : params )
@@ -96,57 +107,39 @@ std::string Stringify( const Synt::ClassField& class_field )
 	case Synt::ReferenceModifier::Reference: ss << "&"; break;
 	}
 
-	switch( class_field.mutability_modifier )
-	{
-	case Synt::MutabilityModifier::None: break;
-	case Synt::MutabilityModifier::Mutable  : ss << Keyword( Keywords::mut_       ); break;
-	case Synt::MutabilityModifier::Immutable: ss << Keyword( Keywords::imut_      ); break;
-	case Synt::MutabilityModifier::Constexpr: ss << Keyword( Keywords::constexpr_ );break;
-	}
+	WriteMutabilityModifier( class_field.mutability_modifier, ss );
 
 	return ss.str();
 }
 
-std::string Stringify( const Synt::VariablesDeclaration::VariableEntry& varaible, const std::string& type )
+std::string Stringify( const Synt::VariablesDeclaration::VariableEntry& variable, const std::string& type )
 {
 	std::stringstream ss;
-	ss << varaible.name << ": " << type << " ";
+	ss << variable.name << ": " << type << " ";
 
-	switch( varaible.reference_modifier )
+	switch( variable.reference_modifier )
 	{
 	case Synt::ReferenceModifier::None: break;
 	case Synt::ReferenceModifier::Reference: ss << "&"; break;
 	}
 
-	switch( varaible.mutability_modifier )
-	{
-	case Synt::MutabilityModifier::None: break;
-	case Synt::MutabilityModifier::Mutable  : ss << Keyword( Keywords::mut_       ); break;
-	case Synt::MutabilityModifier::Immutable: ss << Keyword( Keywords::imut_      ); break;
-	case Synt::MutabilityModifier::Constexpr: ss << Keyword( Keywords::constexpr_ );break;
-	}
+	WriteMutabilityModifier( variable.mutability_modifier, ss );
 
 	return ss.str();
 }
 
-std::string Stringify( const Synt::AutoVariableDeclaration& varaible )
+std::string Stringify( const Synt::AutoVariableDeclaration& variable )
 {
 	std::stringstream ss;
-	ss << varaible.name << ": " << Keyword( Keywords::auto_ ) << " ";
+	ss << variable.name << ": " << Keyword( Keywords::auto_ ) << " ";
 
-	switch( varaible.reference_modifier )
+	switch( variable.reference_modifier )
 	{
 	case Synt::ReferenceModifier::None: break;
 	case Synt::ReferenceModifier::Reference: ss << "&"; break;
 	}
 
-	switch( varaible.mutability_modifier )
-	{
-	case Synt::MutabilityModifier::None: break;
-	case Synt::MutabilityModifier::Mutable  : ss << Keyword( Keywords::mut_       ); break;
-	case Synt::MutabilityModifier::Immutable: ss << Keyword( Keywords::imut_      ); break;
-	case Synt::MutabilityModifier::Constexpr: ss << Keyword( Keywords::constexpr_ );break;
-	}
+	WriteMutabilityModifier( variable.mutability_modifier, ss );
 
 	return ss.str();
 }
@@ -178,8 +171,8 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( class_field_ );
-		symbol.kind= SymbolKind::Field;
 		symbol.src_loc= class_field_.src_loc_;
+		symbol.kind= SymbolKind::Field;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::FunctionPtr& func )
@@ -189,16 +182,16 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= Stringify( *func );
-		symbol.kind= SymbolKind::Function;
 		symbol.src_loc= func->src_loc_;
+		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::FunctionTemplate& func_template )
 	{
 		Symbol symbol;
 		symbol.name= Stringify( func_template );
-		symbol.kind= SymbolKind::Function;
 		symbol.src_loc= func_template.src_loc_;
+		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::ClassVisibilityLabel& )
@@ -208,27 +201,25 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( type_template );
+		symbol.src_loc= type_template.src_loc_;
+		symbol.kind= SymbolKind::Class;
 
 		if( const auto class_= std::get_if<Synt::ClassPtr>( &type_template.something_ ) )
 		{
-			symbol.kind= SymbolKind::Class;
 			symbol.children= BuildProgramModel_r( (*class_)->elements_ );
 		}
 		if( std::get_if<std::unique_ptr<const Synt::TypeAlias>>( &type_template.something_ ) != nullptr )
-		{
-			symbol.kind= SymbolKind::Class;
-		}
+		{}
 
-		symbol.src_loc= type_template.src_loc_;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::Enum& enum_ )
 	{
 		Symbol symbol;
 		symbol.name= enum_.name;
+		symbol.src_loc= enum_.src_loc_;
 		symbol.kind= SymbolKind::Enum;
 		symbol.children= BuildProgramModel_r( enum_ );
-		symbol.src_loc= enum_.src_loc_;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::StaticAssert&  )
@@ -237,9 +228,9 @@ struct Visitor final
 	void operator()( const Synt::TypeAlias& typedef_ )
 	{
 		Symbol symbol;
+		symbol.src_loc= typedef_.src_loc_;
 		symbol.name= typedef_.name;
 		symbol.kind= SymbolKind::Class;
-		symbol.src_loc= typedef_.src_loc_;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::VariablesDeclaration& variables_declaration )
@@ -249,9 +240,8 @@ struct Visitor final
 		{
 			Symbol symbol;
 			symbol.name= Stringify( variable, type_name );
-			symbol.kind= SymbolKind::Variable;
-
 			symbol.src_loc= variable.src_loc;
+			symbol.kind= SymbolKind::Variable;
 			result.push_back( std::move(symbol) );
 		}
 	}
@@ -259,8 +249,8 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( auto_variable_declaration );
-		symbol.kind= SymbolKind::Variable;
 		symbol.src_loc= auto_variable_declaration.src_loc_;
+		symbol.kind= SymbolKind::Variable;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::ClassPtr& class_ )
@@ -270,9 +260,9 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= class_->name_;
+		symbol.src_loc= class_->src_loc_;
 		symbol.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? SymbolKind::Struct : SymbolKind::Class;
 		symbol.children= BuildProgramModel_r( class_->elements_ );
-		symbol.src_loc= class_->src_loc_;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::NamespacePtr& namespace_ )
@@ -280,12 +270,11 @@ struct Visitor final
 		if( namespace_ == nullptr )
 			return;
 
-		// TODO - what if there are multiple declarations of same namespace in single source file?
 		Symbol symbol;
 		symbol.name= namespace_->name_;
+		symbol.src_loc= namespace_->src_loc_;
 		symbol.kind= SymbolKind::Namespace;
 		symbol.children= BuildProgramModel_r( namespace_->elements_ );
-		symbol.src_loc= namespace_->src_loc_;
 		result.push_back( std::move(symbol) );
 	}
 };
