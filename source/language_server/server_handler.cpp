@@ -288,12 +288,11 @@ ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 		return result;
 	}
 
-	for( const DocumentRange& range : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	for( const RangeInDocument& range : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
 		Json::Object location;
-		location["range"]= DocumentRangeToJson( range );
-		// TODO - set proper URI for occurences in other files.
-		location["uri"]= uri->str();
+		location["range"]= DocumentRangeToJson( range.range );
+		location["uri"]= range.uri.ToString();
 
 		result.push_back( std::move(location) );
 	}
@@ -552,18 +551,21 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 
 	{
 		Json::Object changes;
+		for( const RangeInDocument& range : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 		{
-			Json::Array edits;
-			for( const DocumentRange& range : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+			Json::Object edit;
+			edit["range"]= DocumentRangeToJson( range.range );
+			edit["newText"]= new_name_str;
+
+			std::string change_uri= range.uri.ToString();
+			if( const auto prev_edits= changes.getArray( change_uri ) )
+				prev_edits->push_back( std::move(edit) );
+			else
 			{
-				Json::Object edit;
-				edit["range"]= DocumentRangeToJson( range );
-				edit["newText"]= new_name_str;
-
+				Json::Array edits;
 				edits.push_back( std::move(edit) );
+				changes.try_emplace( std::move(change_uri), std::move(edits) );
 			}
-
-			changes[ uri->str() ]= std::move(edits);
 		}
 
 		result["changes"]= std::move(changes);

@@ -106,7 +106,7 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 	return result;
 }
 
-std::vector<DocumentRange> Document::GetAllOccurrences( const SrcLoc& src_loc )
+std::vector<RangeInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
@@ -124,15 +124,23 @@ std::vector<DocumentRange> Document::GetAllOccurrences( const SrcLoc& src_loc )
 
 	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( lexem->src_loc );
 
-	std::vector<DocumentRange> result;
+	// TODO - improve this.
+	// We need to extract occurences in other opended documents and maybe search for other files.
+
+	std::vector<RangeInDocument> result;
 	result.reserve( occurrences.size() );
 
 	for( const SrcLoc& src_loc : occurrences )
 	{
-		// TODO - fill also file.
-		DocumentRange range;
-		range.start= SrcLocToDocumentPosition(src_loc);
-		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
+		RangeInDocument range;
+		range.range.start= SrcLocToDocumentPosition(src_loc);
+		range.range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
+
+		const uint32_t file_index= src_loc.GetFileIndex();
+		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
+			range.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
+		else
+			range.uri= Uri::FromFilePath( path_ ); // TODO - maybe skip this item instead?
 
 		result.push_back( std::move(range) );
 	}
