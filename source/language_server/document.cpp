@@ -184,13 +184,24 @@ void Document::Rebuild()
 	if( !lex_errors_.empty() )
 		return;
 
+	if( source_graph.nodes_storage.empty() )
+		return;
+
+	// Take syntax errors only from this document.
+	synt_errors_.swap( source_graph.nodes_storage.front().ast.error_messages );
+	if( !synt_errors_.empty() )
+	{
+		for( const auto& error : synt_errors_ )
+			std::cout << "error: " << error.text << std::endl;
+		return;
+	}
+
+	// Do not compile code if imports are not correct.
 	for( const SourceGraph::Node& node : source_graph.nodes_storage )
 	{
-		for( const LexSyntError& error : node.ast.error_messages )
-			synt_errors_.push_back( error );
+		if( !node.ast.error_messages.empty() )
+			return;
 	}
-	if( !synt_errors_.empty() )
-		return;
 
 	// TODO - maybe avoid recreating context or even share it across multiple documents?
 	auto llvm_context= std::make_unique<llvm::LLVMContext>();
