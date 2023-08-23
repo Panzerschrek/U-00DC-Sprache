@@ -17,6 +17,8 @@ public:
 	Document* GetDocument( const Uri& uri );
 	void Close( const Uri& uri );
 
+	void RequestDocumentOrFile( const Synt::Import& import );
+
 private:
 	std::ostream& log_;
 	// TODO - use unordered map.

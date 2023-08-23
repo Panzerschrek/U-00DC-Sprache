@@ -12,10 +12,12 @@ namespace U
 namespace LangServer
 {
 
+class DocumentManager;
+
 class Document
 {
 public:
-	Document( std::ostream& log, std::string text );
+	Document( DocumentManager& document_manager, std::ostream& log, std::string text );
 
 	Document( const Document& )= delete;
 	Document( Document&& )= default;
@@ -49,6 +51,7 @@ private:
 	};
 
 private:
+	DocumentManager& document_manager_;
 	std::ostream& log_;
 	std::string text_;
 	std::optional<CompiledState> last_valid_state_;

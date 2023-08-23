@@ -12,7 +12,7 @@ DocumentManager::DocumentManager( std::ostream& log )
 
 Document* DocumentManager::Open( const Uri& uri, std::string text )
 {
-	const auto it_bool_pair= documents_.insert( std::make_pair( uri, Document( log_, std::move(text) ) ) );
+	const auto it_bool_pair= documents_.insert( std::make_pair( uri, Document( *this, log_, std::move(text) ) ) );
 	return &it_bool_pair.first->second;
 }
 
@@ -27,6 +27,10 @@ Document* DocumentManager::GetDocument( const Uri& uri )
 void DocumentManager::Close( const Uri& uri )
 {
 	documents_.erase( uri );
+}
+
+void DocumentManager::RequestDocumentOrFile( const Synt::Import& import )
+{
 }
 
 } // namespace LangServer

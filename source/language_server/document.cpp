@@ -2,6 +2,7 @@
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "../tests/tests_common.hpp"
+#include "document_manager.hpp"
 #include "document.hpp"
 
 namespace U
@@ -20,8 +21,8 @@ DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc )
 
 } // namespace
 
-Document::Document( std::ostream& log, std::string text )
-	: log_(log)
+Document::Document( DocumentManager& document_manager, std::ostream& log, std::string text )
+	: document_manager_(document_manager), log_(log)
 {
 	(void)log_;
 	SetText( std::move(text) );
@@ -158,9 +159,15 @@ void Document::SetText( std::string text )
 	if( !lex_errors_.empty() )
 		return;
 
-	// TODO - parse imports and read files or request another opended documents.
+	// TODO - read files or request another opended documents.
 	// TODO - provide options for import directories.
 	// TODO - fill macros from imported files.
+
+	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
+	for( const Synt::Import& import : imports )
+	{
+		document_manager_.RequestDocumentOrFile( import );
+	}
 
 	const auto macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
 
