@@ -306,8 +306,11 @@ void SetupRanges_r( std::vector<Symbol>& symbols, DocumentPosition& prev_positio
 {
 	for( auto it= symbols.rbegin(), it_end= symbols.rend(); it != it_end; ++it )
 	{
-		it->range.end= prev_position;
+		// it->range.end= prev_position;
 		SetupRanges_r( it->children, prev_position );
+		// HACK! Limit symbol position to start position of first child.
+		// This is needed, because some stupid IDEs (like QtCreator) can't properly select the most deep symbol under cursor.
+		it->range.end= prev_position;
 		prev_position= it->range.start;
 	}
 }
