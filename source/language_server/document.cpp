@@ -2,7 +2,6 @@
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "../tests/tests_common.hpp"
-#include "document_manager.hpp"
 #include "document.hpp"
 
 namespace U
@@ -21,11 +20,10 @@ DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc )
 
 } // namespace
 
-Document::Document( DocumentManager& document_manager, std::ostream& log, std::string text )
-	: document_manager_(document_manager), log_(log)
+Document::Document( IVfs::Path path, IVfs& vfs, std::ostream& log )
+	: path_(std::move(path)), vfs_(vfs), log_(log)
 {
 	(void)log_;
-	SetText( std::move(text) );
 }
 
 LexSyntErrors Document::GetLexErrors() const
@@ -149,47 +147,35 @@ void Document::SetText( std::string text )
 		return;
 
 	text_= text;
+	Rebuild();
+}
 
+const std::string& Document::GetText() const
+{
+	return text_;
+}
+
+void Document::Rebuild()
+{
 	lex_errors_.clear();
 	synt_errors_.clear();
 	code_builder_errors_.clear();
 
-	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
-	lex_errors_= std::move( lex_result.errors );
+	const std::string prelude; // TODO - provide it.
+
+	SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, prelude );
+
+	lex_errors_= std::move( source_graph.errors );
 	if( !lex_errors_.empty() )
 		return;
 
-	// TODO - read files or request another opended documents.
-	// TODO - provide options for import directories.
-	// TODO - fill macros from imported files.
-
-	const std::vector<Synt::Import> imports= Synt::ParseImports( lex_result.lexems );
-	for( const Synt::Import& import : imports )
+	for( const SourceGraph::Node& node : source_graph.nodes_storage )
 	{
-		document_manager_.RequestDocumentOrFile( import );
+		for( const LexSyntError& error : node.ast.error_messages )
+			synt_errors_.push_back( error );
 	}
-
-	const auto macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
-
-	Synt::SyntaxAnalysisResult synt_result=
-		Synt::SyntaxAnalysis(
-			lex_result.lexems,
-			Synt::MacrosByContextMap(),
-			macro_expansion_contexts,
-			CalculateSourceFileContentsHash( text_ ) );
-
-	synt_errors_= std::move(synt_result.error_messages);
 	if( !synt_errors_.empty() )
 		return;
-
-	// TODO - add also generated prelude.
-
-	SourceGraph::Node source_graph_node;
-	source_graph_node.ast= std::move(synt_result);
-
-	SourceGraph source_graph;
-	source_graph.nodes_storage.push_back( std::move(source_graph_node) );
-	source_graph.macro_expansion_contexts= macro_expansion_contexts;
 
 	// TODO - maybe avoid recreating context or even share it across multiple documents?
 	auto llvm_context= std::make_unique<llvm::LLVMContext>();
@@ -220,8 +206,11 @@ void Document::SetText( std::string text )
 
 	code_builder_errors_= code_builder->TakeErrors();
 
+	// Re-do lexical analysis, since source graph loading function doesn't saves it.
+	Lexems lexems= LexicalAnalysis( text_ ).lexems;
+
 	last_valid_state_= std::nullopt;
-	last_valid_state_= CompiledState{ std::move( lex_result.lexems ), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
+	last_valid_state_= CompiledState{ std::move( lexems ), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
 }
 
 } // namespace LangServer

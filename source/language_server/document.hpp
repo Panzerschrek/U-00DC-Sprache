@@ -5,6 +5,7 @@
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "document_symbols.hpp"
+#include "uri.hpp"
 
 namespace U
 {
@@ -12,12 +13,10 @@ namespace U
 namespace LangServer
 {
 
-class DocumentManager;
-
 class Document
 {
 public:
-	Document( DocumentManager& document_manager, std::ostream& log, std::string text );
+	Document( IVfs::Path path, IVfs& vfs, std::ostream& log );
 
 	Document( const Document& )= delete;
 	Document( Document&& )= default;
@@ -25,6 +24,7 @@ public:
 	Document& operator=( Document&& )= default;
 
 	void SetText( std::string text );
+	const std::string& GetText() const;
 
 	LexSyntErrors GetLexErrors() const;
 	LexSyntErrors GetSyntErrors() const;
@@ -42,6 +42,9 @@ public:
 	std::vector<Symbol> GetSymbols();
 
 private:
+	void Rebuild();
+
+private:
 	struct CompiledState
 	{
 		Lexems lexems;
@@ -51,7 +54,8 @@ private:
 	};
 
 private:
-	DocumentManager& document_manager_;
+	const IVfs::Path path_;
+	IVfs& vfs_;
 	std::ostream& log_;
 	std::string text_;
 	std::optional<CompiledState> last_valid_state_;
