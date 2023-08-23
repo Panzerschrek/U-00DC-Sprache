@@ -1,4 +1,5 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../compilers_support_lib/prelude.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "../tests/tests_common.hpp"
@@ -176,7 +177,26 @@ void Document::Rebuild()
 	synt_errors_.clear();
 	code_builder_errors_.clear();
 
-	const std::string prelude; // TODO - provide it.
+	// TODO - create proper target machine.
+	const llvm::DataLayout data_layout( GetTestsDataLayout() );
+	// TODO - use target triple, dependent on compilation options.
+	const llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
+
+	// TODO - cache prelude.
+	const llvm::StringRef features;
+	const llvm::StringRef cpu_name;
+	const char optimization_level= '0';
+	const bool generate_debug_info= 0;
+	const uint32_t compiler_generation= 0;
+	const std::string prelude=
+		GenerateCompilerPreludeCode(
+			target_triple,
+			data_layout,
+			features,
+			cpu_name,
+			optimization_level,
+			generate_debug_info,
+			compiler_generation );
 
 	SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, prelude );
 
@@ -205,11 +225,6 @@ void Document::Rebuild()
 
 	// TODO - maybe avoid recreating context or even share it across multiple documents?
 	auto llvm_context= std::make_unique<llvm::LLVMContext>();
-
-	// TODO - create proper target machine.
-	llvm::DataLayout data_layout( GetTestsDataLayout() );
-	// TODO - use target triple, dependent on compilation options.
-	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
 
 	// Disable almost all code builder options.
 	// We do not need to generate code here - only assist developer (retrieve errors, etc.).
