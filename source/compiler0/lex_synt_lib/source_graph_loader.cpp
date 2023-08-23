@@ -65,7 +65,7 @@ size_t LoadNode_r(
 	const std::optional<IVfs::FileContent> loaded_file= vfs.LoadFileContent( full_file_path );
 	if( loaded_file == std::nullopt )
 	{
-		LexSyntError error_message( "Can not read file \"" + full_file_path + "\"", import_src_loc );
+		LexSyntError error_message( "Can not read file \"" + (full_file_path.empty() ? file_path : full_file_path) + "\"", import_src_loc );
 		result.errors.push_back( std::move(error_message) );
 		return ~0u;
 	}
