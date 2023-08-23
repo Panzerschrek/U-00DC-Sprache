@@ -602,81 +602,7 @@ void ElementWrite( const MutabilityModifier& mutability_modifier, std::ostream& 
 
 void ElementWrite( const Function& function, std::ostream& stream )
 {
-	if( function.overloaded_operator_ == OverloadedOperator::None )
-		stream << Keyword( Keywords::fn_ );
-	else
-		stream << Keyword( Keywords::op_ );
-	stream << " ";
-
-	switch( function.virtual_function_kind_ )
-	{
-	case VirtualFunctionKind::None:
-		break;
-	case VirtualFunctionKind::DeclareVirtual:
-		stream << Keyword( Keywords::virtual_ ) << " ";
-		break;
-	case VirtualFunctionKind::VirtualOverride:
-		stream << Keyword( Keywords::override_ ) << " ";
-		break;
-	case VirtualFunctionKind::VirtualFinal:
-		stream << Keyword( Keywords::final_ ) << " ";
-		break;
-	case VirtualFunctionKind::VirtualPure:
-		stream << Keyword( Keywords::pure_ ) << " ";
-		break;
-	};
-
-	if( function.kind == Function::Kind::Generator )
-		stream << Keyword( Keywords::generator_ ) << " ";
-
-	ElementWrite( function.coroutine_non_sync_tag, stream );
-
-	if( function.constexpr_ )
-		stream << Keyword( Keywords::constexpr_ ) << " ";
-	if( function.no_mangle_ )
-		stream << Keyword( Keywords::nomangle_ ) << " ";
-
-	if( std::get_if<EmptyVariant>(&function.condition_) == nullptr )
-	{
-		stream << Keyword( Keywords::enable_if_ ) << "( ";
-		ElementWrite( function.condition_, stream );
-		stream << " ) ";
-	}
-
-	for( const Function::NameComponent& component : function.name_ )
-	{
-		stream << component.name;
-		if( &component != &function.name_.back() )
-			stream << "::";
-	}
-
-	if( function.type_.params_.empty() )
-		stream << "()";
-	else
-	{
-		stream << "( ";
-		for( const FunctionParam& arg : function.type_.params_ )
-		{
-			ElementWrite( arg, stream );
-			if( &arg != &function.type_.params_.back() )
-				stream << ", ";
-		}
-		stream << " )";
-	}
-
-	ElementWriteFunctionTypeEnding( function.type_, stream );
-
-	switch( function.body_kind )
-	{
-	case Function::BodyKind::None:
-		break;
-	case Function::BodyKind::BodyGenerationRequired:
-		stream << "= " << Keyword( Keywords::default_ );
-		break;
-	case Function::BodyKind::BodyGenerationDisabled:
-		stream << "= " << Keyword( Keywords::break_ );
-		break;
-	}
+	WriteFunctionDeclaration( function, stream );
 
 	if( function.block_ == nullptr )
 		stream << ";\n";
@@ -903,7 +829,81 @@ void WriteTypeName( const Synt::TypeName& type_name, std::ostream& stream )
 
 void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& stream )
 {
-	ElementWrite( function, stream );
+	if( function.overloaded_operator_ == OverloadedOperator::None )
+		stream << Keyword( Keywords::fn_ );
+	else
+		stream << Keyword( Keywords::op_ );
+	stream << " ";
+
+	switch( function.virtual_function_kind_ )
+	{
+	case VirtualFunctionKind::None:
+		break;
+	case VirtualFunctionKind::DeclareVirtual:
+		stream << Keyword( Keywords::virtual_ ) << " ";
+		break;
+	case VirtualFunctionKind::VirtualOverride:
+		stream << Keyword( Keywords::override_ ) << " ";
+		break;
+	case VirtualFunctionKind::VirtualFinal:
+		stream << Keyword( Keywords::final_ ) << " ";
+		break;
+	case VirtualFunctionKind::VirtualPure:
+		stream << Keyword( Keywords::pure_ ) << " ";
+		break;
+	};
+
+	if( function.kind == Function::Kind::Generator )
+		stream << Keyword( Keywords::generator_ ) << " ";
+
+	ElementWrite( function.coroutine_non_sync_tag, stream );
+
+	if( function.constexpr_ )
+		stream << Keyword( Keywords::constexpr_ ) << " ";
+	if( function.no_mangle_ )
+		stream << Keyword( Keywords::nomangle_ ) << " ";
+
+	if( std::get_if<EmptyVariant>(&function.condition_) == nullptr )
+	{
+		stream << Keyword( Keywords::enable_if_ ) << "( ";
+		ElementWrite( function.condition_, stream );
+		stream << " ) ";
+	}
+
+	for( const Function::NameComponent& component : function.name_ )
+	{
+		stream << component.name;
+		if( &component != &function.name_.back() )
+			stream << "::";
+	}
+
+	if( function.type_.params_.empty() )
+		stream << "()";
+	else
+	{
+		stream << "( ";
+		for( const FunctionParam& arg : function.type_.params_ )
+		{
+			ElementWrite( arg, stream );
+			if( &arg != &function.type_.params_.back() )
+				stream << ", ";
+		}
+		stream << " )";
+	}
+
+	ElementWriteFunctionTypeEnding( function.type_, stream );
+
+	switch( function.body_kind )
+	{
+	case Function::BodyKind::None:
+		break;
+	case Function::BodyKind::BodyGenerationRequired:
+		stream << "= " << Keyword( Keywords::default_ );
+		break;
+	case Function::BodyKind::BodyGenerationDisabled:
+		stream << "= " << Keyword( Keywords::break_ );
+		break;
+	}
 }
 
 } // namespace Synt
