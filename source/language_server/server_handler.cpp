@@ -52,14 +52,7 @@ Json::Array SymbolsToJson( const std::vector<Symbol>& symbols )
 		Json::Object out_symbol;
 		out_symbol["name"]= symbol.name;
 		out_symbol["kind"]= int32_t(symbol.kind);
-
-		{
-			Json::Object position;
-			position["start"]= SrcLocToPosition( symbol.src_loc );
-			// TODO - extract full range.
-			position["end"]= SrcLocToPosition( SrcLoc( 0, symbol.src_loc.GetLine(), symbol.src_loc.GetColumn() + 1 ) );
-			out_symbol["range"]= std::move(position);
-		}
+		out_symbol["range"]= DocumentRangeToJson( symbol.range );
 
 		if( !symbol.children.empty() )
 			out_symbol["children"]= SymbolsToJson( symbol.children );

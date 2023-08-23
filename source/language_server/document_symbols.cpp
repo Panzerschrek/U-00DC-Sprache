@@ -11,6 +11,11 @@ namespace U
 namespace
 {
 
+DocumentRange MakeRangeInitial( const SrcLoc& src_loc )
+{
+	return DocumentRange{ { src_loc.GetLine(), src_loc.GetColumn() }, { src_loc.GetLine(), src_loc.GetColumn() } };
+}
+
 std::string Stringify( const Synt::TypeName& type_name )
 {
 	std::stringstream ss;
@@ -150,11 +155,11 @@ std::vector<Symbol> BuildProgramModel_r( const Synt::Enum& enum_ )
 
 	for( const Synt::Enum::Member& member : enum_.members )
 	{
-		Symbol element;
-		element.name= member.name;
-		element.kind= SymbolKind::EnumMember;
-		element.src_loc= member.src_loc;
-		result.push_back(element);
+		Symbol symbol;
+		symbol.name= member.name;
+		symbol.range= MakeRangeInitial( member.src_loc );
+		symbol.kind= SymbolKind::EnumMember;
+		result.push_back(symbol);
 	}
 
 	return result;
@@ -171,7 +176,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( class_field_ );
-		symbol.src_loc= class_field_.src_loc_;
+		symbol.range= MakeRangeInitial( class_field_.src_loc_ );
 		symbol.kind= SymbolKind::Field;
 		result.push_back( std::move(symbol) );
 	}
@@ -182,7 +187,7 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= Stringify( *func );
-		symbol.src_loc= func->src_loc_;
+		symbol.range= MakeRangeInitial( func->src_loc_ );
 		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
 	}
@@ -190,7 +195,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( func_template );
-		symbol.src_loc= func_template.src_loc_;
+		symbol.range= MakeRangeInitial( func_template.src_loc_ );
 		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
 	}
@@ -201,7 +206,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( type_template );
-		symbol.src_loc= type_template.src_loc_;
+		symbol.range= MakeRangeInitial( type_template.src_loc_ );
 		symbol.kind= SymbolKind::Class;
 
 		if( const auto class_= std::get_if<Synt::ClassPtr>( &type_template.something_ ) )
@@ -217,7 +222,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= enum_.name;
-		symbol.src_loc= enum_.src_loc_;
+		symbol.range= MakeRangeInitial( enum_.src_loc_ );
 		symbol.kind= SymbolKind::Enum;
 		symbol.children= BuildProgramModel_r( enum_ );
 		result.push_back( std::move(symbol) );
@@ -228,7 +233,7 @@ struct Visitor final
 	void operator()( const Synt::TypeAlias& typedef_ )
 	{
 		Symbol symbol;
-		symbol.src_loc= typedef_.src_loc_;
+		symbol.range= MakeRangeInitial( typedef_.src_loc_ );
 		symbol.name= typedef_.name;
 		symbol.kind= SymbolKind::Class;
 		result.push_back( std::move(symbol) );
@@ -240,7 +245,7 @@ struct Visitor final
 		{
 			Symbol symbol;
 			symbol.name= Stringify( variable, type_name );
-			symbol.src_loc= variable.src_loc;
+			symbol.range= MakeRangeInitial( variable.src_loc );
 			symbol.kind= SymbolKind::Variable;
 			result.push_back( std::move(symbol) );
 		}
@@ -249,7 +254,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( auto_variable_declaration );
-		symbol.src_loc= auto_variable_declaration.src_loc_;
+		symbol.range= MakeRangeInitial( auto_variable_declaration.src_loc_ );
 		symbol.kind= SymbolKind::Variable;
 		result.push_back( std::move(symbol) );
 	}
@@ -260,7 +265,7 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= class_->name_;
-		symbol.src_loc= class_->src_loc_;
+		symbol.range= MakeRangeInitial( class_->src_loc_ );
 		symbol.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? SymbolKind::Struct : SymbolKind::Class;
 		symbol.children= BuildProgramModel_r( class_->elements_ );
 		result.push_back( std::move(symbol) );
@@ -272,7 +277,7 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= namespace_->name_;
-		symbol.src_loc= namespace_->src_loc_;
+		symbol.range= MakeRangeInitial( namespace_->src_loc_ );
 		symbol.kind= SymbolKind::Namespace;
 		symbol.children= BuildProgramModel_r( namespace_->elements_ );
 		result.push_back( std::move(symbol) );
@@ -297,12 +302,43 @@ std::vector<Symbol> BuildProgramModel_r( const Synt::ProgramElements& elements )
 	return std::move(visitor.result);
 }
 
+void SetupRanges_r( std::vector<Symbol>& symbols, DocumentPosition& prev_position )
+{
+	for( auto it= symbols.rbegin(), it_end= symbols.rend(); it != it_end; ++it )
+	{
+		it->range.end= prev_position;
+		SetupRanges_r( it->children, prev_position );
+		prev_position= it->range.start;
+	}
+}
+
+void SetupRanges( std::vector<Symbol>& symbols )
+{
+	if( symbols.empty() )
+		return;
+
+	DocumentPosition end_position;
+	Symbol* current_symbol= &symbols.back();
+	while(true)
+	{
+		end_position= current_symbol->range.end;
+		if( !current_symbol->children.empty() )
+			current_symbol= &current_symbol->children.back();
+		else
+			break;
+	}
+
+	SetupRanges_r( symbols, end_position );
+}
+
 } // namespace
 
 std::vector<Symbol> BuildSymbols( const Synt::ProgramElements& program_elements )
 {
 	// TODO - include also macros.
-	return BuildProgramModel_r( program_elements );
+	auto result= BuildProgramModel_r( program_elements );
+	SetupRanges(result);
+	return result;
 }
 
 

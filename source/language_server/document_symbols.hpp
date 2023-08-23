@@ -4,6 +4,19 @@
 namespace U
 {
 
+// Position within document, without specifying document instance (specific document depends on context).
+struct DocumentPosition
+{
+	uint32_t line= 0; // From 1, as in SrcLoc.
+	uint32_t column= 0; // From 0, as in SrcLoc.
+};
+
+struct DocumentRange
+{
+	DocumentPosition start;
+	DocumentPosition end;
+};
+
 enum class SymbolKind : uint8_t
 {
 	None= 0,
@@ -38,7 +51,7 @@ enum class SymbolKind : uint8_t
 struct Symbol
 {
 	std::string name;
-	SrcLoc src_loc;
+	DocumentRange range;
 	std::vector<Symbol> children;
 	SymbolKind kind= SymbolKind::None;
 };
