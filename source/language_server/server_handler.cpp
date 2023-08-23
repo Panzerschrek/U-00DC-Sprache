@@ -121,7 +121,7 @@ void CreateCodeBuilderErrorsDiagnostics( const CodeBuilderErrorsContainer& error
 } // namespace
 
 ServerHandler::ServerHandler( std::ostream& log )
-	: log_(log)
+	: log_(log), document_manager_(log_)
 {
 }
 
@@ -217,14 +217,14 @@ ServerResponse ServerHandler::ProcessTextDocumentSymbol( const Json::Value& para
 		return result;
 	}
 
-	const auto it= documents_.find( uri->str() );
-	if( it == documents_.end() )
+	Document* const document= document_manager_.GetDocument( uri->str() );
+	if( document == nullptr )
 	{
 		log_ << "Can't find document " << uri->str() << std::endl;
 		return result;
 	}
 
-	return SymbolsToJson( it->second.GetSymbols() );
+	return SymbolsToJson( document->GetSymbols() );
 }
 
 ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )
@@ -267,14 +267,14 @@ ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 		return result;
 	}
 
-	const auto it= documents_.find( uri->str() );
-	if( it == documents_.end() )
+	Document* const document= document_manager_.GetDocument( uri->str() );
+	if( document == nullptr )
 	{
 		log_ << "Can't find document " << uri->str() << std::endl;
 		return result;
 	}
 
-	for( const DocumentRange& range : it->second.GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	for( const DocumentRange& range : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
 		Json::Object location;
 		location["range"]= DocumentRangeToJson( range );
@@ -327,14 +327,14 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 		return result;
 	}
 
-	const auto it= documents_.find( uri->str() );
-	if( it == documents_.end() )
+	Document* const document= document_manager_.GetDocument( uri->str() );
+	if( document == nullptr )
 	{
 		log_ << "Can't find document " << uri->str() << std::endl;
 		return result;
 	}
 
-	if( const auto range= it->second.GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	if( const auto range= document->GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
 		result["range"]= DocumentRangeToJson( *range );
 		result["uri"]= uri->str();
@@ -435,14 +435,14 @@ ServerResponse ServerHandler::ProcessTextDocumentHighlight( const Json::Value& p
 		return result;
 	}
 
-	const auto it= documents_.find( uri->str() );
-	if( it == documents_.end() )
+	Document* const document= document_manager_.GetDocument( uri->str() );
+	if( document == nullptr )
 	{
 		log_ << "Can't find document " << uri->str() << std::endl;
 		return result;
 	}
 
-	for( const DocumentRange& range : it->second.GetHighlightLocations( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	for( const DocumentRange& range : document->GetHighlightLocations( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
 		Json::Object highlight;
 		highlight["range"]= DocumentRangeToJson( range );
@@ -499,8 +499,8 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 		return result;
 	}
 
-	const auto it= documents_.find( uri->str() );
-	if( it == documents_.end() )
+	Document* const document= document_manager_.GetDocument( uri->str() );
+	if( document == nullptr )
 	{
 		log_ << "Can't find document " << uri->str() << std::endl;
 		return result;
@@ -519,7 +519,7 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 		Json::Object changes;
 		{
 			Json::Array edits;
-			for( const DocumentRange& range : it->second.GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+			for( const DocumentRange& range : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 			{
 				Json::Object edit;
 				edit["range"]= DocumentRangeToJson( range );
@@ -569,9 +569,9 @@ void ServerHandler::ProcessTextDocumentDidOpen( const Json::Value& params )
 
 	log_ << "open a document " << uri->str() << std::endl;
 
-	const auto it_bool_pair= documents_.insert( std::make_pair( uri->str(), Document( log_, text->str() ) ) );
-
-	GenerateDocumentNotifications( *uri, it_bool_pair.first->second );
+	Document* const document= document_manager_.Open( uri->str(), text->str() );
+	if( document != nullptr )
+		GenerateDocumentNotifications( *uri, *document );
 }
 
 void ServerHandler::ProcessTextDocumentDidClose( const Json::Value& params )
@@ -599,7 +599,7 @@ void ServerHandler::ProcessTextDocumentDidClose( const Json::Value& params )
 
 	log_ << "close a document " << uri->str() << std::endl;
 
-	documents_.erase( uri->str() );
+	document_manager_.Close( uri->str() );
 }
 
 void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
@@ -663,15 +663,15 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 		return;
 	}
 
-	const auto it= documents_.find( uri->str() );
-	if( it == documents_.end() )
+	Document* const document= document_manager_.GetDocument( uri->str() );
+	if( document == nullptr )
 	{
 		log_ << "Can't find document " << uri->str() << std::endl;
 		return;
 	}
 
-	it->second.SetText( change_text_str->str() );
-	GenerateDocumentNotifications( *uri, it->second );
+	document->SetText( change_text_str->str() );
+	GenerateDocumentNotifications( *uri, *document );
 }
 
 void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, const Document& document )
