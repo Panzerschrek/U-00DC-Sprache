@@ -1,5 +1,7 @@
 #pragma once
 #include "document.hpp"
+#include "uri.hpp"
+
 namespace U
 {
 
@@ -11,13 +13,14 @@ class DocumentManager
 public:
 	explicit DocumentManager( std::ostream& log );
 
-	Document* Open( const DocumentURI& uri, std::string text );
-	Document* GetDocument(  const DocumentURI& uri );
-	void Close( const DocumentURI& uri );
+	Document* Open( const Uri& uri, std::string text );
+	Document* GetDocument( const Uri& uri );
+	void Close( const Uri& uri );
 
 private:
 	std::ostream& log_;
-	std::unordered_map<DocumentURI, Document> documents_;
+	// TODO - use unordered map.
+	std::map<Uri, Document> documents_;
 };
 
 } // namespace LangServer

@@ -57,8 +57,6 @@ private:
 	CodeBuilderErrorsContainer code_builder_errors_;
 };
 
-using DocumentURI= std::string;
-
 } // namespace LangServer
 
 } // namespace U
