@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
+<!--
+	Ü syntax highlighting rules for IDEs, that use Kate syntax highlighting.
+	This file should properly work at least in Kate and QtCreator.
+-->
 <!DOCTYPE language SYSTEM "language.dtd"
 [
 	<!ENTITY IdentStartChar "a-zA-Z\x{0400}-\x{04FF}\x{0500}-\x{0527}\x{00C0}-\x{00D6}\x{00D8}-\x{00F6}\x{00F8}-\x{00FF}\x{0100}-\x{017F}\x{0180}-\x{024F}">
