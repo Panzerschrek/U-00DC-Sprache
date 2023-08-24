@@ -19,8 +19,6 @@ isEmpty( QT_CREATOR_BINARY_ROOT ) {
 SOURCES+= *.cpp
 HEADERS+= *.hpp
 
-INCLUDEPATH += ../compiler0/lex_synt_lib/
-
 !win32 {
 	# Avoid common mistakes
 	QMAKE_CXXFLAGS += -Wall -Wextra -Werror
