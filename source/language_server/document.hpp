@@ -1,7 +1,5 @@
 #pragma once
 #include <ostream>
-#include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
-#include "../compiler0/lex_synt_lib/syntax_elements.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "document_symbols.hpp"

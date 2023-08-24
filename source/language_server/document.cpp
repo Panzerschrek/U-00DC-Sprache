@@ -1,6 +1,5 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
-#include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "document.hpp"
 
 namespace U

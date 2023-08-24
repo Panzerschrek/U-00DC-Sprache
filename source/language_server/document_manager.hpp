@@ -1,6 +1,5 @@
 #pragma once
 #include "document.hpp"
-#include "uri.hpp"
 
 namespace U
 {
