@@ -16,18 +16,9 @@ isEmpty( QT_CREATOR_BINARY_ROOT ) {
 
 # USprache files
 
-SOURCES+= \
-	*.cpp \
-	../lex_synt_lib_common/*.cpp \
-	../compiler0/lex_synt_lib/*.cpp \
-	$$SPRACHE_LEX_GEN_DIR/*.cpp \
+SOURCES+= *.cpp
+HEADERS+= *.hpp
 
-HEADERS+= \
-	*.hpp \
-	../lex_synt_lib_common/*.hpp \
-	../compiler0/lex_synt_lib/*.hpp \
-
-INCLUDEPATH += $$SPRACHE_LEX_GEN_DIR
 INCLUDEPATH += ../compiler0/lex_synt_lib/
 
 !win32 {

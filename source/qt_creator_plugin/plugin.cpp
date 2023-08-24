@@ -3,7 +3,6 @@
 #include <coreplugin/editormanager/editormanager.h>
 #include <texteditor/texteditoractionhandler.h>
 #include "editor_widget.hpp"
-#include "syntax_highlighter.hpp"
 
 #include "plugin.hpp"
 
@@ -36,8 +35,6 @@ ExtensionSystem::IPlugin::ShutdownFlag Plugin::aboutToShutdown()
 EditorDocument::EditorDocument()
 {
 	setId(g_editor_id);
-
-	setSyntaxHighlighter( new SyntaxHighlighter );
 }
 
 EditorFactory::EditorFactory()
@@ -49,6 +46,7 @@ EditorFactory::EditorFactory()
 	setDocumentCreator([]() { return new EditorDocument; });
 	setEditorWidgetCreator([]() { return new EditorWidget; });
 	setEditorCreator([]() { return new Editor; });
+	setUseGenericHighlighter(true);
 
 	setEditorActionHandlers(
 		TextEditor::TextEditorActionHandler::Format |

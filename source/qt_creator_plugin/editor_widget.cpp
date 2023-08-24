@@ -22,6 +22,7 @@ void EditorWidget::finalizeInitialization()
 	// Allow adding breakpoints.
 	setRequestMarkEnabled(true);
 	setMarksVisible(true);
+	configureGenericHighlighter();
 }
 
 void EditorWidget::contextMenuEvent( QContextMenuEvent* const event )
