@@ -84,6 +84,9 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 
 	unmanaged_file= base_vfs_->LoadFileContent( full_file_path );
 
+	if( unmanaged_file == std::nullopt )
+		document_manager_.log_ << "Failed to load unmanaged file " << full_file_path << std::endl;
+
 	return unmanaged_file;
 }
 
