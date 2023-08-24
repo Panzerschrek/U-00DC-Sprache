@@ -1,10 +1,9 @@
 #pragma once
 #include <ostream>
-#include "../compiler0/lex_synt_lib/lexical_analyzer.hpp"
-#include "../compiler0/lex_synt_lib/syntax_elements.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "document_symbols.hpp"
+#include "uri.hpp"
 
 namespace U
 {
@@ -12,10 +11,17 @@ namespace U
 namespace LangServer
 {
 
+struct DocumentBuildOptions
+{
+	llvm::DataLayout data_layout;
+	llvm::Triple target_triple;
+	std::string prelude;
+};
+
 class Document
 {
 public:
-	Document( std::ostream& log, std::string text );
+	Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log );
 
 	Document( const Document& )= delete;
 	Document( Document&& )= default;
@@ -23,21 +29,23 @@ public:
 	Document& operator=( Document&& )= default;
 
 	void SetText( std::string text );
+	const std::string& GetText() const;
 
 	LexSyntErrors GetLexErrors() const;
 	LexSyntErrors GetSyntErrors() const;
 	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
 
-	// TODO - return also URI for file
-	std::optional<DocumentRange> GetDefinitionPoint( const SrcLoc& src_loc );
+	std::optional<RangeInDocument> GetDefinitionPoint( const SrcLoc& src_loc );
 
 	// Returns highlights only for this document.
 	std::vector<DocumentRange> GetHighlightLocations( const SrcLoc& src_loc );
 
-	// TODO - provide also URI.
-	std::vector<DocumentRange> GetAllOccurrences( const SrcLoc& src_loc );
+	std::vector<RangeInDocument> GetAllOccurrences( const SrcLoc& src_loc );
 
 	std::vector<Symbol> GetSymbols();
+
+private:
+	void Rebuild();
 
 private:
 	struct CompiledState
@@ -49,6 +57,9 @@ private:
 	};
 
 private:
+	const IVfs::Path path_;
+	const DocumentBuildOptions build_options_;
+	IVfs& vfs_;
 	std::ostream& log_;
 	std::string text_;
 	std::optional<CompiledState> last_valid_state_;
@@ -56,8 +67,6 @@ private:
 	LexSyntErrors synt_errors_;
 	CodeBuilderErrorsContainer code_builder_errors_;
 };
-
-using DocumentURI= std::string;
 
 } // namespace LangServer
 

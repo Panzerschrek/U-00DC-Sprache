@@ -3,7 +3,7 @@
 #include <queue>
 #include <string_view>
 #include "json.hpp"
-#include "document.hpp"
+#include "document_manager.hpp"
 
 namespace U
 {
@@ -72,7 +72,7 @@ private:
 
 private:
 	std::ostream& log_;
-	std::unordered_map<DocumentURI, Document> documents_;
+	DocumentManager document_manager_;
 
 	std::queue<ServerNotification> notifications_queue_;
 };

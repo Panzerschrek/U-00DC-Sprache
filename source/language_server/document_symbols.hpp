@@ -1,21 +1,12 @@
 #pragma once
 #include "../compiler0/lex_synt_lib/syntax_elements.hpp"
+#include "document_position.hpp"
 
 namespace U
 {
 
-// Position within document, without specifying document instance (specific document depends on context).
-struct DocumentPosition
+namespace LangServer
 {
-	uint32_t line= 0; // From 1, as in SrcLoc.
-	uint32_t column= 0; // From 0, as in SrcLoc.
-};
-
-struct DocumentRange
-{
-	DocumentPosition start;
-	DocumentPosition end;
-};
 
 enum class SymbolKind : uint8_t
 {
@@ -58,5 +49,7 @@ struct Symbol
 };
 
 std::vector<Symbol> BuildSymbols( const Synt::ProgramElements& program_elements );
+
+} // namespace LangServer
 
 } // namespace U

@@ -1,7 +1,5 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
-#include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
-#include "../tests/tests_common.hpp"
 #include "document.hpp"
 
 namespace U
@@ -20,11 +18,10 @@ DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc )
 
 } // namespace
 
-Document::Document( std::ostream& log, std::string text )
-	: log_(log)
+Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log )
+	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
 {
 	(void)log_;
-	SetText( std::move(text) );
 }
 
 LexSyntErrors Document::GetLexErrors() const
@@ -42,21 +39,29 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 	return code_builder_errors_;
 }
 
-std::optional<DocumentRange> Document::GetDefinitionPoint( const SrcLoc& src_loc )
+std::optional<RangeInDocument> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
 	// Find lexem, where position is located.
+	// TODO - use text directly, avoid storing additional lexems container.
 	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
 	if( lexem == nullptr )
 		return std::nullopt;
 
 	if( const auto src_loc= last_valid_state_->code_builder->GetDefinition( lexem->src_loc ) )
 	{
-		DocumentRange range;
-		range.start= SrcLocToDocumentPosition(*src_loc);
-		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc->GetLine(), src_loc->GetColumn(), last_valid_state_->lexems ) );
+		RangeInDocument range;
+		range.range.start= SrcLocToDocumentPosition(*src_loc);
+		range.range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc->GetLine(), src_loc->GetColumn(), last_valid_state_->lexems ) );
+
+		const uint32_t file_index= src_loc->GetFileIndex();
+		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
+			range.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
+		else
+			range.uri= Uri::FromFilePath( path_ ); // TODO - maybe return std::nullopt instead?
+
 		return range;
 	}
 
@@ -69,6 +74,7 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 		return {};
 
 	// Find lexem, where position is located.
+	// TODO - use text directly, avoid storing additional lexems container.
 	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
 	if( lexem == nullptr )
 		return {};
@@ -92,6 +98,7 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 
 		DocumentRange range;
 		range.start= SrcLocToDocumentPosition(src_loc);
+		// TODO - fix this, result is wrong for imported files.
 		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
 
 		result.push_back( std::move(range) );
@@ -100,7 +107,7 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 	return result;
 }
 
-std::vector<DocumentRange> Document::GetAllOccurrences( const SrcLoc& src_loc )
+std::vector<RangeInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
@@ -118,15 +125,24 @@ std::vector<DocumentRange> Document::GetAllOccurrences( const SrcLoc& src_loc )
 
 	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( lexem->src_loc );
 
-	std::vector<DocumentRange> result;
+	// TODO - improve this.
+	// We need to extract occurences in other opended documents and maybe search for other files.
+
+	std::vector<RangeInDocument> result;
 	result.reserve( occurrences.size() );
 
 	for( const SrcLoc& src_loc : occurrences )
 	{
-		// TODO - fill also file.
-		DocumentRange range;
-		range.start= SrcLocToDocumentPosition(src_loc);
-		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
+		RangeInDocument range;
+		range.range.start= SrcLocToDocumentPosition(src_loc);
+		// TODO - fix this, result is wrong for imported files.
+		range.range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
+
+		const uint32_t file_index= src_loc.GetFileIndex();
+		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
+			range.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
+		else
+			range.uri= Uri::FromFilePath( path_ ); // TODO - maybe skip this item instead?
 
 		result.push_back( std::move(range) );
 	}
@@ -148,49 +164,47 @@ void Document::SetText( std::string text )
 		return;
 
 	text_= text;
+	Rebuild();
+}
 
+const std::string& Document::GetText() const
+{
+	return text_;
+}
+
+void Document::Rebuild()
+{
 	lex_errors_.clear();
 	synt_errors_.clear();
 	code_builder_errors_.clear();
 
-	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
-	lex_errors_= std::move( lex_result.errors );
+	SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
+
+	lex_errors_= std::move( source_graph.errors );
 	if( !lex_errors_.empty() )
 		return;
 
-	// TODO - parse imports and read files or request another opended documents.
-	// TODO - provide options for import directories.
-	// TODO - fill macros from imported files.
-
-	const auto macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
-
-	Synt::SyntaxAnalysisResult synt_result=
-		Synt::SyntaxAnalysis(
-			lex_result.lexems,
-			Synt::MacrosByContextMap(),
-			macro_expansion_contexts,
-			CalculateSourceFileContentsHash( text_ ) );
-
-	synt_errors_= std::move(synt_result.error_messages);
-	if( !synt_errors_.empty() )
+	if( source_graph.nodes_storage.empty() )
 		return;
 
-	// TODO - add also generated prelude.
+	// Take syntax errors only from this document.
+	synt_errors_.swap( source_graph.nodes_storage.front().ast.error_messages );
+	if( !synt_errors_.empty() )
+	{
+		for( const auto& error : synt_errors_ )
+			std::cout << "error: " << error.text << std::endl;
+		return;
+	}
 
-	SourceGraph::Node source_graph_node;
-	source_graph_node.ast= std::move(synt_result);
-
-	SourceGraph source_graph;
-	source_graph.nodes_storage.push_back( std::move(source_graph_node) );
-	source_graph.macro_expansion_contexts= macro_expansion_contexts;
+	// Do not compile code if imports are not correct.
+	for( const SourceGraph::Node& node : source_graph.nodes_storage )
+	{
+		if( !node.ast.error_messages.empty() )
+			return;
+	}
 
 	// TODO - maybe avoid recreating context or even share it across multiple documents?
 	auto llvm_context= std::make_unique<llvm::LLVMContext>();
-
-	// TODO - create proper target machine.
-	llvm::DataLayout data_layout( GetTestsDataLayout() );
-	// TODO - use target triple, dependent on compilation options.
-	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
 
 	// Disable almost all code builder options.
 	// We do not need to generate code here - only assist developer (retrieve errors, etc.).
@@ -206,15 +220,18 @@ void Document::SetText( std::string text )
 	auto code_builder=
 		CodeBuilder::BuildProgramAndLeaveInternalState(
 			*llvm_context,
-			data_layout,
-			target_triple,
+			build_options_.data_layout,
+			build_options_.target_triple,
 			options,
 			source_graph );
 
 	code_builder_errors_= code_builder->TakeErrors();
 
+	// Re-do lexical analysis, since source graph loading function doesn't saves it.
+	Lexems lexems= LexicalAnalysis( text_ ).lexems;
+
 	last_valid_state_= std::nullopt;
-	last_valid_state_= CompiledState{ std::move( lex_result.lexems ), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
+	last_valid_state_= CompiledState{ std::move( lexems ), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
 }
 
 } // namespace LangServer
