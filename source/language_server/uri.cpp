@@ -39,8 +39,8 @@ void PercentEncode( llvm::StringRef content, std::string& out )
 		if( ShouldEscape(c) )
 		{
 			out.push_back('%');
-			out.push_back(llvm::hexdigit(uint32_t(c) / 16));
-			out.push_back(llvm::hexdigit(uint32_t(c) % 16));
+			out.push_back(llvm::hexdigit(uint32_t(uint8_t(c)) / 16));
+			out.push_back(llvm::hexdigit(uint32_t(uint8_t(c)) % 16));
 		}
 		else
 			out.push_back(c);
