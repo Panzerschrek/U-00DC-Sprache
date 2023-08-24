@@ -83,6 +83,7 @@ private:
 			else
 				llvm::sys::path::append( result, *it );
 		}
+		llvm::sys::path::native(result);
 		return result;
 	}
 
