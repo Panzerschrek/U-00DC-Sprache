@@ -767,14 +767,15 @@ SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, const Pro
 	return SrcLoc( 0, line, column );
 }
 
-ProgramLinearPosition GetIdentifierStartForPosition( const std::string_view program_text, const ProgramLinearPosition position )
+std::optional<ProgramLinearPosition> GetIdentifierStartForPosition( const std::string_view program_text, const ProgramLinearPosition position )
 {
 	U_ASSERT( position < program_text.size() );
 
-	// TODO - return none for non-idenrifier positions.
-
 	// Go backward until find non-identifier char.
 	// TODO - support Unicode.
+
+	if( !IsIdentifierChar( sprache_char( program_text[ position ] ) ) )
+		return std::nullopt; // Not an identifier.
 
 	ProgramLinearPosition current_position= position;
 	while( current_position > 0 && IsIdentifierChar( sprache_char( program_text[ current_position - 1 ] ) ) )
@@ -783,14 +784,15 @@ ProgramLinearPosition GetIdentifierStartForPosition( const std::string_view prog
 	return current_position;
 }
 
-ProgramLinearPosition GetIdentifierEndForPosition( const std::string_view program_text, const ProgramLinearPosition position )
+std::optional<ProgramLinearPosition> GetIdentifierEndForPosition( const std::string_view program_text, const ProgramLinearPosition position )
 {
-	// TODO - return none for non-idenrifier positions.
-
 	ProgramLinearPosition current_position= position;
 	// TODO - support Unicode.
 	while( current_position < program_text.size() && IsIdentifierChar( sprache_char( program_text[ current_position ] ) ) )
 		++current_position;
+
+	if( current_position == position )
+		return std::nullopt; // Not an identifier.
 
 	return current_position;
 }

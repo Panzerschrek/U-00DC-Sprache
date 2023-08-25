@@ -23,8 +23,11 @@ std::optional<SrcLoc> GetIdentifierStartSrcLoc( const SrcLoc& src_loc, const std
 		return std::nullopt;
 
 	const ProgramLinearPosition linear_position= line_to_linear_position_index[ line ] + src_loc.GetColumn();
-	const ProgramLinearPosition linear_position_corrected= GetIdentifierStartForPosition( program_text, linear_position );
-	SrcLoc result= LinearPositionToSrcLoc( line_to_linear_position_index, linear_position_corrected );
+	const std::optional<ProgramLinearPosition> linear_position_corrected= GetIdentifierStartForPosition( program_text, linear_position );
+	if( linear_position_corrected == std::nullopt )
+		return std::nullopt;
+
+	SrcLoc result= LinearPositionToSrcLoc( line_to_linear_position_index, *linear_position_corrected );
 	result.SetFileIndex( src_loc.GetFileIndex() );
 	result.SetMacroExpansionIndex( src_loc.GetMacroExpansionIndex() );
 	return result;
@@ -37,8 +40,11 @@ std::optional<SrcLoc> GetIdentifierEndSrcLoc( const SrcLoc& src_loc, const std::
 		return std::nullopt;
 
 	const ProgramLinearPosition linear_position= line_to_linear_position_index[ line ] + src_loc.GetColumn();
-	const ProgramLinearPosition linear_position_corrected= GetIdentifierEndForPosition( program_text, linear_position );
-	SrcLoc result= LinearPositionToSrcLoc( line_to_linear_position_index, linear_position_corrected );
+	const std::optional<ProgramLinearPosition> linear_position_corrected= GetIdentifierEndForPosition( program_text, linear_position );
+	if( linear_position_corrected == std::nullopt )
+		return std::nullopt;
+
+	SrcLoc result= LinearPositionToSrcLoc( line_to_linear_position_index, *linear_position_corrected );
 	result.SetFileIndex( src_loc.GetFileIndex() );
 	result.SetMacroExpansionIndex( src_loc.GetMacroExpansionIndex() );
 	return result;

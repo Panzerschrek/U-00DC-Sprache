@@ -143,7 +143,7 @@ LineToLinearPositionIndex BuildLineToLinearPositionIndex( std::string_view progr
 
 SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, ProgramLinearPosition position );
 
-ProgramLinearPosition GetIdentifierStartForPosition( std::string_view program_text, ProgramLinearPosition position );
-ProgramLinearPosition GetIdentifierEndForPosition( std::string_view program_text, ProgramLinearPosition position );
+std::optional<ProgramLinearPosition> GetIdentifierStartForPosition( std::string_view program_text, ProgramLinearPosition position );
+std::optional<ProgramLinearPosition> GetIdentifierEndForPosition( std::string_view program_text, ProgramLinearPosition position );
 
 } // namespace U
