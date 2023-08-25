@@ -771,6 +771,8 @@ ProgramLinearPosition GetIdentifierStartForPosition( const std::string_view prog
 {
 	U_ASSERT( position < program_text.size() );
 
+	// TODO - return none for non-idenrifier positions.
+
 	// Go backward until find non-identifier char.
 	// TODO - support Unicode.
 
@@ -783,6 +785,8 @@ ProgramLinearPosition GetIdentifierStartForPosition( const std::string_view prog
 
 ProgramLinearPosition GetIdentifierEndForPosition( const std::string_view program_text, const ProgramLinearPosition position )
 {
+	// TODO - return none for non-idenrifier positions.
+
 	ProgramLinearPosition current_position= position;
 	// TODO - support Unicode.
 	while( current_position < program_text.size() && IsIdentifierChar( sprache_char( program_text[ current_position ] ) ) )
