@@ -179,4 +179,83 @@ U_TEST( ValidIdentifierTest )
 	U_TEST_ASSERT( !IsValidIdentifier( "()" ) );
 }
 
+U_TEST( LineToLinearPositionIndex_Test0 )
+{
+	static const char c_program_text[] = "";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test1 )
+{
+	static const char c_program_text[] = "foo";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test2 )
+{
+	static const char c_program_text[] = "foo\nbarw";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 4 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test3 )
+{
+	static const char c_program_text[] = "foo\n\nbarw";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 4, 5 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test4 )
+{
+	static const char c_program_text[] = "\n";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 1 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test5 )
+{
+	static const char c_program_text[] = "\n ";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 1 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test6 )
+{
+	static const char c_program_text[] = "foo\n";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 4 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test7 )
+{
+	static const char c_program_text[] = "foo\n\n";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 4, 5 }) );
+}
+
+U_TEST( LinearPositionToSrcLoc_Test0 )
+{
+	static const char c_program_text[] = "";
+	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( c_program_text );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 0 ) == SrcLoc( 0, 1, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 1 ) == SrcLoc( 0, 1, 1 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 2 ) == SrcLoc( 0, 1, 2 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 100 ) == SrcLoc( 0, 1, 100 ) );
+}
+
+U_TEST( LinearPositionToSrcLoc_Test1 )
+{
+	static const char c_program_text[] = "fn foo()\n{\n\tbar();\n}\n";
+	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( c_program_text );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  0 ) == SrcLoc( 0, 1, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  6 ) == SrcLoc( 0, 1, 6 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  8 ) == SrcLoc( 0, 1, 8 ) ); // '\n' counts as last symbol in the line.
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  9 ) == SrcLoc( 0, 2, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 10 ) == SrcLoc( 0, 2, 1 ) ); // '\n' counts as last symbol in the line.
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 11 ) == SrcLoc( 0, 3, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 12 ) == SrcLoc( 0, 3, 1 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 13 ) == SrcLoc( 0, 3, 2 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 18 ) == SrcLoc( 0, 3, 7 ) );  // '\n' counts as last symbol in the line.
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 19 ) == SrcLoc( 0, 4, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 20 ) == SrcLoc( 0, 4, 1 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 21 ) == SrcLoc( 0, 5, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 22 ) == SrcLoc( 0, 5, 1 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 23 ) == SrcLoc( 0, 5, 2 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 53 ) == SrcLoc( 0, 5,32 ) );
+}
+
 } // namespace U
