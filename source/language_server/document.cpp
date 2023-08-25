@@ -22,8 +22,8 @@ std::optional<SrcLoc> GetIdentifierStartSrcLoc( const SrcLoc& src_loc, const std
 	if( line >= line_to_linear_position_index.size() )
 		return std::nullopt;
 
-	const ProgramLinearPosition linear_position= line_to_linear_position_index[ line ] + src_loc.GetColumn();
-	const std::optional<ProgramLinearPosition> linear_position_corrected= GetIdentifierStartForPosition( program_text, linear_position );
+	const TextLinearPosition linear_position= line_to_linear_position_index[ line ] + src_loc.GetColumn();
+	const std::optional<TextLinearPosition> linear_position_corrected= GetIdentifierStartForPosition( program_text, linear_position );
 	if( linear_position_corrected == std::nullopt )
 		return std::nullopt;
 
@@ -39,8 +39,8 @@ std::optional<SrcLoc> GetIdentifierEndSrcLoc( const SrcLoc& src_loc, const std::
 	if( line >= line_to_linear_position_index.size() )
 		return std::nullopt;
 
-	const ProgramLinearPosition linear_position= line_to_linear_position_index[ line ] + src_loc.GetColumn();
-	const std::optional<ProgramLinearPosition> linear_position_corrected= GetIdentifierEndForPosition( program_text, linear_position );
+	const TextLinearPosition linear_position= line_to_linear_position_index[ line ] + src_loc.GetColumn();
+	const std::optional<TextLinearPosition> linear_position_corrected= GetIdentifierEndForPosition( program_text, linear_position );
 	if( linear_position_corrected == std::nullopt )
 		return std::nullopt;
 

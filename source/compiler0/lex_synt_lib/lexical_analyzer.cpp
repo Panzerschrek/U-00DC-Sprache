@@ -592,6 +592,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 		}
 		else if( IsNewline(c) )
 		{
+			// TODO - handle stupid things, like windows double-symbol newlines.
 			++line;
 			++it;
 			column= 0u;
@@ -730,65 +731,65 @@ bool IsValidIdentifier( const std::string_view text )
 	return it == it_end;
 }
 
-LineToLinearPositionIndex BuildLineToLinearPositionIndex( const std::string_view program_text )
+LineToLinearPositionIndex BuildLineToLinearPositionIndex( const std::string_view text )
 {
 	LineToLinearPositionIndex result;
 	result.push_back(0);
 	result.push_back(0);
 
-	for( size_t i= 0, i_end= program_text.size(); i < i_end; ++i )
+	for( size_t i= 0, i_end= text.size(); i < i_end; ++i )
 	{
 		// TODO - handle stupid things, like windows double-symbol newlines.
 
-		if( IsNewline( sprache_char(program_text[i]) ) )
+		if( IsNewline( sprache_char(text[i]) ) )
 			result.push_back( uint32_t(i + 1) ); // Next line starts with next symbol.
 	}
 
 	return result;
 }
 
-SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, const ProgramLinearPosition position )
+SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, const TextLinearPosition position )
 {
+	U_ASSERT( index.size() >= 2 ); // Should contains at least dummy and first line.
+
 	// Use binary search to find line number.
-	const auto it= std::lower_bound(
-		index.begin(),
-		index.end(),
-		position );
+	const auto it= std::upper_bound( index.begin(), index.end(), position );
 
 	if( it == index.begin() )
 	{
-		// TODO - handle edge cases.
+		// WTF?
+		return SrcLoc( 0, 1, 0 );
 	}
 	const auto prev_it= std::prev(it);
 
-	const uint32_t line= uint32_t( size_t( prev_it - index.begin()  ) );
-	const uint32_t column= std::min( uint32_t(position - *prev_it), uint32_t(512) );
+	const uint32_t line= uint32_t( size_t( prev_it - index.begin() ) );
+	const uint32_t column= std::min( uint32_t( position - *prev_it ), uint32_t(512) );
 
 	return SrcLoc( 0, line, column );
 }
 
-std::optional<ProgramLinearPosition> GetIdentifierStartForPosition( const std::string_view program_text, const ProgramLinearPosition position )
+std::optional<TextLinearPosition> GetIdentifierStartForPosition( const std::string_view text, const TextLinearPosition position )
 {
-	U_ASSERT( position < program_text.size() );
+	U_ASSERT( position < text.size() );
 
 	// Go backward until find non-identifier char.
 	// TODO - support Unicode.
 
-	if( !IsIdentifierChar( sprache_char( program_text[ position ] ) ) )
+	if( !IsIdentifierChar( sprache_char( text[ position ] ) ) )
 		return std::nullopt; // Not an identifier.
 
-	ProgramLinearPosition current_position= position;
-	while( current_position > 0 && IsIdentifierChar( sprache_char( program_text[ current_position - 1 ] ) ) )
+	TextLinearPosition current_position= position;
+	while( current_position > 0 && IsIdentifierChar( sprache_char( text[ current_position - 1 ] ) ) )
 		--current_position;
 
 	return current_position;
 }
 
-std::optional<ProgramLinearPosition> GetIdentifierEndForPosition( const std::string_view program_text, const ProgramLinearPosition position )
+std::optional<TextLinearPosition> GetIdentifierEndForPosition( const std::string_view text, const TextLinearPosition position )
 {
-	ProgramLinearPosition current_position= position;
+	TextLinearPosition current_position= position;
 	// TODO - support Unicode.
-	while( current_position < program_text.size() && IsIdentifierChar( sprache_char( program_text[ current_position ] ) ) )
+	while( current_position < text.size() && IsIdentifierChar( sprache_char( text[ current_position ] ) ) )
 		++current_position;
 
 	if( current_position == position )

@@ -130,20 +130,30 @@ struct LexicalAnalysisResult
 
 LexicalAnalysisResult LexicalAnalysis( std::string_view program_text, bool collect_comments= false );
 
-bool IsValidIdentifier(  std::string_view text );
+//
+// Additional text-related stuff.
+//
 
-using ProgramLinearPosition= uint32_t;
+bool IsValidIdentifier( std::string_view text );
 
-// Return mapping line -> linear position.
+using TextLinearPosition= uint32_t;
+
+// Mapping line -> linear position.
 // Since lines are numbered from 1, element 0 is dummy.
-// Result list is (obviously) sorted.
-using LineToLinearPositionIndex= std::vector<ProgramLinearPosition>;
+// It is (obviously) sorted.
+using LineToLinearPositionIndex= std::vector<TextLinearPosition>;
 
-LineToLinearPositionIndex BuildLineToLinearPositionIndex( std::string_view program_text );
+LineToLinearPositionIndex BuildLineToLinearPositionIndex( std::string_view text );
 
-SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, ProgramLinearPosition position );
+// Map linear position to position in format line:column (lines starting from 1).
+SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, TextLinearPosition position );
 
-std::optional<ProgramLinearPosition> GetIdentifierStartForPosition( std::string_view program_text, ProgramLinearPosition position );
-std::optional<ProgramLinearPosition> GetIdentifierEndForPosition( std::string_view program_text, ProgramLinearPosition position );
+// Get position of the start of identifier at given position.
+// Returns none if there is no identifier here.
+std::optional<TextLinearPosition> GetIdentifierStartForPosition( std::string_view text, TextLinearPosition position );
+
+// Get position of the end of identifier at given position.
+// Returns none if there is no identifier here.
+std::optional<TextLinearPosition> GetIdentifierEndForPosition( std::string_view text, TextLinearPosition position );
 
 } // namespace U
