@@ -44,17 +44,25 @@ std::optional<RangeInDocument> Document::GetDefinitionPoint( const SrcLoc& src_l
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	// Find lexem, where position is located.
-	// TODO - use text directly, avoid storing additional lexems container.
-	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
-	if( lexem == nullptr )
+	if( src_loc.GetLine() >= last_valid_state_->line_to_linear_position_index.size() )
 		return std::nullopt;
 
-	if( const auto src_loc= last_valid_state_->code_builder->GetDefinition( lexem->src_loc ) )
+	const ProgramLinearPosition linear_position= last_valid_state_->line_to_linear_position_index[ src_loc.GetLine() ] + src_loc.GetColumn();
+	const ProgramLinearPosition linear_position_corrected= GetIdentifierStartForPosition( text_, linear_position );
+	const SrcLoc src_loc_corrected= LinearPositionToSrcLoc( last_valid_state_->line_to_linear_position_index, linear_position_corrected );
+
+	if( const auto src_loc= last_valid_state_->code_builder->GetDefinition( src_loc_corrected ) )
 	{
+		if( src_loc->GetLine() >= last_valid_state_->line_to_linear_position_index )
+			return std::nullopt;
+
+		const ProgramLinearPosition result_position= last_valid_state_->line_to_linear_position_index[ src_loc->GetLine() ] + src_loc->GetColumn();
+		const ProgramLinearPosition result_position_end= GetIdentifierEndForPosition( text_, result_position );
+		const SrcLoc result_end_src_loc= LinearPositionToSrcLoc( last_valid_state_->line_to_linear_position_index, result_position_end );
+
 		RangeInDocument range;
 		range.range.start= SrcLocToDocumentPosition(*src_loc);
-		range.range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc->GetLine(), src_loc->GetColumn(), last_valid_state_->lexems ) );
+		range.range.end= SrcLocToDocumentPosition( result_end_src_loc );
 
 		const uint32_t file_index= src_loc->GetFileIndex();
 		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
@@ -73,6 +81,9 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
+	(void)src_loc;
+	return {};
+/*
 	// Find lexem, where position is located.
 	// TODO - use text directly, avoid storing additional lexems container.
 	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
@@ -105,6 +116,7 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 	}
 
 	return result;
+	*/
 }
 
 std::vector<RangeInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc )
@@ -112,6 +124,9 @@ std::vector<RangeInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc 
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
+	(void) src_loc;
+	return {};
+	/*
 	// Find lexem, where position is located.
 	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
 	if( lexem == nullptr )
@@ -148,6 +163,7 @@ std::vector<RangeInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc 
 	}
 
 	return result;
+	*/
 }
 
 std::vector<Symbol> Document::GetSymbols()
@@ -227,11 +243,10 @@ void Document::Rebuild()
 
 	code_builder_errors_= code_builder->TakeErrors();
 
-	// Re-do lexical analysis, since source graph loading function doesn't saves it.
-	Lexems lexems= LexicalAnalysis( text_ ).lexems;
+	auto line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
 
 	last_valid_state_= std::nullopt;
-	last_valid_state_= CompiledState{ std::move( lexems ), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
+	last_valid_state_= CompiledState{ line_to_linear_position_index, std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
 }
 
 } // namespace LangServer

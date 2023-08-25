@@ -132,4 +132,18 @@ LexicalAnalysisResult LexicalAnalysis( std::string_view program_text, bool colle
 
 bool IsValidIdentifier(  std::string_view text );
 
+using ProgramLinearPosition= uint32_t;
+
+// Return mapping line -> linear position.
+// Since lines are numbered from 1, element 0 is dummy.
+// Result list is (obviously) sorted.
+using LineToLinearPositionIndex= std::vector<ProgramLinearPosition>;
+
+LineToLinearPositionIndex BuildLineToLinearPositionIndex( std::string_view program_text );
+
+SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, ProgramLinearPosition position );
+
+ProgramLinearPosition GetIdentifierStartForPosition( std::string_view program_text, ProgramLinearPosition position );
+ProgramLinearPosition GetIdentifierEndForPosition( std::string_view program_text, ProgramLinearPosition position );
+
 } // namespace U

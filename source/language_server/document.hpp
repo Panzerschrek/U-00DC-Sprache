@@ -50,7 +50,7 @@ private:
 private:
 	struct CompiledState
 	{
-		Lexems lexems;
+		LineToLinearPositionIndex line_to_linear_position_index;
 		SourceGraph source_graph;
 		std::unique_ptr<llvm::LLVMContext> llvm_context;
 		std::unique_ptr<CodeBuilder> code_builder;
