@@ -520,6 +520,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 		{
 			while( it_prev < it )
 			{
+				// TODO - maybe count UTF-8 chars instead of code points?
 				ReadNextUTF8Char( it_prev, it );
 				++column;
 				max_column= std::max( max_column, column );
@@ -763,7 +764,8 @@ SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, const Tex
 	const auto prev_it= std::prev(it);
 
 	const uint32_t line= uint32_t( size_t( prev_it - index.begin() ) );
-	const uint32_t column= std::min( uint32_t( position - *prev_it ), uint32_t(512) );
+	// TODO - maybe count code points, not UTF-8 chars?
+	const uint32_t column= uint32_t( position - *prev_it );
 
 	return SrcLoc( 0, line, column );
 }

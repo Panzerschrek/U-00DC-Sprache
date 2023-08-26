@@ -78,6 +78,7 @@ Language server
 *) Async requests handling
 *) Rebuild documents, depending on other documents
 *) Delayed documents rebuild
+*) Non-ASCII support
 *) Proper mapping of current state file to last valid state for requests (use some sort of diff)
 *) Compilation speed-up - remove unnecessary steps, like imported/template functions building, generated methods building, etc
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents

@@ -216,7 +216,7 @@ void Document::Rebuild()
 	auto line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
 
 	last_valid_state_= std::nullopt;
-	last_valid_state_= CompiledState{ line_to_linear_position_index, std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
+	last_valid_state_= CompiledState{ std::move(line_to_linear_position_index), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
 }
 
 } // namespace LangServer
