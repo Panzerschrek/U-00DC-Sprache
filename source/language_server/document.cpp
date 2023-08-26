@@ -1,5 +1,6 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
+#include "document_position_utils.hpp"
 #include "document.hpp"
 
 namespace U
@@ -7,16 +8,6 @@ namespace U
 
 namespace LangServer
 {
-
-namespace
-{
-
-DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc )
-{
-	return DocumentPosition{ src_loc.GetLine(), src_loc.GetColumn() };
-}
-
-} // namespace
 
 Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log )
 	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
@@ -39,30 +30,27 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 	return code_builder_errors_;
 }
 
-std::optional<RangeInDocument> Document::GetDefinitionPoint( const SrcLoc& src_loc )
+std::optional<PositionInDocument> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	// Find lexem, where position is located.
-	// TODO - use text directly, avoid storing additional lexems container.
-	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
-	if( lexem == nullptr )
+	const auto src_loc_corrected= GetIdentifierStartSrcLoc( src_loc, text_, last_valid_state_->line_to_linear_position_index );
+	if( src_loc_corrected == std::nullopt )
 		return std::nullopt;
 
-	if( const auto src_loc= last_valid_state_->code_builder->GetDefinition( lexem->src_loc ) )
+	if( const auto result_src_loc= last_valid_state_->code_builder->GetDefinition( *src_loc_corrected ) )
 	{
-		RangeInDocument range;
-		range.range.start= SrcLocToDocumentPosition(*src_loc);
-		range.range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc->GetLine(), src_loc->GetColumn(), last_valid_state_->lexems ) );
+		PositionInDocument position;
+		position.position= SrcLocToDocumentPosition( *result_src_loc );
 
-		const uint32_t file_index= src_loc->GetFileIndex();
+		const uint32_t file_index= result_src_loc->GetFileIndex();
 		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
-			range.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
+			position.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
 		else
-			range.uri= Uri::FromFilePath( path_ ); // TODO - maybe return std::nullopt instead?
+			position.uri= Uri::FromFilePath( path_ ); // TODO - maybe return std::nullopt instead?
 
-		return range;
+		return position;
 	}
 
 	return std::nullopt;
@@ -73,33 +61,28 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	// Find lexem, where position is located.
-	// TODO - use text directly, avoid storing additional lexems container.
-	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
-	if( lexem == nullptr )
+	const auto src_loc_corrected= GetIdentifierStartSrcLoc( src_loc, text_, last_valid_state_->line_to_linear_position_index );
+	if( src_loc_corrected == std::nullopt )
 		return {};
 
-	if( lexem->type != Lexem::Type::Identifier )
-	{
-		// There is no reason to highlight non-identifiers.
-		// TODO - maybe highlight at least overloaded operators?
-		return {};
-	}
-
-	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( lexem->src_loc );
+	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *src_loc_corrected );
 
 	std::vector<DocumentRange> result;
 	result.reserve( occurrences.size() );
 
-	for( const SrcLoc& src_loc : occurrences )
+	for( const SrcLoc& result_src_loc : occurrences )
 	{
-		if( src_loc.GetFileIndex() != 0 )
+		if( result_src_loc.GetFileIndex() != 0 )
 			continue; // Filter out symbols from imported files.
 
+		// It is fine to use text of this file to determine end position, since highlighting works only within the document.
+		const auto result_end_src_loc= GetIdentifierEndSrcLoc( result_src_loc, text_, last_valid_state_->line_to_linear_position_index );
+		if( result_end_src_loc == std::nullopt )
+			continue;
+
 		DocumentRange range;
-		range.start= SrcLocToDocumentPosition(src_loc);
-		// TODO - fix this, result is wrong for imported files.
-		range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
+		range.start= SrcLocToDocumentPosition( result_src_loc );
+		range.end= SrcLocToDocumentPosition( *result_end_src_loc );
 
 		result.push_back( std::move(range) );
 	}
@@ -107,44 +90,35 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 	return result;
 }
 
-std::vector<RangeInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc )
+std::vector<PositionInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	// Find lexem, where position is located.
-	const Lexem* const lexem= GetLexemForPosition( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems );
-	if( lexem == nullptr )
+	const auto src_loc_corrected= GetIdentifierStartSrcLoc( src_loc, text_, last_valid_state_->line_to_linear_position_index );
+	if( src_loc_corrected == std::nullopt )
 		return {};
 
-	if( lexem->type != Lexem::Type::Identifier )
-	{
-		// There is no reason to process non-identifiers.
-		return {};
-	}
-
-	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( lexem->src_loc );
+	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *src_loc_corrected );
 
 	// TODO - improve this.
 	// We need to extract occurences in other opended documents and maybe search for other files.
 
-	std::vector<RangeInDocument> result;
+	std::vector<PositionInDocument> result;
 	result.reserve( occurrences.size() );
 
-	for( const SrcLoc& src_loc : occurrences )
+	for( const SrcLoc& result_src_loc : occurrences )
 	{
-		RangeInDocument range;
-		range.range.start= SrcLocToDocumentPosition(src_loc);
-		// TODO - fix this, result is wrong for imported files.
-		range.range.end= SrcLocToDocumentPosition( GetLexemEnd( src_loc.GetLine(), src_loc.GetColumn(), last_valid_state_->lexems ) );
+		PositionInDocument position;
+		position.position= SrcLocToDocumentPosition( result_src_loc );
 
-		const uint32_t file_index= src_loc.GetFileIndex();
+		const uint32_t file_index= result_src_loc.GetFileIndex();
 		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
-			range.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
+			position.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
 		else
-			range.uri= Uri::FromFilePath( path_ ); // TODO - maybe skip this item instead?
+			position.uri= Uri::FromFilePath( path_ ); // TODO - maybe skip this item instead?
 
-		result.push_back( std::move(range) );
+		result.push_back( std::move(position) );
 	}
 
 	return result;
@@ -156,6 +130,18 @@ std::vector<Symbol> Document::GetSymbols()
 		return {};
 
 	return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
+}
+
+std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const DocumentPosition& start_position ) const
+{
+	if( last_valid_state_ == std::nullopt )
+		return std::nullopt;
+
+	const auto end_src_loc= GetIdentifierEndSrcLoc( DocumentPositionToSrcLoc( start_position ), text_, last_valid_state_->line_to_linear_position_index );
+	if( end_src_loc == std::nullopt )
+		return std::nullopt;
+
+	return SrcLocToDocumentPosition( *end_src_loc );
 }
 
 void Document::SetText( std::string text )
@@ -227,11 +213,10 @@ void Document::Rebuild()
 
 	code_builder_errors_= code_builder->TakeErrors();
 
-	// Re-do lexical analysis, since source graph loading function doesn't saves it.
-	Lexems lexems= LexicalAnalysis( text_ ).lexems;
+	auto line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
 
 	last_valid_state_= std::nullopt;
-	last_valid_state_= CompiledState{ std::move( lexems ), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
+	last_valid_state_= CompiledState{ std::move(line_to_linear_position_index), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
 }
 
 } // namespace LangServer

@@ -20,6 +20,14 @@ struct DocumentRange
 	DocumentPosition end;
 };
 
+// Position within specific document.
+struct PositionInDocument
+{
+	DocumentPosition position;
+	Uri uri;
+};
+
+
 // Range within specific document.
 struct RangeInDocument
 {

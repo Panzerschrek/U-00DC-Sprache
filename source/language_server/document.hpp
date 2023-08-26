@@ -35,14 +35,16 @@ public:
 	LexSyntErrors GetSyntErrors() const;
 	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
 
-	std::optional<RangeInDocument> GetDefinitionPoint( const SrcLoc& src_loc );
+	std::optional<PositionInDocument> GetDefinitionPoint( const SrcLoc& src_loc );
 
 	// Returns highlights only for this document.
 	std::vector<DocumentRange> GetHighlightLocations( const SrcLoc& src_loc );
 
-	std::vector<RangeInDocument> GetAllOccurrences( const SrcLoc& src_loc );
+	std::vector<PositionInDocument> GetAllOccurrences( const SrcLoc& src_loc );
 
 	std::vector<Symbol> GetSymbols();
+
+	std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& start_position ) const;
 
 private:
 	void Rebuild();
@@ -50,7 +52,7 @@ private:
 private:
 	struct CompiledState
 	{
-		Lexems lexems;
+		LineToLinearPositionIndex line_to_linear_position_index;
 		SourceGraph source_graph;
 		std::unique_ptr<llvm::LLVMContext> llvm_context;
 		std::unique_ptr<CodeBuilder> code_builder;

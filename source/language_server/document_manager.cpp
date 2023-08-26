@@ -1,6 +1,7 @@
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/vfs.hpp"
 #include "../tests/tests_common.hpp"
+#include "document_position_utils.hpp"
 #include "options.hpp"
 #include "document_manager.hpp"
 
@@ -74,20 +75,27 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 		// TODO - detect changes in unmanaged files and reload them if it is necessary.
 		if( it->second == std::nullopt )
 			return nullptr;
-		return *it->second;
+		return it->second->content;
 	}
 
 	// Load unmanaged file.
 	document_manager_.log_ << "Load unmanaged file " << full_file_path << std::endl;
 
-	std::optional<IVfs::FileContent>& unmanaged_file= document_manager_.unmanaged_files_[file_uri];
+	std::optional<UnmanagedFile>& unmanaged_file= document_manager_.unmanaged_files_[file_uri];
 
-	unmanaged_file= base_vfs_->LoadFileContent( full_file_path );
+	std::optional<IVfs::FileContent> content= base_vfs_->LoadFileContent( full_file_path );
 
-	if( unmanaged_file == std::nullopt )
+	if( content == std::nullopt )
+	{
 		document_manager_.log_ << "Failed to load unmanaged file " << full_file_path << std::endl;
+		return std::nullopt;
+	}
 
-	return unmanaged_file;
+	unmanaged_file= UnmanagedFile{};
+	unmanaged_file->content= std::move(*content);
+	unmanaged_file->line_to_linear_position_index= BuildLineToLinearPositionIndex( unmanaged_file->content );
+
+	return unmanaged_file->content;
 }
 
 IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& file_path, const Path& full_parent_file_path )
@@ -140,6 +148,32 @@ Document* DocumentManager::GetDocument( const Uri& uri )
 void DocumentManager::Close( const Uri& uri )
 {
 	documents_.erase( uri );
+}
+
+std::optional<PositionInDocument> DocumentManager::GetIdentifierEndPosition( const PositionInDocument& start_position ) const
+{
+	if( const auto it= documents_.find( start_position.uri ); it != documents_.end() )
+	{
+		if( const auto end_position= it->second.GetIdentifierEndPosition( start_position.position ) )
+		{
+			return PositionInDocument{ *end_position, start_position.uri };
+		}
+	}
+
+	if( const auto it= unmanaged_files_.find( start_position.uri ); it != unmanaged_files_.end() )
+	{
+		if( it->second != std::nullopt )
+		{
+			const SrcLoc src_loc= DocumentPositionToSrcLoc( start_position.position );
+			const UnmanagedFile& unmanaged_file= *it->second;
+			if( const auto end_src_loc= GetIdentifierEndSrcLoc( src_loc, unmanaged_file.content, unmanaged_file.line_to_linear_position_index ) )
+			{
+				return PositionInDocument{ SrcLocToDocumentPosition( *end_src_loc ), start_position.uri };
+			}
+		}
+	}
+
+	return std::nullopt;
 }
 
 } // namespace LangServer

@@ -179,4 +179,148 @@ U_TEST( ValidIdentifierTest )
 	U_TEST_ASSERT( !IsValidIdentifier( "()" ) );
 }
 
+U_TEST( LineToLinearPositionIndex_Test0 )
+{
+	static const char c_program_text[] = "";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test1 )
+{
+	static const char c_program_text[] = "foo";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test2 )
+{
+	static const char c_program_text[] = "foo\nbarw";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 4 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test3 )
+{
+	static const char c_program_text[] = "foo\n\nbarw";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 4, 5 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test4 )
+{
+	static const char c_program_text[] = "\n";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 1 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test5 )
+{
+	static const char c_program_text[] = "\n ";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 1 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test6 )
+{
+	static const char c_program_text[] = "foo\n";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 4 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test7 )
+{
+	static const char c_program_text[] = "foo\n\n";
+	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 4, 5 }) );
+}
+
+U_TEST( LinearPositionToSrcLoc_Test0 )
+{
+	static const char c_program_text[] = "";
+	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( c_program_text );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 0 ) == SrcLoc( 0, 1, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 1 ) == SrcLoc( 0, 1, 1 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 2 ) == SrcLoc( 0, 1, 2 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 100 ) == SrcLoc( 0, 1, 100 ) );
+}
+
+U_TEST( LinearPositionToSrcLoc_Test1 )
+{
+	static const char c_program_text[] = "fn foo()\n{\n\tbar();\n}\n";
+	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( c_program_text );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  0 ) == SrcLoc( 0, 1, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  6 ) == SrcLoc( 0, 1, 6 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  8 ) == SrcLoc( 0, 1, 8 ) ); // '\n' counts as last symbol in the line.
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  9 ) == SrcLoc( 0, 2, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 10 ) == SrcLoc( 0, 2, 1 ) ); // '\n' counts as last symbol in the line.
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 11 ) == SrcLoc( 0, 3, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 12 ) == SrcLoc( 0, 3, 1 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 13 ) == SrcLoc( 0, 3, 2 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 18 ) == SrcLoc( 0, 3, 7 ) );  // '\n' counts as last symbol in the line.
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 19 ) == SrcLoc( 0, 4, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 20 ) == SrcLoc( 0, 4, 1 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 21 ) == SrcLoc( 0, 5, 0 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 22 ) == SrcLoc( 0, 5, 1 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 23 ) == SrcLoc( 0, 5, 2 ) );
+	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 53 ) == SrcLoc( 0, 5,32 ) );
+}
+
+U_TEST( IdentifierStartEndPosition_Test0 )
+{
+	static const char c_program_text[] = "foo  bar {baz} (qerty) ++*= []%%%";
+
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  0 ) == TextLinearPosition( 0) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  1 ) == TextLinearPosition( 0) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  2 ) == TextLinearPosition( 0) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  3 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  4 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  5 ) == TextLinearPosition( 5) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  6 ) == TextLinearPosition( 5) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  7 ) == TextLinearPosition( 5) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  8 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  9 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 10 ) == TextLinearPosition(10) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 11 ) == TextLinearPosition(10) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 12 ) == TextLinearPosition(10) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 13 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 14 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 15 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 16 ) == TextLinearPosition(16) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 17 ) == TextLinearPosition(16) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 18 ) == TextLinearPosition(16) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 19 ) == TextLinearPosition(16) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 20 ) == TextLinearPosition(16) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 21 ) == std::nullopt );
+
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 24 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 25 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 29 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 30 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 31 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 32 ) == std::nullopt );
+
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  0 ) == TextLinearPosition( 3) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  1 ) == TextLinearPosition( 3) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  2 ) == TextLinearPosition( 3) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  3 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  4 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  5 ) == TextLinearPosition( 8) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  6 ) == TextLinearPosition( 8) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  7 ) == TextLinearPosition( 8) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  8 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  9 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 10 ) == TextLinearPosition(13) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 11 ) == TextLinearPosition(13) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 12 ) == TextLinearPosition(13) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 13 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 14 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 15 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 16 ) == TextLinearPosition(21) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 17 ) == TextLinearPosition(21) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 18 ) == TextLinearPosition(21) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 19 ) == TextLinearPosition(21) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 20 ) == TextLinearPosition(21) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 21 ) == std::nullopt );
+
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 24 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 25 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 29 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 30 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 31 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 32 ) == std::nullopt );
+}
+
 } // namespace U

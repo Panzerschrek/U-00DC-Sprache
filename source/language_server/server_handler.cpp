@@ -288,11 +288,11 @@ ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 		return result;
 	}
 
-	for( const RangeInDocument& range : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	for( const PositionInDocument& position : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
 		Json::Object location;
-		location["range"]= DocumentRangeToJson( range.range );
-		location["uri"]= range.uri.ToString();
+		location["range"]= DocumentRangeToJson( DocumentPositionToRange( position ) );
+		location["uri"]= position.uri.ToString();
 
 		result.push_back( std::move(location) );
 	}
@@ -354,10 +354,10 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 		return result;
 	}
 
-	if( const auto range= document->GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	if( const auto position= document->GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
-		result["range"]= DocumentRangeToJson( range->range );
-		result["uri"]= range->uri.ToString();
+		result["range"]= DocumentRangeToJson( DocumentPositionToRange( *position ) );
+		result["uri"]= position->uri.ToString();
 	}
 	return result;
 }
@@ -551,13 +551,13 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 
 	{
 		Json::Object changes;
-		for( const RangeInDocument& range : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+		for( const PositionInDocument& position : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 		{
 			Json::Object edit;
-			edit["range"]= DocumentRangeToJson( range.range );
+			edit["range"]= DocumentRangeToJson( DocumentPositionToRange( position ) );
 			edit["newText"]= new_name_str;
 
-			std::string change_uri= range.uri.ToString();
+			std::string change_uri= position.uri.ToString();
 			if( const auto prev_edits= changes.getArray( change_uri ) )
 				prev_edits->push_back( std::move(edit) );
 			else
@@ -749,6 +749,18 @@ void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, co
 
 	ServerNotification notification{ "textDocument/publishDiagnostics", std::move(result) };
 	notifications_queue_.push( std::move(notification) );
+}
+
+DocumentRange ServerHandler::DocumentPositionToRange( const PositionInDocument& position ) const
+{
+	DocumentRange range;
+	range.start= position.position;
+	if( const auto end_position= document_manager_.GetIdentifierEndPosition( position ) )
+		range.end= end_position->position;
+	else
+		range.end= DocumentPosition{ range.start.line, range.start.column + 1 };
+
+	return range;
 }
 
 } // namespace LangServer
