@@ -16,19 +16,8 @@ isEmpty( QT_CREATOR_BINARY_ROOT ) {
 
 # USprache files
 
-SOURCES+= \
-	*.cpp \
-	../lex_synt_lib_common/*.cpp \
-	../compiler0/lex_synt_lib/*.cpp \
-	$$SPRACHE_LEX_GEN_DIR/*.cpp \
-
-HEADERS+= \
-	*.hpp \
-	../lex_synt_lib_common/*.hpp \
-	../compiler0/lex_synt_lib/*.hpp \
-
-INCLUDEPATH += $$SPRACHE_LEX_GEN_DIR
-INCLUDEPATH += ../compiler0/lex_synt_lib/
+SOURCES+= *.cpp
+HEADERS+= *.hpp
 
 !win32 {
 	# Avoid common mistakes
@@ -61,6 +50,7 @@ QTC_LIB_DEPENDS+= \
 QTC_PLUGIN_DEPENDS+= \
 	coreplugin \
 	texteditor \
+	languageclient \
 
 QTC_PLUGIN_RECOMMENDS+= \
     # optional plugin dependencies. nothing here at this time

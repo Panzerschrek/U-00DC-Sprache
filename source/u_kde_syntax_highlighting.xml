@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+	Ü syntax highlighting rules for IDEs, that use Kate syntax highlighting.
+	This file should properly work at least in Kate and QtCreator.
+-->
+<!DOCTYPE language SYSTEM "language.dtd"
+[
+	<!ENTITY IdentStartChar "a-zA-Z\x{0400}-\x{04FF}\x{0500}-\x{0527}\x{00C0}-\x{00D6}\x{00D8}-\x{00F6}\x{00F8}-\x{00FF}\x{0100}-\x{017F}\x{0180}-\x{024F}">
+]>
+
+<language name="Sprache" version="4" kateversion="5.0" section="Sources" extensions="*.u;*.uh;*.ü" mimetype="text/u-spr" priority="10" license="BSD3" author="Panzerschrek">
+	<highlighting>
+
+		<list name="Sprache_RegularKeyword">
+			<item>fn</item>
+			<item>op</item>
+			<item>var</item>
+			<item>auto</item>
+			<item>return</item>
+			<item>yield</item>
+			<item>label</item>
+			<item>while</item>
+			<item>loop</item>
+			<item>break</item>
+			<item>continue</item>
+			<item>if</item>
+			<item>static_if</item>
+			<item>enable_if</item>
+			<item>if_coro_advance</item>
+			<item>else</item>
+			<item>move</item>
+			<item>take</item>
+			<item>select</item>
+			<item>tup</item>
+			<item>struct</item>
+			<item>class</item>
+			<item>final</item>
+			<item>polymorph</item>
+			<item>interface</item>
+			<item>abstract</item>
+			<item>non_sync</item>
+			<item>ordered</item>
+			<item>nomangle</item>
+			<item>call_conv</item>
+			<item>virtual</item>
+			<item>override</item>
+			<item>pure</item>
+			<item>generator</item>
+			<item>async</item>
+			<item>namespace</item>
+			<item>public</item>
+			<item>private</item>
+			<item>protected</item>
+			<item>true</item>
+			<item>false</item>
+			<item>mut</item>
+			<item>imut</item>
+			<item>constexpr</item>
+			<item>const</item>
+			<item>zero_init</item>
+			<item>this</item>
+			<item>base</item>
+			<item>constructor</item>
+			<item>destructor</item>
+			<item>conversion_constructor</item>
+			<item>static_assert</item>
+			<item>halt</item>
+			<item>safe</item>
+			<item>type</item>
+			<item>typeinfo</item>
+			<item>typeof</item>
+			<item>template</item>
+			<item>enum</item>
+			<item>cast_ref</item>
+			<item>cast_imut</item>
+			<item>import</item>
+			<item>export</item>
+			<item>default</item>
+			<item>delete</item>
+			<item>for</item>
+			<item>with</item>
+			<item>do</item>
+			<item>switch</item>
+			<item>case</item>
+			<item>typename</item>
+			<item>lambda</item>
+			<item>static</item>
+			<item>package</item>
+			<item>module</item>
+		</list>
+		<list name="Sprache_Unsafe">
+			<item>unsafe</item>
+			<item>cast_ref_unsafe</item>
+			<item>cast_mut</item>
+			<item>uninitialized</item>
+		</list>
+		<list name="Sprache_FundamentalTypeName">
+			<item>void</item>
+			<item>bool</item>
+			<item>i8</item>
+			<item>u8</item>
+			<item>i16</item>
+			<item>u16</item>
+			<item>i32</item>
+			<item>u32</item>
+			<item>i64</item>
+			<item>u64</item>
+			<item>i128</item>
+			<item>u128</item>
+			<item>i256</item>
+			<item>u256</item>
+			<item>i512</item>
+			<item>u512</item>
+			<item>i1024</item>
+			<item>u1024</item>
+			<item>i2048</item>
+			<item>u2048</item>
+			<item>i4096</item>
+			<item>u4096</item>
+			<item>f16</item>
+			<item>f32</item>
+			<item>f80</item>
+			<item>f64</item>
+			<item>f128</item>
+			<item>char8</item>
+			<item>char16</item>
+			<item>char32</item>
+			<item>byte8</item>
+			<item>byte16</item>
+			<item>byte32</item>
+			<item>byte64</item>
+			<item>byte128</item>
+			<item>byte256</item>
+			<item>byte512</item>
+			<item>byte1024</item>
+			<item>byte2048</item>
+			<item>byte4096</item>
+			<item>size_type</item>
+		</list>
+
+	<contexts>
+		<context name="normal_text" attribute="NormalText" lineEndContext="#pop" >
+			<keyword attribute="Keyword" String="Sprache_RegularKeyword" context="#stay" />
+			<keyword attribute="FundamentalType" String="Sprache_FundamentalTypeName" context="#stay" />
+			<keyword attribute="Unsafe" String="Sprache_Unsafe" context="#stay" />
+			<RegExpr attribute="Identifier" String="[&IdentStartChar;][&IdentStartChar;0-9_]*" insensitive="false" minimal="false" context="#stay" />
+			<RegExpr attribute="MacroIdentifier" String="(\?){1,2}[&IdentStartChar;][&IdentStartChar;0-9_]*" insensitive="false" minimal="false" context="#stay" />
+			<RegExpr attribute="Number" String="0b[0-1]+(\.[0-1]+)?" insensitive="false" minimal="false" context="#stay" />
+			<RegExpr attribute="Number" String="0o[0-7]+(\.[0-7]+)?" insensitive="false" minimal="false" context="#stay" />
+			<RegExpr attribute="Number" String="0x[0-9a-fA-F]+(\.[0-9a-fA-F]+)" insensitive="false" minimal="false" context="#stay" />
+			<RegExpr attribute="NumberDecimal" String="[0-9]+(\.[0-9]+)?(e[0-9]+)?" insensitive="false" minimal="false" context="#stay" />
+			<DetectChar attribute="String" char="&quot;" context="string" />
+			<Detect2Chars attribute="Comment" char="/" char1="/" context="line_comment" />
+			<Detect2Chars attribute="Comment" char="/" char1="*" context="multiline_comment" />
+		</context>
+
+		<context name="string" attribute="String" lineEndContext="#pop" >
+			<DetectChar attribute="String" char="\\" context="string_escape" />
+			<DetectChar attribute="String" char="&quot;" context="#pop" />
+		</context>
+
+		<context name="string_escape" attribute="String" lineEndContext="#stay" >
+			<AnyChar attribute="String" String="&quot;ubfnrt0" context="#pop"/>
+		</context>
+
+		<context name="line_comment" attribute="Comment" lineEndContext="#pop" >
+		</context>
+
+		<context name="multiline_comment" attribute="Comment" lineEndContext="#stay" >
+			<Detect2Chars attribute="Comment" char="/" char1="*" context="multiline_comment" />
+			<Detect2Chars attribute="Comment" char="*" char1="/" context="#pop"/>
+		</context>
+
+	</contexts>
+
+	<itemDatas>
+		<itemData name="NormalText" defStyleNum="dsNormal" />
+		<itemData name="Keyword" defStyleNum="dsKeyword" />
+		<itemData name="FundamentalType" defStyleNum="dsDataType" />
+		<itemData name="Unsafe" defStyleNum="dsExtension" />
+		<itemData name="Identifier" defStyleNum="dsVariable" />
+		<itemData name="MacroIdentifier" defStyleNum="dsPreprocessor" />
+		<itemData name="Number" defStyleNum="dsBaseN" />
+		<itemData name="NumberDecimal" defStyleNum="dsDecVal" />
+		<itemData name="String" defStyleNum="dsString" />
+		<itemData name="Comment" defStyleNum="dsComment" />
+	</itemDatas>
+
+	</highlighting>
+</language>

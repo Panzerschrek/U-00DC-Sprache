@@ -1,8 +1,8 @@
 #include <coreplugin/coreconstants.h>
+#include <extensionsystem/pluginmanager.h>
 #include <coreplugin/editormanager/editormanager.h>
-#include "indenter.hpp"
+#include <texteditor/texteditoractionhandler.h>
 #include "editor_widget.hpp"
-#include "syntax_highlighter.hpp"
 
 #include "plugin.hpp"
 
@@ -20,7 +20,7 @@ bool Plugin::initialize( const QStringList& arguments, QString* const error_stri
 	Q_UNUSED(arguments)
 	Q_UNUSED(error_string)
 
-	addAutoReleasedObject(new EditorFactory);
+	ExtensionSystem::PluginManager::addObject(new EditorFactory);
 	return true;
 }
 
@@ -35,9 +35,6 @@ ExtensionSystem::IPlugin::ShutdownFlag Plugin::aboutToShutdown()
 EditorDocument::EditorDocument()
 {
 	setId(g_editor_id);
-
-	setSyntaxHighlighter( new SyntaxHighlighter );
-	setIndenter( new Indenter );
 }
 
 EditorFactory::EditorFactory()
@@ -49,6 +46,14 @@ EditorFactory::EditorFactory()
 	setDocumentCreator([]() { return new EditorDocument; });
 	setEditorWidgetCreator([]() { return new EditorWidget; });
 	setEditorCreator([]() { return new Editor; });
+	setUseGenericHighlighter(true);
+
+	setEditorActionHandlers(
+		TextEditor::TextEditorActionHandler::Format |
+		TextEditor::TextEditorActionHandler::UnCommentSelection |
+		TextEditor::TextEditorActionHandler::UnCollapseAll |
+		TextEditor::TextEditorActionHandler::FollowSymbolUnderCursor |
+		TextEditor::TextEditorActionHandler::JumpToFileUnderCursor );
 }
 
 } // namespace UQtCreatorPlugin
