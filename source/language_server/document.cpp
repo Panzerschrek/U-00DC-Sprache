@@ -75,13 +75,13 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 		if( result_src_loc.GetFileIndex() != 0 )
 			continue; // Filter out symbols from imported files.
 
+		// It is fine to use text of this file to determine end position, since highlighting works only within the document.
 		const auto result_end_src_loc= GetIdentifierEndSrcLoc( result_src_loc, text_, last_valid_state_->line_to_linear_position_index );
 		if( result_end_src_loc == std::nullopt )
 			continue;
 
 		DocumentRange range;
 		range.start= SrcLocToDocumentPosition( result_src_loc );
-		// TODO - fix this, result is wrong for imported files.
 		range.end= SrcLocToDocumentPosition( *result_end_src_loc );
 
 		result.push_back( std::move(range) );
@@ -90,7 +90,7 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 	return result;
 }
 
-std::vector<RangeInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc )
+std::vector<PositionInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
@@ -104,27 +104,21 @@ std::vector<RangeInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc 
 	// TODO - improve this.
 	// We need to extract occurences in other opended documents and maybe search for other files.
 
-	std::vector<RangeInDocument> result;
+	std::vector<PositionInDocument> result;
 	result.reserve( occurrences.size() );
 
 	for( const SrcLoc& result_src_loc : occurrences )
 	{
-		const auto result_end_src_loc= GetIdentifierEndSrcLoc( result_src_loc, text_, last_valid_state_->line_to_linear_position_index );
-		if( result_end_src_loc == std::nullopt )
-			continue;
-
-		RangeInDocument range;
-		range.range.start= SrcLocToDocumentPosition( result_src_loc );
-		// TODO - fix this, result is wrong for imported files.
-		range.range.end= SrcLocToDocumentPosition( *result_end_src_loc );
+		PositionInDocument position;
+		position.position= SrcLocToDocumentPosition( result_src_loc );
 
 		const uint32_t file_index= src_loc.GetFileIndex();
 		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
-			range.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
+			position.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
 		else
-			range.uri= Uri::FromFilePath( path_ ); // TODO - maybe skip this item instead?
+			position.uri= Uri::FromFilePath( path_ ); // TODO - maybe skip this item instead?
 
-		result.push_back( std::move(range) );
+		result.push_back( std::move(position) );
 	}
 
 	return result;

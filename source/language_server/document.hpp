@@ -40,7 +40,7 @@ public:
 	// Returns highlights only for this document.
 	std::vector<DocumentRange> GetHighlightLocations( const SrcLoc& src_loc );
 
-	std::vector<RangeInDocument> GetAllOccurrences( const SrcLoc& src_loc );
+	std::vector<PositionInDocument> GetAllOccurrences( const SrcLoc& src_loc );
 
 	std::vector<Symbol> GetSymbols();
 

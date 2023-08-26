@@ -288,11 +288,18 @@ ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 		return result;
 	}
 
-	for( const RangeInDocument& range : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	for( const PositionInDocument& position : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
+		DocumentRange range;
+		range.start= position.position;
+		if( const auto end_position= document_manager_.GetIdentifierEndPosition( position ) )
+			range.end= end_position->position;
+		else
+			range.end= DocumentPosition{ range.start.line, range.start.column + 1 };
+
 		Json::Object location;
-		location["range"]= DocumentRangeToJson( range.range );
-		location["uri"]= range.uri.ToString();
+		location["range"]= DocumentRangeToJson( range );
+		location["uri"]= position.uri.ToString();
 
 		result.push_back( std::move(location) );
 	}
@@ -361,7 +368,7 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 		if( const auto end_position= document_manager_.GetIdentifierEndPosition( *position ) )
 			range.end= end_position->position;
 		else
-			range.start= DocumentPosition{ range.start.line, range.start.column + 1 };
+			range.end= DocumentPosition{ range.start.line, range.start.column + 1 };
 
 		result["range"]= DocumentRangeToJson( range );
 		result["uri"]= position->uri.ToString();
@@ -558,13 +565,20 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 
 	{
 		Json::Object changes;
-		for( const RangeInDocument& range : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+		for( const PositionInDocument& position : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 		{
+			DocumentRange range;
+			range.start= position.position;
+			if( const auto end_position= document_manager_.GetIdentifierEndPosition( position ) )
+				range.end= end_position->position;
+			else
+				range.end= DocumentPosition{ range.start.line, range.start.column + 1 };
+
 			Json::Object edit;
-			edit["range"]= DocumentRangeToJson( range.range );
+			edit["range"]= DocumentRangeToJson( range );
 			edit["newText"]= new_name_str;
 
-			std::string change_uri= range.uri.ToString();
+			std::string change_uri= position.uri.ToString();
 			if( const auto prev_edits= changes.getArray( change_uri ) )
 				prev_edits->push_back( std::move(edit) );
 			else
