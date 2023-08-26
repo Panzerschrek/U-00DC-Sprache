@@ -17,6 +17,12 @@ public:
 	void Close( const Uri& uri );
 
 private:
+	struct UnmanagedFile
+	{
+		IVfs::FileContent content;
+		LineToLinearPositionIndex line_to_linear_position_index;
+	};
+
 	// VFS wrapper, that allows to read managed documents and also caches unmanaged files reads.
 	// Use this to load source graph for documents.
 	// It is not so efficient, because full lexical and synax analysis for all imports is performed for a document.
@@ -42,7 +48,7 @@ private:
 	const DocumentBuildOptions build_options_;
 	// TODO - use unordered map.
 	std::map<Uri, Document> documents_;
-	std::map<Uri, std::optional<IVfs::FileContent>> unmanaged_files_;
+	std::map<Uri, std::optional<UnmanagedFile>> unmanaged_files_;
 };
 
 } // namespace LangServer

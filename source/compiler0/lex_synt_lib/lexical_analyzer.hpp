@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <cstdint>
+#include <optional>
 #include "../../lex_synt_lib_common/lex_synt_error.hpp"
 
 
