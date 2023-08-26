@@ -313,6 +313,15 @@ void CodeBuilder::GlobalThingBuildFunctionsSet( NamesScope& names_scope, Overloa
 	{
 		for( FunctionVariable& function_variable : functions_set.functions )
 		{
+			if(
+				skip_building_generated_functions_ &&
+				function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr &&
+				names_scope.IsInsideTemplate() )
+			{
+				// This is some non-constexpr function inside a template and we skip building such functions.
+				continue;
+			}
+
 			if( function_variable.syntax_element != nullptr && function_variable.syntax_element->block_ != nullptr &&
 				!function_variable.have_body && !function_variable.return_type_is_auto && !function_variable.is_inherited )
 			{

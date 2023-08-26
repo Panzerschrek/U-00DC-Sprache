@@ -201,7 +201,9 @@ void Document::Rebuild()
 	options.generate_tbaa_metadata= false;
 	options.report_about_unused_names= false;
 
+	// Specific options for the Language Server.
 	options.collect_definition_points= true;
+	options.skip_building_generated_functions= true;
 
 	auto code_builder=
 		CodeBuilder::BuildProgramAndLeaveInternalState(
