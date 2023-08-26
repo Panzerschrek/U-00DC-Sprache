@@ -1146,7 +1146,13 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 
 	FunctionVariable& function_variable= result_functions_set.functions.front();
 	if( function_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprComplete )
-		function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
+	{
+		// Эта залупа всё ещё пропускает функцию _ZN3ust19random_access_rangeIN2U120VariableTypeExtendedELb0EE11constructorILy1EEEvRNS0_IS2_Lb0EEERKA1_S2_, хотя не должна.
+		if( ( function_variable.is_this_call || func_name == Keywords::constructor_ ) && function_template.base_class != nullptr && !function_template.base_class->can_be_constexpr )
+			function_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
+		else
+			function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
+	}
 
 	// Set correct mangled name
 	function_variable.llvm_function->name_mangled=
