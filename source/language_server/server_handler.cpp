@@ -354,10 +354,17 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 		return result;
 	}
 
-	if( const auto range= document->GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	if( const auto position= document->GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 	{
-		result["range"]= DocumentRangeToJson( range->range );
-		result["uri"]= range->uri.ToString();
+		DocumentRange range;
+		range.start= position->position;
+		if( const auto end_position= document_manager_.GetIdentifierEndPosition( *position ) )
+			range.end= end_position->position;
+		else
+			range.start= DocumentPosition{ range.start.line, range.start.column + 1 };
+
+		result["range"]= DocumentRangeToJson( range );
+		result["uri"]= position->uri.ToString();
 	}
 	return result;
 }

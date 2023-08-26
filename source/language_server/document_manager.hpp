@@ -16,6 +16,8 @@ public:
 	Document* GetDocument( const Uri& uri );
 	void Close( const Uri& uri );
 
+	std::optional<PositionInDocument> GetIdentifierEndPosition( const PositionInDocument& start_position ) const;
+
 private:
 	struct UnmanagedFile
 	{

@@ -1,5 +1,6 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
+#include "document_position_utils.hpp"
 #include "document.hpp"
 
 namespace U
@@ -7,50 +8,6 @@ namespace U
 
 namespace LangServer
 {
-
-namespace
-{
-
-DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc )
-{
-	return DocumentPosition{ src_loc.GetLine(), src_loc.GetColumn() };
-}
-
-std::optional<SrcLoc> GetIdentifierStartSrcLoc( const SrcLoc& src_loc, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index )
-{
-	const uint32_t line= src_loc.GetLine();
-	if( line >= line_to_linear_position_index.size() )
-		return std::nullopt;
-
-	const TextLinearPosition linear_position= line_to_linear_position_index[ line ] + src_loc.GetColumn();
-	const std::optional<TextLinearPosition> linear_position_corrected= GetIdentifierStartForPosition( program_text, linear_position );
-	if( linear_position_corrected == std::nullopt )
-		return std::nullopt;
-
-	SrcLoc result= LinearPositionToSrcLoc( line_to_linear_position_index, *linear_position_corrected );
-	result.SetFileIndex( src_loc.GetFileIndex() );
-	result.SetMacroExpansionIndex( src_loc.GetMacroExpansionIndex() );
-	return result;
-}
-
-std::optional<SrcLoc> GetIdentifierEndSrcLoc( const SrcLoc& src_loc, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index )
-{
-	const uint32_t line= src_loc.GetLine();
-	if( line >= line_to_linear_position_index.size() )
-		return std::nullopt;
-
-	const TextLinearPosition linear_position= line_to_linear_position_index[ line ] + src_loc.GetColumn();
-	const std::optional<TextLinearPosition> linear_position_corrected= GetIdentifierEndForPosition( program_text, linear_position );
-	if( linear_position_corrected == std::nullopt )
-		return std::nullopt;
-
-	SrcLoc result= LinearPositionToSrcLoc( line_to_linear_position_index, *linear_position_corrected );
-	result.SetFileIndex( src_loc.GetFileIndex() );
-	result.SetMacroExpansionIndex( src_loc.GetMacroExpansionIndex() );
-	return result;
-}
-
-} // namespace
 
 Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log )
 	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
@@ -73,7 +30,7 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 	return code_builder_errors_;
 }
 
-std::optional<RangeInDocument> Document::GetDefinitionPoint( const SrcLoc& src_loc )
+std::optional<PositionInDocument> Document::GetDefinitionPoint( const SrcLoc& src_loc )
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
@@ -84,21 +41,16 @@ std::optional<RangeInDocument> Document::GetDefinitionPoint( const SrcLoc& src_l
 
 	if( const auto result_src_loc= last_valid_state_->code_builder->GetDefinition( *src_loc_corrected ) )
 	{
-		const auto result_end_src_loc= GetIdentifierEndSrcLoc( *result_src_loc, text_, last_valid_state_->line_to_linear_position_index );
-		if( result_end_src_loc == std::nullopt )
-			return std::nullopt;
-
-		RangeInDocument range;
-		range.range.start= SrcLocToDocumentPosition( *result_src_loc );
-		range.range.end= SrcLocToDocumentPosition( *result_end_src_loc );
+		PositionInDocument position;
+		position.position= SrcLocToDocumentPosition( *result_src_loc );
 
 		const uint32_t file_index= result_src_loc->GetFileIndex();
 		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
-			range.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
+			position.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
 		else
-			range.uri= Uri::FromFilePath( path_ ); // TODO - maybe return std::nullopt instead?
+			position.uri= Uri::FromFilePath( path_ ); // TODO - maybe return std::nullopt instead?
 
-		return range;
+		return position;
 	}
 
 	return std::nullopt;
@@ -184,6 +136,18 @@ std::vector<Symbol> Document::GetSymbols()
 		return {};
 
 	return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
+}
+
+std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const DocumentPosition& start_position ) const
+{
+	if( last_valid_state_ == std::nullopt )
+		return std::nullopt;
+
+	const auto end_src_loc= GetIdentifierEndSrcLoc( DocumentPositionToSrcLoc( start_position ), text_, last_valid_state_->line_to_linear_position_index );
+	if( end_src_loc == std::nullopt )
+		return std::nullopt;
+
+	return SrcLocToDocumentPosition( *end_src_loc );
 }
 
 void Document::SetText( std::string text )

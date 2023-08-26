@@ -1,6 +1,7 @@
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/vfs.hpp"
 #include "../tests/tests_common.hpp"
+#include "document_position_utils.hpp"
 #include "options.hpp"
 #include "document_manager.hpp"
 
@@ -147,6 +148,32 @@ Document* DocumentManager::GetDocument( const Uri& uri )
 void DocumentManager::Close( const Uri& uri )
 {
 	documents_.erase( uri );
+}
+
+std::optional<PositionInDocument> DocumentManager::GetIdentifierEndPosition( const PositionInDocument& start_position ) const
+{
+	if( const auto it= documents_.find( start_position.uri ); it != documents_.end() )
+	{
+		if( const auto end_position= it->second.GetIdentifierEndPosition( start_position.position ) )
+		{
+			return PositionInDocument{ *end_position, start_position.uri };
+		}
+	}
+
+	if( const auto it= unmanaged_files_.find( start_position.uri ); it != unmanaged_files_.end() )
+	{
+		if( it->second != std::nullopt )
+		{
+			const SrcLoc src_loc= DocumentPositionToSrcLoc( start_position.position );
+			const UnmanagedFile& unmanaged_file= *it->second;
+			if( const auto end_src_loc= GetIdentifierEndSrcLoc( src_loc, unmanaged_file.content, unmanaged_file.line_to_linear_position_index ) )
+			{
+				return PositionInDocument{ SrcLocToDocumentPosition( *end_src_loc ), start_position.uri };
+			}
+		}
+	}
+
+	return std::nullopt;
 }
 
 } // namespace LangServer
