@@ -112,7 +112,7 @@ std::vector<PositionInDocument> Document::GetAllOccurrences( const SrcLoc& src_l
 		PositionInDocument position;
 		position.position= SrcLocToDocumentPosition( result_src_loc );
 
-		const uint32_t file_index= src_loc.GetFileIndex();
+		const uint32_t file_index= result_src_loc.GetFileIndex();
 		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
 			position.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
 		else
