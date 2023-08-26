@@ -69,6 +69,7 @@ private:
 
 	// Other stuff.
 	void GenerateDocumentNotifications( llvm::StringRef uri, const Document& document );
+	DocumentRange DocumentPositionToRange( const PositionInDocument& position ) const;
 
 private:
 	std::ostream& log_;
