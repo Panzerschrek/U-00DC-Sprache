@@ -343,13 +343,16 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	NamesScopeFillOutOfLineElements( *result.names_map, source_graph_node.ast.program_elements );
 	GlobalThingBuildNamespace( *result.names_map );
 
-	// Finalize building template things.
-	// Each new template thing added into this vector, so, by iterating through we will build all template things.
-	// It's important to use an index instead of iterators during iteration because this vector may be chaged in process.
-	for( size_t i= 0; i < generated_template_things_sequence_.size(); ++i )
+	if( !skip_building_generated_functions_ )
 	{
-		if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].value.GetNamespace() )
-			GlobalThingBuildNamespace( *namespace_ );
+		// Finalize building template things.
+		// Each new template thing added into this vector, so, by iterating through we will build all template things.
+		// It's important to use an index instead of iterators during iteration because this vector may be chaged in process.
+		for( size_t i= 0; i < generated_template_things_sequence_.size(); ++i )
+		{
+			if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].value.GetNamespace() )
+				GlobalThingBuildNamespace( *namespace_ );
+		}
 	}
 	generated_template_things_sequence_.clear();
 
