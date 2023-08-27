@@ -1147,11 +1147,27 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	FunctionVariable& function_variable= result_functions_set.functions.front();
 	if( function_variable.constexpr_kind != FunctionVariable::ConstexprKind::ConstexprComplete )
 	{
-		// Эта залупа всё ещё пропускает функцию _ZN3ust19random_access_rangeIN2U120VariableTypeExtendedELb0EE11constructorILy1EEEvRNS0_IS2_Lb0EEERKA1_S2_, хотя не должна.
-		if( ( function_variable.is_this_call || func_name == Keywords::constructor_ ) && function_template.base_class != nullptr && !function_template.base_class->can_be_constexpr )
-			function_variable.constexpr_kind= FunctionVariable::ConstexprKind::NonConstexpr;
-		else
-			function_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprAuto;
+		bool can_be_constexpr= true;
+		if( skip_building_generated_functions_ )
+		{
+			// If we skipping building of generate function, perform pre-check of constexpr possibility.
+			// If param types/return type is not constexpr, function can't be constexpr and we can skip its building.
+
+			// It is fine to require type completeness here, because we plan to build this function anyway and that too requires type completeness.
+
+			if( !EnsureTypeComplete( function_variable.type.return_type ) || !function_variable.type.return_type.CanBeConstexpr() )
+				can_be_constexpr= false;
+
+			for( const FunctionType::Param& param : function_variable.type.params )
+			{
+				if( !EnsureTypeComplete( param.type ) || !param.type.CanBeConstexpr() )
+					can_be_constexpr= false;
+			}
+
+			if( function_variable.type.unsafe )
+				can_be_constexpr= false;
+		}
+		function_variable.constexpr_kind= can_be_constexpr ? FunctionVariable::ConstexprKind::ConstexprAuto : FunctionVariable::ConstexprKind::NonConstexpr;
 	}
 
 	// Set correct mangled name
@@ -1164,8 +1180,11 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	if( function_variable.llvm_function->function != nullptr )
 		function_variable.llvm_function->function->setName( function_variable.llvm_function->name_mangled );
 
-	// And generate function body after insertion of prototype.
-	if( !function_variable.have_body ) // if function is constexpr, body may be already generated.
+	// Generate function body after insertion of prototype.
+	// if function is constexpr, body may be already generated.
+	// Skip building body if generated functions building is disabled and if this function can't be constexpr.
+	if( !function_variable.have_body &&
+		!( skip_building_generated_functions_ && function_variable.constexpr_kind == FunctionVariable::ConstexprKind::NonConstexpr ) )
 		BuildFuncCode(
 			function_variable,
 			function_template.base_class,
