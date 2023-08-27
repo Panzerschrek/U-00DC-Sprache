@@ -30,6 +30,7 @@ Templates:
 	such arguments.
 
 Standart library:
+*) Compilation speed-up - avoid generating some helper classes/functions
 *) Associative containers - map, set, string_map
 *) More algorithms
 *) Iterators library with transformations/operations (map, filter, reduce, etc.)
@@ -42,6 +43,8 @@ Standart library:
 *) More math functions
 
 Compiler:
+*) Optimize typeinfo - avoid calculating mangled name for typeinfo types
+*) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
 *) Imporve TBAA - use struct path-based TBAA.
 *) Pass/return by-value composite values containing more than one scalar inside.
@@ -80,7 +83,7 @@ Language server
 *) Delayed documents rebuild
 *) Non-ASCII support
 *) Proper mapping of current state file to last valid state for requests (use some sort of diff)
-*) Compilation speed-up - remove unnecessary steps, like imported/template functions building, generated methods building, etc
+*) Reduce memory usage - remove llvm functions body for compiled module
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
 *) A way to provide configuration (import directories, other compilation options)
