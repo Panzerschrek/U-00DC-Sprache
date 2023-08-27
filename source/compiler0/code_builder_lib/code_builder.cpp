@@ -255,10 +255,12 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 
 	// Perform post-checks for non_sync tags.
 	// Do this at the end to avoid dependency loops.
-	for( const auto& class_type : classes_table_ )
+	// Use index-for since classes table may be extended during iteration.
+	for( size_t i= 0; i < classes_table_.size(); ++i )
 	{
-		CheckClassNonSyncTagExpression( class_type.get() );
-		CheckClassNonSyncTagInheritance( class_type.get() );
+		const ClassPtr class_type= classes_table_[i].get();
+		CheckClassNonSyncTagExpression( class_type );
+		CheckClassNonSyncTagInheritance( class_type );
 	}
 
 	// Check for unused names in root file.
@@ -357,8 +359,8 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	generated_template_things_sequence_.clear();
 
 	// Fill result classes members namespaces table.
-	for( const auto& class_shared_ptr : classes_table_ )
-		result.classes_members_namespaces_table.emplace( class_shared_ptr.get(), class_shared_ptr->members );
+	for( const auto& class_ptr : classes_table_ )
+		result.classes_members_namespaces_table.emplace( class_ptr.get(), class_ptr->members );
 }
 
 void CodeBuilder::MergeNameScopes(
