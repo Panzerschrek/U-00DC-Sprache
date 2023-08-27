@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/helpers.u"
 import "/string_conversions.u"
 import "/keywords.uh"
@@ -309,21 +310,22 @@ fn ManglerState::FinalizePart( mut this, size_type start, size_type compressed_s
 
 			if( i > 0s )
 			{
-				auto n= i - 1s;
-				if( n < 36s )
+				// Use 32-bit division, which is significantly faster, than 64-bit.
+				var u32 n( i - 1s );
+				if( n < 36u )
 				{
 					result_compressed_.push_back( Base36Digit( n ) );
 				}
-				else if( n < 36s * 36s )
+				else if( n < 36u * 36u )
 				{
-					result_compressed_.push_back( Base36Digit( n / 36s ) );
-					result_compressed_.push_back( Base36Digit( n % 36s ) );
+					result_compressed_.push_back( Base36Digit( n / 36u ) );
+					result_compressed_.push_back( Base36Digit( n % 36u ) );
 				}
-				else if( n < 36s * 36s * 36s )
+				else if( n < 36u * 36u * 36u )
 				{
-					result_compressed_.push_back( Base36Digit( n / ( 36s * 36s ) ) );
-					result_compressed_.push_back( Base36Digit( n / 36s % 36s ) );
-					result_compressed_.push_back( Base36Digit( n % 36s ) );
+					result_compressed_.push_back( Base36Digit( n / ( 36u * 36u ) ) );
+					result_compressed_.push_back( Base36Digit( n / 36u % 36u ) );
+					result_compressed_.push_back( Base36Digit( n % 36u ) );
 				}
 				else { halt; } // Too much substitutions.
 			}
@@ -337,16 +339,16 @@ fn ManglerState::FinalizePart( mut this, size_type start, size_type compressed_s
 	substitutions_.push_back( substitution );
 }
 
-fn Base36Digit( size_type mut value ) : char8
+fn Base36Digit( u32 value ) : char8
 {
-	value %= 36s;
-	if( value < 10s )
+	debug_assert( value < 36u );
+	if( value < 10u )
 	{
-		return char8(size_type("0"c8) + value);
+		return char8(u32("0"c8) + value);
 	}
 	else
 	{
-		return char8(size_type("A"c8) + ( value - 10s ) );
+		return char8(u32("A"c8) + ( value - 10u ) );
 	}
 }
 
@@ -687,19 +689,19 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 			{
 				mangler_state.Push( "_RR" );
 
-				halt if( function_type.return_references.size() >= 36s );
-				mangler_state.Push( Base36Digit(function_type.return_references.size()) );
+				debug_assert( function_type.return_references.size() < 36s );
+				mangler_state.Push( Base36Digit( u32( function_type.return_references.size()) ) );
 
 				foreach( &param_reference : function_type.return_references )
 				{
 					halt if( param_reference.param_index >= 36u8 );
 					halt if( param_reference.reference_index >= 36u8 && param_reference.reference_index != FunctionType::c_param_reference_number );
 
-					mangler_state.Push( Base36Digit( size_type(param_reference.param_index) ) );
+					mangler_state.Push( Base36Digit( u32(param_reference.param_index) ) );
 					mangler_state.Push( select(
 						param_reference.reference_index == FunctionType::c_param_reference_number
 						? "_"c8
-						: Base36Digit( size_type(param_reference.reference_index) ) ) );
+						: Base36Digit( u32(param_reference.reference_index) ) ) );
 				}
 			}
 		}
@@ -709,8 +711,8 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 			{
 				mangler_state.Push( "_RP" );
 
-				halt if( function_type.references_pollution.size() >= 36s );
-				mangler_state.Push( Base36Digit(function_type.references_pollution.size()) );
+				debug_assert( function_type.references_pollution.size() < 36s );
+				mangler_state.Push( Base36Digit(u32(function_type.references_pollution.size())) );
 
 				foreach( &pollution : function_type.references_pollution )
 				{
@@ -719,16 +721,16 @@ fn EncodeFunctionTypeName( ManglerState& mut mangler_state, FunctionType& functi
 					halt if( pollution.src.param_index >= 36u8 );
 					halt if( pollution.src.reference_index >= 36u8 && pollution.src.reference_index != FunctionType::c_param_reference_number );
 
-					mangler_state.Push( Base36Digit( size_type(pollution.dst.param_index) ) );
+					mangler_state.Push( Base36Digit( u32(pollution.dst.param_index) ) );
 					mangler_state.Push( select(
 						pollution.dst.reference_index == FunctionType::c_param_reference_number
 						? "_"c8
-						: Base36Digit( size_type(pollution.dst.reference_index) ) ) );
-					mangler_state.Push( Base36Digit( size_type(pollution.src.param_index) ) );
+						: Base36Digit( u32(pollution.dst.reference_index) ) ) );
+					mangler_state.Push( Base36Digit( u32(pollution.src.param_index) ) );
 					mangler_state.Push( select(
 						pollution.src.reference_index == FunctionType::c_param_reference_number
 						? "_"c8
-						: Base36Digit( size_type(pollution.src.reference_index) ) ) );
+						: Base36Digit( u32(pollution.src.reference_index) ) ) );
 				}
 			}
 		}

@@ -155,7 +155,8 @@ void ManglerState::FinalizePart( const LenType start, const LenType compressed_s
 
 			if( i > 0u )
 			{
-				size_t n= i - 1u;
+				// Use 32-bit division, which is significantly faster, than 64-bit.
+				const uint32_t n= uint32_t(i) - 1u;
 				if( n < 36 )
 					result_compressed_.push_back( Base36Digit( n ) );
 				else if( n < 36 * 36 )
