@@ -96,6 +96,7 @@ CodeBuilder::CodeBuilder(
 	, generate_tbaa_metadata_( options.generate_tbaa_metadata )
 	, report_about_unused_names_( options.report_about_unused_names )
 	, collect_definition_points_( options.collect_definition_points )
+	, skip_building_generated_functions_( options.skip_building_generated_functions )
 	, constexpr_function_evaluator_( data_layout_ )
 	, mangler_( CreateMangler( options.mangling_scheme, data_layout_ ) )
 	, tbaa_metadata_builder_( llvm_context_, data_layout, mangler_ )
@@ -254,10 +255,12 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 
 	// Perform post-checks for non_sync tags.
 	// Do this at the end to avoid dependency loops.
-	for( const auto& class_type : classes_table_ )
+	// Use index-for since classes table may be extended during iteration.
+	for( size_t i= 0; i < classes_table_.size(); ++i )
 	{
-		CheckClassNonSyncTagExpression( class_type.get() );
-		CheckClassNonSyncTagInheritance( class_type.get() );
+		const ClassPtr class_type= classes_table_[i].get();
+		CheckClassNonSyncTagExpression( class_type );
+		CheckClassNonSyncTagInheritance( class_type );
 	}
 
 	// Check for unused names in root file.
@@ -342,19 +345,22 @@ void CodeBuilder::BuildSourceGraphNode( const SourceGraph& source_graph, const s
 	NamesScopeFillOutOfLineElements( *result.names_map, source_graph_node.ast.program_elements );
 	GlobalThingBuildNamespace( *result.names_map );
 
-	// Finalize building template things.
-	// Each new template thing added into this vector, so, by iterating through we will build all template things.
-	// It's important to use an index instead of iterators during iteration because this vector may be chaged in process.
-	for( size_t i= 0; i < generated_template_things_sequence_.size(); ++i )
+	if( !skip_building_generated_functions_ )
 	{
-		if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].value.GetNamespace() )
-			GlobalThingBuildNamespace( *namespace_ );
+		// Finalize building template things.
+		// Each new template thing added into this vector, so, by iterating through we will build all template things.
+		// It's important to use an index instead of iterators during iteration because this vector may be chaged in process.
+		for( size_t i= 0; i < generated_template_things_sequence_.size(); ++i )
+		{
+			if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].value.GetNamespace() )
+				GlobalThingBuildNamespace( *namespace_ );
+		}
 	}
 	generated_template_things_sequence_.clear();
 
 	// Fill result classes members namespaces table.
-	for( const auto& class_shared_ptr : classes_table_ )
-		result.classes_members_namespaces_table.emplace( class_shared_ptr.get(), class_shared_ptr->members );
+	for( const auto& class_ptr : classes_table_ )
+		result.classes_members_namespaces_table.emplace( class_ptr.get(), class_ptr->members );
 }
 
 void CodeBuilder::MergeNameScopes(

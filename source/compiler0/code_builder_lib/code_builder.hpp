@@ -33,6 +33,10 @@ struct CodeBuilderOptions
 	bool generate_tbaa_metadata= false;
 	bool report_about_unused_names= true;
 	bool collect_definition_points= false;
+	// Skip building generated methods, functions inside templates.
+	// Such option produces incomplete module, but for some cases (testing, language server) it is enough.
+	// The main reason for this option to exist is to speed-up code for such purposes.
+	bool skip_building_generated_functions= false;
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
@@ -1115,6 +1119,7 @@ private:
 	const bool generate_tbaa_metadata_;
 	const bool report_about_unused_names_;
 	const bool collect_definition_points_;
+	const bool skip_building_generated_functions_;
 
 	struct
 	{

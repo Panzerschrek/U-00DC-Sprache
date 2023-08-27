@@ -105,6 +105,15 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 	constructor_variable->is_generated= true;
 	constructor_variable->is_constructor= true;
 
+	// After default constructor generation, class is default-constructible.
+	the_class.is_default_constructible= true;
+
+	if( skip_building_generated_functions_ && !class_type->can_be_constexpr )
+	{
+		// This is some non-constexpr method inside a template and we skip building such methods.
+		return;
+	}
+
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *constructor_variable );
 
 	FunctionContext function_context(
@@ -179,9 +188,6 @@ void CodeBuilder::TryGenerateDefaultConstructor( const ClassPtr class_type )
 
 	function_context.llvm_ir_builder.CreateRetVoid();
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
-
-	// After default constructor generation, class is default-constructible.
-	the_class.is_default_constructible= true;
 
 	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *constructor_variable );
 }
@@ -288,6 +294,15 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 	constructor_variable->is_generated= true;
 	constructor_variable->is_constructor= true;
 
+	// After default constructor generation, class is copy-constructible.
+	the_class.is_copy_constructible= true;
+
+	if( skip_building_generated_functions_ && !class_type->can_be_constexpr )
+	{
+		// This is some non-constexpr method inside a template and we skip building such methods.
+		return;
+	}
+
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *constructor_variable );
 
 	FunctionContext function_context(
@@ -336,9 +351,6 @@ void CodeBuilder::TryGenerateCopyConstructor( const ClassPtr class_type )
 	function_context.llvm_ir_builder.CreateRetVoid();
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 
-	// After default constructor generation, class is copy-constructible.
-	the_class.is_copy_constructible= true;
-
 	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *constructor_variable );
 }
 
@@ -364,6 +376,14 @@ FunctionVariable CodeBuilder::GenerateDestructorPrototype( const ClassPtr class_
 
 void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVariable& destructor_function )
 {
+	destructor_function.have_body= true;
+
+	if( skip_building_generated_functions_ && !class_type->can_be_constexpr )
+	{
+		// This is some non-constexpr method inside a template and we skip building such methods.
+		return;
+	}
+
 	Class& the_class= *class_type;
 	const FunctionType& destructor_type= destructor_function.type;
 
@@ -392,8 +412,6 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVar
 	CallMembersDestructors( function_context, the_class.members->GetErrors(), the_class.body_src_loc );
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
-
-	destructor_function.have_body= true;
 }
 
 void CodeBuilder::TryGenerateDestructor( const ClassPtr class_type )
@@ -537,6 +555,15 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 	operator_variable->is_this_call= true;
 	operator_variable->is_generated= true;
 
+	// After operator generation, class is copy-assignable.
+	the_class.is_copy_assignable= true;
+
+	if( skip_building_generated_functions_ && !class_type->can_be_constexpr )
+	{
+		// This is some non-constexpr method inside a template and we skip building such methods.
+		return;
+	}
+
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
 
 	FunctionContext function_context(
@@ -575,9 +602,6 @@ void CodeBuilder::TryGenerateCopyAssignmentOperator( const ClassPtr class_type )
 
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
-
-	// After operator generation, class is copy-assignable.
-	the_class.is_copy_assignable= true;
 
 	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *operator_variable );
 }
@@ -686,6 +710,15 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 	operator_variable->is_this_call= false; // TODO - is there any reason to set this flag?
 	operator_variable->is_generated= true;
 
+	// After operator generation, class is equality-comparable.
+	the_class.is_equality_comparable= true;
+
+	if( skip_building_generated_functions_ && !class_type->can_be_constexpr )
+	{
+		// This is some non-constexpr method inside a template and we skip building such methods.
+		return;
+	}
+
 	llvm::Function* const llvm_function= EnsureLLVMFunctionCreated( *operator_variable );
 
 	FunctionContext function_context(
@@ -746,9 +779,6 @@ void CodeBuilder::TryGenerateEqualityCompareOperator( const ClassPtr class_type 
 
 	// Finish allocations block.
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
-
-	// After operator generation, class is equality-comparable.
-	the_class.is_equality_comparable= true;
 
 	ProcessGeneratedMethodConstexprFlag( class_type, function_context, *operator_variable );
 }
