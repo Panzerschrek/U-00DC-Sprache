@@ -109,4 +109,11 @@ fn move_into_uninitialized( T& mut uninitialized_dst, T mut src ) unsafe
 	}
 }
 
+fn constexpr get_vector_first_allocation_size( size_type element_size ) : size_type
+{
+	if     ( element_size ==  0s ) { return ~0s; } // Max for zero-sized elements.
+	else if( element_size >= 16s ) { return  1s; }
+	else { return 16s / element_size; }
+}
+
 } // namespace ust

@@ -28,7 +28,7 @@ public:
 
 		unsafe
 		{
-			capacity_= max( get_first_allocation_size(), other.size_ );
+			capacity_= max( c_first_allocation_size_, other.size_ );
 			// Multiplication overflow is not possible here because allocation of source container should not overflow.
 			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( capacity_ * c_element_size_ ) ) );
 
@@ -47,7 +47,7 @@ public:
 
 		unsafe
 		{
-			capacity_= max( get_first_allocation_size(), size_ );
+			capacity_= max( c_first_allocation_size_, size_ );
 			// Multiplication overflow check is needed here.
 			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
 
@@ -66,7 +66,7 @@ public:
 
 		unsafe
 		{
-			capacity_= max( get_first_allocation_size(), size_ );
+			capacity_= max( c_first_allocation_size_, size_ );
 			// Multiplication overflow check is needed here.
 			ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
 
@@ -453,16 +453,7 @@ public:
 private:
 	auto constexpr c_element_size_= typeinfo</T/>.size_of;
 	auto constexpr c_element_alignment_= typeinfo</T/>.align_of;
-
-	fn constexpr get_first_allocation_size() : size_type
-	{
-		// Typical allocator allocates memory with block size=16 or more.
-		// For first allocation we can allocate more, than one element for elements, smaller, then 16/2.
-
-		static_if     ( c_element_size_ ==  0s ) { return ~0s; } // Max for zero-sized elements.
-		else static_if( c_element_size_ >= 16s ) { return  1s; }
-		else { return 16s / c_element_size_; }
-	}
+	auto constexpr c_first_allocation_size_= get_vector_first_allocation_size( c_element_size_ );
 
 	auto c_size_type_is_u32_= typeinfo</ size_type />.size_of == typeinfo</ u32 />.size_of;
 	auto c_size_type_is_u64_= typeinfo</ size_type />.size_of == typeinfo</ u64 />.size_of;
@@ -478,7 +469,7 @@ private:
 			}
 			else if( capacity_ == 0s )
 			{
-				capacity_= max( get_first_allocation_size(), new_size );
+				capacity_= max( c_first_allocation_size_, new_size );
 				// Multiplication overflow check is needed here.
 				ptr_= $<( cast_ref_unsafe</T/>( memory_allocate( mul_overflow_check_halt( capacity_, c_element_size_ ) ) ) );
 			}
