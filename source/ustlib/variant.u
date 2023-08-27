@@ -31,7 +31,7 @@ class variant
 public:
 	static_assert( typeinfo</Y/>.is_tuple, "this container accepts types list in form of tuple" );
 	static_assert( typeinfo</Y/>.element_count > 0s, "expected non-empty tuple" );
-	static_assert( variant_impl::all_tuple_elements_are_unique</Y/>(), "duplicated element types" );
+	static_assert( tuple_type_properties_.all_elements_are_unique, "duplicated element types" );
 	// Cant' use type with references inside since we use "optional_ref" to access variants.
 	static_assert( typeinfo</Y/>.references_tags_count == 0s, "this container doesn't support types with references inside" );
 
@@ -50,7 +50,7 @@ public:
 	}
 
 	fn
-	enable_if( variant_impl::all_tuple_elements_are_copy_constructible</Y/>() )
+	enable_if( tuple_type_properties_.all_elements_are_copy_constructible )
 	constructor( this_type& other )
 		( index_(other.index_), storage_= zero_init )
 	{
@@ -115,7 +115,7 @@ public:
 	}
 
 	op
-	enable_if( variant_impl::all_tuple_elements_are_copy_constructible</Y/>() )
+	enable_if( tuple_type_properties_.all_elements_are_copy_constructible )
 	=( mut this, this_type& other )
 	{
 		// Implement assignment operator, using copy constructor.
@@ -178,7 +178,7 @@ public:
 	// Use aslo "==" for value to variant comparison to avoid constly conversions to variant.
 
 	op
-	enable_if( variant_impl::all_tuple_elements_are_equality_comparable</Y/>() )
+	enable_if( tuple_type_properties_.all_elements_are_equality_comparable )
 	==( this_type& l, this_type& r ) : bool
 	{
 		if( l.index_ != r.index_ )
@@ -201,7 +201,7 @@ public:
 
 	template</ type T />
 	op
-	enable_if( variant_impl::all_tuple_elements_are_equality_comparable</Y/>() && variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	enable_if( tuple_type_properties_.all_elements_are_equality_comparable && variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
 	==( this_type& l, T& r ) : bool
 	{
 		if_var( &l_value : l.get</T/>() )
@@ -213,7 +213,7 @@ public:
 
 	template</ type T />
 	op
-	enable_if( variant_impl::all_tuple_elements_are_equality_comparable</Y/>() && variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
+	enable_if( tuple_type_properties_.all_elements_are_equality_comparable && variant_impl::type_is_one_of_tuple_elements</ T, Y />() )
 	==( T& l, this_type& r ) : bool
 	{
 		if_var( &r_value : r.get</T/>() )
@@ -255,11 +255,14 @@ public: // Methods for internal usage.
 	}
 
 private:
+	var variant_impl::TupleTypeProperties tuple_type_properties_= variant_impl::get_tuple_type_properties</Y/>();
+
+private:
 	ContainerTag</ Y /> container_tag_;
 
 	aligned_storage</
-		variant_impl::get_max_tuple_element_size</Y/>(),
-		variant_impl::get_max_tuple_element_alignment</Y/>()
+		tuple_type_properties_.max_element_size,
+		tuple_type_properties_.max_element_alignment
 		/> storage_;
 	u8 index_;
 }
@@ -279,57 +282,28 @@ variant_try_move( variant</Y/> mut v ) : T
 namespace variant_impl
 {
 
-template</ type T />
-fn constexpr get_max_tuple_element_size() : size_type
-{
-	var size_type mut s(0);
-	for( & element : typeinfo</T/>.elements_list )
-	{
-		s = max( s, element.type.size_of );
-	}
-	return s;
-}
+// Use single function to retrieve all tuple properties in order to reduce number of generated template functions and speed-up compilation.
 
 template</ type T />
-fn constexpr get_max_tuple_element_alignment() : size_type
+fn constexpr get_tuple_type_properties() : TupleTypeProperties
 {
-	var size_type mut a(0);
+	var TupleTypeProperties mut result
+	{
+		.max_element_size(0),
+		.max_element_alignment(0),
+		.all_elements_are_copy_constructible(true),
+		.all_elements_are_equality_comparable(true),
+		.all_elements_are_unique(true)
+	};
+
 	for( & element : typeinfo</T/>.elements_list )
 	{
-		a = max( a, element.type.align_of );
+		result.max_element_size = max( result.max_element_size, element.type.size_of );
+		result.max_element_alignment = max( result.max_element_alignment, element.type.align_of );
+		result.all_elements_are_copy_constructible &= element.type.is_copy_constructible;
+		result.all_elements_are_equality_comparable &= element.type.is_equality_comparable;
 	}
-	return a;
-}
 
-template</ type T />
-fn constexpr all_tuple_elements_are_copy_constructible() : bool
-{
-	for( & element : typeinfo</T/>.elements_list )
-	{
-		if( !element.type.is_copy_constructible )
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-template</ type T />
-fn constexpr all_tuple_elements_are_equality_comparable() : bool
-{
-	for( & element : typeinfo</T/>.elements_list )
-	{
-		if( !element.type.is_equality_comparable )
-		{
-			return false;
-		}
-	}
-	return true;
-}
-
-template</ type T />
-fn constexpr all_tuple_elements_are_unique() : bool
-{
 	auto mut i= 0s;
 	for( & element_i : typeinfo</T/>.elements_list )
 	{
@@ -338,14 +312,24 @@ fn constexpr all_tuple_elements_are_unique() : bool
 		{
 			if( i != j && is_same_type</ typeof(element_i.type), typeof(element_j.type) />() )
 			{
-				return false;
+				result.all_elements_are_unique= false;
 			}
 
 			++j;
 		}
 		++i;
 	}
-	return true;
+
+	return result;
+}
+
+struct TupleTypeProperties
+{
+	size_type max_element_size;
+	size_type max_element_alignment;
+	bool all_elements_are_copy_constructible;
+	bool all_elements_are_equality_comparable;
+	bool all_elements_are_unique;
 }
 
 template</ type C, type Tup />
