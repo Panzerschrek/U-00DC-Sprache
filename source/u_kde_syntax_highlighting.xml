@@ -150,6 +150,8 @@
 			<RegExpr attribute="Number" String="0x[0-9a-fA-F]+(\.[0-9a-fA-F]+)" insensitive="false" minimal="false" context="#stay" />
 			<RegExpr attribute="NumberDecimal" String="[0-9]+(\.[0-9]+)?(e[0-9]+)?" insensitive="false" minimal="false" context="#stay" />
 			<DetectChar attribute="String" char="&quot;" context="string" />
+			<Detect2Chars attribute="NormalText" char="&lt;" char1="/" context="normal_text" />
+			<Detect2Chars attribute="NormalText" char="/" char1="&rt;" context="normal_text" />
 			<Detect2Chars attribute="Comment" char="/" char1="/" context="line_comment" />
 			<Detect2Chars attribute="Comment" char="/" char1="*" context="multiline_comment" />
 		</context>
