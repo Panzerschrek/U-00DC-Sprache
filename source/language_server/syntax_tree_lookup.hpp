@@ -7,9 +7,6 @@ namespace U
 namespace LangServer
 {
 
-// This code is for nw unused, because there are more robust ways to implement "go to definition".
-// TODO - use it for some other feature of the LanguageServer or remove it.
-
 using DefinitionRequestPrefixComponent= std::variant<
 	const Synt::Namespace*,
 	const Synt::Class*,

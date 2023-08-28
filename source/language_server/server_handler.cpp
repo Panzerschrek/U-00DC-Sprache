@@ -387,12 +387,36 @@ ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 		return result;
 	}
 
+	const auto uri_parsed= Uri::Parse( *uri );
+	if( uri_parsed == std::nullopt )
+	{
+		log_ << "Invalid uri!" << std::endl;
+		return result;
+	}
+
 	const auto position= obj->getObject( "position" );
 	if( position == nullptr )
 	{
 		log_ << "No position!" << std::endl;
 		return result;
 	}
+
+	const auto line= position->getInteger( "line" );
+	const auto character= position->getInteger( "character" );
+	if( line == llvm::None || character == llvm::None )
+	{
+		log_ << "Invalid position!" << std::endl;
+		return result;
+	}
+
+	Document* const document= document_manager_.GetDocument( *uri_parsed );
+	if( document == nullptr )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return result;
+	}
+
+	document->Complete( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) );
 
 	// TODO - perform real completion.
 

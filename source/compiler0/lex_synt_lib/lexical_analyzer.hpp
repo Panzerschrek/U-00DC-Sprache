@@ -108,7 +108,8 @@ struct Lexem
 
 		Ellipsis, // ...
 
-		// TODO - add other lexems.
+		// Special kind of lexem, that can be created only manually (and not parsed).
+		CompletionIdentifier,
 
 		EndOfFile,
 	};

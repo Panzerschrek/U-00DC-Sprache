@@ -1,5 +1,7 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
+#include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
+#include "syntax_tree_lookup.hpp"
 #include "document_position_utils.hpp"
 #include "document.hpp"
 
@@ -130,6 +132,76 @@ std::vector<Symbol> Document::GetSymbols()
 		return {};
 
 	return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
+}
+
+void Document::Complete( const SrcLoc& src_loc )
+{
+	log_ << "Completion request " << src_loc.GetLine() << ":" << src_loc.GetColumn() << std::endl;
+
+	if( last_valid_state_ == std::nullopt )
+	{
+		log_ << "Can't complete - document is not compiled" << std::endl;
+		return;
+	}
+
+	// Perform lexical analysis for current text.
+	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
+	const LineToLinearPositionIndex line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
+
+	const uint32_t column= src_loc.GetColumn();
+	if( column == 0 )
+	{
+		log_ << "Can't complete at column 0" << std::endl;
+		return;
+	}
+	const SrcLoc src_loc_prev( 0, src_loc.GetLine(), column - 1u );
+
+	const auto src_loc_corected= GetIdentifierStartSrcLoc( src_loc_prev, text_, line_to_linear_position_index );
+	if( src_loc_corected == std::nullopt )
+	{
+		log_ << "Failed to find identifer start" << std::endl;
+		return;
+	}
+
+	bool found= false;
+	for( Lexem& lexem : lex_result.lexems )
+	{
+		if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Identifier )
+		{
+			log_ << "Complete text " << lexem.text << std::endl;
+			lexem.type= Lexem::Type::CompletionIdentifier;
+			found= true;
+			break;
+		}
+	}
+
+	if( !found )
+	{
+		log_ << "Can't find identifier lexem" << std::endl;
+	}
+
+	// Perform syntaxis parsing of current text.
+	// In most cases it will fail, but it will still parse text until first error.
+	// Here we assume, that first error is at least at point of completion or further.
+
+	const auto macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
+
+	const auto synt_result=
+		Synt::SyntaxAnalysis(
+			lex_result.lexems,
+			// TODO - use proper imported macros.
+			Synt::MacrosByContextMap(),
+			macro_expansion_contexts,
+			CalculateSourceFileContentsHash( text_ ) );
+
+	const SyntaxTreeLookupResultOpt lookup_result= FindSyntaxElementForPosition( src_loc_corected->GetLine(), src_loc_corected->GetColumn(), synt_result.program_elements );
+	if( lookup_result == std::nullopt )
+	{
+		log_ << "Failed to find parsed syntax element" << std::endl;
+		return;
+	}
+
+	log_ << "Find syntax element of kind " << lookup_result->item.index() << std::endl;
 }
 
 std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const DocumentPosition& start_position ) const
