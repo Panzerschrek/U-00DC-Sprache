@@ -551,7 +551,10 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 	{
 		SyntaxTreeLookupResultOpt res= FindSyntaxElementForPositionImplVariant( line, column, program_element );
 		if( res != std::nullopt )
+		{
+			res->last_global_element= &program_element;
 			return res;
+		}
 	}
 
 	return std::nullopt;
@@ -563,7 +566,10 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 	{
 		SyntaxTreeLookupResultOpt res= FindSyntaxElementForPositionImplVariant( line, column, class_element );
 		if( res != std::nullopt )
+		{
+			res->last_global_element= &class_element;
 			return res;
+		}
 	}
 
 	return std::nullopt;

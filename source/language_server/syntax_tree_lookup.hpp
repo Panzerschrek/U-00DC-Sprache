@@ -23,6 +23,7 @@ struct SyntaxTreeLookupResult
 {
 	std::vector<DefinitionRequestPrefixComponent> prefix;
 	GetDefinitionRequestItem item;
+	std::variant<const Synt::ProgramElement*, const Synt::ClassElement*> last_global_element= static_cast<const Synt::ProgramElement*>(nullptr);
 };
 
 using SyntaxTreeLookupResultOpt= std::optional<SyntaxTreeLookupResult>;
