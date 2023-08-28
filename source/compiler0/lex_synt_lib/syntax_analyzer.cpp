@@ -1133,6 +1133,9 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 		return ParseComplexName();
 
+	case Lexem::Type::CompletionIdentifier:
+		return ParseComplexName();
+
 	default:
 		PushErrorMessage();
 		return Expression();
@@ -1935,7 +1938,7 @@ VariablesDeclaration SyntaxAnalyzer::ParseVariablesDeclaration()
 		variable_entry.src_loc= it_->src_loc;
 		NextLexem();
 
-		Initializer variable_initializer=  ParseVariableInitializer();
+		Initializer variable_initializer= ParseVariableInitializer();
 		if( std::get_if<EmptyVariant>( &variable_initializer ) == nullptr )
 			variable_entry.initializer= std::make_unique<Initializer>( std::move(variable_initializer) );
 
