@@ -187,6 +187,11 @@ ServerResponse ServerHandler::ProcessInitialize( const Json::Value& params )
 			link_provider["resolveProvider"]= true;
 			capabilities["documentLinkProvider"]= std::move(link_provider);
 		}
+		{
+			Json::Object completion_options;
+			capabilities["completionProvider"]= std::move(completion_options);
+		}
+
 		result["capabilities"]= std::move(capabilities);
 	}
 	return result;
