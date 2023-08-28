@@ -134,14 +134,14 @@ std::vector<Symbol> Document::GetSymbols()
 	return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
 }
 
-void Document::Complete( const SrcLoc& src_loc )
+std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 {
 	log_ << "Completion request " << src_loc.GetLine() << ":" << src_loc.GetColumn() << std::endl;
 
 	if( last_valid_state_ == std::nullopt )
 	{
 		log_ << "Can't complete - document is not compiled" << std::endl;
-		return;
+		return {};
 	}
 
 	// Perform lexical analysis for current text.
@@ -152,7 +152,7 @@ void Document::Complete( const SrcLoc& src_loc )
 	if( column == 0 )
 	{
 		log_ << "Can't complete at column 0" << std::endl;
-		return;
+		return {};
 	}
 	const SrcLoc src_loc_prev( 0, src_loc.GetLine(), column - 1u );
 
@@ -160,7 +160,7 @@ void Document::Complete( const SrcLoc& src_loc )
 	if( src_loc_corected == std::nullopt )
 	{
 		log_ << "Failed to find identifer start" << std::endl;
-		return;
+		return {};
 	}
 
 	bool found= false;
@@ -198,7 +198,7 @@ void Document::Complete( const SrcLoc& src_loc )
 	if( lookup_result == std::nullopt )
 	{
 		log_ << "Failed to find parsed syntax element" << std::endl;
-		return;
+		return {};
 	}
 
 	log_ << "Find syntax element of kind " << lookup_result->item.index() << std::endl;
@@ -212,7 +212,10 @@ void Document::Complete( const SrcLoc& src_loc )
 			log_ << r << ", ";
 		}
 		log_ << std::endl;
+		return completion_result;
 	}
+
+	return {};
 }
 
 std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const DocumentPosition& start_position ) const

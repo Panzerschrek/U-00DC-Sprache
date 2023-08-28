@@ -421,20 +421,15 @@ ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 		return result;
 	}
 
-	document->Complete( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) );
-
-	// TODO - perform real completion.
-
-	// Fill dummy.
-	result["isIncomplete"]= true;
+	result["isIncomplete"]= true; // TODO - set it to proper value.
 
 	{
 		Json::Array items;
 
+		for( const std::string& completion_str : document->Complete( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 		{
 			Json::Object item;
-
-			item["label"]= "CompleteThis";
+			item["label"]= completion_str;
 
 			items.push_back( std::move(item) );
 		}

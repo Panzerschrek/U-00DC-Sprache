@@ -44,7 +44,7 @@ public:
 
 	std::vector<Symbol> GetSymbols();
 
-	void Complete( const SrcLoc& src_loc );
+	std::vector<std::string> Complete( const SrcLoc& src_loc );
 
 	std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& start_position ) const;
 
