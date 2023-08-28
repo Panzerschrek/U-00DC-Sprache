@@ -85,6 +85,11 @@ void ElementWrite( const NameLookup& name_lookup, std::ostream& stream )
 	stream << name_lookup.name;
 }
 
+void ElementWrite( const NameLookupCompletion& name_lookup_completion, std::ostream& stream )
+{
+	stream << name_lookup_completion.name;
+}
+
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream )
 {
 	ElementWrite( *names_scope_fetch.base, stream );

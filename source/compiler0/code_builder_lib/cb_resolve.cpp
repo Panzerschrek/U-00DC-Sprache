@@ -58,6 +58,15 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	return result.value->value;
 }
 
+Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion )
+{
+	// TODO
+	(void)names_scope;
+	(void)function_context;
+	(void)name_lookup_completion;
+	return ErrorValue();
+}
+
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch )
 {
 	const Value base= ResolveValue( names_scope, function_context, *names_scope_fetch.base );

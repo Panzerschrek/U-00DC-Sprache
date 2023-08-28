@@ -1555,6 +1555,27 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 			return TryParseComplexNameTailWithTemplateArgs( std::move(name_lookup) );
 		}
 	}
+	else if( it_->type == Lexem::Type::CompletionIdentifier )
+	{
+		if( it_->text == Keywords::typeof_ )
+		{
+			TypeofTypeName typeof_type_name( it_->src_loc );
+			NextLexem();
+			typeof_type_name.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			return ParseComplexNameTail( std::move( typeof_type_name ) );
+		}
+		else
+		{
+			NameLookupCompletion name_lookup( it_->src_loc );
+
+			if( it_->type != Lexem::Type::Identifier )
+				PushErrorMessage();
+			name_lookup.name= it_->text;
+			NextLexem();
+
+			return TryParseComplexNameTailWithTemplateArgs( std::move(name_lookup) );
+		}
+	}
 	else
 	{
 		PushErrorMessage();

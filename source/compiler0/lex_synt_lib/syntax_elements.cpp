@@ -38,6 +38,10 @@ NameLookup::NameLookup( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+NameLookupCompletion::NameLookupCompletion( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 NamesScopeNameFetch::NamesScopeNameFetch( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}

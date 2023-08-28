@@ -14,10 +14,10 @@ using DefinitionRequestPrefixComponent= std::variant<
 
 using GetDefinitionRequestItem= std::variant<
 	const Synt::NameLookup*,
+	const Synt::NameLookupCompletion*,
 	const Synt::RootNamespaceNameLookup*,
 	const Synt::NamesScopeNameFetch*,
 	const Synt::MemberAccessOperator*>;
-
 
 struct SyntaxTreeLookupResult
 {
