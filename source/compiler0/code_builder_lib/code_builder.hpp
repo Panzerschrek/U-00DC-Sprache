@@ -88,6 +88,11 @@ public:
 	// Result lost is sorted and contains unique entrires.
 	std::vector<SrcLoc> GetAllOccurrences( const SrcLoc& src_loc );
 
+	// Try to compile given program element, including internal completion syntax element.
+	// Return completion result.
+	// Result list is sorted and unique.
+	std::vector<std::string> Complete( const Synt::ProgramElement& program_element );
+
 private:
 	CodeBuilder(
 		llvm::LLVMContext& llvm_context,
@@ -142,6 +147,8 @@ private:
 	SrcLoc GetDefinitionFetchSrcLoc( const NamesScopeValue& value );
 
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
+
+	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );
@@ -1223,6 +1230,9 @@ private:
 	};
 	// Map usage point to definition point.
 	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
+
+	// Output container for completion syntax elements.
+	std::vector<std::string> completion_items_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

@@ -202,6 +202,17 @@ void Document::Complete( const SrcLoc& src_loc )
 	}
 
 	log_ << "Find syntax element of kind " << lookup_result->item.index() << std::endl;
+	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &lookup_result->last_global_element ) )
+	{
+		log_ << "Found program element of kind " << (*program_element)->index() << std::endl;
+		const auto completion_result= last_valid_state_->code_builder->Complete( **program_element );
+		log_ << "Complete found " << completion_result.size() << " results" << std::endl;
+		for( const std::string& r : completion_result )
+		{
+			log_ << r << ", ";
+		}
+		log_ << std::endl;
+	}
 }
 
 std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const DocumentPosition& start_position ) const

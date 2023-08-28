@@ -46,6 +46,31 @@ std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
 	return result;
 }
 
+std::vector<std::string> CodeBuilder::Complete( const Synt::ProgramElement& program_element )
+{
+	// TODO - fetch namespaces/classes.
+	NamesScope& names_scope= *compiled_sources_.front().names_map;
+
+	// Put given element into dummy names scope.
+	NamesScope element_names_scope( "", &names_scope );
+
+	completion_items_.clear();
+
+	// Create name for given item.
+	std::visit(
+		[&]( const auto& el ) { NamesScopeFill( element_names_scope, el ); },
+		program_element );
+
+	// Build it.
+	GlobalThingBuildNamespace( element_names_scope );
+
+	std::vector<std::string> result;
+	result.swap( completion_items_ );
+	std::sort( result.begin(), result.end() );
+	result.erase( std::unique( result.begin(), result.end() ), result.end() );
+	return result;
+}
+
 SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
 {
 	// Process functions set specially.
@@ -92,6 +117,23 @@ void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc&
 	}
 
 	definition_points_.insert( std::make_pair( src_loc, std::move(point) ) );
+}
+
+void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const std::string_view name )
+{
+	const NamesScope* current_scope= &names_scope;
+	do
+	{
+		current_scope->ForEachInThisScope(
+			[&]( const std::string_view namespace_name, const NamesScopeValue& value )
+			{
+				(void)value;
+				if( namespace_name.size() >= name.size() && namespace_name.substr(0, name.size() ) == name )
+					completion_items_.push_back( std::string(namespace_name) );
+			});
+
+		current_scope= current_scope->GetParent();
+	} while( current_scope != nullptr );
 }
 
 } // namespace U

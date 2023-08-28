@@ -60,10 +60,8 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion )
 {
-	// TODO
-	(void)names_scope;
 	(void)function_context;
-	(void)name_lookup_completion;
+	NameLookupCompleteImpl( names_scope, name_lookup_completion.name );
 	return ErrorValue();
 }
 
