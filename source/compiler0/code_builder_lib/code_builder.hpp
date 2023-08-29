@@ -156,6 +156,18 @@ private:
 
 	NamesScope* EvaluateCompletionRequestPrefix( NamesScope& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 
+	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionPtr& function_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassPtr& class_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ptr );
+
 	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 
 private:

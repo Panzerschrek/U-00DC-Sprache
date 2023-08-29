@@ -54,18 +54,9 @@ std::vector<std::string> CodeBuilder::Complete( const llvm::ArrayRef<CompletionR
 	if( names_scope == nullptr )
 		return {};
 
-	// Put given element into dummy names scope.
-	NamesScope element_names_scope( "", names_scope );
-
 	completion_items_.clear();
 
-	// Create name for given item.
-	std::visit(
-		[&]( const auto& el ) { NamesScopeFill( element_names_scope, el ); },
-		program_element );
-
-	// Build it.
-	GlobalThingBuildNamespace( element_names_scope );
+	BuildElementForCompletion( *names_scope, program_element );
 
 	std::vector<std::string> result;
 	result.swap( completion_items_ );
@@ -170,6 +161,116 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix( NamesScope& start_scop
 	else U_ASSERT(false);
 
 	return nullptr;
+}
+
+void CodeBuilder::BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element )
+{
+	return std::visit( [&](const auto &el){ return BuildElementForCompletionImpl( names_scope, el ); }, program_element );
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
+{
+	FunctionContext& function_context= *global_function_context_;
+
+	// Complete type name.
+	const Type type= PrepareType( variables_declaration.type, names_scope, function_context );
+
+	// Complete names in initializers.
+	for( const Synt::VariablesDeclaration::VariableEntry& variable_entry : variables_declaration.variables )
+	{
+		if( variable_entry.initializer == nullptr )
+			continue;
+
+		const VariableMutPtr variable=
+			std::make_shared<Variable>(
+				type,
+				ValueType::Value,
+				Variable::Location::Pointer,
+				variable_entry.name + " variable itself" );
+
+		function_context.variables_state.AddNode( variable );
+
+		const VariableMutPtr variable_for_initialization=
+			std::make_shared<Variable>(
+				type,
+				ValueType::ReferenceMut,
+				Variable::Location::Pointer,
+				variable_entry.name,
+				variable->llvm_value );
+
+		function_context.variables_state.AddNode( variable_for_initialization );
+		function_context.variables_state.AddLink( variable, variable_for_initialization );
+
+		ApplyInitializer( variable_for_initialization, names_scope, function_context, *variable_entry.initializer );
+
+		function_context.variables_state.RemoveNode( variable_for_initialization );
+		function_context.variables_state.RemoveNode( variable );
+	}
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration )
+{
+	// Complete names in auto-variable expression initializer.
+	BuildExpressionCode( auto_variable_declaration.initializer_expression, names_scope, *global_function_context_ );
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ )
+{
+	// Complete names in static assert expression.
+	BuildExpressionCode( static_assert_.expression, names_scope, *global_function_context_ );
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias )
+{
+	// Complete names in aliased type name.
+	PrepareType( type_alias.value, names_scope, *global_function_context_ );
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ )
+{
+	// Nothing to complete in enum.
+	(void)names_scope;
+	(void)enum_;
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionPtr& function_ptr )
+{
+	// TODO
+	(void)names_scope;
+	(void)function_ptr;
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassPtr& class_ptr )
+{
+	if( class_ptr == nullptr )
+		return;
+
+	// Complete names in parent mames.
+	for( const Synt::ComplexName& parent_name : class_ptr->parents_ )
+		PrepareTypeImpl( names_scope, *global_function_context_, parent_name );
+
+	// Do not complete class members, since completion for class member should be triggered instead.
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template )
+{
+	// TODO
+	(void)names_scope;
+	(void)type_template;
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template )
+{
+	// TODO
+	(void)names_scope;
+	(void)function_template;
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ptr )
+{
+	// Nothing to do here, since completion for namespace has no sense and completion for namespace member will be trigered otherwise.
+	(void)names_scope;
+	(void)namespace_ptr;
 }
 
 void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const std::string_view name )
