@@ -212,7 +212,7 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
 	{
 		log_ << "Found program element of kind " << (*program_element)->index() << std::endl;
-		const auto completion_result= last_valid_state_->code_builder->Complete( **program_element );
+		const auto completion_result= last_valid_state_->code_builder->Complete( lookup_result->prefix, **program_element );
 		log_ << "Complete found " << completion_result.size() << " results" << std::endl;
 		for( const std::string& r : completion_result )
 		{

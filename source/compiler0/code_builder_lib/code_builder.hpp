@@ -55,6 +55,11 @@ public:
 		std::unique_ptr<llvm::Module> module;
 	};
 
+	using CompletionRequestPrefixComponent= std::variant<
+		const Synt::Namespace*,
+		const Synt::Class*,
+		const Synt::TypeTemplate*>;
+
 public:
 	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
 
@@ -91,7 +96,8 @@ public:
 	// Try to compile given program element, including internal completion syntax element.
 	// Return completion result.
 	// Result list is sorted and unique.
-	std::vector<std::string> Complete( const Synt::ProgramElement& program_element );
+	// Prefix is used to find proper namespace/class (name lookups are used).
+	std::vector<std::string> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
 
 private:
 	CodeBuilder(
@@ -147,6 +153,8 @@ private:
 	SrcLoc GetDefinitionFetchSrcLoc( const NamesScopeValue& value );
 
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
+
+	NamesScope* EvaluateCompletionRequestPrefix( NamesScope& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 
 	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 

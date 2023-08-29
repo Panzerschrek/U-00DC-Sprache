@@ -1,5 +1,5 @@
 #pragma once
-#include "../compiler0/lex_synt_lib/syntax_elements.hpp"
+#include "../compiler0/code_builder_lib/code_builder.hpp"
 
 namespace U
 {
@@ -7,10 +7,6 @@ namespace U
 namespace LangServer
 {
 
-using DefinitionRequestPrefixComponent= std::variant<
-	const Synt::Namespace*,
-	const Synt::Class*,
-	const Synt::TypeTemplate*>;
 
 using GetDefinitionRequestItem= std::variant<
 	const Synt::NameLookup*,
@@ -19,12 +15,11 @@ using GetDefinitionRequestItem= std::variant<
 	const Synt::NamesScopeNameFetch*,
 	const Synt::MemberAccessOperator*>;
 
-
 using GlobalItem= std::variant<const Synt::ProgramElement*, const Synt::ClassElement*>;
 
 struct SyntaxTreeLookupResult
 {
-	std::vector<DefinitionRequestPrefixComponent> prefix;
+	std::vector<CodeBuilder::CompletionRequestPrefixComponent> prefix;
 	GetDefinitionRequestItem item;
 	std::optional<GlobalItem> global_item;
 };

@@ -46,13 +46,16 @@ std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
 	return result;
 }
 
-std::vector<std::string> CodeBuilder::Complete( const Synt::ProgramElement& program_element )
+std::vector<std::string> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element )
 {
-	// TODO - fetch namespaces/classes.
-	NamesScope& names_scope= *compiled_sources_.front().names_map;
+	NamesScope& root_names_scope= *compiled_sources_.front().names_map;
+
+	NamesScope* const names_scope= EvaluateCompletionRequestPrefix( root_names_scope, prefix );
+	if( names_scope == nullptr )
+		return {};
 
 	// Put given element into dummy names scope.
-	NamesScope element_names_scope( "", &names_scope );
+	NamesScope element_names_scope( "", names_scope );
 
 	completion_items_.clear();
 
@@ -117,6 +120,56 @@ void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc&
 	}
 
 	definition_points_.insert( std::make_pair( src_loc, std::move(point) ) );
+}
+
+NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix( NamesScope& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
+{
+	if( prefix.empty() )
+		return &start_scope;
+
+	const CompletionRequestPrefixComponent& prefix_head= prefix.front();
+	const auto prefix_tail= prefix.drop_front();
+
+	if( const auto namespace_= std::get_if<const Synt::Namespace*>( &prefix_head ) )
+	{
+		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*namespace_)->name_ ) )
+		{
+			if( const auto names_scope= value->value.GetNamespace() )
+				return EvaluateCompletionRequestPrefix( *names_scope, prefix_tail );
+		}
+	}
+	else if( const auto class_= std::get_if<const Synt::Class*>( &prefix_head ) )
+	{
+		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*class_)->name_ ) )
+		{
+			if( const auto type_name= value->value.GetTypeName() )
+			{
+				if( const auto class_type= type_name->GetClassType() )
+					return EvaluateCompletionRequestPrefix( *class_type->members, prefix_tail );
+			}
+		}
+	}
+	else if( const auto type_template= std::get_if<const Synt::TypeTemplate*>( &prefix_head ) )
+	{
+		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*type_template)->name_ ) )
+		{
+			if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
+			{
+				for( const TypeTemplatePtr& type_template_ptr : type_templates_set->type_templates )
+				{
+					if( type_template_ptr->syntax_element == *type_template )
+					{
+						// Found this type template.
+						// TODO - instantiate type template with dummy ags and search something inside it.
+						return nullptr;
+					}
+				}
+			}
+		}
+	}
+	else U_ASSERT(false);
+
+	return nullptr;
 }
 
 void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const std::string_view name )
