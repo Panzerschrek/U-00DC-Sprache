@@ -114,25 +114,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion )
 {
 	const Value base= ResolveValue( names_scope, function_context, *names_scope_fetch_completion.base );
-
-	if( const NamesScopePtr inner_namespace= base.GetNamespace() )
-	{
-		// TODO
-		(void)inner_namespace;
-	}
-	else if( const Type* const type= base.GetTypeName() )
-	{
-		if( const ClassPtr class_= type->GetClassType() )
-		{
-			// TODO
-			(void)class_;
-		}
-		else if( const EnumPtr enum_= type->GetEnumType() )
-		{
-			// TODO
-			(void)enum_;
-		}
-	}
+	NamesScopeFetchComleteImpl( base, names_scope_fetch_completion.name );
 
 	return ErrorValue();
 }

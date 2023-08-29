@@ -343,19 +343,48 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const std::string_view name )
 {
+	// Complete for this names_scope and all parents until root.
 	const NamesScope* current_scope= &names_scope;
 	do
 	{
-		current_scope->ForEachInThisScope(
-			[&]( const std::string_view namespace_name, const NamesScopeValue& value )
-			{
-				(void)value;
-				if( namespace_name.size() >= name.size() && namespace_name.substr(0, name.size() ) == name )
-					completion_items_.push_back( std::string(namespace_name) );
-			});
-
+		NamesScopeFetchComleteForNamesScope( *current_scope, name );
 		current_scope= current_scope->GetParent();
 	} while( current_scope != nullptr );
+}
+
+void CodeBuilder::NamesScopeFetchComleteImpl( const Value& base, const std::string_view name )
+{
+	if( const NamesScopePtr inner_namespace= base.GetNamespace() )
+		NamesScopeFetchComleteForNamesScope( *inner_namespace, name );
+	else if( const Type* const type= base.GetTypeName() )
+	{
+		if( const ClassPtr class_= type->GetClassType() )
+			NamesScopeFetchComleteForClass( class_, name );
+		else if( const EnumPtr enum_= type->GetEnumType() )
+			NamesScopeFetchComleteForNamesScope( enum_->members, name );
+	}
+}
+
+void CodeBuilder::NamesScopeFetchComleteForNamesScope( const NamesScope& names_scope, const std::string_view name )
+{
+	// Populate completion items by members of this names_scope, that start with given name.
+	names_scope.ForEachInThisScope(
+		[&]( const std::string_view namespace_name, const NamesScopeValue& value )
+		{
+			(void)value;
+			if( namespace_name.size() >= name.size() && namespace_name.substr(0, name.size() ) == name )
+				completion_items_.push_back( std::string(namespace_name) );
+		});
+}
+
+void CodeBuilder::NamesScopeFetchComleteForClass( const ClassPtr class_, const std::string_view name )
+{
+	// Complete for class members.
+	NamesScopeFetchComleteForNamesScope( *class_->members, name );
+
+	// Complete for all parent classes, since parent class membes are accessible via child namespace.
+	for( const auto& parent : class_->parents )
+		NamesScopeFetchComleteForClass( parent.class_, name );
 }
 
 } // namespace U

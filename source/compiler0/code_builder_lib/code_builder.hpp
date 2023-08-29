@@ -175,6 +175,9 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
 
 	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
+	void NamesScopeFetchComleteImpl( const Value& base, std::string_view name );
+	void NamesScopeFetchComleteForNamesScope( const NamesScope& names_scope, std::string_view name );
+	void NamesScopeFetchComleteForClass( ClassPtr class_, std::string_view name );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );
