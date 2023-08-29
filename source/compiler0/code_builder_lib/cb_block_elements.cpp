@@ -32,6 +32,7 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
 		bool operator()( const Synt::IndexationOperator& ) { return true; }
 		bool operator()( const Synt::MemberAccessOperator& ) { return true; }
+		bool operator()( const Synt::MemberAccessOperatorCompletion& ) { return true; }
 		bool operator()( const Synt::UnaryPlus& ) { return true; }
 		bool operator()( const Synt::UnaryMinus& ) { return true; }
 		bool operator()( const Synt::LogicalNot& ) { return true; }

@@ -176,6 +176,7 @@ private:
 
 	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 	void NamesScopeFetchComleteImpl( const Value& base, std::string_view name );
+	void MemberAccessCompleteImpl( const VariablePtr& variable, std::string_view name );
 	void NamesScopeFetchComleteForNamesScope( const NamesScope& names_scope, std::string_view name );
 	void NamesScopeFetchComleteForClass( ClassPtr class_, std::string_view name );
 
@@ -594,6 +595,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperator& call_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::IndexationOperator& indexation_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperator& member_access_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryMinus& unary_minus );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryPlus& unary_plus );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::LogicalNot& logical_not );

@@ -359,6 +359,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	return ErrorValue();
 }
 
+Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion )
+{
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *member_access_operator_completion.expression_, names, function_context );
+	MemberAccessCompleteImpl( variable, member_access_operator_completion.member_name_ );
+	return ErrorValue();
+}
+
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,

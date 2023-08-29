@@ -365,6 +365,15 @@ void CodeBuilder::NamesScopeFetchComleteImpl( const Value& base, const std::stri
 	}
 }
 
+void CodeBuilder::MemberAccessCompleteImpl( const VariablePtr& variable, const std::string_view name )
+{
+	if( variable == nullptr )
+		return;
+
+	if( Class* const class_= variable->type.GetClassType() )
+		NamesScopeFetchComleteForClass( class_, name );
+}
+
 void CodeBuilder::NamesScopeFetchComleteForNamesScope( const NamesScope& names_scope, const std::string_view name )
 {
 	// Populate completion items by members of this names_scope, that start with given name.

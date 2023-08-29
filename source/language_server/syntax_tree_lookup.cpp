@@ -19,6 +19,7 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint3
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::CallOperator& call_operator );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::IndexationOperator& indexation_operator );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::MemberAccessOperator& member_access_operator );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::UnaryPlus& unary_plus );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::UnaryMinus& unary_minus );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::LogicalNot& ligical_not );
@@ -187,6 +188,14 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 				return res;
 		}
 	}
+
+	return std::nullopt;
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion )
+{
+	if( member_access_operator_completion.src_loc_.GetLine() == line && member_access_operator_completion.src_loc_.GetColumn() == column )
+		return SyntaxTreeLookupResult{ {}, &member_access_operator_completion, std::nullopt };
 
 	return std::nullopt;
 }

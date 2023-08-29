@@ -496,7 +496,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		void operator()( const MemberAccessOperator& member_access_operator ) const
 		{
 			ElementWrite( *member_access_operator.expression_, stream );
-			stream << ".";
+			stream << "." << member_access_operator.member_name_;
 			if( member_access_operator.template_parameters != std::nullopt )
 			{
 				stream << "</";
@@ -508,6 +508,11 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 				}
 				stream << "/>";
 			}
+		}
+		void operator()( const MemberAccessOperatorCompletion& member_access_operator_completion ) const
+		{
+			ElementWrite( *member_access_operator_completion.expression_, stream );
+			stream << "." << member_access_operator_completion.member_name_;
 		}
 		void operator()( const CallOperator& call_operator ) const
 		{

@@ -883,23 +883,35 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 	case Lexem::Type::Dot:
 		{
 			NextLexem();
-			MemberAccessOperator member_access_operator( it_->src_loc );
 
-			member_access_operator.expression_= std::make_unique<Expression>(std::move(expr));
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				MemberAccessOperator member_access_operator( it_->src_loc );
+				member_access_operator.member_name_= it_->text;
+				NextLexem();
 
-			if( it_->type != Lexem::Type::Identifier )
+				member_access_operator.expression_= std::make_unique<Expression>(std::move(expr));
+
+				if( it_->type == Lexem::Type::TemplateBracketLeft )
+					member_access_operator.template_parameters= ParseTemplateParameters();
+
+				return TryParseBinaryOperatorComponentPostfixOperator(std::move(member_access_operator));
+			}
+			else if( it_->type == Lexem::Type::CompletionIdentifier )
+			{
+				MemberAccessOperatorCompletion member_access_operator_completion( it_->src_loc );
+				member_access_operator_completion.member_name_= it_->text;
+				NextLexem();
+
+				member_access_operator_completion.expression_= std::make_unique<Expression>(std::move(expr));
+
+				return std::move(member_access_operator_completion);
+			}
+			else
 			{
 				PushErrorMessage();
 				return EmptyVariant();
 			}
-
-			member_access_operator.member_name_= it_->text;
-			NextLexem();
-
-			if( it_->type == Lexem::Type::TemplateBracketLeft )
-				member_access_operator.template_parameters= ParseTemplateParameters();
-
-			return TryParseBinaryOperatorComponentPostfixOperator(std::move(member_access_operator));
 		}
 
 	default:

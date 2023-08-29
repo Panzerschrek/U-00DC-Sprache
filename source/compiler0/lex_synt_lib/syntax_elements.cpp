@@ -99,6 +99,11 @@ MemberAccessOperator::MemberAccessOperator(
 	: SyntaxElementBase( src_loc )
 {}
 
+MemberAccessOperatorCompletion::MemberAccessOperatorCompletion(
+	const SrcLoc& src_loc )
+	: SyntaxElementBase( src_loc )
+{}
+
 SequenceInitializer::SequenceInitializer( const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
 {}

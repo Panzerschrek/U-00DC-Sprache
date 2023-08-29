@@ -33,6 +33,7 @@ struct BitwiseNot;
 struct CallOperator;
 struct IndexationOperator;
 struct MemberAccessOperator;
+struct MemberAccessOperatorCompletion;
 
 struct BinaryOperator;
 struct TernaryOperator;
@@ -139,6 +140,7 @@ using Expression= std::variant<
 	CallOperator,
 	IndexationOperator,
 	MemberAccessOperator,
+	MemberAccessOperatorCompletion,
 	// Prefix operators
 	UnaryPlus,
 	UnaryMinus,
@@ -585,6 +587,14 @@ struct MemberAccessOperator final : public SyntaxElementBase
 	ExpressionPtr expression_;
 	std::string member_name_;
 	std::optional<std::vector<Expression>> template_parameters;
+};
+
+struct MemberAccessOperatorCompletion final : public SyntaxElementBase
+{
+	MemberAccessOperatorCompletion( const SrcLoc& src_loc );
+
+	ExpressionPtr expression_;
+	std::string member_name_;
 };
 
 struct SequenceInitializer final : public SyntaxElementBase
