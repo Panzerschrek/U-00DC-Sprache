@@ -171,18 +171,17 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 		return {};
 	}
 
-	std::optional<SrcLoc> src_loc_corected;
+	SrcLoc src_loc_corected;
 	if( text_[ char_position ] == '.' )
 	{
 		log_ << "Complete for ." << std::endl;
 
-		const SrcLoc src_loc_start( 0, line, column_minus_one );
+		src_loc_corected= SrcLoc( 0, line, column_minus_one );
 
 		bool found= false;
-		for( size_t i= 0; i < lex_result.lexems.size(); ++i )
+		for( Lexem& lexem : lex_result.lexems )
 		{
-			Lexem& lexem= lex_result.lexems[i];
-			if( lexem.src_loc == src_loc_start && lexem.type == Lexem::Type::Dot )
+			if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Dot )
 			{
 				log_ << "Complete . " << std::endl;
 				lexem.type= Lexem::Type::CompletionDot;
@@ -196,20 +195,17 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 			log_ << "Can't find . lexem" << std::endl;
 			return {};
 		}
-
-		src_loc_corected= src_loc_start;
 	}
 	else if( text_[ char_position ] == ':' && char_position > 0 && text_[ char_position - 1 ] == ':' )
 	{
 		log_ << "Complete for ::" << std::endl;
 
-		const SrcLoc src_loc_start( 0, line, column - 2 );
+		src_loc_corected= SrcLoc( 0, line, column_minus_one - 1 ); // -1 to reach start of "::"
 
 		bool found= false;
-		for( size_t i= 0; i < lex_result.lexems.size(); ++i )
+		for( Lexem& lexem : lex_result.lexems )
 		{
-			Lexem& lexem= lex_result.lexems[i];
-			if( lexem.src_loc == src_loc_start && lexem.type == Lexem::Type::Scope )
+			if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Scope )
 			{
 				log_ << "Complete :: " << std::endl;
 				lexem.type= Lexem::Type::CompletionScope;
@@ -223,21 +219,18 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 			log_ << "Can't find :: lexem" << std::endl;
 			return {};
 		}
-
-		src_loc_corected= src_loc_start;
 	}
 	else
 	{
 		log_ << "Complete for identifier" << std::endl;
 
-		const SrcLoc src_loc_prev( 0, line, column_minus_one );
-
-		src_loc_corected= GetIdentifierStartSrcLoc( src_loc_prev, text_, line_to_linear_position_index );
-		if( src_loc_corected == std::nullopt )
+		const auto idenifier_start_src_loc= GetIdentifierStartSrcLoc( SrcLoc( 0, line, column_minus_one ), text_, line_to_linear_position_index );
+		if( idenifier_start_src_loc == std::nullopt )
 		{
 			log_ << "Failed to find identifer start" << std::endl;
 			return {};
 		}
+		src_loc_corected= *idenifier_start_src_loc;
 
 		bool found= false;
 		for( Lexem& lexem : lex_result.lexems )
@@ -272,7 +265,9 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 			macro_expansion_contexts,
 			CalculateSourceFileContentsHash( text_ ) );
 
-	const SyntaxTreeLookupResultOpt lookup_result= FindSyntaxElementForPosition( src_loc_corected->GetLine(), src_loc_corected->GetColumn(), synt_result.program_elements );
+	// Lookup global thing, where element with "completion*" lexem is located, together with path to it.
+	const SyntaxTreeLookupResultOpt lookup_result=
+		FindSyntaxElementForPosition( src_loc_corected.GetLine(), src_loc_corected.GetColumn(), synt_result.program_elements );
 	if( lookup_result == std::nullopt )
 	{
 		log_ << "Failed to find parsed syntax element" << std::endl;
