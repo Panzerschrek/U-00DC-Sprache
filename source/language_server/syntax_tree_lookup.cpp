@@ -52,7 +52,8 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint3
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::RootNamespaceNameLookup& root_namespace_name_lookup );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::NameLookup& name_lookup );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::NameLookupCompletion& name_lookup_completion );
-SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::NamesScopeNameFetch& names_scope_names_fetch );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::NamesScopeNameFetch& names_scope_name_fetch );
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::NamesScopeNameFetchCompletion& names_scope_name_fetch_completion );
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::TemplateParametrization& template_parametrization );
 
 SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( uint32_t line, uint32_t column, const Synt::Initializer& initializer );
@@ -456,16 +457,29 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 	return std::nullopt;
 }
 
-SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::NamesScopeNameFetch& names_scope_names_fetch )
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::NamesScopeNameFetch& names_scope_name_fetch )
 {
 	{
-		auto res= FindSyntaxElementForPositionImpl( line, column, *names_scope_names_fetch.base );
+		auto res= FindSyntaxElementForPositionImpl( line, column, *names_scope_name_fetch.base );
 		if( res != std::nullopt )
 			return res;
 	}
 
-	if( line == names_scope_names_fetch.src_loc_.GetLine() && column == names_scope_names_fetch.src_loc_.GetColumn() )
-		return SyntaxTreeLookupResult{ {}, &names_scope_names_fetch, std::nullopt };
+	if( line == names_scope_name_fetch.src_loc_.GetLine() && column == names_scope_name_fetch.src_loc_.GetColumn() )
+		return SyntaxTreeLookupResult{ {}, &names_scope_name_fetch, std::nullopt };
+	return std::nullopt;
+}
+
+SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line, const uint32_t column, const Synt::NamesScopeNameFetchCompletion& names_scope_name_fetch_completion )
+{
+	{
+		auto res= FindSyntaxElementForPositionImpl( line, column, *names_scope_name_fetch_completion.base );
+		if( res != std::nullopt )
+			return res;
+	}
+
+	if( line == names_scope_name_fetch_completion.src_loc_.GetLine() && column == names_scope_name_fetch_completion.src_loc_.GetColumn() )
+		return SyntaxTreeLookupResult{ {}, &names_scope_name_fetch_completion, std::nullopt };
 	return std::nullopt;
 }
 

@@ -13,6 +13,7 @@ using GetDefinitionRequestItem= std::variant<
 	const Synt::NameLookupCompletion*,
 	const Synt::RootNamespaceNameLookup*,
 	const Synt::NamesScopeNameFetch*,
+	const Synt::NamesScopeNameFetchCompletion*,
 	const Synt::MemberAccessOperator*>;
 
 using GlobalItem= std::variant<const Synt::ProgramElement*, const Synt::ClassElement*>;

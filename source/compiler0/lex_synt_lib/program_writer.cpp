@@ -20,6 +20,7 @@ void ElementWrite( const RootNamespaceNameLookup& root_namespace_lookup, std::os
 void ElementWrite( const NameLookup& name_lookup, std::ostream& stream );
 void ElementWrite( const NameLookupCompletion& name_lookup_completion, std::ostream& stream );
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream );
+void ElementWrite( const NamesScopeNameFetchCompletion& names_scope_fetch_completion, std::ostream& stream );
 void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream );
 void ElementWrite( const ComplexName& complex_name, std::ostream& stream );
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
@@ -95,6 +96,12 @@ void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& s
 {
 	ElementWrite( *names_scope_fetch.base, stream );
 	stream << "::" << names_scope_fetch.name;
+}
+
+void ElementWrite( const NamesScopeNameFetchCompletion& names_scope_fetch_completion, std::ostream& stream )
+{
+	ElementWrite( *names_scope_fetch_completion.base, stream );
+	stream << "::" << names_scope_fetch_completion.name;
 }
 
 void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream )

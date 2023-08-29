@@ -98,6 +98,7 @@ struct RootNamespaceNameLookup;
 struct NameLookup;
 struct NameLookupCompletion;
 struct NamesScopeNameFetch;
+struct NamesScopeNameFetchCompletion;
 struct TemplateParametrization;
 
 using ComplexName= std::variant<
@@ -106,6 +107,7 @@ using ComplexName= std::variant<
 	NameLookup,
 	NameLookupCompletion,
 	NamesScopeNameFetch,
+	NamesScopeNameFetchCompletion,
 	TemplateParametrization
 	>;
 
@@ -308,6 +310,14 @@ struct NameLookupCompletion final : public SyntaxElementBase
 struct NamesScopeNameFetch final : public SyntaxElementBase
 {
 	explicit NamesScopeNameFetch( const SrcLoc& src_loc );
+
+	std::string name;
+	ComplexNamePtr base;
+};
+
+struct NamesScopeNameFetchCompletion final : public SyntaxElementBase
+{
+	explicit NamesScopeNameFetchCompletion( const SrcLoc& src_loc );
 
 	std::string name;
 	ComplexNamePtr base;

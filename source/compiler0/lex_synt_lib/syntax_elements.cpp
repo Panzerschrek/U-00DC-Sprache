@@ -46,6 +46,10 @@ NamesScopeNameFetch::NamesScopeNameFetch( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+NamesScopeNameFetchCompletion::NamesScopeNameFetchCompletion( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 TemplateParametrization::TemplateParametrization( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
