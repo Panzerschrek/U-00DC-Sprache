@@ -235,9 +235,41 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionPtr& function_ptr )
 {
-	// TODO
-	(void)names_scope;
-	(void)function_ptr;
+	if( function_ptr == nullptr || function_ptr->name_.empty() )
+		return;
+
+	OverloadedFunctionsSet functions_set;
+
+	const ClassPtr base_class= nullptr; // TODO - pass it.
+	const bool is_out_of_line_function= false; // TODO - set it.
+
+	// Prepare function - complete names in types of params and return value.
+	const size_t function_index= PrepareFunction( names_scope, base_class, functions_set, *function_ptr, is_out_of_line_function );
+
+	if( function_index >= functions_set.functions.size() )
+	{
+		// Something went wrong.
+		return;
+	}
+
+	if( function_ptr->block_ == nullptr )
+		return; // This is only prototype.
+
+	FunctionVariable& function_variable= functions_set.functions[ function_index ];
+
+	// Build function code - complete names inside its body.
+	BuildFuncCode(
+		function_variable,
+		base_class,
+		names_scope,
+		function_ptr->name_.back().name,
+		function_ptr->type_.params_,
+		*function_ptr->block_,
+		function_ptr->constructor_initialization_list_.get() );
+
+	// Clear garbage - remove created llvm function.
+	if( function_variable.llvm_function->function != nullptr )
+		function_variable.llvm_function->function->eraseFromParent();
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassPtr& class_ptr )
