@@ -3473,6 +3473,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			}
 			else
 			{
+				result.emplace_back( std::move( field ) );
 				PushErrorMessage();
 				TryRecoverAfterError( g_class_body_elements_control_lexems );
 				continue;
@@ -3482,16 +3483,15 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			if( std::get_if<EmptyVariant>( &field_initializer ) == nullptr )
 				field.initializer= std::make_unique<Initializer>( std::move(field_initializer) );
 
+			result.emplace_back( std::move( field ) );
+
 			if( it_->type == Lexem::Type::Semicolon )
 				NextLexem();
 			else
 			{
 				PushErrorMessage();
 				TryRecoverAfterError( g_class_body_elements_control_lexems );
-				continue;
 			}
-
-			result.emplace_back( std::move( field ) );
 		}
 	}
 
