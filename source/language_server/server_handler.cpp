@@ -189,6 +189,17 @@ ServerResponse ServerHandler::ProcessInitialize( const Json::Value& params )
 		}
 		{
 			Json::Object completion_options;
+
+			{
+				Json::Array trigger_characters;
+				trigger_characters.push_back( Json::Value( "." ) );
+				// HACK! Use single trigger character ":" instead of "::", since some IDEs (like QtCreator) use longest trigger sequence to trigger completion,
+				// so, using "::" breaks completion for ".".
+				//trigger_characters.push_back( Json::Value( "::" ) );
+				trigger_characters.push_back( Json::Value( ":" ) );
+
+				completion_options["triggerCharacters"]= std::move(trigger_characters);
+			}
 			capabilities["completionProvider"]= std::move(completion_options);
 		}
 
