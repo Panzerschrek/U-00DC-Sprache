@@ -155,30 +155,86 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 		log_ << "Can't complete at column 0" << std::endl;
 		return {};
 	}
-	const SrcLoc src_loc_prev( 0, src_loc.GetLine(), column - 1u );
+	const uint32_t column_minus_one= column - 1u;
 
-	const auto src_loc_corected= GetIdentifierStartSrcLoc( src_loc_prev, text_, line_to_linear_position_index );
-	if( src_loc_corected == std::nullopt )
+	const uint32_t line= src_loc.GetLine();
+	if( line >= line_to_linear_position_index.size() )
 	{
-		log_ << "Failed to find identifer start" << std::endl;
+		log_ << "Line is greater than document end" << std::endl;
 		return {};
 	}
 
-	bool found= false;
-	for( Lexem& lexem : lex_result.lexems )
+	const uint32_t char_position= line_to_linear_position_index[ line ] + column_minus_one;
+	if( char_position >= text_.size() )
 	{
-		if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Identifier )
-		{
-			log_ << "Complete text " << lexem.text << std::endl;
-			lexem.type= Lexem::Type::CompletionIdentifier;
-			found= true;
-			break;
-		}
+		log_ << "Wrong linear position inside text" << std::endl;
+		return {};
 	}
 
-	if( !found )
+	std::optional<SrcLoc> src_loc_corected;
+	if( text_[ char_position ] == '.' )
 	{
-		log_ << "Can't find identifier lexem" << std::endl;
+		// TODO
+		log_ << "Complete for ." << std::endl;
+		return {};
+	}
+	else if( text_[ char_position ] == ':' && char_position > 0 && text_[ char_position - 1 ] == ':' )
+	{
+		log_ << "Complete for ::" << std::endl;
+
+		const SrcLoc src_loc_start( 0, line, column - 2 );
+
+		bool found= false;
+		for( size_t i= 0; i < lex_result.lexems.size(); ++i )
+		{
+			Lexem& lexem= lex_result.lexems[i];
+			if( lexem.src_loc == src_loc_start && lexem.type == Lexem::Type::Scope )
+			{
+				log_ << "Complete :: " << std::endl;
+				lexem.type= Lexem::Type::CompletionScope;
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
+		{
+			log_ << "Can't find :: lexem" << std::endl;
+			return {};
+		}
+
+		src_loc_corected= src_loc_start;
+	}
+	else
+	{
+		log_ << "Complete for identifier" << std::endl;
+
+		const SrcLoc src_loc_prev( 0, line, column_minus_one );
+
+		src_loc_corected= GetIdentifierStartSrcLoc( src_loc_prev, text_, line_to_linear_position_index );
+		if( src_loc_corected == std::nullopt )
+		{
+			log_ << "Failed to find identifer start" << std::endl;
+			return {};
+		}
+
+		bool found= false;
+		for( Lexem& lexem : lex_result.lexems )
+		{
+			if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Identifier )
+			{
+				log_ << "Complete text " << lexem.text << std::endl;
+				lexem.type= Lexem::Type::CompletionIdentifier;
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
+		{
+			log_ << "Can't find identifier lexem" << std::endl;
+			return {};
+		}
 	}
 
 	// Perform syntaxis parsing of current text.

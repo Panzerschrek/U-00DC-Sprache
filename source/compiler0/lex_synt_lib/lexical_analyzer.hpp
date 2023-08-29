@@ -108,8 +108,9 @@ struct Lexem
 
 		Ellipsis, // ...
 
-		// Special kind of lexem, that can be created only manually (and not parsed).
+		// Special kind of lexems, that can be created only manually (and not parsed).
 		CompletionIdentifier,
+		CompletionScope,
 
 		EndOfFile,
 	};

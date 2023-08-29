@@ -1588,33 +1588,45 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 
 ComplexName SyntaxAnalyzer::ParseComplexNameTail( ComplexName base )
 {
-	if( it_->type != Lexem::Type::Scope )
-		return base;
-	NextLexem(); // Skip ::
-
-	if( it_->type == Lexem::Type::Identifier )
+	if( it_->type == Lexem::Type::Scope )
 	{
-		NamesScopeNameFetch names_scope_fetch( it_->src_loc );
-		names_scope_fetch.name= it_->text;
-		NextLexem();
+		NextLexem(); // Skip ::
 
-		names_scope_fetch.base= std::make_unique<ComplexName>( std::move(base) );
-		return TryParseComplexNameTailWithTemplateArgs( std::move(names_scope_fetch) );
+		if( it_->type == Lexem::Type::Identifier )
+		{
+			NamesScopeNameFetch names_scope_fetch( it_->src_loc );
+			names_scope_fetch.name= it_->text;
+			NextLexem();
+
+			names_scope_fetch.base= std::make_unique<ComplexName>( std::move(base) );
+			return TryParseComplexNameTailWithTemplateArgs( std::move(names_scope_fetch) );
+		}
+		else if( it_->type == Lexem::Type::CompletionIdentifier )
+		{
+			NamesScopeNameFetchCompletion names_scope_fetch_completion( it_->src_loc );
+			names_scope_fetch_completion.name= it_->text;
+			NextLexem();
+
+			names_scope_fetch_completion.base= std::make_unique<ComplexName>( std::move(base) );
+			return std::move(names_scope_fetch_completion);
+		}
+		else
+		{
+			PushErrorMessage();
+			return base;
+		}
 	}
-	else if( it_->type == Lexem::Type::CompletionIdentifier )
+	else if( it_->type == Lexem::Type::CompletionScope )
 	{
-		NamesScopeNameFetchCompletion names_scope_fetch_completion( it_->src_loc );
-		names_scope_fetch_completion.name= it_->text;
-		NextLexem();
+		NamesScopeNameFetchCompletion names_scope_fetch_completion( it_->src_loc ); // Use "src_loc" of completion scope lexem, since there is no identifier lexem here.
+		names_scope_fetch_completion.name= ""; // Complete with empty string.
+		NextLexem(); // Skip ::
 
 		names_scope_fetch_completion.base= std::make_unique<ComplexName>( std::move(base) );
-		return TryParseComplexNameTailWithTemplateArgs( std::move(names_scope_fetch_completion) );
+		return std::move(names_scope_fetch_completion);
 	}
 	else
-	{
-		PushErrorMessage();
 		return base;
-	}
 }
 
 ComplexName SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( ComplexName base )
