@@ -19,11 +19,14 @@ using GetDefinitionRequestItem= std::variant<
 	const Synt::NamesScopeNameFetch*,
 	const Synt::MemberAccessOperator*>;
 
+
+using GlobalItem= std::variant<const Synt::ProgramElement*, const Synt::ClassElement*>;
+
 struct SyntaxTreeLookupResult
 {
 	std::vector<DefinitionRequestPrefixComponent> prefix;
 	GetDefinitionRequestItem item;
-	std::variant<const Synt::ProgramElement*, const Synt::ClassElement*> last_global_element= static_cast<const Synt::ProgramElement*>(nullptr);
+	std::optional<GlobalItem> global_item;
 };
 
 using SyntaxTreeLookupResultOpt= std::optional<SyntaxTreeLookupResult>;

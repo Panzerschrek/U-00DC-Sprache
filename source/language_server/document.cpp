@@ -202,7 +202,14 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 	}
 
 	log_ << "Find syntax element of kind " << lookup_result->item.index() << std::endl;
-	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &lookup_result->last_global_element ) )
+	if( lookup_result->global_item == std::nullopt )
+	{
+		log_ << "Can't fetch global item" << std::endl;
+		return {};
+	}
+
+	const GlobalItem& global_item= *lookup_result->global_item;
+	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
 	{
 		log_ << "Found program element of kind " << (*program_element)->index() << std::endl;
 		const auto completion_result= last_valid_state_->code_builder->Complete( **program_element );
