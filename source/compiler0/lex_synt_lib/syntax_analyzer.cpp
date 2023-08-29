@@ -2746,19 +2746,19 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 				}
 				NextLexem();
 			}
-			else if( it_->type == Lexem::Type::Semicolon )
-			{
-				SingleExpressionOperator expr(it_->src_loc );
-				NextLexem();
-
-				expr.expression_= std::move(l_expression);
-				elements.emplace_back( std::move(expr) );
-			}
 			else
 			{
-				PushErrorMessage();
-				TryRecoverAfterError( g_block_body_elements_control_lexems );
-				continue;
+				SingleExpressionOperator expr(it_->src_loc );
+				expr.expression_= std::move(l_expression);
+				elements.emplace_back( std::move(expr) );
+
+				if( it_->type == Lexem::Type::Semicolon )
+					NextLexem();
+				else
+				{
+					PushErrorMessage();
+					TryRecoverAfterError( g_block_body_elements_control_lexems );
+				}
 			}
 		}
 	}
