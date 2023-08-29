@@ -1,6 +1,7 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
+#include "../lex_synt_lib_common/assert.hpp"
 #include "syntax_tree_lookup.hpp"
 #include "document_position_utils.hpp"
 #include "document.hpp"
@@ -209,20 +210,26 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 	}
 
 	const GlobalItem& global_item= *lookup_result->global_item;
+	std::vector<std::string> completion_result;
 	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
 	{
 		log_ << "Found program element of kind " << (*program_element)->index() << std::endl;
-		const auto completion_result= last_valid_state_->code_builder->Complete( lookup_result->prefix, **program_element );
-		log_ << "Complete found " << completion_result.size() << " results" << std::endl;
-		for( const std::string& r : completion_result )
-		{
-			log_ << r << ", ";
-		}
-		log_ << std::endl;
-		return completion_result;
+		completion_result= last_valid_state_->code_builder->Complete( lookup_result->prefix, **program_element );
 	}
+	else if( const auto class_element= std::get_if<const Synt::ClassElement*>( &global_item ) )
+	{
+		log_ << "Found class element of kind " << (*class_element)->index() << std::endl;
+		completion_result= last_valid_state_->code_builder->Complete( lookup_result->prefix, **class_element );
+	}
+	else U_ASSERT( false );
 
-	return {};
+	log_ << "Complete found " << completion_result.size() << " results" << std::endl;
+	for( const std::string& r : completion_result )
+	{
+		log_ << r << ", ";
+	}
+	log_ << std::endl;
+	return completion_result;
 }
 
 std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const DocumentPosition& start_position ) const

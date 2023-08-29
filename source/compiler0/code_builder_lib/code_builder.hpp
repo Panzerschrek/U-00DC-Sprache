@@ -98,6 +98,7 @@ public:
 	// Result list is sorted and unique.
 	// Prefix is used to find proper namespace/class (name lookups are used).
 	std::vector<std::string> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
+	std::vector<std::string> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
 
 private:
 	CodeBuilder(
@@ -154,9 +155,12 @@ private:
 
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
 
-	NamesScope* EvaluateCompletionRequestPrefix( NamesScope& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
+	NamesScope* GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
+	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
+	std::vector<std::string> CompletionResultFinalize();
 
 	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element );
+	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
@@ -167,6 +171,8 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
 
 	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 

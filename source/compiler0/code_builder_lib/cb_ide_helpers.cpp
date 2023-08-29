@@ -48,21 +48,24 @@ std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
 
 std::vector<std::string> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element )
 {
-	NamesScope& root_names_scope= *compiled_sources_.front().names_map;
-
-	NamesScope* const names_scope= EvaluateCompletionRequestPrefix( root_names_scope, prefix );
+	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
 	if( names_scope == nullptr )
 		return {};
 
-	completion_items_.clear();
-
 	BuildElementForCompletion( *names_scope, program_element );
 
-	std::vector<std::string> result;
-	result.swap( completion_items_ );
-	std::sort( result.begin(), result.end() );
-	result.erase( std::unique( result.begin(), result.end() ), result.end() );
-	return result;
+	return CompletionResultFinalize();
+}
+
+std::vector<std::string> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element )
+{
+	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+	if( names_scope == nullptr )
+		return {};
+
+	BuildElementForCompletion( *names_scope, class_element );
+
+	return CompletionResultFinalize();
 }
 
 SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
@@ -113,7 +116,13 @@ void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc&
 	definition_points_.insert( std::make_pair( src_loc, std::move(point) ) );
 }
 
-NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix( NamesScope& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
+NamesScope* CodeBuilder::GetNamesScopeForCompletion( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
+{
+	NamesScope& root_names_scope= *compiled_sources_.front().names_map;
+	return EvaluateCompletionRequestPrefix_r( root_names_scope, prefix );
+}
+
+NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
 {
 	if( prefix.empty() )
 		return &start_scope;
@@ -126,7 +135,7 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix( NamesScope& start_scop
 		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*namespace_)->name_ ) )
 		{
 			if( const auto names_scope= value->value.GetNamespace() )
-				return EvaluateCompletionRequestPrefix( *names_scope, prefix_tail );
+				return EvaluateCompletionRequestPrefix_r( *names_scope, prefix_tail );
 		}
 	}
 	else if( const auto class_= std::get_if<const Synt::Class*>( &prefix_head ) )
@@ -136,7 +145,7 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix( NamesScope& start_scop
 			if( const auto type_name= value->value.GetTypeName() )
 			{
 				if( const auto class_type= type_name->GetClassType() )
-					return EvaluateCompletionRequestPrefix( *class_type->members, prefix_tail );
+					return EvaluateCompletionRequestPrefix_r( *class_type->members, prefix_tail );
 			}
 		}
 	}
@@ -163,9 +172,23 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix( NamesScope& start_scop
 	return nullptr;
 }
 
+std::vector<std::string> CodeBuilder::CompletionResultFinalize()
+{
+	std::vector<std::string> result;
+	result.swap( completion_items_ );
+	std::sort( result.begin(), result.end() );
+	result.erase( std::unique( result.begin(), result.end() ), result.end() );
+	return result;
+}
+
 void CodeBuilder::BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element )
 {
 	return std::visit( [&](const auto &el){ return BuildElementForCompletionImpl( names_scope, el ); }, program_element );
+}
+
+void CodeBuilder::BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element )
+{
+	return std::visit( [&](const auto &el){ return BuildElementForCompletionImpl( names_scope, el ); }, class_element );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
@@ -303,6 +326,19 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	// Nothing to do here, since completion for namespace has no sense and completion for namespace member will be trigered otherwise.
 	(void)names_scope;
 	(void)namespace_ptr;
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field )
+{
+	// Complete type name of class field.
+	PrepareType( class_field.type, names_scope, *global_function_context_ );
+}
+
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label )
+{
+	// Nothing to do here.
+	(void)names_scope;
+	(void)class_visibility_label;
 }
 
 void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const std::string_view name )
