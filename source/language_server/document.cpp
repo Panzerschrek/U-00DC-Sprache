@@ -174,9 +174,30 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 	std::optional<SrcLoc> src_loc_corected;
 	if( text_[ char_position ] == '.' )
 	{
-		// TODO
 		log_ << "Complete for ." << std::endl;
-		return {};
+
+		const SrcLoc src_loc_start( 0, line, column_minus_one );
+
+		bool found= false;
+		for( size_t i= 0; i < lex_result.lexems.size(); ++i )
+		{
+			Lexem& lexem= lex_result.lexems[i];
+			if( lexem.src_loc == src_loc_start && lexem.type == Lexem::Type::Dot )
+			{
+				log_ << "Complete . " << std::endl;
+				lexem.type= Lexem::Type::CompletionDot;
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
+		{
+			log_ << "Can't find . lexem" << std::endl;
+			return {};
+		}
+
+		src_loc_corected= src_loc_start;
 	}
 	else if( text_[ char_position ] == ':' && char_position > 0 && text_[ char_position - 1 ] == ':' )
 	{

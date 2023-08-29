@@ -914,6 +914,17 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 			}
 		}
 
+	case Lexem::Type::CompletionDot:
+		{
+			MemberAccessOperatorCompletion member_access_operator_completion( it_->src_loc );
+			member_access_operator_completion.member_name_= "";
+			NextLexem();
+
+			member_access_operator_completion.expression_= std::make_unique<Expression>(std::move(expr));
+
+			return std::move(member_access_operator_completion);
+		}
+
 	default:
 		return expr;
 	};

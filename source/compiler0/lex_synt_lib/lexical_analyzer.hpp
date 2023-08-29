@@ -111,6 +111,7 @@ struct Lexem
 		// Special kind of lexems, that can be created only manually (and not parsed).
 		CompletionIdentifier,
 		CompletionScope,
+		CompletionDot,
 
 		EndOfFile,
 	};
