@@ -170,8 +170,11 @@ void FindImpl( const Synt::StringLiteral& string_literal )
 
 void FindImpl( const Synt::MoveOperator& move_operator )
 {
-	// TODO - process it specially
-	(void)move_operator;
+	if( move_operator.src_loc_.GetLine() == line_ && move_operator.src_loc_.GetColumn() == column_ )
+	{
+		U_ASSERT( global_item_ != std::nullopt );
+		result_= SyntaxTreeLookupResult{ prefix_, &move_operator, *global_item_ };
+	}
 }
 
 void FindImpl( const Synt::TakeOperator& take_operator )

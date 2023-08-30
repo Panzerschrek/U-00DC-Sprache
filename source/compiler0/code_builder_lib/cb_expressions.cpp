@@ -1234,6 +1234,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
+	if( move_operator.completion_requested )
+		NameLookupCompleteImpl( names, move_operator.var_name_ );
+
 	NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name_, move_operator.src_loc_ ).value;
 	if( resolved_value_ptr == nullptr )
 		return ErrorValue();

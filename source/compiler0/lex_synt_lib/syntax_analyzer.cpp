@@ -1035,13 +1035,23 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			MoveOperator move_operator( it_->src_loc );
 
-			if( it_->type != Lexem::Type::Identifier )
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				move_operator.var_name_= it_->text;
+				NextLexem();
+			}
+			else if( it_->type == Lexem::Type::CompletionIdentifier )
+			{
+				move_operator.var_name_= it_->text;
+				move_operator.src_loc_= it_->src_loc;
+				NextLexem();
+				move_operator.completion_requested= true;
+			}
+			else
 			{
 				PushErrorMessage();
 				return EmptyVariant();
 			}
-			move_operator.var_name_= it_->text;
-			NextLexem();
 
 			ExpectLexem( Lexem::Type::BracketRight );
 

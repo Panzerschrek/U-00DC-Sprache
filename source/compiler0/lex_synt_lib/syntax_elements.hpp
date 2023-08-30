@@ -447,6 +447,7 @@ struct MoveOperator final : public SyntaxElementBase
 	MoveOperator( const SrcLoc& src_loc );
 
 	std::string var_name_;
+	bool completion_requested= false;
 };
 
 struct TakeOperator final : public SyntaxElementBase

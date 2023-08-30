@@ -12,7 +12,8 @@ using CompletionSyntaxElement= std::variant<
 	const Synt::NameLookupCompletion*,
 	const Synt::NamesScopeNameFetchCompletion*,
 	const Synt::MemberAccessOperatorCompletion*,
-	const Synt::StructNamedInitializer::MemberInitializer*>;
+	const Synt::StructNamedInitializer::MemberInitializer*,
+	const Synt::MoveOperator*>;
 
 using GlobalItem= std::variant<const Synt::ProgramElement*, const Synt::ClassElement*>;
 
