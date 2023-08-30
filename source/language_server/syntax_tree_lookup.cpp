@@ -394,6 +394,7 @@ void FindImpl( const Synt::Enum& enum_ )
 
 void FindImpl( const Synt::Function& function )
 {
+	FindImpl( function.condition_ );
 	FindImpl( function.type_ );
 	FindImpl( function.constructor_initialization_list_ );
 	FindImpl( function.coroutine_non_sync_tag );

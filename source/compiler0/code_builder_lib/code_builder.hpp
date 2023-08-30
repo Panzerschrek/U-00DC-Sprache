@@ -194,7 +194,7 @@ private:
 	void NamesScopeFetchComleteImpl( const Value& base, std::string_view name );
 	void MemberAccessCompleteImpl( const VariablePtr& variable, std::string_view name );
 	void NamesScopeFetchComleteForNamesScope( const NamesScope& names_scope, std::string_view name );
-	void NamesScopeFetchComleteForClass( ClassPtr class_, std::string_view name );
+	void NamesScopeFetchComleteForClass( const Class* class_, std::string_view name );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );

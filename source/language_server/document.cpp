@@ -298,11 +298,13 @@ std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
 	std::vector<CodeBuilder::CompletionItem> completion_result;
 	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
 	{
+		U_ASSERT( *program_element != nullptr );
 		log_ << "Found program element of kind " << (*program_element)->index() << std::endl;
 		completion_result= last_valid_state_->code_builder->Complete( lookup_result->prefix, **program_element );
 	}
 	else if( const auto class_element= std::get_if<const Synt::ClassElement*>( &global_item ) )
 	{
+		U_ASSERT( *class_element != nullptr );
 		log_ << "Found class element of kind " << (*class_element)->index() << std::endl;
 		completion_result= last_valid_state_->code_builder->Complete( lookup_result->prefix, **class_element );
 	}

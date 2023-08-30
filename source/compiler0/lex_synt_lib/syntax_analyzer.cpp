@@ -3342,15 +3342,24 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 			while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
 			{
-				if( it_->type != Lexem::Type::Identifier )
-				{
-					PushErrorMessage();
-					return nullptr;
-				}
 				constructor_initialization_list->members_initializers.emplace_back();
-				constructor_initialization_list->members_initializers.back().name= it_->text;
-				constructor_initialization_list->members_initializers.back().src_loc= it_->src_loc;
-				Initializer& initializer= constructor_initialization_list->members_initializers.back().initializer;
+				StructNamedInitializer::MemberInitializer& member_initializer= constructor_initialization_list->members_initializers.back();
+
+				if( it_->type == Lexem::Type::Identifier )
+				{
+					member_initializer.name= it_->text;
+					member_initializer.src_loc= it_->src_loc;
+				}
+				else if( it_->type == Lexem::Type::CompletionIdentifier )
+				{
+					member_initializer.name= it_->text;
+					member_initializer.src_loc= it_->src_loc;
+					member_initializer.completion_requested= true;
+				}
+				else
+					PushErrorMessage();
+
+				Initializer& initializer= member_initializer.initializer;
 
 				NextLexem();
 				initializer= ParseVariableInitializer();
@@ -3376,7 +3385,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		else
 		{
 			PushErrorMessage();
-			return nullptr;
+			return result;
 		}
 	}
 

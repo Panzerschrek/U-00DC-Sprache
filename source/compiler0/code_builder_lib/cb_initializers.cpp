@@ -31,11 +31,11 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr&,
-	NamesScope&,
+	NamesScope& names_scope,
 	FunctionContext&,
 	const Synt::EmptyVariant& )
 {
-	U_ASSERT(false);
+	REPORT_ERROR( BuildFailed, names_scope.GetErrors(), SrcLoc( 0, 1, 0 ), "Reached empty variant initializer!" );
 	return nullptr;
 }
 
@@ -150,7 +150,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	FunctionContext& function_context,
 	const Synt::StructNamedInitializer& initializer )
 {
-	Class* const class_type= variable->type.GetClassType();
+	const Class* const class_type= variable->type.GetClassType();
 	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
 	{
 		REPORT_ERROR( StructInitializerForNonStruct, names.GetErrors(), initializer.src_loc_ );
@@ -970,6 +970,9 @@ void CodeBuilder::BuildConstructorInitialization(
 	bool base_initialized= false;
 	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
+		if( field_initializer.completion_requested )
+			NamesScopeFetchComleteForClass( &base_class, field_initializer.name );
+
 		if( field_initializer.name == Keywords::base_ )
 		{
 			if( base_class.base_class == nullptr )

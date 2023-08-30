@@ -470,7 +470,7 @@ void CodeBuilder::NamesScopeFetchComleteForNamesScope( const NamesScope& names_s
 		});
 }
 
-void CodeBuilder::NamesScopeFetchComleteForClass( const ClassPtr class_, const std::string_view name )
+void CodeBuilder::NamesScopeFetchComleteForClass( const Class* const class_, const std::string_view name )
 {
 	// Complete for class members.
 	NamesScopeFetchComleteForNamesScope( *class_->members, name );
