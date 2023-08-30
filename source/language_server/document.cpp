@@ -135,7 +135,7 @@ std::vector<Symbol> Document::GetSymbols()
 	return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
 }
 
-std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
+std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
 {
 	log_ << "Completion request " << src_loc.GetLine() << ":" << src_loc.GetColumn() << std::endl;
 
@@ -300,7 +300,7 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 	}
 
 	const GlobalItem& global_item= *lookup_result->global_item;
-	std::vector<std::string> completion_result;
+	std::vector<CodeBuilder::CompletionItem> completion_result;
 	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
 	{
 		log_ << "Found program element of kind " << (*program_element)->index() << std::endl;
@@ -314,12 +314,14 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 	else U_ASSERT( false );
 
 	log_ << "Complete found " << completion_result.size() << " results" << std::endl;
-	for( const std::string& r : completion_result )
+
+	std::vector<CompletionItem> result_transformed;
+	result_transformed.reserve( completion_result.size() );
+	for( const CodeBuilder::CompletionItem& item : completion_result )
 	{
-		log_ << r << ", ";
+		result_transformed.push_back( CompletionItem{ item.name, TranslateCompletionItemKind( item.kind ) } );
 	}
-	log_ << std::endl;
-	return completion_result;
+	return result_transformed;
 }
 
 std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const DocumentPosition& start_position ) const

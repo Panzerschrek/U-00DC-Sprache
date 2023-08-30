@@ -60,6 +60,22 @@ public:
 		const Synt::Class*,
 		const Synt::TypeTemplate*>;
 
+	enum class CompletionValueKind : uint8_t
+	{
+		Variable,
+		FunctionsSet,
+		Type,
+		ClassField,
+		NamesScope,
+		TypeTemplatesSet,
+	};
+
+	struct CompletionItem
+	{
+		std::string name;
+		CompletionValueKind kind= CompletionValueKind::Variable;
+	};
+
 public:
 	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
 
@@ -97,8 +113,8 @@ public:
 	// Return completion result.
 	// Result list is sorted and unique.
 	// Prefix is used to find proper namespace/class (name lookups are used).
-	std::vector<std::string> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
-	std::vector<std::string> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
+	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
+	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
 
 private:
 	CodeBuilder(
@@ -157,7 +173,7 @@ private:
 
 	NamesScope* GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
-	std::vector<std::string> CompletionResultFinalize();
+	std::vector<CompletionItem> CompletionResultFinalize();
 
 	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element );
 	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element );
@@ -1264,7 +1280,7 @@ private:
 	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
 
 	// Output container for completion syntax elements.
-	std::vector<std::string> completion_items_;
+	std::vector<CompletionItem> completion_items_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

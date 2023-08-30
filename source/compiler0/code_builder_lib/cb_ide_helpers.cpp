@@ -46,7 +46,7 @@ std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
 	return result;
 }
 
-std::vector<std::string> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element )
+std::vector<CodeBuilder::CompletionItem> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element )
 {
 	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
 	if( names_scope == nullptr )
@@ -57,7 +57,7 @@ std::vector<std::string> CodeBuilder::Complete( const llvm::ArrayRef<CompletionR
 	return CompletionResultFinalize();
 }
 
-std::vector<std::string> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element )
+std::vector<CodeBuilder::CompletionItem> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element )
 {
 	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
 	if( names_scope == nullptr )
@@ -172,12 +172,11 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_sc
 	return nullptr;
 }
 
-std::vector<std::string> CodeBuilder::CompletionResultFinalize()
+std::vector<CodeBuilder::CompletionItem> CodeBuilder::CompletionResultFinalize()
 {
-	std::vector<std::string> result;
+	std::vector<CompletionItem> result;
 	result.swap( completion_items_ );
-	std::sort( result.begin(), result.end() );
-	result.erase( std::unique( result.begin(), result.end() ), result.end() );
+	// TODO - maybe remove duplicates and/or sort result?
 	return result;
 }
 
@@ -440,11 +439,29 @@ void CodeBuilder::NamesScopeFetchComleteForNamesScope( const NamesScope& names_s
 {
 	// Populate completion items by members of this names_scope, that start with given name.
 	names_scope.ForEachInThisScope(
-		[&]( const std::string_view namespace_name, const NamesScopeValue& value )
+		[&]( const std::string_view namespace_name, const NamesScopeValue& names_scope_value )
 		{
-			(void)value;
 			if( namespace_name.size() >= name.size() && namespace_name.substr(0, name.size() ) == name )
-				completion_items_.push_back( std::string(namespace_name) );
+			{
+				CompletionItem item;
+				item.name= std::string(namespace_name);
+
+				const Value& value= names_scope_value.value;
+				if( value.GetVariable() != nullptr )
+					item.kind= CompletionValueKind::Variable;
+				else if( value.GetFunctionsSet() != nullptr || value.GetThisOverloadedMethodsSet() != nullptr )
+					item.kind= CompletionValueKind::FunctionsSet;
+				else if( value.GetTypeName() || value.GetTypedef() != nullptr )
+					item.kind= CompletionValueKind::Type;
+				else if( value.GetClassField() != nullptr )
+					item.kind= CompletionValueKind::ClassField;
+				else if( value.GetNamespace() != nullptr )
+					item.kind= CompletionValueKind::NamesScope;
+				else if( value.GetTypeTemplatesSet() != nullptr )
+					item.kind= CompletionValueKind::TypeTemplatesSet;
+
+				completion_items_.push_back( std::move(item) );
+			}
 		});
 }
 

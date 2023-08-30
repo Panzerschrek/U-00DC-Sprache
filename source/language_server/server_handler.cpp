@@ -437,10 +437,12 @@ ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 	{
 		Json::Array items;
 
-		for( const std::string& completion_str : document->Complete( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+		for( const CompletionItem& completion_item : document->Complete( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 		{
 			Json::Object item;
-			item["label"]= completion_str;
+			item["label"]= completion_item.label;
+			if( completion_item.kind != CompletionItemKind::None )
+				item["kind"]= uint32_t(completion_item.kind);
 
 			items.push_back( std::move(item) );
 		}

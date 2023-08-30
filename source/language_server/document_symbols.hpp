@@ -8,6 +8,7 @@ namespace U
 namespace LangServer
 {
 
+// Values from LSP specification.
 enum class SymbolKind : uint8_t
 {
 	None= 0,
