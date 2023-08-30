@@ -262,6 +262,8 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		return;
 
 	NamesScope* actual_nams_scope= nullptr;
+	ClassPtr base_class= nullptr;
+
 	if( function_ptr->name_.size() > 1 )
 	{
 		// Out of line definition - fetch proper namespace.
@@ -298,7 +300,12 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 			else if( const auto type= value->value.GetTypeName() )
 			{
 				if( const auto class_= type->GetClassType() )
+				{
 					actual_nams_scope= class_->members.get();
+
+					if( i + 2 == name.size() )
+						base_class= class_;
+				}
 			}
 
 			if( actual_nams_scope == nullptr )
@@ -311,11 +318,12 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	{
 		// Declaration/definition in current scope.
 		actual_nams_scope= &names_scope;
+
+		base_class= names_scope.GetClass();
 	}
 
 	OverloadedFunctionsSet functions_set;
 
-	const ClassPtr base_class= nullptr; // TODO - pass it.
 	// Consider this not an out-of line definition.
 	// There is no reason to set this flag to true, since it affects only some consistency checks.
 	const bool out_of_line_flag= false;
