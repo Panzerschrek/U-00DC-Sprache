@@ -531,7 +531,9 @@ SyntaxTreeLookupResultOpt FindSyntaxElementForPositionImpl( const uint32_t line,
 {
 	for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : struct_named_initializer.members_initializers )
 	{
-		// TODO - process also name of member itself.
+		if( line == member_initializer.src_loc.GetLine() && column == member_initializer.src_loc.GetColumn() )
+			return SyntaxTreeLookupResult{ {}, &member_initializer, std::nullopt };
+
 		SyntaxTreeLookupResultOpt res= FindSyntaxElementForPositionImpl( line, column, member_initializer.initializer );
 		if( res != std::nullopt )
 			return res;

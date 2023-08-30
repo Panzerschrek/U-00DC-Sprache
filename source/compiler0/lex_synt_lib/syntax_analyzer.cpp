@@ -1888,31 +1888,49 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::BraceRight )
 	{
+		result.members_initializers.emplace_back();
+		StructNamedInitializer::MemberInitializer& out_initializer= result.members_initializers.back();
+
 		if( it_->type == Lexem::Type::Dot )
+		{
 			NextLexem();
+
+			if( it_->type == Lexem::Type::Identifier )
+			{
+				out_initializer.name= it_->text;
+				out_initializer.src_loc= it_->src_loc;
+				NextLexem();
+			}
+			else if( it_->type == Lexem::Type::CompletionIdentifier )
+			{
+				out_initializer.name= it_->text;
+				out_initializer.src_loc= it_->src_loc;
+				NextLexem();
+				out_initializer.completion_requested= true;
+			}
+			else
+			{
+				PushErrorMessage();
+				return std::move(result);
+			}
+
+			Initializer initializer= ParseVariableInitializer();
+			if( std::get_if<EmptyVariant>(&initializer) != nullptr )
+				PushErrorMessage();
+			out_initializer.initializer= std::move(initializer);
+		}
+		else if( it_->type == Lexem::Type::CompletionDot )
+		{
+			out_initializer.completion_requested= true;
+			out_initializer.src_loc= it_->src_loc;
+			out_initializer.name= "";
+			NextLexem();
+		}
 		else
 		{
 			PushErrorMessage();
 			return std::move(result);
 		}
-
-		if( it_->type != Lexem::Type::Identifier )
-		{
-			PushErrorMessage();
-			return std::move(result);
-		}
-		std::string name= it_->text;
-		const SrcLoc src_loc= it_->src_loc;
-		NextLexem();
-
-		Initializer initializer= ParseVariableInitializer();
-		if( std::get_if<EmptyVariant>(&initializer) != nullptr )
-			PushErrorMessage();
-
-		result.members_initializers.emplace_back();
-		result.members_initializers.back().src_loc= src_loc;
-		result.members_initializers.back().name= std::move(name);
-		result.members_initializers.back().initializer= std::move(initializer);
 
 		if( it_->type == Lexem::Type::Comma )
 		{

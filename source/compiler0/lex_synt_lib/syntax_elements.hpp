@@ -635,6 +635,7 @@ struct StructNamedInitializer::MemberInitializer
 	SrcLoc src_loc;
 	std::string name;
 	Initializer initializer;
+	bool completion_requested= false;
 };
 
 struct Label final : public SyntaxElementBase

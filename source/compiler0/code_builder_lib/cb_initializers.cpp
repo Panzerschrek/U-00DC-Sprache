@@ -150,7 +150,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	FunctionContext& function_context,
 	const Synt::StructNamedInitializer& initializer )
 {
-	const Class* const class_type= variable->type.GetClassType();
+	Class* const class_type= variable->type.GetClassType();
 	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
 	{
 		REPORT_ERROR( StructInitializerForNonStruct, names.GetErrors(), initializer.src_loc_ );
@@ -173,6 +173,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 	for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 	{
+		if( member_initializer.completion_requested )
+		{
+			NamesScopeFetchComleteForClass( class_type, member_initializer.name );
+			continue;
+		}
+
 		const NamesScopeValue* const class_member= class_type->members->GetThisScopeValue( member_initializer.name );
 		if( class_member == nullptr )
 		{
