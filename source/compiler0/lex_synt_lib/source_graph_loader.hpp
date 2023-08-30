@@ -46,4 +46,6 @@ SourceGraph LoadSourceGraph(
 	const IVfs::Path& root_file_path,
 	std::string_view prelude_code = "" );
 
+Synt::MacrosPtr PrepareBuiltInMacros( SourceFileContentsHashigFunction source_file_contents_hashing_function );
+
 } // namespace U

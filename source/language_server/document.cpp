@@ -139,7 +139,7 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 {
 	log_ << "Completion request " << src_loc.GetLine() << ":" << src_loc.GetColumn() << std::endl;
 
-	if( last_valid_state_ == std::nullopt )
+	if( last_valid_state_ == std::nullopt || last_valid_state_->source_graph.nodes_storage.empty() )
 	{
 		log_ << "Can't complete - document is not compiled" << std::endl;
 		return {};
@@ -255,14 +255,32 @@ std::vector<std::string> Document::Complete( const SrcLoc& src_loc )
 	// In most cases it will fail, but it will still parse text until first error.
 	// Here we assume, that first error is at least at point of completion or further.
 
-	const auto macro_expansion_contexts= std::make_shared<Synt::MacroExpansionContexts>();
+	Synt::MacrosByContextMap merged_macroses;
+	{
+		const auto& child_nodes_indeces= last_valid_state_->source_graph.nodes_storage.front().child_nodes_indeces;
+		if( child_nodes_indeces.empty() )
+		{
+			// Load built-in macroses only if this document has no imports. Otherwise built-in macroses will be taken from imports.
+			merged_macroses= *PrepareBuiltInMacros( CalculateSourceFileContentsHash );
+		}
+
+		// Merge macroses of imported modules in order to parse document text properly.
+		for( const size_t child_node_index : child_nodes_indeces )
+		{
+			for( const auto& context_macro_map_pair : *last_valid_state_->source_graph.nodes_storage[child_node_index].ast.macros )
+			{
+				Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
+				for( const auto& macro_map_pair : context_macro_map_pair.second )
+					dst_map[macro_map_pair.first]= macro_map_pair.second;
+			}
+		}
+	}
 
 	const auto synt_result=
 		Synt::SyntaxAnalysis(
 			lex_result.lexems,
-			// TODO - use proper imported macros.
-			Synt::MacrosByContextMap(),
-			macro_expansion_contexts,
+			merged_macroses,
+			std::make_shared<Synt::MacroExpansionContexts>(),
 			CalculateSourceFileContentsHash( text_ ) );
 
 	// Lookup global thing, where element with "completion*" lexem is located, together with path to it.

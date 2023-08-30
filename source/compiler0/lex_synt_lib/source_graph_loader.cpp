@@ -10,23 +10,6 @@ namespace U
 namespace
 {
 
-Synt::MacrosPtr PrepareBuiltInMacros( const SourceFileContentsHashigFunction source_file_contents_hashing_function )
-{
-	#include "built_in_macros.hpp"
-	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_built_in_macros );
-	U_ASSERT( lex_result.errors.empty() );
-
-	const Synt::SyntaxAnalysisResult synt_result=
-		Synt::SyntaxAnalysis(
-			lex_result.lexems,
-			Synt::MacrosByContextMap(),
-			std::make_shared<Synt::MacroExpansionContexts>(),
-			source_file_contents_hashing_function( c_built_in_macros ) );
-	U_ASSERT( synt_result.error_messages.empty() );
-
-	return synt_result.macros;
-}
-
 size_t LoadNode_r(
 	IVfs& vfs,
 	const SourceFileContentsHashigFunction source_file_contents_hashing_function,
@@ -217,6 +200,23 @@ SourceGraph LoadSourceGraph(
 	}
 
 	return result;
+}
+
+Synt::MacrosPtr PrepareBuiltInMacros( const SourceFileContentsHashigFunction source_file_contents_hashing_function )
+{
+	#include "built_in_macros.hpp"
+	const LexicalAnalysisResult lex_result= LexicalAnalysis( c_built_in_macros );
+	U_ASSERT( lex_result.errors.empty() );
+
+	const Synt::SyntaxAnalysisResult synt_result=
+		Synt::SyntaxAnalysis(
+			lex_result.lexems,
+			Synt::MacrosByContextMap(),
+			std::make_shared<Synt::MacroExpansionContexts>(),
+			source_file_contents_hashing_function( c_built_in_macros ) );
+	U_ASSERT( synt_result.error_messages.empty() );
+
+	return synt_result.macros;
 }
 
 } // namespace U
