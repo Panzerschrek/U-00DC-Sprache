@@ -1,5 +1,6 @@
 #include <sstream>
 #include "keywords.hpp"
+#include "../../code_builder_lib_common/string_ref.hpp"
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "../lex_synt_lib/program_writer.hpp"
 #include "code_builder.hpp"
@@ -437,11 +438,15 @@ void CodeBuilder::MemberAccessCompleteImpl( const VariablePtr& variable, const s
 
 void CodeBuilder::NamesScopeFetchComleteForNamesScope( const NamesScope& names_scope, const std::string_view name )
 {
+	const llvm::StringRef name_ref= StringViewToStringRef(name);
+
 	// Populate completion items by members of this names_scope, that start with given name.
 	names_scope.ForEachInThisScope(
 		[&]( const std::string_view namespace_name, const NamesScopeValue& names_scope_value )
 		{
-			if( namespace_name.size() >= name.size() && namespace_name.substr(0, name.size() ) == name )
+			// Use this name if given name is substring (ignoring case) of provided name.
+			// TODO - prioritize names, starting with providing name.
+			if( name_ref.empty() || StringViewToStringRef( namespace_name ).find_insensitive( name_ref ) != llvm::StringRef::npos )
 			{
 				CompletionItem item;
 				item.name= std::string(namespace_name);
