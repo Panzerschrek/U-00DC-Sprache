@@ -432,7 +432,7 @@ ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 		return result;
 	}
 
-	result["isIncomplete"]= true; // TODO - set it to proper value.
+	result["isIncomplete"]= false; // Completion provides all possible names.
 
 	{
 		Json::Array items;
