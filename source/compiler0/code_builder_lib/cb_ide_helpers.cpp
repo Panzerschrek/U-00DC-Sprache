@@ -261,13 +261,67 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	if( function_ptr == nullptr || function_ptr->name_.empty() )
 		return;
 
+	NamesScope* actual_nams_scope= nullptr;
+	if( function_ptr->name_.size() > 1 )
+	{
+		// Out of line definition - fetch proper namespace.
+		const auto& name= function_ptr->name_;
+		NamesScopeValue* value= nullptr;
+		size_t component_index= 0u;
+		if( name.front().name.empty() )
+		{
+			// Perform function name lookup starting from root.
+			U_ASSERT( name.size() >= 2u );
+			value= names_scope.GetRoot()->GetThisScopeValue( name[1].name );
+			++component_index;
+			if( value != nullptr )
+				CollectDefinition( *value, name[1].src_loc );
+		}
+		else
+		{
+			// Perform regular name lookup.
+			value= LookupName( names_scope, name[0].name, function_ptr->src_loc_ ).value;
+			if( value != nullptr )
+				CollectDefinition( *value, name[0].src_loc );
+		}
+
+		// Iterate over name components except last and fetch scopes.
+		// Last component is not a scope name, but function name, so, ignore it.
+		for( size_t i= component_index; i + 1 < name.size(); ++i )
+		{
+			if( value == nullptr )
+				return;
+
+			actual_nams_scope= nullptr;
+			if( const auto namespace_= value->value.GetNamespace() )
+				actual_nams_scope= namespace_.get();
+			else if( const auto type= value->value.GetTypeName() )
+			{
+				if( const auto class_= type->GetClassType() )
+					actual_nams_scope= class_->members.get();
+			}
+
+			if( actual_nams_scope == nullptr )
+				return;
+
+			value= actual_nams_scope->GetThisScopeValue( name[i + 1].name );
+		}
+	}
+	else
+	{
+		// Declaration/definition in current scope.
+		actual_nams_scope= &names_scope;
+	}
+
 	OverloadedFunctionsSet functions_set;
 
 	const ClassPtr base_class= nullptr; // TODO - pass it.
-	const bool is_out_of_line_function= false; // TODO - set it.
+	// Consider this not an out-of line definition.
+	// There is no reason to set this flag to true, since it affects only some consistency checks.
+	const bool out_of_line_flag= false;
 
 	// Prepare function - complete names in types of params and return value.
-	const size_t function_index= PrepareFunction( names_scope, base_class, functions_set, *function_ptr, is_out_of_line_function );
+	const size_t function_index= PrepareFunction( *actual_nams_scope, base_class, functions_set, *function_ptr, out_of_line_flag );
 
 	if( function_index >= functions_set.functions.size() )
 	{
@@ -284,7 +338,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	BuildFuncCode(
 		function_variable,
 		base_class,
-		names_scope,
+		*actual_nams_scope,
 		function_ptr->name_.back().name,
 		function_ptr->type_.params_,
 		*function_ptr->block_,
