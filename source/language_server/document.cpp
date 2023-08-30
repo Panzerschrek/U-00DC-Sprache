@@ -285,21 +285,16 @@ std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
 
 	// Lookup global thing, where element with "completion*" lexem is located, together with path to it.
 	const SyntaxTreeLookupResultOpt lookup_result=
-		FindSyntaxElementForPosition( src_loc_corected.GetLine(), src_loc_corected.GetColumn(), synt_result.program_elements );
+		FindCompletionSyntaxElement( src_loc_corected.GetLine(), src_loc_corected.GetColumn(), synt_result.program_elements );
 	if( lookup_result == std::nullopt )
 	{
 		log_ << "Failed to find parsed syntax element" << std::endl;
 		return {};
 	}
 
-	log_ << "Find syntax element of kind " << lookup_result->item.index() << std::endl;
-	if( lookup_result->global_item == std::nullopt )
-	{
-		log_ << "Can't fetch global item" << std::endl;
-		return {};
-	}
+	log_ << "Find syntax element of kind " << lookup_result->element.index() << std::endl;
 
-	const GlobalItem& global_item= *lookup_result->global_item;
+	const GlobalItem& global_item= lookup_result->global_item;
 	std::vector<CodeBuilder::CompletionItem> completion_result;
 	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
 	{
