@@ -362,9 +362,16 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	if( class_ptr == nullptr )
 		return;
 
-	// Complete names in parent mames.
+	// Complete names in parent names.
 	for( const Synt::ComplexName& parent_name : class_ptr->parents_ )
 		PrepareTypeImpl( names_scope, *global_function_context_, parent_name );
+
+	// Complete names in non-sync tag.
+	if( const auto non_sync_expression= std::get_if<Synt::ExpressionPtr>( &class_ptr->non_sync_tag_ ) )
+	{
+		if( *non_sync_expression != nullptr )
+			BuildExpressionCode( **non_sync_expression, names_scope, *global_function_context_ );
+	}
 
 	// Do not complete class members, since completion for class member should be triggered instead.
 }
