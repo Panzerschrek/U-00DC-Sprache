@@ -239,10 +239,10 @@ private:
 
 	TypeAlias ParseTypeAlias();
 	TypeAlias ParseTypeAliasBody();
-	std::unique_ptr<Function> ParseFunction();
-	std::unique_ptr<Class> ParseClass();
+	Function ParseFunction();
+	Class ParseClass();
 	ClassElements ParseClassBodyElements();
-	std::unique_ptr<Class> ParseClassBody();
+	Class ParseClassBody();
 
 	using TemplateVar=
 		std::variant<
@@ -685,13 +685,11 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 	{
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
-			if( auto function= ParseFunction() )
-				program_elements.emplace_back( std::move( function ) );
+			program_elements.emplace_back( std::make_unique<Function>(ParseFunction()) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
-			if( auto class_= ParseClass() )
-				program_elements.emplace_back( std::move( class_ ) );
+			program_elements.emplace_back( std::make_unique<Class>(ParseClass()) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
@@ -3060,11 +3058,11 @@ TypeAlias SyntaxAnalyzer::ParseTypeAliasBody()
 	return result;
 }
 
-std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
+Function SyntaxAnalyzer::ParseFunction()
 {
 	U_ASSERT( it_->text == Keywords::fn_ || it_->text == Keywords::op_ );
 
-	auto result= std::make_unique<Function>( it_->src_loc );
+	Function result( it_->src_loc );
 
 	const std::string& function_definition_lexem= it_->text;
 	NextLexem();
@@ -3072,22 +3070,22 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::virtual_ )
 	{
 		NextLexem();
-		result->virtual_function_kind_= VirtualFunctionKind::DeclareVirtual;
+		result.virtual_function_kind_= VirtualFunctionKind::DeclareVirtual;
 		if( it_->type == Lexem::Type::Identifier )
 		{
 			if( it_->text == Keywords::override_ )
 			{
-				result->virtual_function_kind_= VirtualFunctionKind::VirtualOverride;
+				result.virtual_function_kind_= VirtualFunctionKind::VirtualOverride;
 				NextLexem();
 			}
 			else if( it_->text == Keywords::final_ )
 			{
-				result->virtual_function_kind_= VirtualFunctionKind::VirtualFinal;
+				result.virtual_function_kind_= VirtualFunctionKind::VirtualFinal;
 				NextLexem();
 			}
 			else if( it_->text == Keywords::pure_ )
 			{
-				result->virtual_function_kind_= VirtualFunctionKind::VirtualPure;
+				result.virtual_function_kind_= VirtualFunctionKind::VirtualPure;
 				NextLexem();
 			}
 		}
@@ -3095,32 +3093,32 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::generator_ )
 	{
 		NextLexem();
-		result->kind= Function::Kind::Generator;
+		result.kind= Function::Kind::Generator;
 
-		result->coroutine_non_sync_tag= TryParseNonSyncTag();
+		result.coroutine_non_sync_tag= TryParseNonSyncTag();
 	}
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::constexpr_ )
 	{
 		NextLexem();
-		result->constexpr_= true;
+		result.constexpr_= true;
 	}
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::nomangle_ )
 	{
 		NextLexem();
-		result->no_mangle_= true;
+		result.no_mangle_= true;
 	}
 	// TODO - parse "enalbe_if" prior to other modifiers?
 	if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enable_if_ )
 	{
 		NextLexem();
 
-		result->condition_= ParseExpressionInBrackets();
+		result.condition_= ParseExpressionInBrackets();
 	}
 
 	// Parse complex name before function name - such "fn MyStruct::A::B"
 	if( it_->type == Lexem::Type::Scope )
 	{
-		result->name_.push_back(Function::NameComponent{});
+		result.name_.push_back(Function::NameComponent{});
 		NextLexem();
 	}
 	if( it_->type == Lexem::Type::Identifier )
@@ -3132,8 +3130,8 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 				PushErrorMessage();
 				return result;
 			}
-			result->name_.push_back(Function::NameComponent{ it_->text, it_->src_loc });
-			result->src_loc_= it_->src_loc;
+			result.name_.push_back(Function::NameComponent{ it_->text, it_->src_loc });
+			result.src_loc_= it_->src_loc;
 			NextLexem();
 
 			if( it_->type == Lexem::Type::Scope )
@@ -3160,20 +3158,20 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	if( function_definition_lexem == Keywords::fn_ )
 	{
-		if( result->name_.empty() )
+		if( result.name_.empty() )
 		{
 			PushErrorMessage();
-			result->name_.push_back(Function::NameComponent{ "dummy", SrcLoc() });
+			result.name_.push_back(Function::NameComponent{ "dummy", SrcLoc() });
 		}
-		if( result->name_.back().name == Keywords::conversion_constructor_ )
+		if( result.name_.back().name == Keywords::conversion_constructor_ )
 		{
-			result->name_.back().name= Keyword( Keywords::constructor_ );
-			result->is_conversion_constructor_= true;
+			result.name_.back().name= Keyword( Keywords::constructor_ );
+			result.is_conversion_constructor_= true;
 		}
 	}
 	else
 	{
-		result->src_loc_= it_->src_loc;
+		result.src_loc_= it_->src_loc;
 		OverloadedOperator overloaded_operator= OverloadedOperator::None;
 		switch( it_->type )
 		{
@@ -3210,7 +3208,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			if( it_->type != Lexem::Type::SquareBracketRight )
 			{
 				PushErrorMessage();
-				return nullptr;
+				return result;
 			}
 			overloaded_operator= OverloadedOperator::Indexing;
 			break;
@@ -3220,25 +3218,25 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			if( it_->type != Lexem::Type::BracketRight )
 			{
 				PushErrorMessage();
-				return nullptr;
+				return result;
 			}
 			overloaded_operator= OverloadedOperator::Call;
 			break;
 
 		default:
 			PushErrorMessage();
-			return nullptr;
+			return result;
 		};
 
-		result->name_.emplace_back( Function::NameComponent{ std::string( OverloadedOperatorToString( overloaded_operator ) ), result->src_loc_ } );
-		result->overloaded_operator_= overloaded_operator;
+		result.name_.emplace_back( Function::NameComponent{ std::string( OverloadedOperatorToString( overloaded_operator ) ), result.src_loc_ } );
+		result.overloaded_operator_= overloaded_operator;
 
 		NextLexem();
 	}
 
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	FunctionParams& params= result->type_.params_;
+	FunctionParams& params= result.type_.params_;
 
 	// Try parse "this"
 	if( it_->type == Lexem::Type::Identifier )
@@ -3251,7 +3249,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::this_ ) )
 			{
 				PushErrorMessage();
-				return nullptr;
+				return result;
 			}
 			NextLexem();
 
@@ -3264,7 +3262,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			if( !( it_->type == Lexem::Type::Identifier && it_->text == Keywords::this_ ) )
 			{
 				PushErrorMessage();
-				return nullptr;
+				return result;
 			}
 			NextLexem();
 
@@ -3331,10 +3329,10 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 
 	// If method is constructor or destructor and "this" not explicitly specified, add it.
 	// It's easier add "this" here, than dealing with implicit "this" in CodeBuilder.
-	if( ( result->name_.back().name == Keywords::constructor_ || result->name_.back().name == Keywords::destructor_ ) &&
+	if( ( result.name_.back().name == Keywords::constructor_ || result.name_.back().name == Keywords::destructor_ ) &&
 		( params.empty() || params.front().name_ != Keywords::this_ ) )
 	{
-		FunctionParam this_argument( result->src_loc_ );
+		FunctionParam this_argument( result.src_loc_ );
 		this_argument.name_= Keyword( Keywords::this_ );
 		this_argument.mutability_modifier_= MutabilityModifier::Mutable;
 		this_argument.reference_modifier_= ReferenceModifier::Reference;
@@ -3342,7 +3340,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		params.insert( params.begin(), std::move( this_argument ) );
 	}
 
-	ParseFunctionTypeEnding( result->type_ );
+	ParseFunctionTypeEnding( result.type_ );
 
 	if( it_->type == Lexem::Type::Semicolon )
 	{
@@ -3356,11 +3354,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 		NextLexem();
 
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::default_ || it_->text == Keywords::delete_ ) )
-			result->body_kind= it_->text == Keywords::default_ ? Function::BodyKind::BodyGenerationRequired : Function::BodyKind::BodyGenerationDisabled;
+			result.body_kind= it_->text == Keywords::default_ ? Function::BodyKind::BodyGenerationRequired : Function::BodyKind::BodyGenerationDisabled;
 		else
 		{
 			PushErrorMessage();
-			return nullptr;
+			return result;
 		}
 		NextLexem();
 
@@ -3410,11 +3408,11 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 			}
 			ExpectLexem( Lexem::Type::BracketRight );
 
-			result->constructor_initialization_list_= std::move(constructor_initialization_list);
+			result.constructor_initialization_list_= std::move(constructor_initialization_list);
 		}
 
 		if( it_->type == Lexem::Type::BraceLeft )
-			result->block_= std::make_unique<Block>( ParseBlock() );
+			result.block_= std::make_unique<Block>( ParseBlock() );
 		else
 		{
 			PushErrorMessage();
@@ -3425,7 +3423,7 @@ std::unique_ptr<Function> SyntaxAnalyzer::ParseFunction()
 	return result;
 }
 
-std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
+Class SyntaxAnalyzer::ParseClass()
 {
 	U_ASSERT( it_->text == Keywords::struct_ || it_->text == Keywords::class_ );
 	const bool is_class= it_->text == Keywords::class_;
@@ -3434,7 +3432,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 	if( it_->type != Lexem::Type::Identifier )
 	{
 		PushErrorMessage();
-		return nullptr;
+		return Class( it_->src_loc );
 	}
 	std::string name= it_->text;
 	const SrcLoc& class_src_loc= it_->src_loc;
@@ -3450,16 +3448,13 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClass()
 	NonSyncTag non_sync_tag= TryParseNonSyncTag();
 	const bool keep_fields_order= TryParseClassFieldsOrdered();
 
-	std::unique_ptr<Class> result= ParseClassBody();
-	if( result != nullptr )
-	{
-		result->src_loc_= class_src_loc;
-		result->name_= std::move(name);
-		result->kind_attribute_= class_kind_attribute;
-		result->non_sync_tag_= std::move(non_sync_tag);
-		result->keep_fields_order_= keep_fields_order;
-		result->parents_= std::move(parents_list);
-	}
+	Class result= ParseClassBody();
+	result.src_loc_= class_src_loc;
+	result.name_= std::move(name);
+	result.kind_attribute_= class_kind_attribute;
+	result.non_sync_tag_= std::move(non_sync_tag);
+	result.keep_fields_order_= keep_fields_order;
+	result.parents_= std::move(parents_list);
 
 	return result;
 }
@@ -3474,11 +3469,11 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			break;
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
-			result.emplace_back( ParseFunction() );
+			result.emplace_back( std::make_unique<Function>(ParseFunction()) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
-			result.emplace_back( ParseClass() );
+			result.emplace_back( std::make_unique<Class>(ParseClass()) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
@@ -3606,9 +3601,9 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 	return result;
 }
 
-std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
+Class SyntaxAnalyzer::ParseClassBody()
 {
-	auto result= std::make_unique<Class>( it_->src_loc );
+	Class result( it_->src_loc );
 
 	if( it_->type == Lexem::Type::BraceLeft )
 	{
@@ -3620,7 +3615,7 @@ std::unique_ptr<Class> SyntaxAnalyzer::ParseClassBody()
 		return result;
 	}
 
-	result->elements_= ParseClassBodyElements();
+	result.elements_= ParseClassBodyElements();
 
 	ExpectLexem( Lexem::Type::BraceRight );
 
@@ -3725,14 +3720,8 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	{
 		FunctionTemplate function_template( template_src_loc );
 		function_template.params_= std::move(params);
-
-		if( auto function= ParseFunction() )
-		{
-			function_template.function_= std::move(function);
-			return std::move(function_template);
-		}
-		else
-			return EmptyVariant();
+		function_template.function_= std::make_unique<Function>(ParseFunction());
+		return std::move(function_template);
 	}
 	else
 	{
@@ -3804,17 +3793,14 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			NonSyncTag non_sync_tag= TryParseNonSyncTag();
 			const bool keep_fields_order= TryParseClassFieldsOrdered();
 
-			auto class_= ParseClassBody();
-			if( class_ != nullptr )
-			{
-				class_->src_loc_= template_thing_src_loc;
-				class_->name_= "_"; // // Give special name for all template classes
-				class_->kind_attribute_= class_kind_attribute;
-				class_->non_sync_tag_= std::move(non_sync_tag);
-				class_->keep_fields_order_= keep_fields_order;
-				class_->parents_= std::move(class_parents_list);
-				class_template.something_= std::move(class_);
-			}
+			Class class_= ParseClassBody();
+			class_.src_loc_= template_thing_src_loc;
+			class_.name_= "_"; // // Give special name for all template classes
+			class_.kind_attribute_= class_kind_attribute;
+			class_.non_sync_tag_= std::move(non_sync_tag);
+			class_.keep_fields_order_= keep_fields_order;
+			class_.parents_= std::move(class_parents_list);
+			class_template.something_= std::make_unique<Class>(std::move(class_));
 			return std::move(class_template);
 		}
 
