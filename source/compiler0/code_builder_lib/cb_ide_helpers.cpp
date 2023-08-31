@@ -547,7 +547,27 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 		}
 		else if( value.GetFunctionsSet() != nullptr || value.GetThisOverloadedMethodsSet() != nullptr )
 			item.kind= CompletionItemKind::FunctionsSet;
-		else if( value.GetTypeName() || value.GetTypedef() != nullptr )
+		else if( const auto type= value.GetTypeName() )
+		{
+			item.kind= CompletionItemKind::Type;
+
+			if( type->GetFundamentalType() == nullptr )
+			{
+				// Fill detail for types except fundamentals.
+				item.detail= item.name;
+				item.detail+= " : ";
+
+				// Prefix structs/classes with specific keyword.
+				if( const auto class_type= type->GetClassType() )
+				{
+					item.detail+= Keyword( class_type->kind == Class::Kind::Struct ? Keywords::struct_ : Keywords::class_ );
+					item.detail+= " ";
+				}
+
+				item.detail+= type->ToString();
+			}
+		}
+		else if( value.GetTypedef() != nullptr )
 			item.kind= CompletionItemKind::Type;
 		else if( const auto class_field= value.GetClassField() )
 		{
