@@ -133,6 +133,7 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 	// This is needed, because document itself may be requested during "SetText" call - via DocumentManagerVfs.
 	Document& document= it_bool_pair.first->second;
 	document.SetText( std::move(text) );
+	document.Rebuild();
 
 	return &it_bool_pair.first->second;
 }

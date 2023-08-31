@@ -35,12 +35,42 @@ Json::Value DocumentPositionToJson( const DocumentPosition& position )
 	return out_position;
 }
 
+std::optional<DocumentPosition> JsonToDocumentPosition( const Json::Value& value )
+{
+	if( const auto obj= value.getAsObject() )
+	{
+		const auto line= obj->getInteger( "line" );
+		const auto column= obj->getInteger( "character" );
+		if( line != llvm::None && column != llvm::None )
+			return DocumentPosition{ uint32_t(*line) + 1, uint32_t(*column) };
+	}
+	return std::nullopt;
+}
+
 Json::Value DocumentRangeToJson( const DocumentRange& range )
 {
 	Json::Object out_range;
 	out_range["start"]= DocumentPositionToJson( range.start );
 	out_range["end"]= DocumentPositionToJson( range.end );
 	return out_range;
+}
+
+std::optional<DocumentRange> JsonToDocumentRange( const Json::Value& value )
+{
+	if( const auto obj= value.getAsObject() )
+	{
+		const auto start= obj->get( "start" );
+		const auto end= obj->get( "end" );
+		if( start != nullptr && end != nullptr )
+		{
+			const auto start_parsed= JsonToDocumentPosition( *start );
+			const auto end_parsed= JsonToDocumentPosition( *end );
+			if( start_parsed != std::nullopt && end_parsed != std::nullopt )
+				return DocumentRange{ *start_parsed, *end_parsed };
+		}
+	}
+
+	return std::nullopt;
 }
 
 Json::Array SymbolsToJson( const std::vector<Symbol>& symbols )
@@ -282,18 +312,17 @@ ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 		return result;
 	}
 
-	const auto position= obj->getObject( "position" );
-	if( position == nullptr )
+	const auto position_json= obj->get( "position" );
+	if( position_json == nullptr )
 	{
 		log_ << "No position!" << std::endl;
 		return result;
 	}
 
-	const auto line= position->getInteger( "line" );
-	const auto character= position->getInteger( "character" );
-	if( line == llvm::None || character == llvm::None )
+	const auto position= JsonToDocumentPosition( *position_json );
+	if( position == std::nullopt )
 	{
-		log_ << "Invalid position!" << std::endl;
+		log_ << "Failed to parse position" << std::endl;
 		return result;
 	}
 
@@ -304,7 +333,7 @@ ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 		return result;
 	}
 
-	for( const PositionInDocument& position : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	for( const PositionInDocument& position : document->GetAllOccurrences( *position ) )
 	{
 		Json::Object location;
 		location["range"]= DocumentRangeToJson( DocumentPositionToRange( position ) );
@@ -348,18 +377,17 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 		return result;
 	}
 
-	const auto position= obj->getObject( "position" );
-	if( position == nullptr )
+	const auto position_json= obj->get( "position" );
+	if( position_json == nullptr )
 	{
 		log_ << "No position!" << std::endl;
 		return result;
 	}
 
-	const auto line= position->getInteger( "line" );
-	const auto character= position->getInteger( "character" );
-	if( line == llvm::None || character == llvm::None )
+	const auto position= JsonToDocumentPosition( *position_json );
+	if( position == std::nullopt )
 	{
-		log_ << "Invalid position!" << std::endl;
+		log_ << "Failed to parse position" << std::endl;
 		return result;
 	}
 
@@ -370,10 +398,10 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 		return result;
 	}
 
-	if( const auto position= document->GetDefinitionPoint( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	if( const auto result_position= document->GetDefinitionPoint( *position ) )
 	{
-		result["range"]= DocumentRangeToJson( DocumentPositionToRange( *position ) );
-		result["uri"]= position->uri.ToString();
+		result["range"]= DocumentRangeToJson( DocumentPositionToRange( *result_position ) );
+		result["uri"]= result_position->uri.ToString();
 	}
 	return result;
 }
@@ -410,18 +438,17 @@ ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 		return result;
 	}
 
-	const auto position= obj->getObject( "position" );
-	if( position == nullptr )
+	const auto position_json= obj->get( "position" );
+	if( position_json == nullptr )
 	{
 		log_ << "No position!" << std::endl;
 		return result;
 	}
 
-	const auto line= position->getInteger( "line" );
-	const auto character= position->getInteger( "character" );
-	if( line == llvm::None || character == llvm::None )
+	const auto position= JsonToDocumentPosition( *position_json );
+	if( position == std::nullopt )
 	{
-		log_ << "Invalid position!" << std::endl;
+		log_ << "Failed to parse position" << std::endl;
 		return result;
 	}
 
@@ -437,7 +464,7 @@ ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 	{
 		Json::Array items;
 
-		for( const CompletionItem& completion_item : document->Complete( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+		for( const CompletionItem& completion_item : document->Complete( *position ) )
 		{
 			Json::Object item;
 			item["label"]= completion_item.label;
@@ -488,18 +515,17 @@ ServerResponse ServerHandler::ProcessTextDocumentHighlight( const Json::Value& p
 		return result;
 	}
 
-	const auto position= obj->getObject( "position" );
-	if( position == nullptr )
+	const auto position_json= obj->get( "position" );
+	if( position_json == nullptr )
 	{
 		log_ << "No position!" << std::endl;
 		return result;
 	}
 
-	const auto line= position->getInteger( "line" );
-	const auto character= position->getInteger( "character" );
-	if( line == llvm::None || character == llvm::None )
+	const auto position= JsonToDocumentPosition( *position_json );
+	if( position == std::nullopt )
 	{
-		log_ << "Invalid position!" << std::endl;
+		log_ << "Failed to parse position" << std::endl;
 		return result;
 	}
 
@@ -510,7 +536,7 @@ ServerResponse ServerHandler::ProcessTextDocumentHighlight( const Json::Value& p
 		return result;
 	}
 
-	for( const DocumentRange& range : document->GetHighlightLocations( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+	for( const DocumentRange& range : document->GetHighlightLocations( *position ) )
 	{
 		Json::Object highlight;
 		highlight["range"]= DocumentRangeToJson( range );
@@ -559,18 +585,17 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 		return result;
 	}
 
-	const auto position= obj->getObject( "position" );
-	if( position == nullptr )
+	const auto position_json= obj->get( "position" );
+	if( position_json == nullptr )
 	{
 		log_ << "No position!" << std::endl;
 		return result;
 	}
 
-	const auto line= position->getInteger( "line" );
-	const auto character= position->getInteger( "character" );
-	if( line == llvm::None || character == llvm::None )
+	const auto position= JsonToDocumentPosition( *position_json );
+	if( position == std::nullopt )
 	{
-		log_ << "Invalid position!" << std::endl;
+		log_ << "Failed to parse position" << std::endl;
 		return result;
 	}
 
@@ -592,13 +617,13 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 
 	{
 		Json::Object changes;
-		for( const PositionInDocument& position : document->GetAllOccurrences( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
+		for( const PositionInDocument& result_position : document->GetAllOccurrences( *position ) )
 		{
 			Json::Object edit;
-			edit["range"]= DocumentRangeToJson( DocumentPositionToRange( position ) );
+			edit["range"]= DocumentRangeToJson( DocumentPositionToRange( result_position ) );
 			edit["newText"]= new_name_str;
 
-			std::string change_uri= position.uri.ToString();
+			std::string change_uri= result_position.uri.ToString();
 			if( const auto prev_edits= changes.getArray( change_uri ) )
 				prev_edits->push_back( std::move(edit) );
 			else
@@ -769,37 +794,21 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 			return;
 		}
 
-		if( const auto range_obj= change_obj->getObject( "range" ) )
+		if( const auto range_json= change_obj->get( "range" ) )
 		{
-			const auto start= range_obj->getObject( "start" );
-			const auto end= range_obj->getObject( "end" );
-			if( start == nullptr || end == nullptr )
+			const auto range= JsonToDocumentRange( *range_json );
+			if( range == std::nullopt )
 			{
-				log_ << "Wrong range with no start/end" << std::endl;
+				log_ << "Failed to parse range" << std::endl;
 				return;
 			}
-			const auto start_line= start->getInteger( "line" );
-			const auto start_column= start->getInteger( "character" );
-			const auto end_line= end->getInteger( "line" );
-			const auto end_column= end->getInteger( "character" );
-			if( start_line == llvm::None || start_column == llvm::None || end_line == llvm::None || end_column == llvm::None )
-			{
-				log_ << "Wrong range without proper line/column" << std::endl;
-				return;
-			}
-
-			const DocumentRange range
-			{
-				{ uint32_t(*start_line) + 1, uint32_t(*start_column) },
-				{ uint32_t(*end_line) + 1, uint32_t(*end_column) }
-			};
 
 			log_ << "Change document range "
-				<< range.start.line << ":" << range.start.column << " - "
-				<< range.end.line << ":" << range.end.column
+				<< range->start.line << ":" << range->start.column << " - "
+				<< range->end.line << ":" << range->end.column
 				<< " with new text \"" << std::string_view(*change_text_str) << "\"" << std::endl;
 
-			document->UpdateText( range, *change_text_str );
+			document->UpdateText( *range, *change_text_str );
 		}
 		else
 		{

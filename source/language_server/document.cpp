@@ -33,12 +33,12 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 	return code_builder_errors_;
 }
 
-std::optional<PositionInDocument> Document::GetDefinitionPoint( const SrcLoc& src_loc )
+std::optional<PositionInDocument> Document::GetDefinitionPoint( const DocumentPosition& position )
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	const auto src_loc_corrected= GetIdentifierStartSrcLoc( src_loc, text_, last_valid_state_->line_to_linear_position_index );
+	const auto src_loc_corrected= GetIdentifierStartSrcLoc( DocumentPositionToSrcLoc(position), text_, last_valid_state_->line_to_linear_position_index );
 	if( src_loc_corrected == std::nullopt )
 		return std::nullopt;
 
@@ -59,12 +59,12 @@ std::optional<PositionInDocument> Document::GetDefinitionPoint( const SrcLoc& sr
 	return std::nullopt;
 }
 
-std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_loc )
+std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPosition& position )
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	const auto src_loc_corrected= GetIdentifierStartSrcLoc( src_loc, text_, last_valid_state_->line_to_linear_position_index );
+	const auto src_loc_corrected= GetIdentifierStartSrcLoc( DocumentPositionToSrcLoc(position), text_, last_valid_state_->line_to_linear_position_index );
 	if( src_loc_corrected == std::nullopt )
 		return {};
 
@@ -93,12 +93,12 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const SrcLoc& src_lo
 	return result;
 }
 
-std::vector<PositionInDocument> Document::GetAllOccurrences( const SrcLoc& src_loc )
+std::vector<PositionInDocument> Document::GetAllOccurrences( const DocumentPosition& position )
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	const auto src_loc_corrected= GetIdentifierStartSrcLoc( src_loc, text_, last_valid_state_->line_to_linear_position_index );
+	const auto src_loc_corrected= GetIdentifierStartSrcLoc( DocumentPositionToSrcLoc(position), text_, last_valid_state_->line_to_linear_position_index );
 	if( src_loc_corrected == std::nullopt )
 		return {};
 
@@ -135,9 +135,9 @@ std::vector<Symbol> Document::GetSymbols()
 	return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
 }
 
-std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
+std::vector<CompletionItem> Document::Complete( const DocumentPosition& position )
 {
-	log_ << "Completion request " << src_loc.GetLine() << ":" << src_loc.GetColumn() << std::endl;
+	log_ << "Completion request " << position.line << ":" << position.column << std::endl;
 
 	if( last_valid_state_ == std::nullopt || last_valid_state_->source_graph.nodes_storage.empty() )
 	{
@@ -149,7 +149,7 @@ std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
 	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
 	const LineToLinearPositionIndex line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
 
-	const uint32_t column= src_loc.GetColumn();
+	const uint32_t column= position.column;
 	if( column == 0 )
 	{
 		log_ << "Can't complete at column 0" << std::endl;
@@ -157,7 +157,7 @@ std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
 	}
 	const uint32_t column_minus_one= column - 1u;
 
-	const uint32_t line= src_loc.GetLine();
+	const uint32_t line= position.line;
 	if( line >= line_to_linear_position_index.size() )
 	{
 		log_ << "Line is greater than document end" << std::endl;

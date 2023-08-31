@@ -37,16 +37,16 @@ public:
 	LexSyntErrors GetSyntErrors() const;
 	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
 
-	std::optional<PositionInDocument> GetDefinitionPoint( const SrcLoc& src_loc );
+	std::optional<PositionInDocument> GetDefinitionPoint( const DocumentPosition& position );
 
 	// Returns highlights only for this document.
-	std::vector<DocumentRange> GetHighlightLocations( const SrcLoc& src_loc );
+	std::vector<DocumentRange> GetHighlightLocations( const DocumentPosition& position );
 
-	std::vector<PositionInDocument> GetAllOccurrences( const SrcLoc& src_loc );
+	std::vector<PositionInDocument> GetAllOccurrences( const DocumentPosition& position );
 
 	std::vector<Symbol> GetSymbols();
 
-	std::vector<CompletionItem> Complete( const SrcLoc& src_loc );
+	std::vector<CompletionItem> Complete( const DocumentPosition& position );
 
 	std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& start_position ) const;
 
