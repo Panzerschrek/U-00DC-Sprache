@@ -44,6 +44,13 @@ fn ToString( TupleType& tuple_type ) : ust::string8
 {
 	var ust::string8 mut result;
 	result+= KeywordToString( Keyword::tup_ );
+
+	if( tuple_type.element_types.empty() )
+	{
+		result+= "[]";
+		return move(result);
+	}
+
 	result+= "[ ";
 
 	foreach( &element_type : tuple_type.element_types )
@@ -77,10 +84,18 @@ fn ToString( FunctionType& function_type ) : ust::string8
 	var ust::string8 mut result;
 
 	result+= KeywordToString( Keyword::fn_ );
+	result+= " ";
 
-	result+= "(";
-	result+= FunctionParamsToString( function_type.params.range() );
-	result+= ") ";
+	if( function_type.params.empty() )
+	{
+		result+= "() ";
+	}
+	else
+	{
+		result+= "( ";
+		result+= FunctionParamsToString( function_type.params.range() );
+		result+= " ) ";
+	}
 
 	if( function_type.is_unsafe )
 	{
@@ -281,6 +296,9 @@ fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) 
 
 	foreach( &param : params )
 	{
+		result+= param.t.ToString();
+		result+= " ";
+
 		if( param.value_type == ValueType::ReferenceMut )
 		{
 			result+= "&mut ";
@@ -290,7 +308,7 @@ fn FunctionParamsToString( ust::array_view_imut</FunctionType::Param/> params ) 
 			result+= "&imut ";
 		}
 
-		result+= param.t.ToString();
+		result+= "_"; // use some dummy for param name.
 
 		if( ust::ref_cmp_ne( param, params.back() ) )
 		{
