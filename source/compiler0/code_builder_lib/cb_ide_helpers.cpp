@@ -421,6 +421,13 @@ void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const s
 	} while( current_scope != nullptr );
 }
 
+void CodeBuilder::RootNamespaseLookupCompleteImpl( const NamesScope& names_scope, const std::string_view name )
+{
+	const auto root= names_scope.GetRoot();
+	U_ASSERT( root != nullptr );
+	NamesScopeFetchComleteForNamesScope( *root, name );
+}
+
 void CodeBuilder::NamesScopeFetchComleteImpl( const Value& base, const std::string_view name )
 {
 	if( const NamesScopePtr inner_namespace= base.GetNamespace() )

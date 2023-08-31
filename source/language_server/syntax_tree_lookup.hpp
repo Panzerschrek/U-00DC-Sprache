@@ -9,6 +9,7 @@ namespace LangServer
 
 
 using CompletionSyntaxElement= std::variant<
+	const Synt::RootNamespaceNameLookupCompletion*,
 	const Synt::NameLookupCompletion*,
 	const Synt::NamesScopeNameFetchCompletion*,
 	const Synt::MemberAccessOperatorCompletion*,

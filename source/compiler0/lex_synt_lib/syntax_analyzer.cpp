@@ -1558,17 +1558,40 @@ std::vector<Expression> SyntaxAnalyzer::ParseTemplateParameters()
 
 ComplexName SyntaxAnalyzer::ParseComplexName()
 {
-	if( it_->type == Lexem::Type::Scope )
+	if( it_->type == Lexem::Type::CompletionScope )
+	{
+		RootNamespaceNameLookupCompletion root_namespace_lookup_completion( it_->src_loc );
+		NextLexem(); // Skip ::
+
+		root_namespace_lookup_completion.name= "";
+
+		return std::move(root_namespace_lookup_completion);
+	}
+	else if( it_->type == Lexem::Type::Scope )
 	{
 		NextLexem(); // Skip ::
-		RootNamespaceNameLookup root_namespace_lookup( it_->src_loc );
 
-		if( it_->type != Lexem::Type::Identifier )
+		if( it_->type == Lexem::Type::Identifier )
+		{
+			RootNamespaceNameLookup root_namespace_lookup( it_->src_loc );
+			root_namespace_lookup.name= it_->text;
+			NextLexem();
+
+			return TryParseComplexNameTailWithTemplateArgs( std::move(root_namespace_lookup) );
+		}
+		else if( it_->type == Lexem::Type::CompletionIdentifier )
+		{
+			RootNamespaceNameLookupCompletion root_namespace_lookup_completion( it_->src_loc );
+			root_namespace_lookup_completion.name= it_->text;
+			NextLexem();
+
+			return std::move(root_namespace_lookup_completion);
+		}
+		else
+		{
 			PushErrorMessage();
-		root_namespace_lookup.name= it_->text;
-		NextLexem();
-
-		return TryParseComplexNameTailWithTemplateArgs( std::move(root_namespace_lookup) );
+			return RootNamespaceNameLookupCompletion( it_->src_loc );
+		}
 	}
 	else if( it_->type == Lexem::Type::Identifier )
 	{

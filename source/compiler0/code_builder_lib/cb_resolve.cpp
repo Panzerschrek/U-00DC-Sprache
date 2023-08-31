@@ -41,6 +41,13 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	return value->value;
 }
 
+Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
+{
+	(void)function_context;
+	RootNamespaseLookupCompleteImpl( names_scope, root_namespace_lookup_completion.name );
+	return ErrorValue();
+}
+
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
 {
 	(void)function_context;

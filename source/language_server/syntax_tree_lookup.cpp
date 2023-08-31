@@ -265,6 +265,15 @@ void FindImpl( const Synt::RootNamespaceNameLookup& root_namespace_name_lookup )
 	(void)root_namespace_name_lookup;
 }
 
+void FindImpl( const Synt::RootNamespaceNameLookupCompletion& root_namespace_name_lookup_completion )
+{
+	if( line_ == root_namespace_name_lookup_completion.src_loc_.GetLine() && column_ == root_namespace_name_lookup_completion.src_loc_.GetColumn() )
+	{
+		U_ASSERT( global_item_ != std::nullopt );
+		result_= SyntaxTreeLookupResult{ prefix_, &root_namespace_name_lookup_completion, *global_item_ };
+	}
+}
+
 void FindImpl( const Synt::NameLookup& name_lookup )
 {
 	(void)name_lookup;

@@ -34,6 +34,10 @@ RootNamespaceNameLookup::RootNamespaceNameLookup( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+RootNamespaceNameLookupCompletion::RootNamespaceNameLookupCompletion( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 NameLookup::NameLookup( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
