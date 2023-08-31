@@ -519,4 +519,26 @@ void CodeBuilder::NamesScopeFetchComleteForClass( const Class* const class_, con
 		NamesScopeFetchComleteForClass( parent.class_, name );
 }
 
+void CodeBuilder::ComleteClassOwnFields( const Class* class_, const std::string_view name )
+{
+	const llvm::StringRef name_ref= StringViewToStringRef(name);
+
+	class_->members->ForEachInThisScope(
+		[&]( const std::string_view namespace_name, const NamesScopeValue& names_scope_value )
+		{
+			if( names_scope_value.value.GetClassField() == nullptr )
+				return;
+
+			// Use this name if given name is substring (ignoring case) of provided name.
+			// TODO - prioritize names, starting with providing name.
+			if( name_ref.empty() || StringViewToStringRef( namespace_name ).find_insensitive( name_ref ) != llvm::StringRef::npos )
+			{
+				CompletionItem item;
+				item.name= std::string(namespace_name);
+				item.kind= CompletionValueKind::ClassField;
+				completion_items_.push_back( std::move(item) );
+			}
+		});
+}
+
 } // namespace U

@@ -175,7 +175,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	{
 		if( member_initializer.completion_requested )
 		{
-			NamesScopeFetchComleteForClass( class_type, member_initializer.name );
+			ComleteClassOwnFields( class_type, member_initializer.name );
 			continue;
 		}
 
@@ -971,7 +971,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
 		if( field_initializer.completion_requested )
-			NamesScopeFetchComleteForClass( &base_class, field_initializer.name );
+			ComleteClassOwnFields( &base_class, field_initializer.name );
 
 		if( field_initializer.name == Keywords::base_ )
 		{
