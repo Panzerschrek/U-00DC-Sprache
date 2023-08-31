@@ -337,7 +337,7 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAss
 	static_assert_.syntax_element= &static_assert_declaration;
 
 	names_scope.AddName(
-		"_sa_" + std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)),
+		"static_assert_" + std::to_string(reinterpret_cast<uintptr_t>(&static_assert_declaration)),
 		NamesScopeValue( static_assert_, static_assert_declaration.src_loc_ ) );
 }
 
