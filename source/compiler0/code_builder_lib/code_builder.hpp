@@ -73,6 +73,7 @@ public:
 	struct CompletionItem
 	{
 		std::string name;
+		std::string sort_text;
 		CompletionValueKind kind= CompletionValueKind::Variable;
 	};
 
@@ -197,6 +198,7 @@ private:
 	void NamesScopeFetchComleteForNamesScope( const NamesScope& names_scope, std::string_view name );
 	void NamesScopeFetchComleteForClass( const Class* class_, std::string_view name );
 	void ComleteClassOwnFields( const Class* class_, std::string_view name );
+	void CompleteProcessValue( std::string_view completion_name, std::string_view value_name, const NamesScopeValue& names_scope_value );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );

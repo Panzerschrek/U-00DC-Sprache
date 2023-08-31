@@ -477,35 +477,10 @@ void CodeBuilder::MemberAccessCompleteImpl( const VariablePtr& variable, const s
 
 void CodeBuilder::NamesScopeFetchComleteForNamesScope( const NamesScope& names_scope, const std::string_view name )
 {
-	const llvm::StringRef name_ref= StringViewToStringRef(name);
-
-	// Populate completion items by members of this names_scope, that start with given name.
 	names_scope.ForEachInThisScope(
-		[&]( const std::string_view namespace_name, const NamesScopeValue& names_scope_value )
+		[&]( const std::string_view value_name, const NamesScopeValue& names_scope_value )
 		{
-			// Use this name if given name is substring (ignoring case) of provided name.
-			// TODO - prioritize names, starting with providing name.
-			if( name_ref.empty() || StringViewToStringRef( namespace_name ).find_insensitive( name_ref ) != llvm::StringRef::npos )
-			{
-				CompletionItem item;
-				item.name= std::string(namespace_name);
-
-				const Value& value= names_scope_value.value;
-				if( value.GetVariable() != nullptr )
-					item.kind= CompletionValueKind::Variable;
-				else if( value.GetFunctionsSet() != nullptr || value.GetThisOverloadedMethodsSet() != nullptr )
-					item.kind= CompletionValueKind::FunctionsSet;
-				else if( value.GetTypeName() || value.GetTypedef() != nullptr )
-					item.kind= CompletionValueKind::Type;
-				else if( value.GetClassField() != nullptr )
-					item.kind= CompletionValueKind::ClassField;
-				else if( value.GetNamespace() != nullptr )
-					item.kind= CompletionValueKind::NamesScope;
-				else if( value.GetTypeTemplatesSet() != nullptr )
-					item.kind= CompletionValueKind::TypeTemplatesSet;
-
-				completion_items_.push_back( std::move(item) );
-			}
+			CompleteProcessValue( name, value_name, names_scope_value );
 		});
 }
 
@@ -521,24 +496,51 @@ void CodeBuilder::NamesScopeFetchComleteForClass( const Class* const class_, con
 
 void CodeBuilder::ComleteClassOwnFields( const Class* class_, const std::string_view name )
 {
-	const llvm::StringRef name_ref= StringViewToStringRef(name);
-
 	class_->members->ForEachInThisScope(
-		[&]( const std::string_view namespace_name, const NamesScopeValue& names_scope_value )
+		[&]( const std::string_view value_name, const NamesScopeValue& names_scope_value )
 		{
 			if( names_scope_value.value.GetClassField() == nullptr )
 				return;
 
-			// Use this name if given name is substring (ignoring case) of provided name.
-			// TODO - prioritize names, starting with providing name.
-			if( name_ref.empty() || StringViewToStringRef( namespace_name ).find_insensitive( name_ref ) != llvm::StringRef::npos )
-			{
-				CompletionItem item;
-				item.name= std::string(namespace_name);
-				item.kind= CompletionValueKind::ClassField;
-				completion_items_.push_back( std::move(item) );
-			}
+			CompleteProcessValue( name, value_name, names_scope_value );
 		});
+}
+
+void CodeBuilder::CompleteProcessValue( std::string_view completion_name, std::string_view value_name, const NamesScopeValue& names_scope_value )
+{
+	const llvm::StringRef name_ref= StringViewToStringRef(completion_name);
+
+	// Use this name if given name is substring (ignoring case) of provided name.
+	// TODO - support Unicode names.
+	const auto pos= StringViewToStringRef( value_name ).find_insensitive( name_ref );
+	if( name_ref.empty() || pos != llvm::StringRef::npos )
+	{
+		CompletionItem item;
+		item.name= std::string(value_name);
+
+		// Perform prioritization by prefixing name in sort text.
+		// All values names, starting with given text have more priority, that values with name matching given in the middle/at end.
+		if( name_ref.empty() || pos == 0 )
+			item.sort_text= "0_" + item.name;
+		else
+			item.sort_text= "1_" + item.name;
+
+		const Value& value= names_scope_value.value;
+		if( value.GetVariable() != nullptr )
+			item.kind= CompletionValueKind::Variable;
+		else if( value.GetFunctionsSet() != nullptr || value.GetThisOverloadedMethodsSet() != nullptr )
+			item.kind= CompletionValueKind::FunctionsSet;
+		else if( value.GetTypeName() || value.GetTypedef() != nullptr )
+			item.kind= CompletionValueKind::Type;
+		else if( value.GetClassField() != nullptr )
+			item.kind= CompletionValueKind::ClassField;
+		else if( value.GetNamespace() != nullptr )
+			item.kind= CompletionValueKind::NamesScope;
+		else if( value.GetTypeTemplatesSet() != nullptr )
+			item.kind= CompletionValueKind::TypeTemplatesSet;
+
+		completion_items_.push_back( std::move(item) );
+	}
 }
 
 } // namespace U

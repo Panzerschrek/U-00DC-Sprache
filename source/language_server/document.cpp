@@ -316,7 +316,7 @@ std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
 	result_transformed.reserve( completion_result.size() );
 	for( const CodeBuilder::CompletionItem& item : completion_result )
 	{
-		result_transformed.push_back( CompletionItem{ item.name, TranslateCompletionItemKind( item.kind ) } );
+		result_transformed.push_back( CompletionItem{ item.name, item.sort_text, TranslateCompletionItemKind( item.kind ) } );
 	}
 	return result_transformed;
 }

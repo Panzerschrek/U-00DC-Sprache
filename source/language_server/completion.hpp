@@ -41,6 +41,7 @@ enum class CompletionItemKind  : uint8_t
 struct CompletionItem
 {
 	std::string label;
+	std::string sort_text;
 	CompletionItemKind kind= CompletionItemKind::None;
 };
 
