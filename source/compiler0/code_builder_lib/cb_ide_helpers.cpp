@@ -533,9 +533,17 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 		else
 			item.sort_text= "1_" + item.name;
 
+		// TODO - fill detail for other kinds of values.
+
 		const Value& value= names_scope_value.value;
-		if( value.GetVariable() != nullptr )
+		if( const auto variable= value.GetVariable() )
+		{
 			item.kind= CompletionItemKind::Variable;
+
+			item.detail= item.name;
+			item.detail+= " : ";
+			item.detail+= variable->type.ToString();
+		}
 		else if( value.GetFunctionsSet() != nullptr || value.GetThisOverloadedMethodsSet() != nullptr )
 			item.kind= CompletionItemKind::FunctionsSet;
 		else if( value.GetTypeName() || value.GetTypedef() != nullptr )

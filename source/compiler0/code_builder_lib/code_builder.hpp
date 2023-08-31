@@ -74,6 +74,7 @@ public:
 	{
 		std::string name;
 		std::string sort_text;
+		std::string detail;
 		CompletionItemKind kind= CompletionItemKind::Variable;
 	};
 
