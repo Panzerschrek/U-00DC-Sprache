@@ -548,8 +548,27 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 			item.kind= CompletionItemKind::FunctionsSet;
 		else if( value.GetTypeName() || value.GetTypedef() != nullptr )
 			item.kind= CompletionItemKind::Type;
-		else if( value.GetClassField() != nullptr )
+		else if( const auto class_field= value.GetClassField() )
+		{
 			item.kind= CompletionItemKind::ClassField;
+
+			item.detail= item.name;
+			item.detail+= " : ";
+
+			if( class_field->is_reference )
+			{
+				item.detail+= "&";
+				item.detail+= Keyword( class_field->is_mutable ? Keywords::mut_ : Keywords::imut_ );
+				item.detail+= " ";
+			}
+			else if( !class_field->is_mutable )
+			{
+				item.detail+= Keyword( Keywords::imut_ );
+				item.detail+= " ";
+			}
+
+			item.detail+= class_field->type.ToString();
+		}
 		else if( value.GetNamespace() != nullptr )
 			item.kind= CompletionItemKind::NamesScope;
 		else if( value.GetTypeTemplatesSet() != nullptr )
