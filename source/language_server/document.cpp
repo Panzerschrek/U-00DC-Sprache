@@ -183,7 +183,6 @@ std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
 		{
 			if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Dot )
 			{
-				log_ << "Complete . " << std::endl;
 				lexem.type= Lexem::Type::CompletionDot;
 				found= true;
 				break;
@@ -207,7 +206,6 @@ std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
 		{
 			if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Scope )
 			{
-				log_ << "Complete :: " << std::endl;
 				lexem.type= Lexem::Type::CompletionScope;
 				found= true;
 				break;
@@ -237,7 +235,7 @@ std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
 		{
 			if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Identifier )
 			{
-				log_ << "Complete text " << lexem.text << std::endl;
+				log_ << "Complete text \"" << lexem.text << "\"" << std::endl;
 				lexem.type= Lexem::Type::CompletionIdentifier;
 				found= true;
 				break;
@@ -294,30 +292,31 @@ std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
 
 	log_ << "Find syntax element of kind " << lookup_result->element.index() << std::endl;
 
+	// Use existing compiled program to perform names lookup.
+	// Do not try to compile current text, because it is broken and completion will not return what should be returned.
+	// Also it is too slow to recompile program for each completion.
+
 	const GlobalItem& global_item= lookup_result->global_item;
 	std::vector<CodeBuilder::CompletionItem> completion_result;
 	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
 	{
 		U_ASSERT( *program_element != nullptr );
-		log_ << "Found program element of kind " << (*program_element)->index() << std::endl;
 		completion_result= last_valid_state_->code_builder->Complete( lookup_result->prefix, **program_element );
 	}
 	else if( const auto class_element= std::get_if<const Synt::ClassElement*>( &global_item ) )
 	{
 		U_ASSERT( *class_element != nullptr );
-		log_ << "Found class element of kind " << (*class_element)->index() << std::endl;
 		completion_result= last_valid_state_->code_builder->Complete( lookup_result->prefix, **class_element );
 	}
 	else U_ASSERT( false );
 
-	log_ << "Complete found " << completion_result.size() << " results" << std::endl;
+	log_ << "Completion found " << completion_result.size() << " results" << std::endl;
 
 	std::vector<CompletionItem> result_transformed;
 	result_transformed.reserve( completion_result.size() );
 	for( const CodeBuilder::CompletionItem& item : completion_result )
-	{
 		result_transformed.push_back( CompletionItem{ item.name, item.sort_text, TranslateCompletionItemKind( item.kind ) } );
-	}
+
 	return result_transformed;
 }
 

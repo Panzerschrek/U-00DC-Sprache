@@ -295,6 +295,8 @@ struct RootNamespaceNameLookup final : public SyntaxElementBase
 	std::string name;
 };
 
+// Variant of name lookup, used internally by language server for completion.
+// In normal compilation process it is not used.
 struct RootNamespaceNameLookupCompletion final : public SyntaxElementBase
 {
 	explicit RootNamespaceNameLookupCompletion( const SrcLoc& src_loc );
@@ -326,6 +328,8 @@ struct NamesScopeNameFetch final : public SyntaxElementBase
 	ComplexNamePtr base;
 };
 
+// Variant of name lookup, used internally by language server for completion.
+// In normal compilation process it is not used.
 struct NamesScopeNameFetchCompletion final : public SyntaxElementBase
 {
 	explicit NamesScopeNameFetchCompletion( const SrcLoc& src_loc );
@@ -599,6 +603,8 @@ struct MemberAccessOperator final : public SyntaxElementBase
 	std::optional<std::vector<Expression>> template_parameters;
 };
 
+// Variant of member access, used internally by language server for completion.
+// In normal compilation process it is not used.
 struct MemberAccessOperatorCompletion final : public SyntaxElementBase
 {
 	MemberAccessOperatorCompletion( const SrcLoc& src_loc );

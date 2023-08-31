@@ -60,7 +60,7 @@ public:
 		const Synt::Class*,
 		const Synt::TypeTemplate*>;
 
-	enum class CompletionValueKind : uint8_t
+	enum class CompletionItemKind : uint8_t
 	{
 		Variable,
 		FunctionsSet,
@@ -74,7 +74,7 @@ public:
 	{
 		std::string name;
 		std::string sort_text;
-		CompletionValueKind kind= CompletionValueKind::Variable;
+		CompletionItemKind kind= CompletionItemKind::Variable;
 	};
 
 public:
@@ -172,7 +172,7 @@ private:
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
 
 	NamesScope* GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
-	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
+	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	std::vector<CompletionItem> CompletionResultFinalize();
 
 	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element );

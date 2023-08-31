@@ -161,7 +161,7 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_sc
 					if( type_template_ptr->syntax_element == *type_template )
 					{
 						// Found this type template.
-						// TODO - instantiate type template with dummy ags and search something inside it.
+						// TODO - support completion inside templates.
 						return nullptr;
 					}
 				}
@@ -290,7 +290,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		{
 			if( name[0].completion_requested )
 			{
-				RootNamespaseLookupCompleteImpl( names_scope, name[0].name );
+				NameLookupCompleteImpl( names_scope, name[0].name );
 				return;
 			}
 
@@ -403,14 +403,14 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template )
 {
-	// TODO
+	// TODO - support completion inside templates.
 	(void)names_scope;
 	(void)type_template;
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template )
 {
-	// TODO
+	// TODO - support completion inside templates.
 	(void)names_scope;
 	(void)function_template;
 }
@@ -430,7 +430,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label )
 {
-	// Nothing to do here.
+	// Nothing to complete in class visibility label.
 	(void)names_scope;
 	(void)class_visibility_label;
 }
@@ -535,17 +535,17 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 
 		const Value& value= names_scope_value.value;
 		if( value.GetVariable() != nullptr )
-			item.kind= CompletionValueKind::Variable;
+			item.kind= CompletionItemKind::Variable;
 		else if( value.GetFunctionsSet() != nullptr || value.GetThisOverloadedMethodsSet() != nullptr )
-			item.kind= CompletionValueKind::FunctionsSet;
+			item.kind= CompletionItemKind::FunctionsSet;
 		else if( value.GetTypeName() || value.GetTypedef() != nullptr )
-			item.kind= CompletionValueKind::Type;
+			item.kind= CompletionItemKind::Type;
 		else if( value.GetClassField() != nullptr )
-			item.kind= CompletionValueKind::ClassField;
+			item.kind= CompletionItemKind::ClassField;
 		else if( value.GetNamespace() != nullptr )
-			item.kind= CompletionValueKind::NamesScope;
+			item.kind= CompletionItemKind::NamesScope;
 		else if( value.GetTypeTemplatesSet() != nullptr )
-			item.kind= CompletionValueKind::TypeTemplatesSet;
+			item.kind= CompletionItemKind::TypeTemplatesSet;
 
 		completion_items_.push_back( std::move(item) );
 	}

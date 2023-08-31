@@ -1561,7 +1561,7 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 		RootNamespaceNameLookupCompletion root_namespace_lookup_completion( it_->src_loc );
 		NextLexem(); // Skip ::
 
-		root_namespace_lookup_completion.name= "";
+		root_namespace_lookup_completion.name= ""; // Complete with empty string.
 
 		return std::move(root_namespace_lookup_completion);
 	}
@@ -1614,24 +1614,11 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 	}
 	else if( it_->type == Lexem::Type::CompletionIdentifier )
 	{
-		if( it_->text == Keywords::typeof_ )
-		{
-			TypeofTypeName typeof_type_name( it_->src_loc );
-			NextLexem();
-			typeof_type_name.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
-			return ParseComplexNameTail( std::move( typeof_type_name ) );
-		}
-		else
-		{
-			NameLookupCompletion name_lookup( it_->src_loc );
+		NameLookupCompletion name_lookup_completion( it_->src_loc );
+		name_lookup_completion.name= it_->text;
+		NextLexem();
 
-			if( it_->type != Lexem::Type::Identifier )
-				PushErrorMessage();
-			name_lookup.name= it_->text;
-			NextLexem();
-
-			return TryParseComplexNameTailWithTemplateArgs( std::move(name_lookup) );
-		}
+		return std::move(name_lookup_completion);
 	}
 	else
 	{
@@ -1931,6 +1918,11 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 				out_initializer.name= it_->text;
 				out_initializer.src_loc= it_->src_loc;
 				NextLexem();
+
+				Initializer initializer= ParseVariableInitializer();
+				if( std::get_if<EmptyVariant>(&initializer) != nullptr )
+					PushErrorMessage();
+				out_initializer.initializer= std::move(initializer);
 			}
 			else if( it_->type == Lexem::Type::CompletionIdentifier )
 			{
@@ -1944,17 +1936,12 @@ Initializer SyntaxAnalyzer::ParseStructNamedInitializer()
 				PushErrorMessage();
 				return std::move(result);
 			}
-
-			Initializer initializer= ParseVariableInitializer();
-			if( std::get_if<EmptyVariant>(&initializer) != nullptr )
-				PushErrorMessage();
-			out_initializer.initializer= std::move(initializer);
 		}
 		else if( it_->type == Lexem::Type::CompletionDot )
 		{
 			out_initializer.completion_requested= true;
 			out_initializer.src_loc= it_->src_loc;
-			out_initializer.name= "";
+			out_initializer.name= ""; // Complete with empty string.
 			NextLexem();
 		}
 		else
@@ -3124,6 +3111,7 @@ Function SyntaxAnalyzer::ParseFunction()
 
 	if( it_->type == Lexem::Type::CompletionScope )
 	{
+		// Complete with empty string.
 		result.name_.push_back(Function::NameComponent{ "", it_->src_loc });
 		result.name_.back().completion_requested= true;
 		NextLexem();
@@ -3176,7 +3164,7 @@ Function SyntaxAnalyzer::ParseFunction()
 			}
 			else if( it_->type == Lexem::Type::CompletionScope )
 			{
-				result.name_.push_back(Function::NameComponent{ "", it_->src_loc, true });
+				result.name_.push_back(Function::NameComponent{ "", it_->src_loc, true }); // Complete with empty string.
 				NextLexem();
 				return result;
 			}

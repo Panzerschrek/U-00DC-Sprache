@@ -7,16 +7,18 @@ namespace U
 namespace LangServer
 {
 
-CompletionItemKind TranslateCompletionItemKind( const CodeBuilder::CompletionValueKind value_kind )
+CompletionItemKind TranslateCompletionItemKind( const CodeBuilder::CompletionItemKind value_kind )
 {
+	using InKind= CodeBuilder::CompletionItemKind;
+	using OutKind= CompletionItemKind;
 	switch(value_kind)
 	{
-	case CodeBuilder::CompletionValueKind::Variable: return CompletionItemKind::Variable;
-	case CodeBuilder::CompletionValueKind::FunctionsSet: return CompletionItemKind::Function;
-	case CodeBuilder::CompletionValueKind::Type: return CompletionItemKind::Class;
-	case CodeBuilder::CompletionValueKind::ClassField: return CompletionItemKind::Field;
-	case CodeBuilder::CompletionValueKind::NamesScope: return CompletionItemKind::Module; // TODO - maybe use something else here?
-	case CodeBuilder::CompletionValueKind::TypeTemplatesSet: return CompletionItemKind::Class; // TODO - maybe use something else here?
+	case InKind::Variable: return OutKind::Variable;
+	case InKind::FunctionsSet: return OutKind::Function;
+	case InKind::Type: return OutKind::Class;
+	case InKind::ClassField: return OutKind::Field;
+	case InKind::NamesScope: return OutKind::Module; // TODO - maybe use something else here?
+	case InKind::TypeTemplatesSet: return OutKind::Class; // TODO - maybe use something else here?
 	};
 
 	U_ASSERT(false);

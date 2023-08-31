@@ -45,7 +45,7 @@ struct CompletionItem
 	CompletionItemKind kind= CompletionItemKind::None;
 };
 
-CompletionItemKind TranslateCompletionItemKind( CodeBuilder::CompletionValueKind value_kind );
+CompletionItemKind TranslateCompletionItemKind( CodeBuilder::CompletionItemKind value_kind );
 
 } // namespace LangServer
 
