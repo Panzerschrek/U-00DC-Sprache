@@ -29,6 +29,7 @@ public:
 	Document& operator=( const Document& )= delete;
 	Document& operator=( Document&& )= default;
 
+	void UpdateText( const DocumentRange& range, std::string_view new_text );
 	void SetText( std::string text );
 	const std::string& GetText() const;
 
@@ -49,7 +50,7 @@ public:
 
 	std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& start_position ) const;
 
-private:
+public:
 	void Rebuild();
 
 private:

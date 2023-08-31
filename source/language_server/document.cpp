@@ -335,11 +335,28 @@ std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const Docume
 
 void Document::SetText( std::string text )
 {
-	if( text == text_ )
-		return;
+	text_= std::move(text);
+}
 
-	text_= text;
-	Rebuild();
+void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
+{
+	// We require newest index to perform incremental update.
+	// Can't use some saved index.
+	const auto index= BuildLineToLinearPositionIndex( text_ );
+
+	if( range.start.line < index.size() && range.end.line < index.size() )
+	{
+		const uint32_t linear_position_start= index[ range.start.line ] + range.start.column;
+		const uint32_t linear_position_end= index[ range.end.line ] + range.end.column;
+		if( linear_position_end < linear_position_start )
+		{
+			log_ << "Wrong range: end is less than start!" << std::endl;
+			return;
+		}
+		text_.replace( size_t(linear_position_start), size_t(linear_position_end - linear_position_start), new_text );
+	}
+	else
+		log_ << "Wrong update range!" << std::endl;
 }
 
 const std::string& Document::GetText() const

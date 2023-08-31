@@ -174,7 +174,7 @@ ServerResponse ServerHandler::ProcessInitialize( const Json::Value& params )
 
 	{
 		Json::Object capabilities;
-		capabilities["textDocumentSync"]= 1; // Full.
+		capabilities["textDocumentSync"]= 2; // Incremental.
 		capabilities["declarationProvider"]= true;
 		capabilities["definitionProvider"]= true;
 		capabilities["referencesProvider"]= true;
@@ -724,7 +724,12 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 		return;
 	}
 
-	log_ << "Change document " << uri->str() << std::endl;
+	Document* const document= document_manager_.GetDocument( *uri_parsed );
+	if( document == nullptr )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return;
+	}
 
 	const auto content_changes= obj->getArray("contentChanges" );
 	if( content_changes == nullptr )
@@ -739,37 +744,71 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 		return;
 	}
 
-	const Json::Value& change= content_changes->back();
+	// TODO - check also given document version number.
 
-	const auto change_obj= change.getAsObject();
-	if( change_obj == nullptr )
+	for( const Json::Value& change : *content_changes )
 	{
-		log_ << "change is not an object!" << std::endl;
-		return;
+		const auto change_obj= change.getAsObject();
+		if( change_obj == nullptr )
+		{
+			log_ << "change is not an object!" << std::endl;
+			return;
+		}
+
+		const auto change_text= change_obj->get("text");
+		if( change_text == nullptr )
+		{
+			log_ << "No change text!" << std::endl;
+			return;
+		}
+
+		const auto change_text_str= change_text->getAsString();
+		if( !change_text_str )
+		{
+			log_ << "Change text is not a string!" << std::endl;
+			return;
+		}
+
+		if( const auto range_obj= change_obj->getObject( "range" ) )
+		{
+			const auto start= range_obj->getObject( "start" );
+			const auto end= range_obj->getObject( "end" );
+			if( start == nullptr || end == nullptr )
+			{
+				log_ << "Wrong range with no start/end" << std::endl;
+				return;
+			}
+			const auto start_line= start->getInteger( "line" );
+			const auto start_column= start->getInteger( "character" );
+			const auto end_line= end->getInteger( "line" );
+			const auto end_column= end->getInteger( "character" );
+			if( start_line == llvm::None || start_column == llvm::None || end_line == llvm::None || end_column == llvm::None )
+			{
+				log_ << "Wrong range without proper line/column" << std::endl;
+				return;
+			}
+
+			const DocumentRange range
+			{
+				{ uint32_t(*start_line) + 1, uint32_t(*start_column) },
+				{ uint32_t(*end_line) + 1, uint32_t(*end_column) }
+			};
+
+			log_ << "Change document range "
+				<< range.start.line << ":" << range.start.column << " - "
+				<< range.end.line << ":" << range.end.column
+				<< " with new text \"" << std::string_view(*change_text_str) << "\"" << std::endl;
+
+			document->UpdateText( range, *change_text_str );
+		}
+		else
+		{
+			log_ << "Change document " << uri->str() << "by replacing whole text" << std::endl;
+			document->SetText( change_text_str->str() );
+		}
 	}
 
-	const auto change_text= change_obj->get("text");
-	if( change_text == nullptr )
-	{
-		log_ << "No change text!" << std::endl;
-		return;
-	}
-
-	const auto change_text_str= change_text->getAsString();
-	if( !change_text_str )
-	{
-		log_ << "Change text is not a string!" << std::endl;
-		return;
-	}
-
-	Document* const document= document_manager_.GetDocument( *uri_parsed );
-	if( document == nullptr )
-	{
-		log_ << "Can't find document " << uri->str() << std::endl;
-		return;
-	}
-
-	document->SetText( change_text_str->str() );
+	document->Rebuild(); // TODO - rebuild only if necessary.
 	GenerateDocumentNotifications( *uri, *document );
 }
 
