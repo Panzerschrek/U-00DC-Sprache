@@ -3121,10 +3121,33 @@ Function SyntaxAnalyzer::ParseFunction()
 		result.name_.push_back(Function::NameComponent{});
 		NextLexem();
 	}
+
+	if( it_->type == Lexem::Type::CompletionScope )
+	{
+		result.name_.push_back(Function::NameComponent{ "", it_->src_loc });
+		result.name_.back().completion_requested= true;
+		NextLexem();
+		result.name_.push_back(Function::NameComponent{ "", it_->src_loc });
+		return result;
+	}
+	if( it_->type == Lexem::Type::CompletionIdentifier )
+	{
+		result.name_.push_back(Function::NameComponent{ it_->text, it_->src_loc, true });
+		NextLexem();
+		return result;
+	}
+
 	if( it_->type == Lexem::Type::Identifier )
 	{
 		while( NotEndOfFile() )
 		{
+			if( it_->type == Lexem::Type::CompletionIdentifier )
+			{
+				result.name_.push_back(Function::NameComponent{ it_->text, it_->src_loc, true });
+				NextLexem();
+				return result;
+			}
+
 			if( it_->type != Lexem::Type::Identifier )
 			{
 				PushErrorMessage();
@@ -3138,7 +3161,7 @@ Function SyntaxAnalyzer::ParseFunction()
 			{
 				NextLexem();
 
-				if( it_->type == Lexem::Type::Identifier )
+				if( it_->type == Lexem::Type::Identifier || it_->type == Lexem::Type::CompletionIdentifier )
 					continue;
 				else
 				{
@@ -3150,6 +3173,12 @@ Function SyntaxAnalyzer::ParseFunction()
 						return result;
 					}
 				}
+			}
+			else if( it_->type == Lexem::Type::CompletionScope )
+			{
+				result.name_.push_back(Function::NameComponent{ "", it_->src_loc, true });
+				NextLexem();
+				return result;
 			}
 			else
 				break;

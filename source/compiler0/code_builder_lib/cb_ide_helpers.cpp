@@ -264,14 +264,21 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	NamesScope* actual_nams_scope= nullptr;
 	ClassPtr base_class= nullptr;
 
-	if( function_ptr->name_.size() > 1 )
+	const auto& name= function_ptr->name_;
+
+	if( name.size() > 1 )
 	{
 		// Out of line definition - fetch proper namespace.
-		const auto& name= function_ptr->name_;
 		NamesScopeValue* value= nullptr;
 		size_t component_index= 0u;
 		if( name.front().name.empty() )
 		{
+			if( name[0].completion_requested || name[1].completion_requested )
+			{
+				RootNamespaseLookupCompleteImpl( names_scope, name[1].name );
+				return;
+			}
+
 			// Perform function name lookup starting from root.
 			U_ASSERT( name.size() >= 2u );
 			value= names_scope.GetRoot()->GetThisScopeValue( name[1].name );
@@ -281,6 +288,12 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		}
 		else
 		{
+			if( name[0].completion_requested )
+			{
+				RootNamespaseLookupCompleteImpl( names_scope, name[0].name );
+				return;
+			}
+
 			// Perform regular name lookup.
 			value= LookupName( names_scope, name[0].name, function_ptr->src_loc_ ).value;
 			if( value != nullptr )
@@ -311,11 +324,23 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 			if( actual_nams_scope == nullptr )
 				return;
 
+			if( name[i + 1].completion_requested )
+			{
+				NamesScopeFetchComleteForNamesScope( *actual_nams_scope, name[i + 1].name );
+				return;
+			}
+
 			value= actual_nams_scope->GetThisScopeValue( name[i + 1].name );
 		}
 	}
 	else
 	{
+		if( name.front().completion_requested )
+		{
+			NameLookupCompleteImpl( names_scope, name.front().name );
+			return;
+		}
+
 		// Declaration/definition in current scope.
 		actual_nams_scope= &names_scope;
 
@@ -347,7 +372,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		function_variable,
 		base_class,
 		*actual_nams_scope,
-		function_ptr->name_.back().name,
+		name.back().name,
 		function_ptr->type_.params_,
 		*function_ptr->block_,
 		function_ptr->constructor_initialization_list_.get() );

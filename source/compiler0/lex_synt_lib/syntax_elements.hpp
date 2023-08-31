@@ -975,6 +975,7 @@ struct Function final : public SyntaxElementBase
 	{
 		std::string name;
 		SrcLoc src_loc;
+		bool completion_requested= false;
 	};
 
 	std::vector<NameComponent> name_; // A, A::B, A::B::C::D, ::A, ::A::B

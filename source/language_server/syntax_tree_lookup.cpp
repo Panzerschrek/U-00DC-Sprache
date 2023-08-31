@@ -406,6 +406,15 @@ void FindImpl( const Synt::Enum& enum_ )
 
 void FindImpl( const Synt::Function& function )
 {
+	for( const Synt::Function::NameComponent& name_component : function.name_ )
+	{
+		if( line_ == name_component.src_loc.GetLine() && column_ == name_component.src_loc.GetColumn() )
+		{
+			U_ASSERT( global_item_ != std::nullopt );
+			result_= SyntaxTreeLookupResult{ prefix_, &name_component, *global_item_ };
+		}
+	}
+
 	FindImpl( function.condition_ );
 	FindImpl( function.type_ );
 	FindImpl( function.constructor_initialization_list_ );
