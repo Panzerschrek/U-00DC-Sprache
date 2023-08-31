@@ -112,7 +112,6 @@ public:
 
 	// Try to compile given program element, including internal completion syntax element.
 	// Return completion result.
-	// Result list is sorted and unique.
 	// Prefix is used to find proper namespace/class (name lookups are used).
 	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
 	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );

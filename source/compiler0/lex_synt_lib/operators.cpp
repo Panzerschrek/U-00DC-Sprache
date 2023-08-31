@@ -38,6 +38,31 @@ std::string_view BinaryOperatorToString( const BinaryOperatorType op )
 	return "";
 }
 
+std::optional<BinaryOperatorType> StringToBinaryOperator( const std::string_view s )
+{
+	if( s == "+" ) return BinaryOperatorType::Add;
+	if( s == "-" ) return BinaryOperatorType::Sub;
+	if( s == "*" ) return BinaryOperatorType::Mul;
+	if( s == "/" ) return BinaryOperatorType::Div;
+	if( s == "%" ) return BinaryOperatorType::Rem;
+	if( s == "=="  ) return BinaryOperatorType::Equal;
+	if( s == "!="  ) return BinaryOperatorType::NotEqual;
+	if( s == "<"   ) return BinaryOperatorType::Less;
+	if( s == "<="  ) return BinaryOperatorType::LessEqual;
+	if( s == ">"   ) return BinaryOperatorType::Greater;
+	if( s == ">="  ) return BinaryOperatorType::GreaterEqual;
+	if( s == "<=>" ) return BinaryOperatorType::CompareOrder;
+	if( s == "&" ) return BinaryOperatorType::And;
+	if( s == "|" ) return BinaryOperatorType::Or;
+	if( s == "^" ) return BinaryOperatorType::Xor;
+	if( s == "<<" ) return BinaryOperatorType::ShiftLeft;
+	if( s == ">>" ) return BinaryOperatorType::ShiftRight;
+	if( s == "&&" ) return BinaryOperatorType::LazyLogicalAnd;
+	if( s == "||" ) return BinaryOperatorType::LazyLogicalOr;
+
+	return std::nullopt;
+}
+
 std::string_view OverloadedOperatorToString( const OverloadedOperator op )
 {
 	switch( op )
@@ -86,6 +111,41 @@ std::string_view OverloadedOperatorToString( const OverloadedOperator op )
 
 	U_ASSERT(false);
 	return "";
+}
+
+std::optional<OverloadedOperator> StringToOverloadedOperator( const std::string_view s )
+{
+	if( s == "+" ) return OverloadedOperator::Add;
+	if( s == "-" ) return OverloadedOperator::Sub;
+	if( s == "*" ) return OverloadedOperator::Mul;
+	if( s == "/" ) return OverloadedOperator::Div;
+	if( s == "%" ) return OverloadedOperator::Rem;
+	if( s == "==" ) return OverloadedOperator::CompareEqual;
+	if( s == "<=>" ) return OverloadedOperator::CompareOrder;
+	if( s == "&" ) return OverloadedOperator::And;
+	if( s == "|" ) return OverloadedOperator::Or;
+	if( s == "^" ) return OverloadedOperator::Xor;
+	if( s == "<<" ) return OverloadedOperator::ShiftLeft;
+	if( s == ">>" ) return OverloadedOperator::ShiftRight;
+	if( s == "+=" ) return OverloadedOperator::AssignAdd;
+	if( s == "-=" ) return OverloadedOperator::AssignSub;
+	if( s == "*=" ) return OverloadedOperator::AssignMul;
+	if( s == "/=" ) return OverloadedOperator::AssignDiv;
+	if( s == "%=" ) return OverloadedOperator::AssignRem;
+	if( s == "&=" ) return OverloadedOperator::AssignAnd;
+	if( s == "|=" ) return OverloadedOperator::AssignOr;
+	if( s == "^=" ) return OverloadedOperator::AssignXor;
+	if( s == "<<=" ) return OverloadedOperator::AssignShiftLeft;
+	if( s == ">>=" ) return OverloadedOperator::AssignShiftRight;
+	if( s == "!" ) return OverloadedOperator::LogicalNot;
+	if( s == "~" ) return OverloadedOperator::BitwiseNot;
+	if( s == "=" ) return OverloadedOperator::Assign;
+	if( s == "++" ) return OverloadedOperator::Increment;
+	if( s == "--" ) return OverloadedOperator::Decrement;
+	if( s == "[]" ) return OverloadedOperator::Indexing;
+	if( s == "()" ) return OverloadedOperator::Call;
+
+	return std::nullopt;
 }
 
 OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorType binary_operator_type )

@@ -176,8 +176,8 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_sc
 std::vector<CodeBuilder::CompletionItem> CodeBuilder::CompletionResultFinalize()
 {
 	std::vector<CompletionItem> result;
-	result.swap( completion_items_ );
-	// TODO - maybe remove duplicates and/or sort result?
+	result.swap( completion_items_ );	
+	// Ideally we should filter-out shadowed names, but it is for now too complicated.
 	return result;
 }
 
@@ -506,21 +506,29 @@ void CodeBuilder::ComleteClassOwnFields( const Class* class_, const std::string_
 		});
 }
 
-void CodeBuilder::CompleteProcessValue( std::string_view completion_name, std::string_view value_name, const NamesScopeValue& names_scope_value )
+void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, const std::string_view value_name, const NamesScopeValue& names_scope_value )
 {
-	const llvm::StringRef name_ref= StringViewToStringRef(completion_name);
+	const llvm::StringRef completion_name_ref= StringViewToStringRef(completion_name);
 
 	// Use this name if given name is substring (ignoring case) of provided name.
 	// TODO - support Unicode names.
-	const auto pos= StringViewToStringRef( value_name ).find_insensitive( name_ref );
-	if( name_ref.empty() || pos != llvm::StringRef::npos )
+	const auto pos= StringViewToStringRef( value_name ).find_insensitive( completion_name_ref );
+	if( completion_name_ref.empty() || pos != llvm::StringRef::npos )
 	{
+		if( value_name == Keyword(Keywords::static_assert_) || // static_assert name may exist isnide namespace, but we should ignore it.
+			StringToOverloadedOperator( value_name ) != std::nullopt // Ignore all overloaded operators. There is no reason and no possibility to access overloaded operator by name.
+			// Still allow to access constructors and destructors, even if it is needed very rarely.
+			)
+		{
+			return;
+		}
+
 		CompletionItem item;
 		item.name= std::string(value_name);
 
 		// Perform prioritization by prefixing name in sort text.
 		// All values names, starting with given text have more priority, that values with name matching given in the middle/at end.
-		if( name_ref.empty() || pos == 0 )
+		if( completion_name_ref.empty() || pos == 0 )
 			item.sort_text= "0_" + item.name;
 		else
 			item.sort_text= "1_" + item.name;
