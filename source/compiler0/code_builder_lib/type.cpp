@@ -406,28 +406,39 @@ std::string Type::ToString() const
 
 		std::string operator()( const ArrayPtr& array ) const
 		{
-			return
-				"[ " + array->element_type.ToString() + ", " +
-				std::to_string( array->element_count ) + " ]";
+			std::string result;
+			result+= "[ ";
+			result+= array->element_type.ToString();
+			result+= ", ";
+			result+= std::to_string( array->element_count );
+			result+= " ]";
+			return result;
 		}
 
 		std::string operator()( const RawPointerPtr& raw_pointer ) const
 		{
-			return "$( " + raw_pointer->element_type.ToString() + " )";
+			std::string result;
+			result+= "$( ";
+			result+= raw_pointer->element_type.ToString();
+			result+= " )";
+			return result;
 		}
 
 		std::string operator()( const TupleTypePtr& tuple ) const
 		{
-			std::string res= "tup[ ";
+			if( tuple->element_types.empty() )
+				return "tup[]";
+
+			std::string result= "tup[ ";
 
 			for( const Type& element_type : tuple->element_types )
 			{
-				res+= element_type.ToString();
+				result+= element_type.ToString();
 				if( &element_type != & tuple->element_types.back() )
-					res+= ", ";
+					result+= ", ";
 			}
-			res+= " ]";
-			return res;
+			result+= " ]";
+			return result;
 		}
 
 		std::string operator()( const ClassPtr class_ ) const
@@ -528,9 +539,15 @@ std::string Type::ToString() const
 
 			std::string result;
 			result+= "fn ";
-			result+= " ( ";
-			result+= FunctionParamsToString( function.params );
-			result+= " ) ";
+
+			if( function.params.empty() )
+				result+= "() ";
+			else
+			{
+				result+= "( ";
+				result+= FunctionParamsToString( function.params );
+				result+= " ) ";
+			}
 			if( function.unsafe )
 				result+= "unsafe ";
 
@@ -810,12 +827,16 @@ std::string FunctionParamsToString( const llvm::ArrayRef<FunctionType::Param> pa
 	std::string result;
 	for( const FunctionType::Param& param : params )
 	{
+		result+= param.type.ToString();
+		result+= " ";
+
 		if( param.value_type == ValueType::ReferenceMut )
 			result+= "&mut ";
 		if( param.value_type == ValueType::ReferenceImut )
 			result+= "&imut ";
 
-		result+= param.type.ToString();
+		result+= "_"; // use some dummy for param name.
+
 		if( &param != &params.back() )
 			result+= ", ";
 	}

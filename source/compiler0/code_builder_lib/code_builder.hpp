@@ -55,6 +55,29 @@ public:
 		std::unique_ptr<llvm::Module> module;
 	};
 
+	using CompletionRequestPrefixComponent= std::variant<
+		const Synt::Namespace*,
+		const Synt::Class*,
+		const Synt::TypeTemplate*>;
+
+	enum class CompletionItemKind : uint8_t
+	{
+		Variable,
+		FunctionsSet,
+		Type,
+		ClassField,
+		NamesScope,
+		TypeTemplatesSet,
+	};
+
+	struct CompletionItem
+	{
+		std::string name;
+		std::string sort_text;
+		std::string detail;
+		CompletionItemKind kind= CompletionItemKind::Variable;
+	};
+
 public:
 	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
 
@@ -87,6 +110,12 @@ public:
 	// For both symbol usage and symvol definition it returns definition point and all unsage points.
 	// Result lost is sorted and contains unique entrires.
 	std::vector<SrcLoc> GetAllOccurrences( const SrcLoc& src_loc );
+
+	// Try to compile given program element, including internal completion syntax element.
+	// Return completion result.
+	// Prefix is used to find proper namespace/class (name lookups are used).
+	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
+	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
 
 private:
 	CodeBuilder(
@@ -142,6 +171,34 @@ private:
 	SrcLoc GetDefinitionFetchSrcLoc( const NamesScopeValue& value );
 
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
+
+	NamesScope* GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
+	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
+	std::vector<CompletionItem> CompletionResultFinalize();
+
+	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element );
+	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionPtr& function_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassPtr& class_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
+
+	void RootNamespaseLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
+	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
+	void NamesScopeFetchComleteImpl( const Value& base, std::string_view name );
+	void MemberAccessCompleteImpl( const VariablePtr& variable, std::string_view name );
+	void NamesScopeFetchComleteForNamesScope( const NamesScope& names_scope, std::string_view name );
+	void NamesScopeFetchComleteForClass( const Class* class_, std::string_view name );
+	void ComleteClassOwnFields( const Class* class_, std::string_view name );
+	void CompleteProcessValue( std::string_view completion_name, std::string_view value_name, const NamesScopeValue& names_scope_value );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );
@@ -558,6 +615,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperator& call_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::IndexationOperator& indexation_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperator& member_access_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryMinus& unary_minus );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnaryPlus& unary_plus );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::LogicalNot& logical_not );
@@ -796,8 +854,11 @@ private:
 	Value ResolveValue( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& complex_name );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization );
 
 	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* value );
@@ -1222,6 +1283,9 @@ private:
 	};
 	// Map usage point to definition point.
 	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
+
+	// Output container for completion syntax elements.
+	std::vector<CompletionItem> completion_items_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

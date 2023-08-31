@@ -1,5 +1,8 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
+#include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
+#include "../lex_synt_lib_common/assert.hpp"
+#include "syntax_tree_lookup.hpp"
 #include "document_position_utils.hpp"
 #include "document.hpp"
 
@@ -130,6 +133,192 @@ std::vector<Symbol> Document::GetSymbols()
 		return {};
 
 	return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
+}
+
+std::vector<CompletionItem> Document::Complete( const SrcLoc& src_loc )
+{
+	log_ << "Completion request " << src_loc.GetLine() << ":" << src_loc.GetColumn() << std::endl;
+
+	if( last_valid_state_ == std::nullopt || last_valid_state_->source_graph.nodes_storage.empty() )
+	{
+		log_ << "Can't complete - document is not compiled" << std::endl;
+		return {};
+	}
+
+	// Perform lexical analysis for current text.
+	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
+	const LineToLinearPositionIndex line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
+
+	const uint32_t column= src_loc.GetColumn();
+	if( column == 0 )
+	{
+		log_ << "Can't complete at column 0" << std::endl;
+		return {};
+	}
+	const uint32_t column_minus_one= column - 1u;
+
+	const uint32_t line= src_loc.GetLine();
+	if( line >= line_to_linear_position_index.size() )
+	{
+		log_ << "Line is greater than document end" << std::endl;
+		return {};
+	}
+
+	const uint32_t char_position= line_to_linear_position_index[ line ] + column_minus_one;
+	if( char_position >= text_.size() )
+	{
+		log_ << "Wrong linear position inside text" << std::endl;
+		return {};
+	}
+
+	SrcLoc src_loc_corected;
+	if( text_[ char_position ] == '.' )
+	{
+		log_ << "Complete for ." << std::endl;
+
+		src_loc_corected= SrcLoc( 0, line, column_minus_one );
+
+		bool found= false;
+		for( Lexem& lexem : lex_result.lexems )
+		{
+			if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Dot )
+			{
+				lexem.type= Lexem::Type::CompletionDot;
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
+		{
+			log_ << "Can't find . lexem" << std::endl;
+			return {};
+		}
+	}
+	else if( text_[ char_position ] == ':' && char_position > 0 && text_[ char_position - 1 ] == ':' )
+	{
+		log_ << "Complete for ::" << std::endl;
+
+		src_loc_corected= SrcLoc( 0, line, column_minus_one - 1 ); // -1 to reach start of "::"
+
+		bool found= false;
+		for( Lexem& lexem : lex_result.lexems )
+		{
+			if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Scope )
+			{
+				lexem.type= Lexem::Type::CompletionScope;
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
+		{
+			log_ << "Can't find :: lexem" << std::endl;
+			return {};
+		}
+	}
+	else
+	{
+		log_ << "Complete for identifier" << std::endl;
+
+		const auto idenifier_start_src_loc= GetIdentifierStartSrcLoc( SrcLoc( 0, line, column_minus_one ), text_, line_to_linear_position_index );
+		if( idenifier_start_src_loc == std::nullopt )
+		{
+			log_ << "Failed to find identifer start" << std::endl;
+			return {};
+		}
+		src_loc_corected= *idenifier_start_src_loc;
+
+		bool found= false;
+		for( Lexem& lexem : lex_result.lexems )
+		{
+			if( lexem.src_loc == src_loc_corected && lexem.type == Lexem::Type::Identifier )
+			{
+				log_ << "Complete text \"" << lexem.text << "\"" << std::endl;
+				lexem.type= Lexem::Type::CompletionIdentifier;
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
+		{
+			log_ << "Can't find identifier lexem" << std::endl;
+			return {};
+		}
+	}
+
+	// Perform syntaxis parsing of current text.
+	// In most cases it will fail, but it will still parse text until first error.
+	// Here we assume, that first error is at least at point of completion or further.
+
+	Synt::MacrosByContextMap merged_macroses;
+	{
+		const auto& child_nodes_indeces= last_valid_state_->source_graph.nodes_storage.front().child_nodes_indeces;
+		if( child_nodes_indeces.empty() )
+		{
+			// Load built-in macroses only if this document has no imports. Otherwise built-in macroses will be taken from imports.
+			merged_macroses= *PrepareBuiltInMacros( CalculateSourceFileContentsHash );
+		}
+
+		// Merge macroses of imported modules in order to parse document text properly.
+		for( const size_t child_node_index : child_nodes_indeces )
+		{
+			for( const auto& context_macro_map_pair : *last_valid_state_->source_graph.nodes_storage[child_node_index].ast.macros )
+			{
+				Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
+				for( const auto& macro_map_pair : context_macro_map_pair.second )
+					dst_map[macro_map_pair.first]= macro_map_pair.second;
+			}
+		}
+	}
+
+	const auto synt_result=
+		Synt::SyntaxAnalysis(
+			lex_result.lexems,
+			merged_macroses,
+			std::make_shared<Synt::MacroExpansionContexts>(),
+			CalculateSourceFileContentsHash( text_ ) );
+
+	// Lookup global thing, where element with "completion*" lexem is located, together with path to it.
+	const SyntaxTreeLookupResultOpt lookup_result=
+		FindCompletionSyntaxElement( src_loc_corected.GetLine(), src_loc_corected.GetColumn(), synt_result.program_elements );
+	if( lookup_result == std::nullopt )
+	{
+		log_ << "Failed to find parsed syntax element" << std::endl;
+		return {};
+	}
+
+	log_ << "Find syntax element of kind " << lookup_result->element.index() << std::endl;
+
+	// Use existing compiled program to perform names lookup.
+	// Do not try to compile current text, because it is broken and completion will not return what should be returned.
+	// Also it is too slow to recompile program for each completion.
+
+	const GlobalItem& global_item= lookup_result->global_item;
+	std::vector<CodeBuilder::CompletionItem> completion_result;
+	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
+	{
+		U_ASSERT( *program_element != nullptr );
+		completion_result= last_valid_state_->code_builder->Complete( lookup_result->prefix, **program_element );
+	}
+	else if( const auto class_element= std::get_if<const Synt::ClassElement*>( &global_item ) )
+	{
+		U_ASSERT( *class_element != nullptr );
+		completion_result= last_valid_state_->code_builder->Complete( lookup_result->prefix, **class_element );
+	}
+	else U_ASSERT( false );
+
+	log_ << "Completion found " << completion_result.size() << " results" << std::endl;
+
+	std::vector<CompletionItem> result_transformed;
+	result_transformed.reserve( completion_result.size() );
+	for( const CodeBuilder::CompletionItem& item : completion_result )
+		result_transformed.push_back(
+			CompletionItem{ item.name, item.sort_text, item.detail, TranslateCompletionItemKind( item.kind ) } );
+
+	return result_transformed;
 }
 
 std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const DocumentPosition& start_position ) const

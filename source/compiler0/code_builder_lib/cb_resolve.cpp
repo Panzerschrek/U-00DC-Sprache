@@ -41,6 +41,13 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	return value->value;
 }
 
+Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
+{
+	(void)function_context;
+	RootNamespaseLookupCompleteImpl( names_scope, root_namespace_lookup_completion.name );
+	return ErrorValue();
+}
+
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
 {
 	(void)function_context;
@@ -56,6 +63,13 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	CollectDefinition( *result.value, name_lookup.src_loc_ );
 
 	return result.value->value;
+}
+
+Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion )
+{
+	(void)function_context;
+	NameLookupCompleteImpl( names_scope, name_lookup_completion.name );
+	return ErrorValue();
 }
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch )
@@ -102,6 +116,14 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	CollectDefinition( *value, names_scope_fetch.src_loc_ );
 
 	return value->value;
+}
+
+Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion )
+{
+	const Value base= ResolveValue( names_scope, function_context, *names_scope_fetch_completion.base );
+	NamesScopeFetchComleteImpl( base, names_scope_fetch_completion.name );
+
+	return ErrorValue();
 }
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization )

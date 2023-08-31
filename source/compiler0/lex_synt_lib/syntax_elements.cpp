@@ -34,11 +34,23 @@ RootNamespaceNameLookup::RootNamespaceNameLookup( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+RootNamespaceNameLookupCompletion::RootNamespaceNameLookupCompletion( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 NameLookup::NameLookup( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+NameLookupCompletion::NameLookupCompletion( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 NamesScopeNameFetch::NamesScopeNameFetch( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
+NamesScopeNameFetchCompletion::NamesScopeNameFetchCompletion( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
@@ -87,6 +99,11 @@ IndexationOperator::IndexationOperator( const SrcLoc& src_loc )
 {}
 
 MemberAccessOperator::MemberAccessOperator(
+	const SrcLoc& src_loc )
+	: SyntaxElementBase( src_loc )
+{}
+
+MemberAccessOperatorCompletion::MemberAccessOperatorCompletion(
 	const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
 {}

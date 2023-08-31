@@ -187,6 +187,22 @@ ServerResponse ServerHandler::ProcessInitialize( const Json::Value& params )
 			link_provider["resolveProvider"]= true;
 			capabilities["documentLinkProvider"]= std::move(link_provider);
 		}
+		{
+			Json::Object completion_options;
+
+			{
+				Json::Array trigger_characters;
+				trigger_characters.push_back( Json::Value( "." ) );
+				// HACK! Use single trigger character ":" instead of "::", since some IDEs (like QtCreator) use longest trigger sequence to trigger completion,
+				// so, using "::" breaks completion for ".".
+				//trigger_characters.push_back( Json::Value( "::" ) );
+				trigger_characters.push_back( Json::Value( ":" ) );
+
+				completion_options["triggerCharacters"]= std::move(trigger_characters);
+			}
+			capabilities["completionProvider"]= std::move(completion_options);
+		}
+
 		result["capabilities"]= std::move(capabilities);
 	}
 	return result;
@@ -387,6 +403,13 @@ ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 		return result;
 	}
 
+	const auto uri_parsed= Uri::Parse( *uri );
+	if( uri_parsed == std::nullopt )
+	{
+		log_ << "Invalid uri!" << std::endl;
+		return result;
+	}
+
 	const auto position= obj->getObject( "position" );
 	if( position == nullptr )
 	{
@@ -394,18 +417,36 @@ ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 		return result;
 	}
 
-	// TODO - perform real completion.
+	const auto line= position->getInteger( "line" );
+	const auto character= position->getInteger( "character" );
+	if( line == llvm::None || character == llvm::None )
+	{
+		log_ << "Invalid position!" << std::endl;
+		return result;
+	}
 
-	// Fill dummy.
-	result["isIncomplete"]= true;
+	Document* const document= document_manager_.GetDocument( *uri_parsed );
+	if( document == nullptr )
+	{
+		log_ << "Can't find document " << uri->str() << std::endl;
+		return result;
+	}
+
+	result["isIncomplete"]= false; // Completion provides all possible names.
 
 	{
 		Json::Array items;
 
+		for( const CompletionItem& completion_item : document->Complete( SrcLoc( 0, uint32_t(*line) + 1, uint32_t(*character) ) ) )
 		{
 			Json::Object item;
-
-			item["label"]= "CompleteThis";
+			item["label"]= completion_item.label;
+			if( !completion_item.sort_text.empty() )
+				item["sortText"]= completion_item.sort_text;
+			if( !completion_item.detail.empty() )
+				item["detail"]= completion_item.detail;
+			if( completion_item.kind != CompletionItemKind::None )
+				item["kind"]= uint32_t(completion_item.kind);
 
 			items.push_back( std::move(item) );
 		}

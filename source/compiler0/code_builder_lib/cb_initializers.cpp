@@ -31,11 +31,11 @@ llvm::Constant* CodeBuilder::ApplyInitializer(
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr&,
-	NamesScope&,
+	NamesScope& names_scope,
 	FunctionContext&,
 	const Synt::EmptyVariant& )
 {
-	U_ASSERT(false);
+	REPORT_ERROR( BuildFailed, names_scope.GetErrors(), SrcLoc( 0, 1, 0 ), "Reached empty variant initializer!" );
 	return nullptr;
 }
 
@@ -173,6 +173,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 
 	for( const Synt::StructNamedInitializer::MemberInitializer& member_initializer : initializer.members_initializers )
 	{
+		if( member_initializer.completion_requested )
+		{
+			ComleteClassOwnFields( class_type, member_initializer.name );
+			continue;
+		}
+
 		const NamesScopeValue* const class_member= class_type->members->GetThisScopeValue( member_initializer.name );
 		if( class_member == nullptr )
 		{
@@ -964,6 +970,9 @@ void CodeBuilder::BuildConstructorInitialization(
 	bool base_initialized= false;
 	for( const Synt::StructNamedInitializer::MemberInitializer& field_initializer : constructor_initialization_list.members_initializers )
 	{
+		if( field_initializer.completion_requested )
+			ComleteClassOwnFields( &base_class, field_initializer.name );
+
 		if( field_initializer.name == Keywords::base_ )
 		{
 			if( base_class.base_class == nullptr )

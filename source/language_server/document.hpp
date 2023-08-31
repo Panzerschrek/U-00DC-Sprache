@@ -2,6 +2,7 @@
 #include <ostream>
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
+#include "completion.hpp"
 #include "document_symbols.hpp"
 #include "uri.hpp"
 
@@ -43,6 +44,8 @@ public:
 	std::vector<PositionInDocument> GetAllOccurrences( const SrcLoc& src_loc );
 
 	std::vector<Symbol> GetSymbols();
+
+	std::vector<CompletionItem> Complete( const SrcLoc& src_loc );
 
 	std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& start_position ) const;
 

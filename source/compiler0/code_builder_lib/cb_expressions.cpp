@@ -359,6 +359,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	return ErrorValue();
 }
 
+Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion )
+{
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *member_access_operator_completion.expression_, names, function_context );
+	MemberAccessCompleteImpl( variable, member_access_operator_completion.member_name_ );
+	return ErrorValue();
+}
+
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -1227,6 +1234,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
+	if( move_operator.completion_requested )
+		NameLookupCompleteImpl( names, move_operator.var_name_ );
+
 	NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name_, move_operator.src_loc_ ).value;
 	if( resolved_value_ptr == nullptr )
 		return ErrorValue();

@@ -380,15 +380,19 @@ fn ActualArgsToString( ust::array_view_imut</VariableTypeExtended/> actual_args 
 	var ust::string8 mut result;
 	foreach( &type_extended : actual_args )
 	{
+		result+= type_extended.t.ToString();
+		result+= " ";
+
 		if( type_extended.value_type == ValueType::ReferenceMut )
 		{
-			result+= "& mut ";
+			result+= "&mut ";
 		}
 		else if( type_extended.value_type == ValueType::ReferenceImut )
 		{
-			result+= "& imut ";
+			result+= "&imut ";
 		}
-		result+= type_extended.t.ToString();
+
+		result+= "_"; // use some dummy for param name.
 
 		if( ust::ref_cmp_ne( type_extended, actual_args.back() ) )
 		{

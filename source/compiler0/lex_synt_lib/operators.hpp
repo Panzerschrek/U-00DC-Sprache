@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <string_view>
 
 namespace U
@@ -76,7 +77,10 @@ enum class OverloadedOperator : uint8_t
 };
 
 std::string_view BinaryOperatorToString( BinaryOperatorType op );
+std::optional<BinaryOperatorType> StringToBinaryOperator( std::string_view s );
+
 std::string_view OverloadedOperatorToString( OverloadedOperator op );
+std::optional<OverloadedOperator> StringToOverloadedOperator( std::string_view s );
 
 OverloadedOperator GetOverloadedOperatorForBinaryOperator( const BinaryOperatorType binary_operator_type );
 OverloadedOperator GetOverloadedOperatorForAdditiveAssignmentOperator( const BinaryOperatorType operator_type );

@@ -441,7 +441,7 @@ def TypeNameInErrorMessage_ActualArgsList_Test0():
 	assert( errors_list[0].error_code == "CouldNotSelectOverloadedFunction" )
 	assert( errors_list[0].src_loc.line == 7 )
 	assert( errors_list[0].text.find( "Args are" ) != -1 )
-	assert( errors_list[0].text.find( "mut i32" ) != -1 )
+	assert( errors_list[0].text.find( "i32 &mut" ) != -1 )
 	assert( errors_list[0].text.find( "f32" ) != -1 )
 	assert( errors_list[0].text.find( "bool" ) != -1 )
 

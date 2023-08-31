@@ -17,8 +17,11 @@ namespace
 // Prototypes start
 void ElementWrite( const EmptyVariant& empty_variant, std::ostream& stream );
 void ElementWrite( const RootNamespaceNameLookup& root_namespace_lookup, std::ostream& stream );
+void ElementWrite( const RootNamespaceNameLookupCompletion& root_namespace_lookup_completion, std::ostream& stream );
 void ElementWrite( const NameLookup& name_lookup, std::ostream& stream );
+void ElementWrite( const NameLookupCompletion& name_lookup_completion, std::ostream& stream );
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream );
+void ElementWrite( const NamesScopeNameFetchCompletion& names_scope_fetch_completion, std::ostream& stream );
 void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream );
 void ElementWrite( const ComplexName& complex_name, std::ostream& stream );
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream );
@@ -80,15 +83,31 @@ void ElementWrite( const RootNamespaceNameLookup& root_namespace_lookup, std::os
 	stream << "::" << root_namespace_lookup.name;
 }
 
+void ElementWrite( const RootNamespaceNameLookupCompletion& root_namespace_lookup_completion, std::ostream& stream )
+{
+	stream << "::" << root_namespace_lookup_completion.name;
+}
+
 void ElementWrite( const NameLookup& name_lookup, std::ostream& stream )
 {
 	stream << name_lookup.name;
+}
+
+void ElementWrite( const NameLookupCompletion& name_lookup_completion, std::ostream& stream )
+{
+	stream << name_lookup_completion.name;
 }
 
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream )
 {
 	ElementWrite( *names_scope_fetch.base, stream );
 	stream << "::" << names_scope_fetch.name;
+}
+
+void ElementWrite( const NamesScopeNameFetchCompletion& names_scope_fetch_completion, std::ostream& stream )
+{
+	ElementWrite( *names_scope_fetch_completion.base, stream );
+	stream << "::" << names_scope_fetch_completion.name;
 }
 
 void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream )
@@ -483,7 +502,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		void operator()( const MemberAccessOperator& member_access_operator ) const
 		{
 			ElementWrite( *member_access_operator.expression_, stream );
-			stream << ".";
+			stream << "." << member_access_operator.member_name_;
 			if( member_access_operator.template_parameters != std::nullopt )
 			{
 				stream << "</";
@@ -495,6 +514,11 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 				}
 				stream << "/>";
 			}
+		}
+		void operator()( const MemberAccessOperatorCompletion& member_access_operator_completion ) const
+		{
+			ElementWrite( *member_access_operator_completion.expression_, stream );
+			stream << "." << member_access_operator_completion.member_name_;
 		}
 		void operator()( const CallOperator& call_operator ) const
 		{

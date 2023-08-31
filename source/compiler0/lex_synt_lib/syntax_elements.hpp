@@ -33,6 +33,7 @@ struct BitwiseNot;
 struct CallOperator;
 struct IndexationOperator;
 struct MemberAccessOperator;
+struct MemberAccessOperatorCompletion;
 
 struct BinaryOperator;
 struct TernaryOperator;
@@ -95,15 +96,21 @@ struct FunctionTemplate;
 
 struct TypeofTypeName;
 struct RootNamespaceNameLookup;
+struct RootNamespaceNameLookupCompletion;
 struct NameLookup;
+struct NameLookupCompletion;
 struct NamesScopeNameFetch;
+struct NamesScopeNameFetchCompletion;
 struct TemplateParametrization;
 
 using ComplexName= std::variant<
 	TypeofTypeName,
 	RootNamespaceNameLookup,
+	RootNamespaceNameLookupCompletion,
 	NameLookup,
+	NameLookupCompletion,
 	NamesScopeNameFetch,
+	NamesScopeNameFetchCompletion,
 	TemplateParametrization
 	>;
 
@@ -135,6 +142,7 @@ using Expression= std::variant<
 	CallOperator,
 	IndexationOperator,
 	MemberAccessOperator,
+	MemberAccessOperatorCompletion,
 	// Prefix operators
 	UnaryPlus,
 	UnaryMinus,
@@ -287,6 +295,15 @@ struct RootNamespaceNameLookup final : public SyntaxElementBase
 	std::string name;
 };
 
+// Variant of name lookup, used internally by language server for completion.
+// In normal compilation process it is not used.
+struct RootNamespaceNameLookupCompletion final : public SyntaxElementBase
+{
+	explicit RootNamespaceNameLookupCompletion( const SrcLoc& src_loc );
+
+	std::string name;
+};
+
 struct NameLookup final : public SyntaxElementBase
 {
 	explicit NameLookup( const SrcLoc& src_loc );
@@ -294,9 +311,28 @@ struct NameLookup final : public SyntaxElementBase
 	std::string name;
 };
 
+// Variant of name lookup, used internally by language server for completion.
+// In normal compilation process it is not used.
+struct NameLookupCompletion final : public SyntaxElementBase
+{
+	explicit NameLookupCompletion( const SrcLoc& src_loc );
+
+	std::string name;
+};
+
 struct NamesScopeNameFetch final : public SyntaxElementBase
 {
 	explicit NamesScopeNameFetch( const SrcLoc& src_loc );
+
+	std::string name;
+	ComplexNamePtr base;
+};
+
+// Variant of name lookup, used internally by language server for completion.
+// In normal compilation process it is not used.
+struct NamesScopeNameFetchCompletion final : public SyntaxElementBase
+{
+	explicit NamesScopeNameFetchCompletion( const SrcLoc& src_loc );
 
 	std::string name;
 	ComplexNamePtr base;
@@ -424,6 +460,7 @@ struct MoveOperator final : public SyntaxElementBase
 	MoveOperator( const SrcLoc& src_loc );
 
 	std::string var_name_;
+	bool completion_requested= false;
 };
 
 struct TakeOperator final : public SyntaxElementBase
@@ -566,6 +603,16 @@ struct MemberAccessOperator final : public SyntaxElementBase
 	std::optional<std::vector<Expression>> template_parameters;
 };
 
+// Variant of member access, used internally by language server for completion.
+// In normal compilation process it is not used.
+struct MemberAccessOperatorCompletion final : public SyntaxElementBase
+{
+	MemberAccessOperatorCompletion( const SrcLoc& src_loc );
+
+	ExpressionPtr expression_;
+	std::string member_name_;
+};
+
 struct SequenceInitializer final : public SyntaxElementBase
 {
 	explicit SequenceInitializer( const SrcLoc& src_loc );
@@ -604,6 +651,7 @@ struct StructNamedInitializer::MemberInitializer
 	SrcLoc src_loc;
 	std::string name;
 	Initializer initializer;
+	bool completion_requested= false;
 };
 
 struct Label final : public SyntaxElementBase
@@ -933,6 +981,7 @@ struct Function final : public SyntaxElementBase
 	{
 		std::string name;
 		SrcLoc src_loc;
+		bool completion_requested= false;
 	};
 
 	std::vector<NameComponent> name_; // A, A::B, A::B::C::D, ::A, ::A::B
