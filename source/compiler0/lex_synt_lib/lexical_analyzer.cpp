@@ -772,7 +772,8 @@ SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, const Tex
 
 std::optional<TextLinearPosition> GetIdentifierStartForPosition( const std::string_view text, const TextLinearPosition position )
 {
-	U_ASSERT( position < text.size() );
+	if( position >= text.size() )
+		return std::nullopt;
 
 	// Go backward until find non-identifier char.
 	// TODO - support Unicode.
