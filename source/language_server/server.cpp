@@ -42,14 +42,7 @@ bool Server::ReadAndProcessInputMessage()
 		return false;
 	}
 
-	std::string id;
-	if( const Json::Value* const id_json= obj->get( "id" ) )
-	{
-		if( const auto str= id_json->getAsString() )
-			id= str->str();
-		else if( const auto num= id_json->getAsInteger() )
-			id= std::to_string( *num );
-	}
+	const Json::Value* const id_json= obj->get( "id" );
 
 	std::string method;
 	if( const auto method_json= obj->getString( "method" ) )
@@ -59,7 +52,7 @@ bool Server::ReadAndProcessInputMessage()
 	if( const auto params_json= obj->get( "params" ) )
 		params= *params_json;
 
-	if( id.empty() )
+	if( id_json == nullptr )
 	{
 		// log_ << "Notification " << method << std::endl;
 
@@ -74,7 +67,7 @@ bool Server::ReadAndProcessInputMessage()
 		if( method == "shutdown" )
 		{
 			llvm::json::Object response_obj;
-			response_obj["id"]= id;
+			response_obj["id"]= *id_json;
 
 			std::string response_str;
 			llvm::raw_string_ostream stream(response_str);
@@ -88,7 +81,7 @@ bool Server::ReadAndProcessInputMessage()
 			ServerResponse response= handler_.HandleRequest( method, params );
 
 			llvm::json::Object response_obj;
-			response_obj["id"]= id;
+			response_obj["id"]= *id_json;
 			response_obj["result"]= std::move(response.result);
 			if( response.error.kind() != Json::Value::Null )
 				response_obj["error"]= std::move(response.error);
