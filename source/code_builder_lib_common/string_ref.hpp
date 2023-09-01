@@ -14,4 +14,9 @@ inline llvm::StringRef StringViewToStringRef( const std::string_view s )
 	return llvm::StringRef( s.data(), s.size() );
 }
 
+inline std::string_view StringRefToStringView( const llvm::StringRef s )
+{
+	return std::string_view( s.data(), s.size() );
+}
+
 } // namespace U

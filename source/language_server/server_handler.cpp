@@ -1,3 +1,4 @@
+#include "../code_builder_lib_common/string_ref.hpp"
 #include "server_handler.hpp"
 
 namespace U
@@ -806,9 +807,9 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 			log_ << "Change document range "
 				<< range->start.line << ":" << range->start.column << " - "
 				<< range->end.line << ":" << range->end.column
-				<< " with new text \"" << std::string_view(*change_text_str) << "\"" << std::endl;
+				<< " with new text \"" << StringRefToStringView(*change_text_str) << "\"" << std::endl;
 
-			document->UpdateText( *range, *change_text_str );
+			document->UpdateText( *range, StringRefToStringView( *change_text_str ) );
 		}
 		else
 		{
