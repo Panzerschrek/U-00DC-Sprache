@@ -9,7 +9,7 @@ namespace LangServer
 {
 
 // Complexity is linear.
-std::optional<uint32_t> DocumentPositionToLinearPosition( const DocumentPosition& pos, std::string_view text );
+std::optional<TextLinearPosition> DocumentPositionToLinearPosition( const DocumentPosition& pos, std::string_view text );
 
 DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc );
 SrcLoc DocumentPositionToSrcLoc( const DocumentPosition& position );

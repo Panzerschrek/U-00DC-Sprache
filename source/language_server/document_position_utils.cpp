@@ -7,11 +7,11 @@ namespace U
 namespace LangServer
 {
 
-std::optional<uint32_t> DocumentPositionToLinearPosition( const DocumentPosition& pos, const std::string_view text )
+std::optional<TextLinearPosition> DocumentPositionToLinearPosition( const DocumentPosition& pos, const std::string_view text )
 {
 	// Find linear position for given line.
 	uint32_t line= 1; // Count lines from one.
-	uint32_t linear_pos= 0;
+	TextLinearPosition linear_pos= 0;
 	while( linear_pos < text.size() )
 	{
 		if( line == pos.line )

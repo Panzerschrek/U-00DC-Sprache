@@ -67,11 +67,50 @@ std::optional<PositionInDocument> Document::GetDefinitionPoint( const DocumentPo
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	const auto src_loc_corrected= GetIdentifierStartSrcLoc( DocumentPositionToSrcLoc(position), text_, last_valid_state_->line_to_linear_position_index );
-	if( src_loc_corrected == std::nullopt )
+	const std::optional<TextLinearPosition> linear_position= DocumentPositionToLinearPosition( position, text_ );
+	if( linear_position == std::nullopt )
+	{
+		log_ << "Failed to decode position" << std::endl;
 		return std::nullopt;
+	}
+	std::optional<TextLinearPosition> identifier_start_linear_position= GetIdentifierStartForPosition( text_, *linear_position );
+	if( identifier_start_linear_position == std::nullopt )
+	{
+		log_ << "Failed to find identifier start" << std::endl;
+		return std::nullopt;
+	}
 
-	if( const auto result_src_loc= last_valid_state_->code_builder->GetDefinition( *src_loc_corrected ) )
+	// Assume, that identifier can't be multiline.
+	if( *identifier_start_linear_position > *linear_position )
+	{
+		log_ << "Find wrong identifier start!" << std::endl;
+		return std::nullopt;
+	}
+
+	// Find line start.
+	TextLinearPosition line_start_position= *identifier_start_linear_position;
+	while( line_start_position >= 1 )
+	{
+		if( text_[ line_start_position - 1 ] == '\n' )
+			break;
+		--line_start_position;
+	}
+
+	// Count column in UTF-32 code point units.
+	TextLinearPosition code_point_column= 0;
+	{
+		const char* s= text_.data() + line_start_position;
+		const char* const s_end= text_.data() + *identifier_start_linear_position;
+		while( s < s_end )
+		{
+			ReadNextUTF8Char( s, s_end );
+			++code_point_column;
+		}
+	}
+
+	const SrcLoc src_loc( 0, position.line, code_point_column );
+
+	if( const auto result_src_loc= last_valid_state_->code_builder->GetDefinition( src_loc ) )
 	{
 		PositionInDocument position;
 		position.position= SrcLocToDocumentPosition( *result_src_loc );
