@@ -12,6 +12,35 @@ namespace U
 namespace LangServer
 {
 
+namespace
+{
+
+std::optional<SrcLoc> GetSrcLocForIndentifierStartPoisitionInText( const std::string_view text, const DocumentPosition& position )
+{
+	const std::optional<TextLinearPosition> linear_position= DocumentPositionToLinearPosition( position, text );
+	if( linear_position == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<TextLinearPosition> identifier_start_linear_position= GetIdentifierStartForPosition( text, *linear_position );
+	if( identifier_start_linear_position == std::nullopt )
+		return std::nullopt;
+
+	// Assume, that identifier can't be multiline - start of the identifier is always in the same line as any position within it.
+	const TextLinearPosition line_start_position= GetLineStartUtf8Position( text, *identifier_start_linear_position );
+	U_ASSERT( line_start_position <= *identifier_start_linear_position );
+
+	const std::optional<TextLinearPosition> code_point_column=
+		Utf8PositionToUtf32Position(
+			text.substr( line_start_position ),
+			*identifier_start_linear_position - line_start_position );
+	if( code_point_column == std::nullopt )
+		return std::nullopt;
+
+	return SrcLoc( 0, position.line, *code_point_column );
+}
+
+} // namespace
+
 Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log )
 	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
 {
@@ -67,36 +96,14 @@ std::optional<PositionInDocument> Document::GetDefinitionPoint( const DocumentPo
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	const std::optional<TextLinearPosition> linear_position= DocumentPositionToLinearPosition( position, text_ );
-	if( linear_position == std::nullopt )
+	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( text_, position );
+	if( src_loc == std::nullopt )
 	{
-		log_ << "Failed to decode position" << std::endl;
-		return std::nullopt;
-	}
-	std::optional<TextLinearPosition> identifier_start_linear_position= GetIdentifierStartForPosition( text_, *linear_position );
-	if( identifier_start_linear_position == std::nullopt )
-	{
-		log_ << "Failed to find identifier start" << std::endl;
+		log_ << "Failed to get indentifier start" << std::endl;
 		return std::nullopt;
 	}
 
-	// Assume, that identifier can't be multiline - start of the identifier is always in the same line as any position within it.
-	const TextLinearPosition line_start_position= GetLineStartUtf8Position( text_, *identifier_start_linear_position );
-	U_ASSERT( line_start_position <= *identifier_start_linear_position );
-
-	const auto code_point_column=
-		Utf8PositionToUtf32Position(
-			text_.substr( line_start_position ),
-			*identifier_start_linear_position - line_start_position );
-	if( code_point_column == std::nullopt )
-	{
-		log_ << "Failed to find UTF-32 column" << std::endl;
-		return std::nullopt;
-	}
-
-	const SrcLoc src_loc( 0, position.line, *code_point_column );
-
-	if( const auto result_src_loc= last_valid_state_->code_builder->GetDefinition( src_loc ) )
+	if( const auto result_src_loc= last_valid_state_->code_builder->GetDefinition( *src_loc ) )
 	{
 		PositionInDocument position;
 		position.position= SrcLocToDocumentPosition( *result_src_loc );
@@ -118,11 +125,14 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPositi
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	const auto src_loc_corrected= GetIdentifierStartSrcLoc( DocumentPositionToSrcLoc(position), text_, last_valid_state_->line_to_linear_position_index );
-	if( src_loc_corrected == std::nullopt )
+	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( text_, position );
+	if( src_loc == std::nullopt )
+	{
+		log_ << "Failed to get indentifier start" << std::endl;
 		return {};
+	}
 
-	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *src_loc_corrected );
+	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *src_loc );
 
 	std::vector<DocumentRange> result;
 	result.reserve( occurrences.size() );
@@ -152,11 +162,14 @@ std::vector<PositionInDocument> Document::GetAllOccurrences( const DocumentPosit
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	const auto src_loc_corrected= GetIdentifierStartSrcLoc( DocumentPositionToSrcLoc(position), text_, last_valid_state_->line_to_linear_position_index );
-	if( src_loc_corrected == std::nullopt )
+	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( text_, position );
+	if( src_loc == std::nullopt )
+	{
+		log_ << "Failed to get indentifier start" << std::endl;
 		return {};
+	}
 
-	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *src_loc_corrected );
+	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *src_loc );
 
 	// TODO - improve this.
 	// We need to extract occurences in other opended documents and maybe search for other files.
