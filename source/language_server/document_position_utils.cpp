@@ -9,43 +9,68 @@ namespace LangServer
 
 std::optional<TextLinearPosition> DocumentPositionToLinearPosition( const DocumentPosition& pos, const std::string_view text )
 {
-	// Find linear position for given line.
-	uint32_t line= 1; // Count lines from one.
-	TextLinearPosition linear_pos= 0;
-	while( linear_pos < text.size() )
-	{
-		if( line == pos.line )
-			break; // Found target line.
-
-		if( text[linear_pos] == '\n' )
-			++line;
-		++linear_pos;
-	}
-
-	if( line != pos.line )
+	const auto line_linear_pos= GetUtf8LineStartPosition( text, pos.line );
+	if( line_linear_pos == std::nullopt )
 		return std::nullopt;
 
-	// Iterate over text starting from line start. Extract from UTF-8 string code points and count number of UTF-16 words.
-	uint32_t column= 0;
-	const char* const char_pos_start= text.data() + linear_pos;
-	const char* char_pos= char_pos_start;
-	const char* const char_end= text.data() + text.size();
-	while( column < pos.character && char_pos < char_end )
+	const auto column_offset= Utf16PositionToUtf8Position( text.substr( *line_linear_pos ), pos.character );
+	if( column_offset == std::nullopt )
+		return std::nullopt;
+
+	return *line_linear_pos + *column_offset;
+}
+
+std::optional<TextLinearPosition> GetUtf8LineStartPosition( const std::string_view text, const uint32_t line )
+{
+	uint32_t current_line= 1; // Count lines from one.
+	TextLinearPosition line_linear_pos= 0;
+
+	if( current_line >= line ) // Handle line 1 and (even if it is wrong) line 0
+		return line_linear_pos;
+
+	while( line_linear_pos < text.size() )
 	{
-		const sprache_char code_point= ReadNextUTF8Char( char_pos, char_end );
+		if( text[line_linear_pos] == '\n' )
+		{
+			++current_line;
+			if( current_line == line )
+				return line_linear_pos + 1;
+		}
+		++line_linear_pos;
+	}
+
+	// Reached text end without reaching target line.
+	return std::nullopt;
+}
+
+std::optional<TextLinearPosition> Utf16PositionToUtf8Position( const std::string_view text, const TextLinearPosition position )
+{
+	// Extract from UTF-8 string code points and count number of UTF-16 words.
+	TextLinearPosition current_utf16_position= 0;
+	const char* s= text.data();
+	const char* const s_end= s + text.size();
+	while( s < s_end && current_utf16_position < position )
+	{
+		const sprache_char code_point= ReadNextUTF8Char( s, s_end );
 		if( code_point <= 0xFFFFu )
 		{
 			// Code points in range [0;0xFFFF] are encoded as singe UTF-16 word.
-			++column;
+			++current_utf16_position;
 		}
 		else
 		{
 			// Code points abowe 0xFFFF are encoded as two UTF-16 words.
-			column += 2;
+			current_utf16_position += 2;
 		}
 	}
 
-	return linear_pos + uint32_t( char_pos - char_pos_start );
+	if( current_utf16_position != position )
+	{
+		// Something went wrong. Maybe utf-16 position is too big?
+		return std::nullopt;
+	}
+
+	return TextLinearPosition( s - text.data() );
 }
 
 DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc )
