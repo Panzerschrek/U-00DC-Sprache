@@ -33,6 +33,38 @@ CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
 	return code_builder_errors_;
 }
 
+
+void Document::SetText( std::string text )
+{
+	text_= std::move(text);
+}
+
+void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
+{
+	// We require newest index to perform incremental update.
+	// Can't use some saved index.
+	const auto index= BuildLineToLinearPositionIndex( text_ );
+
+	if( range.start.line < index.size() && range.end.line < index.size() )
+	{
+		const uint32_t linear_position_start= index[ range.start.line ] + range.start.column;
+		const uint32_t linear_position_end= index[ range.end.line ] + range.end.column;
+		if( linear_position_end < linear_position_start )
+		{
+			log_ << "Wrong range: end is less than start!" << std::endl;
+			return;
+		}
+		text_.replace( size_t(linear_position_start), size_t(linear_position_end - linear_position_start), new_text );
+	}
+	else
+		log_ << "Wrong update range!" << std::endl;
+}
+
+const std::string& Document::GetText() const
+{
+	return text_;
+}
+
 std::optional<PositionInDocument> Document::GetDefinitionPoint( const DocumentPosition& position )
 {
 	if( last_valid_state_ == std::nullopt )
@@ -331,37 +363,6 @@ std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const Docume
 		return std::nullopt;
 
 	return SrcLocToDocumentPosition( *end_src_loc );
-}
-
-void Document::SetText( std::string text )
-{
-	text_= std::move(text);
-}
-
-void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
-{
-	// We require newest index to perform incremental update.
-	// Can't use some saved index.
-	const auto index= BuildLineToLinearPositionIndex( text_ );
-
-	if( range.start.line < index.size() && range.end.line < index.size() )
-	{
-		const uint32_t linear_position_start= index[ range.start.line ] + range.start.column;
-		const uint32_t linear_position_end= index[ range.end.line ] + range.end.column;
-		if( linear_position_end < linear_position_start )
-		{
-			log_ << "Wrong range: end is less than start!" << std::endl;
-			return;
-		}
-		text_.replace( size_t(linear_position_start), size_t(linear_position_end - linear_position_start), new_text );
-	}
-	else
-		log_ << "Wrong update range!" << std::endl;
-}
-
-const std::string& Document::GetText() const
-{
-	return text_;
 }
 
 void Document::Rebuild()

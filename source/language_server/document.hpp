@@ -29,14 +29,17 @@ public:
 	Document& operator=( const Document& )= delete;
 	Document& operator=( Document&& )= default;
 
+public: // Document text stuff.
 	void UpdateText( const DocumentRange& range, std::string_view new_text );
 	void SetText( std::string text );
 	const std::string& GetText() const;
 
+public: // Diagnostics.
 	LexSyntErrors GetLexErrors() const;
 	LexSyntErrors GetSyntErrors() const;
 	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
 
+public: // Requests.
 	std::optional<PositionInDocument> GetDefinitionPoint( const DocumentPosition& position );
 
 	// Returns highlights only for this document.
@@ -50,7 +53,7 @@ public:
 
 	std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& start_position ) const;
 
-public:
+public: // Other stuff.
 	void Rebuild();
 
 private:
