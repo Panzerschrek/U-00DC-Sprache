@@ -73,6 +73,36 @@ std::optional<TextLinearPosition> Utf16PositionToUtf8Position( const std::string
 	return TextLinearPosition( s - text.data() );
 }
 
+std::optional<TextLinearPosition> Utf8PositionToUtf32Position( const std::string_view text, const TextLinearPosition position )
+{
+	TextLinearPosition current_utf32_position= 0;
+	const char* s= text.data();
+	const char* const s_end= s + text.size();
+	while( s < s_end && TextLinearPosition(s - text.data()) < position )
+	{
+		ReadNextUTF8Char( s, s_end );
+		++current_utf32_position;
+	}
+
+	if( TextLinearPosition(s - text.data()) != position )
+		return std::nullopt;
+
+	return current_utf32_position;
+}
+
+TextLinearPosition GetLineStartUtf8Position( const std::string_view text, const TextLinearPosition position )
+{
+	TextLinearPosition line_start_position= position;
+	while( line_start_position >= 1 )
+	{
+		if( text[ line_start_position - 1 ] == '\n' )
+			break;
+		--line_start_position;
+	}
+
+	return line_start_position;
+}
+
 DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc )
 {
 	return DocumentPosition{ src_loc.GetLine(), src_loc.GetColumn() };
