@@ -323,4 +323,45 @@ U_TEST( IdentifierStartEndPosition_Test0 )
 	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 32 ) == std::nullopt );
 }
 
+U_TEST( IdentifierStartEndPosition_Test1 )
+{
+	static const char c_program_text[] = "хлеб für  Путин>";
+
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  0 ) == TextLinearPosition( 0) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  2 ) == TextLinearPosition( 0) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  4 ) == TextLinearPosition( 0) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  6 ) == TextLinearPosition( 0) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  8 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text,  9 ) == TextLinearPosition( 9) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 10 ) == TextLinearPosition( 9) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 12 ) == TextLinearPosition( 9) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 13 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 14 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 15 ) == TextLinearPosition(15) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 17 ) == TextLinearPosition(15) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 19 ) == TextLinearPosition(15) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 21 ) == TextLinearPosition(15) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 23 ) == TextLinearPosition(15) );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 25 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierStartForPosition( c_program_text, 26 ) == std::nullopt );
+
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  0 ) == TextLinearPosition( 8) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  2 ) == TextLinearPosition( 8) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  4 ) == TextLinearPosition( 8) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  6 ) == TextLinearPosition( 8) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  8 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text,  9 ) == TextLinearPosition(13) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 10 ) == TextLinearPosition(13) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 12 ) == TextLinearPosition(13) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 13 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 14 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 15 ) == TextLinearPosition(25) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 17 ) == TextLinearPosition(25) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 19 ) == TextLinearPosition(25) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 21 ) == TextLinearPosition(25) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 23 ) == TextLinearPosition(25) );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 25 ) == std::nullopt );
+	U_TEST_ASSERT( GetIdentifierEndForPosition( c_program_text, 26 ) == std::nullopt );
+}
+
 } // namespace U
