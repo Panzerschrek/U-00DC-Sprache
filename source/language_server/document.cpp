@@ -142,16 +142,35 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPositi
 		if( result_src_loc.GetFileIndex() != 0 )
 			continue; // Filter out symbols from imported files.
 
-		// It is fine to use text of this file to determine end position, since highlighting works only within the document.
-		const auto result_end_src_loc= GetIdentifierEndSrcLoc( result_src_loc, text_, last_valid_state_->line_to_linear_position_index );
-		if( result_end_src_loc == std::nullopt )
+		// TODO - use here last valid text.
+
+		// We pefrom gihlighting only for this document, so, do some position manipulations.
+		// Assume that highlighted identifier is located in single line.
+		// Extract column (UTF-32) from SrcLoc, convert it into UTF-8 offset. For this offset get UTF-8 offset of identifier end.
+		// Convert botf start/end UTF-8 offsets into UTF-16 result positions.
+
+		const uint32_t line= result_src_loc.GetLine();
+		if( line >= last_valid_state_->line_to_linear_position_index.size() )
+			continue;
+		const std::string_view line_text= std::string_view(text_).substr( last_valid_state_->line_to_linear_position_index[ line ] );
+
+		const std::optional<TextLinearPosition> utf8_column= Utf32PositionToUtf8Position( line_text, result_src_loc.GetColumn() );
+		if( utf8_column == std::nullopt )
 			continue;
 
-		DocumentRange range;
-		range.start= SrcLocToDocumentPosition( result_src_loc );
-		range.end= SrcLocToDocumentPosition( *result_end_src_loc );
+		const std::optional<TextLinearPosition> utf8_column_end= GetIdentifierEndForPosition( line_text, *utf8_column );
+		if( utf8_column_end == std::nullopt )
+			continue;
 
-		result.push_back( std::move(range) );
+		const std::optional<TextLinearPosition> utf16_column= Utf8PositionToUtf16Position( line_text, *utf8_column );
+		const std::optional<TextLinearPosition> utf16_column_end= Utf8PositionToUtf16Position( line_text, *utf8_column_end );
+		if( utf16_column == std::nullopt || utf16_column_end == std::nullopt )
+			continue;
+
+		const DocumentPosition start_pos{ line, *utf16_column };
+		const DocumentPosition end_pos{ line, *utf16_column_end };
+
+		result.push_back( DocumentRange{ start_pos, end_pos } );
 	}
 
 	return result;
