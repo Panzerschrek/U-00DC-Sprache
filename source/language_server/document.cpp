@@ -41,23 +41,20 @@ void Document::SetText( std::string text )
 
 void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
 {
-	// We require newest index to perform incremental update.
-	// Can't use some saved index.
-	const auto index= BuildLineToLinearPositionIndex( text_ );
-
-	if( range.start.line < index.size() && range.end.line < index.size() )
+	const std::optional<uint32_t> linear_position_start= DocumentPositionToLinearPosition( range.start, text_ );
+	const std::optional<uint32_t> linear_position_end  = DocumentPositionToLinearPosition( range.end  , text_ );
+	if( linear_position_start == std::nullopt || linear_position_end == std::nullopt )
 	{
-		const uint32_t linear_position_start= index[ range.start.line ] + range.start.column;
-		const uint32_t linear_position_end= index[ range.end.line ] + range.end.column;
-		if( linear_position_end < linear_position_start )
-		{
-			log_ << "Wrong range: end is less than start!" << std::endl;
-			return;
-		}
-		text_.replace( size_t(linear_position_start), size_t(linear_position_end - linear_position_start), new_text );
+		log_ << "Failed to convert range into offsets!" << std::endl;
+		return;
 	}
-	else
-		log_ << "Wrong update range!" << std::endl;
+	if( *linear_position_end < *linear_position_start )
+	{
+		log_ << "Wrong range: end is less than start!" << std::endl;
+		return;
+	}
+
+	text_.replace( size_t(*linear_position_start), size_t(*linear_position_end - *linear_position_start), new_text );
 }
 
 const std::string& Document::GetText() const
@@ -169,7 +166,7 @@ std::vector<Symbol> Document::GetSymbols()
 
 std::vector<CompletionItem> Document::Complete( const DocumentPosition& position )
 {
-	log_ << "Completion request " << position.line << ":" << position.column << std::endl;
+	log_ << "Completion request " << position.line << ":" << position.character << std::endl;
 
 	if( last_valid_state_ == std::nullopt || last_valid_state_->source_graph.nodes_storage.empty() )
 	{
@@ -181,7 +178,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
 	const LineToLinearPositionIndex line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
 
-	const uint32_t column= position.column;
+	const uint32_t column= position.character;
 	if( column == 0 )
 	{
 		log_ << "Can't complete at column 0" << std::endl;

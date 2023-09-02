@@ -32,7 +32,7 @@ Json::Value DocumentPositionToJson( const DocumentPosition& position )
 {
 	Json::Object out_position;
 	out_position["line"]= position.line - 1; // LSP uses 0-based line numbers, Ü use 1-based line numbers.
-	out_position["character"]= position.column;
+	out_position["character"]= position.character;
 	return out_position;
 }
 
@@ -805,8 +805,8 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 			}
 
 			log_ << "Change document range "
-				<< range->start.line << ":" << range->start.column << " - "
-				<< range->end.line << ":" << range->end.column
+				<< range->start.line << ":" << range->start.character << " - "
+				<< range->end.line << ":" << range->end.character
 				<< " with new text \"" << StringRefToStringView(*change_text_str) << "\"" << std::endl;
 
 			document->UpdateText( *range, StringRefToStringView( *change_text_str ) );
@@ -848,7 +848,7 @@ DocumentRange ServerHandler::DocumentPositionToRange( const PositionInDocument& 
 	if( const auto end_position= document_manager_.GetIdentifierEndPosition( position ) )
 		range.end= end_position->position;
 	else
-		range.end= DocumentPosition{ range.start.line, range.start.column + 1 };
+		range.end= DocumentPosition{ range.start.line, range.start.character + 1 };
 
 	return range;
 }

@@ -11,7 +11,7 @@ namespace LangServer
 struct DocumentPosition
 {
 	uint32_t line= 0; // From 1, as in SrcLoc.
-	uint32_t column= 0; // From 0, as in SrcLoc.
+	uint32_t character= 0; // From 0, in UTF-16 words.
 };
 
 struct DocumentRange
