@@ -24,7 +24,7 @@ DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc );
 SrcLoc DocumentPositionToSrcLoc( const DocumentPosition& position );
 
 std::optional<SrcLoc> GetIdentifierStartSrcLoc( const SrcLoc& src_loc, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index );
-std::optional<SrcLoc> GetIdentifierEndSrcLoc( const SrcLoc& src_loc, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index );
+std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& position, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index );
 
 } //namespace LangServer
 

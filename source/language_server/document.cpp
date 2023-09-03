@@ -412,11 +412,7 @@ std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const Docume
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	const auto end_src_loc= GetIdentifierEndSrcLoc( DocumentPositionToSrcLoc( start_position ), text_, last_valid_state_->line_to_linear_position_index );
-	if( end_src_loc == std::nullopt )
-		return std::nullopt;
-
-	return SrcLocToDocumentPosition( *end_src_loc );
+	return LangServer::GetIdentifierEndPosition( start_position, text_, last_valid_state_->line_to_linear_position_index );
 }
 
 void Document::Rebuild()

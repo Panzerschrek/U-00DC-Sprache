@@ -201,21 +201,25 @@ std::optional<SrcLoc> GetIdentifierStartSrcLoc( const SrcLoc& src_loc, const std
 	return result;
 }
 
-std::optional<SrcLoc> GetIdentifierEndSrcLoc( const SrcLoc& src_loc, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index )
+std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& position, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index )
 {
-	const uint32_t line= src_loc.GetLine();
-	if( line >= line_to_linear_position_index.size() )
+	if( position.line >= line_to_linear_position_index.size() )
+		return std::nullopt;
+	const std::string_view line_text= program_text.substr( line_to_linear_position_index[ position.line ] );
+
+	const auto utf8_column= Utf16PositionToUtf8Position( line_text, position.character );
+	if( utf8_column == std::nullopt )
 		return std::nullopt;
 
-	const TextLinearPosition linear_position= line_to_linear_position_index[ line ] + src_loc.GetColumn();
-	const std::optional<TextLinearPosition> linear_position_corrected= GetIdentifierEndForPosition( program_text, linear_position );
-	if( linear_position_corrected == std::nullopt )
+	const auto utf8_column_corrected= GetIdentifierEndForPosition( line_text, *utf8_column );
+	if( utf8_column_corrected == std::nullopt )
 		return std::nullopt;
 
-	SrcLoc result= LinearPositionToSrcLoc( line_to_linear_position_index, *linear_position_corrected );
-	result.SetFileIndex( src_loc.GetFileIndex() );
-	result.SetMacroExpansionIndex( src_loc.GetMacroExpansionIndex() );
-	return result;
+	const auto utf16_column_corrected= Utf8PositionToUtf16Position( line_text, *utf8_column_corrected );
+	if( utf16_column_corrected == std::nullopt )
+		return std::nullopt;
+
+	return DocumentPosition{ position.line, *utf16_column_corrected };
 }
 
 } //namespace LangServer

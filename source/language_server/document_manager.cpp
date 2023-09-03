@@ -165,11 +165,10 @@ std::optional<PositionInDocument> DocumentManager::GetIdentifierEndPosition( con
 	{
 		if( it->second != std::nullopt )
 		{
-			const SrcLoc src_loc= DocumentPositionToSrcLoc( start_position.position );
 			const UnmanagedFile& unmanaged_file= *it->second;
-			if( const auto end_src_loc= GetIdentifierEndSrcLoc( src_loc, unmanaged_file.content, unmanaged_file.line_to_linear_position_index ) )
+			if( const auto end_position= LangServer::GetIdentifierEndPosition( start_position.position, unmanaged_file.content, unmanaged_file.line_to_linear_position_index ) )
 			{
-				return PositionInDocument{ SrcLocToDocumentPosition( *end_src_loc ), start_position.uri };
+				return PositionInDocument{ *end_position, start_position.uri };
 			}
 		}
 	}
