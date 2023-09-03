@@ -20,8 +20,7 @@ std::optional<TextLinearPosition> Utf32PositionToUtf16Position( std::string_view
 
 TextLinearPosition GetLineStartUtf8Position( std::string_view text, TextLinearPosition position );
 
-DocumentPosition SrcLocToDocumentPosition( const SrcLoc& src_loc );
-SrcLoc DocumentPositionToSrcLoc( const DocumentPosition& position );
+std::optional<DocumentRange> SrcLocToDocumentIdentifierRange( const SrcLoc& src_loc, std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index );
 
 std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& position, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index );
 

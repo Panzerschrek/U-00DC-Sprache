@@ -334,10 +334,10 @@ ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 		return result;
 	}
 
-	for( const PositionInDocument& position : document->GetAllOccurrences( *position ) )
+	for( const SrcLocInDocument& position : document->GetAllOccurrences( *position ) )
 	{
 		Json::Object location;
-		location["range"]= DocumentRangeToJson( DocumentPositionToRange( position ) );
+		location["range"]= DocumentRangeToJson( DocumentSrcLocToRange( position ) );
 		location["uri"]= position.uri.ToString();
 
 		result.push_back( std::move(location) );
@@ -399,9 +399,9 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 		return result;
 	}
 
-	if( const auto result_position= document->GetDefinitionPoint( *position ) )
+	if( const std::optional<SrcLocInDocument> result_position= document->GetDefinitionPoint( *position ) )
 	{
-		result["range"]= DocumentRangeToJson( DocumentPositionToRange( *result_position ) );
+		result["range"]= DocumentRangeToJson( DocumentSrcLocToRange( *result_position ) );
 		result["uri"]= result_position->uri.ToString();
 	}
 	return result;
@@ -618,10 +618,10 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 
 	{
 		Json::Object changes;
-		for( const PositionInDocument& result_position : document->GetAllOccurrences( *position ) )
+		for( const SrcLocInDocument& result_position : document->GetAllOccurrences( *position ) )
 		{
 			Json::Object edit;
-			edit["range"]= DocumentRangeToJson( DocumentPositionToRange( result_position ) );
+			edit["range"]= DocumentRangeToJson( DocumentSrcLocToRange( result_position ) );
 			edit["newText"]= new_name_str;
 
 			std::string change_uri= result_position.uri.ToString();
@@ -841,14 +841,16 @@ void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, co
 	notifications_queue_.push( std::move(notification) );
 }
 
-DocumentRange ServerHandler::DocumentPositionToRange( const PositionInDocument& position ) const
+DocumentRange ServerHandler::DocumentSrcLocToRange( const SrcLocInDocument& position ) const
 {
+	if( auto range= document_manager_.GetDocumentIdentifierRange( position ) )
+		return std::move(*range);
+
+	// Something went wrong. Fill some dummy.
+	// Convert UTF-32 column to UTF-16 character. This is wrong, but better than nothing.
 	DocumentRange range;
-	range.start= position.position;
-	if( const auto end_position= document_manager_.GetIdentifierEndPosition( position ) )
-		range.end= end_position->position;
-	else
-		range.end= DocumentPosition{ range.start.line, range.start.character + 1 };
+	range.start= DocumentPosition{ position.src_loc.GetLine(), position.src_loc.GetColumn() };
+	range.end= DocumentPosition{ range.start.line, range.start.character + 1 };
 
 	return range;
 }

@@ -91,7 +91,7 @@ const std::string& Document::GetText() const
 	return text_;
 }
 
-std::optional<PositionInDocument> Document::GetDefinitionPoint( const DocumentPosition& position )
+std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosition& position )
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
@@ -105,8 +105,8 @@ std::optional<PositionInDocument> Document::GetDefinitionPoint( const DocumentPo
 
 	if( const auto result_src_loc= last_valid_state_->code_builder->GetDefinition( *src_loc ) )
 	{
-		PositionInDocument position;
-		position.position= SrcLocToDocumentPosition( *result_src_loc );
+		SrcLocInDocument position;
+		position.src_loc= *result_src_loc;
 
 		const uint32_t file_index= result_src_loc->GetFileIndex();
 		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
@@ -141,39 +141,14 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPositi
 
 		// TODO - use here last valid text.
 
-		// We pefrom gihlighting only for this document, so, do some position manipulations.
-		// Assume that highlighted identifier is located in single line.
-		// Extract column (UTF-32) from SrcLoc, convert it into UTF-8 offset. For this offset get UTF-8 offset of identifier end.
-		// Convert botf start/end UTF-8 offsets into UTF-16 result positions.
-
-		const uint32_t line= result_src_loc.GetLine();
-		if( line >= last_valid_state_->line_to_linear_position_index.size() )
-			continue;
-		const std::string_view line_text= std::string_view(text_).substr( last_valid_state_->line_to_linear_position_index[ line ] );
-
-		const std::optional<TextLinearPosition> utf8_column= Utf32PositionToUtf8Position( line_text, result_src_loc.GetColumn() );
-		if( utf8_column == std::nullopt )
-			continue;
-
-		const std::optional<TextLinearPosition> utf8_column_end= GetIdentifierEndForPosition( line_text, *utf8_column );
-		if( utf8_column_end == std::nullopt )
-			continue;
-
-		const std::optional<TextLinearPosition> utf16_column= Utf8PositionToUtf16Position( line_text, *utf8_column );
-		const std::optional<TextLinearPosition> utf16_column_end= Utf8PositionToUtf16Position( line_text, *utf8_column_end );
-		if( utf16_column == std::nullopt || utf16_column_end == std::nullopt )
-			continue;
-
-		const DocumentPosition start_pos{ line, *utf16_column };
-		const DocumentPosition end_pos{ line, *utf16_column_end };
-
-		result.push_back( DocumentRange{ start_pos, end_pos } );
+		if( auto range= SrcLocToDocumentIdentifierRange( result_src_loc, text_, last_valid_state_->line_to_linear_position_index ) )
+			result.push_back( std::move(*range) );
 	}
 
 	return result;
 }
 
-std::vector<PositionInDocument> Document::GetAllOccurrences( const DocumentPosition& position )
+std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPosition& position )
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
@@ -190,13 +165,13 @@ std::vector<PositionInDocument> Document::GetAllOccurrences( const DocumentPosit
 	// TODO - improve this.
 	// We need to extract occurences in other opended documents and maybe search for other files.
 
-	std::vector<PositionInDocument> result;
+	std::vector<SrcLocInDocument> result;
 	result.reserve( occurrences.size() );
 
 	for( const SrcLoc& result_src_loc : occurrences )
 	{
-		PositionInDocument position;
-		position.position= SrcLocToDocumentPosition( result_src_loc );
+		SrcLocInDocument position;
+		position.src_loc= result_src_loc;
 
 		const uint32_t file_index= result_src_loc.GetFileIndex();
 		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
@@ -422,12 +397,13 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	return result_transformed;
 }
 
-std::optional<DocumentPosition> Document::GetIdentifierEndPosition( const DocumentPosition& start_position ) const
+std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc ) const
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	return LangServer::GetIdentifierEndPosition( start_position, text_, last_valid_state_->line_to_linear_position_index );
+	// TODO - use text from last valid state.
+	return SrcLocToDocumentIdentifierRange( src_loc, text_, last_valid_state_->line_to_linear_position_index );
 }
 
 void Document::Rebuild()

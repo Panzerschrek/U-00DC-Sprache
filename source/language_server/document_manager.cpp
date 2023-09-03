@@ -151,25 +151,19 @@ void DocumentManager::Close( const Uri& uri )
 	documents_.erase( uri );
 }
 
-std::optional<PositionInDocument> DocumentManager::GetIdentifierEndPosition( const PositionInDocument& start_position ) const
+std::optional<DocumentRange> DocumentManager::GetDocumentIdentifierRange( const SrcLocInDocument& document_src_loc ) const
 {
-	if( const auto it= documents_.find( start_position.uri ); it != documents_.end() )
+	if( const auto it= documents_.find( document_src_loc.uri ); it != documents_.end() )
 	{
-		if( const auto end_position= it->second.GetIdentifierEndPosition( start_position.position ) )
-		{
-			return PositionInDocument{ *end_position, start_position.uri };
-		}
+		return it->second.GetIdentifierRange( document_src_loc.src_loc );
 	}
 
-	if( const auto it= unmanaged_files_.find( start_position.uri ); it != unmanaged_files_.end() )
+	if( const auto it= unmanaged_files_.find( document_src_loc.uri ); it != unmanaged_files_.end() )
 	{
 		if( it->second != std::nullopt )
 		{
 			const UnmanagedFile& unmanaged_file= *it->second;
-			if( const auto end_position= LangServer::GetIdentifierEndPosition( start_position.position, unmanaged_file.content, unmanaged_file.line_to_linear_position_index ) )
-			{
-				return PositionInDocument{ *end_position, start_position.uri };
-			}
+			return SrcLocToDocumentIdentifierRange( document_src_loc.src_loc, unmanaged_file.content, unmanaged_file.line_to_linear_position_index );
 		}
 	}
 

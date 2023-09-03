@@ -40,18 +40,18 @@ public: // Diagnostics.
 	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
 
 public: // Requests.
-	std::optional<PositionInDocument> GetDefinitionPoint( const DocumentPosition& position );
+	std::optional<SrcLocInDocument> GetDefinitionPoint( const DocumentPosition& position );
 
 	// Returns highlights only for this document.
 	std::vector<DocumentRange> GetHighlightLocations( const DocumentPosition& position );
 
-	std::vector<PositionInDocument> GetAllOccurrences( const DocumentPosition& position );
+	std::vector<SrcLocInDocument> GetAllOccurrences( const DocumentPosition& position );
 
 	std::vector<Symbol> GetSymbols();
 
 	std::vector<CompletionItem> Complete( const DocumentPosition& position );
 
-	std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& start_position ) const;
+	std::optional<DocumentRange> GetIdentifierRange( const SrcLoc& src_loc ) const;
 
 public: // Other stuff.
 	void Rebuild();
