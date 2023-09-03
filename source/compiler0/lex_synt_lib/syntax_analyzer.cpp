@@ -965,6 +965,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			return std::move(bitwise_not);
 		}
 	case Lexem::Type::Scope:
+	case Lexem::Type::CompletionScope:
 			return ParseComplexName();
 	case Lexem::Type::Number:
 			return ParseNumericConstant();
