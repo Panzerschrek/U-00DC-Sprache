@@ -804,10 +804,10 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 				return;
 			}
 
-			log_ << "Change document range "
-				<< range->start.line << ":" << range->start.character << " - "
-				<< range->end.line << ":" << range->end.character
-				<< " with new text \"" << StringRefToStringView(*change_text_str) << "\"" << std::endl;
+			// log_ << "Change document range "
+			//	<< range->start.line << ":" << range->start.character << " - "
+			//	<< range->end.line << ":" << range->end.character
+			//	<< " with new text \"" << StringRefToStringView(*change_text_str) << "\"" << std::endl;
 
 			document->UpdateText( *range, StringRefToStringView( *change_text_str ) );
 		}
