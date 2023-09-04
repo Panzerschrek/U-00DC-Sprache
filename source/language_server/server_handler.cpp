@@ -273,13 +273,13 @@ ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 		return result;
 	}
 
-	for( const SrcLocInDocument& position : document->GetAllOccurrences( *position ) )
+	for( const SrcLocInDocument& location : document->GetAllOccurrences( *position ) )
 	{
-		Json::Object location;
-		location["range"]= DocumentRangeToJson( DocumentSrcLocToRange( position ) );
-		location["uri"]= position.uri.ToString();
+		Json::Object out_location;
+		out_location["range"]= DocumentRangeToJson( DocumentSrcLocToRange( location ) );
+		out_location["uri"]= location.uri.ToString();
 
-		result.push_back( std::move(location) );
+		result.push_back( std::move(out_location) );
 	}
 
 	return result;
@@ -338,10 +338,10 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 		return result;
 	}
 
-	if( const std::optional<SrcLocInDocument> result_position= document->GetDefinitionPoint( *position ) )
+	if( const std::optional<SrcLocInDocument> location= document->GetDefinitionPoint( *position ) )
 	{
-		result["range"]= DocumentRangeToJson( DocumentSrcLocToRange( *result_position ) );
-		result["uri"]= result_position->uri.ToString();
+		result["range"]= DocumentRangeToJson( DocumentSrcLocToRange( *location ) );
+		result["uri"]= location->uri.ToString();
 	}
 	return result;
 }
@@ -557,13 +557,13 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 
 	{
 		Json::Object changes;
-		for( const SrcLocInDocument& result_position : document->GetAllOccurrences( *position ) )
+		for( const SrcLocInDocument& location : document->GetAllOccurrences( *position ) )
 		{
 			Json::Object edit;
-			edit["range"]= DocumentRangeToJson( DocumentSrcLocToRange( result_position ) );
+			edit["range"]= DocumentRangeToJson( DocumentSrcLocToRange( location ) );
 			edit["newText"]= new_name_str;
 
-			std::string change_uri= result_position.uri.ToString();
+			std::string change_uri= location.uri.ToString();
 			if( const auto prev_edits= changes.getArray( change_uri ) )
 				prev_edits->push_back( std::move(edit) );
 			else
@@ -786,15 +786,15 @@ void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, co
 	notifications_queue_.push( std::move(notification) );
 }
 
-DocumentRange ServerHandler::DocumentSrcLocToRange( const SrcLocInDocument& position ) const
+DocumentRange ServerHandler::DocumentSrcLocToRange( const SrcLocInDocument& document_src_loc ) const
 {
-	if( auto range= document_manager_.GetDocumentIdentifierRange( position ) )
+	if( auto range= document_manager_.GetDocumentIdentifierRange( document_src_loc ) )
 		return std::move(*range);
 
 	// Something went wrong. Fill some dummy.
 	// Convert UTF-32 column to UTF-16 character. This is wrong, but better than nothing.
 	DocumentRange range;
-	range.start= DocumentPosition{ position.src_loc.GetLine(), position.src_loc.GetColumn() };
+	range.start= DocumentPosition{ document_src_loc.src_loc.GetLine(), document_src_loc.src_loc.GetColumn() };
 	range.end= DocumentPosition{ range.start.line, range.start.character + 1 };
 
 	return range;

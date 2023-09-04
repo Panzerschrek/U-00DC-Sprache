@@ -144,16 +144,16 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 
 	if( const auto result_src_loc= last_valid_state_->code_builder->GetDefinition( *src_loc ) )
 	{
-		SrcLocInDocument position;
-		position.src_loc= *result_src_loc;
+		SrcLocInDocument location;
+		location.src_loc= *result_src_loc;
 
 		const uint32_t file_index= result_src_loc->GetFileIndex();
 		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
-			position.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
+			location.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
 		else
-			position.uri= Uri::FromFilePath( path_ ); // TODO - maybe return std::nullopt instead?
+			location.uri= Uri::FromFilePath( path_ ); // TODO - maybe return std::nullopt instead?
 
-		return position;
+		return location;
 	}
 
 	return std::nullopt;
@@ -209,16 +209,16 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 
 	for( const SrcLoc& result_src_loc : occurrences )
 	{
-		SrcLocInDocument position;
-		position.src_loc= result_src_loc;
+		SrcLocInDocument location;
+		location.src_loc= result_src_loc;
 
 		const uint32_t file_index= result_src_loc.GetFileIndex();
 		if( file_index < last_valid_state_->source_graph.nodes_storage.size() )
-			position.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
+			location.uri= Uri::FromFilePath( last_valid_state_->source_graph.nodes_storage[ file_index ].file_path );
 		else
-			position.uri= Uri::FromFilePath( path_ ); // TODO - maybe skip this item instead?
+			location.uri= Uri::FromFilePath( path_ ); // TODO - maybe skip this item instead?
 
-		result.push_back( std::move(position) );
+		result.push_back( std::move(location) );
 	}
 
 	return result;
