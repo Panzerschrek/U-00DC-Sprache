@@ -80,8 +80,10 @@ Language server
 *) Async requests handling
 *) Rebuild documents, depending on other documents
 *) Delayed documents rebuild
-*) Non-ASCII support
+*) Support various end of line combinations "\n", "\r\n", "\r"
 *) Completion tests
+*) Properly display errors in template/macro contexts, errors in imported files
+*) Backup completion for non-compiled documents
 *) Filter-out some symbol kinds in completion, depending on context
 *) Sort completed items using some kind of prioroty
 *) Proper mapping of current state file to last valid state for requests (use some sort of diff)
@@ -90,6 +92,7 @@ Language server
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
 *) A way to provide configuration (import directories, other compilation options)
 *) Tune SrcLoc of syntax elements in order to show name definition points properly
+*) Fix definitions search for names, declared inside macros
 
 CPP Header converter:
 *) White list of converted symbols

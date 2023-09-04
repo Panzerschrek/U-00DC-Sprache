@@ -20,19 +20,11 @@ enum ErrorCode : int32_t
 	RequestFailed = -32803,
 };
 
-Json::Value SrcLocToPosition( const SrcLoc& src_loc )
-{
-	Json::Object position;
-	position["line"]= src_loc.GetLine() - 1; // LSP uses 0-based line numbers, Ü use 1-based line numbers.
-	position["character"]= src_loc.GetColumn();
-	return position;
-}
-
 Json::Value DocumentPositionToJson( const DocumentPosition& position )
 {
 	Json::Object out_position;
 	out_position["line"]= position.line - 1; // LSP uses 0-based line numbers, Ü use 1-based line numbers.
-	out_position["character"]= position.column;
+	out_position["character"]= position.character;
 	return out_position;
 }
 
@@ -95,60 +87,6 @@ Json::Array SymbolsToJson( const std::vector<Symbol>& symbols )
 	return result;
 }
 
-void CreateLexSyntErrorsDiagnostics( const LexSyntErrors& errors, Json::Array& out_diagnostics )
-{
-	for( const LexSyntError& error : errors)
-	{
-		Json::Object diagnostic;
-		diagnostic["message"]= error.text;
-		diagnostic["severity"]= 1; // Means "error"
-
-		{
-			Json::Object range;
-
-			range["start"]= SrcLocToPosition( error.src_loc );
-			{
-				// TODO - extract length of the lexem.
-				const SrcLoc src_loc( error.src_loc.GetFileIndex(), error.src_loc.GetLine(), error.src_loc.GetColumn() + 1 );
-				range["end"]= SrcLocToPosition( src_loc );
-			}
-
-			diagnostic["range"]= std::move(range);
-		}
-
-		out_diagnostics.push_back( std::move(diagnostic) );
-	}
-}
-
-void CreateCodeBuilderErrorsDiagnostics( const CodeBuilderErrorsContainer& errors, Json::Array& out_diagnostics )
-{
-	for( const CodeBuilderError& error : errors )
-	{
-		Json::Object diagnostic;
-		diagnostic["message"]= error.text;
-		diagnostic["severity"]= 1; // Means "error"
-		diagnostic["code"]= std::string( CodeBuilderErrorCodeToString( error.code ) );
-
-		{
-			Json::Object range;
-
-			range["start"]= SrcLocToPosition( error.src_loc );
-			{
-				// TODO - extract length of the lexem.
-				const SrcLoc src_loc( error.src_loc.GetFileIndex(), error.src_loc.GetLine(), error.src_loc.GetColumn() + 1 );
-				range["end"]= SrcLocToPosition( src_loc );
-			}
-
-			diagnostic["range"]= std::move(range);
-		}
-
-		out_diagnostics.push_back( std::move(diagnostic) );
-
-		if( error.template_context != nullptr )
-			CreateCodeBuilderErrorsDiagnostics( error.template_context->errors, out_diagnostics );
-	}
-}
-
 } // namespace
 
 ServerHandler::ServerHandler( std::ostream& log )
@@ -206,6 +144,7 @@ ServerResponse ServerHandler::ProcessInitialize( const Json::Value& params )
 	{
 		Json::Object capabilities;
 		capabilities["textDocumentSync"]= 2; // Incremental.
+		capabilities["positionEncoding"]= "utf-16";
 		capabilities["declarationProvider"]= true;
 		capabilities["definitionProvider"]= true;
 		capabilities["referencesProvider"]= true;
@@ -334,13 +273,13 @@ ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 		return result;
 	}
 
-	for( const PositionInDocument& position : document->GetAllOccurrences( *position ) )
+	for( const SrcLocInDocument& location : document->GetAllOccurrences( *position ) )
 	{
-		Json::Object location;
-		location["range"]= DocumentRangeToJson( DocumentPositionToRange( position ) );
-		location["uri"]= position.uri.ToString();
+		Json::Object out_location;
+		out_location["range"]= DocumentRangeToJson( DocumentSrcLocToRange( location ) );
+		out_location["uri"]= location.uri.ToString();
 
-		result.push_back( std::move(location) );
+		result.push_back( std::move(out_location) );
 	}
 
 	return result;
@@ -399,10 +338,10 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 		return result;
 	}
 
-	if( const auto result_position= document->GetDefinitionPoint( *position ) )
+	if( const std::optional<SrcLocInDocument> location= document->GetDefinitionPoint( *position ) )
 	{
-		result["range"]= DocumentRangeToJson( DocumentPositionToRange( *result_position ) );
-		result["uri"]= result_position->uri.ToString();
+		result["range"]= DocumentRangeToJson( DocumentSrcLocToRange( *location ) );
+		result["uri"]= location->uri.ToString();
 	}
 	return result;
 }
@@ -618,13 +557,13 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 
 	{
 		Json::Object changes;
-		for( const PositionInDocument& result_position : document->GetAllOccurrences( *position ) )
+		for( const SrcLocInDocument& location : document->GetAllOccurrences( *position ) )
 		{
 			Json::Object edit;
-			edit["range"]= DocumentRangeToJson( DocumentPositionToRange( result_position ) );
+			edit["range"]= DocumentRangeToJson( DocumentSrcLocToRange( location ) );
 			edit["newText"]= new_name_str;
 
-			std::string change_uri= result_position.uri.ToString();
+			std::string change_uri= location.uri.ToString();
 			if( const auto prev_edits= changes.getArray( change_uri ) )
 				prev_edits->push_back( std::move(edit) );
 			else
@@ -804,10 +743,10 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 				return;
 			}
 
-			log_ << "Change document range "
-				<< range->start.line << ":" << range->start.column << " - "
-				<< range->end.line << ":" << range->end.column
-				<< " with new text \"" << StringRefToStringView(*change_text_str) << "\"" << std::endl;
+			// log_ << "Change document range "
+			//	<< range->start.line << ":" << range->start.character << " - "
+			//	<< range->end.line << ":" << range->end.character
+			//	<< " with new text \"" << StringRefToStringView(*change_text_str) << "\"" << std::endl;
 
 			document->UpdateText( *range, StringRefToStringView( *change_text_str ) );
 		}
@@ -830,9 +769,15 @@ void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, co
 	{
 		Json::Array diagnostics;
 
-		CreateLexSyntErrorsDiagnostics( document.GetLexErrors(), diagnostics );
-		CreateLexSyntErrorsDiagnostics( document.GetSyntErrors(), diagnostics );
-		CreateCodeBuilderErrorsDiagnostics( document.GetCodeBuilderErrors(), diagnostics );
+		for( const DocumentDiagnostic& diagnostic : document.GetDiagnostics() )
+		{
+			Json::Object out_diagnostic;
+			out_diagnostic["message"]= diagnostic.text;
+			out_diagnostic["severity"]= 1; // Means "error"
+			out_diagnostic["range"]= DocumentRangeToJson( diagnostic.range );
+
+			diagnostics.push_back( std::move(out_diagnostic) );
+		}
 
 		result["diagnostics"]= std::move(diagnostics);
 	}
@@ -841,14 +786,16 @@ void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, co
 	notifications_queue_.push( std::move(notification) );
 }
 
-DocumentRange ServerHandler::DocumentPositionToRange( const PositionInDocument& position ) const
+DocumentRange ServerHandler::DocumentSrcLocToRange( const SrcLocInDocument& document_src_loc ) const
 {
+	if( auto range= document_manager_.GetDocumentIdentifierRange( document_src_loc ) )
+		return std::move(*range);
+
+	// Something went wrong. Fill some dummy.
+	// Convert UTF-32 column to UTF-16 character. This is wrong, but better than nothing.
 	DocumentRange range;
-	range.start= position.position;
-	if( const auto end_position= document_manager_.GetIdentifierEndPosition( position ) )
-		range.end= end_position->position;
-	else
-		range.end= DocumentPosition{ range.start.line, range.start.column + 1 };
+	range.start= DocumentPosition{ document_src_loc.src_loc.GetLine(), document_src_loc.src_loc.GetColumn() };
+	range.end= DocumentPosition{ range.start.line, range.start.character + 1 };
 
 	return range;
 }

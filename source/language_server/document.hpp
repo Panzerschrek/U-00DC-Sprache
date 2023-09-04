@@ -19,6 +19,12 @@ struct DocumentBuildOptions
 	std::string prelude;
 };
 
+struct DocumentDiagnostic
+{
+	DocumentRange range;
+	std::string text;
+};
+
 class Document
 {
 public:
@@ -29,28 +35,29 @@ public:
 	Document& operator=( const Document& )= delete;
 	Document& operator=( Document&& )= default;
 
+public: // Document text stuff.
 	void UpdateText( const DocumentRange& range, std::string_view new_text );
 	void SetText( std::string text );
 	const std::string& GetText() const;
 
-	LexSyntErrors GetLexErrors() const;
-	LexSyntErrors GetSyntErrors() const;
-	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
+public: // Diagnostics.
+	llvm::ArrayRef<DocumentDiagnostic> GetDiagnostics() const;
 
-	std::optional<PositionInDocument> GetDefinitionPoint( const DocumentPosition& position );
+public: // Requests.
+	std::optional<SrcLocInDocument> GetDefinitionPoint( const DocumentPosition& position );
 
 	// Returns highlights only for this document.
 	std::vector<DocumentRange> GetHighlightLocations( const DocumentPosition& position );
 
-	std::vector<PositionInDocument> GetAllOccurrences( const DocumentPosition& position );
+	std::vector<SrcLocInDocument> GetAllOccurrences( const DocumentPosition& position );
 
 	std::vector<Symbol> GetSymbols();
 
 	std::vector<CompletionItem> Complete( const DocumentPosition& position );
 
-	std::optional<DocumentPosition> GetIdentifierEndPosition( const DocumentPosition& start_position ) const;
+	std::optional<DocumentRange> GetIdentifierRange( const SrcLoc& src_loc ) const;
 
-public:
+public: // Other stuff.
 	void Rebuild();
 
 private:
@@ -69,9 +76,7 @@ private:
 	std::ostream& log_;
 	std::string text_;
 	std::optional<CompiledState> last_valid_state_;
-	LexSyntErrors lex_errors_;
-	LexSyntErrors synt_errors_;
-	CodeBuilderErrorsContainer code_builder_errors_;
+	std::vector<DocumentDiagnostic> diagnostics_;
 };
 
 } // namespace LangServer

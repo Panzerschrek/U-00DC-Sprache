@@ -775,30 +775,66 @@ std::optional<TextLinearPosition> GetIdentifierStartForPosition( const std::stri
 	if( position >= text.size() )
 		return std::nullopt;
 
-	// Go backward until find non-identifier char.
-	// TODO - support Unicode.
-
-	if( !IsIdentifierChar( sprache_char( text[ position ] ) ) )
+	if( !IsIdentifierChar( GetUTF8FirstChar( text.data() + position, text.data() + text.size() ) ) )
 		return std::nullopt; // Not an identifier.
 
+	// Go backward until find non-identifier char.
 	TextLinearPosition current_position= position;
-	while( current_position > 0 && IsIdentifierChar( sprache_char( text[ current_position - 1 ] ) ) )
-		--current_position;
+	while( current_position > 0 )
+	{
+		const char c= text[ current_position - 1 ];
+		if( ( c & 0b10000000 ) == 0 )
+		{
+			if( !IsIdentifierChar( sprache_char(c) ) )
+				break;
+			--current_position;
+		}
+		else
+		{
+			// Read multibyte sequence backwards.
+			TextLinearPosition code_point_start_position= current_position - 1;
+			while(true)
+			{
+				if( ( text[ code_point_start_position ] & 0b11000000 ) == 0b10000000 )
+				{
+					// Auxilarity byte.
+					if( code_point_start_position == 0 )
+						return std::nullopt; // Broken UTF-8.
+					--code_point_start_position;
+				}
+				else
+					break;
+			}
+			if( !IsIdentifierChar( GetUTF8FirstChar( text.data() + code_point_start_position, text.data() + text.size() ) ) )
+				break;
+			current_position= code_point_start_position;
+		}
+	}
 
 	return current_position;
 }
 
 std::optional<TextLinearPosition> GetIdentifierEndForPosition( const std::string_view text, const TextLinearPosition position )
 {
-	TextLinearPosition current_position= position;
-	// TODO - support Unicode.
-	while( current_position < text.size() && IsIdentifierChar( sprache_char( text[ current_position ] ) ) )
-		++current_position;
+	if( position >= text.size() )
+		return std::nullopt;
 
-	if( current_position == position )
+	const char* s= text.data() + position;
+	const char* const s_end= text.data() + text.size();
+	while( s < s_end )
+	{
+		const char* s_copy= s;
+		const sprache_char c= ReadNextUTF8Char( s_copy, s_end );
+		if( !IsIdentifierChar(c) )
+			break;
+		s= s_copy;
+	}
+
+	const TextLinearPosition end_position= TextLinearPosition(s - text.data());
+	if( end_position == position )
 		return std::nullopt; // Not an identifier.
 
-	return current_position;
+	return end_position;
 }
 
 } // namespace U

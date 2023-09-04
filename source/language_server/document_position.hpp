@@ -1,4 +1,5 @@
 #pragma once
+#include "../lex_synt_lib_common/src_loc.hpp"
 #include "uri.hpp"
 
 namespace U
@@ -11,7 +12,7 @@ namespace LangServer
 struct DocumentPosition
 {
 	uint32_t line= 0; // From 1, as in SrcLoc.
-	uint32_t column= 0; // From 0, as in SrcLoc.
+	uint32_t character= 0; // From 0, in UTF-16 words.
 };
 
 struct DocumentRange
@@ -27,6 +28,11 @@ struct PositionInDocument
 	Uri uri;
 };
 
+struct SrcLocInDocument
+{
+	SrcLoc src_loc;
+	Uri uri;
+};
 
 // Range within specific document.
 struct RangeInDocument
