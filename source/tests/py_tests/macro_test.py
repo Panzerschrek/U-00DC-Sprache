@@ -583,9 +583,6 @@ def MacroExpansionContext_Test3():
 
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
-	assert( errors_list[0].error_code == "MacroExpansionContext" )
-	assert( errors_list[0].src_loc.line == 7 )
-	assert( errors_list[0].template_errors.errors[0].error_code == "MacroExpansionContext" )
-	assert( errors_list[0].template_errors.errors[0].src_loc.line == 7 )
-	assert( errors_list[0].template_errors.errors[0].template_errors.errors[0].error_code == "NameNotFound" )
-	assert( errors_list[0].template_errors.errors[0].template_errors.errors[0].src_loc.line == 7 )
+	# Should not put lexem "unknown" into macro expansion context, since it is unique.
+	# Only lexems within macro and macro unique identifiers obtain are placed inside macro expansion context.
+	assert( errors_list[0].error_code == "NameNotFound" )

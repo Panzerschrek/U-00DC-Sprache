@@ -260,11 +260,14 @@ private:
 		const Macro::MatchElements& match_elements,
 		const std::string& macro_name );
 
-	Lexems DoExpandMacro(
+	// Fill result container of lexems, setting macro context for them (if needed).
+	void DoExpandMacro_r(
 		const MacroNamesMap& parsed_elements,
 		const Macro::ResultElements& result_elements,
 		ProgramStringMap<std::string>& unique_macro_identifier_map,
-		const std::string& macro_unique_identifiers_base_name );
+		const std::string& macro_unique_identifiers_base_name,
+		uint32_t macro_expansion_index,
+		Lexems& result_lexems );
 
 	void ExpectSemicolon();
 	void ExpectLexem( Lexem::Type lexem_type );
@@ -3879,25 +3882,26 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	macro_unique_identifiers_base_name+= "_c";
 	macro_unique_identifiers_base_name+= std::to_string( expansion_src_loc.GetColumn() );
 
-	Lexems result_lexems=
-		DoExpandMacro(
-			names_map,
-			macro.result_template_elements,
-			unique_macro_identifier_map,
-			macro_unique_identifiers_base_name );
+	const uint32_t macro_expansion_index= uint32_t(macro_expansion_contexts_->size());
+
+	Lexems result_lexems;
+	DoExpandMacro_r(
+		names_map,
+		macro.result_template_elements,
+		unique_macro_identifier_map,
+		macro_unique_identifiers_base_name,
+		macro_expansion_index,
+		result_lexems);
 
 	Lexem eof;
 	eof.type= Lexem::Type::EndOfFile;
 	result_lexems.push_back(eof);
 
-	const uint32_t macro_expansion_index= uint32_t(macro_expansion_contexts_->size());
 	MacroExpansionContext macro_expansion_context;
 	macro_expansion_context.macro_name= macro.name;
 	macro_expansion_context.macro_declaration_src_loc= macro.src_loc;
 	macro_expansion_context.src_loc= expansion_src_loc;
 	macro_expansion_contexts_->push_back(macro_expansion_context);
-	for( Lexem& lexem : result_lexems )
-		lexem.src_loc.SetMacroExpansionIndex( macro_expansion_index );
 
 	SyntaxAnalyzer result_analyzer( macros_, macro_expansion_contexts_ );
 	result_analyzer.it_= result_lexems.begin();
@@ -4086,13 +4090,14 @@ std::optional<SyntaxAnalyzer::MacroVariablesMap> SyntaxAnalyzer::MatchMacroBlock
 	return out_elements;
 }
 
-Lexems SyntaxAnalyzer::DoExpandMacro(
+void SyntaxAnalyzer::DoExpandMacro_r(
 	const MacroNamesMap& parsed_elements,
 	const Macro::ResultElements& result_elements,
 	ProgramStringMap<std::string>& unique_macro_identifier_map,
-	const std::string& macro_unique_identifiers_base_name )
+	const std::string& macro_unique_identifiers_base_name,
+	const uint32_t macro_expansion_index,
+	Lexems& result_lexems )
 {
-	Lexems result_lexems;
 	for( const Macro::ResultElement& result_element : result_elements )
 	{
 		switch( result_element.kind )
@@ -4104,6 +4109,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				Lexem l;
 				l.type= Lexem::Type::Identifier;
 				l.src_loc= result_element.lexem.src_loc;
+				l.src_loc.SetMacroExpansionIndex( macro_expansion_index );
 
 				const auto it= unique_macro_identifier_map.find( result_element.lexem.text );
 				if( it != unique_macro_identifier_map.end() )
@@ -4125,7 +4131,11 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 				result_lexems.push_back( std::move(l) );
 			}
 			else
-				result_lexems.push_back( result_element.lexem );
+			{
+				Lexem l= result_element.lexem;
+				l.src_loc.SetMacroExpansionIndex( macro_expansion_index );
+				result_lexems.push_back( std::move(l) );
+			}
 			break;
 
 		case Macro::ResultElementKind::VariableElement:
@@ -4137,7 +4147,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					msg.src_loc= result_element.lexem.src_loc;
 					msg.text= result_element.name + " not found";
 					error_messages_.push_back( std::move(msg) );
-					return result_lexems;
+					return;
 				}
 
 				result_lexems.insert( result_lexems.end(), element->begin, element->end );
@@ -4153,7 +4163,7 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					msg.src_loc= result_element.lexem.src_loc;
 					msg.text= result_element.name + " not found";
 					error_messages_.push_back( std::move(msg) );
-					return result_lexems;
+					return;
 				}
 
 				if( element->kind == Macro::MatchElementKind::Optional || element->kind == Macro::MatchElementKind::Repeated )
@@ -4164,17 +4174,21 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 						sub_elements_map.prev= &parsed_elements;
 						sub_elements_map.names= &sub_elements;
 
-						Lexems element_lexems=
-							DoExpandMacro(
-								sub_elements_map,
-								result_element.sub_elements,
-								unique_macro_identifier_map,
-								macro_unique_identifiers_base_name );
-						result_lexems.insert( result_lexems.end(), element_lexems.begin(), element_lexems.end() );
+						DoExpandMacro_r(
+							sub_elements_map,
+							result_element.sub_elements,
+							unique_macro_identifier_map,
+							macro_unique_identifiers_base_name,
+							macro_expansion_index,
+							result_lexems );
 
 						// Push separator.
 						if( &sub_elements != &element->sub_elements.back() && result_element.lexem.type != Lexem::Type::EndOfFile )
-							result_lexems.push_back( result_element.lexem );
+						{
+							Lexem l= result_element.lexem;
+							l.src_loc.SetMacroExpansionIndex( macro_expansion_index );
+							result_lexems.push_back( std::move(l) );
+						}
 					}
 				}
 				else
@@ -4183,14 +4197,12 @@ Lexems SyntaxAnalyzer::DoExpandMacro(
 					msg.src_loc= result_element.lexem.src_loc;
 					msg.text= "Expected optional or repated.";
 					error_messages_.push_back( std::move(msg) );
-					return result_lexems;
+					return;
 				}
 			}
 			break;
 		};
 	}
-
-	return result_lexems;
 }
 
 void SyntaxAnalyzer::ExpectSemicolon()
