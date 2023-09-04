@@ -12,35 +12,6 @@ namespace U
 namespace LangServer
 {
 
-namespace
-{
-
-std::optional<SrcLoc> GetSrcLocForIndentifierStartPoisitionInText( const std::string_view text, const DocumentPosition& position )
-{
-	const std::optional<TextLinearPosition> linear_position= DocumentPositionToLinearPosition( position, text );
-	if( linear_position == std::nullopt )
-		return std::nullopt;
-
-	const std::optional<TextLinearPosition> identifier_start_linear_position= GetIdentifierStartForPosition( text, *linear_position );
-	if( identifier_start_linear_position == std::nullopt )
-		return std::nullopt;
-
-	// Assume, that identifier can't be multiline - start of the identifier is always in the same line as any position within it.
-	const TextLinearPosition line_start_position= GetLineStartUtf8Position( text, *identifier_start_linear_position );
-	U_ASSERT( line_start_position <= *identifier_start_linear_position );
-
-	const std::optional<TextLinearPosition> code_point_column=
-		Utf8PositionToUtf32Position(
-			text.substr( line_start_position ),
-			*identifier_start_linear_position - line_start_position );
-	if( code_point_column == std::nullopt )
-		return std::nullopt;
-
-	return SrcLoc( 0, position.line, *code_point_column );
-}
-
-} // namespace
-
 Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log )
 	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
 {
