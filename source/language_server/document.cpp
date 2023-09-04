@@ -15,6 +15,37 @@ namespace LangServer
 namespace
 {
 
+std::optional<DocumentRange> GetErrorRange( const SrcLoc& src_loc, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index )
+{
+	const uint32_t line= src_loc.GetLine();
+	if( line >= line_to_linear_position_index.size() )
+		return std::nullopt;
+
+	const std::string_view line_text= program_text.substr( line_to_linear_position_index[line] );
+
+	const auto column_utf8= Utf32PositionToUtf8Position( line_text, src_loc.GetColumn() );
+	if( column_utf8 == std::nullopt )
+		return std::nullopt;
+
+	// Use identifier end for position.
+	const auto column_end_utf8= GetIdentifierEndForPosition( line_text, *column_utf8 );
+
+	const auto column_utf16= Utf8PositionToUtf16Position( line_text, *column_utf8 );
+	if( column_utf16 == std::nullopt )
+		return std::nullopt;
+
+	std::optional<uint32_t> column_end_utf16;
+	if( column_end_utf8 != std::nullopt )
+		column_end_utf16= Utf8PositionToUtf16Position( line_text, *column_end_utf8 );
+	else
+		column_end_utf16= *column_utf16 + 1; // Use character + 1 as range for non-identifiers.
+
+	if( column_end_utf16 == std::nullopt )
+		return std::nullopt;
+
+	return DocumentRange{ { line, *column_utf16 }, { line, *column_end_utf16 } };
+}
+
 void PopulateDiagnostics( const LexSyntErrors& errors, const std::string_view program_text, std::vector<DocumentDiagnostic>& out_diagnostics )
 {
 	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
@@ -22,27 +53,37 @@ void PopulateDiagnostics( const LexSyntErrors& errors, const std::string_view pr
 	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( program_text );
 	for( const LexSyntError& error : errors )
 	{
-		const uint32_t line= error.src_loc.GetLine();
-		if( line >= index.size() )
+		if( error.src_loc.GetFileIndex() != 0 )
+			continue; // Ignore errors from imported files.
+
+		auto range= GetErrorRange( error.src_loc, program_text, index );
+		if( range == std::nullopt )
 			continue;
 
-		const std::string_view line_text= program_text.substr( index[line] );
-
-		const auto column_utf8= Utf32PositionToUtf8Position( line_text, error.src_loc.GetColumn() );
-		if( column_utf8 == std::nullopt )
-			continue;
-
-		const uint32_t column_end_utf8= GetIdentifierEndForPosition( line_text, *column_utf8 ).value_or( *column_utf8 + 1 );
-
-		const auto column_utf16= Utf8PositionToUtf16Position( line_text, *column_utf8 );
-		const auto column_end_utf16= Utf8PositionToUtf16Position( line_text, column_end_utf8 );
-		if( column_utf16 == std::nullopt || column_end_utf16 == std::nullopt )
-			continue;
-
-		DocumentRange range{ { line, *column_utf16 }, { line, *column_end_utf16 } };
 		DocumentDiagnostic diagnostic;
-		diagnostic.range= std::move(range);
+		diagnostic.range= std::move(*range);
 		diagnostic.text= error.text;
+
+		out_diagnostics.push_back( std::move(diagnostic) );
+	}
+}
+
+void PopulateDiagnostics( const CodeBuilderErrorsContainer& errors, const std::string_view program_text, std::vector<DocumentDiagnostic>& out_diagnostics )
+{
+	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
+
+	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( program_text );
+	for( const CodeBuilderError& error : errors )
+	{
+		auto range= GetErrorRange( error.src_loc, program_text, index );
+		if( range == std::nullopt )
+			continue;
+
+		DocumentDiagnostic diagnostic;
+		diagnostic.range= std::move(*range);
+		diagnostic.text= error.text;
+
+		// TODO - fill other fields, like code and template/macro expansion context?
 
 		out_diagnostics.push_back( std::move(diagnostic) );
 	}
@@ -458,7 +499,7 @@ void Document::Rebuild()
 			options,
 			source_graph );
 
-	//code_builder_errors_= code_builder->TakeErrors();
+	PopulateDiagnostics( code_builder->TakeErrors(), text_, diagnostics_ );
 
 	auto line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
 
