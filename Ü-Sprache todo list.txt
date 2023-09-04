@@ -92,7 +92,6 @@ Language server
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
 *) A way to provide configuration (import directories, other compilation options)
 *) Tune SrcLoc of syntax elements in order to show name definition points properly
-*) Fix definitions search for names, declared inside macros
 
 CPP Header converter:
 *) White list of converted symbols

@@ -114,7 +114,14 @@ void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc&
 			point.type= class_field->type;
 	}
 
-	definition_points_.insert( std::make_pair( src_loc, std::move(point) ) );
+	// Reset macro expansion contexts.
+	// This fixes search of definitions/usages inside macro expansions.
+	// This breaks search within macro definitions itselfs, but it is anyway irrelevant.
+	SrcLoc src_loc_corrected= src_loc;
+	src_loc_corrected.SetMacroExpansionIndex( SrcLoc::c_max_macro_expanison_index );
+	point.src_loc.SetMacroExpansionIndex( SrcLoc::c_max_macro_expanison_index );
+
+	definition_points_.insert( std::make_pair( src_loc_corrected, std::move(point) ) );
 }
 
 NamesScope* CodeBuilder::GetNamesScopeForCompletion( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
