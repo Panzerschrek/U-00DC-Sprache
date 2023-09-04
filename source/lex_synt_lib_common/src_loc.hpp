@@ -7,6 +7,8 @@ namespace U
 {
 
 // Location in program source.
+// Lines in source are started with 1. This was choosen in order to report about errors properly, because IDEs/editors use 1-based lines numbering.
+// Column is represented starting with 0, in UTF-32 code points. It is maybe better to use 1-base, but it is too late to change this behavior.
 class SrcLoc
 {
 public:
@@ -38,7 +40,7 @@ public:
 private:
 	uint16_t file_index_;
 	uint16_t macro_expansion_index_;
-	uint16_t line_; // from 1
+	uint16_t line_;
 	uint16_t column_;
 };
 
