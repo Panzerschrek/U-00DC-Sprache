@@ -66,6 +66,7 @@ private:
 	void ProcessTextDocumentDidOpen( const Json::Value& params );
 	void ProcessTextDocumentDidClose( const Json::Value& params );
 	void ProcessTextDocumentDidChange( const Json::Value& params );
+	void ProcessCancelRequest( const Json::Value& params );
 
 	// Other stuff.
 	void GenerateDocumentNotifications( llvm::StringRef uri, const Document& document );

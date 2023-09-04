@@ -119,10 +119,12 @@ void ServerHandler::HandleNotification( const std::string_view method, const Jso
 {
 	if( method == "textDocument/didOpen" )
 		return ProcessTextDocumentDidOpen( params );
-	else if( method == "textDocument/didClose" )
+	if( method == "textDocument/didClose" )
 		return ProcessTextDocumentDidClose( params );
-	else if( method == "textDocument/didChange" )
+	if( method == "textDocument/didChange" )
 		return ProcessTextDocumentDidChange( params );
+	if( method == "$/cancelRequest" )
+		return ProcessCancelRequest( params );
 }
 
 std::optional<ServerNotification> ServerHandler::TakeNotification()
@@ -759,6 +761,23 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 
 	document->Rebuild(); // TODO - rebuild only if necessary.
 	GenerateDocumentNotifications( *uri, *document );
+}
+
+void ServerHandler::ProcessCancelRequest( const Json::Value& params )
+{
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+	{
+		log_ << "Not an object!" << std::endl;
+		return;
+	}
+
+	const auto id= obj->get("id");
+	if( id == nullptr )
+	{
+		log_ << "No request id!" << std::endl;
+	}
+	log_ << "Recieve cancellation for request " << std::endl;
 }
 
 void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, const Document& document )
