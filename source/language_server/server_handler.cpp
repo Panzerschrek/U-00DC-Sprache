@@ -20,14 +20,6 @@ enum ErrorCode : int32_t
 	RequestFailed = -32803,
 };
 
-Json::Value SrcLocToPosition( const SrcLoc& src_loc )
-{
-	Json::Object position;
-	position["line"]= src_loc.GetLine() - 1; // LSP uses 0-based line numbers, Ü use 1-based line numbers.
-	position["character"]= src_loc.GetColumn();
-	return position;
-}
-
 Json::Value DocumentPositionToJson( const DocumentPosition& position )
 {
 	Json::Object out_position;
@@ -93,60 +85,6 @@ Json::Array SymbolsToJson( const std::vector<Symbol>& symbols )
 	}
 
 	return result;
-}
-
-void CreateLexSyntErrorsDiagnostics( const LexSyntErrors& errors, Json::Array& out_diagnostics )
-{
-	for( const LexSyntError& error : errors)
-	{
-		Json::Object diagnostic;
-		diagnostic["message"]= error.text;
-		diagnostic["severity"]= 1; // Means "error"
-
-		{
-			Json::Object range;
-
-			range["start"]= SrcLocToPosition( error.src_loc );
-			{
-				// TODO - extract length of the lexem.
-				const SrcLoc src_loc( error.src_loc.GetFileIndex(), error.src_loc.GetLine(), error.src_loc.GetColumn() + 1 );
-				range["end"]= SrcLocToPosition( src_loc );
-			}
-
-			diagnostic["range"]= std::move(range);
-		}
-
-		out_diagnostics.push_back( std::move(diagnostic) );
-	}
-}
-
-void CreateCodeBuilderErrorsDiagnostics( const CodeBuilderErrorsContainer& errors, Json::Array& out_diagnostics )
-{
-	for( const CodeBuilderError& error : errors )
-	{
-		Json::Object diagnostic;
-		diagnostic["message"]= error.text;
-		diagnostic["severity"]= 1; // Means "error"
-		diagnostic["code"]= std::string( CodeBuilderErrorCodeToString( error.code ) );
-
-		{
-			Json::Object range;
-
-			range["start"]= SrcLocToPosition( error.src_loc );
-			{
-				// TODO - extract length of the lexem.
-				const SrcLoc src_loc( error.src_loc.GetFileIndex(), error.src_loc.GetLine(), error.src_loc.GetColumn() + 1 );
-				range["end"]= SrcLocToPosition( src_loc );
-			}
-
-			diagnostic["range"]= std::move(range);
-		}
-
-		out_diagnostics.push_back( std::move(diagnostic) );
-
-		if( error.template_context != nullptr )
-			CreateCodeBuilderErrorsDiagnostics( error.template_context->errors, out_diagnostics );
-	}
 }
 
 } // namespace
@@ -830,9 +768,15 @@ void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, co
 	{
 		Json::Array diagnostics;
 
-		CreateLexSyntErrorsDiagnostics( document.GetLexErrors(), diagnostics );
-		CreateLexSyntErrorsDiagnostics( document.GetSyntErrors(), diagnostics );
-		CreateCodeBuilderErrorsDiagnostics( document.GetCodeBuilderErrors(), diagnostics );
+		for( const DocumentDiagnostic& diagnostic : document.GetDiagnostics() )
+		{
+			Json::Object out_diagnostic;
+			out_diagnostic["message"]= diagnostic.text;
+			out_diagnostic["severity"]= 1; // Means "error"
+			out_diagnostic["range"]= DocumentRangeToJson( diagnostic.range );
+
+			diagnostics.push_back( std::move(out_diagnostic) );
+		}
 
 		result["diagnostics"]= std::move(diagnostics);
 	}

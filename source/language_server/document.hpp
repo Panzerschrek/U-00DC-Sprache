@@ -19,6 +19,12 @@ struct DocumentBuildOptions
 	std::string prelude;
 };
 
+struct DocumentDiagnostic
+{
+	DocumentRange range;
+	std::string text;
+};
+
 class Document
 {
 public:
@@ -35,9 +41,7 @@ public: // Document text stuff.
 	const std::string& GetText() const;
 
 public: // Diagnostics.
-	LexSyntErrors GetLexErrors() const;
-	LexSyntErrors GetSyntErrors() const;
-	CodeBuilderErrorsContainer GetCodeBuilderErrors() const;
+	llvm::ArrayRef<DocumentDiagnostic> GetDiagnostics() const;
 
 public: // Requests.
 	std::optional<SrcLocInDocument> GetDefinitionPoint( const DocumentPosition& position );
@@ -72,9 +76,7 @@ private:
 	std::ostream& log_;
 	std::string text_;
 	std::optional<CompiledState> last_valid_state_;
-	LexSyntErrors lex_errors_;
-	LexSyntErrors synt_errors_;
-	CodeBuilderErrorsContainer code_builder_errors_;
+	std::vector<DocumentDiagnostic> diagnostics_;
 };
 
 } // namespace LangServer

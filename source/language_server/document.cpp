@@ -12,27 +12,49 @@ namespace U
 namespace LangServer
 {
 
+namespace
+{
+
+void PopulateDiagnostics( const LexSyntErrors& errors, const std::string_view program_text, std::vector<DocumentDiagnostic>& out_diagnostics )
+{
+	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
+
+	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( program_text );
+	for( const LexSyntError& error : errors )
+	{
+		const uint32_t line= error.src_loc.GetLine();
+		if( line >= index.size() )
+			continue;
+
+		const std::string_view line_text= program_text.substr( index[line] );
+
+		const auto column_utf8= Utf32PositionToUtf8Position( line_text, error.src_loc.GetColumn() );
+		if( column_utf8 == std::nullopt )
+			continue;
+
+		const uint32_t column_end_utf8= GetIdentifierEndForPosition( line_text, *column_utf8 ).value_or( *column_utf8 + 1 );
+
+		const auto column_utf16= Utf8PositionToUtf16Position( line_text, *column_utf8 );
+		const auto column_end_utf16= Utf8PositionToUtf16Position( line_text, column_end_utf8 );
+		if( column_utf16 == std::nullopt || column_end_utf16 == std::nullopt )
+			continue;
+
+		DocumentRange range{ { line, *column_utf16 }, { line, *column_end_utf16 } };
+		DocumentDiagnostic diagnostic;
+		diagnostic.range= std::move(range);
+		diagnostic.text= error.text;
+
+		out_diagnostics.push_back( std::move(diagnostic) );
+	}
+}
+
+} // namespace
+
 Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log )
 	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
 {
 	(void)log_;
 }
-
-LexSyntErrors Document::GetLexErrors() const
-{
-	return lex_errors_;
-}
-
-LexSyntErrors Document::GetSyntErrors() const
-{
-	return synt_errors_;
-}
-
-CodeBuilderErrorsContainer Document::GetCodeBuilderErrors() const
-{
-	return code_builder_errors_;
-}
-
 
 void Document::SetText( std::string text )
 {
@@ -60,6 +82,11 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 const std::string& Document::GetText() const
 {
 	return text_;
+}
+
+llvm::ArrayRef<DocumentDiagnostic> Document::GetDiagnostics() const
+{
+	return diagnostics_;
 }
 
 std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosition& position )
@@ -379,25 +406,24 @@ std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc
 
 void Document::Rebuild()
 {
-	lex_errors_.clear();
-	synt_errors_.clear();
-	code_builder_errors_.clear();
+	diagnostics_.clear();
 
 	SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
 
-	lex_errors_= std::move( source_graph.errors );
-	if( !lex_errors_.empty() )
+	if( !source_graph.errors.empty() )
+	{
+		PopulateDiagnostics( source_graph.errors, text_, diagnostics_ );
 		return;
+	}
 
 	if( source_graph.nodes_storage.empty() )
 		return;
 
 	// Take syntax errors only from this document.
-	synt_errors_.swap( source_graph.nodes_storage.front().ast.error_messages );
-	if( !synt_errors_.empty() )
+	const LexSyntErrors& synt_errors= source_graph.nodes_storage.front().ast.error_messages;
+	if( !synt_errors.empty() )
 	{
-		for( const auto& error : synt_errors_ )
-			std::cout << "error: " << error.text << std::endl;
+		PopulateDiagnostics( synt_errors, text_, diagnostics_ );
 		return;
 	}
 
@@ -432,7 +458,7 @@ void Document::Rebuild()
 			options,
 			source_graph );
 
-	code_builder_errors_= code_builder->TakeErrors();
+	//code_builder_errors_= code_builder->TakeErrors();
 
 	auto line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
 
