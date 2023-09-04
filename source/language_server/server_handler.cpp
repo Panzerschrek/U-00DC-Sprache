@@ -144,6 +144,7 @@ ServerResponse ServerHandler::ProcessInitialize( const Json::Value& params )
 	{
 		Json::Object capabilities;
 		capabilities["textDocumentSync"]= 2; // Incremental.
+		capabilities["positionEncoding"]= "utf-16";
 		capabilities["declarationProvider"]= true;
 		capabilities["definitionProvider"]= true;
 		capabilities["referencesProvider"]= true;
