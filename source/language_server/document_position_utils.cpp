@@ -44,124 +44,6 @@ std::optional<TextLinearPosition> GetUtf8LineStartPosition( const std::string_vi
 	return std::nullopt;
 }
 
-std::optional<TextLinearPosition> Utf16PositionToUtf8Position( const std::string_view text, const TextLinearPosition position )
-{
-	// Extract from UTF-8 string code points and count number of UTF-16 words.
-	TextLinearPosition current_utf16_position= 0;
-	const char* s= text.data();
-	const char* const s_end= s + text.size();
-	while( s < s_end && current_utf16_position < position )
-	{
-		const sprache_char code_point= ReadNextUTF8Char( s, s_end );
-		if( code_point <= 0xFFFFu )
-		{
-			// Code points in range [0;0xFFFF] are encoded as singe UTF-16 word.
-			++current_utf16_position;
-		}
-		else
-		{
-			// Code points abowe 0xFFFF are encoded as two UTF-16 words.
-			current_utf16_position += 2;
-		}
-	}
-
-	if( current_utf16_position != position )
-	{
-		// Something went wrong. Maybe utf-16 position is too big?
-		return std::nullopt;
-	}
-
-	return TextLinearPosition( s - text.data() );
-}
-
-std::optional<TextLinearPosition> Utf8PositionToUtf16Position( const std::string_view text, const TextLinearPosition position )
-{
-	TextLinearPosition current_utf16_position= 0;
-	const char* s= text.data();
-	const char* const s_end= s + text.size();
-	while( s < s_end && TextLinearPosition(s - text.data()) < position )
-	{
-		const sprache_char code_point= ReadNextUTF8Char( s, s_end );
-		if( code_point <= 0xFFFFu )
-		{
-			// Code points in range [0;0xFFFF] are encoded as singe UTF-16 word.
-			++current_utf16_position;
-		}
-		else
-		{
-			// Code points abowe 0xFFFF are encoded as two UTF-16 words.
-			current_utf16_position += 2;
-		}
-	}
-
-	if( TextLinearPosition(s - text.data()) != position )
-		return std::nullopt;
-
-	return current_utf16_position;
-}
-
-std::optional<TextLinearPosition> Utf8PositionToUtf32Position( const std::string_view text, const TextLinearPosition position )
-{
-	TextLinearPosition current_utf32_position= 0;
-	const char* s= text.data();
-	const char* const s_end= s + text.size();
-	while( s < s_end && TextLinearPosition(s - text.data()) < position )
-	{
-		ReadNextUTF8Char( s, s_end );
-		++current_utf32_position;
-	}
-
-	if( TextLinearPosition(s - text.data()) != position )
-		return std::nullopt;
-
-	return current_utf32_position;
-}
-
-std::optional<TextLinearPosition> Utf32PositionToUtf8Position( std::string_view text, const TextLinearPosition position )
-{
-	TextLinearPosition current_utf32_position= 0;
-	const char* s= text.data();
-	const char* const s_end= s + text.size();
-	while( s < s_end && current_utf32_position < position )
-	{
-		ReadNextUTF8Char( s, s_end );
-		++current_utf32_position;
-	}
-
-	if( current_utf32_position != position )
-		return std::nullopt;
-
-	return TextLinearPosition(s - text.data());
-}
-
-std::optional<TextLinearPosition> Utf32PositionToUtf16Position( const std::string_view text, const TextLinearPosition position )
-{
-	TextLinearPosition current_utf32_position= 0;
-	TextLinearPosition current_utf16_position= 0;
-	const char* s= text.data();
-	const char* const s_end= s + text.size();
-	while( s < s_end && current_utf32_position < position )
-	{
-		const sprache_char code_point= ReadNextUTF8Char( s, s_end );
-		if( code_point <= 0xFFFFu )
-		{
-			// Code points in range [0;0xFFFF] are encoded as singe UTF-16 word.
-			++current_utf16_position;
-		}
-		else
-		{
-			// Code points abowe 0xFFFF are encoded as two UTF-16 words.
-			current_utf16_position += 2;
-		}
-		++current_utf32_position;
-	}
-
-	if( current_utf32_position != position )
-		return std::nullopt;
-
-	return current_utf16_position;
-}
-
 TextLinearPosition GetLineStartUtf8Position( const std::string_view text, const TextLinearPosition position )
 {
 	TextLinearPosition line_start_position= position;
@@ -189,7 +71,7 @@ std::optional<SrcLoc> GetSrcLocForIndentifierStartPoisitionInText( const std::st
 	const TextLinearPosition line_start_position= GetLineStartUtf8Position( text, *identifier_start_linear_position );
 	U_ASSERT( line_start_position <= *identifier_start_linear_position );
 
-	const std::optional<TextLinearPosition> code_point_column=
+	const auto code_point_column=
 		Utf8PositionToUtf32Position(
 			text.substr( line_start_position ),
 			*identifier_start_linear_position - line_start_position );
@@ -207,7 +89,7 @@ std::optional<DocumentRange> SrcLocToDocumentIdentifierRange( const SrcLoc& src_
 
 	const std::string_view line_text= program_text.substr( line_to_linear_position_index[ line ] );
 
-	const std::optional<TextLinearPosition> utf8_column= Utf32PositionToUtf8Position( line_text, src_loc.GetColumn() );
+	const auto utf8_column= Utf32PositionToUtf8Position( line_text, src_loc.GetColumn() );
 	if( utf8_column == std::nullopt )
 		return std::nullopt;
 
@@ -215,8 +97,8 @@ std::optional<DocumentRange> SrcLocToDocumentIdentifierRange( const SrcLoc& src_
 	if( utf8_column_end == std::nullopt )
 		return std::nullopt;
 
-	const std::optional<TextLinearPosition> utf16_column    = Utf8PositionToUtf16Position( line_text, *utf8_column     );
-	const std::optional<TextLinearPosition> utf16_column_end= Utf8PositionToUtf16Position( line_text, *utf8_column_end );
+	const auto utf16_column    = Utf8PositionToUtf16Position( line_text, *utf8_column     );
+	const auto utf16_column_end= Utf8PositionToUtf16Position( line_text, *utf8_column_end );
 	if( utf16_column == std::nullopt || utf16_column_end == std::nullopt )
 		return std::nullopt;
 

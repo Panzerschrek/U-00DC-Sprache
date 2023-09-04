@@ -3,6 +3,25 @@
 namespace U
 {
 
+namespace
+{
+
+uint32_t GetNumberOfUTF16Words( const sprache_char code_point )
+{
+	if( code_point <= 0xFFFFu )
+	{
+		// Code points in range [0;0xFFFF] are encoded as singe UTF-16 word.
+		return 1;
+	}
+	else
+	{
+		// Code points abowe 0xFFFF are encoded as two UTF-16 words.
+		return 2;
+	}
+}
+
+} // namespace
+
 sprache_char ReadNextUTF8Char( const char*& start, const char* const end )
 {
 	// c_bit_masks[4] - menas save first 4 bits
@@ -112,6 +131,72 @@ void PushCharToUTF8String( const sprache_char c, std::string& str )
 	{
 		// Codes above unicode range - wtf?
 	}
+}
+
+std::optional<uint32_t> Utf8PositionToUtf16Position( const std::string_view text, const uint32_t position )
+{
+	uint32_t current_utf16_position= 0;
+	const char* s= text.data();
+	const char* const s_end= s + text.size();
+	while( s < s_end && uint32_t(s - text.data()) < position )
+		current_utf16_position+= GetNumberOfUTF16Words( ReadNextUTF8Char( s, s_end ) );
+
+	if( uint32_t(s - text.data()) != position )
+		return std::nullopt;
+
+	return current_utf16_position;
+}
+
+std::optional<uint32_t> Utf8PositionToUtf32Position( const std::string_view text, const uint32_t position )
+{
+	uint32_t current_utf32_position= 0;
+	const char* s= text.data();
+	const char* const s_end= s + text.size();
+	while( s < s_end && uint32_t(s - text.data()) < position )
+	{
+		ReadNextUTF8Char( s, s_end );
+		++current_utf32_position;
+	}
+
+	if( uint32_t(s - text.data()) != position )
+		return std::nullopt;
+
+	return current_utf32_position;
+}
+
+std::optional<uint32_t> Utf16PositionToUtf8Position( const std::string_view text, const uint32_t position )
+{
+	// Extract from UTF-8 string code points and count number of UTF-16 words.
+	uint32_t current_utf16_position= 0;
+	const char* s= text.data();
+	const char* const s_end= s + text.size();
+	while( s < s_end && current_utf16_position < position )
+		current_utf16_position+= GetNumberOfUTF16Words( ReadNextUTF8Char( s, s_end ) );
+
+	if( current_utf16_position != position )
+	{
+		// Something went wrong. Maybe utf-16 position is too big?
+		return std::nullopt;
+	}
+
+	return uint32_t( s - text.data() );
+}
+
+std::optional<uint32_t> Utf32PositionToUtf8Position( const std::string_view text, const uint32_t position )
+{
+	uint32_t current_utf32_position= 0;
+	const char* s= text.data();
+	const char* const s_end= s + text.size();
+	while( s < s_end && current_utf32_position < position )
+	{
+		ReadNextUTF8Char( s, s_end );
+		++current_utf32_position;
+	}
+
+	if( current_utf32_position != position )
+		return std::nullopt;
+
+	return uint32_t(s - text.data());
 }
 
 } // namespace U

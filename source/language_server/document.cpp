@@ -254,7 +254,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	}
 	const std::string_view line_text= std::string_view(text_).substr( line_to_linear_position_index[ line ] );
 
-	const std::optional<TextLinearPosition> column_utf8= Utf16PositionToUtf8Position( line_text, position.character );
+	const auto column_utf8= Utf16PositionToUtf8Position( line_text, position.character );
 	if( column_utf8 == std::nullopt )
 	{
 		log_ << "Can't obtain column" << std::endl;
@@ -272,7 +272,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	{
 		log_ << "Complete for ." << std::endl;
 
-		const std::optional<TextLinearPosition> column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one );
+		const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one );
 		if( column == std::nullopt )
 		{
 			log_ << "Failed to get utf32 position" << std::endl;
@@ -301,7 +301,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	{
 		log_ << "Complete for ::" << std::endl;
 
-		const std::optional<TextLinearPosition> column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one - 1 ); // -1 to reach start of "::"
+		const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one - 1 ); // -1 to reach start of "::"
 		if( column == std::nullopt )
 		{
 			log_ << "Failed to get utf32 position" << std::endl;
@@ -337,7 +337,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 			return {};
 		}
 
-		const std::optional<TextLinearPosition> column= Utf8PositionToUtf32Position( line_text, *idenifier_start_utf8 );
+		const auto column= Utf8PositionToUtf32Position( line_text, *idenifier_start_utf8 );
 		if( column == std::nullopt )
 		{
 			log_ << "Failed to get utf32 position" << std::endl;
