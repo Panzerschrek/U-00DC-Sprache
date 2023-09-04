@@ -104,8 +104,8 @@ void Document::SetText( std::string text )
 
 void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
 {
-	const std::optional<uint32_t> linear_position_start= DocumentPositionToLinearPosition( range.start, text_ );
-	const std::optional<uint32_t> linear_position_end  = DocumentPositionToLinearPosition( range.end  , text_ );
+	const std::optional<TextLinearPosition> linear_position_start= DocumentPositionToLinearPosition( range.start, text_ );
+	const std::optional<TextLinearPosition> linear_position_end  = DocumentPositionToLinearPosition( range.end  , text_ );
 	if( linear_position_start == std::nullopt || linear_position_end == std::nullopt )
 	{
 		log_ << "Failed to convert range into offsets!" << std::endl;
