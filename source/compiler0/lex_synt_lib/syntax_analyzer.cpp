@@ -284,7 +284,7 @@ private:
 	std::string macro_unique_identifiers_base_name_;
 
 	Lexems::const_iterator last_error_it_;
-	size_t last_error_repeats_;
+	size_t last_error_repeats_= 0;
 
 	const MacrosPtr macros_;
 	const MacroExpansionContextsPtr macro_expansion_contexts_;
@@ -3902,6 +3902,7 @@ ParseFnResult SyntaxAnalyzer::ExpandMacro( const Macro& macro, ParseFnResult (Sy
 	SyntaxAnalyzer result_analyzer( macros_, macro_expansion_contexts_ );
 	result_analyzer.it_= result_lexems.begin();
 	result_analyzer.it_end_= result_lexems.end();
+	result_analyzer.last_error_it_= result_lexems.end();
 	// For subsequent macro expansions use base name that contains also root expansion point (and more - full expansion path).
 	result_analyzer.macro_unique_identifiers_base_name_= macro_unique_identifiers_base_name;
 
