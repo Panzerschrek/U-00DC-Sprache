@@ -482,6 +482,13 @@ private:
 
 	NamesScopeValue* AddNewTemplateThing( std::string key, NamesScopeValue thing );
 
+	void CreateTemplateErrorsContext(
+		CodeBuilderErrorsContainer& errors_container,
+		const SrcLoc& src_loc,
+		const NamesScopePtr& template_args_namespace,
+		const TemplateBase& template_,
+		std::string_view template_name );
+
 	// Constructors/destructors
 	void TryGenerateDefaultConstructor( ClassPtr class_type );
 	void TryGenerateCopyConstructor( ClassPtr class_type );
@@ -1267,6 +1274,10 @@ private:
 	ProgramStringMap<NamesScopeValue> generated_template_things_storage_;
 	// Template things for current source graph node added sequentialy into this vector too.
 	std::vector<std::string> generated_template_things_sequence_;
+
+	// Store error contexts for templates.
+	// We need to store this, since raw pointer to errors inside context may be stored inside template namespace.
+	std::vector<std::shared_ptr<TemplateErrorsContext>> template_error_contexts_;
 
 	std::vector<GlobalThing> global_things_stack_;
 

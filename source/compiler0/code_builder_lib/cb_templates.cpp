@@ -15,57 +15,6 @@
 namespace U
 {
 
-namespace
-{
-
-void CreateTemplateErrorsContext(
-	CodeBuilderErrorsContainer& errors_container,
-	const SrcLoc& src_loc,
-	const NamesScopePtr& template_args_namespace,
-	const TemplateBase& template_,
-	const std::string_view template_name )
-{
-	REPORT_ERROR( TemplateContext, errors_container, src_loc );
-	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
-	template_error_context->context_declaration_src_loc= template_.src_loc;
-	errors_container.back().template_context= template_error_context;
-	template_args_namespace->SetErrors( template_error_context->errors );
-
-	{
-		std::string args_description;
-		args_description+= "[ with ";
-
-		for( const auto& param : template_.template_params )
-		{
-			if( const auto value= template_args_namespace->GetThisScopeValue(param.name) )
-			{
-				args_description+= param.name + " = ";
-				if( const Type* const type= value->value.GetTypeName() )
-					args_description+= type->ToString();
-				else if( const auto variable= value->value.GetVariable() )
-					args_description+= ConstantVariableToString( TemplateVariableArg( *variable ) );
-				else {}
-
-				if( &param != &template_.template_params.back() )
-					args_description+= ", ";
-			}
-		}
-
-		args_description+= " ]";
-		template_error_context->parameters_description= std::move(args_description);
-	}
-	{
-		std::string name= template_.parent_namespace->ToString();
-		if( !name.empty() )
-			name+= "::";
-		name+= template_name;
-
-		template_error_context->context_name= std::move(name);
-	}
-}
-
-} // namesapce
-
 void CodeBuilder::PrepareTypeTemplate(
 	const Synt::TypeTemplate& type_template_declaration,
 	TypeTemplatesSet& type_templates_set,
@@ -1380,6 +1329,55 @@ NamesScopeValue* CodeBuilder::AddNewTemplateThing( std::string key, NamesScopeVa
 {
 	generated_template_things_sequence_.push_back( key );
 	return & generated_template_things_storage_.insert( std::make_pair( std::move(key), std::move(thing) ) ).first->second;
+}
+
+
+void CodeBuilder::CreateTemplateErrorsContext(
+	CodeBuilderErrorsContainer& errors_container,
+	const SrcLoc& src_loc,
+	const NamesScopePtr& template_args_namespace,
+	const TemplateBase& template_,
+	const std::string_view template_name )
+{
+	REPORT_ERROR( TemplateContext, errors_container, src_loc );
+	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
+	template_error_context->context_declaration_src_loc= template_.src_loc;
+	errors_container.back().template_context= template_error_context;
+	template_args_namespace->SetErrors( template_error_context->errors );
+
+	template_error_contexts_.push_back( template_error_context ); // Save it - we need pointer to "errors" live longer, than template args namespace.
+
+	{
+		std::string args_description;
+		args_description+= "[ with ";
+
+		for( const auto& param : template_.template_params )
+		{
+			if( const auto value= template_args_namespace->GetThisScopeValue(param.name) )
+			{
+				args_description+= param.name + " = ";
+				if( const Type* const type= value->value.GetTypeName() )
+					args_description+= type->ToString();
+				else if( const auto variable= value->value.GetVariable() )
+					args_description+= ConstantVariableToString( TemplateVariableArg( *variable ) );
+				else {}
+
+				if( &param != &template_.template_params.back() )
+					args_description+= ", ";
+			}
+		}
+
+		args_description+= " ]";
+		template_error_context->parameters_description= std::move(args_description);
+	}
+	{
+		std::string name= template_.parent_namespace->ToString();
+		if( !name.empty() )
+			name+= "::";
+		name+= template_name;
+
+		template_error_context->context_name= std::move(name);
+	}
 }
 
 } // namespace U
