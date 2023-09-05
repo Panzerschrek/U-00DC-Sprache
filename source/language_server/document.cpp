@@ -146,7 +146,16 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( text_, position );
+	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
+	if( linear_position == std::nullopt )
+	{
+		log_ << "Failed to get last valid document position" << std::endl;
+		return std::nullopt;
+	}
+
+	const uint32_t line= LinearPositionToSrcLoc( last_valid_state_->line_to_linear_position_index, *linear_position ).GetLine();
+
+	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( last_valid_state_->text, line, *linear_position );
 	if( src_loc == std::nullopt )
 	{
 		log_ << "Failed to get indentifier start" << std::endl;
@@ -527,6 +536,25 @@ void Document::Rebuild()
 		text_changes_since_last_valid_state_= TextChangesSequence();
 	else
 		text_changes_since_last_valid_state_->clear();
+}
+
+std::optional<TextLinearPosition> Document::GetPositionInLastValidText( const DocumentPosition& position ) const
+{
+	if( last_valid_state_ == std::nullopt || text_changes_since_last_valid_state_ == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<TextLinearPosition> current_linear_position= DocumentPositionToLinearPosition( position, text_ );
+	if( current_linear_position == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<uint32_t> last_valid_text_position= MapNewPositionToOldPosition( *text_changes_since_last_valid_state_, *current_linear_position );
+	if( last_valid_text_position == std::nullopt )
+		return std::nullopt;
+
+	if( *last_valid_text_position >= last_valid_state_->text.size() )
+		return std::nullopt;
+
+	return last_valid_text_position;
 }
 
 } // namespace LangServer

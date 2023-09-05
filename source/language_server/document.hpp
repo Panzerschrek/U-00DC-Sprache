@@ -62,6 +62,9 @@ public: // Other stuff.
 	void Rebuild();
 
 private:
+	std::optional<TextLinearPosition> GetPositionInLastValidText( const DocumentPosition& position ) const;
+
+private:
 	struct CompiledState
 	{
 		std::string text;
