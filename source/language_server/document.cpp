@@ -104,6 +104,11 @@ void Document::SetText( std::string text )
 	line_to_linear_position_index_= BuildLineToLinearPositionIndex( text_ ); // TODO - speed-up building (reuse vector)?
 }
 
+const std::string& Document::GetCurrentText() const
+{
+	return text_;
+}
+
 void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
 {
 	const std::optional<TextLinearPosition> linear_position_start= DocumentPositionToLinearPosition( range.start, text_ );
@@ -580,12 +585,17 @@ std::optional<TextLinearPosition> Document::GetPositionInLastValidText( const Do
 	if( last_valid_state_ == std::nullopt || text_changes_since_last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	// TODO - use here line_to_linear_position_index_.
-	const std::optional<TextLinearPosition> current_linear_position= DocumentPositionToLinearPosition( position, text_ );
-	if( current_linear_position == std::nullopt )
+	if( position.line >= line_to_linear_position_index_.size() )
+		return std::nullopt;
+	const uint32_t line_offset= line_to_linear_position_index_[ position.line ];
+
+	const std::optional<uint32_t> column_offset= Utf16PositionToUtf8Position( std::string_view(text_).substr( line_offset ), position.character );
+	if( column_offset == std::nullopt )
 		return std::nullopt;
 
-	const std::optional<uint32_t> last_valid_text_position= MapNewPositionToOldPosition( *text_changes_since_last_valid_state_, *current_linear_position );
+	const uint32_t current_linear_position= line_offset + *column_offset;
+
+	const std::optional<uint32_t> last_valid_text_position= MapNewPositionToOldPosition( *text_changes_since_last_valid_state_, current_linear_position );
 	if( last_valid_text_position == std::nullopt )
 		return std::nullopt;
 

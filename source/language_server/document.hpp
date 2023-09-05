@@ -40,6 +40,8 @@ public: // Document text stuff.
 	void UpdateText( const DocumentRange& range, std::string_view new_text );
 	void SetText( std::string text );
 
+	const std::string& GetCurrentText() const;
+
 	// Returns text of last valid state or raw text if there is no last valid state.
 	const std::string& GetTextForCompilation() const;
 
@@ -66,7 +68,10 @@ public: // Other stuff.
 	void Rebuild();
 
 private:
+	// Map position in current document text to position in last valid state text.
 	std::optional<TextLinearPosition> GetPositionInLastValidText( const DocumentPosition& position ) const;
+
+	// Return SrcLoc for last valid state, based on input position of current document state.
 	std::optional<SrcLoc> GetIdentifierStartSrcLoc( const DocumentPosition& position ) const;
 
 private:
