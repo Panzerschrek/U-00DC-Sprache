@@ -101,6 +101,7 @@ void Document::SetText( std::string text )
 {
 	text_= std::move(text);
 	text_changes_since_last_valid_state_= std::nullopt; // Can't perform changes tracking when text is completely changed.
+	line_to_linear_position_index_= BuildLineToLinearPositionIndex( text_ ); // TODO - speed-up building (reuse vector)?
 }
 
 void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
@@ -119,6 +120,7 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 	}
 
 	text_.replace( size_t(*linear_position_start), size_t(*linear_position_end - *linear_position_start), new_text );
+	line_to_linear_position_index_= BuildLineToLinearPositionIndex( text_ ); // TODO - speed-up building (reuse vector)?
 
 	// Save changes sequence.
 	if( last_valid_state_ != std::nullopt && text_changes_since_last_valid_state_ != std::nullopt )
@@ -202,7 +204,6 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPositi
 	if( occurrences.empty() )
 		return {};
 
-	const LineToLinearPositionIndex current_text_index= BuildLineToLinearPositionIndex( text_ );
 	for( const SrcLoc& result_src_loc : occurrences )
 	{
 		if( result_src_loc.GetFileIndex() != 0 )
@@ -230,13 +231,13 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPositi
 		if( position_mapped == std::nullopt || position_end_mapped == std::nullopt )
 			continue;
 
-		const uint32_t current_line= LinearPositionToSrcLoc( current_text_index, *position_mapped ).GetLine();
-		const uint32_t current_end_line= LinearPositionToSrcLoc( current_text_index, *position_end_mapped ).GetLine();
-		if( current_line >= current_text_index.size() || current_end_line >= current_text_index.size() )
+		const uint32_t current_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_mapped ).GetLine();
+		const uint32_t current_end_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_end_mapped ).GetLine();
+		if( current_line >= line_to_linear_position_index_.size() || current_end_line >= line_to_linear_position_index_.size() )
 			continue;
 
-		const auto current_line_start_position= current_text_index[current_line];
-		const auto current_end_line_start_position= current_text_index[current_end_line];
+		const auto current_line_start_position= line_to_linear_position_index_[current_line];
+		const auto current_end_line_start_position= line_to_linear_position_index_[current_end_line];
 		const auto current_line_text= std::string_view(text_).substr( current_line_start_position );
 		const auto current_end_line_text= std::string_view(text_).substr( current_end_line_start_position );
 
@@ -311,15 +312,14 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 
 	// Perform lexical analysis for current text.
 	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
-	const LineToLinearPositionIndex line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
 
 	const uint32_t line= position.line;
-	if( line >= line_to_linear_position_index.size() )
+	if( line >= line_to_linear_position_index_.size() )
 	{
 		log_ << "Line is greater than document end" << std::endl;
 		return {};
 	}
-	const std::string_view line_text= std::string_view(text_).substr( line_to_linear_position_index[ line ] );
+	const std::string_view line_text= std::string_view(text_).substr( line_to_linear_position_index_[ line ] );
 
 	const auto column_utf8= Utf16PositionToUtf8Position( line_text, position.character );
 	if( column_utf8 == std::nullopt )
@@ -568,12 +568,10 @@ void Document::Rebuild()
 
 	PopulateDiagnostics( code_builder->TakeErrors(), text_, diagnostics_ );
 
-	auto line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
-
 	last_valid_state_= std::nullopt; // Reset previous explicitely to free resources of previos state first.
 	last_valid_state_= CompiledState{
 		text_,
-		std::move(line_to_linear_position_index),
+		line_to_linear_position_index_,
 		std::move( source_graph ),
 		std::move(llvm_context),
 		std::move(code_builder) };
@@ -590,6 +588,7 @@ std::optional<TextLinearPosition> Document::GetPositionInLastValidText( const Do
 	if( last_valid_state_ == std::nullopt || text_changes_since_last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
+	// TODO - use here line_to_linear_position_index_.
 	const std::optional<TextLinearPosition> current_linear_position= DocumentPositionToLinearPosition( position, text_ );
 	if( current_linear_position == std::nullopt )
 		return std::nullopt;

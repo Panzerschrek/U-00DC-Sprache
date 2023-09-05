@@ -81,6 +81,7 @@ private:
 	std::ostream& log_;
 
 	std::string text_;
+	LineToLinearPositionIndex line_to_linear_position_index_; // Index is allways actual for current text.
 	std::optional<TextChangesSequence> text_changes_since_last_valid_state_;
 
 	// State for last syntaxically-correct program.
