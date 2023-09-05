@@ -46,17 +46,20 @@ std::optional<DocumentRange> GetErrorRange( const SrcLoc& src_loc, const std::st
 	return DocumentRange{ { line, *column_utf16 }, { line, *column_end_utf16 } };
 }
 
-void PopulateDiagnostics( const LexSyntErrors& errors, const std::string_view program_text, std::vector<DocumentDiagnostic>& out_diagnostics )
+void PopulateDiagnostics(
+	const LexSyntErrors& errors,
+	const std::string_view program_text,
+	const LineToLinearPositionIndex& line_to_linear_position_index,
+	std::vector<DocumentDiagnostic>& out_diagnostics )
 {
 	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
 
-	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( program_text );
 	for( const LexSyntError& error : errors )
 	{
 		if( error.src_loc.GetFileIndex() != 0 )
 			continue; // Ignore errors from imported files.
 
-		auto range= GetErrorRange( error.src_loc, program_text, index );
+		auto range= GetErrorRange( error.src_loc, program_text, line_to_linear_position_index );
 		if( range == std::nullopt )
 			continue;
 
@@ -68,14 +71,17 @@ void PopulateDiagnostics( const LexSyntErrors& errors, const std::string_view pr
 	}
 }
 
-void PopulateDiagnostics( const CodeBuilderErrorsContainer& errors, const std::string_view program_text, std::vector<DocumentDiagnostic>& out_diagnostics )
+void PopulateDiagnostics(
+	const CodeBuilderErrorsContainer& errors,
+	const std::string_view program_text,
+	const LineToLinearPositionIndex& line_to_linear_position_index,
+	std::vector<DocumentDiagnostic>& out_diagnostics )
 {
 	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
 
-	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( program_text );
 	for( const CodeBuilderError& error : errors )
 	{
-		auto range= GetErrorRange( error.src_loc, program_text, index );
+		auto range= GetErrorRange( error.src_loc, program_text, line_to_linear_position_index );
 		if( range == std::nullopt )
 			continue;
 
@@ -101,7 +107,7 @@ void Document::SetText( std::string text )
 {
 	text_= std::move(text);
 	text_changes_since_last_valid_state_= std::nullopt; // Can't perform changes tracking when text is completely changed.
-	line_to_linear_position_index_= BuildLineToLinearPositionIndex( text_ ); // TODO - speed-up building (reuse vector)?
+	BuildLineToLinearPositionIndex( text_, line_to_linear_position_index_ );
 }
 
 const std::string& Document::GetCurrentText() const
@@ -125,7 +131,7 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 	}
 
 	text_.replace( size_t(*linear_position_start), size_t(*linear_position_end - *linear_position_start), new_text );
-	line_to_linear_position_index_= BuildLineToLinearPositionIndex( text_ ); // TODO - speed-up building (reuse vector)?
+	BuildLineToLinearPositionIndex( text_, line_to_linear_position_index_ );
 
 	// Save changes sequence.
 	if( last_valid_state_ != std::nullopt && text_changes_since_last_valid_state_ != std::nullopt )
@@ -522,7 +528,7 @@ void Document::Rebuild()
 
 	if( !source_graph.errors.empty() )
 	{
-		PopulateDiagnostics( source_graph.errors, text_, diagnostics_ );
+		PopulateDiagnostics( source_graph.errors, text_, line_to_linear_position_index_, diagnostics_ );
 		return;
 	}
 
@@ -533,7 +539,7 @@ void Document::Rebuild()
 	const LexSyntErrors& synt_errors= source_graph.nodes_storage.front().ast.error_messages;
 	if( !synt_errors.empty() )
 	{
-		PopulateDiagnostics( synt_errors, text_, diagnostics_ );
+		PopulateDiagnostics( synt_errors, text_, line_to_linear_position_index_, diagnostics_ );
 		return;
 	}
 
@@ -568,7 +574,7 @@ void Document::Rebuild()
 			options,
 			source_graph );
 
-	PopulateDiagnostics( code_builder->TakeErrors(), text_, diagnostics_ );
+	PopulateDiagnostics( code_builder->TakeErrors(), text_, line_to_linear_position_index_, diagnostics_ );
 
 	last_valid_state_= std::nullopt; // Reset previous explicitely to free resources of previos state first.
 	last_valid_state_= CompiledState{
