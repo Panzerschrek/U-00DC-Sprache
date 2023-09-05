@@ -217,6 +217,11 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 		return {};
 
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
+	if( src_loc == std::nullopt )
+	{
+		log_ << "Failed to get indentifier start" << std::endl;
+		return {};
+	}
 
 	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *src_loc );
 
