@@ -69,7 +69,7 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 	const Uri file_uri= Uri::FromFilePath( full_file_path );
 
 	if( const auto it= document_manager_.documents_.find( file_uri ); it != document_manager_.documents_.end() )
-		return it->second.GetText();
+		return it->second.GetTextForCompilation();
 	if( const auto it= document_manager_.unmanaged_files_.find( file_uri ); it != document_manager_.unmanaged_files_.end() )
 	{
 		// TODO - detect changes in unmanaged files and reload them if it is necessary.

@@ -133,9 +133,14 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 	}
 }
 
-const std::string& Document::GetText() const
+const std::string& Document::GetTextForCompilation() const
 {
-	return text_;
+	if( in_rebuild_call_ )
+		return text_; // Force return raw text if this method was called indirectly from the "Rebuild" method.
+
+	// By providing text for last valid state we ensure dependent documents will build properly.
+	// Also this allows to perform proper mapping of "SrcLoc" to current state of the text.
+	return last_valid_state_ == std::nullopt ? text_ : last_valid_state_->text;
 }
 
 llvm::ArrayRef<DocumentDiagnostic> Document::GetDiagnostics() const
@@ -520,7 +525,10 @@ void Document::Rebuild()
 {
 	diagnostics_.clear();
 
+	U_ASSERT( !in_rebuild_call_ );
+	in_rebuild_call_= true;
 	SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
+	in_rebuild_call_= false;
 
 	if( !source_graph.errors.empty() )
 	{

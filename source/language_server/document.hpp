@@ -39,7 +39,9 @@ public:
 public: // Document text stuff.
 	void UpdateText( const DocumentRange& range, std::string_view new_text );
 	void SetText( std::string text );
-	const std::string& GetText() const;
+
+	// Returns text of last valid state or raw text if there is no last valid state.
+	const std::string& GetTextForCompilation() const;
 
 public: // Diagnostics.
 	llvm::ArrayRef<DocumentDiagnostic> GetDiagnostics() const;
@@ -85,6 +87,8 @@ private:
 	std::string text_;
 	LineToLinearPositionIndex line_to_linear_position_index_; // Index is allways actual for current text.
 	std::optional<TextChangesSequence> text_changes_since_last_valid_state_;
+
+	bool in_rebuild_call_= false;
 
 	// State for last syntaxically-correct program.
 	std::optional<CompiledState> last_valid_state_;
