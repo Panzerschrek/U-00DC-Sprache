@@ -153,16 +153,7 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
-	if( linear_position == std::nullopt )
-	{
-		log_ << "Failed to get last valid document position" << std::endl;
-		return std::nullopt;
-	}
-
-	const uint32_t line= LinearPositionToSrcLoc( last_valid_state_->line_to_linear_position_index, *linear_position ).GetLine();
-
-	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( last_valid_state_->text, line, *linear_position );
+	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
 	{
 		log_ << "Failed to get indentifier start" << std::endl;
@@ -191,13 +182,7 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPositi
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
-	if( linear_position == std::nullopt )
-		return {};
-
-	const uint32_t line= LinearPositionToSrcLoc( last_valid_state_->line_to_linear_position_index, *linear_position ).GetLine();
-
-	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( last_valid_state_->text, line, *linear_position );
+	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
 		return {};
 
@@ -226,12 +211,7 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( text_, position );
-	if( src_loc == std::nullopt )
-	{
-		log_ << "Failed to get indentifier start" << std::endl;
-		return {};
-	}
+	const auto src_loc= GetIdentifierStartSrcLoc( position );
 
 	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *src_loc );
 
@@ -613,6 +593,23 @@ std::optional<TextLinearPosition> Document::GetPositionInLastValidText( const Do
 		return std::nullopt;
 
 	return last_valid_text_position;
+}
+
+std::optional<SrcLoc> Document::GetIdentifierStartSrcLoc( const DocumentPosition& position ) const
+{
+	if( last_valid_state_ == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
+	if( linear_position == std::nullopt )
+	{
+		log_ << "Failed to get last valid document position" << std::endl;
+		return std::nullopt;
+	}
+
+	const uint32_t line= LinearPositionToSrcLoc( last_valid_state_->line_to_linear_position_index, *linear_position ).GetLine();
+
+	return GetSrcLocForIndentifierStartPoisitionInText( last_valid_state_->text, line, *linear_position );
 }
 
 } // namespace LangServer

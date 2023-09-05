@@ -67,6 +67,7 @@ public: // Other stuff.
 
 private:
 	std::optional<TextLinearPosition> GetPositionInLastValidText( const DocumentPosition& position ) const;
+	std::optional<SrcLoc> GetIdentifierStartSrcLoc( const DocumentPosition& position ) const;
 
 private:
 	struct CompiledState

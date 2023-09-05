@@ -65,15 +65,6 @@ std::optional<TextLinearPosition> DocumentPositionToLinearPosition( const Docume
 	return *line_linear_pos + *column_offset;
 }
 
-std::optional<SrcLoc> GetSrcLocForIndentifierStartPoisitionInText( const std::string_view text, const DocumentPosition& position )
-{
-	const std::optional<TextLinearPosition> linear_position= DocumentPositionToLinearPosition( position, text );
-	if( linear_position == std::nullopt )
-		return std::nullopt;
-
-	return GetSrcLocForIndentifierStartPoisitionInText( text, position.line, *linear_position );
-}
-
 std::optional<SrcLoc> GetSrcLocForIndentifierStartPoisitionInText( const std::string_view text, const uint32_t line, const TextLinearPosition linear_position )
 {
 	const std::optional<TextLinearPosition> identifier_start_linear_position= GetIdentifierStartForPosition( text, linear_position );
