@@ -4,6 +4,7 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "completion.hpp"
 #include "document_symbols.hpp"
+#include "text_change.hpp"
 #include "uri.hpp"
 
 namespace U
@@ -63,6 +64,7 @@ public: // Other stuff.
 private:
 	struct CompiledState
 	{
+		std::string text;
 		LineToLinearPositionIndex line_to_linear_position_index;
 		SourceGraph source_graph;
 		std::unique_ptr<llvm::LLVMContext> llvm_context;
@@ -74,8 +76,13 @@ private:
 	const DocumentBuildOptions build_options_;
 	IVfs& vfs_;
 	std::ostream& log_;
+
 	std::string text_;
+	std::optional<TextChangesSequence> text_changes_since_last_valid_state_;
+
+	// State for last syntaxically-correct program.
 	std::optional<CompiledState> last_valid_state_;
+
 	std::vector<DocumentDiagnostic> diagnostics_;
 };
 

@@ -100,6 +100,7 @@ Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& v
 void Document::SetText( std::string text )
 {
 	text_= std::move(text);
+	text_changes_since_last_valid_state_= std::nullopt; // Can't perform changes tracking when text is completely changed.
 }
 
 void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
@@ -118,6 +119,16 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 	}
 
 	text_.replace( size_t(*linear_position_start), size_t(*linear_position_end - *linear_position_start), new_text );
+
+	// Save changes sequence.
+	if( last_valid_state_ != std::nullopt && text_changes_since_last_valid_state_ != std::nullopt )
+	{
+		TextChange change;
+		change.range_start= *linear_position_start;
+		change.range_end= *linear_position_end;
+		change.new_count= uint32_t(new_text.size());
+		text_changes_since_last_valid_state_->push_back( std::move(change) );
+	}
 }
 
 const std::string& Document::GetText() const
@@ -503,8 +514,19 @@ void Document::Rebuild()
 
 	auto line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
 
-	last_valid_state_= std::nullopt;
-	last_valid_state_= CompiledState{ std::move(line_to_linear_position_index), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
+	last_valid_state_= std::nullopt; // Reset previous explicitely to free resources of previos state first.
+	last_valid_state_= CompiledState{
+		text_,
+		std::move(line_to_linear_position_index),
+		std::move( source_graph ),
+		std::move(llvm_context),
+		std::move(code_builder) };
+
+	// Reset sequence of changes by last valid state update.
+	if( text_changes_since_last_valid_state_ == std::nullopt )
+		text_changes_since_last_valid_state_= TextChangesSequence();
+	else
+		text_changes_since_last_valid_state_->clear();
 }
 
 } // namespace LangServer
