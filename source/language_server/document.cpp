@@ -209,47 +209,8 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPositi
 		if( result_src_loc.GetFileIndex() != 0 )
 			continue; // Filter out symbols from imported files.
 
-		const uint32_t line= result_src_loc.GetLine();
-		if( line >= last_valid_state_->line_to_linear_position_index.size() )
-			continue;
-		const TextLinearPosition line_start= last_valid_state_->line_to_linear_position_index[line];
-		const auto line_text= std::string_view(last_valid_state_->text).substr( line_start );
-
-		const std::optional<uint32_t> column_utf8= Utf32PositionToUtf8Position( line_text, result_src_loc.GetColumn() );
-		if( column_utf8 == std::nullopt )
-			continue;
-
-		const std::optional<TextLinearPosition> column_end_utf8= GetIdentifierEndForPosition( line_text, *column_utf8 );
-		if( column_end_utf8 == std::nullopt )
-			continue;
-
-		if( text_changes_since_last_valid_state_ == std::nullopt )
-			continue;
-
-		const std::optional<uint32_t> position_mapped= MapOldPositionToNewPosition( *text_changes_since_last_valid_state_, line_start + *column_utf8 );
-		const std::optional<uint32_t> position_end_mapped= MapOldPositionToNewPosition( *text_changes_since_last_valid_state_, line_start + *column_end_utf8 );
-		if( position_mapped == std::nullopt || position_end_mapped == std::nullopt )
-			continue;
-
-		const uint32_t current_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_mapped ).GetLine();
-		const uint32_t current_end_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_end_mapped ).GetLine();
-		if( current_line >= line_to_linear_position_index_.size() || current_end_line >= line_to_linear_position_index_.size() )
-			continue;
-
-		const auto current_line_start_position= line_to_linear_position_index_[current_line];
-		const auto current_end_line_start_position= line_to_linear_position_index_[current_end_line];
-		const auto current_line_text= std::string_view(text_).substr( current_line_start_position );
-		const auto current_end_line_text= std::string_view(text_).substr( current_end_line_start_position );
-
-		const std::optional<uint32_t> character= Utf8PositionToUtf16Position( current_line_text, *position_mapped - current_line_start_position );
-		const std::optional<uint32_t> character_end= Utf8PositionToUtf16Position( current_end_line_text, *position_end_mapped - current_end_line_start_position );
-		if( character == std::nullopt || character_end == std::nullopt )
-			continue;
-
-		DocumentRange range;
-		range.start= DocumentPosition{ current_line, *character };
-		range.end= DocumentPosition{ current_end_line, *character_end };
-		result.push_back( std::move(range) );
+		if( auto range= GetIdentifierRange( result_src_loc ) )
+			result.push_back( std::move(*range) );
 	}
 
 	return result;
@@ -505,11 +466,54 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 
 std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc ) const
 {
-	if( last_valid_state_ == std::nullopt )
+	if( last_valid_state_ == std::nullopt || text_changes_since_last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	// TODO - use text from last valid state.
-	return SrcLocToDocumentIdentifierRange( src_loc, text_, last_valid_state_->line_to_linear_position_index );
+	const uint32_t line= src_loc.GetLine();
+	if( line >= last_valid_state_->line_to_linear_position_index.size() )
+		return std::nullopt;
+
+	const TextLinearPosition line_start= last_valid_state_->line_to_linear_position_index[ line ];
+	const std::string_view line_text= std::string_view(last_valid_state_->text).substr( line_start );
+
+	const auto utf8_column= Utf32PositionToUtf8Position( line_text, src_loc.GetColumn() );
+	if( utf8_column == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<TextLinearPosition> utf8_column_end= GetIdentifierEndForPosition( line_text, *utf8_column );
+	if( utf8_column_end == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<uint32_t> position_mapped= MapOldPositionToNewPosition( *text_changes_since_last_valid_state_, line_start + *utf8_column );
+	const std::optional<uint32_t> position_end_mapped= MapOldPositionToNewPosition( *text_changes_since_last_valid_state_, line_start + *utf8_column_end );
+	if( position_mapped == std::nullopt || position_end_mapped == std::nullopt )
+		return std::nullopt;
+
+	if( *position_end_mapped < *position_mapped )
+		return std::nullopt;
+
+	const uint32_t current_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_mapped ).GetLine();
+	const uint32_t current_end_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_end_mapped ).GetLine();
+	if( current_line >= line_to_linear_position_index_.size() || current_end_line >= line_to_linear_position_index_.size() )
+		return std::nullopt;
+
+	const auto current_line_start_position= line_to_linear_position_index_[current_line];
+	const auto current_end_line_start_position= line_to_linear_position_index_[current_end_line];
+	const auto current_line_text= std::string_view(text_).substr( current_line_start_position );
+	const auto current_end_line_text= std::string_view(text_).substr( current_end_line_start_position );
+
+	const std::optional<uint32_t> character= Utf8PositionToUtf16Position( current_line_text, *position_mapped - current_line_start_position );
+	const std::optional<uint32_t> character_end= Utf8PositionToUtf16Position( current_end_line_text, *position_end_mapped - current_end_line_start_position );
+	if( character == std::nullopt || character_end == std::nullopt )
+		return std::nullopt;
+
+	if( *character_end < character )
+		return std::nullopt;
+
+	DocumentRange range;
+	range.start= DocumentPosition{ current_line, *character };
+	range.end= DocumentPosition{ current_end_line, *character_end };
+	return range;
 }
 
 void Document::Rebuild()

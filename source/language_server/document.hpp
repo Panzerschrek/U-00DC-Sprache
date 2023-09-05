@@ -56,6 +56,8 @@ public: // Requests.
 
 	std::vector<CompletionItem> Complete( const DocumentPosition& position );
 
+	// Assuming given SrcLoc is identifier start, get identifer end for it and construct result range.
+	// Also performs mapping from SrcLoc for last valid state to current text state.
 	std::optional<DocumentRange> GetIdentifierRange( const SrcLoc& src_loc ) const;
 
 public: // Other stuff.
