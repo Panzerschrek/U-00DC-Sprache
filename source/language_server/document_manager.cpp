@@ -151,12 +151,93 @@ void DocumentManager::Close( const Uri& uri )
 	documents_.erase( uri );
 }
 
+std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const PositionInDocument& position ) const
+{
+	const auto it= documents_.find( position.uri );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document" << position.uri.ToString() << std::endl;
+		return std::nullopt;
+	}
+
+	if( const auto result_position= it->second.GetDefinitionPoint( position.position ) )
+		return GetDocumentIdentifierRangeOrDummy( *result_position );
+
+	return std::nullopt;
+}
+
+std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const PositionInDocument& position ) const
+{
+	const auto it= documents_.find( position.uri );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document" << position.uri.ToString() << std::endl;
+		return {};
+	}
+
+	return it->second.GetHighlightLocations( position.position );
+}
+
+std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionInDocument& position ) const
+{
+	const auto it= documents_.find( position.uri );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document" << position.uri.ToString() << std::endl;
+		return {};
+	}
+
+	const std::vector<SrcLocInDocument> occurences= it->second.GetAllOccurrences( position.position );
+
+	std::vector<RangeInDocument> result;
+	result.reserve( occurences.size() );
+	for( const SrcLocInDocument& document_src_loc : occurences )
+		result.push_back( GetDocumentIdentifierRangeOrDummy( document_src_loc ) );
+
+	return result;
+}
+
+std::vector<Symbol> DocumentManager::GetSymbols( const Uri& uri ) const
+{
+	const auto it= documents_.find( uri );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document" << uri.ToString() << std::endl;
+		return {};
+	}
+
+	return it->second.GetSymbols();
+}
+
+std::vector<CompletionItem> DocumentManager::Complete( const PositionInDocument& position )
+{
+	const auto it= documents_.find( position.uri );
+	if( it == documents_.end() )
+	{
+		log_ << "Can't find document" << position.uri.ToString() << std::endl;
+		return {};
+	}
+
+	return it->second.Complete( position.position );
+}
+
+RangeInDocument DocumentManager::GetDocumentIdentifierRangeOrDummy( const SrcLocInDocument& document_src_loc ) const
+{
+	if( auto range= GetDocumentIdentifierRange( document_src_loc ) )
+		return RangeInDocument{ std::move(*range), document_src_loc.uri };
+
+	// Something went wrong. Fill some dummy.
+	// Convert UTF-32 column to UTF-16 character. This is wrong, but better than nothing.
+	DocumentRange range;
+	range.start= DocumentPosition{ document_src_loc.src_loc.GetLine(), document_src_loc.src_loc.GetColumn() };
+	range.end= DocumentPosition{ range.start.line, range.start.character + 1 };
+	return RangeInDocument{ std::move(range), document_src_loc.uri };
+}
+
 std::optional<DocumentRange> DocumentManager::GetDocumentIdentifierRange( const SrcLocInDocument& document_src_loc ) const
 {
 	if( const auto it= documents_.find( document_src_loc.uri ); it != documents_.end() )
-	{
 		return it->second.GetIdentifierRange( document_src_loc.src_loc );
-	}
 
 	if( const auto it= unmanaged_files_.find( document_src_loc.uri ); it != unmanaged_files_.end() )
 	{
