@@ -71,16 +71,18 @@ void PopulateDiagnostics(
 	}
 }
 
-void PopulateDiagnostics(
+
+void PopulateDiagnostics_r(
 	const CodeBuilderErrorsContainer& errors,
 	const std::string_view program_text,
 	const LineToLinearPositionIndex& line_to_linear_position_index,
 	std::vector<DocumentDiagnostic>& out_diagnostics )
 {
-	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
-
 	for( const CodeBuilderError& error : errors )
 	{
+		if( error.template_context != nullptr )
+			PopulateDiagnostics_r( error.template_context->errors, program_text, line_to_linear_position_index, out_diagnostics );
+
 		auto range= GetErrorRange( error.src_loc, program_text, line_to_linear_position_index );
 		if( range == std::nullopt )
 			continue;
@@ -89,10 +91,18 @@ void PopulateDiagnostics(
 		diagnostic.range= std::move(*range);
 		diagnostic.text= error.text;
 
-		// TODO - fill other fields, like code and template/macro expansion context?
-
 		out_diagnostics.push_back( std::move(diagnostic) );
 	}
+}
+
+void PopulateDiagnostics(
+	const CodeBuilderErrorsContainer& errors,
+	const std::string_view program_text,
+	const LineToLinearPositionIndex& line_to_linear_position_index,
+	std::vector<DocumentDiagnostic>& out_diagnostics )
+{
+	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
+	PopulateDiagnostics_r( errors, program_text, line_to_linear_position_index, out_diagnostics );
 }
 
 } // namespace
