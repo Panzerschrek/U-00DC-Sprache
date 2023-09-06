@@ -498,13 +498,19 @@ std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc
 	if( current_line >= line_to_linear_position_index_.size() || current_end_line >= line_to_linear_position_index_.size() )
 		return std::nullopt;
 
-	const auto current_line_start_position= line_to_linear_position_index_[current_line];
-	const auto current_end_line_start_position= line_to_linear_position_index_[current_end_line];
-	const auto current_line_text= std::string_view(text_).substr( current_line_start_position );
-	const auto current_end_line_text= std::string_view(text_).substr( current_end_line_start_position );
 
-	const std::optional<uint32_t> character= Utf8PositionToUtf16Position( current_line_text, *position_mapped - current_line_start_position );
-	const std::optional<uint32_t> character_end= Utf8PositionToUtf16Position( current_end_line_text, *position_end_mapped - current_end_line_start_position );
+	const TextLinearPosition current_line_start_position= line_to_linear_position_index_[current_line];
+	const std::optional<uint32_t> character=
+		Utf8PositionToUtf16Position(
+			std::string_view(text_).substr( current_line_start_position ),
+			*position_mapped - current_line_start_position );
+
+	const TextLinearPosition current_end_line_start_position= line_to_linear_position_index_[current_end_line];
+	const std::optional<uint32_t> character_end=
+		Utf8PositionToUtf16Position(
+			std::string_view(text_).substr( current_end_line_start_position ),
+			*position_end_mapped - current_end_line_start_position );
+
 	if( character == std::nullopt || character_end == std::nullopt )
 		return std::nullopt;
 
@@ -580,7 +586,7 @@ void Document::Rebuild()
 	last_valid_state_= CompiledState{
 		text_,
 		line_to_linear_position_index_,
-		std::move( source_graph ),
+		std::move(source_graph),
 		std::move(llvm_context),
 		std::move(code_builder) };
 
@@ -600,13 +606,13 @@ std::optional<TextLinearPosition> Document::GetPositionInLastValidText( const Do
 		return std::nullopt;
 	const uint32_t line_offset= line_to_linear_position_index_[ position.line ];
 
-	const std::optional<uint32_t> column_offset= Utf16PositionToUtf8Position( std::string_view(text_).substr( line_offset ), position.character );
+	const std::optional<uint32_t> column_offset=
+		Utf16PositionToUtf8Position( std::string_view(text_).substr( line_offset ), position.character );
 	if( column_offset == std::nullopt )
 		return std::nullopt;
 
-	const uint32_t current_linear_position= line_offset + *column_offset;
-
-	const std::optional<uint32_t> last_valid_text_position= MapNewPositionToOldPosition( *text_changes_since_last_valid_state_, current_linear_position );
+	const std::optional<uint32_t> last_valid_text_position=
+		MapNewPositionToOldPosition( *text_changes_since_last_valid_state_, line_offset + *column_offset );
 	if( last_valid_text_position == std::nullopt )
 		return std::nullopt;
 
