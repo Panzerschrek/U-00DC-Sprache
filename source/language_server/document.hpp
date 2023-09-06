@@ -49,15 +49,16 @@ public: // Diagnostics.
 	llvm::ArrayRef<DocumentDiagnostic> GetDiagnostics() const;
 
 public: // Requests.
-	std::optional<SrcLocInDocument> GetDefinitionPoint( const DocumentPosition& position );
+	std::optional<SrcLocInDocument> GetDefinitionPoint( const DocumentPosition& position ) const;
 
 	// Returns highlights only for this document.
-	std::vector<DocumentRange> GetHighlightLocations( const DocumentPosition& position );
+	std::vector<DocumentRange> GetHighlightLocations( const DocumentPosition& position ) const;
 
-	std::vector<SrcLocInDocument> GetAllOccurrences( const DocumentPosition& position );
+	std::vector<SrcLocInDocument> GetAllOccurrences( const DocumentPosition& position ) const;
 
-	std::vector<Symbol> GetSymbols();
+	std::vector<Symbol> GetSymbols() const;
 
+	// Non-const this, since internal compiler state may be changed in completion.
 	std::vector<CompletionItem> Complete( const DocumentPosition& position );
 
 	// Assuming given SrcLoc is identifier start, get identifer end for it and construct result range.

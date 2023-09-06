@@ -159,7 +159,7 @@ llvm::ArrayRef<DocumentDiagnostic> Document::GetDiagnostics() const
 	return diagnostics_;
 }
 
-std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosition& position )
+std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosition& position ) const
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
@@ -188,7 +188,7 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 	return std::nullopt;
 }
 
-std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPosition& position )
+std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPosition& position ) const
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
@@ -217,7 +217,7 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPositi
 	return result;
 }
 
-std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPosition& position )
+std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPosition& position ) const
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
@@ -254,7 +254,7 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 	return result;
 }
 
-std::vector<Symbol> Document::GetSymbols()
+std::vector<Symbol> Document::GetSymbols() const
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
