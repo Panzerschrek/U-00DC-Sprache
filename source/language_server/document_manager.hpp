@@ -16,6 +16,22 @@ public:
 	Document* GetDocument( const Uri& uri );
 	void Close( const Uri& uri );
 
+public: // Wrappers for document founctionality. Use them to perform proper ranges mapping.
+
+	std::optional<RangeInDocument> GetDefinitionPoint( const PositionInDocument& position ) const;
+
+	// Returns highligh locations only for given document.
+	std::vector<DocumentRange> GetHighlightLocations( const PositionInDocument& position ) const;
+
+	std::vector<RangeInDocument> GetAllOccurrences( const PositionInDocument& position ) const;
+
+	std::vector<Symbol> GetSymbols( const Uri& uri ) const;
+
+	// Non-const this, since internal compiler state may be changed in completion.
+	std::vector<CompletionItem> Complete( const PositionInDocument& position );
+
+private:
+	RangeInDocument GetDocumentIdentifierRangeOrDummy( const SrcLocInDocument& document_src_loc ) const;
 	std::optional<DocumentRange> GetDocumentIdentifierRange( const SrcLocInDocument& document_src_loc ) const;
 
 private:

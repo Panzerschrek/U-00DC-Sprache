@@ -147,7 +147,10 @@ using TextLinearPosition= uint32_t;
 // It is (obviously) sorted.
 using LineToLinearPositionIndex= std::vector<TextLinearPosition>;
 
+// Build index and return it.
 LineToLinearPositionIndex BuildLineToLinearPositionIndex( std::string_view text );
+// Build index, reusing provided output container.
+void BuildLineToLinearPositionIndex( std::string_view text, LineToLinearPositionIndex& out_index );
 
 // Map linear position to position in format line:column (lines starting from 1).
 SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, TextLinearPosition position );

@@ -46,17 +46,20 @@ std::optional<DocumentRange> GetErrorRange( const SrcLoc& src_loc, const std::st
 	return DocumentRange{ { line, *column_utf16 }, { line, *column_end_utf16 } };
 }
 
-void PopulateDiagnostics( const LexSyntErrors& errors, const std::string_view program_text, std::vector<DocumentDiagnostic>& out_diagnostics )
+void PopulateDiagnostics(
+	const LexSyntErrors& errors,
+	const std::string_view program_text,
+	const LineToLinearPositionIndex& line_to_linear_position_index,
+	std::vector<DocumentDiagnostic>& out_diagnostics )
 {
 	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
 
-	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( program_text );
 	for( const LexSyntError& error : errors )
 	{
 		if( error.src_loc.GetFileIndex() != 0 )
 			continue; // Ignore errors from imported files.
 
-		auto range= GetErrorRange( error.src_loc, program_text, index );
+		auto range= GetErrorRange( error.src_loc, program_text, line_to_linear_position_index );
 		if( range == std::nullopt )
 			continue;
 
@@ -68,14 +71,17 @@ void PopulateDiagnostics( const LexSyntErrors& errors, const std::string_view pr
 	}
 }
 
-void PopulateDiagnostics( const CodeBuilderErrorsContainer& errors, const std::string_view program_text, std::vector<DocumentDiagnostic>& out_diagnostics )
+void PopulateDiagnostics(
+	const CodeBuilderErrorsContainer& errors,
+	const std::string_view program_text,
+	const LineToLinearPositionIndex& line_to_linear_position_index,
+	std::vector<DocumentDiagnostic>& out_diagnostics )
 {
 	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
 
-	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( program_text );
 	for( const CodeBuilderError& error : errors )
 	{
-		auto range= GetErrorRange( error.src_loc, program_text, index );
+		auto range= GetErrorRange( error.src_loc, program_text, line_to_linear_position_index );
 		if( range == std::nullopt )
 			continue;
 
@@ -100,6 +106,13 @@ Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& v
 void Document::SetText( std::string text )
 {
 	text_= std::move(text);
+	text_changes_since_last_valid_state_= std::nullopt; // Can't perform changes tracking when text is completely changed.
+	BuildLineToLinearPositionIndex( text_, line_to_linear_position_index_ );
+}
+
+const std::string& Document::GetCurrentText() const
+{
+	return text_;
 }
 
 void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
@@ -118,11 +131,27 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 	}
 
 	text_.replace( size_t(*linear_position_start), size_t(*linear_position_end - *linear_position_start), new_text );
+	BuildLineToLinearPositionIndex( text_, line_to_linear_position_index_ );
+
+	// Save changes sequence.
+	if( last_valid_state_ != std::nullopt && text_changes_since_last_valid_state_ != std::nullopt )
+	{
+		TextChange change;
+		change.range_start= *linear_position_start;
+		change.range_end= *linear_position_end;
+		change.new_count= uint32_t(new_text.size());
+		text_changes_since_last_valid_state_->push_back( std::move(change) );
+	}
 }
 
-const std::string& Document::GetText() const
+const std::string& Document::GetTextForCompilation() const
 {
-	return text_;
+	if( in_rebuild_call_ )
+		return text_; // Force return raw text if this method was called indirectly from the "Rebuild" method.
+
+	// By providing text for last valid state we ensure dependent documents will build properly.
+	// Also this allows to perform proper mapping of "SrcLoc" to current state of the text.
+	return last_valid_state_ == std::nullopt ? text_ : last_valid_state_->text;
 }
 
 llvm::ArrayRef<DocumentDiagnostic> Document::GetDiagnostics() const
@@ -130,12 +159,12 @@ llvm::ArrayRef<DocumentDiagnostic> Document::GetDiagnostics() const
 	return diagnostics_;
 }
 
-std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosition& position )
+std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosition& position ) const
 {
 	if( last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( text_, position );
+	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
 	{
 		log_ << "Failed to get indentifier start" << std::endl;
@@ -159,40 +188,41 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 	return std::nullopt;
 }
 
-std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPosition& position )
+std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPosition& position ) const
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( text_, position );
+	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
-		return {}; // Not an idenrifier.
+		return {};
 
 	const std::vector<SrcLoc> occurrences= last_valid_state_->code_builder->GetAllOccurrences( *src_loc );
 
 	std::vector<DocumentRange> result;
 	result.reserve( occurrences.size() );
 
+	if( occurrences.empty() )
+		return {};
+
 	for( const SrcLoc& result_src_loc : occurrences )
 	{
 		if( result_src_loc.GetFileIndex() != 0 )
 			continue; // Filter out symbols from imported files.
 
-		// TODO - use here last valid text.
-
-		if( auto range= SrcLocToDocumentIdentifierRange( result_src_loc, text_, last_valid_state_->line_to_linear_position_index ) )
+		if( auto range= GetIdentifierRange( result_src_loc ) )
 			result.push_back( std::move(*range) );
 	}
 
 	return result;
 }
 
-std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPosition& position )
+std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPosition& position ) const
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
 
-	const auto src_loc= GetSrcLocForIndentifierStartPoisitionInText( text_, position );
+	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
 	{
 		log_ << "Failed to get indentifier start" << std::endl;
@@ -224,7 +254,7 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 	return result;
 }
 
-std::vector<Symbol> Document::GetSymbols()
+std::vector<Symbol> Document::GetSymbols() const
 {
 	if( last_valid_state_ == std::nullopt )
 		return {};
@@ -244,15 +274,14 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 
 	// Perform lexical analysis for current text.
 	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
-	const LineToLinearPositionIndex line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
 
 	const uint32_t line= position.line;
-	if( line >= line_to_linear_position_index.size() )
+	if( line >= line_to_linear_position_index_.size() )
 	{
 		log_ << "Line is greater than document end" << std::endl;
 		return {};
 	}
-	const std::string_view line_text= std::string_view(text_).substr( line_to_linear_position_index[ line ] );
+	const std::string_view line_text= std::string_view(text_).substr( line_to_linear_position_index_[ line ] );
 
 	const auto column_utf8= Utf16PositionToUtf8Position( line_text, position.character );
 	if( column_utf8 == std::nullopt )
@@ -438,22 +467,74 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 
 std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc ) const
 {
-	if( last_valid_state_ == std::nullopt )
+	if( last_valid_state_ == std::nullopt || text_changes_since_last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
-	// TODO - use text from last valid state.
-	return SrcLocToDocumentIdentifierRange( src_loc, text_, last_valid_state_->line_to_linear_position_index );
+	const uint32_t line= src_loc.GetLine();
+	if( line >= last_valid_state_->line_to_linear_position_index.size() )
+		return std::nullopt;
+
+	const TextLinearPosition line_start= last_valid_state_->line_to_linear_position_index[ line ];
+	const std::string_view line_text= std::string_view(last_valid_state_->text).substr( line_start );
+
+	const auto utf8_column= Utf32PositionToUtf8Position( line_text, src_loc.GetColumn() );
+	if( utf8_column == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<TextLinearPosition> utf8_column_end= GetIdentifierEndForPosition( line_text, *utf8_column );
+	if( utf8_column_end == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<uint32_t> position_mapped= MapOldPositionToNewPosition( *text_changes_since_last_valid_state_, line_start + *utf8_column );
+	const std::optional<uint32_t> position_end_mapped= MapOldPositionToNewPosition( *text_changes_since_last_valid_state_, line_start + *utf8_column_end );
+	if( position_mapped == std::nullopt || position_end_mapped == std::nullopt )
+		return std::nullopt;
+
+	if( *position_end_mapped < *position_mapped )
+		return std::nullopt;
+
+	const uint32_t current_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_mapped ).GetLine();
+	const uint32_t current_end_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_end_mapped ).GetLine();
+	if( current_line >= line_to_linear_position_index_.size() || current_end_line >= line_to_linear_position_index_.size() )
+		return std::nullopt;
+
+
+	const TextLinearPosition current_line_start_position= line_to_linear_position_index_[current_line];
+	const std::optional<uint32_t> character=
+		Utf8PositionToUtf16Position(
+			std::string_view(text_).substr( current_line_start_position ),
+			*position_mapped - current_line_start_position );
+
+	const TextLinearPosition current_end_line_start_position= line_to_linear_position_index_[current_end_line];
+	const std::optional<uint32_t> character_end=
+		Utf8PositionToUtf16Position(
+			std::string_view(text_).substr( current_end_line_start_position ),
+			*position_end_mapped - current_end_line_start_position );
+
+	if( character == std::nullopt || character_end == std::nullopt )
+		return std::nullopt;
+
+	if( *character_end < character )
+		return std::nullopt;
+
+	DocumentRange range;
+	range.start= DocumentPosition{ current_line, *character };
+	range.end= DocumentPosition{ current_end_line, *character_end };
+	return range;
 }
 
 void Document::Rebuild()
 {
 	diagnostics_.clear();
 
+	U_ASSERT( !in_rebuild_call_ );
+	in_rebuild_call_= true;
 	SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
+	in_rebuild_call_= false;
 
 	if( !source_graph.errors.empty() )
 	{
-		PopulateDiagnostics( source_graph.errors, text_, diagnostics_ );
+		PopulateDiagnostics( source_graph.errors, text_, line_to_linear_position_index_, diagnostics_ );
 		return;
 	}
 
@@ -464,7 +545,7 @@ void Document::Rebuild()
 	const LexSyntErrors& synt_errors= source_graph.nodes_storage.front().ast.error_messages;
 	if( !synt_errors.empty() )
 	{
-		PopulateDiagnostics( synt_errors, text_, diagnostics_ );
+		PopulateDiagnostics( synt_errors, text_, line_to_linear_position_index_, diagnostics_ );
 		return;
 	}
 
@@ -499,12 +580,63 @@ void Document::Rebuild()
 			options,
 			source_graph );
 
-	PopulateDiagnostics( code_builder->TakeErrors(), text_, diagnostics_ );
+	PopulateDiagnostics( code_builder->TakeErrors(), text_, line_to_linear_position_index_, diagnostics_ );
 
-	auto line_to_linear_position_index= BuildLineToLinearPositionIndex( text_ );
+	last_valid_state_= std::nullopt; // Reset previous explicitely to free resources of previos state first.
+	last_valid_state_= CompiledState{
+		text_,
+		line_to_linear_position_index_,
+		std::move(source_graph),
+		std::move(llvm_context),
+		std::move(code_builder) };
 
-	last_valid_state_= std::nullopt;
-	last_valid_state_= CompiledState{ std::move(line_to_linear_position_index), std::move( source_graph ), std::move(llvm_context), std::move(code_builder) };
+	// Reset sequence of changes by last valid state update.
+	if( text_changes_since_last_valid_state_ == std::nullopt )
+		text_changes_since_last_valid_state_= TextChangesSequence();
+	else
+		text_changes_since_last_valid_state_->clear();
+}
+
+std::optional<TextLinearPosition> Document::GetPositionInLastValidText( const DocumentPosition& position ) const
+{
+	if( last_valid_state_ == std::nullopt || text_changes_since_last_valid_state_ == std::nullopt )
+		return std::nullopt;
+
+	if( position.line >= line_to_linear_position_index_.size() )
+		return std::nullopt;
+	const uint32_t line_offset= line_to_linear_position_index_[ position.line ];
+
+	const std::optional<uint32_t> column_offset=
+		Utf16PositionToUtf8Position( std::string_view(text_).substr( line_offset ), position.character );
+	if( column_offset == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<uint32_t> last_valid_text_position=
+		MapNewPositionToOldPosition( *text_changes_since_last_valid_state_, line_offset + *column_offset );
+	if( last_valid_text_position == std::nullopt )
+		return std::nullopt;
+
+	if( *last_valid_text_position >= last_valid_state_->text.size() )
+		return std::nullopt;
+
+	return last_valid_text_position;
+}
+
+std::optional<SrcLoc> Document::GetIdentifierStartSrcLoc( const DocumentPosition& position ) const
+{
+	if( last_valid_state_ == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
+	if( linear_position == std::nullopt )
+	{
+		log_ << "Failed to get last valid document position" << std::endl;
+		return std::nullopt;
+	}
+
+	const uint32_t line= LinearPositionToSrcLoc( last_valid_state_->line_to_linear_position_index, *linear_position ).GetLine();
+
+	return GetSrcLocForIndentifierStartPoisitionInText( last_valid_state_->text, line, *linear_position );
 }
 
 } // namespace LangServer

@@ -11,7 +11,6 @@ namespace LangServer
 namespace
 {
 
-
 // Get linear position for given line.
 // Complexity is linear.
 std::optional<TextLinearPosition> GetUtf8LineStartPosition( const std::string_view text, const uint32_t line /* from 1 */ )
@@ -66,13 +65,9 @@ std::optional<TextLinearPosition> DocumentPositionToLinearPosition( const Docume
 	return *line_linear_pos + *column_offset;
 }
 
-std::optional<SrcLoc> GetSrcLocForIndentifierStartPoisitionInText( const std::string_view text, const DocumentPosition& position )
+std::optional<SrcLoc> GetSrcLocForIndentifierStartPoisitionInText( const std::string_view text, const uint32_t line, const TextLinearPosition linear_position )
 {
-	const std::optional<TextLinearPosition> linear_position= DocumentPositionToLinearPosition( position, text );
-	if( linear_position == std::nullopt )
-		return std::nullopt;
-
-	const std::optional<TextLinearPosition> identifier_start_linear_position= GetIdentifierStartForPosition( text, *linear_position );
+	const std::optional<TextLinearPosition> identifier_start_linear_position= GetIdentifierStartForPosition( text, linear_position );
 	if( identifier_start_linear_position == std::nullopt )
 		return std::nullopt;
 
@@ -87,7 +82,7 @@ std::optional<SrcLoc> GetSrcLocForIndentifierStartPoisitionInText( const std::st
 	if( code_point_column == std::nullopt )
 		return std::nullopt;
 
-	return SrcLoc( 0, position.line, *code_point_column );
+	return SrcLoc( 0, line, *code_point_column );
 }
 
 std::optional<DocumentRange> SrcLocToDocumentIdentifierRange( const SrcLoc& src_loc, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index )

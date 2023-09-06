@@ -70,7 +70,6 @@ private:
 
 	// Other stuff.
 	void GenerateDocumentNotifications( llvm::StringRef uri, const Document& document );
-	DocumentRange DocumentSrcLocToRange( const SrcLocInDocument& document_src_loc ) const;
 
 private:
 	std::ostream& log_;

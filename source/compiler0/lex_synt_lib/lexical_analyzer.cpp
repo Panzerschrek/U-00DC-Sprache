@@ -735,18 +735,24 @@ bool IsValidIdentifier( const std::string_view text )
 LineToLinearPositionIndex BuildLineToLinearPositionIndex( const std::string_view text )
 {
 	LineToLinearPositionIndex result;
-	result.push_back(0);
-	result.push_back(0);
+	BuildLineToLinearPositionIndex( text, result );
+
+	return result;
+}
+
+void BuildLineToLinearPositionIndex( std::string_view text, LineToLinearPositionIndex& out_index )
+{
+	out_index.clear();
+	out_index.push_back(0);
+	out_index.push_back(0);
 
 	for( size_t i= 0, i_end= text.size(); i < i_end; ++i )
 	{
 		// TODO - handle stupid things, like windows double-symbol newlines.
 
 		if( IsNewline( sprache_char(text[i]) ) )
-			result.push_back( uint32_t(i + 1) ); // Next line starts with next symbol.
+			out_index.push_back( uint32_t(i + 1) ); // Next line starts with next symbol.
 	}
-
-	return result;
 }
 
 SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, const TextLinearPosition position )

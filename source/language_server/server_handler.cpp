@@ -66,6 +66,31 @@ std::optional<DocumentRange> JsonToDocumentRange( const Json::Value& value )
 	return std::nullopt;
 }
 
+std::optional<PositionInDocument> JsonToPositionInDocument( const Json::Object& value )
+{
+	const auto text_document= value.getObject( "textDocument" );
+	if( text_document == nullptr )
+		return std::nullopt;
+
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
+		return std::nullopt;
+
+	std::optional<Uri> uri_parsed= Uri::Parse( *uri );
+	if( uri_parsed == std::nullopt )
+		return std::nullopt;
+
+	const auto position_json= value.get( "position" );
+	if( position_json == nullptr )
+		return std::nullopt;
+
+	std::optional<DocumentPosition> position= JsonToDocumentPosition( *position_json );
+	if( position == std::nullopt )
+		return std::nullopt;
+
+	return PositionInDocument{ std::move(*position), std::move(*uri_parsed) };
+}
+
 Json::Array SymbolsToJson( const std::vector<Symbol>& symbols )
 {
 	Json::Array result;
@@ -212,14 +237,7 @@ ServerResponse ServerHandler::ProcessTextDocumentSymbol( const Json::Value& para
 		return result;
 	}
 
-	Document* const document= document_manager_.GetDocument( *uri_parsed );
-	if( document == nullptr )
-	{
-		log_ << "Can't find document " << uri->str() << std::endl;
-		return result;
-	}
-
-	return SymbolsToJson( document->GetSymbols() );
+	return SymbolsToJson( document_manager_.GetSymbols(*uri_parsed) );
 }
 
 ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )
@@ -233,53 +251,18 @@ ServerResponse ServerHandler::ProcessTextDocumentReferences( const Json::Value& 
 		return result;
 	}
 
-	const auto text_document= obj->getObject( "textDocument" );
-	if( text_document == nullptr )
+	const auto position_in_document= JsonToPositionInDocument( *obj );
+	if( position_in_document == std::nullopt )
 	{
-		log_ << "No textDocument!" << std::endl;
+		log_ << "Failed to get position in document" << std::endl;
 		return result;
 	}
 
-	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
-	{
-		log_ << "No uri!" << std::endl;
-		return result;
-	}
-
-	const auto uri_parsed= Uri::Parse( *uri );
-	if( uri_parsed == std::nullopt )
-	{
-		log_ << "Invalid uri!" << std::endl;
-		return result;
-	}
-
-	const auto position_json= obj->get( "position" );
-	if( position_json == nullptr )
-	{
-		log_ << "No position!" << std::endl;
-		return result;
-	}
-
-	const auto position= JsonToDocumentPosition( *position_json );
-	if( position == std::nullopt )
-	{
-		log_ << "Failed to parse position" << std::endl;
-		return result;
-	}
-
-	Document* const document= document_manager_.GetDocument( *uri_parsed );
-	if( document == nullptr )
-	{
-		log_ << "Can't find document " << uri->str() << std::endl;
-		return result;
-	}
-
-	for( const SrcLocInDocument& location : document->GetAllOccurrences( *position ) )
+	for( const RangeInDocument& range_in_document : document_manager_.GetAllOccurrences( *position_in_document ) )
 	{
 		Json::Object out_location;
-		out_location["range"]= DocumentRangeToJson( DocumentSrcLocToRange( location ) );
-		out_location["uri"]= location.uri.ToString();
+		out_location["range"]= DocumentRangeToJson( range_in_document.range );
+		out_location["uri"]= range_in_document.uri.ToString();
 
 		result.push_back( std::move(out_location) );
 	}
@@ -298,52 +281,17 @@ ServerResponse ServerHandler::ProcessTextDocumentDefinition( const Json::Value& 
 		return result;
 	}
 
-	const auto text_document= obj->getObject( "textDocument" );
-	if( text_document == nullptr )
+	const auto position_in_document= JsonToPositionInDocument( *obj );
+	if( position_in_document == std::nullopt )
 	{
-		log_ << "No textDocument!" << std::endl;
+		log_ << "Failed to get position in document" << std::endl;
 		return result;
 	}
 
-	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
+	if( const std::optional<RangeInDocument> range_in_document= document_manager_.GetDefinitionPoint( *position_in_document ) )
 	{
-		log_ << "No uri!" << std::endl;
-		return result;
-	}
-
-	const auto uri_parsed= Uri::Parse( *uri );
-	if( uri_parsed == std::nullopt )
-	{
-		log_ << "Invalid uri!" << std::endl;
-		return result;
-	}
-
-	const auto position_json= obj->get( "position" );
-	if( position_json == nullptr )
-	{
-		log_ << "No position!" << std::endl;
-		return result;
-	}
-
-	const auto position= JsonToDocumentPosition( *position_json );
-	if( position == std::nullopt )
-	{
-		log_ << "Failed to parse position" << std::endl;
-		return result;
-	}
-
-	Document* const document= document_manager_.GetDocument( *uri_parsed );
-	if( document == nullptr )
-	{
-		log_ << "Can't find document " << uri->str() << std::endl;
-		return result;
-	}
-
-	if( const std::optional<SrcLocInDocument> location= document->GetDefinitionPoint( *position ) )
-	{
-		result["range"]= DocumentRangeToJson( DocumentSrcLocToRange( *location ) );
-		result["uri"]= location->uri.ToString();
+		result["range"]= DocumentRangeToJson( range_in_document->range );
+		result["uri"]= range_in_document->uri.ToString();
 	}
 	return result;
 }
@@ -359,45 +307,10 @@ ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 		return result;
 	}
 
-	const auto text_document= obj->getObject( "textDocument" );
-	if( text_document == nullptr )
+	const auto position_in_document= JsonToPositionInDocument( *obj );
+	if( position_in_document == std::nullopt )
 	{
-		log_ << "No textDocument!" << std::endl;
-		return result;
-	}
-
-	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
-	{
-		log_ << "No uri!" << std::endl;
-		return result;
-	}
-
-	const auto uri_parsed= Uri::Parse( *uri );
-	if( uri_parsed == std::nullopt )
-	{
-		log_ << "Invalid uri!" << std::endl;
-		return result;
-	}
-
-	const auto position_json= obj->get( "position" );
-	if( position_json == nullptr )
-	{
-		log_ << "No position!" << std::endl;
-		return result;
-	}
-
-	const auto position= JsonToDocumentPosition( *position_json );
-	if( position == std::nullopt )
-	{
-		log_ << "Failed to parse position" << std::endl;
-		return result;
-	}
-
-	Document* const document= document_manager_.GetDocument( *uri_parsed );
-	if( document == nullptr )
-	{
-		log_ << "Can't find document " << uri->str() << std::endl;
+		log_ << "Failed to get position in document" << std::endl;
 		return result;
 	}
 
@@ -406,7 +319,7 @@ ServerResponse ServerHandler::ProcessTextDocumentCompletion( const Json::Value& 
 	{
 		Json::Array items;
 
-		for( const CompletionItem& completion_item : document->Complete( *position ) )
+		for( const CompletionItem& completion_item : document_manager_.Complete( *position_in_document ) )
 		{
 			Json::Object item;
 			item["label"]= completion_item.label;
@@ -436,49 +349,14 @@ ServerResponse ServerHandler::ProcessTextDocumentHighlight( const Json::Value& p
 		return result;
 	}
 
-	const auto text_document= obj->getObject( "textDocument" );
-	if( text_document == nullptr )
+	const auto position_in_document= JsonToPositionInDocument( *obj );
+	if( position_in_document == std::nullopt )
 	{
-		log_ << "No textDocument!" << std::endl;
+		log_ << "Failed to get position in document" << std::endl;
 		return result;
 	}
 
-	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
-	{
-		log_ << "No uri!" << std::endl;
-		return result;
-	}
-
-	const auto uri_parsed= Uri::Parse( *uri );
-	if( uri_parsed == std::nullopt )
-	{
-		log_ << "Invalid uri!" << std::endl;
-		return result;
-	}
-
-	const auto position_json= obj->get( "position" );
-	if( position_json == nullptr )
-	{
-		log_ << "No position!" << std::endl;
-		return result;
-	}
-
-	const auto position= JsonToDocumentPosition( *position_json );
-	if( position == std::nullopt )
-	{
-		log_ << "Failed to parse position" << std::endl;
-		return result;
-	}
-
-	Document* const document= document_manager_.GetDocument( *uri_parsed );
-	if( document == nullptr )
-	{
-		log_ << "Can't find document " << uri->str() << std::endl;
-		return result;
-	}
-
-	for( const DocumentRange& range : document->GetHighlightLocations( *position ) )
+	for( const DocumentRange& range : document_manager_.GetHighlightLocations( *position_in_document ) )
 	{
 		Json::Object highlight;
 		highlight["range"]= DocumentRangeToJson( range );
@@ -499,26 +377,6 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 		return result;
 	}
 
-	const auto text_document= obj->getObject( "textDocument" );
-	if( text_document == nullptr )
-	{
-		log_ << "No textDocument!" << std::endl;
-		return result;
-	}
-
-	const auto uri= text_document->getString( "uri" );
-	if( uri == llvm::None )
-	{
-		log_ << "No uri!" << std::endl;
-		return result;
-	}
-
-	const auto uri_parsed= Uri::Parse( *uri );
-	if( uri_parsed == std::nullopt )
-	{
-		log_ << "Invalid uri!" << std::endl;
-		return result;
-	}
 
 	const auto new_name= obj->getString( "newName" );
 	if( new_name == llvm::None )
@@ -527,24 +385,10 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 		return result;
 	}
 
-	const auto position_json= obj->get( "position" );
-	if( position_json == nullptr )
+	const auto position_in_document= JsonToPositionInDocument( *obj );
+	if( position_in_document == std::nullopt )
 	{
-		log_ << "No position!" << std::endl;
-		return result;
-	}
-
-	const auto position= JsonToDocumentPosition( *position_json );
-	if( position == std::nullopt )
-	{
-		log_ << "Failed to parse position" << std::endl;
-		return result;
-	}
-
-	Document* const document= document_manager_.GetDocument( *uri_parsed );
-	if( document == nullptr )
-	{
-		log_ << "Can't find document " << uri->str() << std::endl;
+		log_ << "Failed to get position in document" << std::endl;
 		return result;
 	}
 
@@ -559,13 +403,13 @@ ServerResponse ServerHandler::ProcessTextDocumentRename( const Json::Value& para
 
 	{
 		Json::Object changes;
-		for( const SrcLocInDocument& location : document->GetAllOccurrences( *position ) )
+		for( const RangeInDocument& range_in_document : document_manager_.GetAllOccurrences( *position_in_document ) )
 		{
 			Json::Object edit;
-			edit["range"]= DocumentRangeToJson( DocumentSrcLocToRange( location ) );
+			edit["range"]= DocumentRangeToJson( range_in_document.range );
 			edit["newText"]= new_name_str;
 
-			std::string change_uri= location.uri.ToString();
+			std::string change_uri= range_in_document.uri.ToString();
 			if( const auto prev_edits= changes.getArray( change_uri ) )
 				prev_edits->push_back( std::move(edit) );
 			else
@@ -803,20 +647,6 @@ void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, co
 
 	ServerNotification notification{ "textDocument/publishDiagnostics", std::move(result) };
 	notifications_queue_.push( std::move(notification) );
-}
-
-DocumentRange ServerHandler::DocumentSrcLocToRange( const SrcLocInDocument& document_src_loc ) const
-{
-	if( auto range= document_manager_.GetDocumentIdentifierRange( document_src_loc ) )
-		return std::move(*range);
-
-	// Something went wrong. Fill some dummy.
-	// Convert UTF-32 column to UTF-16 character. This is wrong, but better than nothing.
-	DocumentRange range;
-	range.start= DocumentPosition{ document_src_loc.src_loc.GetLine(), document_src_loc.src_loc.GetColumn() };
-	range.end= DocumentPosition{ range.start.line, range.start.character + 1 };
-
-	return range;
 }
 
 } // namespace LangServer
