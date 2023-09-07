@@ -268,7 +268,7 @@ std::optional<RequestParams> QueuedServerHandler::ProcessTextDocumentHighlight( 
 		return std::nullopt;
 	}
 
-	return Requests::Complete{ std::move( *position_in_document ) };
+	return Requests::Highlight{ std::move( *position_in_document ) };
 }
 
 std::optional<RequestParams> QueuedServerHandler::ProcessTextDocumentRename( const Json::Value& params )

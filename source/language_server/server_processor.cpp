@@ -77,6 +77,7 @@ void ServerProcessor::Process( MessageQueue& message_queue )
 		const std::optional<Message> message= message_queue.Pop();
 		if( message == std::nullopt )
 			return;
+		HandleMessage( *message );
 	}
 }
 
