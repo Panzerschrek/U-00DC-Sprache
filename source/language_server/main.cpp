@@ -5,7 +5,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
 #include "options.hpp"
-#include "server.hpp"
+#include "async_server.hpp"
 
 // Messy stuff.
 // Without it language server doesn't work on Windows.
@@ -46,9 +46,7 @@ int Main( int argc, const char* argv[] )
 
 	log_file << "Start language server" << std::endl;
 
-	ServerHandler handler( log_file );
-	Server server( Connection( std::cin, std::cout ), handler, log_file );
-	server.Run();
+	RunAsyncServer( log_file );
 
 	log_file << "End language server" << std::endl;
 
