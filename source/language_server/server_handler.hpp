@@ -69,7 +69,7 @@ private:
 	void ProcessCancelRequest( const Json::Value& params );
 
 	// Other stuff.
-	void GenerateDocumentNotifications( llvm::StringRef uri, const Document& document );
+	void GenerateDiagnosticsNotifications( const DiagnosticsByDocument& diagnostics );
 
 private:
 	std::ostream& log_;

@@ -4,6 +4,7 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "completion.hpp"
 #include "document_symbols.hpp"
+#include "diagnostics.hpp"
 #include "text_change.hpp"
 #include "uri.hpp"
 
@@ -18,12 +19,6 @@ struct DocumentBuildOptions
 	llvm::DataLayout data_layout;
 	llvm::Triple target_triple;
 	std::string prelude;
-};
-
-struct DocumentDiagnostic
-{
-	DocumentRange range;
-	std::string text;
 };
 
 class Document
@@ -46,7 +41,9 @@ public: // Document text stuff.
 	const std::string& GetTextForCompilation() const;
 
 public: // Diagnostics.
-	llvm::ArrayRef<DocumentDiagnostic> GetDiagnostics() const;
+
+	// Diagnostics are generated not only for this document, but also for opened files.
+	const DiagnosticsByDocument& GetDiagnostics() const;
 
 public: // Requests.
 	std::optional<SrcLocInDocument> GetDefinitionPoint( const DocumentPosition& position ) const;
@@ -100,7 +97,7 @@ private:
 	// State for last syntaxically-correct program.
 	std::optional<CompiledState> last_valid_state_;
 
-	std::vector<DocumentDiagnostic> diagnostics_;
+	DiagnosticsByDocument diagnostics_;
 };
 
 } // namespace LangServer
