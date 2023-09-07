@@ -50,7 +50,7 @@ void PopulateDiagnostics(
 	const LexSyntErrors& errors,
 	const std::string_view program_text,
 	const LineToLinearPositionIndex& line_to_linear_position_index,
-	std::vector<DocumentDiagnostic>& out_diagnostics )
+	DocumentDiagnostics& out_diagnostics )
 {
 	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
 
@@ -73,36 +73,43 @@ void PopulateDiagnostics(
 
 
 void PopulateDiagnostics_r(
+	const SourceGraph& source_graph,
 	const CodeBuilderErrorsContainer& errors,
 	const std::string_view program_text,
 	const LineToLinearPositionIndex& line_to_linear_position_index,
-	std::vector<DocumentDiagnostic>& out_diagnostics )
+	DiagnosticsByDocument& out_diagnostics )
 {
 	for( const CodeBuilderError& error : errors )
 	{
 		if( error.template_context != nullptr )
-			PopulateDiagnostics_r( error.template_context->errors, program_text, line_to_linear_position_index, out_diagnostics );
+			PopulateDiagnostics_r( source_graph, error.template_context->errors, program_text, line_to_linear_position_index, out_diagnostics );
 
 		auto range= GetErrorRange( error.src_loc, program_text, line_to_linear_position_index );
 		if( range == std::nullopt )
 			continue;
 
+		const uint32_t file_index= error.src_loc.GetFileIndex();
+		if( file_index >= source_graph.nodes_storage.size() )
+			continue;
+
+		DocumentDiagnostics& document_diagnostics= out_diagnostics[ Uri::FromFilePath( source_graph.nodes_storage[file_index].file_path ) ];
+
 		DocumentDiagnostic diagnostic;
 		diagnostic.range= std::move(*range);
 		diagnostic.text= error.text;
 
-		out_diagnostics.push_back( std::move(diagnostic) );
+		document_diagnostics.push_back( std::move(diagnostic) );
 	}
 }
 
 void PopulateDiagnostics(
+	const SourceGraph& source_graph,
 	const CodeBuilderErrorsContainer& errors,
 	const std::string_view program_text,
 	const LineToLinearPositionIndex& line_to_linear_position_index,
-	std::vector<DocumentDiagnostic>& out_diagnostics )
+	DiagnosticsByDocument& out_diagnostics )
 {
-	out_diagnostics.reserve( out_diagnostics.size() + errors.size() );
-	PopulateDiagnostics_r( errors, program_text, line_to_linear_position_index, out_diagnostics );
+	PopulateDiagnostics_r( source_graph, errors, program_text, line_to_linear_position_index, out_diagnostics );
 }
 
 } // namespace
@@ -164,7 +171,7 @@ const std::string& Document::GetTextForCompilation() const
 	return last_valid_state_ == std::nullopt ? text_ : last_valid_state_->text;
 }
 
-llvm::ArrayRef<DocumentDiagnostic> Document::GetDiagnostics() const
+const DiagnosticsByDocument& Document::GetDiagnostics() const
 {
 	return diagnostics_;
 }
@@ -544,7 +551,7 @@ void Document::Rebuild()
 
 	if( !source_graph.errors.empty() )
 	{
-		PopulateDiagnostics( source_graph.errors, text_, line_to_linear_position_index_, diagnostics_ );
+		PopulateDiagnostics( source_graph.errors, text_, line_to_linear_position_index_, diagnostics_[Uri::FromFilePath(path_)] );
 		return;
 	}
 
@@ -555,7 +562,7 @@ void Document::Rebuild()
 	const LexSyntErrors& synt_errors= source_graph.nodes_storage.front().ast.error_messages;
 	if( !synt_errors.empty() )
 	{
-		PopulateDiagnostics( synt_errors, text_, line_to_linear_position_index_, diagnostics_ );
+		PopulateDiagnostics( synt_errors, text_, line_to_linear_position_index_,  diagnostics_[Uri::FromFilePath(path_)] );
 		return;
 	}
 
@@ -590,7 +597,7 @@ void Document::Rebuild()
 			options,
 			source_graph );
 
-	PopulateDiagnostics( code_builder->TakeErrors(), text_, line_to_linear_position_index_, diagnostics_ );
+	PopulateDiagnostics( source_graph, code_builder->TakeErrors(), text_, line_to_linear_position_index_, diagnostics_ );
 
 	last_valid_state_= std::nullopt; // Reset previous explicitely to free resources of previos state first.
 	last_valid_state_= CompiledState{

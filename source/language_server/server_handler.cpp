@@ -467,7 +467,7 @@ void ServerHandler::ProcessTextDocumentDidOpen( const Json::Value& params )
 
 	Document* const document= document_manager_.Open( *uri_parsed, text->str() );
 	if( document != nullptr )
-		GenerateDocumentNotifications( *uri, *document );
+		GenerateDiagnosticsNotifications( document->GetDiagnostics() );
 }
 
 void ServerHandler::ProcessTextDocumentDidClose( const Json::Value& params )
@@ -604,7 +604,7 @@ void ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
 	}
 
 	document->Rebuild(); // TODO - rebuild only if necessary.
-	GenerateDocumentNotifications( *uri, *document );
+	GenerateDiagnosticsNotifications( document->GetDiagnostics() );
 }
 
 void ServerHandler::ProcessCancelRequest( const Json::Value& params )
@@ -624,29 +624,32 @@ void ServerHandler::ProcessCancelRequest( const Json::Value& params )
 	log_ << "Recieve cancellation for request " << std::endl;
 }
 
-void ServerHandler::GenerateDocumentNotifications( const llvm::StringRef uri, const Document& document )
+void ServerHandler::GenerateDiagnosticsNotifications( const DiagnosticsByDocument& diagnostics )
 {
-	Json::Object result;
-	result["uri"]= uri.str();
-
+	for( const auto& document_pair : diagnostics )
 	{
-		Json::Array diagnostics;
+		Json::Object result;
+		result["uri"]= document_pair.first.ToString();
 
-		for( const DocumentDiagnostic& diagnostic : document.GetDiagnostics() )
 		{
-			Json::Object out_diagnostic;
-			out_diagnostic["message"]= diagnostic.text;
-			out_diagnostic["severity"]= 1; // Means "error"
-			out_diagnostic["range"]= DocumentRangeToJson( diagnostic.range );
+			Json::Array diagnostics;
 
-			diagnostics.push_back( std::move(out_diagnostic) );
+			for( const DocumentDiagnostic& diagnostic : document_pair.second )
+			{
+				Json::Object out_diagnostic;
+				out_diagnostic["message"]= diagnostic.text;
+				out_diagnostic["severity"]= 1; // Means "error"
+				out_diagnostic["range"]= DocumentRangeToJson( diagnostic.range );
+
+				diagnostics.push_back( std::move(out_diagnostic) );
+			}
+
+			result["diagnostics"]= std::move(diagnostics);
 		}
 
-		result["diagnostics"]= std::move(diagnostics);
+		ServerNotification notification{ "textDocument/publishDiagnostics", std::move(result) };
+		notifications_queue_.push( std::move(notification) );
 	}
-
-	ServerNotification notification{ "textDocument/publishDiagnostics", std::move(result) };
-	notifications_queue_.push( std::move(notification) );
 }
 
 } // namespace LangServer
