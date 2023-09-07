@@ -3,7 +3,8 @@
 #include <queue>
 #include <string_view>
 #include "json.hpp"
-#include "messages.hpp"
+#include "message_queue.hpp"
+#include "transport.hpp"
 
 namespace U
 {
@@ -16,12 +17,14 @@ class QueuedServerHandler
 public:
 	explicit QueuedServerHandler( std::ostream& log );
 
-public:
-	void HandleMessage( const Json::Value& message );
+	// Process until input channel is open.
+	void Process( IJsonMessageRead& in, MessageQueue& message_queue );
 
 private:
+	void HandleMessage( const Json::Value& message, MessageQueue& message_queue );
+
 	// Requests.
-	void HandleRequest( RequestId id, std::string_view method, const Json::Value& params );
+	void HandleRequest( RequestId id, std::string_view method, const Json::Value& params, MessageQueue& message_queue );
 	std::optional<RequestParams> BuildRequestParams( std::string_view method, const Json::Value& params );
 
 	std::optional<RequestParams> ProcessInitialize( const Json::Value& params );
@@ -33,7 +36,7 @@ private:
 	std::optional<RequestParams> ProcessTextDocumentRename( const Json::Value& params );
 
 	// Notifications.
-	void HandleNotification( std::string_view method, const Json::Value& params );
+	void HandleNotification( std::string_view method, const Json::Value& params, MessageQueue& message_queue );
 	std::optional<Notification> BuildNorification( std::string_view method, const Json::Value& params );
 
 	std::optional<Notification> ProcessTextDocumentDidOpen( const Json::Value& params );
@@ -43,9 +46,6 @@ private:
 
 private:
 	std::ostream& log_;
-
-	std::vector<Request> requests_queue_;
-	std::vector<Notification> notifications_queue_;
 };
 
 } // namespace LangServer

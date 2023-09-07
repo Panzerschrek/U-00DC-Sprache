@@ -83,7 +83,19 @@ QueuedServerHandler::QueuedServerHandler( std::ostream& log )
 {
 }
 
-void QueuedServerHandler::HandleMessage( const Json::Value& message )
+void QueuedServerHandler::Process( IJsonMessageRead& in, MessageQueue& message_queue )
+{
+	while(true)
+	{
+		const std::optional<Json::Value> message= in.Read();
+		if( message == std::nullopt )
+			return;
+
+		HandleMessage( *message, message_queue );
+	}
+}
+
+void QueuedServerHandler::HandleMessage( const Json::Value& message, MessageQueue& message_queue )
 {
 	const Json::Object* const obj= message.getAsObject();
 	if( obj == nullptr )
@@ -109,19 +121,19 @@ void QueuedServerHandler::HandleMessage( const Json::Value& message )
 			log_ << "Failed to pase id!" << std::endl;
 			return;
 		}
-		HandleRequest( std::move(*id), method, params );
+		HandleRequest( std::move(*id), method, params, message_queue );
 	}
 	else
-		HandleNotification( method, params );
+		HandleNotification( method, params, message_queue );
 }
 
-void QueuedServerHandler::HandleRequest( RequestId id, const std::string_view method, const Json::Value& params )
+void QueuedServerHandler::HandleRequest( RequestId id, const std::string_view method, const Json::Value& params, MessageQueue& message_queue )
 {
 	auto params_parsed= BuildRequestParams( method, params );
 	if( params_parsed == std::nullopt )
 		return;
 
-	requests_queue_.push_back( Request{ std::move(id), std::move( *params_parsed ) } );
+	message_queue.Push( Request{ std::move(id), std::move( *params_parsed ) } );
 }
 
 std::optional<RequestParams> QueuedServerHandler::BuildRequestParams( const std::string_view method, const Json::Value& params )
@@ -287,13 +299,13 @@ std::optional<RequestParams> QueuedServerHandler::ProcessTextDocumentRename( con
 	return Requests::Rename{ std::move( *position_in_document ), new_name->str() };
 }
 
-void QueuedServerHandler::HandleNotification( const std::string_view method, const Json::Value& params )
+void QueuedServerHandler::HandleNotification( const std::string_view method, const Json::Value& params, MessageQueue& message_queue )
 {
 	auto notification= BuildNorification( method, params );
 	if( notification == std::nullopt )
 		return;
 
-	notifications_queue_.push_back( std::move(*notification) );
+	message_queue.Push( std::move(*notification) );
 }
 
 std::optional<Notification> QueuedServerHandler::BuildNorification( const std::string_view method, const Json::Value& params )

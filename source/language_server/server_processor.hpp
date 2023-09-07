@@ -2,7 +2,8 @@
 #include <queue>
 #include "document_manager.hpp"
 #include "json.hpp"
-#include "messages.hpp"
+#include "message_queue.hpp"
+#include "transport.hpp"
 
 namespace U
 {
@@ -11,50 +12,52 @@ namespace U
 namespace LangServer
 {
 
-struct ServerNotification
-{
-	std::string method;
-	Json::Value params;
-};
-
-struct ServerResponse
-{
-	Json::Value result;
-	Json::Value error;
-
-	ServerResponse( Json::Object in_result ) noexcept
-		: result(std::move(in_result)), error( nullptr )
-	{}
-
-	ServerResponse( Json::Array in_result ) noexcept
-		: result(std::move(in_result)), error( nullptr )
-	{}
-
-	ServerResponse( Json::Value in_result ) noexcept
-		: result(std::move(in_result)), error( nullptr )
-	{}
-
-	ServerResponse( Json::Value in_result, Json::Value in_error ) noexcept
-		: result(std::move(in_result)), error(std::move(in_error))
-	{}
-
-	ServerResponse( const ServerResponse& )= default;
-	ServerResponse( ServerResponse&& )= default;
-
-	ServerResponse& operator=( const ServerResponse& )= default;
-	ServerResponse& operator=( ServerResponse&& )= default;
-};
-
 class ServerProcessor
 {
 public:
-	explicit ServerProcessor( std::ostream& log );
+	explicit ServerProcessor( std::ostream& log, IJsonMessageWrite& out );
+
+	// Process messages from queue until it is not closed.
+	void Process( MessageQueue& message_queue );
+
+private:
+	struct ServerResponse
+	{
+		Json::Value result;
+		Json::Value error;
+
+		ServerResponse( Json::Object in_result ) noexcept
+			: result(std::move(in_result)), error( nullptr )
+		{}
+
+		ServerResponse( Json::Array in_result ) noexcept
+			: result(std::move(in_result)), error( nullptr )
+		{}
+
+		ServerResponse( Json::Value in_result ) noexcept
+			: result(std::move(in_result)), error( nullptr )
+		{}
+
+		ServerResponse( Json::Value in_result, Json::Value in_error ) noexcept
+			: result(std::move(in_result)), error(std::move(in_error))
+		{}
+
+		ServerResponse( const ServerResponse& )= default;
+		ServerResponse( ServerResponse&& )= default;
+
+		ServerResponse& operator=( const ServerResponse& )= default;
+		ServerResponse& operator=( ServerResponse&& )= default;
+	};
+
+private:
+	void HandleMessage( const Message& message );
+	void HandleMessageImpl( const Request& request );
+	void HandleMessageImpl( const Notification& notification );
 
 	ServerResponse HandleRequest( const Request& request );
 
 	void HandleNotification( const Notification& notification );
 
-private:
 	// Requests.
 	ServerResponse HandleRequestImpl( const Requests::Initialize& initiailize );
 	ServerResponse HandleRequestImpl( const Requests::Symbols& symbols );
@@ -73,11 +76,12 @@ private:
 	// Other stuff.
 	void GenerateDiagnosticsNotifications( const DiagnosticsByDocument& diagnostics );
 
+	void PublishNotification( std::string_view method, Json::Value params );
+
 private:
 	std::ostream& log_;
+	IJsonMessageWrite& out_;
 	DocumentManager document_manager_;
-
-	std::queue<ServerNotification> notifications_queue_;
 };
 
 } // namespace LangServer

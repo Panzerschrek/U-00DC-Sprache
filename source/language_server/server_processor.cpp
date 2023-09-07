@@ -1,4 +1,5 @@
 #include "../lex_synt_lib_common/assert.hpp"
+#include "../code_builder_lib_common/string_ref.hpp"
 #include "server_processor.hpp"
 
 namespace U
@@ -57,14 +58,52 @@ Json::Array SymbolsToJson( const std::vector<Symbol>& symbols )
 	return result;
 }
 
+Json::Value RequestIdToJson( const RequestId& id )
+{
+	return std::visit( []( const auto& el ) { return Json::Value(el); }, id );
+}
+
 } // namespace
 
-ServerProcessor::ServerProcessor( std::ostream& log )
-	: log_(log), document_manager_(log_)
+ServerProcessor::ServerProcessor( std::ostream& log, IJsonMessageWrite& out )
+	: log_(log), out_(out), document_manager_(log_)
 {
 }
 
-ServerResponse ServerProcessor::HandleRequest( const Request& request )
+void ServerProcessor::Process( MessageQueue& message_queue )
+{
+	while(true)
+	{
+		const std::optional<Message> message= message_queue.Pop();
+		if( message == std::nullopt )
+			return;
+	}
+}
+
+void ServerProcessor::HandleMessage( const Message& message )
+{
+	return std::visit( [&]( const auto& n ) { return HandleMessageImpl(n); }, message );
+}
+
+void ServerProcessor::HandleMessageImpl( const Request& request )
+{
+	ServerResponse response= HandleRequest( request );
+
+	Json::Object response_obj;
+	response_obj["id"]= RequestIdToJson(request.id);
+	response_obj["result"]= std::move(response.result);
+	if( response.error.kind() != Json::Value::Null )
+		response_obj["error"]= std::move(response.error);
+
+	out_.Write( Json::Value( std::move(response_obj) ) );
+}
+
+void ServerProcessor::HandleMessageImpl( const Notification& notification )
+{
+	HandleNotification( notification );
+}
+
+ServerProcessor::ServerResponse ServerProcessor::HandleRequest( const Request& request )
 {
 	return std::visit( [&]( const auto& r ) { return HandleRequestImpl(r); }, request.params );
 }
@@ -74,7 +113,7 @@ void ServerProcessor::HandleNotification( const Notification& notification )
 	return std::visit( [&]( const auto& n ) { return HandleNotificationImpl(n); }, notification );
 }
 
-ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Initialize& initiailize )
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Initialize& initiailize )
 {
 	(void)initiailize;
 
@@ -116,12 +155,12 @@ ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Initialize& i
 	return result;
 }
 
-ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Symbols& symbols )
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Symbols& symbols )
 {
 	return SymbolsToJson( document_manager_.GetSymbols(symbols.uri) );
 }
 
-ServerResponse ServerProcessor::HandleRequestImpl( const Requests::References& references )
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::References& references )
 {
 	Json::Array result;
 
@@ -137,7 +176,7 @@ ServerResponse ServerProcessor::HandleRequestImpl( const Requests::References& r
 	return result;
 }
 
-ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Definition& definition )
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Definition& definition )
 {
 	Json::Object result;
 
@@ -150,7 +189,7 @@ ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Definition& d
 	return result;
 }
 
-ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Complete& complete )
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Complete& complete )
 {
 	Json::Object result;
 
@@ -178,7 +217,7 @@ ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Complete& com
 	return result;
 }
 
-ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Highlight& highlight )
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Highlight& highlight )
 {
 	Json::Array result;
 
@@ -192,7 +231,7 @@ ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Highlight& hi
 	return result;
 }
 
-ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Rename& rename )
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Rename& rename )
 {
 	Json::Object result;
 
@@ -298,9 +337,17 @@ void ServerProcessor::GenerateDiagnosticsNotifications( const DiagnosticsByDocum
 			result["diagnostics"]= std::move(diagnostics);
 		}
 
-		ServerNotification notification{ "textDocument/publishDiagnostics", std::move(result) };
-		notifications_queue_.push( std::move(notification) );
+		PublishNotification( "textDocument/publishDiagnostics", std::move(result) );
 	}
+}
+
+void ServerProcessor::PublishNotification( const std::string_view method, Json::Value params )
+{
+	llvm::json::Object notification_obj;
+	notification_obj["method"]= StringViewToStringRef(method);
+	notification_obj["params"]= std::move(params);
+
+	out_.Write( Json::Value( std::move(notification_obj) ) );
 }
 
 } // namespace LangServer
