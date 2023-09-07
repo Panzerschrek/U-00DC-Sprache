@@ -4,6 +4,7 @@
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "completion.hpp"
 #include "document_symbols.hpp"
+#include "diagnostics.hpp"
 #include "text_change.hpp"
 #include "uri.hpp"
 
@@ -19,17 +20,6 @@ struct DocumentBuildOptions
 	llvm::Triple target_triple;
 	std::string prelude;
 };
-
-struct DocumentDiagnostic
-{
-	DocumentRange range;
-	std::string text;
-};
-
-using DocumentDiagnostics= std::vector<DocumentDiagnostic>;
-
-// TODO - use unordered_map.
-using DiagnosticsByDocument= std::map<Uri, DocumentDiagnostics>;
 
 class Document
 {
