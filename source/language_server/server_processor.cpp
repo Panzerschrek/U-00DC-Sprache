@@ -156,6 +156,12 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 	return result;
 }
 
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Shutdown& shutdown )
+{
+	(void)shutdown;
+	return Json::Value(nullptr);
+}
+
 ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Symbols& symbols )
 {
 	return SymbolsToJson( document_manager_.GetSymbols(symbols.uri) );

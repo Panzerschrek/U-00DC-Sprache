@@ -29,6 +29,7 @@ private:
 	std::optional<RequestParams> BuildRequestParams( std::string_view method, const Json::Value& params );
 
 	std::optional<RequestParams> ProcessInitialize( const Json::Value& params );
+	std::optional<RequestParams> ProcessShutdown( const Json::Value& params );
 	std::optional<RequestParams> ProcessTextDocumentSymbol( const Json::Value& params );
 	std::optional<RequestParams> ProcessTextDocumentReferences( const Json::Value& params );
 	std::optional<RequestParams> ProcessTextDocumentDefinition( const Json::Value& params );

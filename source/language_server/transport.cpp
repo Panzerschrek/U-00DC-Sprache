@@ -21,12 +21,16 @@ public:
 
 	std::optional<Json::Value> Read() override
 	{
+		if( in_.eof() || in_.fail() )
+			return std::nullopt;
+
+		// TODO - fix this mess, perform HTTP parsing properly.
+
 		const MessageHeader header= ReadMessageHeader();
 
 		str_.resize( header.content_length );
 		in_.read( str_.data(), header.content_length );
 		str_[header.content_length]= '\0';
-
 
 		llvm::Expected<llvm::json::Value> parse_result= llvm::json::parse( str_ );
 		if( !parse_result )

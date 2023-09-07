@@ -61,6 +61,7 @@ private:
 
 	// Requests.
 	ServerResponse HandleRequestImpl( const Requests::Initialize& initiailize );
+	ServerResponse HandleRequestImpl( const Requests::Shutdown& shutdown );
 	ServerResponse HandleRequestImpl( const Requests::Symbols& symbols );
 	ServerResponse HandleRequestImpl( const Requests::References& references );
 	ServerResponse HandleRequestImpl( const Requests::Definition& definition );

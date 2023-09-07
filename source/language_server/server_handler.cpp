@@ -140,6 +140,8 @@ std::optional<RequestParams> ServerHandler::BuildRequestParams( const std::strin
 {
 	if( method == "initialize" )
 		return ProcessInitialize( params );
+	if( method == "shutdown" )
+		return ProcessShutdown( params );
 	if( method == "textDocument/documentSymbol" )
 		return ProcessTextDocumentSymbol( params );
 	if( method == "textDocument/references" )
@@ -160,6 +162,12 @@ std::optional<RequestParams> ServerHandler::ProcessInitialize( const Json::Value
 {
 	(void)params;
 	return Requests::Initialize{};
+}
+
+std::optional<RequestParams> ServerHandler::ProcessShutdown( const Json::Value& params )
+{
+	(void)params;
+	return Requests::Shutdown{};
 }
 
 std::optional<RequestParams> ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
@@ -301,6 +309,13 @@ std::optional<RequestParams> ServerHandler::ProcessTextDocumentRename( const Jso
 
 void ServerHandler::HandleNotification( const std::string_view method, const Json::Value& params, MessageQueue& message_queue )
 {
+	if( method == "exit" )
+	{
+		// Close message queue - this causes all users of message queue to end processing.
+		message_queue.Close();
+		return;
+	}
+
 	auto notification= BuildNorification( method, params );
 	if( notification == std::nullopt )
 		return;

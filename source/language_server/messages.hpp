@@ -13,6 +13,7 @@ namespace Requests
 {
 
 struct Initialize{};
+struct Shutdown{};
 
 struct Symbols
 {
@@ -51,6 +52,7 @@ using RequestId= std::variant<std::string, int64_t>;
 
 using RequestParams= std::variant<
 	Requests::Initialize,
+	Requests::Shutdown,
 	Requests::Symbols,
 	Requests::References,
 	Requests::Definition,
