@@ -1,5 +1,5 @@
 #include <thread>
-#include "queued_server_handler.hpp"
+#include "server_handler.hpp"
 #include "server_processor.hpp"
 #include "async_server.hpp"
 
@@ -24,7 +24,7 @@ void RunAsyncServer( std::ostream& log )
 		} );
 
 	// Read messages from input using current thread.
-	QueuedServerHandler handler( log );
+	ServerHandler handler( log );
 	handler.Process( *transport.first, message_queue );
 
 	processor_tread.join();

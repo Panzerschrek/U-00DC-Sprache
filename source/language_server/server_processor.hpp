@@ -12,6 +12,7 @@ namespace U
 namespace LangServer
 {
 
+// Class that performs actual messages processing.
 class ServerProcessor
 {
 public:
