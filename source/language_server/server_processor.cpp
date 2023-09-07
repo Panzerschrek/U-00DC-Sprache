@@ -72,7 +72,7 @@ ServerProcessor::ServerProcessor( std::ostream& log, IJsonMessageWrite& out )
 
 void ServerProcessor::Process( MessageQueue& message_queue )
 {
-	while(true)
+	while(!message_queue.IsClosed())
 	{
 		const std::optional<Message> message= message_queue.Pop();
 		if( message == std::nullopt )

@@ -85,7 +85,7 @@ ServerHandler::ServerHandler( std::ostream& log )
 
 void ServerHandler::Process( IJsonMessageRead& in, MessageQueue& message_queue )
 {
-	while(true)
+	while(!message_queue.IsClosed())
 	{
 		const std::optional<Json::Value> message= in.Read();
 		if( message == std::nullopt )
