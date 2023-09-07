@@ -97,6 +97,7 @@ void PopulateDiagnostics_r(
 		DocumentDiagnostic diagnostic;
 		diagnostic.range= std::move(*range);
 		diagnostic.text= error.text;
+		diagnostic.code= CodeBuilderErrorCodeToString( error.code );
 
 		document_diagnostics.push_back( std::move(diagnostic) );
 	}

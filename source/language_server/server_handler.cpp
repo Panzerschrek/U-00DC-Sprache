@@ -640,6 +640,8 @@ void ServerHandler::GenerateDiagnosticsNotifications( const DiagnosticsByDocumen
 				out_diagnostic["message"]= diagnostic.text;
 				out_diagnostic["severity"]= 1; // Means "error"
 				out_diagnostic["range"]= DocumentRangeToJson( diagnostic.range );
+				if( !diagnostic.code.empty() )
+					out_diagnostic["code"]= diagnostic.code;
 
 				diagnostics.push_back( std::move(out_diagnostic) );
 			}

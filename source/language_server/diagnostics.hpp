@@ -13,6 +13,7 @@ struct DocumentDiagnostic
 {
 	DocumentRange range;
 	std::string text;
+	std::string code;
 };
 
 using DocumentDiagnostics= std::vector<DocumentDiagnostic>;
