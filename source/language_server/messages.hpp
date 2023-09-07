@@ -105,6 +105,7 @@ using Notification= std::variant<
 	Notifications::TextDocumentDidChange,
 	Notifications::CancelRequest >;
 
+using Message= std::variant<Request, Notification>;
 
 } // namespaceLangServer
 
