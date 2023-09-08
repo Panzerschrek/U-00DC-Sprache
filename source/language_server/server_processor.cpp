@@ -74,7 +74,7 @@ void ServerProcessor::Process( MessageQueue& message_queue )
 {
 	while(!message_queue.IsClosed())
 	{
-		// TODO - process here internal logic (like delayed rebuild).
+		document_manager_.PerfromDelayedRebuild();
 
 		// TODO - make wait time dependent on something like document rebuild timers.
 		if( const std::optional<Message> message= message_queue.TryPop( std::chrono::milliseconds(250) ) )
@@ -309,9 +309,6 @@ void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentD
 			document->SetText( *full_change );
 		else U_ASSERT(false); // Unhandled variant.
 	}
-
-	document->Rebuild(); // TODO - rebuild only if necessary.
-	GenerateDiagnosticsNotifications( document->GetDiagnostics() );
 }
 
 void ServerProcessor::HandleNotificationImpl( const Notifications::CancelRequest& cancel_request )

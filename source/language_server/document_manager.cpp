@@ -129,11 +129,10 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 				uri,
 				Document( std::move( *file_path ), build_options_, vfs_, log_ ) ) );
 
-	// Than set text.
-	// This is needed, because document itself may be requested during "SetText" call - via DocumentManagerVfs.
 	Document& document= it_bool_pair.first->second;
 	document.SetText( std::move(text) );
-	document.Rebuild();
+
+	// Do not build document right now - perform delayed rebuild later.
 
 	return &it_bool_pair.first->second;
 }
@@ -149,6 +148,24 @@ Document* DocumentManager::GetDocument( const Uri& uri )
 void DocumentManager::Close( const Uri& uri )
 {
 	documents_.erase( uri );
+}
+
+void DocumentManager::PerfromDelayedRebuild()
+{
+	const auto rebuild_delay= std::chrono::milliseconds(1000); // TODO - make it configurable.
+	for( auto& document_pair : documents_ )
+	{
+		Document& document= document_pair.second;
+		if( document.RebuildRequired() )
+		{
+			const auto current_time= DocumentClock::now();
+			const auto modification_time= document.GetModificationTime();
+			if( modification_time <= current_time && (current_time - modification_time) >= rebuild_delay )
+			{
+				document.Rebuild();
+			}
+		}
+	}
 }
 
 std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const PositionInDocument& position ) const

@@ -16,6 +16,8 @@ public:
 	Document* GetDocument( const Uri& uri );
 	void Close( const Uri& uri );
 
+	void PerfromDelayedRebuild();
+
 public: // Wrappers for document founctionality. Use them to perform proper ranges mapping.
 
 	std::optional<RangeInDocument> GetDefinitionPoint( const PositionInDocument& position ) const;

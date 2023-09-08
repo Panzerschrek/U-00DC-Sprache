@@ -99,7 +99,7 @@ private:
 	std::optional<TextChangesSequence> text_changes_since_last_valid_state_;
 
 	DocumentClock::time_point modification_time_;
-	bool rebuild_required_= false;
+	bool rebuild_required_= true;
 
 	bool in_rebuild_call_= false;
 
