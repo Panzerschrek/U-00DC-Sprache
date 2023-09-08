@@ -1,8 +1,7 @@
 #pragma once
-#include <ostream>
-#include <queue>
 #include <string_view>
 #include "json.hpp"
+#include "logger.hpp"
 #include "message_queue.hpp"
 #include "transport.hpp"
 
@@ -16,7 +15,7 @@ namespace LangServer
 class ServerHandler
 {
 public:
-	explicit ServerHandler( std::ostream& log );
+	explicit ServerHandler( Logger& log );
 
 	// Process until input channel is open.
 	void Process( IJsonMessageRead& in, MessageQueue& message_queue );
@@ -47,7 +46,7 @@ private:
 	std::optional<Notification> ProcessCancelRequest( const Json::Value& params );
 
 private:
-	std::ostream& log_;
+	Logger& log_;
 };
 
 } // namespace LangServer

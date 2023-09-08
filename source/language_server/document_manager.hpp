@@ -10,7 +10,7 @@ namespace LangServer
 class DocumentManager
 {
 public:
-	explicit DocumentManager( std::ostream& log );
+	explicit DocumentManager( Logger& log );
 
 	Document* Open( const Uri& uri, std::string text );
 	Document* GetDocument( const Uri& uri );
@@ -48,7 +48,7 @@ private:
 	class DocumentManagerVfs final : public IVfs
 	{
 	public:
-		DocumentManagerVfs( DocumentManager& document_manager, std::ostream& log );
+		DocumentManagerVfs( DocumentManager& document_manager, Logger& log );
 
 		std::optional<IVfs::FileContent> LoadFileContent( const Path& full_file_path ) override;
 
@@ -61,7 +61,7 @@ private:
 	};
 
 private:
-	std::ostream& log_;
+	Logger& log_;
 	DocumentManagerVfs vfs_;
 	const DocumentBuildOptions build_options_;
 	// TODO - use unordered map.

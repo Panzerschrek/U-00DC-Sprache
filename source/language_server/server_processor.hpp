@@ -16,7 +16,7 @@ namespace LangServer
 class ServerProcessor
 {
 public:
-	explicit ServerProcessor( std::ostream& log, IJsonMessageWrite& out );
+	explicit ServerProcessor( Logger& log, IJsonMessageWrite& out );
 
 	// Process messages from queue until it is not closed.
 	void Process( MessageQueue& message_queue );
@@ -81,7 +81,7 @@ private:
 	void PublishNotification( std::string_view method, Json::Value params );
 
 private:
-	std::ostream& log_;
+	Logger& log_;
 	IJsonMessageWrite& out_;
 	DocumentManager document_manager_;
 };
