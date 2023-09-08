@@ -14,13 +14,13 @@ namespace LangServer
 namespace
 {
 
-std::unique_ptr<IVfs> CreateBaseVfs( std::ostream& log )
+std::unique_ptr<IVfs> CreateBaseVfs( Logger& log )
 {
 	auto vfs_with_includes= CreateVfsOverSystemFS( Options::include_dir );
 	if( vfs_with_includes != nullptr )
 		return vfs_with_includes;
 
-	log << "Failed to create VFS." << std::endl;
+	log << "Failed to create VFS." << endl;
 
 	// Something went wrong. Create fallback.
 	return CreateVfsOverSystemFS( {} );
@@ -58,7 +58,7 @@ DocumentBuildOptions CreateBuildOptions()
 
 } // namespace
 
-DocumentManager::DocumentManagerVfs::DocumentManagerVfs( DocumentManager& document_manager, std::ostream& log )
+DocumentManager::DocumentManagerVfs::DocumentManagerVfs( DocumentManager& document_manager, Logger& log )
 	: document_manager_(document_manager)
 	, base_vfs_( CreateBaseVfs( log ) )
 {
@@ -79,7 +79,7 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 	}
 
 	// Load unmanaged file.
-	document_manager_.log_ << "Load unmanaged file " << full_file_path << std::endl;
+	document_manager_.log_ << "Load unmanaged file " << full_file_path << endl;
 
 	std::optional<UnmanagedFile>& unmanaged_file= document_manager_.unmanaged_files_[file_uri];
 
@@ -87,7 +87,7 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 
 	if( content == std::nullopt )
 	{
-		document_manager_.log_ << "Failed to load unmanaged file " << full_file_path << std::endl;
+		document_manager_.log_ << "Failed to load unmanaged file " << full_file_path << endl;
 		return std::nullopt;
 	}
 
@@ -103,7 +103,7 @@ IVfs::Path DocumentManager::DocumentManagerVfs::GetFullFilePath( const Path& fil
 	return base_vfs_->GetFullFilePath( file_path, full_parent_file_path );
 }
 
-DocumentManager::DocumentManager( std::ostream& log )
+DocumentManager::DocumentManager( Logger& log )
 	: log_(log)
 	// TODO - use individual VFS for different files.
 	, vfs_( *this, log_ )
@@ -116,7 +116,7 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 	std::optional<std::string> file_path= uri.AsFilePath();
 	if( file_path == std::nullopt )
 	{
-		log_ << "Can't convert URI into file path!" << std::endl;
+		log_ << "Can't convert URI into file path!" << endl;
 		return nullptr;
 	}
 
@@ -156,7 +156,7 @@ std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const Positi
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document" << position.uri.ToString() << std::endl;
+		log_ << "Can't find document" << position.uri.ToString() << endl;
 		return std::nullopt;
 	}
 
@@ -171,7 +171,7 @@ std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const Positio
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document" << position.uri.ToString() << std::endl;
+		log_ << "Can't find document" << position.uri.ToString() << endl;
 		return {};
 	}
 
@@ -183,7 +183,7 @@ std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionI
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document" << position.uri.ToString() << std::endl;
+		log_ << "Can't find document" << position.uri.ToString() << endl;
 		return {};
 	}
 
@@ -202,7 +202,7 @@ std::vector<Symbol> DocumentManager::GetSymbols( const Uri& uri ) const
 	const auto it= documents_.find( uri );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document" << uri.ToString() << std::endl;
+		log_ << "Can't find document" << uri.ToString() << endl;
 		return {};
 	}
 
@@ -214,7 +214,7 @@ std::vector<CompletionItem> DocumentManager::Complete( const PositionInDocument&
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document" << position.uri.ToString() << std::endl;
+		log_ << "Can't find document" << position.uri.ToString() << endl;
 		return {};
 	}
 

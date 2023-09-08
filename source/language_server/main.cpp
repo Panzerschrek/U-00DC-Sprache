@@ -1,28 +1,10 @@
 #include <fstream>
-#include <iostream>
 #include "../../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/Support/InitLLVM.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
 #include "options.hpp"
-#include "server.hpp"
-
-// Messy stuff.
-// Without it language server doesn't work on Windows.
-#if defined(_WIN32) || defined(_WIN64)
-#include <fcntl.h>
-#include <io.h>
-
-void PlatformInit()
-{
-	auto res = _setmode( _fileno(stdin), _O_BINARY );
-	U_ASSERT(res != -1);
-	res = _setmode( _fileno(stdout), _O_BINARY );
-	U_ASSERT(res != -1);
-}
-#else
-void PlatformInit() {}
-#endif
+#include "async_server.hpp"
 
 namespace U
 {
@@ -40,17 +22,14 @@ int Main( int argc, const char* argv[] )
 	llvm::cl::HideUnrelatedOptions( Options::options_category );
 	llvm::cl::ParseCommandLineOptions( argc, argv, "Ü-Sprache language server\n" );
 
-	PlatformInit();
-
 	std::ofstream log_file( Options::log_file_path );
+	Logger logger( log_file );
 
-	log_file << "Start language server" << std::endl;
+	logger << "Start language server" << endl;
 
-	ServerHandler handler( log_file );
-	Server server( Connection( std::cin, std::cout ), handler, log_file );
-	server.Run();
+	RunAsyncServer( logger );
 
-	log_file << "End language server" << std::endl;
+	logger << "End language server" << endl;
 
 	return 0;
 }

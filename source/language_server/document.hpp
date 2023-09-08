@@ -1,10 +1,10 @@
 #pragma once
-#include <ostream>
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "completion.hpp"
 #include "document_symbols.hpp"
 #include "diagnostics.hpp"
+#include "logger.hpp"
 #include "text_change.hpp"
 #include "uri.hpp"
 
@@ -24,7 +24,7 @@ struct DocumentBuildOptions
 class Document
 {
 public:
-	Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log );
+	Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, Logger& log );
 
 	Document( const Document& )= delete;
 	Document( Document&& )= default;
@@ -86,7 +86,7 @@ private:
 	const IVfs::Path path_;
 	const DocumentBuildOptions build_options_;
 	IVfs& vfs_;
-	std::ostream& log_;
+	Logger& log_;
 
 	std::string text_;
 	LineToLinearPositionIndex line_to_linear_position_index_; // Index is allways actual for current text.

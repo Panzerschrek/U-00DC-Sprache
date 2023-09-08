@@ -115,7 +115,7 @@ void PopulateDiagnostics(
 
 } // namespace
 
-Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, std::ostream& log )
+Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, Logger& log )
 	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
 {
 	(void)log_;
@@ -139,12 +139,12 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 	const std::optional<TextLinearPosition> linear_position_end  = DocumentPositionToLinearPosition( range.end  , text_ );
 	if( linear_position_start == std::nullopt || linear_position_end == std::nullopt )
 	{
-		log_ << "Failed to convert range into offsets!" << std::endl;
+		log_ << "Failed to convert range into offsets!" << endl;
 		return;
 	}
 	if( *linear_position_end < *linear_position_start )
 	{
-		log_ << "Wrong range: end is less than start!" << std::endl;
+		log_ << "Wrong range: end is less than start!" << endl;
 		return;
 	}
 
@@ -185,7 +185,7 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
 	{
-		log_ << "Failed to get indentifier start" << std::endl;
+		log_ << "Failed to get indentifier start" << endl;
 		return std::nullopt;
 	}
 
@@ -243,7 +243,7 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
 	{
-		log_ << "Failed to get indentifier start" << std::endl;
+		log_ << "Failed to get indentifier start" << endl;
 		return {};
 	}
 
@@ -282,11 +282,11 @@ std::vector<Symbol> Document::GetSymbols() const
 
 std::vector<CompletionItem> Document::Complete( const DocumentPosition& position )
 {
-	log_ << "Completion request " << position.line << ":" << position.character << std::endl;
+	log_ << "Completion request " << position.line << ":" << position.character << endl;
 
 	if( last_valid_state_ == std::nullopt || last_valid_state_->source_graph.nodes_storage.empty() )
 	{
-		log_ << "Can't complete - document is not compiled" << std::endl;
+		log_ << "Can't complete - document is not compiled" << endl;
 		return {};
 	}
 
@@ -296,7 +296,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	const uint32_t line= position.line;
 	if( line >= line_to_linear_position_index_.size() )
 	{
-		log_ << "Line is greater than document end" << std::endl;
+		log_ << "Line is greater than document end" << endl;
 		return {};
 	}
 	const std::string_view line_text= std::string_view(text_).substr( line_to_linear_position_index_[ line ] );
@@ -304,12 +304,12 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	const auto column_utf8= Utf16PositionToUtf8Position( line_text, position.character );
 	if( column_utf8 == std::nullopt )
 	{
-		log_ << "Can't obtain column" << std::endl;
+		log_ << "Can't obtain column" << endl;
 		return {};
 	}
 	if( *column_utf8 == 0 )
 	{
-		log_ << "Can't complete at column 0" << std::endl;
+		log_ << "Can't complete at column 0" << endl;
 		return {};
 	}
 	const TextLinearPosition column_utf8_minus_one= *column_utf8 - 1u;
@@ -317,12 +317,12 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	SrcLoc src_loc;
 	if( line_text[ column_utf8_minus_one ] == '.' )
 	{
-		log_ << "Complete for ." << std::endl;
+		log_ << "Complete for ." << endl;
 
 		const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one );
 		if( column == std::nullopt )
 		{
-			log_ << "Failed to get utf32 position" << std::endl;
+			log_ << "Failed to get utf32 position" << endl;
 			return {};
 		}
 		src_loc= SrcLoc( 0, line, *column );
@@ -340,18 +340,18 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 
 		if( !found )
 		{
-			log_ << "Can't find . lexem" << std::endl;
+			log_ << "Can't find . lexem" << endl;
 			return {};
 		}
 	}
 	else if( line_text[ column_utf8_minus_one ] == ':' && column_utf8_minus_one > 0 && line_text[ column_utf8_minus_one - 1 ] == ':' )
 	{
-		log_ << "Complete for ::" << std::endl;
+		log_ << "Complete for ::" << endl;
 
 		const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one - 1 ); // -1 to reach start of "::"
 		if( column == std::nullopt )
 		{
-			log_ << "Failed to get utf32 position" << std::endl;
+			log_ << "Failed to get utf32 position" << endl;
 			return {};
 		}
 		src_loc= SrcLoc( 0, line, *column );
@@ -369,25 +369,25 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 
 		if( !found )
 		{
-			log_ << "Can't find :: lexem" << std::endl;
+			log_ << "Can't find :: lexem" << endl;
 			return {};
 		}
 	}
 	else
 	{
-		log_ << "Complete for identifier" << std::endl;
+		log_ << "Complete for identifier" << endl;
 
 		const std::optional<TextLinearPosition> idenifier_start_utf8= GetIdentifierStartForPosition( line_text, column_utf8_minus_one );
 		if( idenifier_start_utf8 == std::nullopt )
 		{
-			log_ << "Failed to find identifer start" << std::endl;
+			log_ << "Failed to find identifer start" << endl;
 			return {};
 		}
 
 		const auto column= Utf8PositionToUtf32Position( line_text, *idenifier_start_utf8 );
 		if( column == std::nullopt )
 		{
-			log_ << "Failed to get utf32 position" << std::endl;
+			log_ << "Failed to get utf32 position" << endl;
 			return {};
 		}
 		src_loc= SrcLoc( 0, line, *column );
@@ -397,7 +397,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		{
 			if( lexem.src_loc == src_loc && lexem.type == Lexem::Type::Identifier )
 			{
-				log_ << "Complete text \"" << lexem.text << "\"" << std::endl;
+				log_ << "Complete text \"" << lexem.text << "\"" << endl;
 				lexem.type= Lexem::Type::CompletionIdentifier;
 				found= true;
 				break;
@@ -406,7 +406,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 
 		if( !found )
 		{
-			log_ << "Can't find identifier lexem" << std::endl;
+			log_ << "Can't find identifier lexem" << endl;
 			return {};
 		}
 	}
@@ -448,11 +448,11 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		FindCompletionSyntaxElement( src_loc.GetLine(), src_loc.GetColumn(), synt_result.program_elements );
 	if( lookup_result == std::nullopt )
 	{
-		log_ << "Failed to find parsed syntax element" << std::endl;
+		log_ << "Failed to find parsed syntax element" << endl;
 		return {};
 	}
 
-	log_ << "Find syntax element of kind " << lookup_result->element.index() << std::endl;
+	log_ << "Find syntax element of kind " << lookup_result->element.index() << endl;
 
 	// Use existing compiled program to perform names lookup.
 	// Do not try to compile current text, because it is broken and completion will not return what should be returned.
@@ -472,7 +472,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	}
 	else U_ASSERT( false );
 
-	log_ << "Completion found " << completion_result.size() << " results" << std::endl;
+	log_ << "Completion found " << completion_result.size() << " results" << endl;
 
 	std::vector<CompletionItem> result_transformed;
 	result_transformed.reserve( completion_result.size() );
@@ -648,7 +648,7 @@ std::optional<SrcLoc> Document::GetIdentifierStartSrcLoc( const DocumentPosition
 	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
 	if( linear_position == std::nullopt )
 	{
-		log_ << "Failed to get last valid document position" << std::endl;
+		log_ << "Failed to get last valid document position" << endl;
 		return std::nullopt;
 	}
 

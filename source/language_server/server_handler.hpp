@@ -1,9 +1,9 @@
 #pragma once
-#include <ostream>
-#include <queue>
 #include <string_view>
 #include "json.hpp"
-#include "document_manager.hpp"
+#include "logger.hpp"
+#include "message_queue.hpp"
+#include "transport.hpp"
 
 namespace U
 {
@@ -11,71 +11,42 @@ namespace U
 namespace LangServer
 {
 
-struct ServerNotification
-{
-	std::string method;
-	Json::Value params;
-};
-
-struct ServerResponse
-{
-	Json::Value result;
-	Json::Value error;
-
-	ServerResponse( Json::Object in_result )
-		: result(std::move(in_result)), error( nullptr )
-	{}
-
-	ServerResponse( Json::Array in_result )
-		: result(std::move(in_result)), error( nullptr )
-	{}
-
-	ServerResponse( Json::Value in_result )
-		: result(std::move(in_result)), error( nullptr )
-	{}
-
-	ServerResponse( Json::Value in_result, Json::Value in_error )
-		: result(std::move(in_result)), error(std::move(in_error))
-	{}
-};
-
+// Class that reads input messages and pushes them into message queue.
 class ServerHandler
 {
 public:
-	explicit ServerHandler( std::ostream& log );
+	explicit ServerHandler( Logger& log );
 
-public:
-	ServerResponse HandleRequest( std::string_view method, const Json::Value& params );
-	void HandleNotification( std::string_view method, const Json::Value& params );
-
-	// Take first notification in queue.
-	// Call this, until it returns result.
-	std::optional<ServerNotification> TakeNotification();
+	// Process until input channel is open.
+	void Process( IJsonMessageRead& in, MessageQueue& message_queue );
 
 private:
+	void HandleMessage( const Json::Value& message, MessageQueue& message_queue );
+
 	// Requests.
-	ServerResponse ProcessInitialize( const Json::Value& params );
-	ServerResponse ProcessTextDocumentSymbol( const Json::Value& params );
-	ServerResponse ProcessTextDocumentReferences( const Json::Value& params );
-	ServerResponse ProcessTextDocumentDefinition( const Json::Value& params );
-	ServerResponse ProcessTextDocumentCompletion( const Json::Value& params );
-	ServerResponse ProcessTextDocumentHighlight( const Json::Value& params );
-	ServerResponse ProcessTextDocumentRename( const Json::Value& params );
+	void HandleRequest( RequestId id, std::string_view method, const Json::Value& params, MessageQueue& message_queue );
+	std::optional<RequestParams> BuildRequestParams( std::string_view method, const Json::Value& params );
+
+	std::optional<RequestParams> ProcessInitialize( const Json::Value& params );
+	std::optional<RequestParams> ProcessShutdown( const Json::Value& params );
+	std::optional<RequestParams> ProcessTextDocumentSymbol( const Json::Value& params );
+	std::optional<RequestParams> ProcessTextDocumentReferences( const Json::Value& params );
+	std::optional<RequestParams> ProcessTextDocumentDefinition( const Json::Value& params );
+	std::optional<RequestParams> ProcessTextDocumentCompletion( const Json::Value& params );
+	std::optional<RequestParams> ProcessTextDocumentHighlight( const Json::Value& params );
+	std::optional<RequestParams> ProcessTextDocumentRename( const Json::Value& params );
 
 	// Notifications.
-	void ProcessTextDocumentDidOpen( const Json::Value& params );
-	void ProcessTextDocumentDidClose( const Json::Value& params );
-	void ProcessTextDocumentDidChange( const Json::Value& params );
-	void ProcessCancelRequest( const Json::Value& params );
+	void HandleNotification( std::string_view method, const Json::Value& params, MessageQueue& message_queue );
+	std::optional<Notification> BuildNorification( std::string_view method, const Json::Value& params );
 
-	// Other stuff.
-	void GenerateDiagnosticsNotifications( const DiagnosticsByDocument& diagnostics );
+	std::optional<Notification> ProcessTextDocumentDidOpen( const Json::Value& params );
+	std::optional<Notification> ProcessTextDocumentDidClose( const Json::Value& params );
+	std::optional<Notification> ProcessTextDocumentDidChange( const Json::Value& params );
+	std::optional<Notification> ProcessCancelRequest( const Json::Value& params );
 
 private:
-	std::ostream& log_;
-	DocumentManager document_manager_;
-
-	std::queue<ServerNotification> notifications_queue_;
+	Logger& log_;
 };
 
 } // namespace LangServer
