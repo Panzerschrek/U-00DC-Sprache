@@ -77,6 +77,8 @@ void ServerProcessor::Process( MessageQueue& message_queue )
 		const DocumentClock::duration wait_duration= document_manager_.PerfromDelayedRebuild();
 		const auto wait_ms= std::chrono::duration_cast<std::chrono::milliseconds>(wait_duration);
 
+		UpdateDiagnostics();
+
 		// Wait for new messages, but only until next document needs to be updated.
 		if( const std::optional<Message> message= message_queue.TryPop( wait_ms ) )
 			HandleMessage( *message );
@@ -316,6 +318,34 @@ void ServerProcessor::HandleNotificationImpl( const Notifications::CancelRequest
 {
 	// Assume that cancellation is performing before this handler - in messages queue itself.
 	(void)cancel_request;
+}
+
+void ServerProcessor::UpdateDiagnostics()
+{
+	if( !document_manager_.DiagnosticsWereUpdated() )
+		return; // No need to update.
+
+	// Flattan diagnostics maps - collect errors in common imported files caused by compilation of different documents.
+	const DiagnosticsBySourceDocument& diagnostics= document_manager_.GetDiagnostics();
+	DiagnosticsByDocument diagnostcs_flat;
+
+	for( const auto& document_diagnostics : diagnostics )
+		for( const auto& diagnostic_pair : document_diagnostics.second )
+			diagnostcs_flat[ diagnostic_pair.first ]= diagnostic_pair.second;
+
+	// Make sure diagnostics are unique.
+	for( auto& diagnostic_pair : diagnostcs_flat )
+	{
+		DocumentDiagnostics& document_diagnostics= diagnostic_pair.second;
+		std::sort( document_diagnostics.begin(), document_diagnostics.end() );
+		document_diagnostics.erase(
+			std::unique( document_diagnostics.begin(), document_diagnostics.end() ),
+			document_diagnostics.end() );
+	}
+
+	GenerateDiagnosticsNotifications( diagnostcs_flat );
+
+	document_manager_.ResetDiagnosticsUpdatedFlag();
 }
 
 void ServerProcessor::GenerateDiagnosticsNotifications( const DiagnosticsByDocument& diagnostics )

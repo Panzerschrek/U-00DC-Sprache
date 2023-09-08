@@ -148,6 +148,7 @@ Document* DocumentManager::GetDocument( const Uri& uri )
 void DocumentManager::Close( const Uri& uri )
 {
 	documents_.erase( uri );
+	all_diagnostics_.erase( uri );
 }
 
 DocumentClock::duration DocumentManager::PerfromDelayedRebuild()
@@ -158,6 +159,7 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild()
 	// Find document to rebuild and rebuild it (and only it).
 	for( auto& document_pair : documents_ )
 	{
+		const Uri& uri= document_pair.first;
 		Document& document= document_pair.second;
 		if( document.RebuildRequired() )
 		{
@@ -167,11 +169,15 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild()
 				document.Rebuild();
 
 				// Notify other document about change in order to trigger rebuilding of dependent documents.
-				if( const auto file_path= document_pair.first.AsFilePath() )
+				if( const auto file_path= uri.AsFilePath() )
 				{
 					for( auto& other_document_pair : documents_ )
 						other_document_pair.second.OnPossibleDependentFileChanged( *file_path );
 				}
+
+				// Take diagnostics.
+				all_diagnostics_[ uri ]= document.GetDiagnostics();
+				diagnostics_updated_= true;
 
 				// Return after first rebuilded document.
 				// Allow caller to do something else (like mesages processing).
@@ -183,19 +189,34 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild()
 
 	// Calculate minimal time to next document rebuild.
 	// Start with reasonably great value.
-	DocumentClock::duration wait_duration= std::chrono::duration_cast<DocumentClock::duration>( std::chrono::seconds(5) );
+	DocumentClock::duration wait_time= std::chrono::duration_cast<DocumentClock::duration>( std::chrono::seconds(5) );
 	for( auto& document_pair : documents_ )
 	{
 		Document& document= document_pair.second;
 		if( document.RebuildRequired() )
 		{
-			const auto update_time_point= document.GetModificationTime() + rebuild_delay;
-			if( current_time <= update_time_point )
-				wait_duration= std::min( wait_duration, update_time_point - current_time );
+			const auto update_time= document.GetModificationTime() + rebuild_delay;
+			if( current_time <= update_time )
+				wait_time= std::min( wait_time, update_time - current_time );
 		}
 	}
 
-	return wait_duration;
+	return wait_time;
+}
+
+bool DocumentManager::DiagnosticsWereUpdated() const
+{
+	return diagnostics_updated_;
+}
+
+void DocumentManager::ResetDiagnosticsUpdatedFlag()
+{
+	diagnostics_updated_= false;
+}
+
+const DiagnosticsBySourceDocument& DocumentManager::GetDiagnostics() const
+{
+	return all_diagnostics_;
 }
 
 std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const PositionInDocument& position ) const

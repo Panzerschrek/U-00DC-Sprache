@@ -21,6 +21,11 @@ public:
 	// May return zero time.
 	DocumentClock::duration PerfromDelayedRebuild();
 
+public: // Diagnostics.
+	bool DiagnosticsWereUpdated() const;
+	void ResetDiagnosticsUpdatedFlag();
+	const DiagnosticsBySourceDocument& GetDiagnostics() const;
+
 public: // Wrappers for document founctionality. Use them to perform proper ranges mapping.
 
 	std::optional<RangeInDocument> GetDefinitionPoint( const PositionInDocument& position ) const;
@@ -72,6 +77,9 @@ private:
 	// TODO - use unordered map.
 	std::map<Uri, Document> documents_;
 	std::map<Uri, std::optional<UnmanagedFile>> unmanaged_files_;
+
+	DiagnosticsBySourceDocument all_diagnostics_;
+	bool diagnostics_updated_= true;
 };
 
 } // namespace LangServer
