@@ -74,10 +74,11 @@ void ServerProcessor::Process( MessageQueue& message_queue )
 {
 	while(!message_queue.IsClosed())
 	{
-		const std::optional<Message> message= message_queue.Pop();
-		if( message == std::nullopt )
-			return;
-		HandleMessage( *message );
+		// TODO - process here internal logic (like delayed rebuild).
+
+		// TODO - make wait time dependent on something like document rebuild timers.
+		if( const std::optional<Message> message= message_queue.TryPop( std::chrono::milliseconds(250) ) )
+			HandleMessage( *message );
 	}
 }
 

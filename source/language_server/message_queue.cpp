@@ -37,25 +37,32 @@ void MessageQueue::Push( Message message )
 	condition_variable_.notify_one();
 }
 
-std::optional<Message> MessageQueue::Pop()
+std::optional<Message> MessageQueue::TryPop( const std::chrono::milliseconds wait_time )
 {
 	std::unique_lock<std::mutex> lock(mutex_);
 
-	while(true)
+	if( closed_.load() )
+		return std::nullopt;
+
+	// Check if queue is non-empty first.
+	if( !queue_.empty() )
 	{
-		if( closed_.load() )
-			return std::nullopt;
+		Message result= queue_.front();
+		queue_.pop_front();
+		return std::move(result);
+	}
 
-		if( !queue_.empty() )
-		{
-			Message result= queue_.front();
-			queue_.pop_front();
-			return std::move(result);
-		}
+	// Wait a bit.
+	condition_variable_.wait_for( lock, wait_time );
 
-		// Wait until next iteration.
-		// If notification is recived or spurious wakeup happens continue checking closed flag and queue in loop.
-		condition_variable_.wait(lock);
+	// Check if queue is non-empty again.
+	// It may be non-empty if new message was pushed.
+	// But is also may be empty if timeout has expired or in case of spurious wakeup.
+	if( !queue_.empty() )
+	{
+		Message result= queue_.front();
+		queue_.pop_front();
+		return std::move(result);
 	}
 
 	return std::nullopt;

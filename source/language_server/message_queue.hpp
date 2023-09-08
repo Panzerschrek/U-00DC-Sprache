@@ -24,9 +24,9 @@ public:
 	void Push( Message message );
 
 	// Extract message from queue.
-	// Blocks until new message not added.
-	// Returns nullopt if Queue is closed.
-	std::optional<Message> Pop();
+	// Blocks until new message not added or timeout is expired, but may return earlier.
+	// Returns nullopt if there is no messages in the queue or if queue is closed.
+	std::optional<Message> TryPop( std::chrono::milliseconds wait_time );
 
 	void Close();
 	bool IsClosed() const;
