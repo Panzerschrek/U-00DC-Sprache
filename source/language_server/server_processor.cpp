@@ -330,8 +330,12 @@ void ServerProcessor::UpdateDiagnostics()
 	DiagnosticsByDocument diagnostcs_flat;
 
 	for( const auto& document_diagnostics : diagnostics )
+	{
+		diagnostcs_flat[ document_diagnostics.first ]; // Force create entry for owned document in order to clear previous diagnostics.
+
 		for( const auto& diagnostic_pair : document_diagnostics.second )
 			diagnostcs_flat[ diagnostic_pair.first ]= diagnostic_pair.second;
+	}
 
 	// Make sure diagnostics are unique.
 	for( auto& diagnostic_pair : diagnostcs_flat )
