@@ -1,4 +1,5 @@
 #pragma once
+#include "logger.hpp"
 
 namespace U
 {
@@ -6,8 +7,7 @@ namespace U
 namespace LangServer
 {
 
-// Log must be thread-safe!
-void RunAsyncServer( std::ostream& log );
+void RunAsyncServer( Logger& log );
 
 } // namespace LangServer
 

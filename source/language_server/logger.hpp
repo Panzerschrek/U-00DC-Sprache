@@ -27,8 +27,7 @@ public:
 
 	Logger& operator<<( Logger& (*manipulator)(Logger&) )
 	{
-		manipulator(*this);
-		return *this;
+		return manipulator(*this);
 	}
 
 	void endl()

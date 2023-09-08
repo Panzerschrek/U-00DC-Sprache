@@ -2,6 +2,23 @@
 #include "../lex_synt_lib_common/assert.hpp"
 #include "transport.hpp"
 
+// Messy stuff.
+// Without it language server doesn't work on Windows.
+#if defined(_WIN32) || defined(_WIN64)
+#include <fcntl.h>
+#include <io.h>
+
+void PlatformInit()
+{
+	auto res = _setmode( _fileno(stdin), _O_BINARY );
+	U_ASSERT(res != -1);
+	res = _setmode( _fileno(stdout), _O_BINARY );
+	U_ASSERT(res != -1);
+}
+#else
+void PlatformInit() {}
+#endif
+
 namespace U
 {
 
@@ -94,7 +111,7 @@ private:
 
 private:
 	std::istream& in_;
-	std::string str_;
+	std::string str_; // Reuse input buffer.
 };
 
 class JsonMessageWrite final : public IJsonMessageWrite
@@ -122,13 +139,14 @@ public:
 
 private:
 	std::ostream& out_;
-	std::string str_;
+	std::string str_; // Reuse output buffer.
 };
 
 } // namespace
 
 std::pair<IJsonMessageReadPtr, IJsonMessageWritePtr> OpenJSONStdioTransport()
 {
+	PlatformInit();
 	return std::make_pair( std::make_unique<JsonMessageRead>( std::cin ), std::make_unique<JsonMessageWrite>( std::cout ) );
 }
 
