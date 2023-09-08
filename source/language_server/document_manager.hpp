@@ -16,7 +16,10 @@ public:
 	Document* GetDocument( const Uri& uri );
 	void Close( const Uri& uri );
 
-	void PerfromDelayedRebuild();
+	// Returns duration to next document update. This method may be called again after returned time is passed.
+	// It is possible to call this method earlier, but it likely will not rebuild anything.
+	// May return zero time.
+	DocumentClock::duration PerfromDelayedRebuild();
 
 public: // Wrappers for document founctionality. Use them to perform proper ranges mapping.
 

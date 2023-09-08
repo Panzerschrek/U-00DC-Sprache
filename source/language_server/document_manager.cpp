@@ -150,15 +150,17 @@ void DocumentManager::Close( const Uri& uri )
 	documents_.erase( uri );
 }
 
-void DocumentManager::PerfromDelayedRebuild()
+DocumentClock::duration DocumentManager::PerfromDelayedRebuild()
 {
 	const auto rebuild_delay= std::chrono::milliseconds(1000); // TODO - make it configurable.
+	const auto current_time= DocumentClock::now();
+
+	// Find document to rebuild and rebuild it (and only it).
 	for( auto& document_pair : documents_ )
 	{
 		Document& document= document_pair.second;
 		if( document.RebuildRequired() )
 		{
-			const auto current_time= DocumentClock::now();
 			const auto modification_time= document.GetModificationTime();
 			if( modification_time <= current_time && (current_time - modification_time) >= rebuild_delay )
 			{
@@ -170,9 +172,30 @@ void DocumentManager::PerfromDelayedRebuild()
 					for( auto& other_document_pair : documents_ )
 						other_document_pair.second.OnPossibleDependentFileChanged( *file_path );
 				}
+
+				// Return after first rebuilded document.
+				// Allow caller to do something else (like mesages processing).
+				// If caller has nothing to do it will call this method again.
+				return DocumentClock::duration(0);
 			}
 		}
 	}
+
+	// Calculate minimal time to next document rebuild.
+	// Start with reasonably great value.
+	DocumentClock::duration wait_duration= std::chrono::duration_cast<DocumentClock::duration>( std::chrono::seconds(5) );
+	for( auto& document_pair : documents_ )
+	{
+		Document& document= document_pair.second;
+		if( document.RebuildRequired() )
+		{
+			const auto update_time_point= document.GetModificationTime() + rebuild_delay;
+			if( current_time <= update_time_point )
+				wait_duration= std::min( wait_duration, update_time_point - current_time );
+		}
+	}
+
+	return wait_duration;
 }
 
 std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const PositionInDocument& position ) const

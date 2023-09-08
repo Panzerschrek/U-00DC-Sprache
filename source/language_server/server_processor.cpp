@@ -74,10 +74,11 @@ void ServerProcessor::Process( MessageQueue& message_queue )
 {
 	while(!message_queue.IsClosed())
 	{
-		document_manager_.PerfromDelayedRebuild();
+		const DocumentClock::duration wait_duration= document_manager_.PerfromDelayedRebuild();
+		const auto wait_ms= std::chrono::duration_cast<std::chrono::milliseconds>(wait_duration);
 
-		// TODO - make wait time dependent on something like document rebuild timers.
-		if( const std::optional<Message> message= message_queue.TryPop( std::chrono::milliseconds(250) ) )
+		// Wait for new messages, but only until next document needs to be updated.
+		if( const std::optional<Message> message= message_queue.TryPop( wait_ms ) )
 			HandleMessage( *message );
 	}
 }
