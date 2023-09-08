@@ -1,6 +1,7 @@
 #pragma once
 #include <optional>
 #include "json.hpp"
+#include "logger.hpp"
 
 namespace U
 {
@@ -30,7 +31,8 @@ using IJsonMessageWritePtr= std::unique_ptr<IJsonMessageWrite>;
 
 // Returns a pair of read/write channels.
 // It is safe to use result channels in separate threads, but not to share each channel accross threads.
-std::pair<IJsonMessageReadPtr, IJsonMessageWritePtr> OpenJSONStdioTransport();
+// Reference to logger must live long enough.
+std::pair<IJsonMessageReadPtr, IJsonMessageWritePtr> OpenJSONStdioTransport( Logger& log );
 
 } // namespace LangServer
 

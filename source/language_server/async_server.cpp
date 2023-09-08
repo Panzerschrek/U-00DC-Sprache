@@ -12,7 +12,7 @@ namespace LangServer
 
 void RunAsyncServer( Logger& log )
 {
-	const auto transport= OpenJSONStdioTransport();
+	const auto transport= OpenJSONStdioTransport( log );
 	MessageQueue message_queue;
 
 	// Process messages using additional thread.

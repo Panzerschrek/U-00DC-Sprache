@@ -31,86 +31,70 @@ namespace
 class JsonMessageRead final : public IJsonMessageRead
 {
 public:
-	explicit JsonMessageRead( std::istream& in )
-		: in_(in)
-	{
-	}
+	explicit JsonMessageRead( std::istream& in, Logger& log )
+		: in_(in), log_(log)
+	{}
 
 	std::optional<Json::Value> Read() override
 	{
-		if( in_.eof() || in_.fail() )
+		std::optional<size_t> content_length;
+		while(true)
+		{
+			if( in_.eof() || in_.fail() )
+			{
+				log_ << "Transport close or fail" << endl;
+				return std::nullopt;
+			}
+
+			std::getline( in_, str_ );
+
+			llvm::StringRef line_ref = str_;
+			if( line_ref.consume_front("Content-Length: ") )
+			{
+				unsigned long long l= 0;
+				const bool parse_error= llvm::getAsUnsignedInteger( line_ref.trim(), 0, l );
+				if( parse_error )
+				{
+					log_ << "Failed to parse Content-Length!" << endl;
+					break;
+				}
+				else
+				{
+					content_length= size_t(l);
+					continue;
+				}
+			}
+
+			if( line_ref.trim().empty() ) // End of headers.
+				break;
+		}
+
+		if( content_length == std::nullopt )
+		{
+			log_ << "No Content-Length!" << endl;
 			return std::nullopt;
+		}
 
-		// TODO - fix this mess, perform HTTP parsing properly.
+		if( content_length >= 128 * 1024 * 1024 )
+			return std::nullopt; // Protection agains overflows.
 
-		const MessageHeader header= ReadMessageHeader();
-
-		str_.resize( header.content_length );
-		in_.read( str_.data(), header.content_length );
-		str_[header.content_length]= '\0';
+		str_.resize( *content_length );
+		in_.read( str_.data(), std::streamsize(*content_length) );
+		str_[ *content_length ]= '\0';
 
 		llvm::Expected<llvm::json::Value> parse_result= llvm::json::parse( str_ );
 		if( !parse_result )
+		{
+			log_ << "Failed to parse JSON" << endl;
 			return std::nullopt;
+		}
 
 		return std::move(parse_result.get());
 	}
 
 private:
-	struct MessageHeader
-	{
-		uint32_t content_length= 0;
-		std::string content_type;
-	};
-
-private:
-	MessageHeader ReadMessageHeader()
-	{
-		MessageHeader header;
-		while (ReadMessageHeaderPart(header)){}
-		return header;
-	}
-
-	bool ReadMessageHeaderPart( MessageHeader& header )
-	{
-		if( in_.peek() == '\r' )
-		{
-			const auto c1= in_.get();
-			const auto c2= in_.get();
-			U_ASSERT(c1 == '\r' && c2 == '\n');
-			return false;
-		}
-
-		// We assume it's 'Content-'
-		U_ASSERT( in_.peek() == 'C' );
-		in_.ignore(8);
-		if( in_.peek() == 'L' )
-		{
-			// We assume 'Content-Length: '
-			in_.ignore(8);
-			in_ >> header.content_length;
-		}
-		else
-		{
-			// We assume 'Content-Type: '
-			U_ASSERT( in_.peek() == 'T' );
-			in_.ignore(6);
-			header.content_type.clear();
-			while( in_.peek() != '\r' )
-			{
-				header.content_type += char(in_.get());
-			}
-		}
-
-		// Assume good delimeters
-		const auto c1= in_.get();
-		const auto c2= in_.get();
-		U_ASSERT(c1 == '\r' && c2 == '\n');
-		return true;
-	}
-
-private:
 	std::istream& in_;
+	Logger& log_;
 	std::string str_; // Reuse input buffer.
 };
 
@@ -119,8 +103,7 @@ class JsonMessageWrite final : public IJsonMessageWrite
 public:
 	explicit JsonMessageWrite( std::ostream& out )
 		: out_(out)
-	{
-	}
+	{}
 
 	void Write( const Json::Value& value ) override
 	{
@@ -144,10 +127,10 @@ private:
 
 } // namespace
 
-std::pair<IJsonMessageReadPtr, IJsonMessageWritePtr> OpenJSONStdioTransport()
+std::pair<IJsonMessageReadPtr, IJsonMessageWritePtr> OpenJSONStdioTransport( Logger& log )
 {
 	PlatformInit();
-	return std::make_pair( std::make_unique<JsonMessageRead>( std::cin ), std::make_unique<JsonMessageWrite>( std::cout ) );
+	return std::make_pair( std::make_unique<JsonMessageRead>( std::cin, log ), std::make_unique<JsonMessageWrite>( std::cout ) );
 }
 
 } // namespace LangServer
