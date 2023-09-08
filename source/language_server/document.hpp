@@ -21,6 +21,8 @@ struct DocumentBuildOptions
 	std::string prelude;
 };
 
+using DocumentClock= std::chrono::steady_clock;
+
 class Document
 {
 public:
@@ -39,6 +41,10 @@ public: // Document text stuff.
 
 	// Returns text of last valid state or raw text if there is no last valid state.
 	const std::string& GetTextForCompilation() const;
+
+public: // State tracking.
+	DocumentClock::time_point GetModificationTime() const;
+	bool RebuildRequired() const;
 
 public: // Diagnostics.
 
@@ -91,6 +97,9 @@ private:
 	std::string text_;
 	LineToLinearPositionIndex line_to_linear_position_index_; // Index is allways actual for current text.
 	std::optional<TextChangesSequence> text_changes_since_last_valid_state_;
+
+	DocumentClock::time_point modification_time_;
+	bool rebuild_required_= false;
 
 	bool in_rebuild_call_= false;
 
