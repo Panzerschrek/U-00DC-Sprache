@@ -2,7 +2,7 @@
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
-#include <queue>
+#include <deque>
 #include "messages.hpp"
 
 namespace U
@@ -34,7 +34,7 @@ public:
 private:
 	std::mutex mutex_;
 	std::condition_variable condition_variable_;
-	std::queue<Message> queue_;
+	std::deque<Message> queue_;
 	std::atomic<bool> closed_{ false };
 };
 

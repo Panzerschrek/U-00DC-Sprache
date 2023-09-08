@@ -315,7 +315,7 @@ void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentD
 
 void ServerProcessor::HandleNotificationImpl( const Notifications::CancelRequest& cancel_request )
 {
-	// TODO
+	// Assume that cancellation is performing before this handler - in messages queue itself.
 	(void)cancel_request;
 }
 

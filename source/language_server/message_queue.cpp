@@ -11,7 +11,28 @@ void MessageQueue::Push( Message message )
 {
 	{
 		const std::lock_guard<std::mutex> guard(mutex_);
-		queue_.push( std::move(message) );
+
+		// Process cancellation specially - clear requests from queue.
+		if( const auto notification= std::get_if<Notification>( &message ) )
+		{
+			if( const auto cancel= std::get_if<Notifications::CancelRequest>( notification ) )
+			{
+				const auto new_end_it=
+					std::remove_if(
+						queue_.begin(), queue_.end(),
+						[&]( const Message& m )
+						{
+							if( const auto request= std::get_if<Request>( &m ) )
+								return request->id == cancel->id;
+							return false;
+						} );
+
+				queue_.erase( new_end_it, queue_.end() );
+				return;
+			}
+		}
+
+		queue_.push_back( std::move(message) );
 	}
 	condition_variable_.notify_one();
 }
@@ -28,7 +49,7 @@ std::optional<Message> MessageQueue::Pop()
 		if( !queue_.empty() )
 		{
 			Message result= queue_.front();
-			queue_.pop();
+			queue_.pop_front();
 			return std::move(result);
 		}
 
