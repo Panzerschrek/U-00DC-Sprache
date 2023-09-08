@@ -77,7 +77,6 @@ Language server
 *) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
 *) Highlighting for overloaded operators
 *) Create TargetMachine to obtain proper data layout
-*) Async requests handling
 *) Rebuild documents, depending on other documents
 *) Delayed documents rebuild
 *) Support various end of line combinations "\n", "\r\n", "\r"
