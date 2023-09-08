@@ -163,6 +163,13 @@ void DocumentManager::PerfromDelayedRebuild()
 			if( modification_time <= current_time && (current_time - modification_time) >= rebuild_delay )
 			{
 				document.Rebuild();
+
+				// Notify other document about change in order to trigger rebuilding of dependent documents.
+				if( const auto file_path= document_pair.first.AsFilePath() )
+				{
+					for( auto& other_document_pair : documents_ )
+						other_document_pair.second.OnPossibleDependentFileChanged( *file_path );
+				}
 			}
 		}
 	}

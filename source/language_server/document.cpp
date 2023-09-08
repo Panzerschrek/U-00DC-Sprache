@@ -188,6 +188,27 @@ bool Document::RebuildRequired() const
 	return rebuild_required_;
 }
 
+void Document::OnPossibleDependentFileChanged( const IVfs::Path& file_path_normalized )
+{
+	if( file_path_normalized == path_ )
+		return; // Do not process changes of itself.
+
+	if( last_valid_state_ == std::nullopt )
+		return;
+
+	for( const SourceGraph::Node& node : last_valid_state_->source_graph.nodes_storage )
+	{
+		if( node.file_path == file_path_normalized )
+		{
+			// If this is one of dependent files - trigger delayed rebuild of this document.
+			// TODO - maybe avoid updating maodification time and thus trigger immediate rebuild?
+			modification_time_= DocumentClock::now();
+			rebuild_required_= true;
+			return;
+		}
+	}
+}
+
 const DiagnosticsByDocument& Document::GetDiagnostics() const
 {
 	return diagnostics_;

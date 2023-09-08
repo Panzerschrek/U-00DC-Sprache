@@ -46,6 +46,8 @@ public: // State tracking.
 	DocumentClock::time_point GetModificationTime() const;
 	bool RebuildRequired() const;
 
+	void OnPossibleDependentFileChanged( const IVfs::Path& file_path_normalized );
+
 public: // Diagnostics.
 
 	// Diagnostics are generated not only for this document, but also for opened files.
