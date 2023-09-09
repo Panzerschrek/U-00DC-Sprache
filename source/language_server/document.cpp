@@ -311,10 +311,20 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 
 std::vector<Symbol> Document::GetSymbols() const
 {
-	if( last_valid_state_ == std::nullopt )
+	if( last_valid_state_ != std::nullopt )
+	{
+		// Normal case - use last valid state of syntax tree in order to build symbols.
+		return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
+	}
+
+	// Backup for cases when document is not compiled yet.
+	// Since first document build may be delayed we need to provide symbols just after document was opened.
+	const SourceGraph source_graph= LoadSourceGraph( vfs_, CalculateSourceFileContentsHash, path_, build_options_.prelude );
+
+	if( source_graph.nodes_storage.empty() )
 		return {};
 
-	return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
+	return BuildSymbols( source_graph.nodes_storage.front().ast.program_elements );
 }
 
 std::vector<CompletionItem> Document::Complete( const DocumentPosition& position )
