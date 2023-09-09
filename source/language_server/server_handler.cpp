@@ -76,96 +76,19 @@ std::optional<PositionInDocument> JsonToPositionInDocument( const Json::Object& 
 	return PositionInDocument{ std::move(*position), std::move(*uri_parsed) };
 }
 
-} // namespace
-
-ServerHandler::ServerHandler( Logger& log )
-	: log_(log)
-{
-}
-
-void ServerHandler::Process( IJsonMessageRead& in, MessageQueue& message_queue )
-{
-	while(!message_queue.IsClosed())
-	{
-		const std::optional<Json::Value> message= in.Read();
-		if( message == std::nullopt )
-			return;
-
-		HandleMessage( *message, message_queue );
-	}
-}
-
-void ServerHandler::HandleMessage( const Json::Value& message, MessageQueue& message_queue )
-{
-	const Json::Object* const obj= message.getAsObject();
-	if( obj == nullptr )
-	{
-		log_() << "JSON is not an object" << std::endl;
-		return;
-	}
-
-	std::string method;
-	if( const auto method_json= obj->getString( "method" ) )
-		method= method_json->str();
-
-	Json::Value params= Json::Object();
-	if( const auto params_json= obj->get( "params" ) )
-		params= *params_json;
-
-	if( const Json::Value* const id_json= obj->get( "id" ) )
-	{
-		auto id= ParseRequestId( *id_json );
-		if( id == std::nullopt )
-		{
-			log_() << "Failed to pase id!" << std::endl;
-			return;
-		}
-		HandleRequest( std::move(*id), method, params, message_queue );
-	}
-	else
-		HandleNotification( method, params, message_queue );
-}
-
-void ServerHandler::HandleRequest( RequestId id, const std::string_view method, const Json::Value& params, MessageQueue& message_queue )
-{
-	message_queue.Push( Request{ std::move(id), BuildRequestParams( method, params ) } );
-}
-
-RequestParams ServerHandler::BuildRequestParams( const std::string_view method, const Json::Value& params )
-{
-	if( method == "initialize" )
-		return ProcessInitialize( params );
-	if( method == "shutdown" )
-		return ProcessShutdown( params );
-	if( method == "textDocument/documentSymbol" )
-		return ProcessTextDocumentSymbol( params );
-	if( method == "textDocument/references" )
-		return ProcessTextDocumentReferences( params );
-	if( method == "textDocument/definition" )
-		return ProcessTextDocumentDefinition( params );
-	if( method == "textDocument/completion" )
-		return ProcessTextDocumentCompletion( params );
-	if( method == "textDocument/documentHighlight" )
-		return ProcessTextDocumentHighlight( params );
-	if( method == "textDocument/rename" )
-		return ProcessTextDocumentRename( params );
-
-	return MethodNotFound{ std::string(method) };
-}
-
-RequestParams ServerHandler::ProcessInitialize( const Json::Value& params )
+RequestParams ParseInitialize( const Json::Value& params )
 {
 	(void)params;
 	return Requests::Initialize{};
 }
 
-RequestParams ServerHandler::ProcessShutdown( const Json::Value& params )
+RequestParams ParseShutdown( const Json::Value& params )
 {
 	(void)params;
 	return Requests::Shutdown{};
 }
 
-RequestParams ServerHandler::ProcessTextDocumentSymbol( const Json::Value& params )
+RequestParams ParseTextDocumentSymbol( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -186,7 +109,7 @@ RequestParams ServerHandler::ProcessTextDocumentSymbol( const Json::Value& param
 	return Requests::Symbols{ std::move(*uri_parsed) };
 }
 
-RequestParams ServerHandler::ProcessTextDocumentReferences( const Json::Value& params )
+RequestParams ParseTextDocumentReferences( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -199,7 +122,7 @@ RequestParams ServerHandler::ProcessTextDocumentReferences( const Json::Value& p
 	return Requests::References{ std::move( *position_in_document ) };
 }
 
-RequestParams ServerHandler::ProcessTextDocumentDefinition( const Json::Value& params )
+RequestParams ParseTextDocumentDefinition( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -212,7 +135,7 @@ RequestParams ServerHandler::ProcessTextDocumentDefinition( const Json::Value& p
 	return Requests::Definition{ std::move( *position_in_document ) };
 }
 
-RequestParams ServerHandler::ProcessTextDocumentCompletion( const Json::Value& params )
+RequestParams ParseTextDocumentCompletion( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -225,7 +148,7 @@ RequestParams ServerHandler::ProcessTextDocumentCompletion( const Json::Value& p
 	return Requests::Complete{ std::move( *position_in_document ) };
 }
 
-RequestParams ServerHandler::ProcessTextDocumentHighlight( const Json::Value& params )
+RequestParams ParseTextDocumentHighlight( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -238,7 +161,7 @@ RequestParams ServerHandler::ProcessTextDocumentHighlight( const Json::Value& pa
 	return Requests::Highlight{ std::move( *position_in_document ) };
 }
 
-RequestParams ServerHandler::ProcessTextDocumentRename( const Json::Value& params )
+RequestParams ParseTextDocumentRename( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -255,33 +178,34 @@ RequestParams ServerHandler::ProcessTextDocumentRename( const Json::Value& param
 	return Requests::Rename{ std::move( *position_in_document ), new_name->str() };
 }
 
-void ServerHandler::HandleNotification( const std::string_view method, const Json::Value& params, MessageQueue& message_queue )
+RequestParams ParseRequestParams( const std::string_view method, const Json::Value& params )
 {
-	if( method == "exit" )
-	{
-		// Close message queue - this causes all users of message queue to end processing.
-		message_queue.Close();
-		return;
-	}
-
-	message_queue.Push( BuildNorification( method, params ) );
-}
-
-Notification ServerHandler::BuildNorification( const std::string_view method, const Json::Value& params )
-{
-	if( method == "textDocument/didOpen" )
-		return ProcessTextDocumentDidOpen( params );
-	if( method == "textDocument/didClose" )
-		return ProcessTextDocumentDidClose( params );
-	if( method == "textDocument/didChange" )
-		return ProcessTextDocumentDidChange( params );
-	if( method == "$/cancelRequest" )
-		return ProcessCancelRequest( params );
+	if( method == "initialize" )
+		return ParseInitialize( params );
+	if( method == "shutdown" )
+		return ParseShutdown( params );
+	if( method == "textDocument/documentSymbol" )
+		return ParseTextDocumentSymbol( params );
+	if( method == "textDocument/references" )
+		return ParseTextDocumentReferences( params );
+	if( method == "textDocument/definition" )
+		return ParseTextDocumentDefinition( params );
+	if( method == "textDocument/completion" )
+		return ParseTextDocumentCompletion( params );
+	if( method == "textDocument/documentHighlight" )
+		return ParseTextDocumentHighlight( params );
+	if( method == "textDocument/rename" )
+		return ParseTextDocumentRename( params );
 
 	return MethodNotFound{ std::string(method) };
 }
 
-Notification ServerHandler::ProcessTextDocumentDidOpen( const Json::Value& params )
+void HandleRequest( RequestId id, const std::string_view method, const Json::Value& params, MessageQueue& message_queue )
+{
+	message_queue.Push( Request{ std::move(id), ParseRequestParams( method, params ) } );
+}
+
+Notification ParseTextDocumentDidOpen( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -306,7 +230,7 @@ Notification ServerHandler::ProcessTextDocumentDidOpen( const Json::Value& param
 	return Notifications::TextDocumentDidOpen{ std::move( *uri_parsed ), text->str() };
 }
 
-Notification ServerHandler::ProcessTextDocumentDidClose( const Json::Value& params )
+Notification ParseTextDocumentDidClose( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -327,7 +251,7 @@ Notification ServerHandler::ProcessTextDocumentDidClose( const Json::Value& para
 	return Notifications::TextDocumentDidClose{ std::move( *uri_parsed ) };
 }
 
-Notification ServerHandler::ProcessTextDocumentDidChange( const Json::Value& params )
+Notification ParseTextDocumentDidChange( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -362,7 +286,6 @@ Notification ServerHandler::ProcessTextDocumentDidChange( const Json::Value& par
 		if( change_obj == nullptr )
 			return InvalidParams{ "Change is not an object!" };
 
-
 		const auto change_text= change_obj->get("text");
 		if( change_text == nullptr )
 			return InvalidParams{ "No change text!" };
@@ -386,7 +309,7 @@ Notification ServerHandler::ProcessTextDocumentDidChange( const Json::Value& par
 	return std::move(change_notification);
 }
 
-Notification ServerHandler::ProcessCancelRequest( const Json::Value& params )
+Notification ParseCancelRequest( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
@@ -401,6 +324,77 @@ Notification ServerHandler::ProcessCancelRequest( const Json::Value& params )
 		return InvalidParams{ "Failed to parse request id!" };
 
 	return Notifications::CancelRequest{ std::move(*id_parsed) };
+}
+
+Notification ParseNorification( const std::string_view method, const Json::Value& params )
+{
+	if( method == "textDocument/didOpen" )
+		return ParseTextDocumentDidOpen( params );
+	if( method == "textDocument/didClose" )
+		return ParseTextDocumentDidClose( params );
+	if( method == "textDocument/didChange" )
+		return ParseTextDocumentDidChange( params );
+	if( method == "$/cancelRequest" )
+		return ParseCancelRequest( params );
+
+	return MethodNotFound{ std::string(method) };
+}
+
+void HandleNotification( const std::string_view method, const Json::Value& params, MessageQueue& message_queue )
+{
+	if( method == "exit" )
+	{
+		// Close message queue - this causes all users of message queue to end processing.
+		message_queue.Close();
+		return;
+	}
+
+	message_queue.Push( ParseNorification( method, params ) );
+}
+
+void HandleMessage( const Json::Value& message, MessageQueue& message_queue, Logger& log )
+{
+	const Json::Object* const obj= message.getAsObject();
+	if( obj == nullptr )
+	{
+		log() << "JSON is not an object" << std::endl;
+		return;
+	}
+
+	std::string method;
+	if( const auto method_json= obj->getString( "method" ) )
+		method= method_json->str();
+
+	Json::Value params= Json::Object();
+	if( const auto params_json= obj->get( "params" ) )
+		params= *params_json;
+
+	if( const Json::Value* const id_json= obj->get( "id" ) )
+	{
+		auto id= ParseRequestId( *id_json );
+		if( id == std::nullopt )
+		{
+			log() << "Failed to pase id!" << std::endl;
+			return;
+		}
+		HandleRequest( std::move(*id), method, params, message_queue );
+	}
+	else
+		HandleNotification( method, params, message_queue );
+}
+
+} // namespace
+
+void ProcessMessages( IJsonMessageRead& in, MessageQueue& message_queue, Logger& log )
+{
+	while(!message_queue.IsClosed())
+	{
+		const std::optional<Json::Value> message= in.Read();
+		if( message == std::nullopt )
+			return;
+
+		HandleMessage( *message, message_queue, log );
+	}
 }
 
 } // namespace LangServer
