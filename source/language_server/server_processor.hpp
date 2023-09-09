@@ -87,6 +87,7 @@ private:
 	Logger& log_;
 	IJsonMessageWrite& out_;
 	DocumentManager document_manager_;
+	bool shutdown_received_= false;
 };
 
 } // namespace LangServer

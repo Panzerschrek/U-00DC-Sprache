@@ -110,6 +110,14 @@ void ServerProcessor::HandleMessageImpl( const Notification& notification )
 
 ServerProcessor::ServerResponse ServerProcessor::HandleRequest( const Request& request )
 {
+	if( shutdown_received_ )
+	{
+		Json::Object error;
+		error["code"]= int32_t(ErrorCode::InvalidRequest);
+		error["message"]= "Should not recieve more requests after shutdown.";
+		return ServerResponse( Json::Object(), Json::Value(std::move(error)) );
+	}
+
 	return std::visit( [&]( const auto& r ) { return HandleRequestImpl(r); }, request.params );
 }
 
@@ -179,6 +187,7 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Shutdown& shutdown )
 {
 	(void)shutdown;
+	shutdown_received_= true;
 	return Json::Value(nullptr);
 }
 
