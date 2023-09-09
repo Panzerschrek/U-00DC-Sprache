@@ -462,7 +462,7 @@ U_TEST(TempVariablesMovingTest8_MoveVariableFromFunctionResultWithMutableReferen
 		fn Foo() : i32
 		{
 			var i32 mut i= 45;
-			auto box= BoxIt(i); // Function result contains mutable reference. If we just copy it, we recieve reference protection error. But, with moving, all must be ok.
+			auto box= BoxIt(i); // Function result contains mutable reference. If we just copy it, we get reference protection error. But, with moving, all must be ok.
 			box.r= 856;
 			return box.r;
 		}

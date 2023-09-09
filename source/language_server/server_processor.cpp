@@ -116,7 +116,7 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequest( const Request& r
 
 		Json::Object error;
 		error["code"]= int32_t(ErrorCode::InvalidRequest);
-		error["message"]= "Should not recieve more requests after shutdown.";
+		error["message"]= "Should not receive more requests after shutdown.";
 		return ServerResponse( Json::Object(), Json::Value(std::move(error)) );
 	}
 
