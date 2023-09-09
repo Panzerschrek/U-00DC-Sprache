@@ -134,7 +134,7 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 
 	// Do not build document right now - perform delayed rebuild later.
 
-	return &it_bool_pair.first->second;
+	return &document;
 }
 
 Document* DocumentManager::GetDocument( const Uri& uri )
@@ -168,7 +168,7 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild()
 			{
 				document.Rebuild();
 
-				// Notify other document about change in order to trigger rebuilding of dependent documents.
+				// Notify other documents about change in order to trigger rebuilding of dependent documents.
 				if( const auto file_path= uri.AsFilePath() )
 				{
 					for( auto& other_document_pair : documents_ )

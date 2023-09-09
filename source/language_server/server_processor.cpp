@@ -325,13 +325,13 @@ void ServerProcessor::UpdateDiagnostics()
 	if( !document_manager_.DiagnosticsWereUpdated() )
 		return; // No need to update.
 
-	// Flattan diagnostics maps - collect errors in common imported files caused by compilation of different documents.
-	const DiagnosticsBySourceDocument& diagnostics= document_manager_.GetDiagnostics();
+	// Flatten diagnostics maps - collect errors in common imported files caused by compilation of different documents.
 	DiagnosticsByDocument diagnostcs_flat;
-
-	for( const auto& document_diagnostics : diagnostics )
+	for( const auto& document_diagnostics : document_manager_.GetDiagnostics() )
 	{
-		diagnostcs_flat[ document_diagnostics.first ]; // Force create entry for owned document in order to clear previous diagnostics.
+		// Force create entry for owned document in order to clear previous diagnostics if no new diagnostics were generated.
+		// This effectevely allows to clear errors in fixed file(s).
+		diagnostcs_flat[ document_diagnostics.first ];
 
 		for( const auto& diagnostic_pair : document_diagnostics.second )
 			diagnostcs_flat[ diagnostic_pair.first ]= diagnostic_pair.second;

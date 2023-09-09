@@ -18,7 +18,7 @@ public:
 
 	// Returns duration to next document update. This method may be called again after returned time is passed.
 	// It is possible to call this method earlier, but it likely will not rebuild anything.
-	// May return zero time.
+	// May return zero duration.
 	DocumentClock::duration PerfromDelayedRebuild();
 
 public: // Diagnostics.
