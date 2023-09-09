@@ -426,7 +426,7 @@ void CodeBuilder::GeneratorYield( NamesScope& names, FunctionContext& function_c
 		CallDestructors( temp_variables_storage, names, function_context, src_loc );
 	}
 
-	// Suspend generator. Now generator caller will recieve filled promise.
+	// Suspend generator. Now generator caller will receive filled promise.
 	GeneratorSuspend( names, function_context, src_loc );
 }
 

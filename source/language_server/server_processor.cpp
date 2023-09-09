@@ -11,7 +11,7 @@ namespace LangServer
 namespace
 {
 
-enum ErrorCode : int32_t
+enum class ErrorCode : int32_t
 {
 	ParseError = -32700,
 	InvalidRequest = -32600,
@@ -110,12 +110,42 @@ void ServerProcessor::HandleMessageImpl( const Notification& notification )
 
 ServerProcessor::ServerResponse ServerProcessor::HandleRequest( const Request& request )
 {
+	if( shutdown_received_ )
+	{
+		log_() << "Request after shutdown!" << std::endl;
+
+		Json::Object error;
+		error["code"]= int32_t(ErrorCode::InvalidRequest);
+		error["message"]= "Should not receive more requests after shutdown.";
+		return ServerResponse( Json::Object(), Json::Value(std::move(error)) );
+	}
+
 	return std::visit( [&]( const auto& r ) { return HandleRequestImpl(r); }, request.params );
 }
 
 void ServerProcessor::HandleNotification( const Notification& notification )
 {
 	return std::visit( [&]( const auto& n ) { return HandleNotificationImpl(n); }, notification );
+}
+
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const InvalidParams& invalid_params )
+{
+	log_() << "Invalid params: " << invalid_params.message << std::endl;
+
+	Json::Object error;
+	error["code"]= int32_t(ErrorCode::InvalidParams);
+	error["message"]= invalid_params.message;
+	return ServerResponse( Json::Object(), Json::Value(std::move(error)) );
+}
+
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const MethodNotFound& method_not_fund )
+{
+	log_() << "Method " << method_not_fund.method_name << " not found" << std::endl;
+
+	Json::Object error;
+	error["code"]= int32_t(ErrorCode::MethodNotFound);
+	error["message"]= "No method " + method_not_fund.method_name;
+	return ServerResponse( Json::Object(), Json::Value(std::move(error)) );
 }
 
 ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Initialize& initiailize )
@@ -163,6 +193,7 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Shutdown& shutdown )
 {
 	(void)shutdown;
+	shutdown_received_= true;
 	return Json::Value(nullptr);
 }
 
@@ -248,6 +279,8 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 	if( !IsValidIdentifier( rename.new_name ) )
 	{
+		log_() << "Invalid identifier for rename: " << rename.new_name << std::endl;
+
 		Json::Object error;
 		error["code"]= int32_t(ErrorCode::RequestFailed);
 		error["message"]= "Not a valid identifier";
@@ -279,6 +312,16 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 	return result;
 }
 
+void ServerProcessor::HandleNotificationImpl( const InvalidParams& invalid_params )
+{
+	log_() << "Invalid params: " << invalid_params.message << std::endl;
+}
+
+void ServerProcessor::HandleNotificationImpl( const MethodNotFound& method_not_fund )
+{
+	log_() << "Method " << method_not_fund.method_name << " not found" << std::endl;
+}
+
 void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentDidOpen& text_document_did_open )
 {
 	log_() << "open a document " << text_document_did_open.uri.ToString() << std::endl;
@@ -306,6 +349,7 @@ void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentD
 
 	for( const Notifications::TextDocumentChange& change : text_document_did_change.changes )
 	{
+		// TODO - somehow invalidate document in case of synchronization errors.
 		if( const auto incremental_change= std::get_if<Notifications::TextDocumentIncrementalChange>( &change ) )
 			document->UpdateText( incremental_change->range, incremental_change->new_text );
 		else if( const auto full_change= std::get_if<std::string>( &change ) )

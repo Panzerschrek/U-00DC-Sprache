@@ -26,8 +26,7 @@ void RunAsyncServer( Logger& log )
 		} );
 
 	// Read messages from input using current thread.
-	ServerHandler handler( log );
-	handler.Process( *transport.first, message_queue );
+	ProcessMessages( *transport.first, message_queue, log );
 
 	processor_tread.join();
 }
