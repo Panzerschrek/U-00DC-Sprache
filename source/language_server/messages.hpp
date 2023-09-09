@@ -9,10 +9,7 @@ namespace U
 namespace LangServer
 {
 
-namespace Requests
-{
-
-// Pseude-requests for cases, where parsing of a request fails.
+// Pseudo-requests/notifications for cases, where parsing of a request/notification fails.
 
 struct InvalidParams
 {
@@ -24,7 +21,8 @@ struct MethodNotFound
 	std::string method_name;
 };
 
-// Actual requests.
+namespace Requests
+{
 
 struct Initialize{};
 struct Shutdown{};
@@ -65,8 +63,8 @@ struct Rename
 using RequestId= std::variant<std::string, int64_t>;
 
 using RequestParams= std::variant<
-	Requests::InvalidParams,
-	Requests::MethodNotFound,
+	InvalidParams,
+	MethodNotFound,
 	Requests::Initialize,
 	Requests::Shutdown,
 	Requests::Symbols,
@@ -118,6 +116,8 @@ struct CancelRequest
 } // namespace Notifications
 
 using Notification= std::variant<
+	InvalidParams,
+	MethodNotFound,
 	Notifications::TextDocumentDidOpen,
 	Notifications::TextDocumentDidClose,
 	Notifications::TextDocumentDidChange,

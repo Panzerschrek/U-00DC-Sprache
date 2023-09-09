@@ -38,12 +38,12 @@ private:
 
 	// Notifications.
 	void HandleNotification( std::string_view method, const Json::Value& params, MessageQueue& message_queue );
-	std::optional<Notification> BuildNorification( std::string_view method, const Json::Value& params );
+	Notification BuildNorification( std::string_view method, const Json::Value& params );
 
-	std::optional<Notification> ProcessTextDocumentDidOpen( const Json::Value& params );
-	std::optional<Notification> ProcessTextDocumentDidClose( const Json::Value& params );
-	std::optional<Notification> ProcessTextDocumentDidChange( const Json::Value& params );
-	std::optional<Notification> ProcessCancelRequest( const Json::Value& params );
+	Notification ProcessTextDocumentDidOpen( const Json::Value& params );
+	Notification ProcessTextDocumentDidClose( const Json::Value& params );
+	Notification ProcessTextDocumentDidChange( const Json::Value& params );
+	Notification ProcessCancelRequest( const Json::Value& params );
 
 private:
 	Logger& log_;

@@ -60,8 +60,8 @@ private:
 	void HandleNotification( const Notification& notification );
 
 	// Requests.
-	ServerResponse HandleRequestImpl( const Requests::InvalidParams& invalid_params );
-	ServerResponse HandleRequestImpl( const Requests::MethodNotFound& method_not_fund );
+	ServerResponse HandleRequestImpl( const InvalidParams& invalid_params );
+	ServerResponse HandleRequestImpl( const MethodNotFound& method_not_fund );
 	ServerResponse HandleRequestImpl( const Requests::Initialize& initiailize );
 	ServerResponse HandleRequestImpl( const Requests::Shutdown& shutdown );
 	ServerResponse HandleRequestImpl( const Requests::Symbols& symbols );
@@ -72,6 +72,8 @@ private:
 	ServerResponse HandleRequestImpl( const Requests::Rename& rename );
 
 	// Notifications.
+	void HandleNotificationImpl( const InvalidParams& invalid_params );
+	void HandleNotificationImpl( const MethodNotFound& method_not_fund );
 	void HandleNotificationImpl( const Notifications::TextDocumentDidOpen& text_document_did_open );
 	void HandleNotificationImpl( const Notifications::TextDocumentDidClose& text_document_did_close );
 	void HandleNotificationImpl( const Notifications::TextDocumentDidChange& text_document_did_change );
