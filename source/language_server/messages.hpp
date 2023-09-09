@@ -14,7 +14,7 @@ namespace Requests
 
 // Pseude-requests for cases, where parsing of a request fails.
 
-struct ParseError
+struct InvalidParams
 {
 	std::string message;
 };
@@ -65,7 +65,7 @@ struct Rename
 using RequestId= std::variant<std::string, int64_t>;
 
 using RequestParams= std::variant<
-	Requests::ParseError,
+	Requests::InvalidParams,
 	Requests::MethodNotFound,
 	Requests::Initialize,
 	Requests::Shutdown,

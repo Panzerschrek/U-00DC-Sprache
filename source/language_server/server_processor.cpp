@@ -118,11 +118,11 @@ void ServerProcessor::HandleNotification( const Notification& notification )
 	return std::visit( [&]( const auto& n ) { return HandleNotificationImpl(n); }, notification );
 }
 
-ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::ParseError& parse_error )
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::InvalidParams& invalid_params )
 {
 	Json::Object error;
-	error["code"]= int32_t(ErrorCode::ParseError);
-	error["message"]= parse_error.message;
+	error["code"]= int32_t(ErrorCode::InvalidParams);
+	error["message"]= invalid_params.message;
 	return ServerResponse( Json::Object(), Json::Value(std::move(error)) );
 }
 

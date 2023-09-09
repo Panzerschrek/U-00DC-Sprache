@@ -169,19 +169,19 @@ RequestParams ServerHandler::ProcessTextDocumentSymbol( const Json::Value& param
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
-		return Requests::ParseError{ "Not an object!" };
+		return Requests::InvalidParams{ "Not an object!" };
 
 	const auto text_document= obj->getObject( "textDocument" );
 	if( text_document == nullptr )
-		return Requests::ParseError{ "No textDocument!" };
+		return Requests::InvalidParams{ "No textDocument!" };
 
 	const auto uri= text_document->getString( "uri" );
 	if( uri == llvm::None )
-		return Requests::ParseError{ "No uri!" };
+		return Requests::InvalidParams{ "No uri!" };
 
 	auto uri_parsed= Uri::Parse( *uri );
 	if( uri_parsed == std::nullopt )
-		return Requests::ParseError{ "Invalid uri!" };
+		return Requests::InvalidParams{ "Invalid uri!" };
 
 	return Requests::Symbols{ std::move(*uri_parsed) };
 }
@@ -190,11 +190,11 @@ RequestParams ServerHandler::ProcessTextDocumentReferences( const Json::Value& p
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
-		return Requests::ParseError{ "Not an object!" };
+		return Requests::InvalidParams{ "Not an object!" };
 
 	auto position_in_document= JsonToPositionInDocument( *obj );
 	if( position_in_document == std::nullopt )
-		return Requests::ParseError{ "Failed to get position in document!" };
+		return Requests::InvalidParams{ "Failed to get position in document!" };
 
 	return Requests::References{ std::move( *position_in_document ) };
 }
@@ -203,11 +203,11 @@ RequestParams ServerHandler::ProcessTextDocumentDefinition( const Json::Value& p
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
-		return Requests::ParseError{ "Not an object!" };
+		return Requests::InvalidParams{ "Not an object!" };
 
 	auto position_in_document= JsonToPositionInDocument( *obj );
 	if( position_in_document == std::nullopt )
-		return Requests::ParseError{ "Failed to get position in document!" };
+		return Requests::InvalidParams{ "Failed to get position in document!" };
 
 	return Requests::Definition{ std::move( *position_in_document ) };
 }
@@ -216,11 +216,11 @@ RequestParams ServerHandler::ProcessTextDocumentCompletion( const Json::Value& p
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
-		return Requests::ParseError{ "Not an object!" };
+		return Requests::InvalidParams{ "Not an object!" };
 
 	auto position_in_document= JsonToPositionInDocument( *obj );
 	if( position_in_document == std::nullopt )
-		return Requests::ParseError{ "Failed to get position in document!" };
+		return Requests::InvalidParams{ "Failed to get position in document!" };
 
 	return Requests::Complete{ std::move( *position_in_document ) };
 }
@@ -229,11 +229,11 @@ RequestParams ServerHandler::ProcessTextDocumentHighlight( const Json::Value& pa
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
-		return Requests::ParseError{ "Not an object!" };
+		return Requests::InvalidParams{ "Not an object!" };
 
 	auto position_in_document= JsonToPositionInDocument( *obj );
 	if( position_in_document == std::nullopt )
-		return Requests::ParseError{ "Failed to get position in document!" };
+		return Requests::InvalidParams{ "Failed to get position in document!" };
 
 	return Requests::Highlight{ std::move( *position_in_document ) };
 }
@@ -242,15 +242,15 @@ RequestParams ServerHandler::ProcessTextDocumentRename( const Json::Value& param
 {
 	const auto obj= params.getAsObject();
 	if( obj == nullptr )
-		return Requests::ParseError{ "Not an object!" };
+		return Requests::InvalidParams{ "Not an object!" };
 
 	const auto new_name= obj->getString( "newName" );
 	if( new_name == llvm::None )
-		return Requests::ParseError{ "No newName" };
+		return Requests::InvalidParams{ "No newName" };
 
 	auto position_in_document= JsonToPositionInDocument( *obj );
 	if( position_in_document == std::nullopt )
-		return Requests::ParseError{ "Failed to get position in document!" };
+		return Requests::InvalidParams{ "Failed to get position in document!" };
 
 	return Requests::Rename{ std::move( *position_in_document ), new_name->str() };
 }
