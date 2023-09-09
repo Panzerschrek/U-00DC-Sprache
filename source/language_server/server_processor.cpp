@@ -281,7 +281,7 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentDidOpen& text_document_did_open )
 {
-	log_ << "open a document " << text_document_did_open.uri.ToString() << endl;
+	log_ << "open a document " << text_document_did_open.uri.ToString() << std::endl;
 
 	Document* const document= document_manager_.Open( text_document_did_open.uri, text_document_did_open.text );
 	if( document != nullptr )
@@ -290,7 +290,7 @@ void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentD
 
 void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentDidClose& text_document_did_close )
 {
-	log_ << "close a document " << text_document_did_close.uri.ToString() << endl;
+	log_ << "close a document " << text_document_did_close.uri.ToString() << std::endl;
 
 	document_manager_.Close( text_document_did_close.uri );
 }
@@ -300,7 +300,7 @@ void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentD
 	Document* const document= document_manager_.GetDocument( text_document_did_change.uri );
 	if( document == nullptr )
 	{
-		log_ << "Can't find document " << text_document_did_change.uri.ToString() << endl;
+		log_ << "Can't find document " << text_document_did_change.uri.ToString() << std::endl;
 		return;
 	}
 

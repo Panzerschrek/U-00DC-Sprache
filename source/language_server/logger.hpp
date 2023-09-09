@@ -25,27 +25,17 @@ public:
 		return *this;
 	}
 
-	Logger& operator<<( Logger& (*manipulator)(Logger&) )
-	{
-		return manipulator(*this);
-	}
-
-	void endl()
+	Logger& operator<<( std::basic_ostream<char>& (*manipulator)(std::basic_ostream<char>&) )
 	{
 		std::lock_guard<std::mutex> guard(mutex_);
-		out_ << std::endl;
+		manipulator(out_);
+		return *this;
 	}
 
 private:
 	std::mutex mutex_;
 	std::ostream& out_;
 };
-
-inline Logger& endl( Logger& l )
-{
-	l.endl();
-	return l;
-}
 
 } // namespace LangServer
 

@@ -20,7 +20,7 @@ std::unique_ptr<IVfs> CreateBaseVfs( Logger& log )
 	if( vfs_with_includes != nullptr )
 		return vfs_with_includes;
 
-	log << "Failed to create VFS." << endl;
+	log << "Failed to create VFS." << std::endl;
 
 	// Something went wrong. Create fallback.
 	return CreateVfsOverSystemFS( {} );
@@ -79,7 +79,7 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 	}
 
 	// Load unmanaged file.
-	document_manager_.log_ << "Load unmanaged file " << full_file_path << endl;
+	document_manager_.log_ << "Load unmanaged file " << full_file_path << std::endl;
 
 	std::optional<UnmanagedFile>& unmanaged_file= document_manager_.unmanaged_files_[file_uri];
 
@@ -87,7 +87,7 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 
 	if( content == std::nullopt )
 	{
-		document_manager_.log_ << "Failed to load unmanaged file " << full_file_path << endl;
+		document_manager_.log_ << "Failed to load unmanaged file " << full_file_path << std::endl;
 		return std::nullopt;
 	}
 
@@ -116,7 +116,7 @@ Document* DocumentManager::Open( const Uri& uri, std::string text )
 	std::optional<std::string> file_path= uri.AsFilePath();
 	if( file_path == std::nullopt )
 	{
-		log_ << "Can't convert URI into file path!" << endl;
+		log_ << "Can't convert URI into file path!" << std::endl;
 		return nullptr;
 	}
 
@@ -224,7 +224,7 @@ std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const Positi
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document" << position.uri.ToString() << endl;
+		log_ << "Can't find document" << position.uri.ToString() << std::endl;
 		return std::nullopt;
 	}
 
@@ -239,7 +239,7 @@ std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const Positio
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document" << position.uri.ToString() << endl;
+		log_ << "Can't find document" << position.uri.ToString() << std::endl;
 		return {};
 	}
 
@@ -251,7 +251,7 @@ std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionI
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document" << position.uri.ToString() << endl;
+		log_ << "Can't find document" << position.uri.ToString() << std::endl;
 		return {};
 	}
 
@@ -270,7 +270,7 @@ std::vector<Symbol> DocumentManager::GetSymbols( const Uri& uri ) const
 	const auto it= documents_.find( uri );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document" << uri.ToString() << endl;
+		log_ << "Can't find document" << uri.ToString() << std::endl;
 		return {};
 	}
 
@@ -282,7 +282,7 @@ std::vector<CompletionItem> DocumentManager::Complete( const PositionInDocument&
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
 	{
-		log_ << "Can't find document" << position.uri.ToString() << endl;
+		log_ << "Can't find document" << position.uri.ToString() << std::endl;
 		return {};
 	}
 

@@ -42,7 +42,7 @@ public:
 		{
 			if( in_.eof() || in_.fail() )
 			{
-				log_ << "Transport close or fail" << endl;
+				log_ << "Transport close or fail" << std::endl;
 				return std::nullopt;
 			}
 
@@ -55,7 +55,7 @@ public:
 				const bool parse_error= llvm::getAsUnsignedInteger( line_ref.trim(), 0, l );
 				if( parse_error )
 				{
-					log_ << "Failed to parse Content-Length!" << endl;
+					log_ << "Failed to parse Content-Length!" << std::endl;
 					break;
 				}
 				else
@@ -71,7 +71,7 @@ public:
 
 		if( content_length == std::nullopt )
 		{
-			log_ << "No Content-Length!" << endl;
+			log_ << "No Content-Length!" << std::endl;
 			return std::nullopt;
 		}
 
@@ -85,7 +85,7 @@ public:
 		llvm::Expected<llvm::json::Value> parse_result= llvm::json::parse( str_ );
 		if( !parse_result )
 		{
-			log_ << "Failed to parse JSON" << endl;
+			log_ << "Failed to parse JSON" << std::endl;
 			return std::nullopt;
 		}
 
