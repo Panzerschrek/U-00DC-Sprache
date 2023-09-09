@@ -12,6 +12,20 @@ namespace LangServer
 namespace Requests
 {
 
+// Pseude-requests for cases, where parsing of a request fails.
+
+struct ParseError
+{
+	std::string message;
+};
+
+struct MethodNotFound
+{
+	std::string method_name;
+};
+
+// Actual requests.
+
 struct Initialize{};
 struct Shutdown{};
 
@@ -51,6 +65,8 @@ struct Rename
 using RequestId= std::variant<std::string, int64_t>;
 
 using RequestParams= std::variant<
+	Requests::ParseError,
+	Requests::MethodNotFound,
 	Requests::Initialize,
 	Requests::Shutdown,
 	Requests::Symbols,

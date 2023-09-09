@@ -60,6 +60,8 @@ private:
 	void HandleNotification( const Notification& notification );
 
 	// Requests.
+	ServerResponse HandleRequestImpl( const Requests::ParseError& parse_error );
+	ServerResponse HandleRequestImpl( const Requests::MethodNotFound& method_not_fund );
 	ServerResponse HandleRequestImpl( const Requests::Initialize& initiailize );
 	ServerResponse HandleRequestImpl( const Requests::Shutdown& shutdown );
 	ServerResponse HandleRequestImpl( const Requests::Symbols& symbols );

@@ -25,16 +25,16 @@ private:
 
 	// Requests.
 	void HandleRequest( RequestId id, std::string_view method, const Json::Value& params, MessageQueue& message_queue );
-	std::optional<RequestParams> BuildRequestParams( std::string_view method, const Json::Value& params );
+	RequestParams BuildRequestParams( std::string_view method, const Json::Value& params );
 
-	std::optional<RequestParams> ProcessInitialize( const Json::Value& params );
-	std::optional<RequestParams> ProcessShutdown( const Json::Value& params );
-	std::optional<RequestParams> ProcessTextDocumentSymbol( const Json::Value& params );
-	std::optional<RequestParams> ProcessTextDocumentReferences( const Json::Value& params );
-	std::optional<RequestParams> ProcessTextDocumentDefinition( const Json::Value& params );
-	std::optional<RequestParams> ProcessTextDocumentCompletion( const Json::Value& params );
-	std::optional<RequestParams> ProcessTextDocumentHighlight( const Json::Value& params );
-	std::optional<RequestParams> ProcessTextDocumentRename( const Json::Value& params );
+	RequestParams ProcessInitialize( const Json::Value& params );
+	RequestParams ProcessShutdown( const Json::Value& params );
+	RequestParams ProcessTextDocumentSymbol( const Json::Value& params );
+	RequestParams ProcessTextDocumentReferences( const Json::Value& params );
+	RequestParams ProcessTextDocumentDefinition( const Json::Value& params );
+	RequestParams ProcessTextDocumentCompletion( const Json::Value& params );
+	RequestParams ProcessTextDocumentHighlight( const Json::Value& params );
+	RequestParams ProcessTextDocumentRename( const Json::Value& params );
 
 	// Notifications.
 	void HandleNotification( std::string_view method, const Json::Value& params, MessageQueue& message_queue );

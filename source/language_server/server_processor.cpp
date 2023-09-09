@@ -118,6 +118,22 @@ void ServerProcessor::HandleNotification( const Notification& notification )
 	return std::visit( [&]( const auto& n ) { return HandleNotificationImpl(n); }, notification );
 }
 
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::ParseError& parse_error )
+{
+	Json::Object error;
+	error["code"]= int32_t(ErrorCode::ParseError);
+	error["message"]= parse_error.message;
+	return ServerResponse( Json::Object(), Json::Value(std::move(error)) );
+}
+
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::MethodNotFound& method_not_fund )
+{
+	Json::Object error;
+	error["code"]= int32_t(ErrorCode::MethodNotFound);
+	error["message"]= "No method " + method_not_fund.method_name;
+	return ServerResponse( Json::Object(), Json::Value(std::move(error)) );
+}
+
 ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Initialize& initiailize )
 {
 	(void)initiailize;
