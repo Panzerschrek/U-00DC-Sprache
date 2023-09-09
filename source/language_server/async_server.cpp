@@ -20,9 +20,9 @@ void RunAsyncServer( Logger& log )
 		[&]
 		{
 			ServerProcessor processor( log, *transport.second );
-			log << "Start async server processor" << std::endl;
+			log() << "Start async server processor" << std::endl;
 			processor.Process( message_queue );
-			log << "End async server processor" << std::endl;
+			log() << "End async server processor" << std::endl;
 		} );
 
 	// Read messages from input using current thread.

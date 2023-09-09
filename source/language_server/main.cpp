@@ -25,11 +25,11 @@ int Main( int argc, const char* argv[] )
 	std::ofstream log_file( Options::log_file_path );
 	Logger logger( log_file );
 
-	logger << "Start language server" << std::endl;
+	logger() << "Start language server" << std::endl;
 
 	RunAsyncServer( logger );
 
-	logger << "End language server" << std::endl;
+	logger() << "End language server" << std::endl;
 
 	return 0;
 }

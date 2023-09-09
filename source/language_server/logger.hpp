@@ -8,6 +8,32 @@ namespace U
 namespace LangServer
 {
 
+// Class that holds lock to logger and allows to actually output something.
+class LoggerLock
+{
+public:
+	LoggerLock( std::mutex& mutex, std::ostream& out )
+		: lock_(mutex), out_(out)
+	{}
+
+	template<typename T>
+	LoggerLock& operator<<( const T& el )
+	{
+		out_ << el;
+		return *this;
+	}
+
+	LoggerLock& operator<<( std::basic_ostream<char>& (*manipulator)(std::basic_ostream<char>&) )
+	{
+		manipulator(out_);
+		return *this;
+	}
+
+private:
+	std::unique_lock<std::mutex> lock_;
+	std::ostream& out_;
+};
+
 // Thread-safe loger. Writes into provided stream.
 // Stream itself should not be used, when the logger instance exists.
 class Logger
@@ -17,19 +43,12 @@ public:
 		: out_(out)
 	{}
 
-	template<typename T>
-	Logger& operator<<( const T& el )
+	// This call creates logger lock object that allows to output something.
+	// Normally this lock is destroyed at the end of whole expression and thus unlocks internal mutex.
+	// This approach allows to log individual messages atomically.
+	LoggerLock operator()()
 	{
-		std::lock_guard<std::mutex> guard(mutex_);
-		out_ << el;
-		return *this;
-	}
-
-	Logger& operator<<( std::basic_ostream<char>& (*manipulator)(std::basic_ostream<char>&) )
-	{
-		std::lock_guard<std::mutex> guard(mutex_);
-		manipulator(out_);
-		return *this;
+		return LoggerLock( mutex_, out_ );
 	}
 
 private:
