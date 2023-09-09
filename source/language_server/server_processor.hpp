@@ -76,6 +76,7 @@ private:
 	void HandleNotificationImpl( const Notifications::CancelRequest& cancel_request );
 
 	// Other stuff.
+	void UpdateDiagnostics();
 	void GenerateDiagnosticsNotifications( const DiagnosticsByDocument& diagnostics );
 
 	void PublishNotification( std::string_view method, Json::Value params );

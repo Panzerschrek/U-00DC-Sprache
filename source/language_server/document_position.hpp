@@ -15,11 +15,17 @@ struct DocumentPosition
 	uint32_t character= 0; // From 0, in UTF-16 words.
 };
 
+bool operator==( const DocumentPosition& l, const DocumentPosition& r );
+bool operator <( const DocumentPosition& l, const DocumentPosition& r );
+
 struct DocumentRange
 {
 	DocumentPosition start;
 	DocumentPosition end;
 };
+
+bool operator==( const DocumentRange& l, const DocumentRange& r );
+bool operator <( const DocumentRange& l, const DocumentRange& r );
 
 // Position within specific document.
 struct PositionInDocument

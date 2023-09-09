@@ -126,11 +126,9 @@ void Document::SetText( std::string text )
 	text_= std::move(text);
 	text_changes_since_last_valid_state_= std::nullopt; // Can't perform changes tracking when text is completely changed.
 	BuildLineToLinearPositionIndex( text_, line_to_linear_position_index_ );
-}
 
-const std::string& Document::GetCurrentText() const
-{
-	return text_;
+	modification_time_= DocumentClock::now();
+	rebuild_required_= true;
 }
 
 void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
@@ -160,6 +158,14 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 		change.new_count= uint32_t(new_text.size());
 		text_changes_since_last_valid_state_->push_back( std::move(change) );
 	}
+
+	modification_time_= DocumentClock::now();
+	rebuild_required_= true;
+}
+
+const std::string& Document::GetCurrentText() const
+{
+	return text_;
 }
 
 const std::string& Document::GetTextForCompilation() const
@@ -170,6 +176,37 @@ const std::string& Document::GetTextForCompilation() const
 	// By providing text for last valid state we ensure dependent documents will build properly.
 	// Also this allows to perform proper mapping of "SrcLoc" to current state of the text.
 	return last_valid_state_ == std::nullopt ? text_ : last_valid_state_->text;
+}
+
+DocumentClock::time_point Document::GetModificationTime() const
+{
+	return modification_time_;
+}
+
+bool Document::RebuildRequired() const
+{
+	return rebuild_required_;
+}
+
+void Document::OnPossibleDependentFileChanged( const IVfs::Path& file_path_normalized )
+{
+	if( file_path_normalized == path_ )
+		return; // Do not process changes of itself.
+
+	if( last_valid_state_ == std::nullopt )
+		return;
+
+	for( const SourceGraph::Node& node : last_valid_state_->source_graph.nodes_storage )
+	{
+		if( node.file_path == file_path_normalized )
+		{
+			// If this is one of dependent files - trigger delayed rebuild of this document.
+			// TODO - maybe avoid updating maodification time and thus trigger immediate rebuild?
+			modification_time_= DocumentClock::now();
+			rebuild_required_= true;
+			return;
+		}
+	}
 }
 
 const DiagnosticsByDocument& Document::GetDiagnostics() const
@@ -543,6 +580,9 @@ std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc
 
 void Document::Rebuild()
 {
+	// Reset rebuild flag. Even if rebuild fails, there is no reason to try another rebuild, unless document (or its dependencies) changed.
+	rebuild_required_= false;
+
 	diagnostics_.clear();
 
 	U_ASSERT( !in_rebuild_call_ );

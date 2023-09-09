@@ -25,7 +25,7 @@ public:
 
 	// Extract message from queue.
 	// Blocks until new message not added or timeout is expired, but may return earlier.
-	// Returns nullopt if there is no messages in the queue or if queue is closed.
+	// Returns nullopt if there is no messages in the queue, timeout is expired or queue is closed.
 	std::optional<Message> TryPop( std::chrono::milliseconds wait_time );
 
 	void Close();

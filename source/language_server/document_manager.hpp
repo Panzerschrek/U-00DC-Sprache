@@ -16,6 +16,16 @@ public:
 	Document* GetDocument( const Uri& uri );
 	void Close( const Uri& uri );
 
+	// Returns duration to next document update. This method may be called again after returned time is passed.
+	// It is possible to call this method earlier, but it likely will not rebuild anything.
+	// May return zero duration.
+	DocumentClock::duration PerfromDelayedRebuild();
+
+public: // Diagnostics.
+	bool DiagnosticsWereUpdated() const;
+	void ResetDiagnosticsUpdatedFlag();
+	const DiagnosticsBySourceDocument& GetDiagnostics() const;
+
 public: // Wrappers for document founctionality. Use them to perform proper ranges mapping.
 
 	std::optional<RangeInDocument> GetDefinitionPoint( const PositionInDocument& position ) const;
@@ -67,6 +77,9 @@ private:
 	// TODO - use unordered map.
 	std::map<Uri, Document> documents_;
 	std::map<Uri, std::optional<UnmanagedFile>> unmanaged_files_;
+
+	DiagnosticsBySourceDocument all_diagnostics_;
+	bool diagnostics_updated_= true;
 };
 
 } // namespace LangServer

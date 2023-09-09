@@ -74,10 +74,13 @@ void ServerProcessor::Process( MessageQueue& message_queue )
 {
 	while(!message_queue.IsClosed())
 	{
-		// TODO - process here internal logic (like delayed rebuild).
+		const DocumentClock::duration wait_duration= document_manager_.PerfromDelayedRebuild();
+		const auto wait_ms= std::chrono::duration_cast<std::chrono::milliseconds>(wait_duration);
 
-		// TODO - make wait time dependent on something like document rebuild timers.
-		if( const std::optional<Message> message= message_queue.TryPop( std::chrono::milliseconds(250) ) )
+		UpdateDiagnostics();
+
+		// Wait for new messages, but only until next document needs to be updated.
+		if( const std::optional<Message> message= message_queue.TryPop( wait_ms ) )
 			HandleMessage( *message );
 	}
 }
@@ -309,15 +312,44 @@ void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentD
 			document->SetText( *full_change );
 		else U_ASSERT(false); // Unhandled variant.
 	}
-
-	document->Rebuild(); // TODO - rebuild only if necessary.
-	GenerateDiagnosticsNotifications( document->GetDiagnostics() );
 }
 
 void ServerProcessor::HandleNotificationImpl( const Notifications::CancelRequest& cancel_request )
 {
 	// Assume that cancellation is performing before this handler - in messages queue itself.
 	(void)cancel_request;
+}
+
+void ServerProcessor::UpdateDiagnostics()
+{
+	if( !document_manager_.DiagnosticsWereUpdated() )
+		return; // No need to update.
+
+	// Flatten diagnostics maps - collect errors in common imported files caused by compilation of different documents.
+	DiagnosticsByDocument diagnostcs_flat;
+	for( const auto& document_diagnostics : document_manager_.GetDiagnostics() )
+	{
+		// Force create entry for owned document in order to clear previous diagnostics if no new diagnostics were generated.
+		// This effectevely allows to clear errors in fixed file(s).
+		diagnostcs_flat[ document_diagnostics.first ];
+
+		for( const auto& diagnostic_pair : document_diagnostics.second )
+			diagnostcs_flat[ diagnostic_pair.first ]= diagnostic_pair.second;
+	}
+
+	// Make sure diagnostics are unique.
+	for( auto& diagnostic_pair : diagnostcs_flat )
+	{
+		DocumentDiagnostics& document_diagnostics= diagnostic_pair.second;
+		std::sort( document_diagnostics.begin(), document_diagnostics.end() );
+		document_diagnostics.erase(
+			std::unique( document_diagnostics.begin(), document_diagnostics.end() ),
+			document_diagnostics.end() );
+	}
+
+	GenerateDiagnosticsNotifications( diagnostcs_flat );
+
+	document_manager_.ResetDiagnosticsUpdatedFlag();
 }
 
 void ServerProcessor::GenerateDiagnosticsNotifications( const DiagnosticsByDocument& diagnostics )
