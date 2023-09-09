@@ -112,6 +112,8 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequest( const Request& r
 {
 	if( shutdown_received_ )
 	{
+		log_() << "Request after shutdown!" << std::endl;
+
 		Json::Object error;
 		error["code"]= int32_t(ErrorCode::InvalidRequest);
 		error["message"]= "Should not recieve more requests after shutdown.";
@@ -128,6 +130,8 @@ void ServerProcessor::HandleNotification( const Notification& notification )
 
 ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::InvalidParams& invalid_params )
 {
+	log_() << "Invalid params: " << invalid_params.message << std::endl;
+
 	Json::Object error;
 	error["code"]= int32_t(ErrorCode::InvalidParams);
 	error["message"]= invalid_params.message;
@@ -136,6 +140,8 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::MethodNotFound& method_not_fund )
 {
+	log_() << "Method " << method_not_fund.method_name << " not found" << std::endl;
+
 	Json::Object error;
 	error["code"]= int32_t(ErrorCode::MethodNotFound);
 	error["message"]= "No method " + method_not_fund.method_name;
@@ -273,6 +279,8 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 	if( !IsValidIdentifier( rename.new_name ) )
 	{
+		log_() << "Invalid identifier for rename: " << rename.new_name << std::endl;
+
 		Json::Object error;
 		error["code"]= int32_t(ErrorCode::RequestFailed);
 		error["message"]= "Not a valid identifier";
