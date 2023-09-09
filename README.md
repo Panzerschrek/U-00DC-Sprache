@@ -17,6 +17,8 @@ Documentation available [here](https://u-00dc-sprache.readthedocs.io/ru/latest/c
 
 [language server](source/language_server/README.md)
 
+[syntax highlighting](source/syntax_highlighting/README.md)
+
 [interpreter](source/interpreter/README.md)
 
 [plugin for QtCreator](source/qt_creator_plugin/README.md)
