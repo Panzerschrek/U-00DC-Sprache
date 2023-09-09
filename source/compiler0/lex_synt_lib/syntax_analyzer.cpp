@@ -4291,7 +4291,15 @@ void SyntaxAnalyzer::PushErrorMessage()
 	{
 		LexSyntError error_message;
 		error_message.src_loc= it_->src_loc;
-		error_message.text= "Syntax error - unexpected lexem \"" + it_->text + "\"";
+
+		if( it_->type == Lexem::Type::Number )
+		{
+			// Process numbers specially since text of number lexem is not a text but binary struct data.
+			error_message.text= "Syntax error - unexpected number lexem";
+		}
+		else
+			error_message.text= "Syntax error - unexpected lexem \"" + it_->text + "\"";
+
 		error_messages_.push_back( std::move(error_message) );
 	}
 
