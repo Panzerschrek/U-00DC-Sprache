@@ -72,7 +72,6 @@ QtCreator plugin:
 *) Language server features support
 
 Language server
-*) Return requests errors properly
 *) Go to definition for non-value names - loop labels, reference tags, imports, etc.
 *) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
 *) Highlighting for overloaded operators
