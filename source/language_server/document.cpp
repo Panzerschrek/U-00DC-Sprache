@@ -641,13 +641,14 @@ void Document::Rebuild( llvm::ThreadPool& thread_pool )
 			return;
 	}
 
-	compilation_future_= thread_pool.async(
+	auto update_func=
 		[
 			text= text_,
 			line_to_linear_position_index= line_to_linear_position_index_,
 			source_graph= std::move(source_graph),
-			build_options= build_options_
+			build_options= build_options_ // Capture copy of build options in case this update func outlives this class instance.
 		]
+		() mutable // Mutable in order to move captured variables.
 		{
 			// TODO - maybe avoid recreating context or even share it across multiple documents?
 			auto llvm_context= std::make_unique<llvm::LLVMContext>();
@@ -673,13 +674,23 @@ void Document::Rebuild( llvm::ThreadPool& thread_pool )
 					options,
 					source_graph );
 
-			return CompiledState{
-				text,
-				line_to_linear_position_index,
-				std::move(source_graph),
-				std::move(llvm_context),
-				std::move(code_builder) };
-		} );
+			return std::make_shared<CompiledState>(
+				CompiledState{
+					std::move(text),
+					std::move(line_to_linear_position_index),
+					std::move(source_graph),
+					std::move(llvm_context),
+					std::move(code_builder) } );
+		};
+
+	compilation_future_=
+		thread_pool.async(
+			// Hack! llvm::ThreadPool uses std::function inside, which requires lambda to be move-constructible.
+			// So, wrap actual lambda into wrapper with shared_ptr - copy shared pointer, not lambda (with captured variables) instead.
+			[ lambda_ptr= std::make_shared< decltype(update_func) >( std::move(update_func) ) ]
+			{
+				return (*lambda_ptr)();
+			} );
 
 	compilation_future_.wait_for( std::chrono::milliseconds(0) );
 }
