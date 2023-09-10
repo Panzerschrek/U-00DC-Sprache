@@ -99,14 +99,15 @@ private:
 		LineToLinearPositionIndex line_to_linear_position_index;
 		SourceGraph source_graph;
 		std::unique_ptr<llvm::LLVMContext> llvm_context;
-		std::unique_ptr<CodeBuilder> code_builder;
+		std::unique_ptr<CodeBuilder> code_builder; // Still may be modified in const state because of indirection.
 	};
 
-	// Use shared_ptr, since llvm::ThreadPool returns only shared_future, that can return only immutable data.
-	using CompiledStatePtr= std::shared_ptr<CompiledState>;
+	// Use shared_ptr, since llvm::ThreadPool returns only shared_future, that can return only immutable result.
+	// So, we can't move-out result and take cheap copy of shared_ptr instead.
+	using CompiledStatePtr= std::shared_ptr<const CompiledState>;
 
 	// llvm::ThreadPool uses shared_future.
-	using CompiledStateFuture= std::shared_future<std::shared_ptr<CompiledState>>;
+	using CompiledStateFuture= std::shared_future<CompiledStatePtr>;
 
 private:
 	const IVfs::Path path_;

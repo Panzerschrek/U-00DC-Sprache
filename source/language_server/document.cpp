@@ -722,7 +722,7 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 					options,
 					source_graph );
 
-			return std::make_shared<CompiledState>(
+			return std::make_shared<const CompiledState>(
 				CompiledState{
 					num_text_changes_at_compilation_task_start,
 					std::move(text),
