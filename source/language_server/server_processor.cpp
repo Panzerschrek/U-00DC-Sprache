@@ -66,8 +66,12 @@ Json::Value RequestIdToJson( const RequestId& id )
 } // namespace
 
 ServerProcessor::ServerProcessor( Logger& log, IJsonMessageWrite& out )
-	: log_(log), out_(out), document_manager_(log_)
+	: log_(log)
+	, out_(out)
+	, thread_pool_() // TODO - make number of threads configurable.
+	, document_manager_(log_)
 {
+	log_() << "Created thead pool with " << thread_pool_.getThreadCount() << " threads" << std::endl;
 }
 
 void ServerProcessor::Process( MessageQueue& message_queue )

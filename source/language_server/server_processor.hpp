@@ -1,5 +1,8 @@
 #pragma once
 #include <queue>
+#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/ThreadPool.h>
+#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "document_manager.hpp"
 #include "json.hpp"
 #include "message_queue.hpp"
@@ -89,6 +92,7 @@ private:
 private:
 	Logger& log_;
 	IJsonMessageWrite& out_;
+	llvm::ThreadPool thread_pool_;
 	DocumentManager document_manager_;
 	bool shutdown_received_= false;
 };
