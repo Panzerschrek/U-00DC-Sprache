@@ -1,4 +1,7 @@
 #pragma once
+#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/ThreadPool.h>
+#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../compiler0/code_builder_lib/code_builder.hpp"
 #include "../lex_synt_lib/source_graph_loader.hpp"
 #include "completion.hpp"
@@ -54,14 +57,14 @@ public: // Diagnostics.
 	const DiagnosticsByDocument& GetDiagnostics() const;
 
 public: // Requests.
-	std::optional<SrcLocInDocument> GetDefinitionPoint( const DocumentPosition& position ) const;
+	std::optional<SrcLocInDocument> GetDefinitionPoint( const DocumentPosition& position );
 
 	// Returns highlights only for this document.
-	std::vector<DocumentRange> GetHighlightLocations( const DocumentPosition& position ) const;
+	std::vector<DocumentRange> GetHighlightLocations( const DocumentPosition& position );
 
-	std::vector<SrcLocInDocument> GetAllOccurrences( const DocumentPosition& position ) const;
+	std::vector<SrcLocInDocument> GetAllOccurrences( const DocumentPosition& position );
 
-	std::vector<Symbol> GetSymbols() const;
+	std::vector<Symbol> GetSymbols();
 
 	// Non-const this, since internal compiler state may be changed in completion.
 	std::vector<CompletionItem> Complete( const DocumentPosition& position );
@@ -71,9 +74,11 @@ public: // Requests.
 	std::optional<DocumentRange> GetIdentifierRange( const SrcLoc& src_loc ) const;
 
 public: // Other stuff.
-	void Rebuild();
+	void Rebuild( llvm::ThreadPool& thread_pool );
 
 private:
+	void TryTakeBackgroundStateUpdate();
+
 	// Map position in current document text to position in last valid state text.
 	std::optional<TextLinearPosition> GetPositionInLastValidText( const DocumentPosition& position ) const;
 
@@ -89,6 +94,11 @@ private:
 		std::unique_ptr<llvm::LLVMContext> llvm_context;
 		std::unique_ptr<CodeBuilder> code_builder;
 	};
+
+	// Use shared_ptr, since llvm::ThreadPool returns only shared_future, that can return only immutable data.
+	using CompiledStatePtr= std::shared_ptr<CompiledState>;
+
+	using CompiledStateFuture= std::shared_future<std::shared_ptr<CompiledState>>;
 
 private:
 	const IVfs::Path path_;
@@ -106,7 +116,9 @@ private:
 	bool in_rebuild_call_= false;
 
 	// State for last syntaxically-correct program.
-	std::optional<CompiledState> last_valid_state_;
+	CompiledStatePtr last_valid_state_;
+
+	CompiledStateFuture compilation_future_;
 
 	DiagnosticsByDocument diagnostics_;
 };

@@ -133,6 +133,8 @@ void Document::SetText( std::string text )
 
 void Document::UpdateText( const DocumentRange& range, const std::string_view new_text )
 {
+	TryTakeBackgroundStateUpdate();
+
 	const std::optional<TextLinearPosition> linear_position_start= DocumentPositionToLinearPosition( range.start, text_ );
 	const std::optional<TextLinearPosition> linear_position_end  = DocumentPositionToLinearPosition( range.end  , text_ );
 	if( linear_position_start == std::nullopt || linear_position_end == std::nullopt )
@@ -150,7 +152,7 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 	BuildLineToLinearPositionIndex( text_, line_to_linear_position_index_ );
 
 	// Save changes sequence.
-	if( last_valid_state_ != std::nullopt && text_changes_since_last_valid_state_ != std::nullopt )
+	if( last_valid_state_ != nullptr && text_changes_since_last_valid_state_ != std::nullopt )
 	{
 		TextChange change;
 		change.range_start= *linear_position_start;
@@ -175,7 +177,7 @@ const std::string& Document::GetTextForCompilation() const
 
 	// By providing text for last valid state we ensure dependent documents will build properly.
 	// Also this allows to perform proper mapping of "SrcLoc" to current state of the text.
-	return last_valid_state_ == std::nullopt ? text_ : last_valid_state_->text;
+	return last_valid_state_ == nullptr ? text_ : last_valid_state_->text;
 }
 
 DocumentClock::time_point Document::GetModificationTime() const
@@ -190,10 +192,12 @@ bool Document::RebuildRequired() const
 
 void Document::OnPossibleDependentFileChanged( const IVfs::Path& file_path_normalized )
 {
+	TryTakeBackgroundStateUpdate();
+
 	if( file_path_normalized == path_ )
 		return; // Do not process changes of itself.
 
-	if( last_valid_state_ == std::nullopt )
+	if( last_valid_state_ == nullptr )
 		return;
 
 	for( const SourceGraph::Node& node : last_valid_state_->source_graph.nodes_storage )
@@ -214,9 +218,11 @@ const DiagnosticsByDocument& Document::GetDiagnostics() const
 	return diagnostics_;
 }
 
-std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosition& position ) const
+std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosition& position )
 {
-	if( last_valid_state_ == std::nullopt )
+	TryTakeBackgroundStateUpdate();
+
+	if( last_valid_state_ == nullptr )
 		return std::nullopt;
 
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
@@ -243,9 +249,11 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 	return std::nullopt;
 }
 
-std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPosition& position ) const
+std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPosition& position )
 {
-	if( last_valid_state_ == std::nullopt )
+	TryTakeBackgroundStateUpdate();
+
+	if( last_valid_state_ == nullptr )
 		return {};
 
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
@@ -272,9 +280,11 @@ std::vector<DocumentRange> Document::GetHighlightLocations( const DocumentPositi
 	return result;
 }
 
-std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPosition& position ) const
+std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPosition& position )
 {
-	if( last_valid_state_ == std::nullopt )
+	TryTakeBackgroundStateUpdate();
+
+	if( last_valid_state_ == nullptr )
 		return {};
 
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
@@ -309,9 +319,11 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 	return result;
 }
 
-std::vector<Symbol> Document::GetSymbols() const
+std::vector<Symbol> Document::GetSymbols()
 {
-	if( last_valid_state_ != std::nullopt )
+	TryTakeBackgroundStateUpdate();
+
+	if( last_valid_state_ != nullptr )
 	{
 		// Normal case - use last valid state of syntax tree in order to build symbols.
 		return BuildSymbols( last_valid_state_->source_graph.nodes_storage.front().ast.program_elements );
@@ -331,7 +343,9 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 {
 	log_() << "Completion request " << position.line << ":" << position.character << std::endl;
 
-	if( last_valid_state_ == std::nullopt || last_valid_state_->source_graph.nodes_storage.empty() )
+	TryTakeBackgroundStateUpdate();
+
+	if( last_valid_state_ == nullptr || last_valid_state_->source_graph.nodes_storage.empty() )
 	{
 		log_() << "Can't complete - document is not compiled" << std::endl;
 		return {};
@@ -532,7 +546,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 
 std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc ) const
 {
-	if( last_valid_state_ == std::nullopt || text_changes_since_last_valid_state_ == std::nullopt )
+	if( last_valid_state_ == nullptr || text_changes_since_last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
 	const uint32_t line= src_loc.GetLine();
@@ -588,10 +602,13 @@ std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc
 	return range;
 }
 
-void Document::Rebuild()
+void Document::Rebuild( llvm::ThreadPool& thread_pool )
 {
 	// Reset rebuild flag. Even if rebuild fails, there is no reason to try another rebuild, unless document (or its dependencies) changed.
 	rebuild_required_= false;
+
+	if( compilation_future_.valid() )
+		return;
 
 	diagnostics_.clear();
 
@@ -624,50 +641,74 @@ void Document::Rebuild()
 			return;
 	}
 
-	// TODO - maybe avoid recreating context or even share it across multiple documents?
-	auto llvm_context= std::make_unique<llvm::LLVMContext>();
+	compilation_future_= thread_pool.async(
+		[
+			text= text_,
+			line_to_linear_position_index= line_to_linear_position_index_,
+			source_graph= std::move(source_graph),
+			build_options= build_options_
+		]
+		{
+			// TODO - maybe avoid recreating context or even share it across multiple documents?
+			auto llvm_context= std::make_unique<llvm::LLVMContext>();
 
-	// Disable almost all code builder options.
-	// We do not need to generate code here - only assist developer (retrieve errors, etc.).
-	CodeBuilderOptions options;
-	options.build_debug_info= false;
-	options.create_lifetimes= false;
-	options.generate_lifetime_start_end_debug_calls= false;
-	options.generate_tbaa_metadata= false;
-	options.report_about_unused_names= false;
+			// Disable almost all code builder options.
+			// We do not need to generate code here - only assist developer (retrieve errors, etc.).
+			CodeBuilderOptions options;
+			options.build_debug_info= false;
+			options.create_lifetimes= false;
+			options.generate_lifetime_start_end_debug_calls= false;
+			options.generate_tbaa_metadata= false;
+			options.report_about_unused_names= false;
 
-	// Specific options for the Language Server.
-	options.collect_definition_points= true;
-	options.skip_building_generated_functions= true;
+			// Specific options for the Language Server.
+			options.collect_definition_points= true;
+			options.skip_building_generated_functions= true;
 
-	auto code_builder=
-		CodeBuilder::BuildProgramAndLeaveInternalState(
-			*llvm_context,
-			build_options_.data_layout,
-			build_options_.target_triple,
-			options,
-			source_graph );
+			auto code_builder=
+				CodeBuilder::BuildProgramAndLeaveInternalState(
+					*llvm_context,
+					build_options.data_layout,
+					build_options.target_triple,
+					options,
+					source_graph );
 
-	PopulateDiagnostics( source_graph, code_builder->TakeErrors(), text_, line_to_linear_position_index_, diagnostics_ );
+			return CompiledState{
+				text,
+				line_to_linear_position_index,
+				std::move(source_graph),
+				std::move(llvm_context),
+				std::move(code_builder) };
+		} );
 
-	last_valid_state_= std::nullopt; // Reset previous explicitely to free resources of previos state first.
-	last_valid_state_= CompiledState{
-		text_,
-		line_to_linear_position_index_,
-		std::move(source_graph),
-		std::move(llvm_context),
-		std::move(code_builder) };
+	compilation_future_.wait_for( std::chrono::milliseconds(0) );
+}
+
+void Document::TryTakeBackgroundStateUpdate()
+{
+	if( !compilation_future_.valid() )
+		return;
+
+	const std::future_status status= compilation_future_.wait_for( std::chrono::milliseconds(0) );
+	if( status != std::future_status::ready )
+		return;
 
 	// Reset sequence of changes by last valid state update.
+	// TODO - remember changes made during rebuild.
 	if( text_changes_since_last_valid_state_ == std::nullopt )
 		text_changes_since_last_valid_state_= TextChangesSequence();
 	else
 		text_changes_since_last_valid_state_->clear();
+
+	last_valid_state_= nullptr;
+	last_valid_state_= compilation_future_.get();
+
+	compilation_future_= CompiledStateFuture();
 }
 
 std::optional<TextLinearPosition> Document::GetPositionInLastValidText( const DocumentPosition& position ) const
 {
-	if( last_valid_state_ == std::nullopt || text_changes_since_last_valid_state_ == std::nullopt )
+	if( last_valid_state_ == nullptr || text_changes_since_last_valid_state_ == std::nullopt )
 		return std::nullopt;
 
 	if( position.line >= line_to_linear_position_index_.size() )
@@ -692,7 +733,7 @@ std::optional<TextLinearPosition> Document::GetPositionInLastValidText( const Do
 
 std::optional<SrcLoc> Document::GetIdentifierStartSrcLoc( const DocumentPosition& position ) const
 {
-	if( last_valid_state_ == std::nullopt )
+	if( last_valid_state_ == nullptr )
 		return std::nullopt;
 
 	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );

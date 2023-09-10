@@ -78,7 +78,7 @@ void ServerProcessor::Process( MessageQueue& message_queue )
 {
 	while(!message_queue.IsClosed())
 	{
-		const DocumentClock::duration wait_duration= document_manager_.PerfromDelayedRebuild();
+		const DocumentClock::duration wait_duration= document_manager_.PerfromDelayedRebuild( thread_pool_ );
 		const auto wait_ms= std::chrono::duration_cast<std::chrono::milliseconds>(wait_duration);
 
 		UpdateDiagnostics();

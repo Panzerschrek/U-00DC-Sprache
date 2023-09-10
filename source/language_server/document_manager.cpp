@@ -151,7 +151,7 @@ void DocumentManager::Close( const Uri& uri )
 	all_diagnostics_.erase( uri );
 }
 
-DocumentClock::duration DocumentManager::PerfromDelayedRebuild()
+DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool& thread_pool )
 {
 	const auto rebuild_delay= std::chrono::milliseconds(1000); // TODO - make it configurable.
 	const auto current_time= DocumentClock::now();
@@ -166,7 +166,7 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild()
 			const auto modification_time= document.GetModificationTime();
 			if( modification_time <= current_time && (current_time - modification_time) >= rebuild_delay )
 			{
-				document.Rebuild();
+				document.Rebuild( thread_pool );
 
 				// Notify other documents about change in order to trigger rebuilding of dependent documents.
 				if( const auto file_path= uri.AsFilePath() )
@@ -219,7 +219,7 @@ const DiagnosticsBySourceDocument& DocumentManager::GetDiagnostics() const
 	return all_diagnostics_;
 }
 
-std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const PositionInDocument& position ) const
+std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const PositionInDocument& position )
 {
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
@@ -234,7 +234,7 @@ std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const Positi
 	return std::nullopt;
 }
 
-std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const PositionInDocument& position ) const
+std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const PositionInDocument& position )
 {
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
@@ -246,7 +246,7 @@ std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const Positio
 	return it->second.GetHighlightLocations( position.position );
 }
 
-std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionInDocument& position ) const
+std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionInDocument& position )
 {
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
@@ -265,7 +265,7 @@ std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionI
 	return result;
 }
 
-std::vector<Symbol> DocumentManager::GetSymbols( const Uri& uri ) const
+std::vector<Symbol> DocumentManager::GetSymbols( const Uri& uri )
 {
 	const auto it= documents_.find( uri );
 	if( it == documents_.end() )
