@@ -676,6 +676,10 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 		}
 	}
 
+	// If this is first rebuild - initialize changes tracking, in order to track changes, made during synchronous compilation.
+	if( compiled_state_ == nullptr && text_changes_since_compiled_state_ == std::nullopt )
+		text_changes_since_compiled_state_= TextChangesSequence();
+
 	// Save number of changes since compiled state.
 	// Later, when taking result of update state we erase all changes until this point, but preserve changes made during update task running.
 	const size_t num_text_changes_at_compilation_task_start=
