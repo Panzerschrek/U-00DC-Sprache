@@ -74,9 +74,11 @@ public: // Requests.
 	std::optional<DocumentRange> GetIdentifierRange( const SrcLoc& src_loc ) const;
 
 public: // Other stuff.
-	void Rebuild( llvm::ThreadPool& thread_pool );
+	// Start rebuild. Rebuilding itself is performed in background thread.
+	void StartRebuild( llvm::ThreadPool& thread_pool );
 
 private:
+	// This metod checks if compilation future has a new result. If so - it updates compiled state.
 	void TryTakeBackgroundStateUpdate();
 
 	// Map position in current document text to position in last valid state text.
@@ -110,14 +112,18 @@ private:
 
 	std::string text_;
 	LineToLinearPositionIndex line_to_linear_position_index_; // Index is allways actual for current text.
-	std::optional<TextChangesSequence> text_changes_since_last_valid_state_;
+	std::optional<TextChangesSequence> text_changes_since_compiled_state_;
 
 	DocumentClock::time_point modification_time_;
 	bool rebuild_required_= true;
 
 	bool in_rebuild_call_= false;
 
-	CompiledStatePtr last_valid_state_;
+	// Compiled state (source text + source graph + code builder).
+	// It is updated relatively rarely - not for each text change.
+	// It is impossible to update it for each change, because not each change produces syntaxically-correct program
+	// and because update is costly.
+	CompiledStatePtr compiled_state_;
 
 	CompiledStateFuture compilation_future_;
 

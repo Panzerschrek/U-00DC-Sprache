@@ -166,7 +166,7 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool
 			const auto modification_time= document.GetModificationTime();
 			if( modification_time <= current_time && (current_time - modification_time) >= rebuild_delay )
 			{
-				document.Rebuild( thread_pool );
+				document.StartRebuild( thread_pool );
 
 				// Notify other documents about change in order to trigger rebuilding of dependent documents.
 				if( const auto file_path= uri.AsFilePath() )
