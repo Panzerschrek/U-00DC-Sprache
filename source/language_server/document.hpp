@@ -88,6 +88,7 @@ private:
 private:
 	struct CompiledState
 	{
+		size_t num_text_changes_at_compilation_task_start= 0; // Used only when updating state.
 		std::string text;
 		LineToLinearPositionIndex line_to_linear_position_index;
 		SourceGraph source_graph;
@@ -98,6 +99,7 @@ private:
 	// Use shared_ptr, since llvm::ThreadPool returns only shared_future, that can return only immutable data.
 	using CompiledStatePtr= std::shared_ptr<CompiledState>;
 
+	// llvm::ThreadPool uses shared_future.
 	using CompiledStateFuture= std::shared_future<std::shared_ptr<CompiledState>>;
 
 private:
@@ -115,7 +117,6 @@ private:
 
 	bool in_rebuild_call_= false;
 
-	// State for last syntaxically-correct program.
 	CompiledStatePtr last_valid_state_;
 
 	CompiledStateFuture compilation_future_;

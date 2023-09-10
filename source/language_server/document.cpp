@@ -641,8 +641,14 @@ void Document::Rebuild( llvm::ThreadPool& thread_pool )
 			return;
 	}
 
+	// Save number of changes since last valid state.
+	// Later, when taking result of update state we arase all changes until this point, but preserve changes made during update task running.
+	const size_t num_text_changes_at_compilation_task_start=
+		text_changes_since_last_valid_state_== std::nullopt ? 0 : text_changes_since_last_valid_state_->size();
+
 	auto update_func=
 		[
+			num_text_changes_at_compilation_task_start,
 			text= text_,
 			line_to_linear_position_index= line_to_linear_position_index_,
 			source_graph= std::move(source_graph),
@@ -676,6 +682,7 @@ void Document::Rebuild( llvm::ThreadPool& thread_pool )
 
 			return std::make_shared<CompiledState>(
 				CompiledState{
+					num_text_changes_at_compilation_task_start,
 					std::move(text),
 					std::move(line_to_linear_position_index),
 					std::move(source_graph),
@@ -704,24 +711,33 @@ void Document::TryTakeBackgroundStateUpdate()
 	if( status != std::future_status::ready )
 		return;
 
-	// Reset sequence of changes by last valid state update.
-	// TODO - remember changes made during rebuild.
-	if( text_changes_since_last_valid_state_ == std::nullopt )
-		text_changes_since_last_valid_state_= TextChangesSequence();
-	else
-		text_changes_since_last_valid_state_->clear();
-
 	last_valid_state_= nullptr;
 	last_valid_state_= compilation_future_.get();
 
+	// Make future invalid - mark it as empty.
+	compilation_future_= CompiledStateFuture();
+
 	if( last_valid_state_ != nullptr )
+	{
+		if( text_changes_since_last_valid_state_ == std::nullopt )
+			text_changes_since_last_valid_state_= TextChangesSequence();
+		else
+		{
+			// Reset changes made before update task start (for actual for task start moment).
+			// Preserve changes made during task running.
+			U_ASSERT( text_changes_since_last_valid_state_->size() >= last_valid_state_->num_text_changes_at_compilation_task_start );
+			text_changes_since_last_valid_state_->erase(
+				text_changes_since_last_valid_state_->begin(),
+				text_changes_since_last_valid_state_->begin() + std::vector<TextChange>::iterator::difference_type( last_valid_state_->num_text_changes_at_compilation_task_start ) );
+		}
+
 		PopulateDiagnostics(
 			last_valid_state_->source_graph,
 			last_valid_state_->code_builder->TakeErrors(),
 			last_valid_state_->text,
-			last_valid_state_->line_to_linear_position_index );
-
-	compilation_future_= CompiledStateFuture();
+			last_valid_state_->line_to_linear_position_index,
+			diagnostics_ );
+	}
 }
 
 std::optional<TextLinearPosition> Document::GetPositionInLastValidText( const DocumentPosition& position ) const
