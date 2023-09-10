@@ -178,7 +178,7 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool
 	const auto rebuild_delay= std::chrono::milliseconds(1000); // TODO - make it configurable.
 	const auto current_time= DocumentClock::now();
 
-	// Find document to rebuild and rebuild it (and only it).
+	// Start documents rebuilding (if necessary).
 	for( auto& document_pair : documents_ )
 	{
 		Document& document= document_pair.second;
@@ -186,14 +186,8 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool
 		{
 			const auto modification_time= document.GetModificationTime();
 			if( modification_time <= current_time && (current_time - modification_time) >= rebuild_delay )
-			{
 				document.StartRebuild( thread_pool );
 
-				// Return after first rebuilded document.
-				// Allow caller to do something else (like mesages processing).
-				// If caller has nothing to do it will call this method again.
-				return DocumentClock::duration(0);
-			}
 		}
 	}
 

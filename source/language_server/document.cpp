@@ -621,11 +621,17 @@ std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc
 
 void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 {
+	TryTakeBackgroundStateUpdate();
+	if( compilation_future_.valid() )
+	{
+		// Compilation is already runnung.
+		// Do not reset rebuild flag during active compilation.
+		// It allows to rebuild document again to apply changes made during current rebuild.
+		return;
+	}
+
 	// Reset rebuild flag. Even if rebuild fails, there is no reason to try another rebuild, unless document (or its dependencies) changed.
 	rebuild_required_= false;
-
-	if( compilation_future_.valid() )
-		return; // Compilation is already runnung.
 
 	// Perform lexical and syntax analysis synchronous.
 	// It is not possible to do this in background thread, since "LoadSourceGraph" uses VFS, which usage is not thread-safe.
@@ -641,17 +647,22 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 	if( !source_graph.errors.empty() )
 	{
 		PopulateDiagnostics( source_graph.errors, text_, line_to_linear_position_index_, diagnostics_[Uri::FromFilePath(path_)] );
+		rebuild_finished_= true;
 		return;
 	}
 
 	if( source_graph.nodes_storage.empty() )
+	{
+		rebuild_finished_= true;
 		return;
+	}
 
 	// Take syntax errors only from this document.
 	const LexSyntErrors& synt_errors= source_graph.nodes_storage.front().ast.error_messages;
 	if( !synt_errors.empty() )
 	{
 		PopulateDiagnostics( synt_errors, text_, line_to_linear_position_index_,  diagnostics_[Uri::FromFilePath(path_)] );
+		rebuild_finished_= true;
 		return;
 	}
 
@@ -659,7 +670,10 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 	for( const SourceGraph::Node& node : source_graph.nodes_storage )
 	{
 		if( !node.ast.error_messages.empty() )
+		{
+			rebuild_finished_= true;
 			return;
+		}
 	}
 
 	// Save number of changes since compiled state.
@@ -716,7 +730,7 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 
 	compilation_future_=
 		thread_pool.async(
-			// Hack! llvm::ThreadPool uses std::function inside, which requires lambda to be move-constructible.
+			// Hack! llvm::ThreadPool uses std::function inside, which requires lambda to be copy-constructible.
 			// So, wrap actual lambda into wrapper with shared_ptr - copy shared pointer, not lambda (with captured variables) instead.
 			[ lambda_ptr= std::make_shared< decltype(update_func) >( std::move(update_func) ) ]
 			{
