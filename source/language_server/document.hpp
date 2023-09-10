@@ -51,6 +51,7 @@ public: // State tracking.
 
 	void OnPossibleDependentFileChanged( const IVfs::Path& file_path_normalized );
 
+	bool RebuildIsRunning() const;
 	bool RebuildFinished();
 	void ResetRebuildFinishedFlag();
 

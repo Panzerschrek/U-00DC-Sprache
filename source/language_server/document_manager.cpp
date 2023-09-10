@@ -203,7 +203,13 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool
 	for( auto& document_pair : documents_ )
 	{
 		Document& document= document_pair.second;
-		if( document.RebuildRequired() )
+		if( document.RebuildIsRunning() )
+		{
+			// Rebuild is running right now.
+			// It is impossible to know exactly how much it will be running, so, return resonable-small time to next check.
+			wait_time= std::min( wait_time, std::chrono::duration_cast<DocumentClock::duration>( std::chrono::milliseconds(75) ) );
+		}
+		else if( document.RebuildRequired() )
 		{
 			const auto update_time= document.GetModificationTime() + rebuild_delay;
 			if( current_time <= update_time )
