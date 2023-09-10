@@ -74,7 +74,7 @@ std::optional<IVfs::FileContent> DocumentManager::DocumentManagerVfs::LoadFileCo
 	{
 		// TODO - detect changes in unmanaged files and reload them if it is necessary.
 		if( it->second == std::nullopt )
-			return nullptr;
+			return std::nullopt;
 		return it->second->content;
 	}
 
