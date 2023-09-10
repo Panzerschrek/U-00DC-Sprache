@@ -714,6 +714,13 @@ void Document::TryTakeBackgroundStateUpdate()
 	last_valid_state_= nullptr;
 	last_valid_state_= compilation_future_.get();
 
+	if( last_valid_state_ != nullptr )
+		PopulateDiagnostics(
+			last_valid_state_->source_graph,
+			last_valid_state_->code_builder->TakeErrors(),
+			last_valid_state_->text,
+			last_valid_state_->line_to_linear_position_index );
+
 	compilation_future_= CompiledStateFuture();
 }
 
