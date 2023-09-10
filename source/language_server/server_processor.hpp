@@ -74,6 +74,7 @@ private:
 	// Notifications.
 	void HandleNotificationImpl( const InvalidParams& invalid_params );
 	void HandleNotificationImpl( const MethodNotFound& method_not_fund );
+	void HandleNotificationImpl( const Notifications::Initialized& initialized );
 	void HandleNotificationImpl( const Notifications::TextDocumentDidOpen& text_document_did_open );
 	void HandleNotificationImpl( const Notifications::TextDocumentDidClose& text_document_did_close );
 	void HandleNotificationImpl( const Notifications::TextDocumentDidChange& text_document_did_change );

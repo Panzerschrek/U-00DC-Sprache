@@ -322,6 +322,12 @@ void ServerProcessor::HandleNotificationImpl( const MethodNotFound& method_not_f
 	log_() << "Method " << method_not_fund.method_name << " not found" << std::endl;
 }
 
+void ServerProcessor::HandleNotificationImpl( const Notifications::Initialized& initialized )
+{
+	// Nothing to do here.
+	(void)initialized;
+}
+
 void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentDidOpen& text_document_did_open )
 {
 	log_() << "open a document " << text_document_did_open.uri.ToString() << std::endl;

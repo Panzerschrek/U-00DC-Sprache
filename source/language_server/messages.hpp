@@ -83,6 +83,8 @@ struct Request
 namespace Notifications
 {
 
+struct Initialized{};
+
 struct TextDocumentDidOpen
 {
 	Uri uri;
@@ -118,6 +120,7 @@ struct CancelRequest
 using Notification= std::variant<
 	InvalidParams,
 	MethodNotFound,
+	Notifications::Initialized,
 	Notifications::TextDocumentDidOpen,
 	Notifications::TextDocumentDidClose,
 	Notifications::TextDocumentDidChange,

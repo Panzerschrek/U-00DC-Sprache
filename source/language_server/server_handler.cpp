@@ -205,6 +205,12 @@ void HandleRequest( RequestId id, const std::string_view method, const Json::Val
 	message_queue.Push( Request{ std::move(id), ParseRequestParams( method, params ) } );
 }
 
+Notification ParseInitialized( const Json::Value& params )
+{
+	(void)params;
+	return Notifications::Initialized{};
+}
+
 Notification ParseTextDocumentDidOpen( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
@@ -328,6 +334,8 @@ Notification ParseCancelRequest( const Json::Value& params )
 
 Notification ParseNorification( const std::string_view method, const Json::Value& params )
 {
+	if( method == "initialized" )
+		return ParseInitialized( params );
 	if( method == "textDocument/didOpen" )
 		return ParseTextDocumentDidOpen( params );
 	if( method == "textDocument/didClose" )
