@@ -213,6 +213,18 @@ void Document::OnPossibleDependentFileChanged( const IVfs::Path& file_path_norma
 	}
 }
 
+bool Document::RebuildFinished()
+{
+	TryTakeBackgroundStateUpdate(); // If this method takes background state it may set finished flag to true.
+
+	return rebuild_finished_;
+}
+
+void Document::ResetRebuildFinishedFlag()
+{
+	rebuild_finished_= false;
+}
+
 const DiagnosticsByDocument& Document::GetDiagnostics() const
 {
 	return diagnostics_;
@@ -723,6 +735,7 @@ void Document::TryTakeBackgroundStateUpdate()
 
 	// Make future invalid - mark it as empty.
 	compilation_future_= CompiledStateFuture();
+	rebuild_finished_= true;
 
 	if( compiled_state_ != nullptr )
 	{

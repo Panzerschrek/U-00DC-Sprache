@@ -153,13 +153,34 @@ void DocumentManager::Close( const Uri& uri )
 
 DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool& thread_pool )
 {
+	// Check for finished async rebuilds of documents.
+	for( auto& document_pair : documents_ )
+	{
+		const Uri& uri= document_pair.first;
+		Document& document= document_pair.second;
+		if( document.RebuildFinished() )
+		{
+			document.ResetRebuildFinishedFlag();
+
+			// Notify other documents about change in order to trigger rebuilding of dependent documents.
+			if( const auto file_path= uri.AsFilePath() )
+			{
+				for( auto& other_document_pair : documents_ )
+					other_document_pair.second.OnPossibleDependentFileChanged( *file_path );
+			}
+
+			// Take diagnostics.
+			all_diagnostics_[ uri ]= document.GetDiagnostics();
+			diagnostics_updated_= true;
+		}
+	}
+
 	const auto rebuild_delay= std::chrono::milliseconds(1000); // TODO - make it configurable.
 	const auto current_time= DocumentClock::now();
 
 	// Find document to rebuild and rebuild it (and only it).
 	for( auto& document_pair : documents_ )
 	{
-		const Uri& uri= document_pair.first;
 		Document& document= document_pair.second;
 		if( document.RebuildRequired() )
 		{
@@ -167,17 +188,6 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool
 			if( modification_time <= current_time && (current_time - modification_time) >= rebuild_delay )
 			{
 				document.StartRebuild( thread_pool );
-
-				// Notify other documents about change in order to trigger rebuilding of dependent documents.
-				if( const auto file_path= uri.AsFilePath() )
-				{
-					for( auto& other_document_pair : documents_ )
-						other_document_pair.second.OnPossibleDependentFileChanged( *file_path );
-				}
-
-				// Take diagnostics.
-				all_diagnostics_[ uri ]= document.GetDiagnostics();
-				diagnostics_updated_= true;
 
 				// Return after first rebuilded document.
 				// Allow caller to do something else (like mesages processing).

@@ -51,6 +51,9 @@ public: // State tracking.
 
 	void OnPossibleDependentFileChanged( const IVfs::Path& file_path_normalized );
 
+	bool RebuildFinished();
+	void ResetRebuildFinishedFlag();
+
 public: // Diagnostics.
 
 	// Diagnostics are generated not only for this document, but also for opened files.
@@ -126,6 +129,7 @@ private:
 	CompiledStatePtr compiled_state_;
 
 	CompiledStateFuture compilation_future_;
+	bool rebuild_finished_= false;
 
 	DiagnosticsByDocument diagnostics_;
 };
