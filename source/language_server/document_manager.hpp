@@ -19,7 +19,7 @@ public:
 	// Returns duration to next document update. This method may be called again after returned time is passed.
 	// It is possible to call this method earlier, but it likely will not rebuild anything.
 	// May return zero duration.
-	DocumentClock::duration PerfromDelayedRebuild();
+	DocumentClock::duration PerfromDelayedRebuild( llvm::ThreadPool& thread_pool );
 
 public: // Diagnostics.
 	bool DiagnosticsWereUpdated() const;
@@ -28,14 +28,14 @@ public: // Diagnostics.
 
 public: // Wrappers for document founctionality. Use them to perform proper ranges mapping.
 
-	std::optional<RangeInDocument> GetDefinitionPoint( const PositionInDocument& position ) const;
+	std::optional<RangeInDocument> GetDefinitionPoint( const PositionInDocument& position );
 
 	// Returns highligh locations only for given document.
-	std::vector<DocumentRange> GetHighlightLocations( const PositionInDocument& position ) const;
+	std::vector<DocumentRange> GetHighlightLocations( const PositionInDocument& position );
 
-	std::vector<RangeInDocument> GetAllOccurrences( const PositionInDocument& position ) const;
+	std::vector<RangeInDocument> GetAllOccurrences( const PositionInDocument& position );
 
-	std::vector<Symbol> GetSymbols( const Uri& uri ) const;
+	std::vector<Symbol> GetSymbols( const Uri& uri );
 
 	// Non-const this, since internal compiler state may be changed in completion.
 	std::vector<CompletionItem> Complete( const PositionInDocument& position );

@@ -151,39 +151,43 @@ void DocumentManager::Close( const Uri& uri )
 	all_diagnostics_.erase( uri );
 }
 
-DocumentClock::duration DocumentManager::PerfromDelayedRebuild()
+DocumentClock::duration DocumentManager::PerfromDelayedRebuild( llvm::ThreadPool& thread_pool )
 {
-	const auto rebuild_delay= std::chrono::milliseconds(1000); // TODO - make it configurable.
-	const auto current_time= DocumentClock::now();
-
-	// Find document to rebuild and rebuild it (and only it).
+	// Check for finished async rebuilds of documents.
 	for( auto& document_pair : documents_ )
 	{
 		const Uri& uri= document_pair.first;
+		Document& document= document_pair.second;
+		if( document.RebuildFinished() )
+		{
+			document.ResetRebuildFinishedFlag();
+
+			// Notify other documents about change in order to trigger rebuilding of dependent documents.
+			if( const auto file_path= uri.AsFilePath() )
+			{
+				for( auto& other_document_pair : documents_ )
+					other_document_pair.second.OnPossibleDependentFileChanged( *file_path );
+			}
+
+			// Take diagnostics.
+			all_diagnostics_[ uri ]= document.GetDiagnostics();
+			diagnostics_updated_= true;
+		}
+	}
+
+	const auto rebuild_delay= std::chrono::milliseconds(1000); // TODO - make it configurable.
+	const auto current_time= DocumentClock::now();
+
+	// Start documents rebuilding (if necessary).
+	for( auto& document_pair : documents_ )
+	{
 		Document& document= document_pair.second;
 		if( document.RebuildRequired() )
 		{
 			const auto modification_time= document.GetModificationTime();
 			if( modification_time <= current_time && (current_time - modification_time) >= rebuild_delay )
-			{
-				document.Rebuild();
+				document.StartRebuild( thread_pool );
 
-				// Notify other documents about change in order to trigger rebuilding of dependent documents.
-				if( const auto file_path= uri.AsFilePath() )
-				{
-					for( auto& other_document_pair : documents_ )
-						other_document_pair.second.OnPossibleDependentFileChanged( *file_path );
-				}
-
-				// Take diagnostics.
-				all_diagnostics_[ uri ]= document.GetDiagnostics();
-				diagnostics_updated_= true;
-
-				// Return after first rebuilded document.
-				// Allow caller to do something else (like mesages processing).
-				// If caller has nothing to do it will call this method again.
-				return DocumentClock::duration(0);
-			}
 		}
 	}
 
@@ -193,7 +197,13 @@ DocumentClock::duration DocumentManager::PerfromDelayedRebuild()
 	for( auto& document_pair : documents_ )
 	{
 		Document& document= document_pair.second;
-		if( document.RebuildRequired() )
+		if( document.RebuildIsRunning() )
+		{
+			// Rebuild is running right now.
+			// It is impossible to know exactly how much it will be running, so, return resonable-small time to next check.
+			wait_time= std::min( wait_time, std::chrono::duration_cast<DocumentClock::duration>( std::chrono::milliseconds(75) ) );
+		}
+		else if( document.RebuildRequired() )
 		{
 			const auto update_time= document.GetModificationTime() + rebuild_delay;
 			if( current_time <= update_time )
@@ -219,7 +229,7 @@ const DiagnosticsBySourceDocument& DocumentManager::GetDiagnostics() const
 	return all_diagnostics_;
 }
 
-std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const PositionInDocument& position ) const
+std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const PositionInDocument& position )
 {
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
@@ -234,7 +244,7 @@ std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const Positi
 	return std::nullopt;
 }
 
-std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const PositionInDocument& position ) const
+std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const PositionInDocument& position )
 {
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
@@ -246,7 +256,7 @@ std::vector<DocumentRange> DocumentManager::GetHighlightLocations( const Positio
 	return it->second.GetHighlightLocations( position.position );
 }
 
-std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionInDocument& position ) const
+std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionInDocument& position )
 {
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )
@@ -265,7 +275,7 @@ std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionI
 	return result;
 }
 
-std::vector<Symbol> DocumentManager::GetSymbols( const Uri& uri ) const
+std::vector<Symbol> DocumentManager::GetSymbols( const Uri& uri )
 {
 	const auto it= documents_.find( uri );
 	if( it == documents_.end() )

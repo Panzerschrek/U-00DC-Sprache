@@ -1,5 +1,6 @@
 #include "../lex_synt_lib_common/assert.hpp"
 #include "../code_builder_lib_common/string_ref.hpp"
+#include "options.hpp"
 #include "server_processor.hpp"
 
 namespace U
@@ -63,18 +64,34 @@ Json::Value RequestIdToJson( const RequestId& id )
 	return std::visit( []( const auto& el ) { return Json::Value(el); }, id );
 }
 
+llvm::ThreadPoolStrategy CreateThreadPoolStrategy( Logger& log )
+{
+	if( Options::num_threads == 0 )
+	{
+		log() << "Auto-select number of threads in the thread pool." << std::endl;
+		return llvm::hardware_concurrency();
+	}
+
+	log() << "Create " << Options::num_threads << " threads in the thread pool." << std::endl;
+	return llvm::hardware_concurrency( Options::num_threads );
+}
+
 } // namespace
 
 ServerProcessor::ServerProcessor( Logger& log, IJsonMessageWrite& out )
-	: log_(log), out_(out), document_manager_(log_)
+	: log_(log)
+	, out_(out)
+	, thread_pool_(CreateThreadPoolStrategy(log_))
+	, document_manager_(log_)
 {
+	log_() << "Created thead pool with " << thread_pool_.getThreadCount() << " threads." << std::endl;
 }
 
 void ServerProcessor::Process( MessageQueue& message_queue )
 {
 	while(!message_queue.IsClosed())
 	{
-		const DocumentClock::duration wait_duration= document_manager_.PerfromDelayedRebuild();
+		const DocumentClock::duration wait_duration= document_manager_.PerfromDelayedRebuild( thread_pool_ );
 		const auto wait_ms= std::chrono::duration_cast<std::chrono::milliseconds>(wait_duration);
 
 		UpdateDiagnostics();
