@@ -110,6 +110,16 @@ struct TextDocumentDidChange
 	std::vector<TextDocumentChange> changes;
 };
 
+struct TextDocumentWillSave
+{
+	Uri uri;
+};
+
+struct TextDocumentDidSave
+{
+	Uri uri;
+};
+
 struct CancelRequest
 {
 	RequestId id;
@@ -124,6 +134,8 @@ using Notification= std::variant<
 	Notifications::TextDocumentDidOpen,
 	Notifications::TextDocumentDidClose,
 	Notifications::TextDocumentDidChange,
+	Notifications::TextDocumentWillSave,
+	Notifications::TextDocumentDidSave,
 	Notifications::CancelRequest >;
 
 using Message= std::variant<Request, Notification>;

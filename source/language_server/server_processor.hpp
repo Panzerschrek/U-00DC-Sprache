@@ -78,6 +78,8 @@ private:
 	void HandleNotificationImpl( const Notifications::TextDocumentDidOpen& text_document_did_open );
 	void HandleNotificationImpl( const Notifications::TextDocumentDidClose& text_document_did_close );
 	void HandleNotificationImpl( const Notifications::TextDocumentDidChange& text_document_did_change );
+	void HandleNotificationImpl( const Notifications::TextDocumentWillSave& text_document_will_save );
+	void HandleNotificationImpl( const Notifications::TextDocumentDidSave& text_document_did_save );
 	void HandleNotificationImpl( const Notifications::CancelRequest& cancel_request );
 
 	// Other stuff.

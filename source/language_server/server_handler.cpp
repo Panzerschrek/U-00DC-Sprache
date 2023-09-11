@@ -225,7 +225,7 @@ Notification ParseTextDocumentDidOpen( const Json::Value& params )
 	if( uri == llvm::None )
 		return InvalidParams{ "No uri!" };
 
-	const auto uri_parsed= Uri::Parse( *uri );
+	auto uri_parsed= Uri::Parse( *uri );
 	if( uri_parsed == std::nullopt )
 		return InvalidParams{ "Invalid uri!" };
 
@@ -250,7 +250,7 @@ Notification ParseTextDocumentDidClose( const Json::Value& params )
 	if( uri == llvm::None )
 		return InvalidParams{ "No uri!" };
 
-	const auto uri_parsed= Uri::Parse( *uri );
+	auto uri_parsed= Uri::Parse( *uri );
 	if( uri_parsed == std::nullopt )
 		return InvalidParams{ "Invalid uri!" };
 
@@ -315,6 +315,52 @@ Notification ParseTextDocumentDidChange( const Json::Value& params )
 	return std::move(change_notification);
 }
 
+Notification ParseTextDocumentWillSave( const Json::Value& params )
+{
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+		return InvalidParams{ "Not an object!" };
+
+	const auto text_document= obj->getObject("textDocument" );
+	if( text_document == nullptr )
+		return InvalidParams{ "No textDocument!" };
+
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
+		return InvalidParams{ "No uri!" };
+
+	auto uri_parsed= Uri::Parse( *uri );
+	if( uri_parsed == std::nullopt )
+		return InvalidParams{ "Invalid uri!" };
+
+	// TODO - parse also reason.
+
+	return Notifications::TextDocumentWillSave{ std::move(*uri_parsed) };
+}
+
+Notification ParseTextDocumentDidSave( const Json::Value& params )
+{
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+		return InvalidParams{ "Not an object!" };
+
+	const auto text_document= obj->getObject("textDocument" );
+	if( text_document == nullptr )
+		return InvalidParams{ "No textDocument!" };
+
+	const auto uri= text_document->getString( "uri" );
+	if( uri == llvm::None )
+		return InvalidParams{ "No uri!" };
+
+	auto uri_parsed= Uri::Parse( *uri );
+	if( uri_parsed == std::nullopt )
+		return InvalidParams{ "Invalid uri!" };
+
+	// TODO - parse also text.
+
+	return Notifications::TextDocumentDidSave{ std::move(*uri_parsed) };
+}
+
 Notification ParseCancelRequest( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
@@ -342,6 +388,10 @@ Notification ParseNorification( const std::string_view method, const Json::Value
 		return ParseTextDocumentDidClose( params );
 	if( method == "textDocument/didChange" )
 		return ParseTextDocumentDidChange( params );
+	if( method == "textDocument/willSave" )
+		return ParseTextDocumentWillSave( params );
+	if( method == "textDocument/didSave" )
+		return ParseTextDocumentDidSave( params );
 	if( method == "$/cancelRequest" )
 		return ParseCancelRequest( params );
 

@@ -381,6 +381,18 @@ void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentD
 	}
 }
 
+void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentWillSave& text_document_will_save )
+{
+	// There is no reason for now to handle this notification somehow.
+	log_() << "Will save document " << text_document_will_save.uri.ToString() << std::endl;
+}
+
+void ServerProcessor::HandleNotificationImpl( const Notifications::TextDocumentDidSave& text_document_did_save )
+{
+	// There is no reason for now to handle this notification somehow.
+	log_() << "Did save document " << text_document_did_save.uri.ToString() << std::endl;
+}
+
 void ServerProcessor::HandleNotificationImpl( const Notifications::CancelRequest& cancel_request )
 {
 	// Assume that cancellation is performing before this handler - in messages queue itself.
