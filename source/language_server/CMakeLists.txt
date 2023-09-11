@@ -1,7 +1,16 @@
-file( GLOB_RECURSE SOURCES "*.cpp" )
-file( GLOB_RECURSE HEADERS "*.hpp" )
+file( GLOB LIB_SOURCES "*.cpp" )
+file( GLOB LIB_HEADERS "*.hpp" )
 
-add_executable( LanguageServer ${SOURCES} ${HEADERS} )
+add_library( LanguageServerLib ${LIB_SOURCES} ${LIB_HEADERS} )
 # Link directly against CodeBuilderLib of compiler0. There is no reason to use compiler1 for the LanguageServer.
-target_link_libraries( LanguageServer CodeBuilderLib CompilersSupportLib )
+target_link_libraries( LanguageServerLib PUBLIC CodeBuilderLib CompilersSupportLib )
+
+add_executable( LanguageServer "tool/main.cpp" )
+target_link_libraries( LanguageServer PRIVATE LanguageServerLib )
 install( TARGETS LanguageServer )
+
+if( U_BUILD_TESTS )
+	add_executable( LanguageServerTests "tests/main.cpp" )
+	target_link_libraries( LanguageServerTests PRIVATE TestsLib LanguageServerLib )
+	add_custom_command( TARGET LanguageServerTests POST_BUILD COMMAND LanguageServerTests )
+endif()
