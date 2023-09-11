@@ -127,7 +127,7 @@ private:
 	// Compiled state (source text + source graph + code builder).
 	// It is updated relatively rarely - not for each text change.
 	// It is impossible to update it for each change, because not each change produces syntaxically-correct program
-	// and because update is costly.
+	// and because update is too slow.
 	CompiledStatePtr compiled_state_;
 
 	CompiledStateFuture compilation_future_;

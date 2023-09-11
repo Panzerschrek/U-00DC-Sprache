@@ -676,7 +676,7 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 		}
 	}
 
-	// If this is first rebuild - initialize changes tracking, in order to track changes, made during synchronous compilation.
+	// If this is first rebuild - initialize changes tracking, in order to track changes, made during assynchronous compilation.
 	if( compiled_state_ == nullptr && text_changes_since_compiled_state_ == std::nullopt )
 		text_changes_since_compiled_state_= TextChangesSequence();
 
@@ -687,6 +687,7 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 
 	// Start background compilation task, since compilation itself is relatively slow (a couple of seconds for reasonable large file).
 	// It is safe to do this, since compilation itself uses no data dependencies.
+	// Doing so we allow to execute some methods (completiong, highlighting, etc.) during compilation - without blocking whole language server.
 
 	auto update_func=
 		[
