@@ -87,7 +87,7 @@ if( U_BUILD_TESTS )
 	#
 	file( GLOB TESTS_LAUNCHER0_SOURCES "tests/*" )
 	add_executable( Tests ${TESTS_LAUNCHER0_SOURCES} )
-	target_link_libraries( Tests CodeBuilderLib ${TESTS_LIB_WRAPPED} )
+	target_link_libraries( Tests CodeBuilderLib ${CPP_TESTS_LIB_WRAPPED} )
 	add_custom_command( TARGET Tests POST_BUILD COMMAND Tests )
 
 	if( MSVC )

@@ -1,11 +1,9 @@
 #pragma once
-#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace U
 {
-
 
 struct TestId // Use struct with non-trivial constructor adn destructor for prevent "unused-variable" warning.
 {
@@ -13,22 +11,7 @@ struct TestId // Use struct with non-trivial constructor adn destructor for prev
 	~TestId() {}
 };
 
-typedef void (TestFunc)();
-class TestException  final : public std::runtime_error
-{
-public:
-	TestException( const char* const what )
-		: std::runtime_error( what )
-	{}
-};
-
-class DisableTestException  final : public std::runtime_error
-{
-public:
-	DisableTestException()
-		: std::runtime_error( "" )
-	{}
-};
+using TestFunc= void();
 
 TestId AddTestFuncPrivate( TestFunc* func, const char* const file_name, const char* const func_name );
 

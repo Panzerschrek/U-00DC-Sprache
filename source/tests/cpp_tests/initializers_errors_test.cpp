@@ -1,7 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "tests.hpp"
+#include "cpp_tests.hpp"
 
 namespace U
 {

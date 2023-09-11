@@ -1,6 +1,6 @@
 #include <cmath>
 
-#include "tests.hpp"
+#include "cpp_tests.hpp"
 
 namespace U
 {

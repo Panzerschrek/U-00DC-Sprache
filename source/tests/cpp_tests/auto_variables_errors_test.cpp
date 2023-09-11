@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include "tests.hpp"
+#include "cpp_tests.hpp"
 
 namespace U
 {

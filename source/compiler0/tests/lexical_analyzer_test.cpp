@@ -1,4 +1,5 @@
-#include "../../tests/cpp_tests/tests.hpp"
+#include "../../tests/tests_lib/funcs_registrator.hpp"
+#include "../../tests/tests_lib/tests.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 
 namespace U
