@@ -76,7 +76,7 @@ else()
 endif()
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_CODE_BUILDER_LIB Core Target )
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB Core )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB Core MC )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	IPO # for pass manager builder, etc.
 	Linker # for linking of multiple llvm modules.
