@@ -22,6 +22,13 @@ inline cl::opt<std::string> log_file_path(
 	cl::Optional,
 	cl::cat(options_category) );
 
+inline cl::opt<uint32_t> num_threads(
+	"num-threads",
+	cl::desc("Number of threads for bacground tasts. Use 0 to create threads for all awailable CPU cores."),
+	cl::value_desc("non-negative whole number"),
+	cl::Optional,
+	cl::cat(options_category) );
+
 // Duplicate some compiler options.
 
 inline cl::list<std::string> include_dir(
