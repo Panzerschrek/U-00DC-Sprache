@@ -1,3 +1,12 @@
+#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/CodeGen/TargetPassConfig.h>
+#include <llvm/MC/TargetRegistry.h>
+#include <llvm/Support/Host.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/InitializePasses.h>
+#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
+
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/vfs.hpp"
 #include "../tests/tests_common.hpp"
@@ -26,20 +35,65 @@ std::unique_ptr<IVfs> CreateBaseVfs( Logger& log )
 	return CreateVfsOverSystemFS( {} );
 }
 
-DocumentBuildOptions CreateBuildOptions()
+DocumentBuildOptions CreateBuildOptions( Logger& log )
 {
+	log() << "Initializing LLVM targets." << std::endl;
+
+	llvm::InitializeAllTargets();
+	llvm::InitializeAllTargetMCs();
+	llvm::InitializeAllAsmPrinters();
+	llvm::initializeTarget( *llvm::PassRegistry::getPassRegistry() );
+
+	const std::string features; // TODO - set it
+	const llvm::StringRef cpu_name= llvm::sys::getHostCPUName(); // TODO - set it.
+
+	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
+	const std::string target_triple_str= target_triple.normalize();
+
+	// Create target machine in order to create data layout.
+	// Doing so we significantly increase result executable size, but for now there is no other way to do this differently.
+	// See https://github.com/llvm/llvm-project/issues/65937.
+	std::unique_ptr<llvm::TargetMachine> target_machine;
+	{
+		log() << "Selecting LLVM target for triple " << target_triple_str << "." << std::endl;
+
+		std::string error_str;
+		const llvm::Target* target= llvm::TargetRegistry::lookupTarget( target_triple_str, error_str );
+		if( target == nullptr )
+			log() << "Error, selecting target: " << error_str << std::endl;
+		else
+		{
+			llvm::TargetOptions target_options;
+
+			auto code_gen_optimization_level= llvm::CodeGenOpt::None;
+
+			target_machine.reset(
+				target->createTargetMachine(
+					target_triple_str,
+					cpu_name,
+					features,
+					target_options,
+					llvm::None,
+					llvm::None,
+					code_gen_optimization_level ) );
+
+			if( target_machine == nullptr )
+				log() << "Error, creating target machine." << std::endl;
+			else
+				log() << "Created target machine for triple " << target_triple_str << "." << std::endl;
+		}
+	}
+
 	DocumentBuildOptions build_options
 	{
-		// TODO - create proper target machine.
-		llvm::DataLayout( GetTestsDataLayout() ),
-		// TODO - use target triple, dependent on compilation options.
-		llvm::Triple( llvm::sys::getDefaultTargetTriple() ),
+		target_machine == nullptr ? llvm::DataLayout(GetTestsDataLayout()) : target_machine->createDataLayout(),
+		target_triple,
 		"",
 	};
 
+	log() << "Use data layout " << build_options.data_layout.getStringRepresentation() << std::endl;
+
 	// TODO - read params from options or some kind of config file.
-	const llvm::StringRef features;
-	const llvm::StringRef cpu_name;
 	const char optimization_level= '0';
 	const bool generate_debug_info= 0;
 	const uint32_t compiler_generation= 0;
@@ -108,7 +162,7 @@ DocumentManager::DocumentManager( Logger& log )
 	// TODO - use individual VFS for different files.
 	, vfs_( *this, log_ )
 	// TODO - create different build options for different files.
-	, build_options_( CreateBuildOptions() )
+	, build_options_( CreateBuildOptions( log_ ) )
 {}
 
 Document* DocumentManager::Open( const Uri& uri, std::string text )

@@ -84,6 +84,8 @@ llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	${LLVM_TARGETS_TO_BUILD}
 	)
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_INTERPRETER Interpreter MCJIT ${LLVM_NATIVE_ARCH} Linker )
+# Link target in order to create proper target layout in compilation inside the language server.
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_LANGUAGE_SERVER ${LLVM_TARGETS_TO_BUILD} )
 
 # Python
 

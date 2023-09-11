@@ -3,7 +3,7 @@ file( GLOB LIB_HEADERS "*.hpp" )
 
 add_library( LanguageServerLib ${LIB_SOURCES} ${LIB_HEADERS} )
 # Link directly against CodeBuilderLib of compiler0. There is no reason to use compiler1 for the LanguageServer.
-target_link_libraries( LanguageServerLib PUBLIC CodeBuilderLib CompilersSupportLib )
+target_link_libraries( LanguageServerLib PUBLIC CodeBuilderLib CompilersSupportLib ${LLVM_LIBS_FOR_LANGUAGE_SERVER} )
 
 add_executable( LanguageServer "tool/main.cpp" )
 target_link_libraries( LanguageServer PRIVATE LanguageServerLib )
