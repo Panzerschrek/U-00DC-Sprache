@@ -61,7 +61,7 @@ public:
 			return std::nullopt;
 		}
 
-		if( content_length >= 128 * 1024 * 1024 )
+		if( *content_length >= 128 * 1024 * 1024 )
 			return std::nullopt; // Protection agains overflows.
 
 		str_.resize( *content_length );
