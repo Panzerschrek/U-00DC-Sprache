@@ -597,11 +597,10 @@ std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc
 	if( *position_end_mapped < *position_mapped )
 		return std::nullopt;
 
-	const uint32_t current_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_mapped ).GetLine();
-	const uint32_t current_end_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_end_mapped ).GetLine();
+	const uint32_t current_line= LinearPositionToLine( line_to_linear_position_index_, *position_mapped );
+	const uint32_t current_end_line= LinearPositionToLine( line_to_linear_position_index_, *position_end_mapped );
 	if( current_line >= line_to_linear_position_index_.size() || current_end_line >= line_to_linear_position_index_.size() )
 		return std::nullopt;
-
 
 	const TextLinearPosition current_line_start_position= line_to_linear_position_index_[current_line];
 	const std::optional<uint32_t> character=
@@ -829,7 +828,7 @@ std::optional<SrcLoc> Document::GetIdentifierStartSrcLoc( const DocumentPosition
 		return std::nullopt;
 	}
 
-	const uint32_t line= LinearPositionToSrcLoc( compiled_state_->line_to_linear_position_index, *linear_position ).GetLine();
+	const uint32_t line= LinearPositionToLine( compiled_state_->line_to_linear_position_index, *linear_position );
 
 	return GetSrcLocForIndentifierStartPoisitionInText( compiled_state_->text, line, *linear_position );
 }

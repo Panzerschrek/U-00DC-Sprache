@@ -152,8 +152,8 @@ LineToLinearPositionIndex BuildLineToLinearPositionIndex( std::string_view text 
 // Build index, reusing provided output container.
 void BuildLineToLinearPositionIndex( std::string_view text, LineToLinearPositionIndex& out_index );
 
-// Map linear position to position in format line:column (lines starting from 1).
-SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, TextLinearPosition position );
+// Get line number (starting from 0).
+uint32_t LinearPositionToLine( const LineToLinearPositionIndex& index, TextLinearPosition position );
 
 // Get position of the start of identifier at given position.
 // Returns none if there is no identifier here.
