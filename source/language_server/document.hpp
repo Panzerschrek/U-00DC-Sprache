@@ -43,7 +43,7 @@ public: // Document text stuff.
 	const std::string& GetCurrentText() const;
 
 	// Returns text of last valid state or raw text if there is no last valid state.
-	const std::string& GetTextForCompilation() const;
+	const std::string& GetTextForCompilation();
 
 public: // State tracking.
 	DocumentClock::time_point GetModificationTime() const;
@@ -54,6 +54,9 @@ public: // State tracking.
 	bool RebuildIsRunning() const;
 	bool RebuildFinished();
 	void ResetRebuildFinishedFlag();
+
+	// Wait synchronously until rebuild is finished. Use only in tests.
+	void WaitUntilRebuildFinished();
 
 public: // Diagnostics.
 

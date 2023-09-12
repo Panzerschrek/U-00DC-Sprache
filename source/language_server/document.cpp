@@ -170,10 +170,12 @@ const std::string& Document::GetCurrentText() const
 	return text_;
 }
 
-const std::string& Document::GetTextForCompilation() const
+const std::string& Document::GetTextForCompilation()
 {
 	if( in_rebuild_call_ )
 		return text_; // Force return raw text if this method was called indirectly from the "Rebuild" method.
+
+	TryTakeBackgroundStateUpdate();
 
 	// By providing text for compiled state we ensure dependent documents will build properly.
 	// Also this allows to perform proper mapping of "SrcLoc" to current state of the text.
@@ -228,6 +230,12 @@ bool Document::RebuildFinished()
 void Document::ResetRebuildFinishedFlag()
 {
 	rebuild_finished_= false;
+}
+
+void Document::WaitUntilRebuildFinished()
+{
+	if( compilation_future_.valid() )
+		compilation_future_.wait();
 }
 
 const DiagnosticsByDocument& Document::GetDiagnostics() const
