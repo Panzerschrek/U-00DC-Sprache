@@ -11,7 +11,7 @@ Documentation available [here](https://u-00dc-sprache.readthedocs.io/ru/latest/c
 ### How to build
 * Download llvm (llvm 15.0.7 used in this project).  
 * Run cmake for *source/CMakeLists.txt* and generate project for your favorite IDE or build system. You must set path to llvm in cmake arguments.  
-* (optional) in order to build CppHeaderConverter you need to download clang sources and set cmake variable LLVM_EXTERNAL_CLANG_SOURCE_DIR.  
+
 
 ### Additional components
 
@@ -20,6 +20,8 @@ Documentation available [here](https://u-00dc-sprache.readthedocs.io/ru/latest/c
 [syntax highlighting](source/syntax_highlighting/README.md)
 
 [standard library](source/ustlib/README.md)
+
+[C++ header converter](source/cpp_header_converter/README.md)
 
 [interpreter](source/interpreter/README.md)
 
