@@ -56,29 +56,6 @@ if( U_BUILD_COMPILER )
 endif()
 
 #
-# CppHeaderConverter
-#
-if( U_BUILD_CPP_HEADER_CONVERTER )
-	if( TARGET clangTooling )
-		message( STATUS "Build c++ header converter" )
-
-		file( GLOB CPP_HEADER_CONVERTER_SOURCES "cpp_header_converter/*" )
-		add_executable( CppHeaderConverter ${CPP_HEADER_CONVERTER_SOURCES} )
-		target_link_libraries( CppHeaderConverter LexSyntLib clangTooling )
-		# Hack! Clang libraries does not exports their include directories, set it manually.
-		target_include_directories( CppHeaderConverter PRIVATE ${LLVM_EXTERNAL_CLANG_SOURCE_DIR}/include )
-		target_include_directories( CppHeaderConverter PRIVATE ${CMAKE_BINARY_DIR}/llvm/tools/clang/include )
-
-		install( TARGETS CppHeaderConverter )
-
-	else()
-		message( STATUS "Clang not found, c++ header converter build disabled" )
-	endif()
-else()
-	message( STATUS "Skip c++ header converter" )
-endif()
-
-#
 # Tests
 #
 if( U_BUILD_TESTS )

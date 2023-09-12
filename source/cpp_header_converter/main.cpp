@@ -6,7 +6,7 @@
 #include  <llvm/Support/CommandLine.h>
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
-#include "../lex_synt_lib/program_writer.hpp"
+#include "../compiler0/lex_synt_lib/program_writer.hpp"
 #include "u_ast_builder.hpp"
 
 int main( int argc, const char* argv[] )

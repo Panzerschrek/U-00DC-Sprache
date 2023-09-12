@@ -320,9 +320,17 @@ else()
 endif()
 
 #
+# CppHeaderConverter
+#
+if( U_BUILD_CPP_HEADER_CONVERTER )
+	add_subdirectory( cpp_header_converter )
+else()
+	message( STATUS "Skip c++ header converter" )
+endif()
+
+#
 # Interpreter
 #
-
 if( U_BUILD_INTERPRETER )
 	message( STATUS "Build Interpreter" )
 	add_subdirectory( interpreter )
@@ -330,6 +338,9 @@ else()
 	message( STATUS "Skip Interpreter" )
 endif()
 
+#
+# Language Server
+#
 if( U_BUILD_LANGUAGE_SERVER )
 	add_subdirectory( language_server )
 else()
