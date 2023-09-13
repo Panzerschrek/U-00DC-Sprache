@@ -564,7 +564,7 @@ void FindImpl( const Synt::StaticIfOperator& static_if_operator )
 
 void FindImpl( const Synt::IfCoroAdvanceOperator& if_coro_advance_operator )
 {
- FindImpl( if_coro_advance_operator.expression );
+	FindImpl( if_coro_advance_operator.expression );
 	FindImpl( if_coro_advance_operator.alternative );
 	FindImpl( if_coro_advance_operator.block );
 }
