@@ -101,6 +101,51 @@ U_TEST( DocumentSetText_Test0 )
 	U_TEST_ASSERT( document.GetTextForCompilation() == "" );
 }
 
+U_TEST( DocumentUpdateText_Test0 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "auto x= 0;\nauto y= x;" );
+	U_TEST_ASSERT( document.GetCurrentText() == "auto x= 0;\nauto y= x;" );
+
+	// Add range.
+	document.UpdateText( DocumentRange{ { 1, 10 }, { 1, 10 } }, " struct S{}" );
+	U_TEST_ASSERT( document.GetCurrentText() == "auto x= 0; struct S{}\nauto y= x;" );
+
+	// Replace range.
+	document.UpdateText( DocumentRange{ { 2, 5 }, { 2, 6 } }, "new_y" );
+	U_TEST_ASSERT( document.GetCurrentText() == "auto x= 0; struct S{}\nauto new_y= x;" );
+
+	// Remove range with newline inside.
+	document.UpdateText( DocumentRange{ { 1, 10 }, { 2, 5 } }, "" );
+	U_TEST_ASSERT( document.GetCurrentText() == "auto x= 0;new_y= x;" );
+
+	// Add range with newlines.
+	document.UpdateText( DocumentRange{ { 1, 5 }, { 1, 19 } }, "new_auto= 42;\nstruct NewStruct{}\nenum E{A}" );
+	U_TEST_ASSERT( document.GetCurrentText() == "auto new_auto= 42;\nstruct NewStruct{}\nenum E{A}" );
+
+	// Add something at start.
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "broken_syntax " );
+	U_TEST_ASSERT( document.GetCurrentText() == "broken_syntax auto new_auto= 42;\nstruct NewStruct{}\nenum E{A}" );
+
+	// Add something at end.
+	document.UpdateText( DocumentRange{ { 3, 9 }, { 3, 9 } }, " var i32 t= 0;" );
+	U_TEST_ASSERT( document.GetCurrentText() == "broken_syntax auto new_auto= 42;\nstruct NewStruct{}\nenum E{A} var i32 t= 0;" );
+
+	// Remove something at start.
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 2, 0 } }, "" );
+	U_TEST_ASSERT( document.GetCurrentText() == "struct NewStruct{}\nenum E{A} var i32 t= 0;" );
+
+	// Remove something at end.
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 2, 23 } }, "" );
+	U_TEST_ASSERT( document.GetCurrentText() == "" );
+}
+
 U_TEST( DocumentRebuild_Test0 )
 {
 	DocumentsContainer documents;
