@@ -538,6 +538,258 @@ U_TEST( DocumentCompletion_Test9 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test10 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Completion inside function. Later defined variables and variables in outer scope are not visible.
+
+	document.SetText( R"(
+fn Foo()
+{
+	auto var0= 0; // visible
+	{
+		auto var1= 0; // not visible
+	}
+	{
+		auto var2= 0; // visible
+		{
+			auto var3= 0; // visible
+// Complete here.
+			auto var4= 0; // not visible
+		}
+		auto var5= 0; // not visible
+	}
+	auto var6= 0; // not visible
+}
+)" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 12, 0 }, { 12, 0 } }, "auto x= va" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 12, 10 } );
+	const CompletionItemsNormalized expected_completion_result{ "var0", "var2", "var3" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test11 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "namespace NN{  } type CustomType= i32; fn Foo();" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	{
+		// Access via "::" provides all global names, including built-in types.
+		document.UpdateText( DocumentRange{ { 1, 14 }, { 1, 14 } }, "type t= ::" );
+
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 24 } );
+		const CompletionItemsNormalized expected_completion_result
+		{
+			"CustomType",
+			"Foo",
+			"NN",
+			"bool",
+			"byte128", "byte16", "byte32", "byte64", "byte8",
+			"char16", "char32", "char8",
+			"compiler", // name from the prelude
+			"f32", "f64",
+			"i128", "i16", "i32", "i64", "i8",
+			"size_type",
+			"u128", "u16", "u32", "u64", "u8",
+			"void"
+		};
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		// Access via "::" with name provides matching globals.
+		document.UpdateText( DocumentRange{ { 1, 14 }, { 1, 24 } }, "type t= ::byte" );
+
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 28 } );
+		const CompletionItemsNormalized expected_completion_result{ "byte128", "byte16", "byte32", "byte64", "byte8", };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+}
+
+U_TEST( DocumentCompletion_Test12 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Completion inside function inside struct inside struct inside a couple of namespaces.
+
+	document.SetText( R"(
+namespace Abc
+{
+	namespace Unvisible0{ auto lol_5= 0; }
+	namespace Def
+	{
+		namespace Unvisible1{ auto lol_6= 0; }
+		struct Ghi
+		{
+			struct Unvisible2{ auto lol_7= 0; }
+			struct Klm
+			{
+				struct Unvisible3{ auto lol_8= 0; }
+				fn Nop()
+				{
+// Complete here
+				}
+				auto lol_0= 0;
+			}
+			auto lol_1= 0;
+		}
+		auto lol_2= 0;
+	}
+	auto lol_3= 0;
+}
+auto lol_4= 0;
+)" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 16, 0 }, { 16, 0 } }, "auto x= lol" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 16, 11 } );
+	const CompletionItemsNormalized expected_completion_result{ "lol_0", "lol_1", "lol_2", "lol_3", "lol_4" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test13 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "fn foo(i32 mut qwerty){  }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Complete name in "move".
+	document.UpdateText( DocumentRange{ { 1, 24 }, { 1, 24 } }, "move( q" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 31 } );
+	const CompletionItemsNormalized expected_completion_result{ "qwerty" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test14 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( " struct S{ i32 a; i32 b; i32 wtf; fn Foo(); type T= i32; }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Complete name in "struct named initializer". Only fields are suggested.
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "var S s { ." );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 11 } );
+	const CompletionItemsNormalized expected_completion_result{ "a", "b", "wtf" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test15 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "struct S{  i32 field0; i32 field1; i32 other_field; i32 lol; }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Complete name in constructor initializer list. Only fields are suggested.
+	document.UpdateText( DocumentRange{ { 1, 10 }, { 1, 10 } }, "fn constructor() ( f ) {}" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 30 } );
+	const CompletionItemsNormalized expected_completion_result{ "field0", "field1", "other_field" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test16 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Complete in complex function name.
+
+	document.SetText( R"(
+namespace Abc
+{
+	namespace Def
+	{
+		fn Foo();
+	}
+}
+// Complete here
+)" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	{
+		document.UpdateText( DocumentRange{ { 9, 0 }, { 9, 0 } }, "fn Ab" );
+		const auto completion_result= document.Complete( DocumentPosition{ 9, 5 } );
+		const CompletionItemsNormalized expected_completion_result{ "Abc" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 9, 5 }, { 9, 5 } }, "c::" );
+		const auto completion_result= document.Complete( DocumentPosition{ 9, 8 } );
+		const CompletionItemsNormalized expected_completion_result{ "Def" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 9, 8 }, { 9, 8 } }, "d" );
+		const auto completion_result= document.Complete( DocumentPosition{ 9, 9 } );
+		const CompletionItemsNormalized expected_completion_result{ "Def" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 9, 8 }, { 9, 9 } }, "Def::" );
+		const auto completion_result= document.Complete( DocumentPosition{ 9, 13 } );
+		const CompletionItemsNormalized expected_completion_result{ "Foo" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 9, 13 }, { 9, 13 } }, "oo" );
+		const auto completion_result= document.Complete( DocumentPosition{ 9, 15 } );
+		const CompletionItemsNormalized expected_completion_result{ "Foo" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+}
+
 } // namespace
 
 } // namespace LangServer
