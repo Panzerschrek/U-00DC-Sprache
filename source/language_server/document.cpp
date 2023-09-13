@@ -366,8 +366,6 @@ std::vector<Symbol> Document::GetSymbols()
 
 std::vector<CompletionItem> Document::Complete( const DocumentPosition& position )
 {
-	log_() << "Completion request " << position.line << ":" << position.character << std::endl;
-
 	TryTakeBackgroundStateUpdate();
 
 	if( compiled_state_ == nullptr || compiled_state_->source_graph.nodes_storage.empty() )
@@ -403,8 +401,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	SrcLoc src_loc;
 	if( line_text[ column_utf8_minus_one ] == '.' )
 	{
-		log_() << "Complete for ." << std::endl;
-
 		const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one );
 		if( column == std::nullopt )
 		{
@@ -432,8 +428,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	}
 	else if( line_text[ column_utf8_minus_one ] == ':' && column_utf8_minus_one > 0 && line_text[ column_utf8_minus_one - 1 ] == ':' )
 	{
-		log_() << "Complete for ::" << std::endl;
-
 		const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one - 1 ); // -1 to reach start of "::"
 		if( column == std::nullopt )
 		{
@@ -461,8 +455,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	}
 	else
 	{
-		log_() << "Complete for identifier" << std::endl;
-
 		const std::optional<TextLinearPosition> idenifier_start_utf8= GetIdentifierStartForPosition( line_text, column_utf8_minus_one );
 		if( idenifier_start_utf8 == std::nullopt )
 		{
@@ -483,7 +475,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		{
 			if( lexem.src_loc == src_loc && lexem.type == Lexem::Type::Identifier )
 			{
-				log_() << "Complete text \"" << lexem.text << "\"" << std::endl;
 				lexem.type= Lexem::Type::CompletionIdentifier;
 				found= true;
 				break;
@@ -538,8 +529,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		return {};
 	}
 
-	log_() << "Find syntax element of kind " << lookup_result->element.index() << std::endl;
-
 	// Use existing compiled program to perform names lookup.
 	// Do not try to compile current text, because it is broken and completion will not return what should be returned.
 	// Also it is too slow to recompile program for each completion.
@@ -557,8 +546,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		completion_result= compiled_state_->code_builder->Complete( lookup_result->prefix, **class_element );
 	}
 	else U_ASSERT( false );
-
-	log_() << "Completion found " << completion_result.size() << " results" << std::endl;
 
 	std::vector<CompletionItem> result_transformed;
 	result_transformed.reserve( completion_result.size() );

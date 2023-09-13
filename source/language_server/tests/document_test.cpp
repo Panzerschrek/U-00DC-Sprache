@@ -69,6 +69,24 @@ private:
 	DocumentsContainer& documents_;
 };
 
+using CompletionItemsNormalized= std::vector<std::string>;
+
+CompletionItemsNormalized NormalizeCompletionResult( const llvm::ArrayRef<CompletionItem> items )
+{
+	std::vector items_copy= items.vec();
+	std::sort(
+		items_copy.begin(),
+		items_copy.end(),
+		[]( const CompletionItem& l, const CompletionItem& r ) { return l.sort_text < r.sort_text; } );
+
+	CompletionItemsNormalized result;
+	result.reserve( items.size() );
+	for( const CompletionItem& item : items_copy )
+		result.push_back( item.label );
+
+	return result;
+}
+
 Logger g_tests_logger( std::cout );
 llvm::ThreadPool g_tests_thread_pool;
 
@@ -214,6 +232,106 @@ U_TEST( DocumentRebuild_Test2 )
 	U_TEST_ASSERT( document.RebuildFinished() == true );
 	U_TEST_ASSERT( document.GetCurrentText() == "wrong syntax" );
 	U_TEST_ASSERT( document.GetTextForCompilation() == "auto x= 0;" );
+}
+
+U_TEST( DocumentCompletion_Test0 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "auto xyz= 0;\nauto qwerty= 0;\nvar i33 xrt= 0;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	{
+		document.UpdateText( DocumentRange{ { 1, 12 }, { 1, 12 } }, "auto w=x" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto xyz= 0;auto w=x\nauto qwerty= 0;\nvar i33 xrt= 0;" );
+
+		// Complete starts with "x"
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 20 } );
+		const CompletionItemsNormalized expected_completion_result{ "xrt", "xyz" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 1, 12 }, { 1, 20 } }, "auto w=q" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto xyz= 0;auto w=q\nauto qwerty= 0;\nvar i33 xrt= 0;" );
+
+		// Complete starts with "q"
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 20 } );
+		const CompletionItemsNormalized expected_completion_result{ "qwerty" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+}
+
+U_TEST( DocumentCompletion_Test1 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Completion with search inside the word.
+	document.SetText( " type PerfectCode= i32; type CodeUnit= f32; type Cod= bool; auto CodeCompletion= 0; var i32 ThisCodeIsWrong= 0;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "type w=Code" );
+	U_TEST_ASSERT( document.GetCurrentText() == "type w=Code type PerfectCode= i32; type CodeUnit= f32; type Cod= bool; auto CodeCompletion= 0; var i32 ThisCodeIsWrong= 0;" );
+
+	// Words starting with "Code" are suggested first. Than words with "Code" inside.
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 11 } );
+	const CompletionItemsNormalized expected_completion_result{ "CodeCompletion", "CodeUnit", "PerfectCode", "ThisCodeIsWrong" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test2 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Completion is case-insensetive.
+	document.SetText( " auto ab= 0; auto Ab= 0; auto QAB= 0; auto TaBs= 0;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "auto x= ab" );
+	U_TEST_ASSERT( document.GetCurrentText() == "auto x= ab auto ab= 0; auto Ab= 0; auto QAB= 0; auto TaBs= 0;" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 10 } );
+	const CompletionItemsNormalized expected_completion_result{ "Ab", "ab", "QAB", "TaBs" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test3 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Completion returns nothing.
+	document.SetText( " auto qwerty= 0;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "auto x= ab" );
+	U_TEST_ASSERT( document.GetCurrentText() == "auto x= ab auto qwerty= 0;" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 10 } );
+	const CompletionItemsNormalized expected_completion_result{};
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
 } // namespace
