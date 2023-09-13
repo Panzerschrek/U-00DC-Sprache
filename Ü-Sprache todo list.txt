@@ -77,8 +77,6 @@ Language server
 *) Highlighting for overloaded operators
 *) Create TargetMachine to obtain proper data layout
 *) Support various end of line combinations "\n", "\r\n", "\r"
-*) Completion tests
-*) Tests for helper functions and core functionality
 *) Backup completion for non-compiled documents
 *) Filter-out some symbol kinds in completion, depending on context
 *) Sort completed items using some kind of prioroty
@@ -89,6 +87,7 @@ Language server
 *) A way to provide configuration (import directories, other compilation options)
 *) Tune SrcLoc of syntax elements in order to show name definition points properly
 *) Links between errors for template/macro errors
+*) More unit-tests
 
 CPP Header converter:
 *) White list of converted symbols
