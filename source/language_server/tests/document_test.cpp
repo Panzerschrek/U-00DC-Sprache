@@ -334,6 +334,210 @@ U_TEST( DocumentCompletion_Test3 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test4 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( " auto var3= 0; namespace NN{ auto var4= 0; } auto var5= 0;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	{
+		document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "auto x= var" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto x= var auto var3= 0; namespace NN{ auto var4= 0; } auto var5= 0;" );
+
+		// Completion returns only items visible within completion point namespace.
+		// Items from inner namespace are not visible.
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 11 } );
+		const CompletionItemsNormalized expected_completion_result{ "var3", "var5" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 12 } }, "" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto var3= 0; namespace NN{ auto var4= 0; } auto var5= 0;" );
+		document.UpdateText( DocumentRange{ { 1, 27 }, { 1, 27 } }, "auto x= var" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto var3= 0; namespace NN{auto x= var auto var4= 0; } auto var5= 0;" );
+
+		// Now "var4" from inner namespace is visible.
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 38 } );
+		const CompletionItemsNormalized expected_completion_result{ "var3", "var4", "var5" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+}
+
+U_TEST( DocumentCompletion_Test5 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "struct S{ i32 field; fn Foo(); } fn S::Foo(){}" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 45 }, { 1, 45 } }, "fi" );
+	U_TEST_ASSERT( document.GetCurrentText() == "struct S{ i32 field; fn Foo(); } fn S::Foo(){fi}" );
+
+	// Class field is visible from out-of-line method.
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 47 } );
+	const CompletionItemsNormalized expected_completion_result{ "field" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test6 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( " struct S{ type GHMQ= i32; fn Foo(); i32 lol; }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Access class memebers via "::".
+	{
+		document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "auto x=S::GH" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto x=S::GH struct S{ type GHMQ= i32; fn Foo(); i32 lol; }" );
+
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 12 } );
+		const CompletionItemsNormalized expected_completion_result{ "GHMQ" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 12 } }, "auto x=S::oo" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto x=S::oo struct S{ type GHMQ= i32; fn Foo(); i32 lol; }" );
+
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 12 } );
+		const CompletionItemsNormalized expected_completion_result{ "Foo" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 12 } }, "auto x=S::LO" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto x=S::LO struct S{ type GHMQ= i32; fn Foo(); i32 lol; }" );
+
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 12 } );
+		const CompletionItemsNormalized expected_completion_result{ "lol" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 12 } }, "auto x=S::con" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto x=S::con struct S{ type GHMQ= i32; fn Foo(); i32 lol; }" );
+
+		// "constructor" name is implicitely created.
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 13 } );
+		const CompletionItemsNormalized expected_completion_result{ "constructor" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 13 } }, "auto x=S::des" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto x=S::des struct S{ type GHMQ= i32; fn Foo(); i32 lol; }" );
+
+		// "destructor" name is implicitely created.
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 13 } );
+		const CompletionItemsNormalized expected_completion_result{ "destructor" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+}
+
+U_TEST( DocumentCompletion_Test7 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( " namespace Abc{ auto x= 0; type Tt= f32; fn Qwerty(); enum EE{A, B, C} var i32 el= 0; }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	{
+		// Via single "::" (with empty name) all namespace members are accessible.
+		document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "type t= Abc::" );
+		U_TEST_ASSERT( document.GetCurrentText() == "type t= Abc:: namespace Abc{ auto x= 0; type Tt= f32; fn Qwerty(); enum EE{A, B, C} var i32 el= 0; }" );
+
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 13 } );
+		const CompletionItemsNormalized expected_completion_result{ "EE", "Qwerty", "Tt", "el", "x" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		// Via "::" with non-empty name accessible only matched elements.
+		document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "e" );
+		U_TEST_ASSERT( document.GetCurrentText() == "type t= Abc::e namespace Abc{ auto x= 0; type Tt= f32; fn Qwerty(); enum EE{A, B, C} var i32 el= 0; }" );
+
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 14 } );
+		const CompletionItemsNormalized expected_completion_result{ "EE", "el", "Qwerty" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+}
+
+U_TEST( DocumentCompletion_Test8 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( " struct S{ i32 field0; i32 field1; i32 other_field; f32 rr; type ll= bool; fn some_func(); type typef= i32; type ftype= i32; struct Inner_f{} } var S s= zero_init;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	{
+		document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "auto x= s.f" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto x= s.f struct S{ i32 field0; i32 field1; i32 other_field; f32 rr; type ll= bool; fn some_func(); type typef= i32; type ftype= i32; struct Inner_f{} } var S s= zero_init;" );
+
+		// With name after "." items are filedered.
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 11 } );
+		const CompletionItemsNormalized expected_completion_result{ "field0", "field1", "ftype", "Inner_f", "other_field", "some_func", "typef" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+	{
+		document.UpdateText( DocumentRange{ { 1, 10 }, { 1, 11 } }, "" );
+		U_TEST_ASSERT( document.GetCurrentText() == "auto x= s. struct S{ i32 field0; i32 field1; i32 other_field; f32 rr; type ll= bool; fn some_func(); type typef= i32; type ftype= i32; struct Inner_f{} } var S s= zero_init;" );
+
+		// With no name after "." all class internals are provided.
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 10 } );
+		const CompletionItemsNormalized expected_completion_result{ "Inner_f", "constructor", "destructor", "field0", "field1", "ftype", "ll", "other_field", "rr", "some_func", "typef" };
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
+}
+
+U_TEST( DocumentCompletion_Test9 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( " struct S{ op++(S &mut s); op()(this); op-(S& s) : S; } var S s= zero_init;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Overloaded operators are ignored via "." access.
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "auto x= s." );
+	U_TEST_ASSERT( document.GetCurrentText() == "auto x= s. struct S{ op++(S &mut s); op()(this); op-(S& s) : S; } var S s= zero_init;" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 10 } );
+	const CompletionItemsNormalized expected_completion_result{ "constructor", "destructor" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
 } // namespace
 
 } // namespace LangServer
