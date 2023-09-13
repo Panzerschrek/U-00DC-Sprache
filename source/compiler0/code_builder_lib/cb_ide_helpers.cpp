@@ -103,20 +103,9 @@ void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc&
 	DefinitionPoint point;
 	point.src_loc= GetDefinitionFetchSrcLoc( value );
 
-	if( const auto variable_ptr= value.value.GetVariable() )
-	{
-		if( variable_ptr != nullptr )
-			point.type= variable_ptr->type;
-	}
-	if( const auto class_field= value.value.GetClassField() )
-	{
-		if( class_field != nullptr )
-			point.type= class_field->type;
-	}
-
 	// Reset macro expansion contexts.
 	// This fixes search of definitions/usages inside macro expansions.
-	// This breaks search within macro definitions itselfs, but it is anyway irrelevant.
+	// This breaks search within macro definitions itself, but it is anyway irrelevant.
 	SrcLoc src_loc_corrected= src_loc;
 	src_loc_corrected.SetMacroExpansionIndex( SrcLoc::c_max_macro_expanison_index );
 	point.src_loc.SetMacroExpansionIndex( SrcLoc::c_max_macro_expanison_index );

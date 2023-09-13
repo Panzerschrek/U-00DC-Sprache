@@ -1290,7 +1290,6 @@ private:
 	struct DefinitionPoint
 	{
 		SrcLoc src_loc;
-		std::optional<Type> type; // Type (if present).
 	};
 	// Map usage point to definition point.
 	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
