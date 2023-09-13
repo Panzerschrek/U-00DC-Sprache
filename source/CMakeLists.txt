@@ -76,7 +76,7 @@ else()
 endif()
 
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_CODE_BUILDER_LIB Core Target )
-llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB Core )
+llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILERS_SUPPORT_LIB Core MC )
 llvm_map_components_to_libnames( LLVM_LIBS_FOR_COMPILER
 	IPO # for pass manager builder, etc.
 	Linker # for linking of multiple llvm modules.
@@ -249,15 +249,24 @@ endif()
 # TestsLib
 #
 if( U_BUILD_TESTS )
+	file( GLOB TESTS_SOURCES "tests/tests_lib/*" )
+	add_library( TestsLib ${TESTS_SOURCES} )
+endif()
+
+#
+# CppTestsLib
+#
+if( U_BUILD_TESTS )
 	message( STATUS "Build tests" )
 
-	file( GLOB TESTS_SOURCES "tests/cpp_tests/*" )
-	add_library( TestsLib ${TESTS_SOURCES} )
+	file( GLOB CPP_TESTS_SOURCES "tests/cpp_tests/*" )
+	add_library( CppTestsLib ${CPP_TESTS_SOURCES} )
+	target_link_libraries( CppTestsLib PUBLIC TestsLib )
 
 	# Hack! Force use static variables with initializers with tests registration
-	set( TESTS_LIB_WRAPPED TestsLib )
+	set( CPP_TESTS_LIB_WRAPPED CppTestsLib )
 	if( NOT MSVC )
-		set( TESTS_LIB_WRAPPED -Wl,--whole-archive ${TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
+		set( CPP_TESTS_LIB_WRAPPED -Wl,--whole-archive ${CPP_TESTS_LIB_WRAPPED} -Wl,--no-whole-archive )
 	endif()
 
 else()

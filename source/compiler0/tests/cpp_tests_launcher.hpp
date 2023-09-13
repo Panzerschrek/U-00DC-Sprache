@@ -1,5 +1,5 @@
 #pragma once
-#include "../../tests/cpp_tests/tests.hpp"
+#include "../../tests/cpp_tests/cpp_tests.hpp"
 #include "../code_builder_lib/code_builder.hpp"
 
 namespace U

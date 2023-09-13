@@ -3,23 +3,11 @@
 #include "../../code_builder_lib_common/code_builder_errors.hpp"
 #include "../execution_engine.hpp"
 
-#include "funcs_registrator.hpp"
+#include "../tests_lib/funcs_registrator.hpp"
+#include "../tests_lib/tests.hpp"
 
 namespace U
 {
-
-// Main tests assertion handler. Aborts test.
-#define U_TEST_ASSERT(x) \
-	if( !(x) )\
-	{\
-		throw TestException( #x );\
-	}
-
-#define DISABLE_TEST throw DisableTestException()
-
-// Utility tests functions.
-
-#define ASSERT_NEAR( x, y, eps ) U_TEST_ASSERT( std::abs( (x) - (y) ) <= (eps) )
 
 struct ErrorTestBuildResult
 {

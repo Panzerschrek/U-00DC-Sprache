@@ -170,10 +170,12 @@ const std::string& Document::GetCurrentText() const
 	return text_;
 }
 
-const std::string& Document::GetTextForCompilation() const
+const std::string& Document::GetTextForCompilation()
 {
 	if( in_rebuild_call_ )
 		return text_; // Force return raw text if this method was called indirectly from the "Rebuild" method.
+
+	TryTakeBackgroundStateUpdate();
 
 	// By providing text for compiled state we ensure dependent documents will build properly.
 	// Also this allows to perform proper mapping of "SrcLoc" to current state of the text.
@@ -228,6 +230,12 @@ bool Document::RebuildFinished()
 void Document::ResetRebuildFinishedFlag()
 {
 	rebuild_finished_= false;
+}
+
+void Document::WaitUntilRebuildFinished()
+{
+	if( compilation_future_.valid() )
+		compilation_future_.wait();
 }
 
 const DiagnosticsByDocument& Document::GetDiagnostics() const
@@ -358,8 +366,6 @@ std::vector<Symbol> Document::GetSymbols()
 
 std::vector<CompletionItem> Document::Complete( const DocumentPosition& position )
 {
-	log_() << "Completion request " << position.line << ":" << position.character << std::endl;
-
 	TryTakeBackgroundStateUpdate();
 
 	if( compiled_state_ == nullptr || compiled_state_->source_graph.nodes_storage.empty() )
@@ -395,8 +401,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	SrcLoc src_loc;
 	if( line_text[ column_utf8_minus_one ] == '.' )
 	{
-		log_() << "Complete for ." << std::endl;
-
 		const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one );
 		if( column == std::nullopt )
 		{
@@ -424,8 +428,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	}
 	else if( line_text[ column_utf8_minus_one ] == ':' && column_utf8_minus_one > 0 && line_text[ column_utf8_minus_one - 1 ] == ':' )
 	{
-		log_() << "Complete for ::" << std::endl;
-
 		const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one - 1 ); // -1 to reach start of "::"
 		if( column == std::nullopt )
 		{
@@ -453,8 +455,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	}
 	else
 	{
-		log_() << "Complete for identifier" << std::endl;
-
 		const std::optional<TextLinearPosition> idenifier_start_utf8= GetIdentifierStartForPosition( line_text, column_utf8_minus_one );
 		if( idenifier_start_utf8 == std::nullopt )
 		{
@@ -475,7 +475,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		{
 			if( lexem.src_loc == src_loc && lexem.type == Lexem::Type::Identifier )
 			{
-				log_() << "Complete text \"" << lexem.text << "\"" << std::endl;
 				lexem.type= Lexem::Type::CompletionIdentifier;
 				found= true;
 				break;
@@ -530,8 +529,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		return {};
 	}
 
-	log_() << "Find syntax element of kind " << lookup_result->element.index() << std::endl;
-
 	// Use existing compiled program to perform names lookup.
 	// Do not try to compile current text, because it is broken and completion will not return what should be returned.
 	// Also it is too slow to recompile program for each completion.
@@ -549,8 +546,6 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		completion_result= compiled_state_->code_builder->Complete( lookup_result->prefix, **class_element );
 	}
 	else U_ASSERT( false );
-
-	log_() << "Completion found " << completion_result.size() << " results" << std::endl;
 
 	std::vector<CompletionItem> result_transformed;
 	result_transformed.reserve( completion_result.size() );
@@ -589,11 +584,10 @@ std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc
 	if( *position_end_mapped < *position_mapped )
 		return std::nullopt;
 
-	const uint32_t current_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_mapped ).GetLine();
-	const uint32_t current_end_line= LinearPositionToSrcLoc( line_to_linear_position_index_, *position_end_mapped ).GetLine();
+	const uint32_t current_line= LinearPositionToLine( line_to_linear_position_index_, *position_mapped );
+	const uint32_t current_end_line= LinearPositionToLine( line_to_linear_position_index_, *position_end_mapped );
 	if( current_line >= line_to_linear_position_index_.size() || current_end_line >= line_to_linear_position_index_.size() )
 		return std::nullopt;
-
 
 	const TextLinearPosition current_line_start_position= line_to_linear_position_index_[current_line];
 	const std::optional<uint32_t> character=
@@ -821,7 +815,7 @@ std::optional<SrcLoc> Document::GetIdentifierStartSrcLoc( const DocumentPosition
 		return std::nullopt;
 	}
 
-	const uint32_t line= LinearPositionToSrcLoc( compiled_state_->line_to_linear_position_index, *linear_position ).GetLine();
+	const uint32_t line= LinearPositionToLine( compiled_state_->line_to_linear_position_index, *linear_position );
 
 	return GetSrcLocForIndentifierStartPoisitionInText( compiled_state_->text, line, *linear_position );
 }

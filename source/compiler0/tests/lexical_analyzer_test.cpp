@@ -1,4 +1,5 @@
-#include "../../tests/cpp_tests/tests.hpp"
+#include "../../tests/tests_lib/funcs_registrator.hpp"
+#include "../../tests/tests_lib/tests.hpp"
 #include "../lex_synt_lib/lexical_analyzer.hpp"
 
 namespace U
@@ -227,35 +228,35 @@ U_TEST( LineToLinearPositionIndex_Test7 )
 	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 4, 5 }) );
 }
 
-U_TEST( LinearPositionToSrcLoc_Test0 )
+U_TEST( LinearPositionToLine_Test0 )
 {
 	static const char c_program_text[] = "";
 	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( c_program_text );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 0 ) == SrcLoc( 0, 1, 0 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 1 ) == SrcLoc( 0, 1, 1 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 2 ) == SrcLoc( 0, 1, 2 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 100 ) == SrcLoc( 0, 1, 100 ) );
+	U_TEST_ASSERT( LinearPositionToLine( index, 0 ) == 1 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 1 ) == 1 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 2 ) == 1 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 100 ) == 1 );
 }
 
-U_TEST( LinearPositionToSrcLoc_Test1 )
+U_TEST( LinearPositionToLine_Test1 )
 {
 	static const char c_program_text[] = "fn foo()\n{\n\tbar();\n}\n";
 	const LineToLinearPositionIndex index= BuildLineToLinearPositionIndex( c_program_text );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  0 ) == SrcLoc( 0, 1, 0 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  6 ) == SrcLoc( 0, 1, 6 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  8 ) == SrcLoc( 0, 1, 8 ) ); // '\n' counts as last symbol in the line.
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index,  9 ) == SrcLoc( 0, 2, 0 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 10 ) == SrcLoc( 0, 2, 1 ) ); // '\n' counts as last symbol in the line.
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 11 ) == SrcLoc( 0, 3, 0 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 12 ) == SrcLoc( 0, 3, 1 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 13 ) == SrcLoc( 0, 3, 2 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 18 ) == SrcLoc( 0, 3, 7 ) );  // '\n' counts as last symbol in the line.
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 19 ) == SrcLoc( 0, 4, 0 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 20 ) == SrcLoc( 0, 4, 1 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 21 ) == SrcLoc( 0, 5, 0 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 22 ) == SrcLoc( 0, 5, 1 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 23 ) == SrcLoc( 0, 5, 2 ) );
-	U_TEST_ASSERT( LinearPositionToSrcLoc( index, 53 ) == SrcLoc( 0, 5,32 ) );
+	U_TEST_ASSERT( LinearPositionToLine( index,  0 ) == 1 );
+	U_TEST_ASSERT( LinearPositionToLine( index,  6 ) == 1 );
+	U_TEST_ASSERT( LinearPositionToLine( index,  8 ) == 1 ); // '\n' counts as last symbol in the line.
+	U_TEST_ASSERT( LinearPositionToLine( index,  9 ) == 2 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 10 ) == 2 ); // '\n' counts as last symbol in the line.
+	U_TEST_ASSERT( LinearPositionToLine( index, 11 ) == 3 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 12 ) == 3 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 13 ) == 3 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 18 ) == 3 );  // '\n' counts as last symbol in the line.
+	U_TEST_ASSERT( LinearPositionToLine( index, 19 ) == 4 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 20 ) == 4 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 21 ) == 5 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 22 ) == 5 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 23 ) == 5 );
+	U_TEST_ASSERT( LinearPositionToLine( index, 53 ) == 5 );
 }
 
 U_TEST( IdentifierStartEndPosition_Test0 )

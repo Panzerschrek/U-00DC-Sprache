@@ -755,7 +755,7 @@ void BuildLineToLinearPositionIndex( std::string_view text, LineToLinearPosition
 	}
 }
 
-SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, const TextLinearPosition position )
+uint32_t LinearPositionToLine( const LineToLinearPositionIndex& index, const TextLinearPosition position )
 {
 	U_ASSERT( index.size() >= 2 ); // Should contains at least dummy and first line.
 
@@ -765,15 +765,11 @@ SrcLoc LinearPositionToSrcLoc( const LineToLinearPositionIndex& index, const Tex
 	if( it == index.begin() )
 	{
 		// WTF?
-		return SrcLoc( 0, 1, 0 );
+		return 1;
 	}
 	const auto prev_it= std::prev(it);
 
-	const uint32_t line= uint32_t( size_t( prev_it - index.begin() ) );
-	// TODO - maybe count code points, not UTF-8 chars?
-	const uint32_t column= uint32_t( position - *prev_it );
-
-	return SrcLoc( 0, line, column );
+	return  uint32_t( size_t( prev_it - index.begin() ) );
 }
 
 std::optional<TextLinearPosition> GetIdentifierStartForPosition( const std::string_view text, const TextLinearPosition position )
