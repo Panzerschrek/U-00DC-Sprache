@@ -312,10 +312,10 @@ FunctionVariable* CodeBuilder::GetFunctionWithSameType(
 	const FunctionType& function_type,
 	OverloadedFunctionsSet& functions_set )
 {
-	for( FunctionVariable& function_varaible : functions_set.functions )
+	for( FunctionVariable& function_variable : functions_set.functions )
 	{
-		if( function_varaible.type == function_type )
-			return &function_varaible;
+		if( function_variable.type == function_type )
+			return &function_variable;
 	}
 
 	return nullptr;

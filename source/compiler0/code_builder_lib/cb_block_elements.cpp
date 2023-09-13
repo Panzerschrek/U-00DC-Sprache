@@ -313,7 +313,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 				continue;
 			}
 
-			// TODO - maybe make copy of varaible address in new llvm register?
+			// TODO - maybe make copy of variable address in new llvm register?
 			variable_reference->llvm_value=
 				CreateReferenceCast( expression_result->llvm_value, expression_result->type, variable_reference->type, function_context );
 			variable_reference->constexpr_value= expression_result->constexpr_value;

@@ -172,7 +172,7 @@ U_TEST(TempVariablesMovingTest2_MoveTempVariableInExpressionInitialization)
 
 		fn Foo()
 		{
-			var S s= S(66635); // Must move to initialized variable temp varaible.
+			var S s= S(66635); // Must move to initialized variable temp variable.
 		}
 	)";
 
@@ -221,7 +221,7 @@ U_TEST(TempVariablesMovingTest3_MoveTempVariableInAutoVariableInitialization)
 
 		fn Foo()
 		{
-			auto s= S(11245678); // Must move to initialized variable temp varaible.
+			auto s= S(11245678); // Must move to initialized variable temp variable.
 		}
 	)";
 
