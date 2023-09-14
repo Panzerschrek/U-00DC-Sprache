@@ -1,6 +1,6 @@
 #pragma once
 #include <functional>
-#include "../compiler0/lex_synt_lib/syntax_elements.hpp"
+#include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "document_position.hpp"
 
 namespace U
@@ -53,7 +53,7 @@ struct Symbol
 using SrcLocToRangeMappingFunction= std::function< std::optional<DocumentRange>( const SrcLoc& src_loc ) >;
 
 std::vector<Symbol> BuildSymbols(
-	const Synt::ProgramElements& program_elements,
+	const Synt::SyntaxAnalysisResult& synt_result,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
 
 } // namespace LangServer

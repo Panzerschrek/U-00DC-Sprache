@@ -353,7 +353,7 @@ std::vector<Symbol> Document::GetSymbols()
 		// Normal case - use last valid state of syntax tree in order to build symbols.
 		return
 			BuildSymbols(
-				compiled_state_->source_graph.nodes_storage.front().ast.program_elements,
+				compiled_state_->source_graph.nodes_storage.front().ast,
 				// Map src_loc in compiled state to range in current state of the document.
 				[this]( const SrcLoc& src_loc ) { return GetIdentifierRange(src_loc); } );
 	}
@@ -367,7 +367,7 @@ std::vector<Symbol> Document::GetSymbols()
 
 	return
 		BuildSymbols(
-			source_graph.nodes_storage.front().ast.program_elements,
+			source_graph.nodes_storage.front().ast,
 			// Use current state of the document text to get ranges for src_loc.
 			[this]( const SrcLoc& src_loc ) { return GetIdentifierCurrentRange(src_loc); } );
 }

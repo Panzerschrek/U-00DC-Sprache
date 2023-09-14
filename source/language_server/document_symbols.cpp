@@ -27,6 +27,41 @@ DocumentRange MakeRange(
 	return DocumentRange{ { src_loc.GetLine(), src_loc.GetColumn() }, { src_loc.GetLine(), src_loc.GetColumn()+ 1 } };
 }
 
+std::vector<Symbol> BuildMacrosSymbols(
+	const Synt::MacrosPtr& macros,
+	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
+{
+	std::vector<Symbol> result;
+	if( macros == nullptr )
+		return result;
+
+	for( const auto& constex_macro_map_pair : *macros )
+	{
+		for( const auto& name_macro_pair : constex_macro_map_pair.second )
+		{
+			const Synt::Macro& macro= name_macro_pair.second;
+			if( macro.src_loc.GetFileIndex() != 0 )
+				continue; // Ignore imported macros.
+
+			if( macro.name == "if_var" || macro.name == "foreach" ) // HACK - ignore built-in macros.
+				continue;
+
+			Symbol symbol;
+			symbol.kind= SymbolKind::Namespace; // There is no kind for macros in LSP.
+			symbol.name= macro.name;
+			symbol.range= MakeRange( macro.src_loc, src_loc_to_range_mapping_function );
+			symbol.selection_range= symbol.range;
+			result.push_back(symbol);
+		}
+	}
+
+	std::sort(
+		result.begin(), result.end(),
+		[](const Symbol& l, const Symbol& r ) { return l.range < r.range; } );
+
+	return result;
+}
+
 std::string Stringify( const Synt::TypeName& type_name )
 {
 	std::stringstream ss;
@@ -378,11 +413,19 @@ void SetupRanges( std::vector<Symbol>& symbols )
 } // namespace
 
 std::vector<Symbol> BuildSymbols(
-	const Synt::ProgramElements& program_elements,
+	const Synt::SyntaxAnalysisResult& synt_result,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
-	// TODO - include also macros.
-	auto result= BuildProgramModel_r( program_elements, src_loc_to_range_mapping_function );
+	auto result= BuildMacrosSymbols( synt_result.macros, src_loc_to_range_mapping_function );
+
+	{
+		auto document_symbols= BuildProgramModel_r( synt_result.program_elements, src_loc_to_range_mapping_function );
+
+		result.reserve( result.size() + document_symbols.size() );
+		for( Symbol& symbol : document_symbols )
+			result.push_back( std::move(symbol) );
+	}
+
 	SetupRanges(result);
 	return result;
 }
