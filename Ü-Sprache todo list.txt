@@ -4,12 +4,14 @@ Delete the features from the list as soon as they are implemented.
 
 General:
 *) build-in "for" for array types.
+*) equality compare for types (like "==").
 *) Disassembly operator - declare variables with initializer as members of value of structure type.
 *) Function to function pointer assignment
 *) Functions references info in "typeinfo".
 *) More float types ( 16 bit, 128 bit )
 *) Constructor initializer for constexpr structs
 *) Lambdas.
+*) Custom field/class attributes, accessible via typeinfo (for metaprogramming)
 *) Async functions.
 *) Continious initializer for arrays
 *) Auto-move in "return" for local variable
@@ -43,7 +45,7 @@ Standart library:
 *) More math functions
 
 Compiler:
-*) Optimize typeinfo - avoid calculating mangled name for typeinfo types
+*) Optimize typeinfo - avoid calculating mangled name for typeinfo types, avoid building lists if it's not necessary (buld them lazily)
 *) Investigate optimization possibility - avoid mangling private functions
 *) Add option to define some constants in prelude (like preprocessor defenitions in C++).
 *) Imporve TBAA - use struct path-based TBAA.
@@ -72,19 +74,19 @@ QtCreator plugin:
 *) Language server features support
 
 Language server
-*) Go to definition for non-value names - loop labels, reference tags, imports, etc.
-*) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
-*) Highlighting for overloaded operators
 *) Create TargetMachine to obtain proper data layout
+*) Reduce memory usage - avoid building unnecessary code, clear unused internal data structures, make mangled names shorter, etc.
+*) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
+*) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
 *) Support various end of line combinations "\n", "\r\n", "\r"
+*) A way to provide configuration (import directories, other compilation options)
+*) Complete function argument types while writing function call
+*) Avoid infinite calculations in constexpr functions executiong during compilation in the LanguageServer
+*) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
+*) Go to definition for non-value names - loop labels, reference tags, imports, etc.
 *) Backup completion for non-compiled documents
 *) Filter-out some symbol kinds in completion, depending on context
 *) Sort completed items using some kind of prioroty
-*) Reduce memory usage - remove llvm functions body for compiled module
-*) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
-*) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
-*) A way to provide configuration (import directories, other compilation options)
-*) Tune SrcLoc of syntax elements in order to show name definition points properly
 *) Links between errors for template/macro errors
 *) More unit-tests
 
