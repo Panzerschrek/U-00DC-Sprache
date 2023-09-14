@@ -8,7 +8,7 @@ def FunctionDeclarationOutsideItsScope_ForFunctionTemplates_Test0():
 		fn NS::Foo(){}
 	"""
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
-	assert( HaveError( errors_list, "FunctionDeclarationOutsideItsScope", 3 ) )
+	assert( HaveError( errors_list, "FunctionDeclarationOutsideItsScope", 4 ) )
 
 
 def ValueIsNotTemplate_ForFunctionTemplates_Test1():
@@ -55,7 +55,7 @@ def IncompleteMemberOfClassTemplate_ForFunctionTemplates_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "IncompleteMemberOfClassTemplate" )
-	assert( errors_list[0].src_loc.line == 2 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def Redefinition_ForFunctionTemplateParameter():
@@ -66,7 +66,7 @@ def Redefinition_ForFunctionTemplateParameter():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "Redefinition" )
-	assert( errors_list[0].src_loc.line == 2 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def NameNotFound_ForFunctionTemplateParameter():
@@ -97,7 +97,7 @@ def InvalidTypeOfTemplateVariableArgument_ForFunctionTemplateParameter():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "InvalidTypeOfTemplateVariableArgument" )
-	assert( errors_list[0].src_loc.line == 3 )
+	assert( errors_list[0].src_loc.line == 4 )
 
 
 def VirtualForFunctionTemplate_Test0():
@@ -108,7 +108,7 @@ def VirtualForFunctionTemplate_Test0():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "VirtualForFunctionTemplate" )
-	assert( errors_list[0].src_loc.line == 2 )
+	assert( errors_list[0].src_loc.line == 3 )
 
 
 def TemplateParametersDeductionFailed_Test0():

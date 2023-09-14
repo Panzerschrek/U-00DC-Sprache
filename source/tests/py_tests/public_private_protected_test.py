@@ -538,7 +538,7 @@ def FunctionsVisibilityMismatch_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
-	assert( errors_list[0].src_loc.line == 7 )
+	assert( errors_list[0].src_loc.line == 8 )
 
 
 def FunctionsVisibilityMismatch_Test2():
@@ -556,7 +556,7 @@ def FunctionsVisibilityMismatch_Test2():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( errors_list[0].error_code == "FunctionsVisibilityMismatch" )
-	assert( errors_list[0].src_loc.line == 8 )
+	assert( errors_list[0].src_loc.line == 9 )
 
 
 def FunctionsVisibilityMismatch_Test3():
