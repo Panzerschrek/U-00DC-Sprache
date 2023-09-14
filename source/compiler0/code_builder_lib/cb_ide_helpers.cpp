@@ -527,7 +527,7 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 	const auto pos=value_name_ref.find_insensitive( completion_name_ref );
 	if( completion_name_ref.empty() || pos != llvm::StringRef::npos )
 	{
-		if( value_name_ref.startswith( StringViewToStringRef( Keyword(Keywords::static_assert_) ) ) || // static_assert name may exist isnide namespace, but we should ignore it.
+		if( value_name_ref.startswith( StringViewToStringRef( Keyword(Keywords::static_assert_) ) ) || // static_assert name may exist inside namespace, but we should ignore it.
 			StringToOverloadedOperator( value_name ) != std::nullopt // Ignore all overloaded operators. There is no reason and no possibility to access overloaded operator by name.
 			// Still allow to access constructors and destructors, even if it is needed very rarely.
 			)
@@ -539,7 +539,7 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 		item.name= std::string(value_name);
 
 		// Perform prioritization by prefixing name in sort text.
-		// All values names, starting with given text have more priority, that values with name matching given in the middle/at end.
+		// All values names, starting with given text have more priority, than values with name matching given in the middle/at end.
 		if( completion_name_ref.empty() || pos == 0 )
 			item.sort_text= "0_" + item.name;
 		else
@@ -551,10 +551,7 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 		if( const auto variable= value.GetVariable() )
 		{
 			item.kind= CompletionItemKind::Variable;
-
-			item.detail= item.name;
-			item.detail+= " : ";
-			item.detail+= variable->type.ToString();
+			item.detail= variable->type.ToString();
 		}
 		else if( value.GetFunctionsSet() != nullptr || value.GetThisOverloadedMethodsSet() != nullptr )
 			item.kind= CompletionItemKind::FunctionsSet;
@@ -565,8 +562,6 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 			if( type->GetFundamentalType() == nullptr )
 			{
 				// Fill detail for types except fundamentals.
-				item.detail= item.name;
-				item.detail+= " : ";
 
 				// Prefix structs/classes and enums with specific keyword.
 				if( const auto class_type= type->GetClassType() )
@@ -588,9 +583,6 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 		else if( const auto class_field= value.GetClassField() )
 		{
 			item.kind= CompletionItemKind::ClassField;
-
-			item.detail= item.name;
-			item.detail+= " : ";
 
 			if( class_field->is_reference )
 			{
