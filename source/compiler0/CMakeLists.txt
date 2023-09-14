@@ -68,7 +68,7 @@ if( U_BUILD_TESTS )
 	add_custom_command( TARGET Tests POST_BUILD COMMAND Tests )
 
 	if( MSVC )
-		set_target_properties( Tests PROPERTIES LINK_FLAGS /WHOLEARCHIVE:TestsLib )
+		set_target_properties( Tests PROPERTIES LINK_FLAGS /WHOLEARCHIVE:CppTestsLib )
 	endif()
 endif()
 
