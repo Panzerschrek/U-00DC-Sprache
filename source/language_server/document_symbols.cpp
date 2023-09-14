@@ -14,14 +14,16 @@ namespace LangServer
 namespace
 {
 
-DocumentRange MakeRangeInitial(
+DocumentRange MakeRange(
 	const SrcLoc& src_loc,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
 	if( auto range= src_loc_to_range_mapping_function(src_loc) )
 		return std::move(*range);
 
-	// Backup range creationg. It is wrong, since it uses no valid utf32->itf16 convertion and doesn't extract identifiers, but this is better than nothing.
+	// Backup range creation.
+	// It is wrong, since it uses no valid utf32->utf16 convertion and doesn't extract correct identifier ranges,
+	// but this is better than nothing.
 	return DocumentRange{ { src_loc.GetLine(), src_loc.GetColumn() }, { src_loc.GetLine(), src_loc.GetColumn()+ 1 } };
 }
 
@@ -168,7 +170,7 @@ std::vector<Symbol> BuildProgramModel_r(
 	{
 		Symbol symbol;
 		symbol.name= member.name;
-		symbol.range= MakeRangeInitial( member.src_loc, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( member.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::EnumMember;
 		result.push_back(symbol);
@@ -198,7 +200,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( class_field_ );
-		symbol.range= MakeRangeInitial( class_field_.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( class_field_.src_loc_, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Field;
 		result.push_back( std::move(symbol) );
@@ -210,7 +212,7 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= Stringify( *func );
-		symbol.range= MakeRangeInitial( func->src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( func->src_loc_, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
@@ -222,7 +224,7 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= Stringify( func_template );
-		symbol.range= MakeRangeInitial( func_template.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( func_template.src_loc_, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
@@ -234,7 +236,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( type_template );
-		symbol.range= MakeRangeInitial( type_template.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( type_template.src_loc_, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range; // TODO - set it properly.
 		symbol.kind= SymbolKind::Class;
 
@@ -251,7 +253,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= enum_.name;
-		symbol.range= MakeRangeInitial( enum_.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( enum_.src_loc_, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Enum;
 		symbol.children= BuildProgramModel_r( enum_, src_loc_to_range_mapping_function );
@@ -264,7 +266,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= typedef_.name;
-		symbol.range= MakeRangeInitial( typedef_.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( typedef_.src_loc_, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Class;
 		result.push_back( std::move(symbol) );
@@ -276,7 +278,7 @@ struct Visitor final
 		{
 			Symbol symbol;
 			symbol.name= Stringify( variable, type_name );
-			symbol.range= MakeRangeInitial( variable.src_loc, src_loc_to_range_mapping_function );
+			symbol.range= MakeRange( variable.src_loc, src_loc_to_range_mapping_function );
 			symbol.selection_range= symbol.range;
 			symbol.kind= SymbolKind::Variable;
 			result.push_back( std::move(symbol) );
@@ -286,7 +288,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( auto_variable_declaration );
-		symbol.range= MakeRangeInitial( auto_variable_declaration.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( auto_variable_declaration.src_loc_, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Variable;
 		result.push_back( std::move(symbol) );
@@ -298,7 +300,7 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= class_->name_;
-		symbol.range= MakeRangeInitial( class_->src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( class_->src_loc_, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? SymbolKind::Struct : SymbolKind::Class;
 		symbol.children= BuildProgramModel_r( class_->elements_, src_loc_to_range_mapping_function );
@@ -311,7 +313,7 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= namespace_->name_;
-		symbol.range= MakeRangeInitial( namespace_->src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( namespace_->src_loc_, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Namespace;
 		symbol.children= BuildProgramModel_r( namespace_->elements_, src_loc_to_range_mapping_function );
