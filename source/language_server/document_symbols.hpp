@@ -41,18 +41,21 @@ enum class SymbolKind : uint8_t
 	TypeParameter = 26,
 };
 
+struct Symbol;
+using Symbols= std::vector<Symbol>;
+
 struct Symbol
 {
 	std::string name;
 	DocumentRange range;
 	DocumentRange selection_range;
-	std::vector<Symbol> children;
+	Symbols children;
 	SymbolKind kind= SymbolKind::None;
 };
 
 using SrcLocToRangeMappingFunction= std::function< std::optional<DocumentRange>( const SrcLoc& src_loc ) >;
 
-std::vector<Symbol> BuildSymbols(
+Symbols BuildSymbols(
 	const Synt::SyntaxAnalysisResult& synt_result,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
 

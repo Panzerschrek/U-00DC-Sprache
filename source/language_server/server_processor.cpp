@@ -38,7 +38,7 @@ Json::Value DocumentRangeToJson( const DocumentRange& range )
 	return out_range;
 }
 
-Json::Array SymbolsToJson( const std::vector<Symbol>& symbols )
+Json::Array SymbolsToJson( const Symbols& symbols )
 {
 	Json::Array result;
 

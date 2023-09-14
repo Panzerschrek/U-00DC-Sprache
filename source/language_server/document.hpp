@@ -71,7 +71,7 @@ public: // Requests.
 
 	std::vector<SrcLocInDocument> GetAllOccurrences( const DocumentPosition& position );
 
-	std::vector<Symbol> GetSymbols();
+	Symbols GetSymbols();
 
 	// Non-const this, since internal compiler state may be changed in completion.
 	std::vector<CompletionItem> Complete( const DocumentPosition& position );

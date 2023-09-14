@@ -344,7 +344,7 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 	return result;
 }
 
-std::vector<Symbol> Document::GetSymbols()
+Symbols Document::GetSymbols()
 {
 	TryTakeBackgroundStateUpdate();
 

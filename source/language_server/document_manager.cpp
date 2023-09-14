@@ -275,7 +275,7 @@ std::vector<RangeInDocument> DocumentManager::GetAllOccurrences( const PositionI
 	return result;
 }
 
-std::vector<Symbol> DocumentManager::GetSymbols( const Uri& uri )
+Symbols DocumentManager::GetSymbols( const Uri& uri )
 {
 	const auto it= documents_.find( uri );
 	if( it == documents_.end() )

@@ -35,7 +35,7 @@ public: // Wrappers for document founctionality. Use them to perform proper rang
 
 	std::vector<RangeInDocument> GetAllOccurrences( const PositionInDocument& position );
 
-	std::vector<Symbol> GetSymbols( const Uri& uri );
+	Symbols GetSymbols( const Uri& uri );
 
 	// Non-const this, since internal compiler state may be changed in completion.
 	std::vector<CompletionItem> Complete( const PositionInDocument& position );

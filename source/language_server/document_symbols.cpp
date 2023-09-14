@@ -27,11 +27,11 @@ DocumentRange MakeRange(
 	return DocumentRange{ { src_loc.GetLine(), src_loc.GetColumn() }, { src_loc.GetLine(), src_loc.GetColumn()+ 1 } };
 }
 
-std::vector<Symbol> BuildMacrosSymbols(
+Symbols BuildMacrosSymbols(
 	const Synt::MacrosPtr& macros,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
-	std::vector<Symbol> result;
+	Symbols result;
 	if( macros == nullptr )
 		return result;
 
@@ -195,11 +195,11 @@ std::string Stringify( const Synt::AutoVariableDeclaration& variable )
 	return ss.str();
 }
 
-std::vector<Symbol> BuildProgramModel_r(
+Symbols BuildProgramModel_r(
 	const Synt::Enum& enum_,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
-	std::vector<Symbol> result;
+	Symbols result;
 
 	for( const Synt::Enum::Member& member : enum_.members )
 	{
@@ -214,11 +214,11 @@ std::vector<Symbol> BuildProgramModel_r(
 	return result;
 }
 
-std::vector<Symbol> BuildProgramModel_r(
+Symbols BuildProgramModel_r(
 	const Synt::ClassElements& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
 
-std::vector<Symbol> BuildProgramModel_r(
+Symbols BuildProgramModel_r(
 	const Synt::ProgramElements& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
 
@@ -228,7 +228,7 @@ struct Visitor final
 		: src_loc_to_range_mapping_function(in_src_loc_to_range_mapping_function)
 	{}
 
-	std::vector<Symbol> result;
+	Symbols result;
 	SrcLocToRangeMappingFunction src_loc_to_range_mapping_function;
 
 	void operator()( const Synt::ClassField& class_field_ )
@@ -356,7 +356,7 @@ struct Visitor final
 	}
 };
 
-std::vector<Symbol> BuildProgramModel_r(
+Symbols BuildProgramModel_r(
 	const Synt::ClassElements& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
@@ -367,7 +367,7 @@ std::vector<Symbol> BuildProgramModel_r(
 	return std::move(visitor.result);
 }
 
-std::vector<Symbol> BuildProgramModel_r(
+Symbols BuildProgramModel_r(
 	const Synt::ProgramElements& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
@@ -378,7 +378,7 @@ std::vector<Symbol> BuildProgramModel_r(
 	return std::move(visitor.result);
 }
 
-void SetupRanges_r( std::vector<Symbol>& symbols, DocumentPosition& prev_position )
+void SetupRanges_r( Symbols& symbols, DocumentPosition& prev_position )
 {
 	for( auto it= symbols.rbegin(), it_end= symbols.rend(); it != it_end; ++it )
 	{
@@ -391,7 +391,7 @@ void SetupRanges_r( std::vector<Symbol>& symbols, DocumentPosition& prev_positio
 	}
 }
 
-void SetupRanges( std::vector<Symbol>& symbols )
+void SetupRanges( Symbols& symbols )
 {
 	if( symbols.empty() )
 		return;
@@ -412,7 +412,7 @@ void SetupRanges( std::vector<Symbol>& symbols )
 
 } // namespace
 
-std::vector<Symbol> BuildSymbols(
+Symbols BuildSymbols(
 	const Synt::SyntaxAnalysisResult& synt_result,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
