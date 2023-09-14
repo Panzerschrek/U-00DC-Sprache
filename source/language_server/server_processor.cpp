@@ -237,15 +237,15 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Definition& definition )
 {
-	Json::Object result;
-
 	if( const std::optional<RangeInDocument> range_in_document= document_manager_.GetDefinitionPoint( definition.position ) )
 	{
+		Json::Object result;
 		result["range"]= DocumentRangeToJson( range_in_document->range );
 		result["uri"]= range_in_document->uri.ToString();
+		return result;
 	}
 
-	return result;
+	return Json::Value(nullptr);
 }
 
 ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::Complete& complete )
