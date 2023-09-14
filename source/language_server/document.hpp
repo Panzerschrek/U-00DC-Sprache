@@ -80,6 +80,9 @@ public: // Requests.
 	// Also performs mapping from SrcLoc for last valid state to current text state.
 	std::optional<DocumentRange> GetIdentifierRange( const SrcLoc& src_loc ) const;
 
+	// Same as abowe, but uses current state of document text.
+	std::optional<DocumentRange> GetIdentifierCurrentRange( const SrcLoc& src_loc ) const;
+
 public: // Other stuff.
 	// Start rebuild. Rebuilding itself is performed in background thread.
 	void StartRebuild( llvm::ThreadPool& thread_pool );

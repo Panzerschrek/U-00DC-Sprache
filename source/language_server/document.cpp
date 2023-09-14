@@ -351,7 +351,11 @@ std::vector<Symbol> Document::GetSymbols()
 	if( compiled_state_ != nullptr )
 	{
 		// Normal case - use last valid state of syntax tree in order to build symbols.
-		return BuildSymbols( compiled_state_->source_graph.nodes_storage.front().ast.program_elements );
+		return
+			BuildSymbols(
+				compiled_state_->source_graph.nodes_storage.front().ast.program_elements,
+				// Map src_loc in compiled state to range in current state of the document.
+				[this]( const SrcLoc& src_loc ) { return GetIdentifierRange(src_loc); } );
 	}
 
 	// Backup for cases when document is not compiled yet.
@@ -361,7 +365,11 @@ std::vector<Symbol> Document::GetSymbols()
 	if( source_graph.nodes_storage.empty() )
 		return {};
 
-	return BuildSymbols( source_graph.nodes_storage.front().ast.program_elements );
+	return
+		BuildSymbols(
+			source_graph.nodes_storage.front().ast.program_elements,
+			// Use current state of the document text to get ranges for src_loc.
+			[this]( const SrcLoc& src_loc ) { return GetIdentifierCurrentRange(src_loc); } );
 }
 
 std::vector<CompletionItem> Document::Complete( const DocumentPosition& position )
@@ -611,6 +619,11 @@ std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc
 	range.start= DocumentPosition{ current_line, *character };
 	range.end= DocumentPosition{ current_end_line, *character_end };
 	return range;
+}
+
+std::optional<DocumentRange> Document::GetIdentifierCurrentRange( const SrcLoc& src_loc ) const
+{
+	return SrcLocToDocumentIdentifierRange( src_loc, text_, line_to_linear_position_index_ );
 }
 
 void Document::StartRebuild( llvm::ThreadPool& thread_pool )
