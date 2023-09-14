@@ -202,16 +202,16 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 			capabilities["completionProvider"]= std::move(completion_options);
 		}
 		{
-			Json::Object signature_options;
+			Json::Object signature_help_options;
 
 			{
 				Json::Array trigger_characters;
 				trigger_characters.push_back( Json::Value( "(" ) );
 
-				signature_options["triggerCharacters"]= std::move(trigger_characters);
+				signature_help_options["triggerCharacters"]= std::move(trigger_characters);
 			}
 
-			capabilities["signatureHelpProvider"]= std::move(signature_options);
+			capabilities["signatureHelpProvider"]= std::move(signature_help_options);
 		}
 
 		result["capabilities"]= std::move(capabilities);
@@ -299,13 +299,19 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 		Json::Array signatures;
 		{
 			Json::Object signature;
-			signature["label"]= "signature_test";
+			signature["label"]= "(som";
+			signature["documentation"]= "TODO - some doc";
 
 			{
 				Json::Array parameters;
 				{
 					Json::Object parameter;
-					parameter["label"]= "some_type_of_param";
+					parameter["label"]= std::string("some_type_of_param");
+					parameters.push_back( std::move(parameter) );
+				}
+				{
+					Json::Object parameter;
+					parameter["label"]= "other_param_type";
 					parameters.push_back( std::move(parameter) );
 				}
 				signature["parameters"]= std::move(parameters);
@@ -313,7 +319,17 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 
 			signatures.push_back( std::move(signature) );
 		}
+		{
+			Json::Object signature;
+			signature["label"]= "(ee";
+			signature["documentation"]= "TODO - some doc";
+			signature["parameters"]= Json::Array();
+
+			signatures.push_back( std::move(signature) );
+		}
 		result["signatures"]= std::move(signatures);
+		result["activeSignature"]= Json::Value( int64_t(0) );
+		result["activeParameter"]= Json::Value( int64_t(0) );
 	}
 	return result;
 }
