@@ -83,7 +83,6 @@ Language server
 *) Reduce memory usage - remove llvm functions body for compiled module
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
-*) Document symbols - correct ranges (Unicode support)
 *) A way to provide configuration (import directories, other compilation options)
 *) Tune SrcLoc of syntax elements in order to show name definition points properly
 *) Links between errors for template/macro errors
