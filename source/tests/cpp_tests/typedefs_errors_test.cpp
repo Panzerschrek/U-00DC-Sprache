@@ -256,7 +256,7 @@ U_TEST( TemplateArgumentNotUsedInSignature_ForTypedefTemplate_Test0 )
 	const CodeBuilderError& error= build_result.errors.front();
 
 	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::TemplateArgumentNotUsedInSignature );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 2u );
+	U_TEST_ASSERT( error.src_loc.GetLine() == 3u );
 }
 
 } // namespace

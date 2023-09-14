@@ -3708,6 +3708,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 
 	std::string name;
 	const SrcLoc& template_thing_src_loc= it_->src_loc;
+	SrcLoc template_name_src_loc= it_->src_loc;
 	if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 	{
 		template_kind= it_->text == Keywords::struct_ ? TemplateKind::Struct : TemplateKind::Class;
@@ -3719,6 +3720,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			return EmptyVariant();
 		}
 		name= it_->text;
+		template_name_src_loc= it_->src_loc;
 		NextLexem();
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
@@ -3731,6 +3733,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			return EmptyVariant();
 		}
 		name= it_->text;
+		template_name_src_loc= it_->src_loc;
 		NextLexem();
 		template_kind= TemplateKind::Typedef;
 	}
@@ -3739,6 +3742,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		FunctionTemplate function_template( template_src_loc );
 		function_template.params_= std::move(params);
 		function_template.function_= std::make_unique<Function>(ParseFunction());
+		function_template.src_loc_= function_template.function_->src_loc_;
 		return std::move(function_template);
 	}
 	else
@@ -3795,7 +3799,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 	case TemplateKind::Class:
 	case TemplateKind::Struct:
 		{
-			TypeTemplate class_template( template_src_loc );
+			TypeTemplate class_template( template_name_src_loc );
 			class_template.params_= std::move(params);
 			class_template.signature_params_= std::move(signature_params);
 			class_template.name_= name;
@@ -3824,7 +3828,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 
 	case TemplateKind::Typedef:
 		{
-			TypeTemplate typedef_template( template_src_loc );
+			TypeTemplate typedef_template( template_name_src_loc );
 			typedef_template.params_= std::move(params);
 			typedef_template.signature_params_= std::move(signature_params);
 			typedef_template.name_= name;

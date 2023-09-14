@@ -14,16 +14,17 @@ namespace LangServer
 namespace
 {
 
-DocumentRange MakeRangeInitial( const SrcLoc& src_loc )
+DocumentRange MakeRange(
+	const SrcLoc& src_loc,
+	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
-	return DocumentRange{ { src_loc.GetLine(), src_loc.GetColumn() }, { src_loc.GetLine(), src_loc.GetColumn() } };
-}
+	if( auto range= src_loc_to_range_mapping_function(src_loc) )
+		return std::move(*range);
 
-DocumentRange MakeSelectionRange( const SrcLoc& src_loc, const std::string& name )
-{
-	// TODO - count UTF-32 points, not UTF-8.
-	const uint32_t size= uint32_t(name.size());
-	return DocumentRange{ { src_loc.GetLine(), src_loc.GetColumn() }, { src_loc.GetLine(), src_loc.GetColumn() + size } };
+	// Backup range creation.
+	// It is wrong, since it uses no valid utf32->utf16 convertion and doesn't extract correct identifier ranges,
+	// but this is better than nothing.
+	return DocumentRange{ { src_loc.GetLine(), src_loc.GetColumn() }, { src_loc.GetLine(), src_loc.GetColumn()+ 1 } };
 }
 
 std::string Stringify( const Synt::TypeName& type_name )
@@ -159,7 +160,9 @@ std::string Stringify( const Synt::AutoVariableDeclaration& variable )
 	return ss.str();
 }
 
-std::vector<Symbol> BuildProgramModel_r( const Synt::Enum& enum_ )
+std::vector<Symbol> BuildProgramModel_r(
+	const Synt::Enum& enum_,
+	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
 	std::vector<Symbol> result;
 
@@ -167,8 +170,8 @@ std::vector<Symbol> BuildProgramModel_r( const Synt::Enum& enum_ )
 	{
 		Symbol symbol;
 		symbol.name= member.name;
-		symbol.range= MakeRangeInitial( member.src_loc );
-		symbol.selection_range= MakeSelectionRange( member.src_loc, member.name );
+		symbol.range= MakeRange( member.src_loc, src_loc_to_range_mapping_function );
+		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::EnumMember;
 		result.push_back(symbol);
 	}
@@ -176,19 +179,29 @@ std::vector<Symbol> BuildProgramModel_r( const Synt::Enum& enum_ )
 	return result;
 }
 
-std::vector<Symbol> BuildProgramModel_r( const Synt::ClassElements& elements );
-std::vector<Symbol> BuildProgramModel_r( const Synt::ProgramElements& elements );
+std::vector<Symbol> BuildProgramModel_r(
+	const Synt::ClassElements& elements,
+	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
+
+std::vector<Symbol> BuildProgramModel_r(
+	const Synt::ProgramElements& elements,
+	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
 
 struct Visitor final
 {
+	explicit Visitor( const SrcLocToRangeMappingFunction& in_src_loc_to_range_mapping_function )
+		: src_loc_to_range_mapping_function(in_src_loc_to_range_mapping_function)
+	{}
+
 	std::vector<Symbol> result;
+	SrcLocToRangeMappingFunction src_loc_to_range_mapping_function;
 
 	void operator()( const Synt::ClassField& class_field_ )
 	{
 		Symbol symbol;
 		symbol.name= Stringify( class_field_ );
-		symbol.range= MakeRangeInitial( class_field_.src_loc_ );
-		symbol.selection_range= MakeSelectionRange( class_field_.src_loc_, class_field_.name );
+		symbol.range= MakeRange( class_field_.src_loc_, src_loc_to_range_mapping_function );
+		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Field;
 		result.push_back( std::move(symbol) );
 	}
@@ -199,8 +212,8 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= Stringify( *func );
-		symbol.range= MakeRangeInitial( func->src_loc_ );
-		symbol.selection_range= MakeSelectionRange( func->src_loc_, func->name_.back().name );
+		symbol.range= MakeRange( func->src_loc_, src_loc_to_range_mapping_function );
+		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
 	}
@@ -211,8 +224,8 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= Stringify( func_template );
-		symbol.range= MakeRangeInitial( func_template.src_loc_ );
-		symbol.selection_range= MakeSelectionRange( func_template.function_->src_loc_, func_template.function_->name_.back().name );
+		symbol.range= MakeRange( func_template.src_loc_, src_loc_to_range_mapping_function );
+		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
 	}
@@ -223,13 +236,13 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( type_template );
-		symbol.range= MakeRangeInitial( type_template.src_loc_ );
+		symbol.range= MakeRange( type_template.src_loc_, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range; // TODO - set it properly.
 		symbol.kind= SymbolKind::Class;
 
 		if( const auto class_= std::get_if<Synt::ClassPtr>( &type_template.something_ ) )
 		{
-			symbol.children= BuildProgramModel_r( (*class_)->elements_ );
+			symbol.children= BuildProgramModel_r( (*class_)->elements_, src_loc_to_range_mapping_function );
 		}
 		if( std::get_if<std::unique_ptr<const Synt::TypeAlias>>( &type_template.something_ ) != nullptr )
 		{}
@@ -240,10 +253,10 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= enum_.name;
-		symbol.range= MakeRangeInitial( enum_.src_loc_ );
-		symbol.selection_range= MakeSelectionRange( enum_.src_loc_, enum_.name );
+		symbol.range= MakeRange( enum_.src_loc_, src_loc_to_range_mapping_function );
+		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Enum;
-		symbol.children= BuildProgramModel_r( enum_ );
+		symbol.children= BuildProgramModel_r( enum_, src_loc_to_range_mapping_function );
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::StaticAssert&  )
@@ -253,8 +266,8 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= typedef_.name;
-		symbol.range= MakeRangeInitial( typedef_.src_loc_ );
-		symbol.selection_range= MakeSelectionRange( typedef_.src_loc_, typedef_.name );
+		symbol.range= MakeRange( typedef_.src_loc_, src_loc_to_range_mapping_function );
+		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Class;
 		result.push_back( std::move(symbol) );
 	}
@@ -265,8 +278,8 @@ struct Visitor final
 		{
 			Symbol symbol;
 			symbol.name= Stringify( variable, type_name );
-			symbol.range= MakeRangeInitial( variable.src_loc );
-			symbol.selection_range= MakeSelectionRange( variable.src_loc, variable.name );
+			symbol.range= MakeRange( variable.src_loc, src_loc_to_range_mapping_function );
+			symbol.selection_range= symbol.range;
 			symbol.kind= SymbolKind::Variable;
 			result.push_back( std::move(symbol) );
 		}
@@ -275,8 +288,8 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( auto_variable_declaration );
-		symbol.range= MakeRangeInitial( auto_variable_declaration.src_loc_ );
-		symbol.selection_range= MakeSelectionRange( auto_variable_declaration.src_loc_, auto_variable_declaration.name );
+		symbol.range= MakeRange( auto_variable_declaration.src_loc_, src_loc_to_range_mapping_function );
+		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Variable;
 		result.push_back( std::move(symbol) );
 	}
@@ -287,10 +300,10 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= class_->name_;
-		symbol.range= MakeRangeInitial( class_->src_loc_ );
-		symbol.selection_range= MakeSelectionRange( class_->src_loc_, class_->name_ );
+		symbol.range= MakeRange( class_->src_loc_, src_loc_to_range_mapping_function );
+		symbol.selection_range= symbol.range;
 		symbol.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? SymbolKind::Struct : SymbolKind::Class;
-		symbol.children= BuildProgramModel_r( class_->elements_ );
+		symbol.children= BuildProgramModel_r( class_->elements_, src_loc_to_range_mapping_function );
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::NamespacePtr& namespace_ )
@@ -300,26 +313,30 @@ struct Visitor final
 
 		Symbol symbol;
 		symbol.name= namespace_->name_;
-		symbol.range= MakeRangeInitial( namespace_->src_loc_ );
-		symbol.selection_range= MakeSelectionRange( namespace_->src_loc_, namespace_->name_ );
+		symbol.range= MakeRange( namespace_->src_loc_, src_loc_to_range_mapping_function );
+		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Namespace;
-		symbol.children= BuildProgramModel_r( namespace_->elements_ );
+		symbol.children= BuildProgramModel_r( namespace_->elements_, src_loc_to_range_mapping_function );
 		result.push_back( std::move(symbol) );
 	}
 };
 
-std::vector<Symbol> BuildProgramModel_r( const Synt::ClassElements& elements )
+std::vector<Symbol> BuildProgramModel_r(
+	const Synt::ClassElements& elements,
+	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
-	Visitor visitor;
+	Visitor visitor( src_loc_to_range_mapping_function );
 	for( const Synt::ClassElement& class_element : elements )
 		std::visit( visitor, class_element );
 
 	return std::move(visitor.result);
 }
 
-std::vector<Symbol> BuildProgramModel_r( const Synt::ProgramElements& elements )
+std::vector<Symbol> BuildProgramModel_r(
+	const Synt::ProgramElements& elements,
+	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
-	Visitor visitor;
+	Visitor visitor( src_loc_to_range_mapping_function );
 	for( const Synt::ProgramElement& program_element : elements )
 		std::visit( visitor, program_element );
 
@@ -360,10 +377,12 @@ void SetupRanges( std::vector<Symbol>& symbols )
 
 } // namespace
 
-std::vector<Symbol> BuildSymbols( const Synt::ProgramElements& program_elements )
+std::vector<Symbol> BuildSymbols(
+	const Synt::ProgramElements& program_elements,
+	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
 	// TODO - include also macros.
-	auto result= BuildProgramModel_r( program_elements );
+	auto result= BuildProgramModel_r( program_elements, src_loc_to_range_mapping_function );
 	SetupRanges(result);
 	return result;
 }

@@ -377,7 +377,7 @@ U_TEST( GoToDefinition_Test9 )
 	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
 
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 5,  3 ) == SrcLoc( 0,  2, 17 ) );
-	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 7, 10 ) == SrcLoc( 0,  2,  2 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 7, 10 ) == SrcLoc( 0,  3,  9 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 7, 15 ) == SrcLoc( 0, 11,  7 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 9, 10 ) == SrcLoc( 0,  7, 23 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 9, 12 ) == SrcLoc( 0,  5,  5 ) );
@@ -428,6 +428,33 @@ U_TEST( GoToDefinition_Test11 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 10 ) == SrcLoc( 0,  4, 13 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 15 ) == SrcLoc( 0,  6, 10 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 23 ) == SrcLoc( 0,  8,  8 ) );
+}
+
+U_TEST( GoToDefinition_Test12 )
+{
+	// SrcLoc of template thing is src_loc of its name.
+	static const char c_program_text[]=
+	R"(
+		template</type T/>
+		class Box{}
+
+		template</type T/>
+		type Vec3= [ T, 3 ];
+
+		template</type T/>
+		fn GetZero() : T { return T(0); }
+
+		type IntBox= Box</i32/>;
+		type FloatVec= Vec3</f32/>;
+		auto double_zero= GetZero</f64/>();
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 15 ) == SrcLoc( 0, 3, 8 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 12, 17 ) == SrcLoc( 0, 6, 7 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 20 ) == SrcLoc( 0, 9, 5 ) );
 }
 
 U_TEST( GetAllOccurrences_Test0 )
