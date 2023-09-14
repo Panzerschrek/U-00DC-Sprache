@@ -2259,7 +2259,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesSco
 			{
 				if( const ClassPtr class_type= type->GetClassType() )
 				{
-					// Build classes only from parent namespace.
+					// Process classes only from parent namespace.
 					// Otherwise we can get loop, using typedef.
 					if( class_type->members->GetParent() == &names_scope )
 						SetupDereferenceableFunctionParamsAndRetAttributes_r( *class_type->members );

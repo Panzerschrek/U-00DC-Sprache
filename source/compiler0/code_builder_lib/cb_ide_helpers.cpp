@@ -69,6 +69,21 @@ std::vector<CodeBuilder::CompletionItem> CodeBuilder::Complete( const llvm::Arra
 	return CompletionResultFinalize();
 }
 
+void CodeBuilder::DeleteFunctionsBodies()
+{
+	// Delete bodies of in code.
+	DeleteFunctionsBodies_r( *compiled_sources_.front().names_map );
+
+	// Delete bodies of template functions / functions inside templates.
+	for( auto& name_value_pair : generated_template_things_storage_ )
+		if( const auto names_scope= name_value_pair.second.value.GetNamespace() )
+			DeleteFunctionsBodies_r( *names_scope );
+
+	// Delete destructors of typeinfo classes.
+	for( const auto& typeinfo_class : typeinfo_class_table_ )
+		DeleteFunctionsBodies_r( *typeinfo_class->members );
+}
+
 SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
 {
 	// Process functions set specially.
@@ -593,6 +608,37 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 
 		completion_items_.push_back( std::move(item) );
 	}
+}
+
+void CodeBuilder::DeleteFunctionsBodies_r( NamesScope& names_scope )
+{
+	names_scope.ForEachValueInThisScope(
+		[&]( Value& value )
+		{
+			if( const OverloadedFunctionsSetPtr functions_set= value.GetFunctionsSet() )
+			{
+				for( FunctionVariable& function_variable : functions_set->functions )
+				{
+					if( function_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete || function_variable.constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete )
+						continue; // Preserve bodies of constexpr functions.
+
+					if( function_variable.llvm_function->function != nullptr )
+						function_variable.llvm_function->function->deleteBody();
+				}
+			}
+			else if( const NamesScopePtr inner_namespace= value.GetNamespace() )
+				DeleteFunctionsBodies_r( *inner_namespace );
+			else if( const Type* const type= value.GetTypeName() )
+			{
+				if( const ClassPtr class_type= type->GetClassType() )
+				{
+					// Process classes only from parent namespace.
+					// Otherwise we can get loop, using typedef.
+					if( class_type->members->GetParent() == &names_scope )
+						DeleteFunctionsBodies_r( *class_type->members );
+				}
+			}
+		});
 }
 
 } // namespace U

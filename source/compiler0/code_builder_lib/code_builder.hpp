@@ -99,7 +99,7 @@ public:
 		const CodeBuilderOptions& options,
 		const SourceGraph& source_graph );
 
-public:
+public: // IDE helpers.
 	CodeBuilderErrorsContainer TakeErrors();
 
 	// Get definition for given location (of some name lexem ).
@@ -116,6 +116,11 @@ public:
 	// Prefix is used to find proper namespace/class (name lookups are used).
 	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
 	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
+
+	// Delete bodies of functions (excepth constexpr ones).
+	// This breaks result module and should not be used for a program compilation (with result object file).
+	// But this is usable for ide helpers in order to reduce memory usage.
+	void DeleteFunctionsBodies();
 
 private:
 	CodeBuilder(
@@ -199,6 +204,8 @@ private:
 	void NamesScopeFetchComleteForClass( const Class* class_, std::string_view name );
 	void ComleteClassOwnFields( const Class* class_, std::string_view name );
 	void CompleteProcessValue( std::string_view completion_name, std::string_view value_name, const NamesScopeValue& names_scope_value );
+
+	void DeleteFunctionsBodies_r( NamesScope& names_scope );
 
 private:
 	void BuildSourceGraphNode( const SourceGraph& source_graph, size_t node_index );

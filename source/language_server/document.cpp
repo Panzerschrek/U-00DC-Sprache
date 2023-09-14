@@ -730,6 +730,9 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 					options,
 					source_graph );
 
+			// Reduce a bit memory footprint.
+			code_builder->DeleteFunctionsBodies();
+
 			return std::make_shared<const CompiledState>(
 				CompiledState{
 					num_text_changes_at_compilation_task_start,
