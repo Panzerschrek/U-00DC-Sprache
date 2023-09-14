@@ -3246,7 +3246,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 		};
 		var TypeTemplate mut type_template
 		{
-			.src_loc= template_src_loc,
+			.src_loc= type_alias_src_loc,
 			.name= template_name,
 			.something( ust::make_shared_ptr_final( move(type_alias) ) ),
 			.params= move(params),
@@ -3303,7 +3303,7 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 
 		var TypeTemplate mut type_template
 		{
-			.src_loc= template_src_loc,
+			.src_loc= class_src_loc,
 			.name= template_name,
 			.something( ust::make_shared_ptr_final( move(class_) ) ),
 			.params= move(params),
@@ -3315,15 +3315,14 @@ fn SyntaxAnalyzer::ParseTemplate( mut this ) : SomeTemplate
 	}
 	else if( IsKeyword( it_.front(), Keyword::fn_ ) || IsKeyword( it_.front(), Keyword::op_ ) )
 	{
+		auto mut function= ParseFunction();
 		var FunctionTemplate mut function_template
 		{
-			.src_loc= template_src_loc,
+			.src_loc= function.src_loc,
+			.name= function.name.back(),
 			.params= move(params),
-			.function( ParseFunction() ),
+			.function( move(function) ),
 		};
-
-		auto mut name= function_template.function.deref().name.back();
-		function_template.name= move(name);
 
 		return ust::make_shared_ptr_final( move(function_template) );
 	}

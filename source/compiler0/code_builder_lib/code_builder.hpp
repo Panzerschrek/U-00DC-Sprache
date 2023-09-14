@@ -300,7 +300,6 @@ private:
 	void ProcessTemplateParams(
 		llvm::ArrayRef<Synt::TemplateBase::Param> params,
 		NamesScope& names_scope,
-		const SrcLoc& src_loc,
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags );
 

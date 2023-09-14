@@ -39,7 +39,6 @@ void CodeBuilder::PrepareTypeTemplate(
 	ProcessTemplateParams(
 		type_template_declaration.params_,
 		names_scope,
-		type_template_declaration.src_loc_,
 		template_parameters,
 		template_parameters_usage_flags );
 
@@ -82,7 +81,7 @@ void CodeBuilder::PrepareTypeTemplate(
 
 	for( size_t i= 0u; i < type_template->template_params.size(); ++i )
 		if( !template_parameters_usage_flags[i] )
-			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope.GetErrors(), type_template_declaration.src_loc_, type_template->template_params[i].name );
+			REPORT_ERROR( TemplateArgumentNotUsedInSignature, names_scope.GetErrors(), type_template->template_params[i].src_loc, type_template->template_params[i].name );
 
 	// Check for redefinition and insert.
 	for( const TypeTemplatePtr& prev_template : type_templates_set.type_templates )
@@ -124,7 +123,6 @@ void CodeBuilder::PrepareFunctionTemplate(
 	ProcessTemplateParams(
 		function_template_declaration.params_,
 		names_scope,
-		function_template_declaration.src_loc_,
 		function_template->template_params,
 		template_parameters_usage_flags );
 
@@ -153,7 +151,6 @@ void CodeBuilder::PrepareFunctionTemplate(
 void CodeBuilder::ProcessTemplateParams(
 	const llvm::ArrayRef<Synt::TemplateBase::Param> params,
 	NamesScope& names_scope,
-	const SrcLoc& src_loc,
 	std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags )
 {
@@ -168,7 +165,7 @@ void CodeBuilder::ProcessTemplateParams(
 		{
 			if( prev_param.name == param.name )
 			{
-				REPORT_ERROR( Redefinition, names_scope.GetErrors(), src_loc, param.name );
+				REPORT_ERROR( Redefinition, names_scope.GetErrors(), param.src_loc, param.name );
 				continue;
 			}
 		}
@@ -197,11 +194,11 @@ void CodeBuilder::ProcessTemplateParams(
 		if( const auto type_param= template_parameters[i].type->GetType() )
 		{
 			if( !TypeIsValidForTemplateVariableArgument( type_param->t ) )
-				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), src_loc, type_param->t );
+				REPORT_ERROR( InvalidTypeOfTemplateVariableArgument, names_scope.GetErrors(), template_parameters[i].src_loc, type_param->t );
 		}
 		else if( template_parameters[i].type->IsTemplateParam() ) {}
 		else
-			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), src_loc, *params[i].param_type );
+			REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), template_parameters[i].src_loc, *params[i].param_type );
 	}
 }
 
