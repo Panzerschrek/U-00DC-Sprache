@@ -148,6 +148,19 @@ RequestParams ParseTextDocumentCompletion( const Json::Value& params )
 	return Requests::Complete{ std::move( *position_in_document ) };
 }
 
+RequestParams ParseTextDocumentSignatureHelp( const Json::Value& params )
+{
+	const auto obj= params.getAsObject();
+	if( obj == nullptr )
+		return InvalidParams{ "Not an object!" };
+
+	auto position_in_document= JsonToPositionInDocument( *obj );
+	if( position_in_document == std::nullopt )
+		return InvalidParams{ "Failed to get position in document!" };
+
+	return Requests::SignatureHelp{ std::move( *position_in_document ) };
+}
+
 RequestParams ParseTextDocumentHighlight( const Json::Value& params )
 {
 	const auto obj= params.getAsObject();
@@ -192,6 +205,8 @@ RequestParams ParseRequestParams( const std::string_view method, const Json::Val
 		return ParseTextDocumentDefinition( params );
 	if( method == "textDocument/completion" )
 		return ParseTextDocumentCompletion( params );
+	if( method == "textDocument/signatureHelp" )
+		return ParseTextDocumentSignatureHelp( params );
 	if( method == "textDocument/documentHighlight" )
 		return ParseTextDocumentHighlight( params );
 	if( method == "textDocument/rename" )

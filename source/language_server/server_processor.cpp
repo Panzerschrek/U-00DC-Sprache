@@ -201,6 +201,18 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 			}
 			capabilities["completionProvider"]= std::move(completion_options);
 		}
+		{
+			Json::Object signature_options;
+
+			{
+				Json::Array trigger_characters;
+				trigger_characters.push_back( Json::Value( "(" ) );
+
+				signature_options["triggerCharacters"]= std::move(trigger_characters);
+			}
+
+			capabilities["signatureHelpProvider"]= std::move(signature_options);
+		}
 
 		result["capabilities"]= std::move(capabilities);
 	}
@@ -273,6 +285,36 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 		result["items"]= std::move(items);
 	}
 
+	return result;
+}
+
+ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Requests::SignatureHelp& signature_help )
+{
+	Json::Object result;
+
+	// TODO - perform proper signature help.
+	// For now fill a dummy.
+	(void)signature_help;
+	{
+		Json::Array signatures;
+		{
+			Json::Object signature;
+			signature["label"]= "signature_test";
+
+			{
+				Json::Array parameters;
+				{
+					Json::Object parameter;
+					parameter["label"]= "some_type_of_param";
+					parameters.push_back( std::move(parameter) );
+				}
+				signature["parameters"]= std::move(parameters);
+			}
+
+			signatures.push_back( std::move(signature) );
+		}
+		result["signatures"]= std::move(signatures);
+	}
 	return result;
 }
 
