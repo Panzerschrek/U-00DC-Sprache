@@ -529,7 +529,7 @@ std::string Type::ToString() const
 
 		std::string operator()( const EnumPtr enum_ ) const
 		{
-			return "enum " + enum_->members.GetThisNamespaceName();
+			return enum_->members.GetThisNamespaceName();
 		}
 
 		std::string operator()( const FunctionPointerPtr& function_pointer ) const

@@ -568,10 +568,15 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 				item.detail= item.name;
 				item.detail+= " : ";
 
-				// Prefix structs/classes with specific keyword.
+				// Prefix structs/classes and enums with specific keyword.
 				if( const auto class_type= type->GetClassType() )
 				{
 					item.detail+= Keyword( class_type->kind == Class::Kind::Struct ? Keywords::struct_ : Keywords::class_ );
+					item.detail+= " ";
+				}
+				else if( type->GetEnumType() != nullptr )
+				{
+					item.detail+= Keyword( Keywords::enum_ );
 					item.detail+= " ";
 				}
 
