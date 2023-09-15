@@ -831,9 +831,25 @@ std::optional<SrcLoc> Document::GetIdentifierStartSrcLoc( const DocumentPosition
 		return std::nullopt;
 	}
 
-	const uint32_t line= LinearPositionToLine( compiled_state_->line_to_linear_position_index, *linear_position );
+	// Assume, that identifier can't be multiline - start of the identifier is always in the same line as any position within it.
 
-	return GetSrcLocForIndentifierStartPoisitionInText( compiled_state_->text, line, *linear_position );
+	const uint32_t line= LinearPositionToLine( compiled_state_->line_to_linear_position_index, *linear_position );
+	U_ASSERT( line < compiled_state_->line_to_linear_position_index.size() );
+
+	const TextLinearPosition line_offset= compiled_state_->line_to_linear_position_index[line];
+	U_ASSERT( *linear_position >= line_offset );
+
+	const std::string_view line_text= std::string_view( compiled_state_->text ).substr( line_offset );
+
+	const std::optional<TextLinearPosition> column_utf8= GetIdentifierStartForPosition( line_text, *linear_position - line_offset );
+	if( column_utf8 == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<uint32_t> column_utf32= Utf8PositionToUtf32Position( line_text, *column_utf8 );
+	if( column_utf32 == std::nullopt )
+		return std::nullopt;
+
+	return SrcLoc( 0, line, *column_utf32 );
 }
 
 } // namespace LangServer

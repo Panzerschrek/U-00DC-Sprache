@@ -36,20 +36,6 @@ std::optional<TextLinearPosition> GetUtf8LineStartPosition( const std::string_vi
 	return std::nullopt;
 }
 
-// Iterates backwards until line start is not found.
-TextLinearPosition GetLineStartUtf8Position( const std::string_view text, const TextLinearPosition position )
-{
-	TextLinearPosition line_start_position= position;
-	while( line_start_position >= 1 )
-	{
-		if( text[ line_start_position - 1 ] == '\n' )
-			break;
-		--line_start_position;
-	}
-
-	return line_start_position;
-}
-
 } // namespace
 
 std::optional<TextLinearPosition> DocumentPositionToLinearPosition( const DocumentPosition& pos, const std::string_view text )
@@ -63,26 +49,6 @@ std::optional<TextLinearPosition> DocumentPositionToLinearPosition( const Docume
 		return std::nullopt;
 
 	return *line_linear_pos + *column_offset;
-}
-
-std::optional<SrcLoc> GetSrcLocForIndentifierStartPoisitionInText( const std::string_view text, const uint32_t line, const TextLinearPosition linear_position )
-{
-	const std::optional<TextLinearPosition> identifier_start_linear_position= GetIdentifierStartForPosition( text, linear_position );
-	if( identifier_start_linear_position == std::nullopt )
-		return std::nullopt;
-
-	// Assume, that identifier can't be multiline - start of the identifier is always in the same line as any position within it.
-	const TextLinearPosition line_start_position= GetLineStartUtf8Position( text, *identifier_start_linear_position );
-	U_ASSERT( line_start_position <= *identifier_start_linear_position );
-
-	const auto code_point_column=
-		Utf8PositionToUtf32Position(
-			text.substr( line_start_position ),
-			*identifier_start_linear_position - line_start_position );
-	if( code_point_column == std::nullopt )
-		return std::nullopt;
-
-	return SrcLoc( 0, line, *code_point_column );
 }
 
 std::optional<DocumentRange> SrcLocToDocumentIdentifierRange( const SrcLoc& src_loc, const std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index )
