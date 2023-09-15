@@ -113,7 +113,20 @@ bool IsWhitespace( const sprache_char c )
 
 bool IsNewline( const sprache_char c )
 {
-	return c == '\n';
+	// See https://en.wikipedia.org/wiki/Newline#Unicode.
+	return
+		c == '\n' || // line feed
+		c == '\r' || // carriage return
+		c == '\f' || // form feed
+		c == '\v' || // vertical tab
+		c == 0x0085 || // Next line
+		c == 0x2028 || // line separator
+		c == 0x2029 ;  // paragraph separator
+}
+
+bool IsNewlineSequence( const sprache_char c0, const sprache_char c1 )
+{
+	return c0 == '\r' && c1 == '\n';
 }
 
 bool IsNumberStartChar( const sprache_char c )
@@ -527,34 +540,33 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 			}
 		};
 
-		const uint32_t c= GetUTF8FirstChar( it, it_end );
+		const sprache_char c= GetUTF8FirstChar( it, it_end );
 		Lexem lexem;
 
 		// line comment.
 		if( c == '/' && it_end - it > 1 && *(it+1) == '/' )
 		{
+			const auto comment_start_it= it;
+
+			// Read all until new line, but do not extract new line symbol itself.
+			while( it < it_end )
+			{
+				auto it_copy= it;
+				const sprache_char c= ReadNextUTF8Char( it_copy, it_end );
+				if( IsNewline(c) )
+					break;
+				it= it_copy;
+			}
+
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
 				comment_lexem.src_loc= SrcLoc( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
-
-				while( it < it_end && !IsNewline(sprache_char(*it)) )
-				{
-					comment_lexem.text.push_back(*it);
-					++it;
-				}
-				advance_column();
+				comment_lexem.text.insert( comment_lexem.text.end(), comment_start_it, it );
 				result.lexems.emplace_back( std::move(comment_lexem) );
 			}
-			else
-				while( it < it_end && !IsNewline(sprache_char(*it)) ) ++it;
 
-			if( it == it_end ) break;
-
-			++line;
-			++it;
-			column= 0u;
 			continue;
 		}
 		if( c == '/' && it_end - it > 1 && *std::next(it) == '*' )
@@ -593,10 +605,20 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 		}
 		else if( IsNewline(c) )
 		{
-			// TODO - handle stupid things, like windows double-symbol newlines.
 			++line;
-			++it;
 			column= 0u;
+
+			ReadNextUTF8Char( it, it_end ); // Consume this line ending symbol.
+
+			// Handle case with two-symbol line ending.
+			if( it < it_end )
+			{
+				auto it_copy= it;
+				const sprache_char next_c= ReadNextUTF8Char( it_copy, it_end );
+				if( IsNewlineSequence( c, next_c ) )
+					it= it_copy;
+			}
+
 			continue;
 		}
 		else if( IsWhitespace(c) )
@@ -746,12 +768,25 @@ void BuildLineToLinearPositionIndex( std::string_view text, LineToLinearPosition
 	out_index.push_back(0);
 	out_index.push_back(0);
 
-	for( size_t i= 0, i_end= text.size(); i < i_end; ++i )
+	const char* const it_start= text.data();
+	const char* const it_end= text.data() + text.size();
+	const char* it= it_start;
+	while( it < it_end )
 	{
-		// TODO - handle stupid things, like windows double-symbol newlines.
+		const sprache_char c= ReadNextUTF8Char( it, it_end );
+		if( IsNewline( c ) )
+		{
+			// Handle cases with two-symbol line ending.
+			if( it < it_end )
+			{
+				auto it_copy= it;
+				const sprache_char next_c= ReadNextUTF8Char( it_copy, it_end );
+				if( IsNewlineSequence( c, next_c ) )
+					it= it_copy;
+			}
 
-		if( IsNewline( sprache_char(text[i]) ) )
-			out_index.push_back( uint32_t(i + 1) ); // Next line starts with next symbol.
+			out_index.push_back( TextLinearPosition(it - it_start) ); // Next line starts with next symbol.
+		}
 	}
 }
 

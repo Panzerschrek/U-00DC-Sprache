@@ -78,7 +78,6 @@ Language server
 *) Reduce memory usage - avoid building unnecessary code, clear unused internal data structures, make mangled names shorter, etc.
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
-*) Support various end of line combinations "\n", "\r\n", "\r"
 *) A way to provide configuration (import directories, other compilation options)
 *) Complete function argument types while writing function call
 *) Avoid infinite calculations in constexpr functions executiong during compilation in the LanguageServer

@@ -118,7 +118,7 @@ void PopulateDiagnostics(
 Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, Logger& log )
 	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
 {
-	(void)log_;
+	SetText("");
 }
 
 void Document::SetText( std::string text )
@@ -135,8 +135,8 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 {
 	TryTakeBackgroundStateUpdate();
 
-	const std::optional<TextLinearPosition> linear_position_start= DocumentPositionToLinearPosition( range.start, text_ );
-	const std::optional<TextLinearPosition> linear_position_end  = DocumentPositionToLinearPosition( range.end  , text_ );
+	const std::optional<TextLinearPosition> linear_position_start= DocumentPositionToLinearPosition( range.start, text_, line_to_linear_position_index_ );
+	const std::optional<TextLinearPosition> linear_position_end  = DocumentPositionToLinearPosition( range.end  , text_, line_to_linear_position_index_ );
 	if( linear_position_start == std::nullopt || linear_position_end == std::nullopt )
 	{
 		log_() << "Failed to convert range into offsets!" << std::endl;
@@ -252,10 +252,7 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
-	{
-		log_() << "Failed to get indentifier start" << std::endl;
 		return std::nullopt;
-	}
 
 	if( const auto result_src_loc= compiled_state_->code_builder->GetDefinition( *src_loc ) )
 	{
@@ -314,10 +311,7 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
-	{
-		log_() << "Failed to get indentifier start" << std::endl;
 		return {};
-	}
 
 	const std::vector<SrcLoc> occurrences= compiled_state_->code_builder->GetAllOccurrences( *src_loc );
 
@@ -826,14 +820,27 @@ std::optional<SrcLoc> Document::GetIdentifierStartSrcLoc( const DocumentPosition
 
 	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
 	if( linear_position == std::nullopt )
-	{
-		log_() << "Failed to get last valid document position" << std::endl;
 		return std::nullopt;
-	}
+
+	// Assume, that identifier can't be multiline - start of the identifier is always in the same line as any position within it.
 
 	const uint32_t line= LinearPositionToLine( compiled_state_->line_to_linear_position_index, *linear_position );
+	U_ASSERT( line < compiled_state_->line_to_linear_position_index.size() );
 
-	return GetSrcLocForIndentifierStartPoisitionInText( compiled_state_->text, line, *linear_position );
+	const TextLinearPosition line_offset= compiled_state_->line_to_linear_position_index[line];
+	U_ASSERT( *linear_position >= line_offset );
+
+	const std::string_view line_text= std::string_view( compiled_state_->text ).substr( line_offset );
+
+	const std::optional<TextLinearPosition> column_utf8= GetIdentifierStartForPosition( line_text, *linear_position - line_offset );
+	if( column_utf8 == std::nullopt )
+		return std::nullopt;
+
+	const std::optional<uint32_t> column_utf32= Utf8PositionToUtf32Position( line_text, *column_utf8 );
+	if( column_utf32 == std::nullopt )
+		return std::nullopt;
+
+	return SrcLoc( 0, line, *column_utf32 );
 }
 
 } // namespace LangServer

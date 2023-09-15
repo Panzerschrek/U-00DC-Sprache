@@ -159,6 +159,27 @@ Foo // scarry
 	TestLexResult( c_program_text, expected_result );
 }
 
+// \n, \r, \r\n, \f, \b, U+0085, U+2028, U+2029 are recognized as valid line endings.
+static const char c_various_newlines_text[]= "foo\nbar\rbaz\r\nlol\fkek\vwtf\u0085zzz\u2028yhn\u2029end";
+
+U_TEST( LineNumberTest1 )
+{
+	const Lexems expected_result
+	{
+		{ "foo", SrcLoc( 0, 1, 0 ), Lexem::Type::Identifier },
+		{ "bar", SrcLoc( 0, 2, 0 ), Lexem::Type::Identifier },
+		{ "baz", SrcLoc( 0, 3, 0 ), Lexem::Type::Identifier },
+		{ "lol", SrcLoc( 0, 4, 0 ), Lexem::Type::Identifier },
+		{ "kek", SrcLoc( 0, 5, 0 ), Lexem::Type::Identifier },
+		{ "wtf", SrcLoc( 0, 6, 0 ), Lexem::Type::Identifier },
+		{ "zzz", SrcLoc( 0, 7, 0 ), Lexem::Type::Identifier },
+		{ "yhn", SrcLoc( 0, 8, 0 ), Lexem::Type::Identifier },
+		{ "end", SrcLoc( 0, 9, 0 ), Lexem::Type::Identifier },
+	};
+
+	TestLexResult( c_various_newlines_text, expected_result );
+}
+
 U_TEST( ValidIdentifierTest )
 {
 	U_TEST_ASSERT(  IsValidIdentifier( "foo" ) );
@@ -226,6 +247,13 @@ U_TEST( LineToLinearPositionIndex_Test7 )
 {
 	static const char c_program_text[] = "foo\n\n";
 	U_TEST_ASSERT( BuildLineToLinearPositionIndex( c_program_text ) == LineToLinearPositionIndex({ 0, 0, 4, 5 }) );
+}
+
+U_TEST( LineToLinearPositionIndex_Test8 )
+{
+	U_TEST_ASSERT(
+		BuildLineToLinearPositionIndex( c_various_newlines_text ) ==
+		LineToLinearPositionIndex({ 0, 0, 4, 8, 13, 17, 21, 26, 32, 38 }) );
 }
 
 U_TEST( LinearPositionToLine_Test0 )

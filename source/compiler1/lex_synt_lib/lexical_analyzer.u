@@ -17,7 +17,20 @@ fn IsWhitespace( sprache_char c ) : bool
 
 fn IsNewline( sprache_char c ) : bool
 {
-	return c == "\n"c32;
+	// See https://en.wikipedia.org/wiki/Newline#Unicode.
+	return
+		c == "\n"c32 || // line feed
+		c == "\r"c32 || // carriage return
+		c == "\f"c32 || // form feed
+		c == sprache_char(0x000B) || // vertical tab
+		c == sprache_char(0x0085) || // Next line
+		c == sprache_char(0x2028) || // line separator
+		c == sprache_char(0x2029) ;  // paragraph separator
+}
+
+fn IsNewlineSequence( sprache_char c0, sprache_char c1 ) : bool
+{
+	return c0 == "\r"c32 && c1 == "\n"c32;
 }
 
 fn IsNumberStartChar( sprache_char c ) : bool
@@ -546,9 +559,16 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		// single line comment
 		if( c == "/"c32 && next_c == "/"c32 )
 		{
-			while( !it.empty() && !IsNewline(sprache_char(it.front())) )
+			// Read all until new line, but do not extract new line symbol itself.
+			while( !it.empty() )
 			{
-				it.drop_front();
+				auto mut it_copy= it;
+				var sprache_char c= ReadNextUTF8Char(it_copy);
+				if( IsNewline(c) )
+				{
+					break;
+				}
+				it= it_copy;
 			}
 
 			continue;
@@ -575,7 +595,24 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 				}
 				else
 				{
-					it.drop_front();
+					var sprache_char comment_c= ReadNextUTF8Char( it );
+					if( IsNewline(comment_c) )
+					{
+						++line;
+						column= 0u;
+
+						// Handle case with two-symbol line ending.
+						if( !it.empty() )
+						{
+							auto mut it_copy= it;
+							var sprache_char next_c= ReadNextUTF8Char( it_copy );
+							if( IsNewlineSequence( comment_c, next_c ) )
+							{
+								it= it_copy;
+							}
+						}
+						prev_it= it;
+					}
 				}
 			}
 			if( comments_depth != 0u )
@@ -587,10 +624,23 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		}
 		else if( IsNewline(c) )
 		{
-			it.drop_front();
 			++line;
-			prev_it= it;
 			column= 0u;
+
+			ReadNextUTF8Char(it); // Consume this line ending symbol.
+
+			// Handle case with two-symbol line ending.
+			if( !it.empty() )
+			{
+				auto mut it_copy= it;
+				var sprache_char next_c= ReadNextUTF8Char( it_copy );
+				if( IsNewlineSequence( c, next_c ) )
+				{
+					it= it_copy;
+				}
+			}
+
+			prev_it= it;
 			continue;
 		}
 		else if( IsWhitespace(c) )
