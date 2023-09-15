@@ -1,6 +1,7 @@
 #pragma once
 #include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
 #include <llvm/IR/DataLayout.h>
+#include <llvm/ADT/Triple.h>
 #include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 namespace U
@@ -14,7 +15,7 @@ namespace LangServer
 // So, use our own target data layout construction stub.
 // It is not so bad to construct somehow incorrect data layout, since this doesn't affect any real compilation.
 // Compiler frontend uses only few data layout features, like pointer size, types alignment and endianness.
-llvm::DataLayout CreateStubDataLayout( const std::string& target_triple_str );
+llvm::DataLayout CreateStubDataLayout( const llvm::Triple& target_triple );
 
 } // namespace LangServer
 

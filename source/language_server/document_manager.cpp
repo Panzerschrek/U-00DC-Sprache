@@ -29,15 +29,28 @@ std::unique_ptr<IVfs> CreateBaseVfs( Logger& log )
 	return CreateVfsOverSystemFS( {} );
 }
 
-DocumentBuildOptions CreateBuildOptions()
+DocumentBuildOptions CreateBuildOptions( Logger& log )
 {
-	const std::string target_triple_str= llvm::sys::getDefaultTargetTriple(); // TODO - use target triple, dependent on compilation options.
+	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
+	if( !Options::architecture.empty() && Options::architecture != "native" )
+		target_triple.setArchName( Options::architecture );
+	if( !Options::target_vendor.empty() )
+		target_triple.setVendorName( Options::target_vendor );
+	if( !Options::target_os.empty() )
+		target_triple.setOSName( Options::target_os );
+	if( !Options::target_environment.empty() )
+		target_triple.setEnvironmentName( Options::target_environment );
+
+	log() << "Using triple " << target_triple.str() << std::endl;
+
 	DocumentBuildOptions build_options
 	{
-		CreateStubDataLayout( target_triple_str ),
-		llvm::Triple( target_triple_str ),
+		CreateStubDataLayout( target_triple ),
+		target_triple,
 		"",
 	};
+
+	log() << "Created data layout " << build_options.data_layout.getStringRepresentation() << std::endl;
 
 	// TODO - read params from options or some kind of config file.
 	const llvm::StringRef features;
@@ -110,7 +123,7 @@ DocumentManager::DocumentManager( Logger& log )
 	// TODO - use individual VFS for different files.
 	, vfs_( *this, log_ )
 	// TODO - create different build options for different files.
-	, build_options_( CreateBuildOptions() )
+	, build_options_( CreateBuildOptions(log_) )
 {}
 
 Document* DocumentManager::Open( const Uri& uri, std::string text )

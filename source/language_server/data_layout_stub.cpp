@@ -1,6 +1,3 @@
-#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
-#include <llvm/ADT/Triple.h>
-#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "data_layout_stub.hpp"
 
 namespace U
@@ -9,10 +6,8 @@ namespace U
 namespace LangServer
 {
 
-llvm::DataLayout CreateStubDataLayout( const std::string& target_triple_str )
+llvm::DataLayout CreateStubDataLayout( const llvm::Triple& target_triple )
 {
-	const llvm::Triple target_triple( target_triple_str );
-
 	// List some common data layouts.
 	// TODO - add more.
 
