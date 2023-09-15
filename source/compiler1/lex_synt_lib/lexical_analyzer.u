@@ -595,7 +595,24 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 				}
 				else
 				{
-					it.drop_front();
+					var sprache_char comment_c= ReadNextUTF8Char( it );
+					if( IsNewline(comment_c) )
+					{
+						++line;
+						column= 0u;
+
+						// Handle case with two-symbol line ending.
+						if( !it.empty() )
+						{
+							auto mut it_copy= it;
+							var sprache_char next_c= ReadNextUTF8Char( it_copy );
+							if( IsNewlineSequence( comment_c, next_c ) )
+							{
+								it= it_copy;
+							}
+						}
+						prev_it= it;
+					}
 				}
 			}
 			if( comments_depth != 0u )

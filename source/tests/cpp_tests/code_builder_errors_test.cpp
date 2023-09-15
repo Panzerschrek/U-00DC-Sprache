@@ -2043,6 +2043,36 @@ U_TEST(ReturnValueDiffersFromPrototypeTest3)
 	U_TEST_ASSERT( error.src_loc.GetLine() == 2u || error.src_loc.GetLine() == 3u );
 }
 
+U_TEST(LineCounting_Test0)
+{
+	// \r\n count as signle line ending.
+	static const char c_program_text[]= "auto Abc= 0;\r\nauto def= abc;";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 2u ) )
+}
+
+U_TEST(LineCounting_Test1)
+{
+	// \r and \n with symbols inbetween count as two line endings.
+	static const char c_program_text[]= "auto Abc= 0;\r \nauto def= abc;";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 3u ) )
+}
+
+U_TEST(LineCounting_Test2)
+{
+	// Should count line endings inside multiline comments properly.
+	static const char c_program_text[]= "auto Abc= 0;/* some comment \nwith \rline breaks\r\nkek*/auto def= abc;";
+
+	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
+	U_TEST_ASSERT( !build_result.errors.empty() );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::NameNotFound, 4u ) )
+}
+
 } // namespace
 
 } // namespace U
