@@ -118,7 +118,6 @@ void PopulateDiagnostics(
 Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& vfs, Logger& log )
 	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
 {
-	(void)log_;
 	SetText("");
 }
 
@@ -253,10 +252,7 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
-	{
-		log_() << "Failed to get indentifier start" << std::endl;
 		return std::nullopt;
-	}
 
 	if( const auto result_src_loc= compiled_state_->code_builder->GetDefinition( *src_loc ) )
 	{
@@ -315,10 +311,7 @@ std::vector<SrcLocInDocument> Document::GetAllOccurrences( const DocumentPositio
 
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
-	{
-		log_() << "Failed to get indentifier start" << std::endl;
 		return {};
-	}
 
 	const std::vector<SrcLoc> occurrences= compiled_state_->code_builder->GetAllOccurrences( *src_loc );
 
@@ -827,10 +820,7 @@ std::optional<SrcLoc> Document::GetIdentifierStartSrcLoc( const DocumentPosition
 
 	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
 	if( linear_position == std::nullopt )
-	{
-		log_() << "Failed to get last valid document position" << std::endl;
 		return std::nullopt;
-	}
 
 	// Assume, that identifier can't be multiline - start of the identifier is always in the same line as any position within it.
 
