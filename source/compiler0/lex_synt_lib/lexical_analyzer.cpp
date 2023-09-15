@@ -766,12 +766,22 @@ void BuildLineToLinearPositionIndex( std::string_view text, LineToLinearPosition
 	out_index.push_back(0);
 	out_index.push_back(0);
 
-	for( size_t i= 0, i_end= text.size(); i < i_end; ++i )
+	const char* const it_start= text.data();
+	const char* const it_end= text.data() + text.size();
+	const char* it= it_start;
+	while( it < it_end )
 	{
-		// TODO - handle stupid things, like windows double-symbol newlines.
+		const sprache_char c= ReadNextUTF8Char( it, it_end );
+		if( IsNewline( c ) )
+		{
+			// Handle cases with two-symbol line ending.
+			auto it_copy= it;
+			const sprache_char next_c= ReadNextUTF8Char( it_copy, it_end );
+			if( IsNewlineSequence( c, next_c ) )
+				it= it_copy;
 
-		if( IsNewline( sprache_char(text[i]) ) )
-			out_index.push_back( uint32_t(i + 1) ); // Next line starts with next symbol.
+			out_index.push_back( TextLinearPosition(it - it_start) ); // Next line starts with next symbol.
+		}
 	}
 }
 
