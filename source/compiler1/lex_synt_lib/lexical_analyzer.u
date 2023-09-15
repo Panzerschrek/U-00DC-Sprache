@@ -559,9 +559,16 @@ fn LexicalAnalysis( ust::string_view8 program_text ) : LexicalAnalysisResult
 		// single line comment
 		if( c == "/"c32 && next_c == "/"c32 )
 		{
-			while( !it.empty() && !IsNewline(sprache_char(it.front())) )
+			// Read all until new line, but do not extract new line symbol itself.
+			while( !it.empty() )
 			{
-				it.drop_front();
+				auto mut it_copy= it;
+				var sprache_char c= ReadNextUTF8Char(it_copy);
+				if( IsNewline(c) )
+				{
+					break;
+				}
+				it= it_copy;
 			}
 
 			continue;

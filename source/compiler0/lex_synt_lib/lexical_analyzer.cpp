@@ -546,28 +546,27 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 		// line comment.
 		if( c == '/' && it_end - it > 1 && *(it+1) == '/' )
 		{
+			const auto comment_start_it= it;
+
+			// Read all until new line, but do not extract new line symbol itself.
+			while( it < it_end )
+			{
+				auto it_copy= it;
+				const sprache_char c= ReadNextUTF8Char( it_copy, it_end );
+				if( IsNewline(c) )
+					break;
+				it= it_copy;
+			}
+
 			if( collect_comments )
 			{
 				Lexem comment_lexem;
 				comment_lexem.src_loc= SrcLoc( 0u, line, column );
 				comment_lexem.type= Lexem::Type::Comment;
-
-				while( it < it_end && !IsNewline(sprache_char(*it)) )
-				{
-					comment_lexem.text.push_back(*it);
-					++it;
-				}
-				advance_column();
+				comment_lexem.text.insert( comment_lexem.text.end(), comment_start_it, it );
 				result.lexems.emplace_back( std::move(comment_lexem) );
 			}
-			else
-				while( it < it_end && !IsNewline(sprache_char(*it)) ) ++it;
 
-			if( it == it_end ) break;
-
-			++line;
-			++it;
-			column= 0u;
 			continue;
 		}
 		if( c == '/' && it_end - it > 1 && *std::next(it) == '*' )
