@@ -1,8 +1,11 @@
+#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/Host.h>
+#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/vfs.hpp"
-#include "../tests/tests_common.hpp"
 #include "document_position_utils.hpp"
 #include "options.hpp"
+#include "data_layout_stub.hpp"
 #include "document_manager.hpp"
 
 namespace U
@@ -28,12 +31,11 @@ std::unique_ptr<IVfs> CreateBaseVfs( Logger& log )
 
 DocumentBuildOptions CreateBuildOptions()
 {
+	const std::string target_triple_str= llvm::sys::getDefaultTargetTriple(); // TODO - use target triple, dependent on compilation options.
 	DocumentBuildOptions build_options
 	{
-		// TODO - create proper target machine.
-		llvm::DataLayout( GetTestsDataLayout() ),
-		// TODO - use target triple, dependent on compilation options.
-		llvm::Triple( llvm::sys::getDefaultTargetTriple() ),
+		CreateStubDataLayout( target_triple_str ),
+		llvm::Triple( target_triple_str ),
 		"",
 	};
 
