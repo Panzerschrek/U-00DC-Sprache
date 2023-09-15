@@ -119,6 +119,7 @@ Document::Document( IVfs::Path path, DocumentBuildOptions build_options, IVfs& v
 	: path_(std::move(path)), build_options_(std::move(build_options)), vfs_(vfs), log_(log)
 {
 	(void)log_;
+	SetText("");
 }
 
 void Document::SetText( std::string text )
@@ -135,8 +136,8 @@ void Document::UpdateText( const DocumentRange& range, const std::string_view ne
 {
 	TryTakeBackgroundStateUpdate();
 
-	const std::optional<TextLinearPosition> linear_position_start= DocumentPositionToLinearPosition( range.start, text_ );
-	const std::optional<TextLinearPosition> linear_position_end  = DocumentPositionToLinearPosition( range.end  , text_ );
+	const std::optional<TextLinearPosition> linear_position_start= DocumentPositionToLinearPosition( range.start, text_, line_to_linear_position_index_ );
+	const std::optional<TextLinearPosition> linear_position_end  = DocumentPositionToLinearPosition( range.end  , text_, line_to_linear_position_index_ );
 	if( linear_position_start == std::nullopt || linear_position_end == std::nullopt )
 	{
 		log_() << "Failed to convert range into offsets!" << std::endl;

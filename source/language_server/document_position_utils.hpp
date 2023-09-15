@@ -10,7 +10,7 @@ namespace LangServer
 
 // Get position withing string (for insertion, for example).
 // Complexity is linear.
-std::optional<TextLinearPosition> DocumentPositionToLinearPosition( const DocumentPosition& pos, std::string_view text );
+std::optional<TextLinearPosition> DocumentPositionToLinearPosition( const DocumentPosition& pos, std::string_view text, const LineToLinearPositionIndex& line_to_linear_position_index );
 
 std::optional<DocumentRange> SrcLocToDocumentIdentifierRange( const SrcLoc& src_loc, std::string_view program_text, const LineToLinearPositionIndex& line_to_linear_position_index );
 
