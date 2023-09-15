@@ -1,0 +1,11 @@
+name: CI
+
+on: [push]
+
+jobs:
+  build_windows:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v1
+    - name: build project
+      run: ./ci/build_release_windows.ps1
