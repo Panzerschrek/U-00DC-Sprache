@@ -52,11 +52,8 @@ DocumentBuildOptions CreateBuildOptions( Logger& log )
 
 	log() << "Created data layout " << build_options.data_layout.getStringRepresentation() << std::endl;
 
-	// TODO - read params from options or some kind of config file.
 	const llvm::StringRef features;
-	const llvm::StringRef cpu_name;
-	const char optimization_level= '0';
-	const bool generate_debug_info= 0;
+	const llvm::StringRef cpu_name= llvm::sys::getHostCPUName();
 	const uint32_t compiler_generation= 0;
 	build_options.prelude=
 		GenerateCompilerPreludeCode(
@@ -64,8 +61,8 @@ DocumentBuildOptions CreateBuildOptions( Logger& log )
 			build_options.data_layout,
 			features,
 			cpu_name,
-			optimization_level,
-			generate_debug_info,
+			Options::optimization_level,
+			Options::generate_debug_info,
 			compiler_generation );
 
 	return build_options;

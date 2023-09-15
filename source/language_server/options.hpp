@@ -40,6 +40,20 @@ inline cl::list<std::string> include_dir(
 	cl::ZeroOrMore,
 	cl::cat(options_category));
 
+inline cl::opt<char> optimization_level(
+	"O",
+	cl::desc("Optimization level. [-O0, -O1, -O2, -O3, -Os or -Oz] (default = '-O0')"),
+	cl::Prefix,
+	cl::Optional,
+	cl::init('0'),
+	cl::cat(options_category) );
+
+inline cl::opt<bool> generate_debug_info(
+	"g",
+	cl::desc("Generate debug information."),
+	cl::init(false),
+	cl::cat(options_category) );
+
 inline cl::opt<std::string> architecture(
 	"march",
 	cl::desc("Architecture to generate code for (see --version)"),
