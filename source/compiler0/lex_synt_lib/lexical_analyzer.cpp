@@ -113,7 +113,20 @@ bool IsWhitespace( const sprache_char c )
 
 bool IsNewline( const sprache_char c )
 {
-	return c == '\n';
+	// See https://en.wikipedia.org/wiki/Newline#Unicode.
+	return
+		c == '\n' || // line feed
+		c == '\r' || // carriage return
+		c == '\f' || // form feed
+		c == '\v' || // vertical tab
+		c == 0x0085 || // Next line
+		c == 0x2028 || // line separator
+		c == 0x2029 ;  // paragraph separator
+}
+
+bool IsNewlineSequence( const sprache_char c0, const sprache_char c1 )
+{
+	return c0 == '\r' && c1 == '\n';
 }
 
 bool IsNumberStartChar( const sprache_char c )
@@ -527,7 +540,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 			}
 		};
 
-		const uint32_t c= GetUTF8FirstChar( it, it_end );
+		const sprache_char c= GetUTF8FirstChar( it, it_end );
 		Lexem lexem;
 
 		// line comment.
@@ -593,10 +606,17 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 		}
 		else if( IsNewline(c) )
 		{
-			// TODO - handle stupid things, like windows double-symbol newlines.
 			++line;
-			++it;
 			column= 0u;
+
+			ReadNextUTF8Char( it, it_end ); // Consume this line ending symbol.
+
+			// Handle case with two-symbol line ending.
+			auto it_copy= it;
+			const sprache_char next_c= ReadNextUTF8Char( it_copy, it_end );
+			if( IsNewlineSequence( c, next_c ) )
+				it= it_copy;
+
 			continue;
 		}
 		else if( IsWhitespace(c) )
