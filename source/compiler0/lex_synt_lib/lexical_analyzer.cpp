@@ -612,10 +612,13 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 			ReadNextUTF8Char( it, it_end ); // Consume this line ending symbol.
 
 			// Handle case with two-symbol line ending.
-			auto it_copy= it;
-			const sprache_char next_c= ReadNextUTF8Char( it_copy, it_end );
-			if( IsNewlineSequence( c, next_c ) )
-				it= it_copy;
+			if( it < it_end )
+			{
+				auto it_copy= it;
+				const sprache_char next_c= ReadNextUTF8Char( it_copy, it_end );
+				if( IsNewlineSequence( c, next_c ) )
+					it= it_copy;
+			}
 
 			continue;
 		}
@@ -775,10 +778,13 @@ void BuildLineToLinearPositionIndex( std::string_view text, LineToLinearPosition
 		if( IsNewline( c ) )
 		{
 			// Handle cases with two-symbol line ending.
-			auto it_copy= it;
-			const sprache_char next_c= ReadNextUTF8Char( it_copy, it_end );
-			if( IsNewlineSequence( c, next_c ) )
-				it= it_copy;
+			if( it < it_end )
+			{
+				auto it_copy= it;
+				const sprache_char next_c= ReadNextUTF8Char( it_copy, it_end );
+				if( IsNewlineSequence( c, next_c ) )
+					it= it_copy;
+			}
 
 			out_index.push_back( TextLinearPosition(it - it_start) ); // Next line starts with next symbol.
 		}
