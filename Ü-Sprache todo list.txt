@@ -74,7 +74,6 @@ QtCreator plugin:
 *) Language server features support
 
 Language server
-*) Create TargetMachine to obtain proper data layout
 *) Reduce memory usage - avoid building unnecessary code, clear unused internal data structures, make mangled names shorter, etc.
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
@@ -88,6 +87,7 @@ Language server
 *) Sort completed items using some kind of prioroty
 *) Links between errors for template/macro errors
 *) More unit-tests
+*) Create TargetMachine to obtain proper data layout
 
 CPP Header converter:
 *) White list of converted symbols
