@@ -1,6 +1,6 @@
-name: CI
+name: WindowsBuild
 
-on: [push]
+on: [workflow_dispatch]
 
 jobs:
   build_windows:
