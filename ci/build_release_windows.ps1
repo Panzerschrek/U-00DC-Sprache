@@ -4,3 +4,8 @@ Invoke-WebRequest -Uri "https://github.com/llvm/llvm-project/releases/download/l
 7z x llvm-15.0.7.src.tar
 7z x cmake-15.0.7.src.tar.xz
 7z x cmake-15.0.7.src.tar
+
+cmd 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat' amd64
+mkdir build_dir
+cmake -S . -B build_dir -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_MODULE_PATH=cmake-15.0.7.src/Modules/ -DLLVM_SRC_DIR=llvm-15.0.7.src/ -DLLVM_TARGETS_TO_BUILD="x86" -DLLVM_BUILD_BENCHMARKS=OFF -DLLVM_INCLUDE_BENCHMARKS=OFF -DLLVM_BUILD_DOCS=OFF -DLLVM_BUILD_EXAMPLES=OFF -DLLVM_BUILD_TESTS=OFF
+cmake --build build_dir
