@@ -11,5 +11,5 @@ jobs:
       run: ./ci/build_release_windows.ps1
     - uses: actions/upload-artifact@v3
       with:
-        name: compiler artifacts
+        name: compiler_windows
         path: install/

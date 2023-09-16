@@ -13,5 +13,5 @@ jobs:
         ./ci/build_release_llvm_bin.sh
     - uses: actions/upload-artifact@v3
       with:
-        name: compiler artifacts
+        name: compiler_gnu_linux
         path: install/
