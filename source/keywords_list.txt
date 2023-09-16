@@ -104,6 +104,8 @@ cast_ref
 cast_ref_unsafe
 cast_imut
 cast_mut
+as
+is
 import
 export
 default

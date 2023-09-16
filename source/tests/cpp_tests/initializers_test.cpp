@@ -778,12 +778,12 @@ U_TEST(EmptyInitializerTest1)
 	}
 	struct S // this struct must have generated default constructor, because it have all fields default-constructible
 	{
-		[ A, 11 ] as;
+		[ A, 11 ] a_s;
 	}
 	fn Foo() : i32
 	{
 		var S s;
-		return s.as[5u].a[17u];
+		return s.a_s[5u].a[17u];
 	}
 	)";
 
