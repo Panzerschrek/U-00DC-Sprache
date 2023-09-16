@@ -30,6 +30,7 @@ inline cl::opt<uint32_t> num_threads(
 	cl::cat(options_category) );
 
 // Duplicate some compiler options.
+// TODO - avoid this and use common header instead.
 
 inline cl::list<std::string> include_dir(
 	"include-dir",
@@ -38,6 +39,40 @@ inline cl::list<std::string> include_dir(
 	cl::value_desc("dir"),
 	cl::ZeroOrMore,
 	cl::cat(options_category));
+
+inline cl::opt<char> optimization_level(
+	"O",
+	cl::desc("Optimization level. [-O0, -O1, -O2, -O3, -Os or -Oz] (default = '-O0')"),
+	cl::Prefix,
+	cl::Optional,
+	cl::init('0'),
+	cl::cat(options_category) );
+
+inline cl::opt<bool> generate_debug_info(
+	"g",
+	cl::desc("Generate debug information."),
+	cl::init(false),
+	cl::cat(options_category) );
+
+inline cl::opt<std::string> architecture(
+	"march",
+	cl::desc("Architecture to generate code for (see --version)"),
+	cl::cat(options_category) );
+
+inline cl::opt<std::string> target_vendor(
+	"target-vendor",
+	cl::desc("Target vendor"),
+	cl::cat(options_category) );
+
+inline cl::opt<std::string> target_os(
+	"target-os",
+	cl::desc("Target OS"),
+	cl::cat(options_category) );
+
+inline cl::opt<std::string> target_environment(
+	"target-environment",
+	cl::desc("Target environment"),
+	cl::cat(options_category) );
 }
 
 } // namespace Options

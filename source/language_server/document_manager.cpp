@@ -1,8 +1,11 @@
+#include "../code_builder_lib_common/push_disable_llvm_warnings.hpp"
+#include <llvm/Support/Host.h>
+#include "../code_builder_lib_common/pop_llvm_warnings.hpp"
 #include "../compilers_support_lib/prelude.hpp"
 #include "../compilers_support_lib/vfs.hpp"
-#include "../tests/tests_common.hpp"
 #include "document_position_utils.hpp"
 #include "options.hpp"
+#include "data_layout_stub.hpp"
 #include "document_manager.hpp"
 
 namespace U
@@ -26,22 +29,31 @@ std::unique_ptr<IVfs> CreateBaseVfs( Logger& log )
 	return CreateVfsOverSystemFS( {} );
 }
 
-DocumentBuildOptions CreateBuildOptions()
+DocumentBuildOptions CreateBuildOptions( Logger& log )
 {
+	llvm::Triple target_triple( llvm::sys::getDefaultTargetTriple() );
+	if( !Options::architecture.empty() && Options::architecture != "native" )
+		target_triple.setArchName( Options::architecture );
+	if( !Options::target_vendor.empty() )
+		target_triple.setVendorName( Options::target_vendor );
+	if( !Options::target_os.empty() )
+		target_triple.setOSName( Options::target_os );
+	if( !Options::target_environment.empty() )
+		target_triple.setEnvironmentName( Options::target_environment );
+
+	log() << "Using triple " << target_triple.str() << std::endl;
+
 	DocumentBuildOptions build_options
 	{
-		// TODO - create proper target machine.
-		llvm::DataLayout( GetTestsDataLayout() ),
-		// TODO - use target triple, dependent on compilation options.
-		llvm::Triple( llvm::sys::getDefaultTargetTriple() ),
+		CreateStubDataLayout( target_triple ),
+		target_triple,
 		"",
 	};
 
-	// TODO - read params from options or some kind of config file.
+	log() << "Created data layout " << build_options.data_layout.getStringRepresentation() << std::endl;
+
 	const llvm::StringRef features;
-	const llvm::StringRef cpu_name;
-	const char optimization_level= '0';
-	const bool generate_debug_info= 0;
+	const llvm::StringRef cpu_name= llvm::sys::getHostCPUName();
 	const uint32_t compiler_generation= 0;
 	build_options.prelude=
 		GenerateCompilerPreludeCode(
@@ -49,8 +61,8 @@ DocumentBuildOptions CreateBuildOptions()
 			build_options.data_layout,
 			features,
 			cpu_name,
-			optimization_level,
-			generate_debug_info,
+			Options::optimization_level,
+			Options::generate_debug_info,
 			compiler_generation );
 
 	return build_options;
@@ -108,7 +120,7 @@ DocumentManager::DocumentManager( Logger& log )
 	// TODO - use individual VFS for different files.
 	, vfs_( *this, log_ )
 	// TODO - create different build options for different files.
-	, build_options_( CreateBuildOptions() )
+	, build_options_( CreateBuildOptions(log_) )
 {}
 
 Document* DocumentManager::Open( const Uri& uri, std::string text )
