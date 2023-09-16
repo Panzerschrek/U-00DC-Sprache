@@ -10,7 +10,7 @@ Invoke-WebRequest -Uri "https://github.com/llvm/llvm-project/releases/download/l
 7z x cmake-15.0.7.src.tar
 
 # Messy stuff. Call vcvarsall.bat, extract all environment variable prepared in this call and redefine them in context of this powershell script.
-cmd /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat`" && set > %temp%\vcvars.txt"
+cmd /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat`" amd64 && set > %temp%\vcvars.txt"
 Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
 	if ($_ -match "^(.*?)=(.*)$") {
 		Set-Content "env:\$($matches[1])" $matches[2]
