@@ -85,7 +85,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CallOperatorSignatureHelp& call_operator_signature_help )
 {
-	// TODO
+	PerformSignatureHelp( BuildExpressionCode( *call_operator_signature_help.expression_, names, function_context ) );
 	return ErrorValue();
 }
 

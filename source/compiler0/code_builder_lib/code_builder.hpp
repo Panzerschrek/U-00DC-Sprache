@@ -205,6 +205,8 @@ private:
 	void ComleteClassOwnFields( const Class* class_, std::string_view name );
 	void CompleteProcessValue( std::string_view completion_name, std::string_view value_name, const NamesScopeValue& names_scope_value );
 
+	void PerformSignatureHelp( const Value& value );
+
 	void DeleteFunctionsBodies_r( NamesScope& names_scope );
 
 private:

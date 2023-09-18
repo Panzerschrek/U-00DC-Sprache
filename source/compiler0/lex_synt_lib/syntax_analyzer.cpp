@@ -881,7 +881,10 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 	case Lexem::Type::SignatureHelpBracketLeft:
 		{
 			CallOperatorSignatureHelp call_operator_signature_help( it_->src_loc );
+			NextLexem();
+
 			call_operator_signature_help.expression_= std::make_unique<Expression>(std::move(expr));
+
 			return TryParseBinaryOperatorComponentPostfixOperator(std::move(call_operator_signature_help));
 		}
 

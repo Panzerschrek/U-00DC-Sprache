@@ -607,6 +607,19 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 	}
 }
 
+void CodeBuilder::PerformSignatureHelp( const Value& value )
+{
+	if( const auto functions_set= value.GetFunctionsSet() )
+	{
+		for( const FunctionVariable& function : functions_set->functions )
+		{
+			CompletionItem item;
+			item.name= FunctionParamsToString( function.type.params );
+			completion_items_.push_back( std::move(item) );
+		}
+	}
+}
+
 void CodeBuilder::DeleteFunctionsBodies_r( NamesScope& names_scope )
 {
 	names_scope.ForEachValueInThisScope(
