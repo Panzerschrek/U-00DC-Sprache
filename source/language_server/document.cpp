@@ -71,7 +71,6 @@ void PopulateDiagnostics(
 	}
 }
 
-
 void PopulateDiagnostics_r(
 	const SourceGraph& source_graph,
 	const CodeBuilderErrorsContainer& errors,
@@ -111,6 +110,47 @@ void PopulateDiagnostics(
 	DiagnosticsByDocument& out_diagnostics )
 {
 	PopulateDiagnostics_r( source_graph, errors, program_text, line_to_linear_position_index, out_diagnostics );
+}
+
+// Returns true if found and changed.
+bool FindAndChangeLexem( Lexems& lexems, const SrcLoc& src_loc, const Lexem::Type type, const Lexem::Type new_type )
+{
+	for( Lexem& lexem : lexems )
+	{
+		if( lexem.src_loc == src_loc && lexem.type == type )
+		{
+			lexem.type= new_type;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+Synt::MacrosByContextMap TakeMacrosFromImports( const SourceGraph& source_graph )
+{
+	Synt::MacrosByContextMap merged_macroses;
+	{
+		const auto& child_nodes_indeces= source_graph.nodes_storage.front().child_nodes_indeces;
+		if( child_nodes_indeces.empty() )
+		{
+			// Load built-in macroses only if this document has no imports. Otherwise built-in macroses will be taken from imports.
+			merged_macroses= *PrepareBuiltInMacros( CalculateSourceFileContentsHash );
+		}
+
+		// Merge macroses of imported modules in order to parse document text properly.
+		for( const size_t child_node_index : child_nodes_indeces )
+		{
+			for( const auto& context_macro_map_pair : *source_graph.nodes_storage[child_node_index].ast.macros )
+			{
+				Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
+				for( const auto& macro_map_pair : context_macro_map_pair.second )
+					dst_map[macro_map_pair.first]= macro_map_pair.second;
+			}
+		}
+	}
+
+	return merged_macroses;
 }
 
 } // namespace
@@ -376,8 +416,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		return {};
 	}
 
-	// Perform lexical analysis for current text.
-	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
+	// Perform lexical analysis and other manipulations for current version of the document text.
 
 	const uint32_t line= position.line;
 	if( line >= line_to_linear_position_index_.size() )
@@ -400,6 +439,8 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	}
 	const TextLinearPosition column_utf8_minus_one= *column_utf8 - 1u;
 
+	Lexems lexems= LexicalAnalysis( text_ ).lexems;
+
 	SrcLoc src_loc;
 	if( line_text[ column_utf8_minus_one ] == '.' )
 	{
@@ -411,18 +452,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		}
 		src_loc= SrcLoc( 0, line, *column );
 
-		bool found= false;
-		for( Lexem& lexem : lex_result.lexems )
-		{
-			if( lexem.src_loc == src_loc && lexem.type == Lexem::Type::Dot )
-			{
-				lexem.type= Lexem::Type::CompletionDot;
-				found= true;
-				break;
-			}
-		}
-
-		if( !found )
+		if( !FindAndChangeLexem( lexems, src_loc, Lexem::Type::Dot, Lexem::Type::CompletionDot ) )
 		{
 			log_() << "Can't find . lexem" << std::endl;
 			return {};
@@ -438,18 +468,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		}
 		src_loc= SrcLoc( 0, line, *column );
 
-		bool found= false;
-		for( Lexem& lexem : lex_result.lexems )
-		{
-			if( lexem.src_loc == src_loc && lexem.type == Lexem::Type::Scope )
-			{
-				lexem.type= Lexem::Type::CompletionScope;
-				found= true;
-				break;
-			}
-		}
-
-		if( !found )
+		if( !FindAndChangeLexem( lexems, src_loc, Lexem::Type::Scope, Lexem::Type::CompletionScope ) )
 		{
 			log_() << "Can't find :: lexem" << std::endl;
 			return {};
@@ -472,18 +491,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 		}
 		src_loc= SrcLoc( 0, line, *column );
 
-		bool found= false;
-		for( Lexem& lexem : lex_result.lexems )
-		{
-			if( lexem.src_loc == src_loc && lexem.type == Lexem::Type::Identifier )
-			{
-				lexem.type= Lexem::Type::CompletionIdentifier;
-				found= true;
-				break;
-			}
-		}
-
-		if( !found )
+		if( !FindAndChangeLexem( lexems, src_loc, Lexem::Type::Identifier, Lexem::Type::CompletionIdentifier ) )
 		{
 			log_() << "Can't find identifier lexem" << std::endl;
 			return {};
@@ -494,31 +502,10 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	// In most cases it will fail, but it will still parse text until first error.
 	// Here we assume, that first error is at least at point of completion or further.
 
-	Synt::MacrosByContextMap merged_macroses;
-	{
-		const auto& child_nodes_indeces= compiled_state_->source_graph.nodes_storage.front().child_nodes_indeces;
-		if( child_nodes_indeces.empty() )
-		{
-			// Load built-in macroses only if this document has no imports. Otherwise built-in macroses will be taken from imports.
-			merged_macroses= *PrepareBuiltInMacros( CalculateSourceFileContentsHash );
-		}
-
-		// Merge macroses of imported modules in order to parse document text properly.
-		for( const size_t child_node_index : child_nodes_indeces )
-		{
-			for( const auto& context_macro_map_pair : *compiled_state_->source_graph.nodes_storage[child_node_index].ast.macros )
-			{
-				Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
-				for( const auto& macro_map_pair : context_macro_map_pair.second )
-					dst_map[macro_map_pair.first]= macro_map_pair.second;
-			}
-		}
-	}
-
 	const auto synt_result=
 		Synt::SyntaxAnalysis(
-			lex_result.lexems,
-			merged_macroses,
+			lexems,
+			TakeMacrosFromImports( compiled_state_->source_graph ),
 			std::make_shared<Synt::MacroExpansionContexts>(),
 			CalculateSourceFileContentsHash( text_ ) );
 
@@ -568,8 +555,7 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 		return {};
 	}
 
-	// Perform lexical analysis for current text.
-	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
+	// Perform lexical analysis and other manipulations for current version of the document text.
 
 	const uint32_t line= position.line;
 	if( line >= line_to_linear_position_index_.size() )
@@ -605,20 +591,9 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 		log_() << "Failed to get utf32 position" << std::endl;
 		return {};
 	}
-	const SrcLoc src_loc( 0, line, *column );
 
-	bool bracket_left_found= false;
-	for( Lexem& lexem : lex_result.lexems )
-	{
-		if( lexem.src_loc == src_loc && lexem.type == Lexem::Type::BracketLeft )
-		{
-			lexem.type= Lexem::Type::SignatureHelpBracketLeft;
-			bracket_left_found= true;
-			break;
-		}
-	}
-
-	if( !bracket_left_found )
+	Lexems lexems= LexicalAnalysis( text_ ).lexems;
+	if( !FindAndChangeLexem( lexems, SrcLoc( 0, line, *column ), Lexem::Type::BracketLeft, Lexem::Type::SignatureHelpBracketLeft ) )
 	{
 		log_() << "Can't find ( lexem" << std::endl;
 		return {};
@@ -628,37 +603,16 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 	// In most cases it will fail, but it will still parse text until first error.
 	// Here we assume, that first error is at least at point of completion or further.
 
-	Synt::MacrosByContextMap merged_macroses;
-	{
-		const auto& child_nodes_indeces= compiled_state_->source_graph.nodes_storage.front().child_nodes_indeces;
-		if( child_nodes_indeces.empty() )
-		{
-			// Load built-in macroses only if this document has no imports. Otherwise built-in macroses will be taken from imports.
-			merged_macroses= *PrepareBuiltInMacros( CalculateSourceFileContentsHash );
-		}
-
-		// Merge macroses of imported modules in order to parse document text properly.
-		for( const size_t child_node_index : child_nodes_indeces )
-		{
-			for( const auto& context_macro_map_pair : *compiled_state_->source_graph.nodes_storage[child_node_index].ast.macros )
-			{
-				Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
-				for( const auto& macro_map_pair : context_macro_map_pair.second )
-					dst_map[macro_map_pair.first]= macro_map_pair.second;
-			}
-		}
-	}
-
 	const auto synt_result=
 		Synt::SyntaxAnalysis(
-			lex_result.lexems,
-			merged_macroses,
+			lexems,
+			TakeMacrosFromImports( compiled_state_->source_graph ),
 			std::make_shared<Synt::MacroExpansionContexts>(),
 			CalculateSourceFileContentsHash( text_ ) );
 
 	// Lookup global thing, where element with SignatureHelpBracketLeft lexem is located, together with path to it.
 	const SyntaxTreeLookupResultOpt lookup_result=
-		FindCompletionSyntaxElement( src_loc.GetLine(), src_loc.GetColumn(), synt_result.program_elements );
+		FindCompletionSyntaxElement( line, *column, synt_result.program_elements );
 	if( lookup_result == std::nullopt )
 	{
 		log_() << "Failed to find parsed syntax element" << std::endl;
