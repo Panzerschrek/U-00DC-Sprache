@@ -69,6 +69,30 @@ std::vector<CodeBuilder::CompletionItem> CodeBuilder::Complete( const llvm::Arra
 	return CompletionResultFinalize();
 }
 
+std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element )
+{
+	// Use same routines for completion and signature help.
+
+	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+	if( names_scope == nullptr )
+		return {};
+
+	BuildElementForCompletion( *names_scope, program_element );
+	return SignatureHelpResultFinalize();
+}
+
+std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element )
+{
+	// Use same routines for completion and signature help.
+
+	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+	if( names_scope == nullptr )
+		return {};
+
+	BuildElementForCompletion( *names_scope, class_element );
+	return SignatureHelpResultFinalize();
+}
+
 void CodeBuilder::DeleteFunctionsBodies()
 {
 	// Delete bodies of in code.
@@ -189,6 +213,13 @@ std::vector<CodeBuilder::CompletionItem> CodeBuilder::CompletionResultFinalize()
 	std::vector<CompletionItem> result;
 	result.swap( completion_items_ );	
 	// Ideally we should filter-out shadowed names, but it is for now too complicated.
+	return result;
+}
+
+std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::SignatureHelpResultFinalize()
+{
+	std::vector<SignatureHelpItem> result;
+	result.swap( signature_help_items_ );
 	return result;
 }
 
@@ -613,9 +644,11 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 	{
 		for( const FunctionVariable& function : functions_set->functions )
 		{
-			CompletionItem item;
-			item.name= FunctionParamsToString( function.type.params );
-			completion_items_.push_back( std::move(item) );
+			SignatureHelpItem item;
+			item.label= FunctionParamsToString( function.type.params );
+			// TODO - maybe use name of function here?
+			// TODO - fill args.
+			signature_help_items_.push_back( std::move(item) );
 		}
 	}
 }

@@ -40,7 +40,7 @@ public: // Wrappers for document founctionality. Use them to perform proper rang
 	// Non-const this, since internal compiler state may be changed in completion.
 	std::vector<CompletionItem> Complete( const PositionInDocument& position );
 
-	std::vector<std::string> GetSignatureHelp( const PositionInDocument& position );
+	std::vector<CodeBuilder::SignatureHelpItem> GetSignatureHelp( const PositionInDocument& position );
 
 private:
 	RangeInDocument GetDocumentIdentifierRangeOrDummy( const SrcLocInDocument& document_src_loc ) const;

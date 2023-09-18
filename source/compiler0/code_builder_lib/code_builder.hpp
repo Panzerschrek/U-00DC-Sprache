@@ -78,6 +78,12 @@ public:
 		CompletionItemKind kind= CompletionItemKind::Variable;
 	};
 
+	struct SignatureHelpItem
+	{
+		std::string label;
+		std::vector<std::string> parameters;
+	};
+
 public:
 	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
 
@@ -116,6 +122,9 @@ public: // IDE helpers.
 	// Prefix is used to find proper namespace/class (name lookups are used).
 	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
 	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
+
+	std::vector<SignatureHelpItem> GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
+	std::vector<SignatureHelpItem> GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
 
 	// Delete bodies of functions (excepth constexpr ones).
 	// This breaks result module and should not be used for a program compilation (with result object file).
@@ -180,6 +189,7 @@ private:
 	NamesScope* GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	std::vector<CompletionItem> CompletionResultFinalize();
+	std::vector<SignatureHelpItem> SignatureHelpResultFinalize();
 
 	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element );
 	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element );
@@ -1303,8 +1313,10 @@ private:
 	// Map usage point to definition point.
 	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
 
-	// Output container for completion syntax elements.
+	// Output container for completion result items.
 	std::vector<CompletionItem> completion_items_;
+	// Output container for signature help result items.
+	std::vector<SignatureHelpItem> signature_help_items_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

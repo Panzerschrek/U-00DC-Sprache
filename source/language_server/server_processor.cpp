@@ -292,47 +292,30 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 {
 	Json::Object result;
 
-	document_manager_.GetSignatureHelp( signature_help.position );
-
-	// TODO - perform proper signature help.
-	// For now fill a dummy.
-	(void)signature_help;
+	Json::Array signatures;
 	{
-		Json::Array signatures;
+		for( const CodeBuilder::SignatureHelpItem& item : document_manager_.GetSignatureHelp( signature_help.position ) )
 		{
 			Json::Object signature;
-			signature["label"]= "(som";
-			signature["documentation"]= "TODO - some doc";
-
+			signature["label"]= item.label;
 			{
 				Json::Array parameters;
+				for( const std::string& param : item.parameters )
 				{
 					Json::Object parameter;
-					parameter["label"]= std::string("some_type_of_param");
-					parameters.push_back( std::move(parameter) );
-				}
-				{
-					Json::Object parameter;
-					parameter["label"]= "other_param_type";
+					parameter["label"]= param;
 					parameters.push_back( std::move(parameter) );
 				}
 				signature["parameters"]= std::move(parameters);
 			}
-
 			signatures.push_back( std::move(signature) );
-		}
-		{
-			Json::Object signature;
-			signature["label"]= "(ee";
-			signature["documentation"]= "TODO - some doc";
-			signature["parameters"]= Json::Array();
 
-			signatures.push_back( std::move(signature) );
 		}
 		result["signatures"]= std::move(signatures);
-		result["activeSignature"]= Json::Value( int64_t(0) );
-		result["activeParameter"]= Json::Value( int64_t(0) );
 	}
+	result["activeSignature"]= Json::Value( int64_t(0) );
+	result["activeParameter"]= Json::Value( int64_t(0) );
+
 	return result;
 }
 

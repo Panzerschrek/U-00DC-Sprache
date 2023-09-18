@@ -311,7 +311,7 @@ std::vector<CompletionItem> DocumentManager::Complete( const PositionInDocument&
 	return it->second.Complete( position.position );
 }
 
-std::vector<std::string> DocumentManager::GetSignatureHelp( const PositionInDocument& position )
+std::vector<CodeBuilder::SignatureHelpItem> DocumentManager::GetSignatureHelp( const PositionInDocument& position )
 {
 	const auto it= documents_.find( position.uri );
 	if( it == documents_.end() )

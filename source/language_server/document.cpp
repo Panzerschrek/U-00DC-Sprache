@@ -558,7 +558,7 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	return result_transformed;
 }
 
-std::vector<std::string> Document::GetSignatureHelp( const DocumentPosition& position )
+std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const DocumentPosition& position )
 {
 	TryTakeBackgroundStateUpdate();
 
@@ -670,28 +670,20 @@ std::vector<std::string> Document::GetSignatureHelp( const DocumentPosition& pos
 	// Also it is too slow to recompile program for each signature help.
 
 	const GlobalItem& global_item= lookup_result->global_item;
-	std::vector<CodeBuilder::CompletionItem> completion_result;
+	std::vector<CodeBuilder::SignatureHelpItem> signature_help_result;
 	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
 	{
 		U_ASSERT( *program_element != nullptr );
-		completion_result= compiled_state_->code_builder->Complete( lookup_result->prefix, **program_element );
+		signature_help_result= compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, **program_element );
 	}
 	else if( const auto class_element= std::get_if<const Synt::ClassElement*>( &global_item ) )
 	{
 		U_ASSERT( *class_element != nullptr );
-		completion_result= compiled_state_->code_builder->Complete( lookup_result->prefix, **class_element );
+		signature_help_result= compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, **class_element );
 	}
 	else U_ASSERT( false );
 
-	std::vector<std::string> result_transformed;
-	result_transformed.reserve( completion_result.size() );
-	for( const CodeBuilder::CompletionItem& item : completion_result )
-	{
-		log_() << "Found " << item.name << std::endl;
-		result_transformed.push_back( item.name );
-	}
-
-	return result_transformed;
+	return signature_help_result;
 }
 
 std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc ) const
