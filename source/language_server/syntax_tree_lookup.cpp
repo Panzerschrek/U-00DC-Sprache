@@ -80,6 +80,17 @@ void FindImpl( const Synt::CallOperator& call_operator )
 		FindImpl( expression );
 }
 
+void FindImpl( const Synt::CallOperatorSignatureHelp& call_operator_signature_help )
+{
+	FindImpl( call_operator_signature_help.expression_ );
+
+	if( call_operator_signature_help.src_loc_.GetLine() == line_ && call_operator_signature_help.src_loc_.GetColumn() == column_ )
+	{
+		U_ASSERT( global_item_ != std::nullopt );
+		result_= SyntaxTreeLookupResult{ prefix_, &call_operator_signature_help, *global_item_ };
+	}
+}
+
 void FindImpl( const Synt::IndexationOperator& indexation_operator )
 {
 	FindImpl( indexation_operator.expression_ );

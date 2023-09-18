@@ -533,6 +533,12 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			}
 			stream << ")";
 		}
+		void operator()( const CallOperatorSignatureHelp& call_operator_signature_help ) const
+		{
+			ElementWrite( *call_operator_signature_help.expression_, stream );
+			stream << "( ";
+			stream << ")";
+		}
 		void operator()( const ArrayTypeName& array_type_name ) const
 		{
 			ElementWrite( array_type_name, stream );

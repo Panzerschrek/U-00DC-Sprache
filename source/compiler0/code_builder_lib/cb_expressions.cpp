@@ -83,6 +83,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::CallOperatorSignatureHelp& call_operator_signature_help )
+{
+	// TODO
+	return ErrorValue();
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::IndexationOperator& indexation_operator )
 {
 	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *indexation_operator.expression_, names, function_context );

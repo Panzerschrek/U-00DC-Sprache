@@ -29,6 +29,7 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		// But sometimes constexpr/non-constepxr call result may depend on template context.
 		// So, in order to avoid generating too many errors, assume, that all calls are not useless.
 		bool operator()( const Synt::CallOperator& ) { return false; }
+		bool operator()( const Synt::CallOperatorSignatureHelp& ) { return false; }
 		// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
 		bool operator()( const Synt::IndexationOperator& ) { return true; }
 		bool operator()( const Synt::MemberAccessOperator& ) { return true; }

@@ -31,6 +31,7 @@ struct LogicalNot;
 struct BitwiseNot;
 
 struct CallOperator;
+struct CallOperatorSignatureHelp;
 struct IndexationOperator;
 struct MemberAccessOperator;
 struct MemberAccessOperatorCompletion;
@@ -140,6 +141,7 @@ using Expression= std::variant<
 	EmptyVariant,
 	// Postfix operators
 	CallOperator,
+	CallOperatorSignatureHelp,
 	IndexationOperator,
 	MemberAccessOperator,
 	MemberAccessOperatorCompletion,
@@ -584,6 +586,15 @@ struct CallOperator final : public SyntaxElementBase
 
 	ExpressionPtr expression_;
 	std::vector<Expression> arguments_;
+};
+
+// Special kind of call operator, created only by language server to perform signature help.
+struct CallOperatorSignatureHelp final : public SyntaxElementBase
+{
+	CallOperatorSignatureHelp( const SrcLoc& src_loc );
+
+	ExpressionPtr expression_;
+	// Fo now no need to parse arguments.
 };
 
 struct IndexationOperator final : public SyntaxElementBase

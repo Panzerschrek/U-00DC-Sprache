@@ -878,6 +878,13 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 			return TryParseBinaryOperatorComponentPostfixOperator(std::move(call_operator));
 		}
 
+	case Lexem::Type::SignatureHelpBracketLeft:
+		{
+			CallOperatorSignatureHelp call_operator_signature_help( it_->src_loc );
+			call_operator_signature_help.expression_= std::make_unique<Expression>(std::move(expr));
+			return TryParseBinaryOperatorComponentPostfixOperator(std::move(call_operator_signature_help));
+		}
+
 	case Lexem::Type::Dot:
 		{
 			NextLexem();
