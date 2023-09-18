@@ -76,6 +76,8 @@ public: // Requests.
 	// Non-const this, since internal compiler state may be changed in completion.
 	std::vector<CompletionItem> Complete( const DocumentPosition& position );
 
+	std::vector<std::string> GetSignatureHelp( const DocumentPosition& position );
+
 	// Assuming given SrcLoc is identifier start, get identifer end for it and construct result range.
 	// Also performs mapping from SrcLoc for last valid state to current text state.
 	std::optional<DocumentRange> GetIdentifierRange( const SrcLoc& src_loc ) const;

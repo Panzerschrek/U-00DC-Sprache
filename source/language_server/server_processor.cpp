@@ -292,6 +292,8 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 {
 	Json::Object result;
 
+	document_manager_.GetSignatureHelp( signature_help.position );
+
 	// TODO - perform proper signature help.
 	// For now fill a dummy.
 	(void)signature_help;

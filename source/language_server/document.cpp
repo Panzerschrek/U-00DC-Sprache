@@ -558,6 +558,107 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	return result_transformed;
 }
 
+std::vector<std::string> Document::GetSignatureHelp( const DocumentPosition& position )
+{
+	TryTakeBackgroundStateUpdate();
+
+	if( compiled_state_ == nullptr || compiled_state_->source_graph.nodes_storage.empty() )
+	{
+		log_() << "Can't get signature help - document is not compiled" << std::endl;
+		return {};
+	}
+
+	// Perform lexical analysis for current text.
+	LexicalAnalysisResult lex_result= LexicalAnalysis( text_ );
+
+	const uint32_t line= position.line;
+	if( line >= line_to_linear_position_index_.size() )
+	{
+		log_() << "Line is greater than document end" << std::endl;
+		return {};
+	}
+	const std::string_view line_text= std::string_view(text_).substr( line_to_linear_position_index_[ line ] );
+
+	const auto column_utf8= Utf16PositionToUtf8Position( line_text, position.character );
+	if( column_utf8 == std::nullopt )
+	{
+		log_() << "Can't obtain column" << std::endl;
+		return {};
+	}
+	if( *column_utf8 == 0 )
+	{
+		log_() << "Can't get signature at column 0" << std::endl;
+		return {};
+	}
+	const TextLinearPosition column_utf8_minus_one= *column_utf8 - 1u;
+
+	if( line_text[ column_utf8_minus_one ] != '(' )
+	{
+		log_() << "Can't get signature help for symbols other than (" << std::endl;
+		return {};
+	}
+	log_() << " Signature help for " << line_text[ column_utf8_minus_one ] << std::endl;
+
+	const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one );
+	if( column == std::nullopt )
+	{
+		log_() << "Failed to get utf32 position" << std::endl;
+		return {};
+	}
+	const SrcLoc src_loc( 0, line, *column );
+
+	bool bracket_left_found= false;
+	for( Lexem& lexem : lex_result.lexems )
+	{
+		if( lexem.src_loc == src_loc && lexem.type == Lexem::Type::BraceLeft )
+		{
+			lexem.type= Lexem::Type::SignatureHelpBracketLeft;
+			bracket_left_found= true;
+			break;
+		}
+	}
+
+	if( !bracket_left_found )
+	{
+		log_() << "Can't find ( lexem" << std::endl;
+		return {};
+	}
+
+	// Perform syntaxis parsing of current text.
+	// In most cases it will fail, but it will still parse text until first error.
+	// Here we assume, that first error is at least at point of completion or further.
+
+	Synt::MacrosByContextMap merged_macroses;
+	{
+		const auto& child_nodes_indeces= compiled_state_->source_graph.nodes_storage.front().child_nodes_indeces;
+		if( child_nodes_indeces.empty() )
+		{
+			// Load built-in macroses only if this document has no imports. Otherwise built-in macroses will be taken from imports.
+			merged_macroses= *PrepareBuiltInMacros( CalculateSourceFileContentsHash );
+		}
+
+		// Merge macroses of imported modules in order to parse document text properly.
+		for( const size_t child_node_index : child_nodes_indeces )
+		{
+			for( const auto& context_macro_map_pair : *compiled_state_->source_graph.nodes_storage[child_node_index].ast.macros )
+			{
+				Synt::MacroMap& dst_map= merged_macroses[context_macro_map_pair.first];
+				for( const auto& macro_map_pair : context_macro_map_pair.second )
+					dst_map[macro_map_pair.first]= macro_map_pair.second;
+			}
+		}
+	}
+
+	const auto synt_result=
+		Synt::SyntaxAnalysis(
+			lex_result.lexems,
+			merged_macroses,
+			std::make_shared<Synt::MacroExpansionContexts>(),
+			CalculateSourceFileContentsHash( text_ ) );
+
+	return {};
+}
+
 std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc ) const
 {
 	if( compiled_state_ == nullptr || text_changes_since_compiled_state_ == std::nullopt )
