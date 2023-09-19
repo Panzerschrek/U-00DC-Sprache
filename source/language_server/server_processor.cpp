@@ -300,12 +300,6 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 			signature["label"]= item.label;
 			{
 				Json::Array parameters;
-				for( const std::string& param : item.parameters )
-				{
-					Json::Object parameter;
-					parameter["label"]= param;
-					parameters.push_back( std::move(parameter) );
-				}
 				signature["parameters"]= std::move(parameters);
 			}
 			signatures.push_back( std::move(signature) );

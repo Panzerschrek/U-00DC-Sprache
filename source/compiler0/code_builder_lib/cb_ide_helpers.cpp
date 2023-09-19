@@ -644,10 +644,23 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 	{
 		for( const FunctionVariable& function : functions_set->functions )
 		{
+			std::stringstream ss;
+
+			if( function.syntax_element != nullptr )
+			{
+				if( !function.syntax_element->name_.empty() )
+					ss << function.syntax_element->name_.back().name;
+
+				Synt::WriteFunctionParamsList( function.syntax_element->type_, ss );
+				Synt::WriteFunctionTypeEnding( function.syntax_element->type_, ss );
+			}
+			else
+			{
+				// TODO
+			}
+
 			SignatureHelpItem item;
-			item.label= FunctionParamsToString( function.type.params );
-			// TODO - maybe use name of function here?
-			// TODO - fill args.
+			item.label= ss.str();
 			signature_help_items_.push_back( std::move(item) );
 		}
 	}

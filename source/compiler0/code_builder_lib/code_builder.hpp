@@ -81,7 +81,7 @@ public:
 	struct SignatureHelpItem
 	{
 		std::string label;
-		std::vector<std::string> parameters;
+		// TODO - fill parameters range.
 	};
 
 public:

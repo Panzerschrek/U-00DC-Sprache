@@ -12,7 +12,8 @@ void WriteProgramElement( const ComplexName& complex_name, std::ostream& stream 
 void WriteExpression( const Synt::Expression& expression, std::ostream& stream );
 void WriteTypeName( const Synt::TypeName& type_name, std::ostream& stream );
 void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& stream );
-
+void WriteFunctionParamsList( const Synt::FunctionType& function_type, std::ostream& stream );
+void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream );
 
 } // namespace Synt
 
