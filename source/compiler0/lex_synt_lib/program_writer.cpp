@@ -206,6 +206,9 @@ void ElementWrite( const FunctionType& function_type_name, std::ostream& stream 
 void ElementWrite( const FunctionParam& param, std::ostream& stream )
 {
 	ElementWrite( param.type_, stream );
+
+	stream << " ";
+
 	ElementWrite( param.reference_modifier_, stream );
 
 	if( !param.reference_tag_.empty() )
@@ -214,7 +217,6 @@ void ElementWrite( const FunctionParam& param, std::ostream& stream )
 		stream << param.reference_tag_;
 	}
 
-	stream << " ";
 	ElementWrite( param.mutability_modifier_, stream );
 
 	if( param.mutability_modifier_ != MutabilityModifier::None )
@@ -915,9 +917,9 @@ void WriteFunctionParamsList( const Synt::FunctionType& function_type, std::ostr
 void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream )
 {
 	if( function_type.unsafe_ )
-		stream << " " << Keyword( Keywords::unsafe_ );
+		stream << Keyword( Keywords::unsafe_ ) << " ";
 
-	stream << " : ";
+	stream << ": ";
 	if( function_type.return_type_ != nullptr )
 		ElementWrite( *function_type.return_type_, stream );
 	else
@@ -930,11 +932,17 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 		stream << "'";
 	}
 
-	ElementWrite( function_type.return_value_reference_modifier_, stream );
-	if( !function_type.return_value_reference_tag_.empty() )
-		stream << "'" << function_type.return_value_reference_tag_;
+	if( function_type.return_value_reference_modifier_ != ReferenceModifier::None )
+	{
+		stream << " ";
 
-	if( function_type.return_value_mutability_modifier_ != MutabilityModifier::None )
+		ElementWrite( function_type.return_value_reference_modifier_, stream );
+		if( !function_type.return_value_reference_tag_.empty() )
+			stream << "'" << function_type.return_value_reference_tag_;
+
+		ElementWrite( function_type.return_value_mutability_modifier_, stream );
+	}
+	else if( function_type.return_value_mutability_modifier_ != MutabilityModifier::None )
 	{
 		stream << " ";
 		ElementWrite( function_type.return_value_mutability_modifier_, stream );

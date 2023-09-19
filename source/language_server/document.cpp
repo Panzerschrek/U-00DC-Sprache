@@ -583,7 +583,6 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 		log_() << "Can't get signature help for symbols other than (" << std::endl;
 		return {};
 	}
-	log_() << " Signature help for " << line_text[ column_utf8_minus_one ] << std::endl;
 
 	const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one );
 	if( column == std::nullopt )

@@ -87,6 +87,20 @@ CompletionItemsNormalized NormalizeCompletionResult( const llvm::ArrayRef<Comple
 	return result;
 }
 
+using SignatureHelpResultNormalized= std::vector<std::string>;
+
+SignatureHelpResultNormalized NormalizeSignatureHelpResult( const llvm::ArrayRef<CodeBuilder::SignatureHelpItem> items )
+{
+	SignatureHelpResultNormalized result;
+	result.reserve( items.size() );
+
+	for( const CodeBuilder::SignatureHelpItem& item : items )
+		result.push_back( item.label );
+
+	std::sort( result.begin(), result.end() );
+	return result;
+}
+
 Logger g_tests_logger( std::cout );
 llvm::ThreadPool g_tests_thread_pool;
 
@@ -788,6 +802,90 @@ namespace Abc
 		const CompletionItemsNormalized expected_completion_result{ "Foo" };
 		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 	}
+}
+
+U_TEST( DocumentSignatureHelp_Test0 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "fn bar(){} fn foo();" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo(" );
+	U_TEST_ASSERT( document.GetCurrentText() == "fn bar(){foo(} fn foo();" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 13 } );
+	const SignatureHelpResultNormalized expected_result{ "foo() : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test1 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "fn bar(){} fn foo( i32 x ); fn foo( f32 y, bool z ) : f64; fn foo( [ i32, 2 ] &mut a, tup[ f32, void ] t ) unsafe : i32 &mut;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo(" );
+	U_TEST_ASSERT( document.GetCurrentText() == "fn bar(){foo(} fn foo( i32 x ); fn foo( f32 y, bool z ) : f64; fn foo( [ i32, 2 ] &mut a, tup[ f32, void ] t ) unsafe : i32 &mut;" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 13 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( [ i32, 2 ] &mut a, tup[ f32, void ] t ) unsafe : i32 &mut", "foo( f32 y, bool z ) : f64", "foo( i32 x ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test2 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Only last component of the function name is used.
+	document.SetText( "fn bar(){} namespace Abc{ struct Str{ fn foo(); } }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "Abc::Str::foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 23 } );
+	const SignatureHelpResultNormalized expected_result{ "foo() : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test3 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Type names as they are writen are used - without unwrapping type aliases and calculating variable values.
+	document.SetText( "fn bar(){} fn foo( [ Int, size ] arr ) : Float; type Int= i64; auto size= 16s; type Float= f32;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 13 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( [ Int, size ] arr ) : Float" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 
 } // namespace
