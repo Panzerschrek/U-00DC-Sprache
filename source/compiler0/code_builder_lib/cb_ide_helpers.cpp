@@ -640,29 +640,40 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 
 void CodeBuilder::PerformSignatureHelp( const Value& value )
 {
-	if( const auto functions_set= value.GetFunctionsSet() )
+	OverloadedFunctionsSetConstPtr functions_set;
+	VariablePtr this_;
+
+	if( const auto value_functions_set= value.GetFunctionsSet() )
+		functions_set= value_functions_set;
+	else if( const auto overloaded_methods_set= value.GetThisOverloadedMethodsSet() )
 	{
-		for( const FunctionVariable& function : functions_set->functions )
+		functions_set= overloaded_methods_set->overloaded_methods_set;
+		this_= overloaded_methods_set->this_;
+	}
+
+	if( functions_set == nullptr )
+		return;
+
+	for( const FunctionVariable& function : functions_set->functions )
+	{
+		std::stringstream ss;
+
+		if( function.syntax_element != nullptr )
 		{
-			std::stringstream ss;
+			if( !function.syntax_element->name_.empty() )
+				ss << function.syntax_element->name_.back().name;
 
-			if( function.syntax_element != nullptr )
-			{
-				if( !function.syntax_element->name_.empty() )
-					ss << function.syntax_element->name_.back().name;
-
-				Synt::WriteFunctionParamsList( function.syntax_element->type_, ss );
-				Synt::WriteFunctionTypeEnding( function.syntax_element->type_, ss );
-			}
-			else
-			{
-				// TODO
-			}
-
-			SignatureHelpItem item;
-			item.label= ss.str();
-			signature_help_items_.push_back( std::move(item) );
+			Synt::WriteFunctionParamsList( function.syntax_element->type_, ss );
+			Synt::WriteFunctionTypeEnding( function.syntax_element->type_, ss );
 		}
+		else
+		{
+			// TODO
+		}
+
+		SignatureHelpItem item;
+		item.label= ss.str();
+		signature_help_items_.push_back( std::move(item) );
 	}
 }
 

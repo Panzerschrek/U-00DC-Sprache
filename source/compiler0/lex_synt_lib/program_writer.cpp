@@ -205,23 +205,35 @@ void ElementWrite( const FunctionType& function_type_name, std::ostream& stream 
 
 void ElementWrite( const FunctionParam& param, std::ostream& stream )
 {
-	ElementWrite( param.type_, stream );
-
-	stream << " ";
-
-	ElementWrite( param.reference_modifier_, stream );
-
-	if( !param.reference_tag_.empty() )
+	if( param.name_ == Keywords::this_ )
 	{
-		stream << "'";
-		stream << param.reference_tag_;
+		if( param.mutability_modifier_ != MutabilityModifier::None )
+		{
+			ElementWrite( param.mutability_modifier_, stream );
+			stream << " ";
+		}
+		stream << Keyword( Keywords::this_ );
 	}
+	else
+	{
+		ElementWrite( param.type_, stream );
 
-	ElementWrite( param.mutability_modifier_, stream );
-
-	if( param.mutability_modifier_ != MutabilityModifier::None )
 		stream << " ";
-	stream << param.name_;
+
+		ElementWrite( param.reference_modifier_, stream );
+
+		if( !param.reference_tag_.empty() )
+		{
+			stream << "'";
+			stream << param.reference_tag_;
+		}
+
+		ElementWrite( param.mutability_modifier_, stream );
+
+		if( param.mutability_modifier_ != MutabilityModifier::None )
+			stream << " ";
+		stream << param.name_;
+	}
 
 	if( !param.inner_arg_reference_tag_.empty() )
 	{

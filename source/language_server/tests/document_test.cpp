@@ -888,6 +888,90 @@ U_TEST( DocumentSignatureHelp_Test3 )
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 
+U_TEST( DocumentSignatureHelp_Test4 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest signature of method call.
+	document.SetText( "fn bar(S& s){} struct S{ fn foo(this); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s.foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( this ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test5 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest signature of method call.
+	document.SetText( "fn bar(S& s){} struct S{ fn foo( mut this, f32 x ); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s.foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( mut this, f32 x ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test6 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest signature of method call.
+	document.SetText( "fn bar(S& s){} struct S{ fn foo( imut this'x' ) : bool; i32& ref_field; }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s.foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( imut this'x' ) : bool" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test7 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest signature of static method call.
+	document.SetText( "fn bar(S& s){} struct S{ fn foo(); fn foo( i32 x ); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s.foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( i32 x ) : void", "foo() : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
 } // namespace
 
 } // namespace LangServer
