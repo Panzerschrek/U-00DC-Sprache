@@ -668,7 +668,55 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 		}
 		else
 		{
-			// TODO
+			// Some generated method.
+			if( functions_set->base_class != nullptr )
+			{
+				// Try to find value for this name in the class and extract proper name.
+				std::string_view name;
+				functions_set->base_class->members->ForEachInThisScope(
+					[&]( const std::string_view member_name, const NamesScopeValue& value )
+				{
+					if( value.value.GetFunctionsSet() == functions_set )
+						name= member_name;
+				} );
+
+				ss << name;
+
+				// Stringify params list, based on function type.
+				ss << "( ";
+				for( const FunctionType::Param& param : function.type.params )
+				{
+					if( function.is_this_call && &param == &function.type.params.front() )
+						ss << Keyword( param.value_type == ValueType::ReferenceMut ? Keywords::mut_ : Keywords::imut_ ) << " " << Keyword( Keywords::this_ );
+					else
+					{
+						ss << param.type.ToString() << " ";
+						if( param.value_type == ValueType::Value )
+						{}
+						else if( param.value_type == ValueType::ReferenceMut )
+							ss << "&" << Keyword( Keywords::mut_ ) << " ";
+						else if( param.value_type == ValueType::ReferenceImut )
+							ss << "&" << Keyword( Keywords::imut_ ) << " ";
+
+						ss << "other"; // Give some dummy name to this param.
+					}
+
+					if( &param != &function.type.params.back() )
+						ss << ", ";
+				}
+				ss << " ) ";
+
+				if( function.type.unsafe )
+					ss << Keyword( Keywords::unsafe_ ) << " ";
+				ss << ": " << function.type.return_type.ToString();
+
+				if( function.type.return_value_type == ValueType::Value )
+				{}
+				else if( function.type.return_value_type == ValueType::ReferenceMut )
+					ss << " &" << Keyword( Keywords::mut_ );
+				else if( function.type.return_value_type == ValueType::ReferenceImut )
+					ss << " &" << Keyword( Keywords::imut_ );
+			}
 		}
 
 		SignatureHelpItem item;

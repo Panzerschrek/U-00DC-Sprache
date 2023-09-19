@@ -972,6 +972,48 @@ U_TEST( DocumentSignatureHelp_Test7 )
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 
+U_TEST( DocumentSignatureHelp_Test8 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest call to generated constructor.
+	document.SetText( "fn bar(S &mut s){} struct S{}" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 17 }, { 1, 17 } }, "unsafe( s.constructor(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 39 } );
+	const SignatureHelpResultNormalized expected_result{ "constructor( mut this ) : void", "constructor( mut this, S &imut other ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test9 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest call to generated destructor.
+	document.SetText( "fn bar(S &mut s){} struct S{}" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 17 }, { 1, 17 } }, "unsafe( s.destructor(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 38 } );
+	const SignatureHelpResultNormalized expected_result{ "destructor( mut this ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
 } // namespace
 
 } // namespace LangServer
