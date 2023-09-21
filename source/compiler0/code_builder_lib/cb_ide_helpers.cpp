@@ -650,6 +650,18 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 		functions_set= overloaded_methods_set->overloaded_methods_set;
 		this_= overloaded_methods_set->this_;
 	}
+	else if( const auto type= value.GetTypeName() )
+	{
+		// This is temp variable construction. Try to extract constructors for given type.
+		if( const auto class_type= type->GetClassType() )
+		{
+			if( const auto constructors= class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+			{
+				if( const auto constructors_functions_set= constructors->value.GetFunctionsSet() )
+					functions_set= constructors_functions_set;
+			}
+		}
+	}
 
 	if( functions_set == nullptr )
 		return;
