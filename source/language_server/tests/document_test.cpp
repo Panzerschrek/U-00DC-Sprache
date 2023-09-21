@@ -1140,6 +1140,48 @@ U_TEST( DocumentSignatureHelp_Test15 )
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 
+U_TEST( DocumentSignatureHelp_Test16 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide signature help for ")" and return outer function.
+	document.SetText( "fn bar(){} fn foo( i32 x, f32 y ); fn baz() : i32;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo( baz()" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( i32 x, f32 y ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test17 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide no signature help for ")" that terminates call operator.
+	document.SetText( "fn bar(){} fn foo();" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo()" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 14 } );
+	const SignatureHelpResultNormalized expected_result{ };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
 } // namespace
 
 } // namespace LangServer

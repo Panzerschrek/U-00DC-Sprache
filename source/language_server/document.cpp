@@ -578,7 +578,6 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 	}
 	const TextLinearPosition column_utf8_minus_one= *column_utf8 - 1u;
 
-
 	const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one );
 	if( column == std::nullopt )
 	{
@@ -589,6 +588,7 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 	const char symbol= line_text[ column_utf8_minus_one ];
 	Lexems lexems= LexicalAnalysis( text_ ).lexems;
 	const SrcLoc src_loc( 0, line, *column );
+	SrcLoc src_loc_for_search= src_loc;
 	if( symbol == '(' )
 	{
 		if( !FindAndChangeLexem( lexems, src_loc, Lexem::Type::BracketLeft, Lexem::Type::SignatureHelpBracketLeft ) )
@@ -599,8 +599,34 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 	}
 	else if( symbol == ',' )
 	{
-		// Re-trigger signature help with ","
+		// Re-trigger signature help with ','
 		if( !FindAndChangeLexem( lexems, src_loc, Lexem::Type::Comma, Lexem::Type::SignatureHelpComma ) )
+		{
+			log_() << "Can't find ',' lexem" << std::endl;
+			return {};
+		}
+	}
+	else if( symbol == ')' )
+	{
+		src_loc_for_search= SrcLoc( 0, src_loc.GetLine(), src_loc.GetColumn() + 1 );
+
+		// Re-trigger signature help when ')' is typed.
+		// Doing so we can reset signature help if perogrammer finished call operator typing.
+		// Also we can re-trigger outer call signature help.
+		bool found= false;
+		for( auto it= lexems.begin(); it != lexems.end(); ++it )
+		{
+			if( it->src_loc == src_loc && it->type == Lexem::Type::BracketRight )
+			{
+				// Insert dummy ',' after ')' in order to trigger signature help for outer call.
+				Lexem lexem{ ",", src_loc_for_search, Lexem::Type::SignatureHelpComma };
+				lexems.insert( std::next(it), std::move(lexem) );
+				found= true;
+				break;
+			}
+		}
+
+		if( !found )
 		{
 			log_() << "Can't find ',' lexem" << std::endl;
 			return {};
@@ -625,10 +651,11 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 
 	// Lookup global thing, where element with SignatureHelpBracketLeft lexem is located, together with path to it.
 	const SyntaxTreeLookupResultOpt lookup_result=
-		FindCompletionSyntaxElement( line, *column, synt_result.program_elements );
+		FindCompletionSyntaxElement( src_loc_for_search.GetLine(), src_loc_for_search.GetColumn(), synt_result.program_elements );
 	if( lookup_result == std::nullopt )
 	{
-		log_() << "Failed to find parsed syntax element" << std::endl;
+		if( symbol != ')' )
+			log_() << "Failed to find parsed syntax element" << std::endl;
 		return {};
 	}
 
