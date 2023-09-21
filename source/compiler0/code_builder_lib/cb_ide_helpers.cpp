@@ -220,6 +220,12 @@ std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::SignatureHelpResultFina
 {
 	std::vector<SignatureHelpItem> result;
 	result.swap( signature_help_items_ );
+
+	// Sort by label in order to have stable result.
+	std::sort(
+		result.begin(), result.end(),
+		[]( const SignatureHelpItem& l, const SignatureHelpItem& r ) { return l.label < r.label; });
+
 	return result;
 }
 
@@ -641,15 +647,11 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 void CodeBuilder::PerformSignatureHelp( const Value& value )
 {
 	OverloadedFunctionsSetConstPtr functions_set;
-	VariablePtr this_;
 
 	if( const auto value_functions_set= value.GetFunctionsSet() )
 		functions_set= value_functions_set;
 	else if( const auto overloaded_methods_set= value.GetThisOverloadedMethodsSet() )
-	{
 		functions_set= overloaded_methods_set->overloaded_methods_set;
-		this_= overloaded_methods_set->this_;
-	}
 	else if( const auto type= value.GetTypeName() )
 	{
 		// This is temp variable construction. Try to extract constructors for given type.

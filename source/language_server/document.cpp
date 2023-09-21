@@ -628,7 +628,7 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 
 		if( !found )
 		{
-			log_() << "Can't find ',' lexem" << std::endl;
+			log_() << "Can't find ')' lexem" << std::endl;
 			return {};
 		}
 	}
@@ -664,20 +664,19 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 	// Also it is too slow to recompile program for each signature help.
 
 	const GlobalItem& global_item= lookup_result->global_item;
-	std::vector<CodeBuilder::SignatureHelpItem> signature_help_result;
 	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
 	{
 		U_ASSERT( *program_element != nullptr );
-		signature_help_result= compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, **program_element );
+		return compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, **program_element );
 	}
 	else if( const auto class_element= std::get_if<const Synt::ClassElement*>( &global_item ) )
 	{
 		U_ASSERT( *class_element != nullptr );
-		signature_help_result= compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, **class_element );
+		return compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, **class_element );
 	}
 	else U_ASSERT( false );
 
-	return signature_help_result;
+	return {};
 }
 
 std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc ) const

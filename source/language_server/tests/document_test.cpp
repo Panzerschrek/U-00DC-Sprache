@@ -97,7 +97,6 @@ SignatureHelpResultNormalized NormalizeSignatureHelpResult( const llvm::ArrayRef
 	for( const CodeBuilder::SignatureHelpItem& item : items )
 		result.push_back( item.label );
 
-	std::sort( result.begin(), result.end() );
 	return result;
 }
 
