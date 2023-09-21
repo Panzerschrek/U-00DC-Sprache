@@ -687,6 +687,9 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 
 	for( const FunctionVariable& function : functions_set->functions )
 	{
+		if( function.is_deleted )
+			continue;
+
 		std::stringstream ss;
 
 		if( function.syntax_element != nullptr )

@@ -1136,7 +1136,7 @@ U_TEST( DocumentSignatureHelp_Test15 )
 	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "var S s( 0.5f," );
 
 	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 23 } );
-	const SignatureHelpResultNormalized expected_result{ "constructor( mut this ) : void", "constructor( mut this, f32 x, bool y ) : void" };
+	const SignatureHelpResultNormalized expected_result{ "constructor( mut this, f32 x, bool y ) : void" };
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 
