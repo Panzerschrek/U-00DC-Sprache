@@ -81,7 +81,8 @@ Language server
 *) Return all overloaded functions (both prototypes and definitions) in occurences search
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
 *) A way to provide configuration (import directories, other compilation options)
-*) Complete function argument types while writing function call
+*) SignatureHelp - filter suggested functions based on already provided arguments
+*) SignatureHelp - return ranges of arguments and active range
 *) Avoid infinite calculations in constexpr functions executiong during compilation in the LanguageServer
 *) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
 *) Go to definition for non-value names - loop labels, reference tags, imports, etc.
