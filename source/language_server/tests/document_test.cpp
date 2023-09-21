@@ -1182,6 +1182,48 @@ U_TEST( DocumentSignatureHelp_Test17 )
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 
+U_TEST( DocumentSignatureHelp_Test18 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should suggest template function.
+	document.SetText( "fn bar(){} template</ type T, size_type S /> fn foo( [ T, S ]& arr ){}" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 13 } );
+	const SignatureHelpResultNormalized expected_result{ "template</ type T, size_type S /> fn foo( [ T, S ] &arr ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test19 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should suggest template function with explicit args.
+	document.SetText( "fn bar(){} template</ type T /> fn foo() : T { return T(0); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo</i32/>(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 20 } );
+	const SignatureHelpResultNormalized expected_result{ "template</ type T /> fn foo() : T" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
 } // namespace
 
 } // namespace LangServer

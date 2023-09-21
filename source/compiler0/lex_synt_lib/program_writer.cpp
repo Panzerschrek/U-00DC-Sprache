@@ -773,10 +773,7 @@ void ElementWrite( const TypeTemplate& type_template, std::ostream& stream )
 
 void ElementWrite( const FunctionTemplate& function_template, std::ostream& stream )
 {
-	U_UNUSED(function_template);
-	U_UNUSED(stream);
-	U_ASSERT(false);
-	// Not implemented yet.
+	WriteFunctionTemplate( function_template, stream );
 }
 
 void ElementWrite( const ClassField& class_field, std::ostream& stream )
@@ -964,6 +961,33 @@ void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& s
 		stream << " ";
 		ElementWrite( function_type.return_value_mutability_modifier_, stream );
 	}
+}
+
+void WriteFunctionTemplate( const FunctionTemplate& function_template, std::ostream& stream )
+{
+	stream << Keyword( Keywords::template_ );
+	stream << "</ ";
+
+	for( const TemplateBase::Param& param : function_template.params_ )
+	{
+		if( param.param_type != std::nullopt )
+		{
+			ElementWrite( *param.param_type, stream );
+			stream << " ";
+		}
+		else
+			stream << Keyword( Keywords::type_ ) << " ";
+
+		stream << param.name;
+
+		if( &param != &function_template.params_.back() )
+			stream << ", ";
+	}
+
+	stream << " /> ";
+
+	if( function_template.function_ != nullptr )
+		WriteFunctionDeclaration( *function_template.function_, stream );
 }
 
 } // namespace Synt

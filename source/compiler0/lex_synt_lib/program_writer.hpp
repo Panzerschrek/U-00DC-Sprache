@@ -14,6 +14,7 @@ void WriteTypeName( const Synt::TypeName& type_name, std::ostream& stream );
 void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& stream );
 void WriteFunctionParamsList( const Synt::FunctionType& function_type, std::ostream& stream );
 void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream );
+void WriteFunctionTemplate( const FunctionTemplate& function_template, std::ostream& stream );
 
 } // namespace Synt
 

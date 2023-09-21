@@ -757,6 +757,19 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 		item.label= ss.str();
 		signature_help_items_.push_back( std::move(item) );
 	}
+
+	for( const FunctionTemplatePtr& function_template : functions_set->template_functions )
+	{
+		if( function_template->syntax_element != nullptr )
+		{
+			std::stringstream ss;
+			Synt::WriteFunctionTemplate( *function_template->syntax_element, ss );
+
+			SignatureHelpItem item;
+			item.label= ss.str();
+			signature_help_items_.push_back( std::move(item) );
+		}
+	}
 }
 
 void CodeBuilder::DeleteFunctionsBodies_r( NamesScope& names_scope )
