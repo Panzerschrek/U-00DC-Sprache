@@ -578,11 +578,6 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 	}
 	const TextLinearPosition column_utf8_minus_one= *column_utf8 - 1u;
 
-	if( line_text[ column_utf8_minus_one ] != '(' )
-	{
-		log_() << "Can't get signature help for symbols other than (" << std::endl;
-		return {};
-	}
 
 	const auto column= Utf8PositionToUtf32Position( line_text, column_utf8_minus_one );
 	if( column == std::nullopt )
@@ -591,10 +586,29 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 		return {};
 	}
 
+	const char symbol= line_text[ column_utf8_minus_one ];
 	Lexems lexems= LexicalAnalysis( text_ ).lexems;
-	if( !FindAndChangeLexem( lexems, SrcLoc( 0, line, *column ), Lexem::Type::BracketLeft, Lexem::Type::SignatureHelpBracketLeft ) )
+	const SrcLoc src_loc( 0, line, *column );
+	if( symbol == '(' )
 	{
-		log_() << "Can't find ( lexem" << std::endl;
+		if( !FindAndChangeLexem( lexems, src_loc, Lexem::Type::BracketLeft, Lexem::Type::SignatureHelpBracketLeft ) )
+		{
+			log_() << "Can't find '(' lexem" << std::endl;
+			return {};
+		}
+	}
+	else if( symbol == ',' )
+	{
+		// Re-trigger signature help with ","
+		if( !FindAndChangeLexem( lexems, src_loc, Lexem::Type::Comma, Lexem::Type::SignatureHelpComma ) )
+		{
+			log_() << "Can't find ',' lexem" << std::endl;
+			return {};
+		}
+	}
+	else
+	{
+		log_() << "Can't get signature help for symbol " << symbol << std::endl;
 		return {};
 	}
 

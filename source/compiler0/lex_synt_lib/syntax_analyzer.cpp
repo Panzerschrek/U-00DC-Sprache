@@ -196,6 +196,7 @@ private:
 	std::string ParseInnerReferenceTag();
 	FunctionReferencesPollutionList ParseFunctionReferencesPollutionList();
 
+	// Stops parsing if signature help comma is encounted.
 	std::vector<Expression> ParseCall();
 
 	Initializer ParseInitializer( bool parse_expression_initializer );
@@ -874,6 +875,14 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 			call_operator.expression_= std::make_unique<Expression>(std::move(expr));
 			call_operator.arguments_= ParseCall();
+
+			if( it_->type == Lexem::Type::SignatureHelpComma )
+			{
+				CallOperatorSignatureHelp signature_help_result( it_->src_loc );
+				NextLexem();
+				signature_help_result.expression_= std::move(call_operator.expression_);
+				return std::move(signature_help_result);
+			}
 
 			return TryParseBinaryOperatorComponentPostfixOperator(std::move(call_operator));
 		}
@@ -1812,6 +1821,8 @@ std::vector<Expression> SyntaxAnalyzer::ParseCall()
 				break;
 			}
 		}
+		else if( it_->type == Lexem::Type::SignatureHelpComma )
+			return args;
 		else
 			break;
 	}
@@ -1986,6 +1997,14 @@ Initializer SyntaxAnalyzer::ParseConstructorInitializer()
 {
 	ConstructorInitializer result( it_->src_loc );
 	result.arguments= ParseCall();
+
+	if( it_->type == Lexem::Type::SignatureHelpComma )
+	{
+		ConstructorInitializerSignatureHelp signature_help_result( it_->src_loc );
+		NextLexem();
+		return std::move(signature_help_result);
+	}
+
 	return std::move(result);
 }
 

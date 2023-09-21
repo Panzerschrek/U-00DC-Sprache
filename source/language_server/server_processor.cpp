@@ -207,6 +207,7 @@ ServerProcessor::ServerResponse ServerProcessor::HandleRequestImpl( const Reques
 			{
 				Json::Array trigger_characters;
 				trigger_characters.push_back( Json::Value( "(" ) );
+				trigger_characters.push_back( Json::Value( "," ) );
 
 				signature_help_options["triggerCharacters"]= std::move(trigger_characters);
 			}
