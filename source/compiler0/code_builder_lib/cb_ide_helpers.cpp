@@ -671,6 +671,15 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 			item.label= variable->type.ToString();
 			signature_help_items_.push_back( std::move(item) );
 		}
+		else if( const auto class_type= variable->type.GetClassType() )
+		{
+			// Try to call overloaded () operator.
+			if( const NamesScopeValue* const call_operator_value= ResolveClassValue( class_type, OverloadedOperatorToString( OverloadedOperator::Call ) ).first )
+			{
+				if( const auto operator_functions_set= call_operator_value->value.GetFunctionsSet() )
+					functions_set= operator_functions_set;
+			}
+		}
 	}
 
 	if( functions_set == nullptr )

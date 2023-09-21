@@ -1056,6 +1056,27 @@ U_TEST( DocumentSignatureHelp_Test11 )
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 
+U_TEST( DocumentSignatureHelp_Test12 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest call to overloaded operator ().
+	document.SetText( "fn bar(S& s){} struct S{ op()( this, bool b ) : f32; }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 15 } );
+	const SignatureHelpResultNormalized expected_result{ "()( this, bool b ) : f32" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
 } // namespace
 
 } // namespace LangServer
