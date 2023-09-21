@@ -1077,6 +1077,27 @@ U_TEST( DocumentSignatureHelp_Test12 )
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 
+U_TEST( DocumentSignatureHelp_Test13 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide signature help for variable construction.
+	document.SetText( "fn bar(){} struct S{ fn constructor()= default; fn constructor( i32 x ); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "var S s(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 17 } );
+	const SignatureHelpResultNormalized expected_result{ "constructor( mut this ) : void", "constructor( mut this, S &imut other ) : void", "constructor( mut this, i32 x ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
 } // namespace
 
 } // namespace LangServer

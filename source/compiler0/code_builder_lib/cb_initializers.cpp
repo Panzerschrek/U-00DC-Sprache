@@ -302,6 +302,21 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const VariablePtr& variable,
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::ConstructorInitializerSignatureHelp& initializer )
+{
+	(void)names;
+	(void)function_context;
+	(void)initializer;
+
+	// Perform signature help as for temp variable construction. Proper constructors should be suggested.
+	PerformSignatureHelp( Value( variable->type ) );
+	return nullptr;
+}
+
+llvm::Constant* CodeBuilder::ApplyInitializerImpl(
+	const VariablePtr& variable,
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::Expression& initializer )
 {
 	const SrcLoc src_loc= Synt::GetExpressionSrcLoc(initializer);

@@ -571,6 +571,11 @@ void ElementWrite( const Initializer& initializer, std::ostream& stream )
 			stream << " )";
 		}
 	}
+	else if( const auto constructor_initializer_signature_help= std::get_if<ConstructorInitializerSignatureHelp>( &initializer ) )
+	{
+		(void)constructor_initializer_signature_help;
+		stream << "()";
+	}
 	else if( const auto struct_named_initializer= std::get_if<StructNamedInitializer>( &initializer ) )
 	{
 		stream << "{ ";

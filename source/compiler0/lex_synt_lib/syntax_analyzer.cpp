@@ -1831,6 +1831,12 @@ Initializer SyntaxAnalyzer::ParseInitializer( const bool parse_expression_initia
 	{
 		return ParseConstructorInitializer(); // TODO - fix case, like :    var [ i32, 1] x[ (1 + 2) * 3 ];
 	}
+	else if( it_->type == Lexem::Type::SignatureHelpBracketLeft )
+	{
+		ConstructorInitializerSignatureHelp result( it_->src_loc );
+		NextLexem();
+		return std::move(result);
+	}
 	else if( it_->type == Lexem::Type::BraceLeft )
 	{
 		return ParseStructNamedInitializer();
@@ -1880,6 +1886,7 @@ Initializer SyntaxAnalyzer::ParseVariableInitializer()
 	}
 	else if(
 		it_->type == Lexem::Type::BracketLeft ||
+		it_->type == Lexem::Type::SignatureHelpBracketLeft ||
 		it_->type == Lexem::Type::SquareBracketLeft ||
 		it_->type == Lexem::Type::BraceLeft )
 		return ParseInitializer( false );

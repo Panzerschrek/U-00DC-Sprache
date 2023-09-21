@@ -124,6 +124,10 @@ ConstructorInitializer::ConstructorInitializer( const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
 {}
 
+ConstructorInitializerSignatureHelp::ConstructorInitializerSignatureHelp( const SrcLoc& src_loc )
+	: SyntaxElementBase( src_loc )
+{}
+
 ZeroInitializer::ZeroInitializer( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}

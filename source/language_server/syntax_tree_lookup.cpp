@@ -354,6 +354,15 @@ void FindImpl( const Synt::ConstructorInitializer& constructor_initializer )
 		FindImpl( expression );
 }
 
+void FindImpl( const Synt::ConstructorInitializerSignatureHelp& constructor_initializer_signature_help )
+{
+	if( constructor_initializer_signature_help.src_loc_.GetLine() == line_ && constructor_initializer_signature_help.src_loc_.GetColumn() == column_ )
+	{
+		U_ASSERT( global_item_ != std::nullopt );
+		result_= SyntaxTreeLookupResult{ prefix_, &constructor_initializer_signature_help, *global_item_ };
+	}
+}
+
 void FindImpl( const Synt::ZeroInitializer& zero_initializer )
 {
 	(void)zero_initializer;

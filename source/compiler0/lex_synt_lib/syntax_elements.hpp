@@ -57,6 +57,7 @@ struct UnsafeExpression;
 struct SequenceInitializer;
 struct StructNamedInitializer;
 struct ConstructorInitializer;
+struct ConstructorInitializerSignatureHelp;
 struct ZeroInitializer;
 struct UninitializedInitializer;
 
@@ -184,6 +185,7 @@ using Initializer= std::variant<
 	SequenceInitializer,
 	StructNamedInitializer,
 	ConstructorInitializer,
+	ConstructorInitializerSignatureHelp,
 	Expression,
 	ZeroInitializer,
 	UninitializedInitializer >;
@@ -643,6 +645,13 @@ struct StructNamedInitializer final : public SyntaxElementBase
 struct ConstructorInitializer final : public SyntaxElementBase
 {
 	ConstructorInitializer( const SrcLoc& src_loc );
+
+	std::vector<Expression> arguments;
+};
+
+struct ConstructorInitializerSignatureHelp final : public SyntaxElementBase
+{
+	ConstructorInitializerSignatureHelp( const SrcLoc& src_loc );
 
 	std::vector<Expression> arguments;
 };
