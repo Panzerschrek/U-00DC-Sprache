@@ -662,6 +662,16 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 			}
 		}
 	}
+	else if( const auto variable= value.GetVariable() )
+	{
+		if( variable->type.GetFunctionPointerType() != nullptr )
+		{
+			// Suggest call to function pointer.
+			SignatureHelpItem item;
+			item.label= variable->type.ToString();
+			signature_help_items_.push_back( std::move(item) );
+		}
+	}
 
 	if( functions_set == nullptr )
 		return;

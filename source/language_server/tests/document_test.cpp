@@ -1035,6 +1035,27 @@ U_TEST( DocumentSignatureHelp_Test10 )
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 
+U_TEST( DocumentSignatureHelp_Test11 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide signature help for function pointer call.
+	document.SetText( "fn bar(){} var (fn(i32 x, f32 & y ) : bool &mut ) ptr= zero_init;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "ptr(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 13 } );
+	const SignatureHelpResultNormalized expected_result{ "fn( i32 _, f32 &imut _ ) : bool &mut" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
 } // namespace
 
 } // namespace LangServer
