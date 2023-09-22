@@ -261,6 +261,9 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	unsafe( LLVMDeleteFunction( global_llvm_function_ ) );
 	global_llvm_function_= LLVMValueRef::Null;
 
+	// Reset debug info builder in order to finalize debug info.
+	debug_info_builder_.reset();
+
 	{ // Clear classes internals to break strong shared pointers loop and avoid memory leaks.
 		var NamesScopeMutPtr dummy_class_names_scope( NamesScope( "", ust::shared_ptr_nullable_imut</NamesScope/>() ) );
 		foreach( &class_type : class_table_ )
@@ -278,11 +281,6 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 			ClearClassInternals( class_type_pair.value(), dummy_class_names_scope );
 		}
 	}
-
-
-	// Reset debug info builder in order to finalize debug info.
-	debug_info_builder_.reset();
-
 	// Replace usage of temporary allocation functions with usage of library allocation functions.
 	// Do such, because we can't just declare internal functions with such names, prior to compiling file with such functions declarations ("alloc.u").
 	// Without such approach functions, declared in library file, get suffix, like "ust_memory_allocate_impl.1".
