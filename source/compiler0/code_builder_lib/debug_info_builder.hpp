@@ -21,6 +21,7 @@ public:
 		bool build_debug_info );
 
 	// Destructor triggers debug info finalization.
+	// Call it after program building is complete, including building of all classes.
 	~DebugInfoBuilder();
 
 	void CreateVariableInfo(
@@ -42,10 +43,6 @@ public:
 	void StartBlock( const SrcLoc& src_loc, FunctionContext& function_context );
 	void EndBlock( FunctionContext& function_context );
 
-	// Call it at the end of program build in order to set body of class types properly.
-	// Without this only stubs are created for classes.
-	void BuildClassTypeDebugInfo( ClassPtr class_type );
-
 private:
 	llvm::DIFile* GetDIFile( const SrcLoc& src_loc );
 	llvm::DIFile* GetRootDIFile();
@@ -59,6 +56,8 @@ private:
 	llvm::DIType* CreateDIType( ClassPtr type );
 	llvm::DIType* CreateDIType( EnumPtr type );
 	llvm::DISubroutineType* CreateDIFunctionType( const FunctionType& type );
+
+	void BuildClassTypeFullDebugInfo( ClassPtr class_type );
 
 private:
 	llvm::LLVMContext& llvm_context_;
@@ -74,6 +73,10 @@ private:
 
 	// Build debug info for classes and enums once and put it to cache.
 	std::unordered_map<ClassPtr, llvm::DIType*> classes_di_cache_;
+	// Populate this vector in order to perform full debug info building for classes properly.
+	std::vector<ClassPtr> classes_order_;
+
+	// Build debug info for enums once and put it to cache.
 	std::unordered_map<EnumPtr, llvm::DICompositeType*> enums_di_cache_;
 };
 
