@@ -1528,11 +1528,24 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::SameType& same_type )
 {
-	// TODO
-	(void)names;
-	(void)function_context;
-	(void)same_type;
-	return ErrorValue();
+	const Type type_l= PrepareType( *same_type.l, names, function_context );
+	const Type type_r= PrepareType( *same_type.r, names, function_context );
+	const bool same= type_l == type_r;
+
+	llvm::Constant* const constant= llvm::ConstantInt::getBool( llvm_context_, same );
+
+	const VariableMutPtr result=
+		std::make_shared<Variable>(
+			bool_type_,
+			ValueType::Value,
+			Variable::Location::LLVMRegister,
+			std::string( Keyword( Keywords::same_type_ ) ),
+			constant,
+			constant );
+
+	function_context.variables_state.AddNode( result );
+	RegisterTemporaryVariable( function_context, result );
+	return result;
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
