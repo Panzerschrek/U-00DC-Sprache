@@ -165,12 +165,15 @@ void DebugInfoBuilder::BuildClassTypeDebugInfo( const ClassPtr class_type )
 	if( builder_ == nullptr )
 		return;
 
+	// Create stub first.
+	// It is important, since we need to create cache value for this class, even if it was not referenced previously,
+	// because we need to build proper debug info for it in case if it will be requested by BuildClassTypeDebugInfo call for other class,
+	// (that for example contains this class).
+	CreateDIType( class_type );
+
 	const Class& the_class= *class_type;
 	if( !class_type->is_complete )
 		return;
-
-	if( classes_di_cache_.count( class_type ) == 0 )
-		return; // Ignore this class - debug info for it was never created.
 
 	const auto di_file= GetDIFile( the_class.body_src_loc );
 
@@ -248,6 +251,7 @@ void DebugInfoBuilder::BuildClassTypeDebugInfo( const ClassPtr class_type )
 			nullptr);
 
 	const auto cache_value= classes_di_cache_.find( class_type );
+	U_ASSERT( cache_value != classes_di_cache_.end() );
 	cache_value->second->replaceAllUsesWith( result );
 	cache_value->second= result;
 }
