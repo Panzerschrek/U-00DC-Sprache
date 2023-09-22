@@ -42,6 +42,10 @@ public:
 	void StartBlock( const SrcLoc& src_loc, FunctionContext& function_context );
 	void EndBlock( FunctionContext& function_context );
 
+	// Call it at the end of program build in order to set body of class types properly.
+	// Without this only stubs are created for classes.
+	void BuildClassTypeDebugInfo( ClassPtr class_type );
+
 private:
 	llvm::DIFile* GetDIFile( const SrcLoc& src_loc );
 	llvm::DIFile* GetRootDIFile();

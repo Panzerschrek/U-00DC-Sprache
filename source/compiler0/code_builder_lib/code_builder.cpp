@@ -305,6 +305,13 @@ void CodeBuilder::FinalizeProgram()
 			free_func_->setName( "ust_memory_free_impl" );
 	}
 
+	if( build_debug_info_ )
+	{
+		// Finalize debug info for classes.
+		for( const auto& class_ : classes_table_ )
+			debug_info_builder_->BuildClassTypeDebugInfo( class_.get() );
+	}
+
 	// Reset debug info builder in order to finish deffered debug info construction.
 	debug_info_builder_= std::nullopt;
 }

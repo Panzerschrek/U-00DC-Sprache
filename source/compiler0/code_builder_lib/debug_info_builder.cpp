@@ -150,6 +150,97 @@ void DebugInfoBuilder::EndBlock( FunctionContext& function_context )
 		function_context.current_debug_info_scope= function_context.current_debug_info_scope->getScope();
 }
 
+void DebugInfoBuilder::BuildClassTypeDebugInfo( const ClassPtr class_type )
+{
+	if( builder_ == nullptr )
+		return;
+
+	const Class& the_class= *class_type;
+	if( !class_type->is_complete )
+		return;
+
+	const auto cache_value= classes_di_cache_.find( class_type );
+	if( cache_value == classes_di_cache_.end() )
+		return; // Ignore this class - debug info for it was never created.
+
+	const auto di_file= GetDIFile( the_class.body_src_loc );
+
+	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
+
+	ClassFieldsVector<llvm::Metadata*> fields;
+	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
+	{
+		for( const ClassFieldPtr& class_field : the_class.fields_order )
+		{
+			if( class_field == nullptr )
+				continue;
+
+			llvm::Type* field_type_llvm= class_field->type.GetLLVMType();
+			llvm::DIType* field_type_di= CreateDIType( class_field->type );
+			if( class_field->is_reference )
+			{
+				field_type_llvm= field_type_llvm->getPointerTo();
+				field_type_di=
+					builder_->createPointerType(
+						field_type_di,
+						data_layout_.getTypeAllocSizeInBits(field_type_llvm),
+						uint32_t(8u * data_layout_.getABITypeAlignment(field_type_llvm)) );
+			}
+
+			// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
+			const auto member =
+				builder_->createMemberType(
+					di_file,
+					class_field->GetName(),
+					di_file,
+					0u, // TODO - src_loc
+					data_layout_.getTypeAllocSizeInBits( field_type_llvm ),
+					uint32_t(8u * data_layout_.getABITypeAlignment( field_type_llvm )),
+					struct_layout.getElementOffsetInBits(class_field->index),
+					llvm::DINode::DIFlags(),
+					field_type_di );
+			fields.push_back(member);
+		}
+
+		for( const Class::Parent& parent : the_class.parents )
+		{
+			llvm::Type* const parent_type_llvm= parent.class_->llvm_type;
+			llvm::DIType* parent_type_di= CreateDIType( parent.class_ );
+
+			// If this type is complete, parent types are complete too.
+			const auto member =
+				builder_->createMemberType(
+					di_file,
+					parent.class_->members->GetThisNamespaceName(),
+					di_file,
+					0u, // TODO - src_loc
+					data_layout_.getTypeAllocSizeInBits( parent_type_llvm ),
+					uint32_t(8u * data_layout_.getABITypeAlignment( parent_type_llvm )),
+					struct_layout.getElementOffsetInBits( parent.field_number ),
+					llvm::DINode::DIFlags(),
+					parent_type_di );
+			fields.push_back(member);
+		}
+	}
+
+	const auto result=
+		builder_->createClassType(
+			di_file,
+			Type(class_type).ToString(),
+			di_file,
+			the_class.body_src_loc.GetLine(),
+			data_layout_.getTypeAllocSizeInBits( the_class.llvm_type ),
+			uint32_t(8u * data_layout_.getABITypeAlignment( the_class.llvm_type )),
+			0u,
+			llvm::DINode::DIFlags(),
+			nullptr,
+			builder_->getOrCreateArray(fields).get(),
+			nullptr,
+			nullptr);
+
+	cache_value->second->replaceAllUsesWith( result );
+}
+
 llvm::DIFile* DebugInfoBuilder::GetDIFile( const SrcLoc& src_loc )
 {
 	const uint32_t file_index= src_loc.GetFileIndex();
@@ -321,94 +412,22 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 
 	const Class& the_class= *type;
 
-	// Ignore incomplete type - do not create debug info for it.
-	if( !the_class.is_complete )
-		return stub_type_;
-
 	if( const auto it= classes_di_cache_.find(type); it != classes_di_cache_.end() )
 		return it->second;
 
-	// Insert stub first, to prevent loops.
-	classes_di_cache_.insert( std::make_pair( type, stub_type_ ) );
-
-	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
-
-	// TODO - get SrcLoc for enum
 	const auto di_file= GetDIFile( the_class.body_src_loc );
 
-	ClassFieldsVector<llvm::Metadata*> fields;
-	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
-	{
-		for( const ClassFieldPtr& class_field : the_class.fields_order )
-		{
-			if( class_field == nullptr )
-				continue;
-
-			llvm::Type* field_type_llvm= class_field->type.GetLLVMType();
-			llvm::DIType* field_type_di= CreateDIType( class_field->type );
-			if( class_field->is_reference )
-			{
-				field_type_llvm= field_type_llvm->getPointerTo();
-				field_type_di=
-					builder_->createPointerType(
-						field_type_di,
-						data_layout_.getTypeAllocSizeInBits(field_type_llvm),
-						uint32_t(8u * data_layout_.getABITypeAlignment(field_type_llvm)) );
-			}
-
-			// It will be fine - use here data layout queries, because for complete struct type non-reference fields are complete too.
-			const auto member =
-				builder_->createMemberType(
-					di_file,
-					class_field->GetName(),
-					di_file,
-					0u, // TODO - src_loc
-					data_layout_.getTypeAllocSizeInBits( field_type_llvm ),
-					uint32_t(8u * data_layout_.getABITypeAlignment( field_type_llvm )),
-					struct_layout.getElementOffsetInBits(class_field->index),
-					llvm::DINode::DIFlags(),
-					field_type_di );
-			fields.push_back(member);
-		}
-
-		for( const Class::Parent& parent : the_class.parents )
-		{
-			llvm::Type* const parent_type_llvm= parent.class_->llvm_type;
-			llvm::DIType* parent_type_di= CreateDIType( parent.class_ );
-
-			// If this type is complete, parent types are complete too.
-			const auto member =
-				builder_->createMemberType(
-					di_file,
-					parent.class_->members->GetThisNamespaceName(),
-					di_file,
-					0u, // TODO - src_loc
-					data_layout_.getTypeAllocSizeInBits( parent_type_llvm ),
-					uint32_t(8u * data_layout_.getABITypeAlignment( parent_type_llvm )),
-					struct_layout.getElementOffsetInBits( parent.field_number ),
-					llvm::DINode::DIFlags(),
-					parent_type_di );
-			fields.push_back(member);
-		}
-	}
-
-	const auto result=
-		builder_->createClassType(
-			di_file,
+	const auto stub=
+		builder_->createReplaceableCompositeType(
+			llvm::dwarf::DW_TAG_class_type,
 			Type(type).ToString(),
 			di_file,
-			the_class.body_src_loc.GetLine(),
-			data_layout_.getTypeAllocSizeInBits( the_class.llvm_type ),
-			uint32_t(8u * data_layout_.getABITypeAlignment( the_class.llvm_type )),
-			0u,
-			llvm::DINode::DIFlags(),
-			nullptr,
-			builder_->getOrCreateArray(fields).get(),
-			nullptr,
-			nullptr);
+			di_file,
+			the_class.body_src_loc.GetLine() );
 
-	classes_di_cache_[ type ]= result;
-	return result;
+	classes_di_cache_.insert( std::make_pair( type, stub ) );
+
+	return stub;
 }
 
 llvm::DIType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
