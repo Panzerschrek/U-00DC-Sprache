@@ -33,6 +33,7 @@
    reference_checking
    reference_casting
    typeinfo
+   same_type
    unsafe
    non_sync_tag
    macros
