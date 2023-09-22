@@ -798,6 +798,27 @@ namespace Abc
 	}
 }
 
+U_TEST( DocumentCompletion_Test17 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "fn foo(){ auto mut lol= Some::A; } enum Some{ A, B, C } " );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Complete name in assignment operator suggestion.
+	document.UpdateText( DocumentRange{ { 1, 32 }, { 1, 32 } }, "lol= Som" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 40 } );
+	const CompletionItemsNormalized expected_completion_result{ "Some" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;

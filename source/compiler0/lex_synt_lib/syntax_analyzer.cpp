@@ -2856,6 +2856,8 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 				assignment_operator.l_value_= std::move(l_expression);
 				assignment_operator.r_value_= ParseExpression();
 
+				elements.emplace_back( std::move(assignment_operator) );
+
 				if( it_->type != Lexem::Type::Semicolon )
 				{
 					PushErrorMessage();
@@ -2863,8 +2865,6 @@ std::vector<BlockElement> SyntaxAnalyzer::ParseBlockElements()
 					continue;
 				}
 				NextLexem();
-
-				elements.emplace_back( std::move(assignment_operator) );
 			}
 			else if( const auto additive_operation= GetAdditiveAssignmentOperator( *it_ ) )
 			{
