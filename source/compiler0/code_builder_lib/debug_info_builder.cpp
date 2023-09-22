@@ -44,8 +44,18 @@ DebugInfoBuilder::DebugInfoBuilder(
 
 DebugInfoBuilder::~DebugInfoBuilder()
 {
-	if( builder_ != nullptr )
-		builder_->finalize(); // We must finalize it.
+	if( builder_ == nullptr )
+		return;
+
+	// Remove temporary class forward declarations (without bodies).
+	for( const auto& class_di_type_pair : classes_di_cache_ )
+	{
+		llvm::DIType* const t= class_di_type_pair.second;
+		if( t->isTemporary() )
+			t->replaceAllUsesWith(nullptr);
+	}
+
+	builder_->finalize(); // We must finalize it.
 }
 
 void DebugInfoBuilder::CreateVariableInfo(
@@ -239,6 +249,7 @@ void DebugInfoBuilder::BuildClassTypeDebugInfo( const ClassPtr class_type )
 			nullptr);
 
 	cache_value->second->replaceAllUsesWith( result );
+	cache_value->second= result;
 }
 
 llvm::DIFile* DebugInfoBuilder::GetDIFile( const SrcLoc& src_loc )
