@@ -176,21 +176,6 @@ fn constexpr string_equals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
 	return true;
 }
 
-template</ type A />
-struct is_same_type_impl
-{
-	// Use type templates overloading for type equality comparison.
-	template</ type B /> struct same</ B />
-	{
-		auto constexpr value= false;
-	}
-
-	template</ /> struct same</ A />
-	{
-		auto constexpr value= true;
-	}
-}
-
 template</ type ParentCandidate, type ParentListType />
 fn constexpr has_parent( ParentListType& parents_list ) : bool
 {
