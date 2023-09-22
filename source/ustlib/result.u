@@ -1,7 +1,6 @@
 import "aligned_storage.u"
 import "container_utils.u"
 import "optional_ref.u"
-import "type_traits.u"
 
 // Use this macro to call some function (or generally, evaluate any expression), returning "result".
 // If result is successfull - it is unwrapped into specified variable.

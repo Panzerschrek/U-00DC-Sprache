@@ -1,6 +1,5 @@
 //##success_test
 import "../ustlib/shared_ptr_final.u"
-import "../ustlib/type_traits.u"
 import "../ustlib/unordered_map.u"
 
 type IntPtr= ust::shared_ptr_final</i32/>;

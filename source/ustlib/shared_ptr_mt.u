@@ -3,7 +3,6 @@ import "atomic.u"
 import "container_utils.u"
 import "polymorph.u"
 import "pthread.u"
-import "type_traits.u"
 
 namespace ust
 {

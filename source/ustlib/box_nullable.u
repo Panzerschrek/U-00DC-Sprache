@@ -2,7 +2,6 @@ import "box.u"
 import "container_utils.u"
 import "hash.u"
 import "polymorph.u"
-import "type_traits.u"
 
 namespace ust
 {
