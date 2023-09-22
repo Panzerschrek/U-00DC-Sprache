@@ -148,3 +148,47 @@ def SameType_test5():
 		static_assert( same_type</ Pass</ S_alias />, S /> );
 	"""
 	tests_lib.build_program( c_program_text )
+
+
+def SameType_test6():
+	# same_type result is bool.
+	c_program_text= """
+		static_assert( same_type</ typeof( same_type</ i32, f32/> ), bool /> );
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def SameTypeResult_IsValue_Test0():
+	c_program_text= """
+		fn Foo()
+		{
+			auto& s= same_type</ i8, u8 />; // Creating reference to temporary variable - result of "same_type".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 4 ) )
+
+
+def SameTypeResult_IsValue_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			var bool& s= same_type</ char8, char8 />; // Creating reference to temporary variable - result of "same_type".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 4 ) )
+
+
+def SameTypeResult_IsValue_Test2():
+	c_program_text= """
+		fn Foo() : bool&
+		{
+			return same_type</ char8, char8 />; // Returning reference to temporary variable - result of "same_type".
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 4 ) )
