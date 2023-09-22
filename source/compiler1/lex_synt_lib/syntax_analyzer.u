@@ -801,6 +801,20 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		var Typeinfo mut typeinfo_{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets()};
 		return move(typeinfo_);
 	}
+	if( IsKeyword( it_.front(), Keyword::same_type_ ) )
+	{
+		auto src_loc= it_.front().src_loc;
+
+		NextLexem();
+		ExpectLexem( Lexem::Type::TemplateBracketLeft );
+		var TypeName mut l= ParseTypeName();
+		ExpectLexem( Lexem::Type::Comma );
+		var TypeName mut r= ParseTypeName();
+		ExpectLexem( Lexem::Type::TemplateBracketRight );
+
+		var SameType mut same_type_{ .src_loc= src_loc, .l= move(l), .r= move(r) };
+		return move(same_type_);
+	}
 	if( IsKeyword( it_.front(), Keyword::non_sync_ ) )
 	{
 		auto src_loc= it_.front().src_loc;

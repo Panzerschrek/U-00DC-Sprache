@@ -103,6 +103,13 @@ struct Typeinfo
 	TypeName type_name;
 }
 
+struct SameType
+{
+	SrcLoc src_loc;
+	TypeName l;
+	TypeName r;
+}
+
 struct NonSyncExpression
 {
 	SrcLoc src_loc;
@@ -239,6 +246,7 @@ type Expression= ust::variant</ tup[
 	StringLiteral,
 	ComplexName,
 	Typeinfo,
+	SameType,
 	NonSyncExpression,
 	CastRef,
 	CastRefUnsafe,
