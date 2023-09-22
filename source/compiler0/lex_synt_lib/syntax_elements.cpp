@@ -180,6 +180,10 @@ TypeInfo::TypeInfo( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+SameType::SameType( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 NonSyncExpression::NonSyncExpression( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}

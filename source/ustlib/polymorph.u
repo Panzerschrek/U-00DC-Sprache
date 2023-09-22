@@ -37,7 +37,7 @@ fn polymorph_is_same_type( A& a, B& b ) : bool
 	}
 	else
 	{
-		return is_same_type</A, B/>();
+		return same_type</A, B/>;
 	}
 }
 
@@ -129,7 +129,7 @@ fn polymorph_cast_impl( From &'x mut from ) : optional_ref</ To, true />'x'
 
 	static_if( is_polymorph</From/>() && is_polymorph</To/>() )
 	{
-		static_if( is_same_type</ From, To />() || is_ancestor_for</ To, From />() )
+		static_if( same_type</ From, To /> || is_ancestor_for</ To, From />() )
 		{
 			// Derived to base cast.
 			return optional_ref</ To, true  />( from );

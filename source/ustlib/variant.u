@@ -2,7 +2,6 @@ import "aligned_storage.u"
 import "container_utils.u"
 import "minmax.u"
 import "optional_ref.u"
-import "type_traits.u"
 
 ?macro <? variant_visit:block ( ?r:opt<? & ?> ?m:opt<? mut ?> ?var_name:ident : ?e:expr ) ?b:block ?>
 ->
@@ -79,7 +78,7 @@ public:
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
-			static_if( is_same_type</ typeof(element.type)::src_type, T />() )
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
 			{
 				unsafe( move_into_uninitialized( cast_ref_unsafe</T/>(storage_), move(val) ) );
 
@@ -136,7 +135,7 @@ public:
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
-			static_if( is_same_type</ typeof(element.type)::src_type, T />() )
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
 			{
 				if( cur_index == size_type(index_) )
 				{
@@ -159,7 +158,7 @@ public:
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
-			static_if( is_same_type</ typeof(element.type)::src_type, T />() )
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
 			{
 				if( cur_index == size_type(index_) )
 				{
@@ -234,7 +233,7 @@ public: // Methods for internal usage.
 		auto mut cur_index= 0s;
 		for( & element : typeinfo</Y/>.elements_list )
 		{
-			static_if( is_same_type</ typeof(element.type)::src_type, T />() )
+			static_if( same_type</ typeof(element.type)::src_type, T /> )
 			{
 				if( cur_index == size_type(index_) )
 				{
@@ -310,7 +309,7 @@ fn constexpr get_tuple_type_properties() : TupleTypeProperties
 		auto mut j= 0s;
 		for( & element_j : typeinfo</T/>.elements_list )
 		{
-			if( i != j && is_same_type</ typeof(element_i.type), typeof(element_j.type) />() )
+			if( i != j && same_type</ typeof(element_i.type), typeof(element_j.type) /> )
 			{
 				result.all_elements_are_unique= false;
 			}
@@ -337,7 +336,7 @@ fn constexpr type_is_one_of_tuple_elements() : bool
 {
 	for( & element : typeinfo</Tup/>.elements_list )
 	{
-		if( is_same_type</ typeof(element.type)::src_type, C />() )
+		if( same_type</ typeof(element.type)::src_type, C /> )
 		{
 			return true;
 		}

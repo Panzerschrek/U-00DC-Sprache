@@ -32,30 +32,6 @@ class LargeClassWithMethods
 }
 
 //
-// is_same_type
-//
-
-static_assert(  ust::is_same_type</ i32, i32 />() );
-static_assert(  ust::is_same_type</ I16, i16 />() );
-static_assert( !ust::is_same_type</ u32, i32 />() );
-static_assert( !ust::is_same_type</ u32, u64 />() );
-
-static_assert( !ust::is_same_type</ bool, u8 />() );
-static_assert( !ust::is_same_type</ char8, u8 />() );
-static_assert( !ust::is_same_type</ char8, char16 />() );
-
-static_assert( ust::is_same_type</ EmptyStruct, EmptyStructAlias0 />() );
-static_assert( ust::is_same_type</ EmptyStruct, EmptyStructAlias1 />() );
-static_assert( ust::is_same_type</ EmptyStructAlias0, EmptyStructAlias1 />() );
-
-static_assert( ust::is_same_type</ size_type, u32 />() || ust::is_same_type</ size_type, u64 />() );
-
-static_assert( !ust::is_same_type</ A, B />() );
-static_assert( !ust::is_same_type</ F, G />() );
-
-static_assert( !ust::is_same_type</ SomeEnum_u8, u8 />() );
-
-//
 // is_parent_for
 //
 

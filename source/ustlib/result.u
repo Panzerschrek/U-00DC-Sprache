@@ -1,7 +1,6 @@
 import "aligned_storage.u"
 import "container_utils.u"
 import "optional_ref.u"
-import "type_traits.u"
 
 // Use this macro to call some function (or generally, evaluate any expression), returning "result".
 // If result is successfull - it is unwrapped into specified variable.
@@ -53,7 +52,7 @@ template</type OkT, type ErrorT/>
 class result
 {
 public:
-	static_assert( !is_same_type</OkT, ErrorT/>(), "Result and error types must be distinct!" );
+	static_assert( !same_type</OkT, ErrorT/>, "Result and error types must be distinct!" );
 
 public:
 	// Construt from ok value.

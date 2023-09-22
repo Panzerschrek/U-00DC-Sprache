@@ -1,7 +1,6 @@
 import "/composite.u"
 import "/random_access_range.u"
 import "/string_conversions.u"
-import "/type_traits.u"
 import "/vector.u"
 import "/code_builder_errors.uh"
 import "../lex_synt_lib/syntax_analyzer.uh"
@@ -52,11 +51,11 @@ fn ReportError( CodeBuilderErrorCode code, SrcLoc& src_loc, A& param0, B& param1
 template</type T/>
 fn PreprocessErrorArg( T& x ) : ust::string8
 {
-	static_if( ust::is_same_type</T, ust::string8/>() )
+	static_if( same_type</T, ust::string8/> )
 	{
 		return x;
 	}
-	else static_if( ust::is_same_type</T, Type/>() )
+	else static_if( same_type</T, Type/> )
 	{
 		return x.ToString();
 	}
@@ -64,11 +63,11 @@ fn PreprocessErrorArg( T& x ) : ust::string8
 	{
 		return ust::string8(x);
 	}
-	else static_if( ust::is_same_type</ T, ust::string_view8 />() )
+	else static_if( same_type</ T, ust::string_view8 /> )
 	{
 		return ust::string8(x);
 	}
-	else static_if( ust::is_same_type</ T, Synt::ComplexName />() )
+	else static_if( same_type</ T, Synt::ComplexName /> )
 	{
 		return ComplexNameToString(x);
 	}

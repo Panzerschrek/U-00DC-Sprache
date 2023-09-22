@@ -121,6 +121,7 @@ class SpracheLexer(RegexLexer):
 			(r'unsafe(?![a-zA-Z_0-9])', token.Keyword),
 			(r'type(?![a-zA-Z_0-9])', token.Keyword),
 			(r'typeinfo(?![a-zA-Z_0-9])', token.Keyword),
+			(r'same_type(?![a-zA-Z_0-9])', token.Keyword),
 			(r'typeof(?![a-zA-Z_0-9])', token.Keyword),
 			(r'template(?![a-zA-Z_0-9])', token.Keyword),
 			(r'enum(?![a-zA-Z_0-9])', token.Keyword),

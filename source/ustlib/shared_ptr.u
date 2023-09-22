@@ -1,7 +1,6 @@
 import "alloc.u"
 import "container_utils.u"
 import "polymorph.u"
-import "type_traits.u"
 
 namespace ust
 {
@@ -88,7 +87,7 @@ public:
 
 	// Construct from shared_ptr of compatible type.
 	template</ type U />
-	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, shared_ptr_base</U, is_nullable, is_mutable/>& ptr )
 	{
 		if( !ptr.empty() )
@@ -303,7 +302,7 @@ public:
 
 	// Construct from weak_ptr of compatible type.
 	template</ type U />
-	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, weak_ptr_base</U, is_mutable/>& ptr )
 	{
 		unsafe

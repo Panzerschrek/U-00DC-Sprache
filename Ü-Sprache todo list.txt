@@ -4,7 +4,6 @@ Delete the features from the list as soon as they are implemented.
 
 General:
 *) build-in "for" for array types.
-*) equality compare for types (like "==").
 *) Disassembly operator - declare variables with initializer as members of value of structure type.
 *) Function to function pointer assignment
 *) Functions references info in "typeinfo".

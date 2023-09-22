@@ -2,7 +2,6 @@ import "alloc.u"
 import "container_utils.u"
 import "hash.u"
 import "polymorph.u"
-import "type_traits.u"
 
 namespace ust
 {
@@ -25,7 +24,7 @@ public:
 	}
 
 	template</ type U />
-	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, box</U/> mut val )
 		( ptr_= $<( cast_ref</T/>(val.deref()) ) )
 	{

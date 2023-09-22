@@ -1150,6 +1150,19 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 
 			return std::move(typeinfo_);
 		}
+		if( it_->text == Keywords::same_type_ )
+		{
+			SameType same_type(it_->src_loc );
+
+			NextLexem();
+			ExpectLexem( Lexem::Type::TemplateBracketLeft );
+			same_type.l= std::make_unique<TypeName>( ParseTypeName() );
+			ExpectLexem( Lexem::Type::Comma );
+			same_type.r= std::make_unique<TypeName>( ParseTypeName() );
+			ExpectLexem( Lexem::Type::TemplateBracketRight );
+
+			return std::move(same_type);
+		}
 		if( it_->text == Keywords::non_sync_ )
 		{
 			NonSyncExpression non_sync_expression(it_->src_loc );

@@ -434,6 +434,16 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( *typeinfo_.type_, stream );
 			stream << " />";
 		}
+		void operator()( const SameType& same_type ) const
+		{
+			if( same_type.l == nullptr || same_type.r == nullptr )
+				return;
+			stream << Keyword( Keywords::same_type_ ) << "</ ";
+			ElementWrite( *same_type.l, stream );
+			stream << ", ";
+			ElementWrite( *same_type.r, stream );
+			stream << " />";
+		}
 		void operator()( const NonSyncExpression& non_sync_expression ) const
 		{
 			if( non_sync_expression.type_ == nullptr )

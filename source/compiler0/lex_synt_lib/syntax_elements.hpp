@@ -50,6 +50,7 @@ struct CastImut;
 struct CastRef;
 struct CastRefUnsafe;
 struct TypeInfo;
+struct SameType;
 struct NonSyncExpression;
 struct SafeExpression;
 struct UnsafeExpression;
@@ -167,6 +168,7 @@ using Expression= std::variant<
 	CastRef,
 	CastRefUnsafe,
 	TypeInfo,
+	SameType,
 	NonSyncExpression,
 	SafeExpression,
 	UnsafeExpression,
@@ -509,6 +511,14 @@ struct TypeInfo final : public SyntaxElementBase
 	TypeInfo( const SrcLoc& src_loc );
 
 	TypeNamePtr type_;
+};
+
+struct SameType final : public SyntaxElementBase
+{
+	SameType( const SrcLoc& src_loc );
+
+	TypeNamePtr l;
+	TypeNamePtr r;
 };
 
 struct NonSyncExpression final : public SyntaxElementBase

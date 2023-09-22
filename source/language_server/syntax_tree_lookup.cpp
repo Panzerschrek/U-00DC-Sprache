@@ -220,6 +220,12 @@ void FindImpl( const Synt::TypeInfo& type_info )
 	FindImpl( type_info.type_ );
 }
 
+void FindImpl( const Synt::SameType& same_type )
+{
+	FindImpl( same_type.l );
+	FindImpl( same_type.r );
+}
+
 void FindImpl( const Synt::NonSyncExpression& non_sync_expression )
 {
 	FindImpl( non_sync_expression.type_ );

@@ -439,6 +439,29 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	return move(result);
 }
 
+fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::SameType& same_type_ ) : Value
+{
+	var Type l= PrepareType( names_scope, function_context, same_type_.l );
+	var Type r= PrepareType( names_scope, function_context, same_type_.r );
+	var bool same= l == r;
+
+	var Variable mut result
+	{
+		.t= bool_type_,
+		.location= Variable::Location::LLVMRegister,
+		.value_type= ValueType::Value,
+		.constexpr_value= unsafe( LLVMConstInt( fundamental_llvm_types_.bool_, select( same ? 1u64 : 0u64 ), LLVMBool::True ) ),
+		.name= KeywordToString( Keyword::same_type_ ),
+	};
+	result.llvm_value= result.constexpr_value;
+
+	// Register variable for references checking.
+	var VariablePtr mut result_ptr( move(result) );
+	function_context.references_graph.AddNode( result_ptr );
+	RegisterTemporaryVariable( function_context, result_ptr );
+	return move(result_ptr);
+}
+
 fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::NonSyncExpression& non_sync_expression ) : Value
 {
 	var Type t= PrepareType( names_scope, function_context, non_sync_expression.type_name );

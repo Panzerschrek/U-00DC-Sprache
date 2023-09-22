@@ -689,10 +689,10 @@ op Type::==( Type& l, Type& r ) : bool
 	{
 		type LeftT= typeof(l_t);
 		static_if(
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</ArrayType/> />() ||
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</TupleType/> />() ||
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</RawPointerType/> />() ||
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</FunctionPointerType/> />() )
+			same_type</ LeftT, ust::shared_ptr_final</ArrayType/> /> ||
+			same_type</ LeftT, ust::shared_ptr_final</TupleType/> /> ||
+			same_type</ LeftT, ust::shared_ptr_final</RawPointerType/> /> ||
+			same_type</ LeftT, ust::shared_ptr_final</FunctionPointerType/> /> )
 		{
 			return l_t.deref() == r.something_.get</ LeftT />().try_deref().deref();
 		}
@@ -1188,12 +1188,12 @@ op TemplateSignatureParam::==(TemplateSignatureParam& l, TemplateSignatureParam&
 	{
 		type LeftT= typeof(l_t);
 		static_if(
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</ArrayTypeParam/> />() ||
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</TupleTypeParam/> />() ||
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</RawPointerTypeParam/> />() ||
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</FunctionTypeParam/> />() ||
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</CoroutineTypeParam/> />() ||
-			ust::is_same_type</ LeftT, ust::shared_ptr_final</SpecializedTemplateParam/> />() )
+			same_type</ LeftT, ust::shared_ptr_final</ArrayTypeParam/> /> ||
+			same_type</ LeftT, ust::shared_ptr_final</TupleTypeParam/> /> ||
+			same_type</ LeftT, ust::shared_ptr_final</RawPointerTypeParam/> /> ||
+			same_type</ LeftT, ust::shared_ptr_final</FunctionTypeParam/> /> ||
+			same_type</ LeftT, ust::shared_ptr_final</CoroutineTypeParam/> /> ||
+			same_type</ LeftT, ust::shared_ptr_final</SpecializedTemplateParam/> /> )
 		{
 			return l_t.deref() == r.something_.get</ LeftT />().try_deref().deref();
 		}

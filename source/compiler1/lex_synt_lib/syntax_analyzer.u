@@ -265,19 +265,19 @@ private:
 			move(macro_unique_identifiers_base_name) );
 
 		var T mut result;
-		static_if( ust::is_same_type</T, Expression/>() )
+		static_if( same_type</T, Expression/> )
 		{
 			result = syntax_analyzer.ParseExpression();
 		}
-		else static_if( ust::is_same_type</T, BlockElements/>() )
+		else static_if( same_type</T, BlockElements/> )
 		{
 			result = syntax_analyzer.ParseBlockElements();
 		}
-		else static_if( ust::is_same_type</T, ClassElements/>() )
+		else static_if( same_type</T, ClassElements/> )
 		{
 			result = syntax_analyzer.ParseClassBodyElements();
 		}
-		else static_if( ust::is_same_type</T, NamespaceElements/>() )
+		else static_if( same_type</T, NamespaceElements/> )
 		{
 			result = syntax_analyzer.ParseNamespaceBody( Lexem::Type::EndOfFile );
 		}
@@ -800,6 +800,20 @@ fn SyntaxAnalyzer::ParseBinaryOperatorComponentCore( mut this ) : Expression
 		NextLexem();
 		var Typeinfo mut typeinfo_{ .src_loc= src_loc, .type_name= ParseTypeNameInTemplateBrackets()};
 		return move(typeinfo_);
+	}
+	if( IsKeyword( it_.front(), Keyword::same_type_ ) )
+	{
+		auto src_loc= it_.front().src_loc;
+
+		NextLexem();
+		ExpectLexem( Lexem::Type::TemplateBracketLeft );
+		var TypeName mut l= ParseTypeName();
+		ExpectLexem( Lexem::Type::Comma );
+		var TypeName mut r= ParseTypeName();
+		ExpectLexem( Lexem::Type::TemplateBracketRight );
+
+		var SameType mut same_type_{ .src_loc= src_loc, .l= move(l), .r= move(r) };
+		return move(same_type_);
 	}
 	if( IsKeyword( it_.front(), Keyword::non_sync_ ) )
 	{
