@@ -169,8 +169,7 @@ void DebugInfoBuilder::BuildClassTypeDebugInfo( const ClassPtr class_type )
 	if( !class_type->is_complete )
 		return;
 
-	const auto cache_value= classes_di_cache_.find( class_type );
-	if( cache_value == classes_di_cache_.end() )
+	if( classes_di_cache_.count( class_type ) == 0 )
 		return; // Ignore this class - debug info for it was never created.
 
 	const auto di_file= GetDIFile( the_class.body_src_loc );
@@ -248,6 +247,7 @@ void DebugInfoBuilder::BuildClassTypeDebugInfo( const ClassPtr class_type )
 			nullptr,
 			nullptr);
 
+	const auto cache_value= classes_di_cache_.find( class_type );
 	cache_value->second->replaceAllUsesWith( result );
 	cache_value->second= result;
 }
