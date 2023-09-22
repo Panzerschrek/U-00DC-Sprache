@@ -254,36 +254,33 @@ fn DebugInfoBuilder::CreateReferenceVariableInfo( mut this, FunctionContext& fun
 
 fn DebugInfoBuilder::CreateDIType( mut this, Type& t ) : LLVMMetadataRef
 {
-	if( unsafe( LLVMTypeIsSized( t.GetLLVMType() ) ) == LLVMBool::True )
+	if_var( &tt : t.GetFundamentalType() )
 	{
-		if_var( &tt : t.GetFundamentalType() )
-		{
-			return CreateDITypeImpl( tt );
-		}
-		if_var( &tt : t.GetRawPointerType() )
-		{
-			return CreateDITypeImpl( tt );
-		}
-		if_var( &tt : t.GetFunctionPointerType() )
-		{
-			return CreateDITypeImpl( tt );
-		}
-		if_var( &tt : t.GetArrayType() )
-		{
-			return CreateDITypeImpl( tt );
-		}
-		if_var( &tt : t.GetTupleType() )
-		{
-			return CreateDITypeImpl( tt );
-		}
-		if_var( &tt : t.GetClassType() )
-		{
-			return CreateDITypeImpl( tt );
-		}
-		if_var( &tt : t.GetEnumType() )
-		{
-			return CreateDITypeImpl( tt );
-		}
+		return CreateDITypeImpl( tt );
+	}
+	if_var( &tt : t.GetRawPointerType() )
+	{
+		return CreateDITypeImpl( tt );
+	}
+	if_var( &tt : t.GetFunctionPointerType() )
+	{
+		return CreateDITypeImpl( tt );
+	}
+	if_var( &tt : t.GetArrayType() )
+	{
+		return CreateDITypeImpl( tt );
+	}
+	if_var( &tt : t.GetTupleType() )
+	{
+		return CreateDITypeImpl( tt );
+	}
+	if_var( &tt : t.GetClassType() )
+	{
+		return CreateDITypeImpl( tt );
+	}
+	if_var( &tt : t.GetEnumType() )
+	{
+		return CreateDITypeImpl( tt );
 	}
 
 	return stub_type_;
@@ -332,6 +329,11 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, FundamentalType& t ) : LLVMMeta
 
 fn DebugInfoBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRef
 {
+	if( unsafe( LLVMTypeIsSized( t.llvm_type ) ) == LLVMBool::False )
+	{
+		return stub_type_;
+	}
+
 	unsafe
 	{
 		auto mut subrange= LLVMDIBuilderGetOrCreateSubrange( builder_, 0i64, i64(t.element_count) );
@@ -346,6 +348,11 @@ fn DebugInfoBuilder::CreateDITypeImpl( mut this, ArrayType& t ) : LLVMMetadataRe
 
 fn DebugInfoBuilder::CreateDITypeImpl( mut this, TupleType& t ) : LLVMMetadataRef
 {
+	if( unsafe( LLVMTypeIsSized( t.llvm_type ) ) == LLVMBool::False )
+	{
+		return stub_type_;
+	}
+
 	var ust::vector</LLVMMetadataRef/> mut elements;
 
 	auto di_file= source_file_entries_.front();
