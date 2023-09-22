@@ -443,15 +443,17 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 	CreateDIType( class_type );
 
 	const Class& the_class= *class_type;
-	if( !class_type->is_complete )
-		return;
 
 	const auto di_file= GetDIFile( the_class.body_src_loc );
 
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
 	ClassFieldsVector<llvm::Metadata*> fields;
-	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
+	uint64_t size_in_bits= 1;
+	uint32_t alignment_in_bits= 1;
+
+	if( the_class.is_complete && // Build proper info for complete clases.
+		the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.)
 	{
 		for( const ClassFieldPtr& class_field : the_class.fields_order )
 		{
@@ -504,6 +506,13 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 					parent_type_di );
 			fields.push_back(member);
 		}
+
+		size_in_bits= data_layout_.getTypeAllocSizeInBits( the_class.llvm_type );
+		alignment_in_bits= uint32_t( 8u * data_layout_.getABITypeAlignment( the_class.llvm_type ) );
+	}
+	else
+	{
+		// Leave fields list empty and use stub size/alignment for incomplete classes (in case of error).
 	}
 
 	const auto result=
@@ -512,8 +521,8 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 			Type(class_type).ToString(),
 			di_file,
 			the_class.body_src_loc.GetLine(),
-			data_layout_.getTypeAllocSizeInBits( the_class.llvm_type ),
-			uint32_t(8u * data_layout_.getABITypeAlignment( the_class.llvm_type )),
+			size_in_bits,
+			alignment_in_bits,
 			0u,
 			llvm::DINode::DIFlags(),
 			nullptr,
