@@ -36,7 +36,7 @@ public:
 	
 	// Construct with value, taken from nullable box of compatible type.
 	template</ type U />
-	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, box_nullable</U/> mut val )
 	{
 		unsafe
@@ -51,7 +51,7 @@ public:
 	
 	// Construct with value, taken from box of compatible type.
 	template</ type U />
-	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, box</U/> mut val )
 	{
 		unsafe

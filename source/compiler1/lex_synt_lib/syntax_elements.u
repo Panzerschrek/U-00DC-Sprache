@@ -11,11 +11,11 @@ fn GetSrcLoc( Initializer& initializer ) : SrcLoc
 	variant_visit( &el : initializer )
 	{
 		type ElementT= typeof(el);
-		static_if( ust::is_same_type</ ElementT, EmptyVariant />() )
+		static_if( same_type</ ElementT, EmptyVariant /> )
 		{
 			return SrcLoc();
 		}
-		else static_if( ust::is_same_type</ ElementT, Expression />() )
+		else static_if( same_type</ ElementT, Expression /> )
 		{
 			return GetSrcLoc(el);
 		}
@@ -41,31 +41,31 @@ fn GetSrcLoc( Expression& expression ) : SrcLoc
 	variant_visit( &el : expression )
 	{
 		type ElementT= typeof(el);
-		static_if( ust::is_same_type</ ElementT, EmptyVariant />() )
+		static_if( same_type</ ElementT, EmptyVariant /> )
 		{
 			return SrcLoc();
 		}
-		else static_if( ust::is_same_type</ ElementT, ust::box</ArrayType/> />() )
+		else static_if( same_type</ ElementT, ust::box</ArrayType/> /> )
 		{
 			return el.deref().src_loc;
 		}
-		else static_if( ust::is_same_type</ ElementT, ust::box</FunctionType/> />() )
+		else static_if( same_type</ ElementT, ust::box</FunctionType/> /> )
 		{
 			return el.deref().src_loc;
 		}
-		else static_if( ust::is_same_type</ ElementT, ust::box</TupleType/> />() )
+		else static_if( same_type</ ElementT, ust::box</TupleType/> /> )
 		{
 			return el.deref().src_loc;
 		}
-		else static_if( ust::is_same_type</ ElementT, ust::box</RawPointerType/> />() )
+		else static_if( same_type</ ElementT, ust::box</RawPointerType/> /> )
 		{
 			return el.deref().src_loc;
 		}
-		else static_if( ust::is_same_type</ ElementT, ust::box</GeneratorType/> />() )
+		else static_if( same_type</ ElementT, ust::box</GeneratorType/> /> )
 		{
 			return el.deref().src_loc;
 		}
-		else static_if( ust::is_same_type</ ElementT, ComplexName />() )
+		else static_if( same_type</ ElementT, ComplexName /> )
 		{
 			return GetSrcLoc( el );
 		}
@@ -82,15 +82,15 @@ fn GetSrcLoc( BlockElement& block_element ) : SrcLoc
 	variant_visit( &el : block_element )
 	{
 		type ElementT= typeof(el);
-		static_if( ust::is_same_type</ ElementT, Expression />() )
+		static_if( same_type</ ElementT, Expression /> )
 		{
 			return GetSrcLoc(el);
 		}
-		else static_if( ust::is_same_type</ ElementT, ust::box</ScopeBlock/> />() )
+		else static_if( same_type</ ElementT, ust::box</ScopeBlock/> /> )
 		{
 			return el.deref().src_loc;
 		}
-		else static_if( ust::is_same_type</ ElementT, ust::shared_ptr_final</TypeAlias/> />() )
+		else static_if( same_type</ ElementT, ust::shared_ptr_final</TypeAlias/> /> )
 		{
 			return el.deref().src_loc;
 		}

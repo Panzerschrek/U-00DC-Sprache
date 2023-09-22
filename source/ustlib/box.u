@@ -25,7 +25,7 @@ public:
 	}
 
 	template</ type U />
-	fn enable_if( !is_same_type</T, U/>() && is_ancestor_for</T, U/>() )
+	fn enable_if( !same_type</T, U/> && is_ancestor_for</T, U/>() )
 	conversion_constructor( mut this, box</U/> mut val )
 		( ptr_= $<( cast_ref</T/>(val.deref()) ) )
 	{

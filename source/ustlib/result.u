@@ -53,7 +53,7 @@ template</type OkT, type ErrorT/>
 class result
 {
 public:
-	static_assert( !is_same_type</OkT, ErrorT/>(), "Result and error types must be distinct!" );
+	static_assert( !same_type</OkT, ErrorT/>, "Result and error types must be distinct!" );
 
 public:
 	// Construt from ok value.
