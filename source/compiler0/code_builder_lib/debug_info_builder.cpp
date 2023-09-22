@@ -52,7 +52,7 @@ DebugInfoBuilder::~DebugInfoBuilder()
 	{
 		llvm::DIType* const t= class_di_type_pair.second;
 		if( t->isTemporary() )
-			t->replaceAllUsesWith(nullptr);
+			llvm::MDNode::deleteTemporary(t);
 	}
 
 	builder_->finalize(); // We must finalize it.
