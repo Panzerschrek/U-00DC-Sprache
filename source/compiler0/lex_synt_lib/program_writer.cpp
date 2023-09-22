@@ -438,7 +438,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			if( same_type.l == nullptr || same_type.r == nullptr )
 				return;
-			stream << "</ ";
+			stream << Keyword( Keywords::same_type_ ) << "</ ";
 			ElementWrite( *same_type.l, stream );
 			stream << ", ";
 			ElementWrite( *same_type.r, stream );
