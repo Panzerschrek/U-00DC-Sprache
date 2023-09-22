@@ -73,15 +73,10 @@ using CompletionItemsNormalized= std::vector<std::string>;
 
 CompletionItemsNormalized NormalizeCompletionResult( const llvm::ArrayRef<CompletionItem> items )
 {
-	std::vector items_copy= items.vec();
-	std::sort(
-		items_copy.begin(),
-		items_copy.end(),
-		[]( const CompletionItem& l, const CompletionItem& r ) { return l.sort_text < r.sort_text; } );
-
 	CompletionItemsNormalized result;
 	result.reserve( items.size() );
-	for( const CompletionItem& item : items_copy )
+
+	for( const CompletionItem& item : items )
 		result.push_back( item.label );
 
 	return result;

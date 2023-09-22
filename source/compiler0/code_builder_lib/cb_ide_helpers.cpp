@@ -211,8 +211,36 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_sc
 std::vector<CodeBuilder::CompletionItem> CodeBuilder::CompletionResultFinalize()
 {
 	std::vector<CompletionItem> result;
-	result.swap( completion_items_ );	
+	result.swap( completion_items_ );
+
 	// Ideally we should filter-out shadowed names, but it is for now too complicated.
+
+	// Sort result list and remove duplicates.
+	// Duplicates are possible, since name lookup may be performed multiple types, like for epression preevaluation.
+	std::sort(
+		result.begin(), result.end(),
+		[]( const CompletionItem& l, const CompletionItem & r )
+		{
+			if( l.sort_text != r.sort_text ) // Compare sort text first.
+				return l.sort_text < r.sort_text;
+			if( l.name != r.name )
+				return l.name < r.name;
+			if( l.detail != r.detail )
+				return l.detail < r.detail;
+			return l.kind < r.kind;
+		} );
+
+	const auto new_end=
+		std::unique(
+			result.begin(),
+			result.end(),
+			[]( const CompletionItem& l, const CompletionItem& r )
+			{
+				return l.name == r.name && l.sort_text == r.sort_text && l.detail == r.detail && l.kind == r.kind;
+			} );
+
+	result.erase( new_end, result.end() );
+
 	return result;
 }
 
