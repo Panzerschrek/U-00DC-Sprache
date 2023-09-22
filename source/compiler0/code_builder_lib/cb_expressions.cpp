@@ -1526,6 +1526,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
+	const Synt::SameType& same_type )
+{
+	// TODO
+	(void)names;
+	(void)function_context;
+	(void)same_type;
+	return ErrorValue();
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
 	const Synt::NonSyncExpression& non_sync_expression )
 {
 	const Type type= PrepareType( *non_sync_expression.type_, names, function_context );

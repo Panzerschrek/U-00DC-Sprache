@@ -57,6 +57,7 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const Synt::CastRef& ) { return true; }
 		bool operator()( const Synt::CastRefUnsafe& ) { return true; }
 		bool operator()( const Synt::TypeInfo& ) { return true; }
+		bool operator()( const Synt::SameType& ) { return true; }
 		bool operator()( const Synt::NonSyncExpression& ) { return true; }
 		// safe/unsafe expressions needs to be visited deeply.
 		// safe/unsafe expression can't be discarded, because it has meaning.
