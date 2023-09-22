@@ -71,7 +71,7 @@ private:
 
 	llvm::DIType* stub_type_= nullptr;
 
-	// Build debug info for classes and enums once and put it to cache.
+	// Build debug info for classes once and put it to cache.
 	std::unordered_map<ClassPtr, llvm::DIType*> classes_di_cache_;
 	// Populate this vector in order to perform full debug info building for classes properly.
 	std::vector<ClassPtr> classes_order_;

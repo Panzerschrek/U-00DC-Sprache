@@ -430,7 +430,6 @@ llvm::DISubroutineType* DebugInfoBuilder::CreateDIFunctionType( const FunctionTy
 	return builder_->createSubroutineType( builder_->getOrCreateTypeArray(args) );
 }
 
-
 void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 {
 	if( builder_ == nullptr )
@@ -438,7 +437,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 
 	// Create stub first.
 	// It is important, since we need to create cache value for this class, even if it was not referenced previously,
-	// because we need to build proper debug info for it in case if it will be requested by BuildClassTypeDebugInfo call for other class,
+	// because we need to build proper debug info for it in case if it will be requested by BuildClassTypeFullDebugInfo call for other class,
 	// (that for example contains this class).
 	CreateDIType( class_type );
 
