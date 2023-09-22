@@ -84,29 +84,28 @@ fn ToString( FunctionType& function_type ) : ust::string8
 	var ust::string8 mut result;
 
 	result+= KeywordToString( Keyword::fn_ );
-	result+= " ";
 
 	if( function_type.params.empty() )
 	{
-		result+= "() ";
+		result+= "()";
 	}
 	else
 	{
 		result+= "( ";
 		result+= FunctionParamsToString( function_type.params.range() );
-		result+= " ) ";
+		result+= " )";
 	}
 
 	if( function_type.is_unsafe )
 	{
-		result+= KeywordToString( Keyword::unsafe_ );
 		result+= " ";
+		result+= KeywordToString( Keyword::unsafe_ );
 	}
 
 	if( function_type.calling_convention != LLVMCallConv::C )
 	{
 		result+= KeywordToString( Keyword::call_conv_ );
-		result+= "(\"";
+		result+= " (\"";
 
 		if( function_type.calling_convention == LLVMCallConv::Fast )
 		{
@@ -121,20 +120,20 @@ fn ToString( FunctionType& function_type ) : ust::string8
 			result+= "system";
 		}
 
-		result+= "\") ";
+		result+= "\")";
 	}
 
-	result+= ": ";
+	result+= " : ";
 
 	result+= function_type.return_type.ToString();
 
 	if( function_type.return_value_type == ValueType::ReferenceMut )
 	{
-		result+= "&mut";
+		result+= " &mut";
 	}
 	if( function_type.return_value_type == ValueType::ReferenceImut )
 	{
-		result+= "&imut";
+		result+= " &imut";
 	}
 
 	return move(result);

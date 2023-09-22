@@ -94,6 +94,10 @@ CallOperator::CallOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
 
+CallOperatorSignatureHelp::CallOperatorSignatureHelp( const SrcLoc& src_loc )
+	: SyntaxElementBase(src_loc)
+{}
+
 IndexationOperator::IndexationOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {}
@@ -117,6 +121,10 @@ StructNamedInitializer::StructNamedInitializer( const SrcLoc& src_loc )
 {}
 
 ConstructorInitializer::ConstructorInitializer( const SrcLoc& src_loc )
+	: SyntaxElementBase( src_loc )
+{}
+
+ConstructorInitializerSignatureHelp::ConstructorInitializerSignatureHelp( const SrcLoc& src_loc )
 	: SyntaxElementBase( src_loc )
 {}
 

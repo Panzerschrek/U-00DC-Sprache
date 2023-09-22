@@ -78,6 +78,12 @@ public:
 		CompletionItemKind kind= CompletionItemKind::Variable;
 	};
 
+	struct SignatureHelpItem
+	{
+		std::string label;
+		// TODO - fill parameters range.
+	};
+
 public:
 	// Use static creation methods for building of code, since it is unsafe to reuse internal data structures after building single source graph.
 
@@ -116,6 +122,9 @@ public: // IDE helpers.
 	// Prefix is used to find proper namespace/class (name lookups are used).
 	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
 	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
+
+	std::vector<SignatureHelpItem> GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
+	std::vector<SignatureHelpItem> GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
 
 	// Delete bodies of functions (excepth constexpr ones).
 	// This breaks result module and should not be used for a program compilation (with result object file).
@@ -180,6 +189,7 @@ private:
 	NamesScope* GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	std::vector<CompletionItem> CompletionResultFinalize();
+	std::vector<SignatureHelpItem> SignatureHelpResultFinalize();
 
 	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element );
 	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element );
@@ -204,6 +214,8 @@ private:
 	void NamesScopeFetchComleteForClass( const Class* class_, std::string_view name );
 	void ComleteClassOwnFields( const Class* class_, std::string_view name );
 	void CompleteProcessValue( std::string_view completion_name, std::string_view value_name, const NamesScopeValue& names_scope_value );
+
+	void PerformSignatureHelp( const Value& value );
 
 	void DeleteFunctionsBodies_r( NamesScope& names_scope );
 
@@ -626,6 +638,7 @@ private:
 	Value BuildExpressionCode( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperator& call_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperatorSignatureHelp& call_operator_signature_help );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::IndexationOperator& indexation_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperator& member_access_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion );
@@ -986,6 +999,7 @@ private:
 	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::SequenceInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::StructNamedInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::ConstructorInitializer& initializer );
+	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::ConstructorInitializerSignatureHelp& initializer );
 	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::Expression& initializer );
 	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::ZeroInitializer& initializer );
 	llvm::Constant* ApplyInitializerImpl( const VariablePtr& variable, NamesScope& names, FunctionContext& function_context, const Synt::UninitializedInitializer& uninitialized_initializer );
@@ -1300,8 +1314,10 @@ private:
 	// Map usage point to definition point.
 	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
 
-	// Output container for completion syntax elements.
+	// Output container for completion result items.
 	std::vector<CompletionItem> completion_items_;
+	// Output container for signature help result items.
+	std::vector<SignatureHelpItem> signature_help_items_;
 };
 
 using MutabilityModifier= Synt::MutabilityModifier;

@@ -47,6 +47,11 @@ struct Complete
 	PositionInDocument position;
 };
 
+struct SignatureHelp
+{
+	PositionInDocument position;
+};
+
 struct Highlight
 {
 	PositionInDocument position;
@@ -71,6 +76,7 @@ using RequestParams= std::variant<
 	Requests::References,
 	Requests::Definition,
 	Requests::Complete,
+	Requests::SignatureHelp,
 	Requests::Highlight,
 	Requests::Rename >;
 

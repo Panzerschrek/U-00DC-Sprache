@@ -7,7 +7,6 @@ namespace U
 namespace LangServer
 {
 
-
 using CompletionSyntaxElement= std::variant<
 	const Synt::RootNamespaceNameLookupCompletion*,
 	const Synt::NameLookupCompletion*,
@@ -15,7 +14,9 @@ using CompletionSyntaxElement= std::variant<
 	const Synt::MemberAccessOperatorCompletion*,
 	const Synt::StructNamedInitializer::MemberInitializer*,
 	const Synt::MoveOperator*,
-	const Synt::Function::NameComponent*>;
+	const Synt::Function::NameComponent*,
+	const Synt::CallOperatorSignatureHelp*,
+	const Synt::ConstructorInitializerSignatureHelp*>;
 
 using GlobalItem= std::variant<const Synt::ProgramElement*, const Synt::ClassElement*>;
 

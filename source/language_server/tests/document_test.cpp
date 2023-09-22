@@ -87,6 +87,19 @@ CompletionItemsNormalized NormalizeCompletionResult( const llvm::ArrayRef<Comple
 	return result;
 }
 
+using SignatureHelpResultNormalized= std::vector<std::string>;
+
+SignatureHelpResultNormalized NormalizeSignatureHelpResult( const llvm::ArrayRef<CodeBuilder::SignatureHelpItem> items )
+{
+	SignatureHelpResultNormalized result;
+	result.reserve( items.size() );
+
+	for( const CodeBuilder::SignatureHelpItem& item : items )
+		result.push_back( item.label );
+
+	return result;
+}
+
 Logger g_tests_logger( std::cout );
 llvm::ThreadPool g_tests_thread_pool;
 
@@ -788,6 +801,426 @@ namespace Abc
 		const CompletionItemsNormalized expected_completion_result{ "Foo" };
 		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 	}
+}
+
+U_TEST( DocumentSignatureHelp_Test0 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "fn bar(){} fn foo();" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo(" );
+	U_TEST_ASSERT( document.GetCurrentText() == "fn bar(){foo(} fn foo();" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 13 } );
+	const SignatureHelpResultNormalized expected_result{ "foo() : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test1 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "fn bar(){} fn foo( i32 x ); fn foo( f32 y, bool z ) : f64; fn foo( [ i32, 2 ] &mut a, tup[ f32, void ] t ) unsafe : i32 &mut;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo(" );
+	U_TEST_ASSERT( document.GetCurrentText() == "fn bar(){foo(} fn foo( i32 x ); fn foo( f32 y, bool z ) : f64; fn foo( [ i32, 2 ] &mut a, tup[ f32, void ] t ) unsafe : i32 &mut;" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 13 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( [ i32, 2 ] &mut a, tup[ f32, void ] t ) unsafe : i32 &mut", "foo( f32 y, bool z ) : f64", "foo( i32 x ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test2 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Only last component of the function name is used.
+	document.SetText( "fn bar(){} namespace Abc{ struct Str{ fn foo(); } }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "Abc::Str::foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 23 } );
+	const SignatureHelpResultNormalized expected_result{ "foo() : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test3 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Type names as they are writen are used - without unwrapping type aliases and calculating variable values.
+	document.SetText( "fn bar(){} fn foo( [ Int, size ] arr ) : Float; type Int= i64; auto size= 16s; type Float= f32;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 13 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( [ Int, size ] arr ) : Float" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test4 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest signature of method call.
+	document.SetText( "fn bar(S& s){} struct S{ fn foo(this); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s.foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( this ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test5 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest signature of method call.
+	document.SetText( "fn bar(S& s){} struct S{ fn foo( mut this, f32 x ); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s.foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( mut this, f32 x ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test6 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest signature of method call.
+	document.SetText( "fn bar(S& s){} struct S{ fn foo( imut this'x' ) : bool; i32& ref_field; }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s.foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( imut this'x' ) : bool" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test7 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest signature of static method call.
+	document.SetText( "fn bar(S& s){} struct S{ fn foo(); fn foo( i32 x ); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s.foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( i32 x ) : void", "foo() : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test8 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest call to generated constructor.
+	document.SetText( "fn bar(S &mut s){} struct S{}" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 17 }, { 1, 17 } }, "unsafe( s.constructor(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 39 } );
+	const SignatureHelpResultNormalized expected_result{ "constructor( mut this ) : void", "constructor( mut this, S &imut other ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test9 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest call to generated destructor.
+	document.SetText( "fn bar(S &mut s){} struct S{}" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 17 }, { 1, 17 } }, "unsafe( s.destructor(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 38 } );
+	const SignatureHelpResultNormalized expected_result{ "destructor( mut this ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test10 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide signature help for temp variable construction.
+	document.SetText( "fn bar(){} struct S{ fn constructor()= default; fn constructor( i32 x ); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "S(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 11 } );
+	const SignatureHelpResultNormalized expected_result{ "constructor( mut this ) : void", "constructor( mut this, S &imut other ) : void", "constructor( mut this, i32 x ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test11 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide signature help for function pointer call.
+	document.SetText( "fn bar(){} var (fn(i32 x, f32 & y ) : bool &mut ) ptr= zero_init;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "ptr(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 13 } );
+	const SignatureHelpResultNormalized expected_result{ "fn( i32 _, f32 &imut _ ) : bool &mut" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test12 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should properly suggest call to overloaded operator ().
+	document.SetText( "fn bar(S& s){} struct S{ op()( this, bool b ) : f32; }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 13 }, { 1, 13 } }, "s(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 15 } );
+	const SignatureHelpResultNormalized expected_result{ "()( this, bool b ) : f32" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test13 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide signature help for variable construction.
+	document.SetText( "fn bar(){} struct S{ fn constructor()= default; fn constructor( i32 x ); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "var S s(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 17 } );
+	const SignatureHelpResultNormalized expected_result{ "constructor( mut this ) : void", "constructor( mut this, S &imut other ) : void", "constructor( mut this, i32 x ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test14 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide signature help for ",", that is part of call operator.
+	document.SetText( "fn bar(){} fn foo( i32 x, f32 y );" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo( 42," );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 17 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( i32 x, f32 y ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test15 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide signature help for"," in variable construction.
+	document.SetText( "fn bar(){} class S{ fn constructor()= delete; fn constructor( f32 x, bool y ); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "var S s( 0.5f," );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 23 } );
+	const SignatureHelpResultNormalized expected_result{ "constructor( mut this, f32 x, bool y ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test16 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide signature help for ")" and return outer function.
+	document.SetText( "fn bar(){} fn foo( i32 x, f32 y ); fn baz() : i32;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo( baz()" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 19 } );
+	const SignatureHelpResultNormalized expected_result{ "foo( i32 x, f32 y ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test17 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should provide no signature help for ")" that terminates call operator.
+	document.SetText( "fn bar(){} fn foo();" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo()" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 14 } );
+	const SignatureHelpResultNormalized expected_result{ };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test18 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should suggest template function.
+	document.SetText( "fn bar(){} template</ type T, size_type S /> fn foo( [ T, S ]& arr ){}" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 13 } );
+	const SignatureHelpResultNormalized expected_result{ "template</ type T, size_type S /> fn foo( [ T, S ] &arr ) : void" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( DocumentSignatureHelp_Test19 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	// Should suggest template function with explicit args.
+	document.SetText( "fn bar(){} template</ type T /> fn foo() : T { return T(0); }" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	document.UpdateText( DocumentRange{ { 1, 9 }, { 1, 9 } }, "foo</i32/>(" );
+
+	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 20 } );
+	const SignatureHelpResultNormalized expected_result{ "template</ type T /> fn foo() : T" };
+	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
 }
 
 } // namespace

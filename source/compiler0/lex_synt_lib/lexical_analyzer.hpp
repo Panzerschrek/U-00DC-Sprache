@@ -112,6 +112,8 @@ struct Lexem
 		CompletionIdentifier,
 		CompletionScope,
 		CompletionDot,
+		SignatureHelpBracketLeft,
+		SignatureHelpComma,
 
 		EndOfFile,
 	};

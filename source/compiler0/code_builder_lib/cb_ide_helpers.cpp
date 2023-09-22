@@ -69,6 +69,30 @@ std::vector<CodeBuilder::CompletionItem> CodeBuilder::Complete( const llvm::Arra
 	return CompletionResultFinalize();
 }
 
+std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element )
+{
+	// Use same routines for completion and signature help.
+
+	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+	if( names_scope == nullptr )
+		return {};
+
+	BuildElementForCompletion( *names_scope, program_element );
+	return SignatureHelpResultFinalize();
+}
+
+std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element )
+{
+	// Use same routines for completion and signature help.
+
+	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+	if( names_scope == nullptr )
+		return {};
+
+	BuildElementForCompletion( *names_scope, class_element );
+	return SignatureHelpResultFinalize();
+}
+
 void CodeBuilder::DeleteFunctionsBodies()
 {
 	// Delete bodies of in code.
@@ -189,6 +213,19 @@ std::vector<CodeBuilder::CompletionItem> CodeBuilder::CompletionResultFinalize()
 	std::vector<CompletionItem> result;
 	result.swap( completion_items_ );	
 	// Ideally we should filter-out shadowed names, but it is for now too complicated.
+	return result;
+}
+
+std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::SignatureHelpResultFinalize()
+{
+	std::vector<SignatureHelpItem> result;
+	result.swap( signature_help_items_ );
+
+	// Sort by label in order to have stable result.
+	std::sort(
+		result.begin(), result.end(),
+		[]( const SignatureHelpItem& l, const SignatureHelpItem& r ) { return l.label < r.label; });
+
 	return result;
 }
 
@@ -604,6 +641,136 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 			item.kind= CompletionItemKind::TypeTemplatesSet;
 
 		completion_items_.push_back( std::move(item) );
+	}
+}
+
+void CodeBuilder::PerformSignatureHelp( const Value& value )
+{
+	OverloadedFunctionsSetConstPtr functions_set;
+
+	if( const auto value_functions_set= value.GetFunctionsSet() )
+		functions_set= value_functions_set;
+	else if( const auto overloaded_methods_set= value.GetThisOverloadedMethodsSet() )
+		functions_set= overloaded_methods_set->overloaded_methods_set;
+	else if( const auto type= value.GetTypeName() )
+	{
+		// This is temp variable construction. Try to extract constructors for given type.
+		if( const auto class_type= type->GetClassType() )
+		{
+			if( const auto constructors= class_type->members->GetThisScopeValue( Keyword( Keywords::constructor_ ) ) )
+			{
+				if( const auto constructors_functions_set= constructors->value.GetFunctionsSet() )
+					functions_set= constructors_functions_set;
+			}
+		}
+	}
+	else if( const auto variable= value.GetVariable() )
+	{
+		if( variable->type.GetFunctionPointerType() != nullptr )
+		{
+			// Suggest call to function pointer.
+			SignatureHelpItem item;
+			item.label= variable->type.ToString();
+			signature_help_items_.push_back( std::move(item) );
+		}
+		else if( const auto class_type= variable->type.GetClassType() )
+		{
+			// Try to call overloaded () operator.
+			if( const NamesScopeValue* const call_operator_value= ResolveClassValue( class_type, OverloadedOperatorToString( OverloadedOperator::Call ) ).first )
+			{
+				if( const auto operator_functions_set= call_operator_value->value.GetFunctionsSet() )
+					functions_set= operator_functions_set;
+			}
+		}
+	}
+
+	if( functions_set == nullptr )
+		return;
+
+	for( const FunctionVariable& function : functions_set->functions )
+	{
+		if( function.is_deleted )
+			continue;
+
+		std::stringstream ss;
+
+		if( function.syntax_element != nullptr )
+		{
+			if( !function.syntax_element->name_.empty() )
+				ss << function.syntax_element->name_.back().name;
+
+			Synt::WriteFunctionParamsList( function.syntax_element->type_, ss );
+			Synt::WriteFunctionTypeEnding( function.syntax_element->type_, ss );
+		}
+		else
+		{
+			// Some generated method.
+			if( functions_set->base_class != nullptr )
+			{
+				// Try to find value for this name in the class and extract proper name.
+				std::string_view name;
+				functions_set->base_class->members->ForEachInThisScope(
+					[&]( const std::string_view member_name, const NamesScopeValue& value )
+				{
+					if( value.value.GetFunctionsSet() == functions_set )
+						name= member_name;
+				} );
+
+				ss << name;
+
+				// Stringify params list, based on function type.
+				ss << "( ";
+				for( const FunctionType::Param& param : function.type.params )
+				{
+					if( function.is_this_call && &param == &function.type.params.front() )
+						ss << Keyword( param.value_type == ValueType::ReferenceMut ? Keywords::mut_ : Keywords::imut_ ) << " " << Keyword( Keywords::this_ );
+					else
+					{
+						ss << param.type.ToString() << " ";
+						if( param.value_type == ValueType::Value )
+						{}
+						else if( param.value_type == ValueType::ReferenceMut )
+							ss << "&" << Keyword( Keywords::mut_ ) << " ";
+						else if( param.value_type == ValueType::ReferenceImut )
+							ss << "&" << Keyword( Keywords::imut_ ) << " ";
+
+						ss << "other"; // Give some dummy name to this param.
+					}
+
+					if( &param != &function.type.params.back() )
+						ss << ", ";
+				}
+				ss << " ) ";
+
+				if( function.type.unsafe )
+					ss << Keyword( Keywords::unsafe_ ) << " ";
+				ss << ": " << function.type.return_type.ToString();
+
+				if( function.type.return_value_type == ValueType::Value )
+				{}
+				else if( function.type.return_value_type == ValueType::ReferenceMut )
+					ss << " &" << Keyword( Keywords::mut_ );
+				else if( function.type.return_value_type == ValueType::ReferenceImut )
+					ss << " &" << Keyword( Keywords::imut_ );
+			}
+		}
+
+		SignatureHelpItem item;
+		item.label= ss.str();
+		signature_help_items_.push_back( std::move(item) );
+	}
+
+	for( const FunctionTemplatePtr& function_template : functions_set->template_functions )
+	{
+		if( function_template->syntax_element != nullptr )
+		{
+			std::stringstream ss;
+			Synt::WriteFunctionTemplate( *function_template->syntax_element, ss );
+
+			SignatureHelpItem item;
+			item.label= ss.str();
+			signature_help_items_.push_back( std::move(item) );
+		}
 	}
 }
 

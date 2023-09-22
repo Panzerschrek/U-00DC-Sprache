@@ -68,6 +68,7 @@ private:
 	ServerResponse HandleRequestImpl( const Requests::References& references );
 	ServerResponse HandleRequestImpl( const Requests::Definition& definition );
 	ServerResponse HandleRequestImpl( const Requests::Complete& complete );
+	ServerResponse HandleRequestImpl( const Requests::SignatureHelp& signature_help );
 	ServerResponse HandleRequestImpl( const Requests::Highlight& highlight );
 	ServerResponse HandleRequestImpl( const Requests::Rename& rename );
 

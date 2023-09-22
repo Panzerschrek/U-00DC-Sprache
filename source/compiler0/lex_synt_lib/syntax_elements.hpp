@@ -31,6 +31,7 @@ struct LogicalNot;
 struct BitwiseNot;
 
 struct CallOperator;
+struct CallOperatorSignatureHelp;
 struct IndexationOperator;
 struct MemberAccessOperator;
 struct MemberAccessOperatorCompletion;
@@ -56,6 +57,7 @@ struct UnsafeExpression;
 struct SequenceInitializer;
 struct StructNamedInitializer;
 struct ConstructorInitializer;
+struct ConstructorInitializerSignatureHelp;
 struct ZeroInitializer;
 struct UninitializedInitializer;
 
@@ -140,6 +142,7 @@ using Expression= std::variant<
 	EmptyVariant,
 	// Postfix operators
 	CallOperator,
+	CallOperatorSignatureHelp,
 	IndexationOperator,
 	MemberAccessOperator,
 	MemberAccessOperatorCompletion,
@@ -182,6 +185,7 @@ using Initializer= std::variant<
 	SequenceInitializer,
 	StructNamedInitializer,
 	ConstructorInitializer,
+	ConstructorInitializerSignatureHelp,
 	Expression,
 	ZeroInitializer,
 	UninitializedInitializer >;
@@ -586,6 +590,15 @@ struct CallOperator final : public SyntaxElementBase
 	std::vector<Expression> arguments_;
 };
 
+// Special kind of call operator, created only by language server to perform signature help.
+struct CallOperatorSignatureHelp final : public SyntaxElementBase
+{
+	CallOperatorSignatureHelp( const SrcLoc& src_loc );
+
+	ExpressionPtr expression_;
+	// Fo now no need to parse arguments.
+};
+
 struct IndexationOperator final : public SyntaxElementBase
 {
 	explicit IndexationOperator( const SrcLoc& src_loc );
@@ -632,6 +645,13 @@ struct StructNamedInitializer final : public SyntaxElementBase
 struct ConstructorInitializer final : public SyntaxElementBase
 {
 	ConstructorInitializer( const SrcLoc& src_loc );
+
+	std::vector<Expression> arguments;
+};
+
+struct ConstructorInitializerSignatureHelp final : public SyntaxElementBase
+{
+	ConstructorInitializerSignatureHelp( const SrcLoc& src_loc );
 
 	std::vector<Expression> arguments;
 };

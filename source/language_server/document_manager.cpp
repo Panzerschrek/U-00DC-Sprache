@@ -311,6 +311,18 @@ std::vector<CompletionItem> DocumentManager::Complete( const PositionInDocument&
 	return it->second.Complete( position.position );
 }
 
+std::vector<CodeBuilder::SignatureHelpItem> DocumentManager::GetSignatureHelp( const PositionInDocument& position )
+{
+	const auto it= documents_.find( position.uri );
+	if( it == documents_.end() )
+	{
+		log_() << "Can't find document" << position.uri.ToString() << std::endl;
+		return {};
+	}
+
+	return it->second.GetSignatureHelp( position.position );
+}
+
 RangeInDocument DocumentManager::GetDocumentIdentifierRangeOrDummy( const SrcLocInDocument& document_src_loc ) const
 {
 	if( auto range= GetDocumentIdentifierRange( document_src_loc ) )

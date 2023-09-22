@@ -61,12 +61,14 @@ Value CodeBuilder::BuildExpressionCode(
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
-	NamesScope&,
+	NamesScope& names,
 	FunctionContext&,
 	const Synt::EmptyVariant& )
 {
-	U_ASSERT(false);
-	return Value();
+	// This should not happens in normal situation - when syntax is valid.
+	// But for calls from language server we need to handle this case somehow.
+	REPORT_ERROR( NotImplemented, names.GetErrors(), SrcLoc(), "empty expression" );
+	return ErrorValue();
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -78,6 +80,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
 	return CallFunction( function_value, call_operator.arguments_, call_operator.src_loc_, names, function_context );
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::CallOperatorSignatureHelp& call_operator_signature_help )
+{
+	PerformSignatureHelp( BuildExpressionCode( *call_operator_signature_help.expression_, names, function_context ) );
+	return ErrorValue();
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
