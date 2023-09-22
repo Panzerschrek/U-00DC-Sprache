@@ -97,6 +97,7 @@ safe
 unsafe
 type
 typeinfo
+same_type
 typeof
 template
 enum
