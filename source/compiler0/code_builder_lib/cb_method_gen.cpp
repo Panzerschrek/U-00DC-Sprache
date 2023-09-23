@@ -409,7 +409,7 @@ void CodeBuilder::GenerateDestructorBody( const ClassPtr class_type, FunctionVar
 
 	function_context.variables_state.AddNode( this_ );
 
-	CallMembersDestructors( function_context, the_class.members->GetErrors(), the_class.body_src_loc );
+	CallMembersDestructors( function_context, the_class.members->GetErrors(), the_class.src_loc );
 	function_context.alloca_ir_builder.CreateBr( function_context.function_basic_block );
 	function_context.llvm_ir_builder.CreateRetVoid();
 }

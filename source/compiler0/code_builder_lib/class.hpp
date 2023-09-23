@@ -20,6 +20,16 @@ public:
 	bool HaveAncestor( ClassPtr class_ ) const;
 
 public:
+	enum class Kind : uint8_t
+	{
+		Struct,
+		NonPolymorph,
+		Interface,
+		Abstract,
+		PolymorphNonFinal,
+		PolymorphFinal,
+	};
+
 	struct BaseTemplate
 	{
 		TypeTemplatePtr class_template;
@@ -35,16 +45,6 @@ public:
 
 	// Class is just regular class or it has base template or it is typeinfo class or it is coroutine class.
 	using GeneratedClassData= std::variant< NonGeneratedClassTag, BaseTemplate, TypeinfoClassDescription, CoroutineTypeDescription >;
-
-	enum class Kind : uint8_t
-	{
-		Struct,
-		NonPolymorph,
-		Interface,
-		Abstract,
-		PolymorphNonFinal,
-		PolymorphFinal,
-	};
 
 	struct VirtualTableEntry
 	{
@@ -75,10 +75,11 @@ public:
 	llvm::StringMap< ClassMemberVisibility > members_visibility;
 
 	const Synt::Class* syntax_element= nullptr;
+	SrcLoc src_loc;
 
-	size_t field_count= 0u;
-	InnerReferenceType inner_reference_type= InnerReferenceType::None;
+	uint32_t field_count= 0u;
 	Kind kind= Kind::Struct;
+	InnerReferenceType inner_reference_type= InnerReferenceType::None;
 
 	bool parents_list_prepared= false;
 	bool is_complete= false;
@@ -89,8 +90,6 @@ public:
 	bool is_copy_assignable= false;
 	bool is_equality_comparable= false;
 	bool can_be_constexpr= false;
-
-	SrcLoc body_src_loc;
 
 	llvm::StructType* llvm_type= nullptr;
 
