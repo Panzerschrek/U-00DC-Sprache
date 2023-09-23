@@ -236,7 +236,8 @@ void EncodeTemplateArgs( ManglerState& mangler_state, const llvm::ArrayRef<Templ
 
 void EncodeTemplateClassName( ManglerState& mangler_state, const Class& the_class )
 {
-	U_ASSERT( the_class.base_template != std::nullopt );
+	const auto base_template= std::get_if<Class::BaseTemplate>( &the_class.generated_class_data );
+	U_ASSERT( base_template != nullptr );
 
 	{
 		const ManglerState::NodeHolder name_node( mangler_state );
@@ -247,23 +248,23 @@ void EncodeTemplateClassName( ManglerState& mangler_state, const Class& the_clas
 			if( !parent->GetThisNamespaceName().empty() )
 				EncodeNamespacePrefix_r( mangler_state, *parent );
 
-		mangler_state.PushLengthPrefixed( the_class.base_template->class_template->syntax_element->name_ );
+		mangler_state.PushLengthPrefixed( base_template->class_template->syntax_element->name_ );
 	}
 
-	EncodeTemplateArgs( mangler_state, the_class.base_template->signature_args );
+	EncodeTemplateArgs( mangler_state, base_template->signature_args );
 }
 
 void EncodeNamespacePrefix_r( ManglerState& mangler_state, const NamesScope& names_scope )
 {
 	if( const ClassPtr the_class= names_scope.GetClass() )
 	{
-		if( the_class->base_template != std::nullopt )
+		if( std::get_if<Class::BaseTemplate>( &the_class->generated_class_data ) != nullptr )
 		{
 			const ManglerState::NodeHolder result_node( mangler_state );
 			EncodeTemplateClassName( mangler_state, *the_class );
 			return;
 		}
-		else if( the_class->coroutine_type_description != std::nullopt )
+		else if( std::get_if<CoroutineTypeDescription>( &the_class->generated_class_data ) != nullptr )
 		{
 			EncodeCoroutineType( mangler_state, the_class );
 			return;
@@ -377,7 +378,8 @@ void EncodeFunctionParams( ManglerState& mangler_state, const llvm::ArrayRef<Fun
 
 void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type )
 {
-	const CoroutineTypeDescription coroutine_type_description= *class_type->coroutine_type_description;
+	const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data );
+	U_ASSERT( coroutine_type_description != nullptr );
 
 	const ManglerState::NodeHolder result_node( mangler_state );
 	{
@@ -388,24 +390,24 @@ void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type
 	// Encode coroutine type as template with several arguments.
 	mangler_state.Push( "I" );
 
-	if( coroutine_type_description.return_value_type == ValueType::Value )
-		EncodeTypeName( mangler_state, coroutine_type_description.return_type );
+	if( coroutine_type_description->return_value_type == ValueType::Value )
+		EncodeTypeName( mangler_state, coroutine_type_description->return_type );
 	else
 	{
 		const ManglerState::NodeHolder ref_node( mangler_state );
 		mangler_state.Push( "R" );
-		if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
-			EncodeTypeName( mangler_state, coroutine_type_description.return_type );
+		if( coroutine_type_description->return_value_type == ValueType::ReferenceMut )
+			EncodeTypeName( mangler_state, coroutine_type_description->return_type );
 		else
 		{
 			const ManglerState::NodeHolder konst_node( mangler_state );
 			mangler_state.Push( "K" );
-			EncodeTypeName( mangler_state, coroutine_type_description.return_type );
+			EncodeTypeName( mangler_state, coroutine_type_description->return_type );
 		}
 	}
 
 	// Encode non-sync tag, if it exists.
-	if( coroutine_type_description.non_sync )
+	if( coroutine_type_description->non_sync )
 	{
 		mangler_state.Push( "L" );
 		mangler_state.Push( EncodeFundamentalType( U_FundamentalType::bool_ ) );
@@ -416,7 +418,7 @@ void EncodeCoroutineType( ManglerState& mangler_state, const ClassPtr class_type
 	// Encode inner reference kind as variable template parameter.
 	mangler_state.Push( "L" );
 	mangler_state.Push( EncodeFundamentalType( U_FundamentalType::u32_ ) );
-	mangler_state.Push( std::to_string( size_t(coroutine_type_description.inner_reference_type ) ) );
+	mangler_state.Push( std::to_string( size_t(coroutine_type_description->inner_reference_type ) ) );
 	mangler_state.Push( "E" );
 
 	// Do not encode coroutine kind here, because coroutine class name contains kind.
@@ -452,7 +454,7 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{
-		if( class_type->typeinfo_type != std::nullopt )
+		if( const auto typeinfo_class_description= std::get_if< Class::TypeinfoClassDescription>( &class_type->generated_class_data ) )
 		{
 			const ManglerState::NodeHolder result_node( mangler_state );
 			{
@@ -463,16 +465,16 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 				const ManglerState::NodeHolder args_node( mangler_state );
 
 				TemplateArgs typeinfo_pseudo_args;
-				typeinfo_pseudo_args.push_back( *class_type->typeinfo_type );
+				typeinfo_pseudo_args.push_back( typeinfo_class_description->source_type );
 				EncodeTemplateArgs( mangler_state, typeinfo_pseudo_args );
 			}
 		}
-		else if( class_type->coroutine_type_description != std::nullopt )
+		else if( std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data ) != nullptr )
 			EncodeCoroutineType( mangler_state, class_type );
-		else if( class_type->base_template != std::nullopt )
+		else if( const auto base_template= std::get_if< Class::BaseTemplate >( &class_type->generated_class_data ) )
 		{
 			const ManglerState::NodeHolder result_node( mangler_state );
-			if( class_type->base_template->class_template->parent_namespace->GetParent() != nullptr )
+			if( base_template->class_template->parent_namespace->GetParent() != nullptr )
 			{
 				mangler_state.Push( "N" );
 				EncodeTemplateClassName( mangler_state, *class_type );

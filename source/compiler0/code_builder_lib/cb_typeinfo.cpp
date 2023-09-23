@@ -86,7 +86,7 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	typeinfo_class_table_.push_back( std::move(typeinfo_class_ptr) );
 
 	typeinfo_class->llvm_type= llvm_type;
-	typeinfo_class->typeinfo_type= src_type;
+	typeinfo_class->generated_class_data= Class::TypeinfoClassDescription{ src_type };
 
 	llvm_type->setName( mangler_->MangleType( typeinfo_class ) );
 
@@ -281,17 +281,20 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 
 		add_bool_field( "is_interface", class_type->kind == Class::Kind::Interface );
 
-		add_bool_field( "is_typeinfo", class_type->typeinfo_type != std::nullopt );
+		add_bool_field( "is_typeinfo", std::get_if<Class::TypeinfoClassDescription>( &class_type->generated_class_data ) != nullptr );
 
-		add_bool_field( "is_coroutine", class_type->coroutine_type_description != std::nullopt );
-		if( class_type->coroutine_type_description != std::nullopt )
+		if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
 		{
-			add_bool_field( "is_generator", class_type->coroutine_type_description->kind == CoroutineKind::Generator );
+			add_bool_field( "is_coroutine", true );
 
-			add_typeinfo_field( "coroutine_return_type", class_type->coroutine_type_description->return_type );
-			add_bool_field( "coroutine_return_value_is_reference", class_type->coroutine_type_description->return_value_type != ValueType::Value );
-			add_bool_field( "coroutine_return_value_is_mutable"  , class_type->coroutine_type_description->return_value_type == ValueType::ReferenceMut );
+			add_bool_field( "is_generator", coroutine_type_description->kind == CoroutineKind::Generator );
+
+			add_typeinfo_field( "coroutine_return_type", coroutine_type_description->return_type );
+			add_bool_field( "coroutine_return_value_is_reference", coroutine_type_description->return_value_type != ValueType::Value );
+			add_bool_field( "coroutine_return_value_is_mutable"  , coroutine_type_description->return_value_type == ValueType::ReferenceMut );
 		}
+		else
+			add_bool_field( "is_coroutine", false );
 	}
 	else if( const RawPointerType* const raw_pointer_type= type.GetRawPointerType() )
 	{

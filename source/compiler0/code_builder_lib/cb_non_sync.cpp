@@ -134,10 +134,13 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 		}
 
 		// Check coroutines non_sync flag.
-		if( class_type->coroutine_type_description != std::nullopt && class_type->coroutine_type_description->non_sync )
+		if( const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data ) )
 		{
-			prev_types_stack.pop_back();
-			return true;
+			if( coroutine_type_description->non_sync )
+			{
+				prev_types_stack.pop_back();
+				return true;
+			}
 		}
 
 		// Check "non_sync" tag existence for parents.

@@ -26,6 +26,16 @@ public:
 		TemplateArgs signature_args;
 	};
 
+	struct TypeinfoClassDescription
+	{
+		Type source_type; // Type for which this typeinfo class was generated.
+	};
+
+	struct NonGeneratedClassTag{};
+
+	// Class is just regular class or it has base template or it is typeinfo class or it is coroutine class.
+	using GeneratedClassData= std::variant< NonGeneratedClassTag, BaseTemplate, TypeinfoClassDescription, CoroutineTypeDescription >;
+
 	enum class Kind : uint8_t
 	{
 		Struct,
@@ -87,16 +97,7 @@ public:
 	// This class fields in order of field number. Null pointer for parent classes fields.
 	ClassFieldsVector<ClassFieldPtr> fields_order;
 
-	// TODO - use "unique_ptr" instead of "optional" for info for special classes?
-
-	// Exists only for classes, generated from class templates.
-	std::optional<BaseTemplate> base_template;
-
-	// If this class is typeinfo, contains source type.
-	std::optional<Type> typeinfo_type;
-
-	// Non-empty if this is a coroutine type.
-	std::optional<CoroutineTypeDescription> coroutine_type_description;
+	GeneratedClassData generated_class_data;
 
 	ClassPtr base_class= nullptr;
 	std::vector<Parent> parents; // Parents, include base class.
