@@ -1,14 +1,11 @@
 #include "../../lex_synt_lib_common/assert.hpp"
-#include "../../lex_synt_lib_common/size_assert.hpp"
 #include "syntax_analyzer.hpp"
+#include "../../lex_synt_lib_common/size_assert.hpp"
 
 namespace U
 {
 
 namespace Synt
-{
-
-namespace Asserts
 {
 
 // Sizes for x86-64.
@@ -20,8 +17,6 @@ SIZE_ASSERT( Initializer, 96u )
 SIZE_ASSERT( BlockElement, 200u )
 SIZE_ASSERT( ClassElement, 144u )
 SIZE_ASSERT( ProgramElement, 144u )
-
-}
 
 SyntaxElementBase::SyntaxElementBase( const SrcLoc& src_loc )
 	: src_loc_(src_loc)

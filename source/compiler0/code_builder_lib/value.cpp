@@ -1,8 +1,8 @@
 #include "../../lex_synt_lib_common/assert.hpp"
-#include "../../lex_synt_lib_common/size_assert.hpp"
 #include "class.hpp"
 #include "template_signature_param.hpp"
 #include "enum.hpp"
+#include "../../lex_synt_lib_common/size_assert.hpp"
 #include "value.hpp"
 
 namespace U

@@ -3,14 +3,13 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../lex_synt_lib_common/assert.hpp"
-#include "../../lex_synt_lib_common/size_assert.hpp"
 #include "keywords.hpp"
 #include "class.hpp"
 #include "coroutine.hpp"
 #include "enum.hpp"
 #include "template_types.hpp"
+#include "../../lex_synt_lib_common/size_assert.hpp"
 #include "type.hpp"
-
 
 namespace U
 {
