@@ -84,6 +84,7 @@ struct StructWithRecursiveTypeDependency
 fn RecursiveTypeDependencyTest()
 {
 	var StructWithRecursiveTypeDependency s{ .next= zero_init };
+	return;
 }
 
 fn MakeS1() : S1

@@ -685,6 +685,23 @@ fn nomangle LLVMDIBuilderCreateClassType(
 	LLVMMetadataRef TemplateParamsNode,
 	$(char8) UniqueIdentifier, size_type UniqueIdentifierLen) unsafe : LLVMMetadataRef;
 
+fn nomangle LLVMDIBuilderCreateReplaceableCompositeType(
+	LLVMDIBuilderRef Builder,
+	u32 Tag,
+	$(char8) Name, size_type NameLen,
+	LLVMMetadataRef Scope,
+	LLVMMetadataRef File,
+	u32 Line,
+	u32 RuntimeLang,
+	u64 SizeInBits,
+	u32 AlignInBits,
+	LLVMDIFlags Flags,
+	$(char8) UniqueIdentifier, size_type UniqueIdentifierLen ) unsafe : LLVMMetadataRef;
+
+fn nomangle LLVMMetadataReplaceAllUsesWith(
+	LLVMMetadataRef TempTargetMetadata,
+	LLVMMetadataRef Replacement ) unsafe;
+
 fn nomangle LLVMDIBuilderGetOrCreateSubrange(LLVMDIBuilderRef Builder, i64 LowerBound, i64 Count) unsafe : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateArrayType(

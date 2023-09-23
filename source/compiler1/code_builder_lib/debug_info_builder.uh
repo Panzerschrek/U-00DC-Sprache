@@ -37,6 +37,8 @@ private:
 
 	fn CreateFunctionDIType( mut this, FunctionType& t ) : LLVMMetadataRef;
 
+	fn BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_ );
+
 private:
 	LLVMContextRef imut llvm_context_;
 	LLVMTargetDataRef imut data_layout_;
@@ -49,6 +51,10 @@ private:
 
 	// Cache of debug info types for classes and enums.
 	ust::unordered_map</ ClassTypePtr, LLVMMetadataRef /> classes_di_types_;
+	// Populate this vector in order to perform full debug info building for classes properly.
+	ust::vector</ ClassTypePtr /> classes_order_;
+
+	// Cache of debug info types for enums.
 	ust::unordered_map</ EnumTypePtr, LLVMMetadataRef /> enums_di_types_;
 }
 

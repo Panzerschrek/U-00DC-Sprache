@@ -44,8 +44,16 @@ DebugInfoBuilder::DebugInfoBuilder(
 
 DebugInfoBuilder::~DebugInfoBuilder()
 {
-	if( builder_ != nullptr )
-		builder_->finalize(); // We must finalize it.
+	if( builder_ == nullptr )
+		return;
+
+	// Build full debug info for classes, because at this moment all classes should be complete.
+	// Use separate list since we can't iterate over classes_di_cache_ and adding new elements simultaniously.
+	// Use counter-based loop, since this container may be modified during iteration.
+	for( size_t i= 0; i < classes_order_.size(); ++i )
+		BuildClassTypeFullDebugInfo( classes_order_[i] );
+
+	builder_->finalize(); // We must finalize it.
 }
 
 void DebugInfoBuilder::CreateVariableInfo(
@@ -321,23 +329,122 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 
 	const Class& the_class= *type;
 
-	// Ignore incomplete type - do not create debug info for it.
-	if( !the_class.is_complete )
-		return stub_type_;
-
 	if( const auto it= classes_di_cache_.find(type); it != classes_di_cache_.end() )
 		return it->second;
 
-	// Insert stub first, to prevent loops.
-	classes_di_cache_.insert( std::make_pair( type, stub_type_ ) );
+	const auto di_file= GetDIFile( the_class.body_src_loc );
+
+	// Create only forward declaration.
+	// Build full body later.
+	// Doing so we prevent loops and properly handle types with recursive dependencies (like struct with raw pointer to this struct inside).
+
+	const auto forward_declaration=
+		builder_->createReplaceableCompositeType(
+			llvm::dwarf::DW_TAG_class_type,
+			Type(type).ToString(),
+			di_file,
+			di_file,
+			the_class.body_src_loc.GetLine() );
+
+	classes_di_cache_.insert( std::make_pair( type, forward_declaration ) );
+	classes_order_.push_back( type );
+
+	return forward_declaration;
+}
+
+llvm::DIType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
+{
+	U_ASSERT(builder_ != nullptr);
+
+	if( type->syntax_element != nullptr ) // Incomplete
+		return stub_type_;
+
+	if( const auto it= enums_di_cache_.find(type); it != enums_di_cache_.end() )
+		return it->second;
+
+	llvm::SmallVector<llvm::Metadata*, 16> elements;
+	type->members.ForEachInThisScope(
+		[&]( const std::string_view name, const NamesScopeValue& value )
+		{
+			const VariablePtr variable= value.value.GetVariable();
+			if( variable == nullptr )
+				return;
+
+			U_ASSERT( variable->constexpr_value != nullptr );
+
+			elements.push_back(
+				builder_->createEnumerator(
+					StringViewToStringRef( name ),
+					variable->constexpr_value->getUniqueInteger().getLimitedValue(),
+					true ) );
+		} );
+
+	// TODO - get SrcLoc for enum
+	const auto di_file= GetRootDIFile();
+
+	const auto result=
+		builder_->createEnumerationType(
+			di_file,
+			type->members.GetThisNamespaceName(),
+			di_file,
+			0u, // TODO - src_loc
+			8u * type->underlaying_type.GetSize(),
+			uint32_t(data_layout_.getABITypeAlignment( type->underlaying_type.llvm_type )),
+			builder_->getOrCreateArray(elements),
+			CreateDIType( type->underlaying_type ) );
+
+	enums_di_cache_.insert( std::make_pair( type, result ) );
+	return result;
+}
+
+llvm::DISubroutineType* DebugInfoBuilder::CreateDIFunctionType( const FunctionType& type )
+{
+	U_ASSERT(builder_ != nullptr);
+
+	llvm::SmallVector<llvm::Metadata*, 16> args;
+	args.reserve( type.params.size() + 1u );
+
+	{
+		llvm::DIType* di_type= CreateDIType( type.return_type );
+		if( type.return_value_type != ValueType::Value )
+			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( type.return_type.GetLLVMType()->getPointerTo() ) );
+		args.push_back( di_type );
+	}
+
+	for( const FunctionType::Param& param : type.params )
+	{
+		llvm::DIType* di_type= CreateDIType( param.type );
+		if( param.value_type != ValueType::Value )
+			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( param.type.GetLLVMType()->getPointerTo() ) );
+		args.push_back( di_type );
+	}
+
+	return builder_->createSubroutineType( builder_->getOrCreateTypeArray(args) );
+}
+
+void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
+{
+	if( builder_ == nullptr )
+		return;
+
+	// Create stub first.
+	// It is important, since we need to create cache value for this class, even if it was not referenced previously,
+	// because we need to build proper debug info for it in case if it will be requested by BuildClassTypeFullDebugInfo call for other class,
+	// (that for example contains this class).
+	CreateDIType( class_type );
+
+	const Class& the_class= *class_type;
+
+	const auto di_file= GetDIFile( the_class.body_src_loc );
 
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
-	// TODO - get SrcLoc for enum
-	const auto di_file= GetDIFile( the_class.body_src_loc );
-
 	ClassFieldsVector<llvm::Metadata*> fields;
-	if( the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.
+	uint64_t size_in_bits= 1;
+	uint32_t alignment_in_bits= 1;
+
+	if( the_class.is_complete && // Build proper info for complete clases.
+		the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.)
 	{
 		for( const ClassFieldPtr& class_field : the_class.fields_order )
 		{
@@ -390,16 +497,23 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 					parent_type_di );
 			fields.push_back(member);
 		}
+
+		size_in_bits= data_layout_.getTypeAllocSizeInBits( the_class.llvm_type );
+		alignment_in_bits= uint32_t( 8u * data_layout_.getABITypeAlignment( the_class.llvm_type ) );
+	}
+	else
+	{
+		// Leave fields list empty and use stub size/alignment for incomplete classes (in case of error).
 	}
 
 	const auto result=
 		builder_->createClassType(
 			di_file,
-			Type(type).ToString(),
+			Type(class_type).ToString(),
 			di_file,
 			the_class.body_src_loc.GetLine(),
-			data_layout_.getTypeAllocSizeInBits( the_class.llvm_type ),
-			uint32_t(8u * data_layout_.getABITypeAlignment( the_class.llvm_type )),
+			size_in_bits,
+			alignment_in_bits,
 			0u,
 			llvm::DINode::DIFlags(),
 			nullptr,
@@ -407,79 +521,11 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 			nullptr,
 			nullptr);
 
-	classes_di_cache_[ type ]= result;
-	return result;
-}
-
-llvm::DIType* DebugInfoBuilder::CreateDIType( const EnumPtr type )
-{
-	U_ASSERT(builder_ != nullptr);
-
-	if( type->syntax_element != nullptr ) // Incomplete
-		return stub_type_;
-
-	if( const auto it= enums_di_cache_.find(type); it != enums_di_cache_.end() )
-		return it->second;
-
-	llvm::SmallVector<llvm::Metadata*, 16> elements;
-	type->members.ForEachInThisScope(
-		[&]( const std::string_view name, const NamesScopeValue& value )
-		{
-			const VariablePtr variable= value.value.GetVariable();
-			if( variable == nullptr )
-				return;
-
-			U_ASSERT( variable->constexpr_value != nullptr );
-
-			elements.push_back(
-				builder_->createEnumerator(
-					StringViewToStringRef( name ),
-					variable->constexpr_value->getUniqueInteger().getLimitedValue(),
-					true ) );
-		} );
-
-	// TODO - get SrcLoc for enum
-	const auto di_file= GetRootDIFile();
-
-	const auto result=
-		builder_->createEnumerationType(
-			di_file,
-			type->members.GetThisNamespaceName(),
-			di_file,
-			0u, // TODO - src_loc
-			8u * type->underlaying_type.GetSize(),
-			uint32_t(data_layout_.getABITypeAlignment( type->underlaying_type.llvm_type )),
-			builder_->getOrCreateArray(elements),
-			CreateDIType( type->underlaying_type ) );
-
-	enums_di_cache_.insert( std::make_pair( type, result ) );
-	return result;
-}
-
-
-llvm::DISubroutineType* DebugInfoBuilder::CreateDIFunctionType( const FunctionType& type )
-{
-	U_ASSERT(builder_ != nullptr);
-
-	llvm::SmallVector<llvm::Metadata*, 16> args;
-	args.reserve( type.params.size() + 1u );
-
-	{
-		llvm::DIType* di_type= CreateDIType( type.return_type );
-		if( type.return_value_type != ValueType::Value )
-			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( type.return_type.GetLLVMType()->getPointerTo() ) );
-		args.push_back( di_type );
-	}
-
-	for( const FunctionType::Param& param : type.params )
-	{
-		llvm::DIType* di_type= CreateDIType( param.type );
-		if( param.value_type != ValueType::Value )
-			di_type= builder_->createPointerType( di_type, data_layout_.getTypeAllocSizeInBits( param.type.GetLLVMType()->getPointerTo() ) );
-		args.push_back( di_type );
-	}
-
-	return builder_->createSubroutineType( builder_->getOrCreateTypeArray(args) );
+	// Replace temporary forward declaration with correct node.
+	const auto cache_value= classes_di_cache_.find( class_type );
+	U_ASSERT( cache_value != classes_di_cache_.end() );
+	cache_value->second->replaceAllUsesWith( result );
+	cache_value->second= result;
 }
 
 } // namespace U
