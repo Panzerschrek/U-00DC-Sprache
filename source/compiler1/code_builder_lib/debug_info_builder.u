@@ -660,6 +660,7 @@ fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_
 		LLVMMetadataRef::Null,// VTableHolder
 		ust::nullptr</char8/>(), 0s ) );
 
+	// Replace temporary forward declaration with correct node.
 	var LLVMMetadataRef &mut cache_value= classes_di_types_.find( class_ ).try_deref(); // Should be non-empty.
 	unsafe( LLVMMetadataReplaceAllUsesWith( cache_value, di_type ) );
 	cache_value= di_type;

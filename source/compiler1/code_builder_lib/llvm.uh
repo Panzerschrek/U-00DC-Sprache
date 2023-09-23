@@ -702,8 +702,6 @@ fn nomangle LLVMMetadataReplaceAllUsesWith(
 	LLVMMetadataRef TempTargetMetadata,
 	LLVMMetadataRef Replacement ) unsafe;
 
-fn nomangle LLVMDisposeTemporaryMDNode( LLVMMetadataRef TempNode ) unsafe;
-
 fn nomangle LLVMDIBuilderGetOrCreateSubrange(LLVMDIBuilderRef Builder, i64 LowerBound, i64 Count) unsafe : LLVMMetadataRef;
 
 fn nomangle LLVMDIBuilderCreateArrayType(

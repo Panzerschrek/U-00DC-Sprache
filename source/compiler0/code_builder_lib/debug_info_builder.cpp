@@ -53,14 +53,6 @@ DebugInfoBuilder::~DebugInfoBuilder()
 	for( size_t i= 0; i < classes_order_.size(); ++i )
 		BuildClassTypeFullDebugInfo( classes_order_[i] );
 
-	// Remove temporary class forward declarations (without bodies).
-	for( const auto& class_di_type_pair : classes_di_cache_ )
-	{
-		llvm::DIType* const t= class_di_type_pair.second;
-		if( t->isTemporary() )
-			llvm::MDNode::deleteTemporary(t);
-	}
-
 	builder_->finalize(); // We must finalize it.
 }
 
@@ -529,6 +521,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 			nullptr,
 			nullptr);
 
+	// Replace temporary forward declaration with correct node.
 	const auto cache_value= classes_di_cache_.find( class_type );
 	U_ASSERT( cache_value != classes_di_cache_.end() );
 	cache_value->second->replaceAllUsesWith( result );
