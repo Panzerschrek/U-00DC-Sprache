@@ -1,4 +1,5 @@
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../../lex_synt_lib_common/size_assert.hpp"
 #include "class.hpp"
 #include "template_signature_param.hpp"
 #include "enum.hpp"
@@ -161,8 +162,8 @@ const std::string ClassField::c_generated_field_name= "_generated";
 // Value
 //
 
-static_assert( sizeof(Value) <= 56u, "Value is too heavy!" );
-static_assert( sizeof(NamesScopeValue) <= 72u, "NamesScopeValue is too heavy!" );
+SIZE_ASSERT( Value, 56u )
+SIZE_ASSERT( NamesScopeValue, 72u )
 
 Value::Value( VariablePtr variable )
 {

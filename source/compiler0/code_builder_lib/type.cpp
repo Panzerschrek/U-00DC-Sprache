@@ -3,6 +3,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../../lex_synt_lib_common/size_assert.hpp"
 #include "keywords.hpp"
 #include "class.hpp"
 #include "coroutine.hpp"
@@ -123,7 +124,7 @@ bool operator!=( const TupleType& l, const TupleType& r )
 //
 
 // No more, than 3 pointers on 64 bit platform.
-static_assert( sizeof(Type) <= 24u, "Type is too heavy!" );
+SIZE_ASSERT( Type, 24u )
 
 Type::Type( FundamentalType fundamental_type )
 	: something_( std::move(fundamental_type) )
@@ -157,7 +158,6 @@ const FundamentalType* Type::GetFundamentalType() const
 {
 	return std::get_if<FundamentalType>( &something_ );
 }
-
 
 const FunctionPointerType* Type::GetFunctionPointerType() const
 {
