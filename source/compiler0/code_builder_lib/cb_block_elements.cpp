@@ -2666,6 +2666,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
 			if( block_build_info.have_terminal_instruction_inside )
 				REPORT_ERROR( UnreachableCode, names.GetErrors(), el.src_loc );
 
+			debug_info_builder_->SetCurrentLocation( el.src_loc, function_context );
 			const BlockBuildInfo info= BuildBlockElementImpl( names, function_context, el );
 			if( info.have_terminal_instruction_inside )
 				block_build_info.have_terminal_instruction_inside= true;
