@@ -47,52 +47,6 @@ std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
 	return result;
 }
 
-std::vector<CodeBuilder::CompletionItem> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element )
-{
-	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
-	if( names_scope == nullptr )
-		return {};
-
-	BuildElementForCompletion( *names_scope, program_element );
-
-	return CompletionResultFinalize();
-}
-
-std::vector<CodeBuilder::CompletionItem> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element )
-{
-	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
-	if( names_scope == nullptr )
-		return {};
-
-	BuildElementForCompletion( *names_scope, class_element );
-
-	return CompletionResultFinalize();
-}
-
-std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element )
-{
-	// Use same routines for completion and signature help.
-
-	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
-	if( names_scope == nullptr )
-		return {};
-
-	BuildElementForCompletion( *names_scope, program_element );
-	return SignatureHelpResultFinalize();
-}
-
-std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element )
-{
-	// Use same routines for completion and signature help.
-
-	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
-	if( names_scope == nullptr )
-		return {};
-
-	BuildElementForCompletion( *names_scope, class_element );
-	return SignatureHelpResultFinalize();
-}
-
 void CodeBuilder::DeleteFunctionsBodies()
 {
 	// Delete bodies of in code.
@@ -255,16 +209,6 @@ std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::SignatureHelpResultFina
 		[]( const SignatureHelpItem& l, const SignatureHelpItem& r ) { return l.label < r.label; });
 
 	return result;
-}
-
-void CodeBuilder::BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element )
-{
-	return std::visit( [&](const auto &el){ return BuildElementForCompletionImpl( names_scope, el ); }, program_element );
-}
-
-void CodeBuilder::BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element )
-{
-	return std::visit( [&](const auto &el){ return BuildElementForCompletionImpl( names_scope, el ); }, class_element );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )

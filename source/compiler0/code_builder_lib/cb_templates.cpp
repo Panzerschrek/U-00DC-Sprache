@@ -1081,7 +1081,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	CreateTemplateErrorsContext( errors_container, src_loc, template_args_namespace, function_template, func_name );
 
 	// First, prepare only as prototype.
-	NamesScopeFill( *template_args_namespace, function_template.syntax_element->function, function_template.base_class );
+	NamesScopeFill( *template_args_namespace, *function_template.syntax_element->function, function_template.base_class );
 	OverloadedFunctionsSet& result_functions_set= *template_args_namespace->GetThisScopeValue( func_name )->value.GetFunctionsSet();
 	GlobalThingBuildFunctionsSet( *template_args_namespace, result_functions_set, false );
 
