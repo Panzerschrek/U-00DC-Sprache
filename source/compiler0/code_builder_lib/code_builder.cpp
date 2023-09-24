@@ -869,7 +869,7 @@ void CodeBuilder::CheckForUnusedGlobalNamesImpl( const NamesScope& names_scope )
 			}
 			else if(
 				value.GetTypeName() != nullptr ||
-				value.GetTypedef() != nullptr )
+				value.GetTypeAlias() != nullptr )
 			{
 				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
 			}
@@ -911,7 +911,7 @@ void CodeBuilder::CheckForUnusedLocalNames( const NamesScope& names_scope )
 				// Variable with side-effects of their existence should be marked as referenced before.
 				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
 			}
-			else if( value.GetTypeName() != nullptr || value.GetTypedef() != nullptr )
+			else if( value.GetTypeName() != nullptr || value.GetTypeAlias() != nullptr )
 			{
 				REPORT_ERROR( UnusedName, names_scope.GetErrors(), names_scope_value.src_loc, name );
 			}
@@ -2260,7 +2260,7 @@ void CodeBuilder::SetupDereferenceableFunctionParamsAndRetAttributes_r( NamesSco
 				if( const ClassPtr class_type= type->GetClassType() )
 				{
 					// Process classes only from parent namespace.
-					// Otherwise we can get loop, using typedef.
+					// Otherwise we can get loop, using type alias.
 					if( class_type->members->GetParent() == &names_scope )
 						SetupDereferenceableFunctionParamsAndRetAttributes_r( *class_type->members );
 				}

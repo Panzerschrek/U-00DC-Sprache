@@ -176,8 +176,8 @@ void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_sc
 		GlobalThingBuildFunctionsSet( names_scope, *functions_set, false );
 	else if( TypeTemplatesSet* const type_templates_set= value->value.GetTypeTemplatesSet() )
 		GlobalThingBuildTypeTemplatesSet( names_scope, *type_templates_set );
-	else if( value->value.GetTypedef() != nullptr )
-		GlobalThingBuildTypedef( names_scope, value->value );
+	else if( value->value.GetTypeAlias() != nullptr )
+		GlobalThingBuildTypeAlias( names_scope, value->value );
 	else if( value->value.GetIncompleteGlobalVariable() != nullptr )
 		GlobalThingBuildVariable( names_scope, value->value );
 	else if( const Type* const type= value->value.GetTypeName() )
@@ -242,7 +242,7 @@ std::pair<NamesScopeValue*, ClassMemberVisibility> CodeBuilder::ResolveClassValu
 	{
 		const auto visibility= class_type->GetMemberVisibility( name );
 
-		// We need to build some things right now (typedefs, global variables, etc.) in order to do this in correct namespace - namespace of class itself but not namespace of one of its child.
+		// We need to build some things right now (type aliases, global variables, etc.) in order to do this in correct namespace - namespace of class itself but not namespace of one of its child.
 
 		if( value->value.GetClassField() != nullptr )
 		{
@@ -272,9 +272,9 @@ std::pair<NamesScopeValue*, ClassMemberVisibility> CodeBuilder::ResolveClassValu
 			}
 			GlobalThingBuildTypeTemplatesSet( *class_type->members, *type_templates_set );
 		}
-		else if( value->value.GetTypedef() != nullptr )
+		else if( value->value.GetTypeAlias() != nullptr )
 		{
-			GlobalThingBuildTypedef( *class_type->members, value->value );
+			GlobalThingBuildTypeAlias( *class_type->members, value->value );
 		}
 		else if( value->value.GetIncompleteGlobalVariable() != nullptr )
 		{

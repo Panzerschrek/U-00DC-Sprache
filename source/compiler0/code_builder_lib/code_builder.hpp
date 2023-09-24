@@ -1137,7 +1137,7 @@ private:
 	void GlobalThingBuildClass( ClassPtr class_type );
 	void GlobalThingBuildEnum( EnumPtr enum_ );
 	void GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, TypeTemplatesSet& type_templates_set );
-	void GlobalThingBuildTypedef( NamesScope& names_scope, Value& typedef_value );
+	void GlobalThingBuildTypeAlias( NamesScope& names_scope, Value& type_alias_value );
 	void GlobalThingBuildVariable( NamesScope& names_scope, Value& global_variable_value );
 	size_t GlobalThingDetectloop( const GlobalThing& global_thing ); // returns loop start index or ~0u
 	void GlobalThingReportAboutLoop( size_t loop_start_stack_index, std::string_view last_loop_element_name, const SrcLoc& last_loop_element_src_loc );

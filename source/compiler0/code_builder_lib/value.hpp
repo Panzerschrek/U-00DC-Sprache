@@ -182,7 +182,7 @@ struct StaticAssert
 	const Synt::StaticAssert* syntax_element= nullptr; // Null if completed.
 };
 
-struct Typedef
+struct TypeAlias
 {
 	const Synt::TypeAlias* syntax_element= nullptr;
 };
@@ -215,7 +215,7 @@ public:
 	Value( NamesScopePtr namespace_ );
 	Value( TypeTemplatesSet type_templates );
 	Value( StaticAssert static_assert_ );
-	Value( Typedef typedef_ );
+	Value( TypeAlias type_alias );
 	Value( IncompleteGlobalVariable incomplete_global_variable );
 	Value( YetNotDeducedTemplateArg yet_not_deduced_template_arg );
 	Value( ErrorValue error_value );
@@ -242,9 +242,9 @@ public:
 	// static assert
 	StaticAssert* GetStaticAssert();
 	const StaticAssert* GetStaticAssert() const;
-	// typedef
-	Typedef* GetTypedef();
-	const Typedef* GetTypedef() const;
+	// type alias
+	TypeAlias* GetTypeAlias();
+	const TypeAlias* GetTypeAlias() const;
 	// incomplete global variable
 	IncompleteGlobalVariable* GetIncompleteGlobalVariable();
 	const IncompleteGlobalVariable* GetIncompleteGlobalVariable() const;
@@ -264,7 +264,7 @@ private:
 		NamesScopePtr,
 		TypeTemplatesSet,
 		StaticAssert,
-		Typedef,
+		TypeAlias,
 		IncompleteGlobalVariable,
 		YetNotDeducedTemplateArg,
 		ErrorValue > something_;

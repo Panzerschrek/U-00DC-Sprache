@@ -210,9 +210,9 @@ Value::Value( StaticAssert static_assert_ )
 	something_= std::move(static_assert_);
 }
 
-Value::Value( Typedef typedef_ )
+Value::Value( TypeAlias type_alias )
 {
-	something_= std::move(typedef_);
+	something_= std::move(type_alias);
 }
 
 Value::Value( IncompleteGlobalVariable incomplete_global_variable )
@@ -248,7 +248,7 @@ std::string_view Value::GetKindName() const
 		std::string_view operator()( const NamesScopePtr& ) const { return "namespace"; }
 		std::string_view operator()( const TypeTemplatesSet& ) const { return "type templates set"; }
 		std::string_view operator()( const StaticAssert& ) const { return "static assert"; }
-		std::string_view operator()( const Typedef& ) const { return "incomplete typedef"; }
+		std::string_view operator()( const TypeAlias& ) const { return "incomplete type alias"; }
 		std::string_view operator()( const IncompleteGlobalVariable& ) const { return "incomplete global variable"; }
 		std::string_view operator()( const YetNotDeducedTemplateArg& ) const { return "yet not deduced template arg"; }
 		std::string_view operator()( const ErrorValue& ) const { return "error value"; }
@@ -329,14 +329,14 @@ const StaticAssert* Value::GetStaticAssert() const
 	return std::get_if<StaticAssert>( &something_ );
 }
 
-Typedef* Value::GetTypedef()
+TypeAlias* Value::GetTypeAlias()
 {
-	return std::get_if<Typedef>( &something_ );
+	return std::get_if<TypeAlias>( &something_ );
 }
 
-const Typedef* Value::GetTypedef() const
+const TypeAlias* Value::GetTypeAlias() const
 {
-	return std::get_if<Typedef>( &something_ );
+	return std::get_if<TypeAlias>( &something_ );
 }
 
 IncompleteGlobalVariable* Value::GetIncompleteGlobalVariable()

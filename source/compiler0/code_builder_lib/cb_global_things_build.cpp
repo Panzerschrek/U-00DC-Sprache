@@ -209,7 +209,7 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 				else if( const ClassPtr class_type= type->GetClassType() )
 				{
 					// Build classes only from parent namespace.
-					// Otherwise we can get loop, using typedef.
+					// Otherwise we can get loop, using type alias.
 					if( class_type->members->GetParent() == &names_scope )
 					{
 						GlobalThingBuildClass( class_type );
@@ -227,8 +227,8 @@ void CodeBuilder::GlobalThingBuildNamespace( NamesScope& names_scope )
 			else if( value.GetErrorValue() != nullptr ){}
 			else if( const auto static_assert_= value.GetStaticAssert() )
 				BuildStaticAssert( *static_assert_, names_scope, *global_function_context_ );
-			else if( value.GetTypedef() != nullptr )
-				GlobalThingBuildTypedef( names_scope, value );
+			else if( value.GetTypeAlias() != nullptr )
+				GlobalThingBuildTypeAlias( names_scope, value );
 			else if( value.GetIncompleteGlobalVariable() != nullptr )
 				GlobalThingBuildVariable( names_scope, value );
 			else U_ASSERT(false);
@@ -624,7 +624,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 			else if( value.GetVariable() != nullptr ){}
 			else if( value.GetErrorValue() != nullptr ){}
 			else if( value.GetStaticAssert() != nullptr ){}
-			else if( value.GetTypedef() != nullptr ) {}
+			else if( value.GetTypeAlias() != nullptr ) {}
 			else if( const auto type_templates_set= value.GetTypeTemplatesSet() )
 				GlobalThingBuildTypeTemplatesSet( *the_class.members, *type_templates_set );
 			else if( value.GetIncompleteGlobalVariable() != nullptr ) {}
@@ -1035,14 +1035,14 @@ void CodeBuilder::GlobalThingBuildTypeTemplatesSet( NamesScope& names_scope, Typ
 	}
 }
 
-void CodeBuilder::GlobalThingBuildTypedef( NamesScope& names_scope, Value& type_alias_value )
+void CodeBuilder::GlobalThingBuildTypeAlias( NamesScope& names_scope, Value& type_alias_value )
 {
-	U_ASSERT( type_alias_value.GetTypedef() != nullptr );
-	const Synt::TypeAlias& syntax_element= *type_alias_value.GetTypedef()->syntax_element;
+	U_ASSERT( type_alias_value.GetTypeAlias() != nullptr );
+	const Synt::TypeAlias& syntax_element= *type_alias_value.GetTypeAlias()->syntax_element;
 
 	DETECT_GLOBALS_LOOP( &type_alias_value, syntax_element.name, syntax_element.src_loc );
 
-	// Replace value in names map, when typedef is comlete.
+	// Replace value in names map, when type alias is comlete.
 	type_alias_value= PrepareType( syntax_element.value, names_scope, *global_function_context_ );
 }
 

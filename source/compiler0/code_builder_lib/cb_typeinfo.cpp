@@ -517,8 +517,8 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr cl
 	const auto process_class_member=
 		[&]( const std::string_view name, NamesScopeValue& class_member )
 		{
-			if( class_member.value.GetTypedef() != nullptr ) // Event in complete class typedefs may be not yet complete. Complete it now.
-				GlobalThingBuildTypedef( *class_type->members, class_member.value );
+			if( class_member.value.GetTypeAlias() != nullptr ) // Event in complete class type aliases may be not yet complete. Complete it now.
+				GlobalThingBuildTypeAlias( *class_type->members, class_member.value );
 
 			const Type* const class_inner_type= class_member.value.GetTypeName();
 			if( class_inner_type == nullptr )

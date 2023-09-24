@@ -643,7 +643,7 @@ void CodeBuilder::CompleteProcessValue( const std::string_view completion_name, 
 				item.detail+= type->ToString();
 			}
 		}
-		else if( value.GetTypedef() != nullptr )
+		else if( value.GetTypeAlias() != nullptr )
 			item.kind= CompletionItemKind::Type;
 		else if( const auto class_field= value.GetClassField() )
 		{
@@ -825,7 +825,7 @@ void CodeBuilder::DeleteFunctionsBodies_r( NamesScope& names_scope )
 				if( const ClassPtr class_type= type->GetClassType() )
 				{
 					// Process classes only from parent namespace.
-					// Otherwise we can get loop, using typedef.
+					// Otherwise we can get loop, using type alias.
 					if( class_type->members->GetParent() == &names_scope )
 						DeleteFunctionsBodies_r( *class_type->members );
 				}

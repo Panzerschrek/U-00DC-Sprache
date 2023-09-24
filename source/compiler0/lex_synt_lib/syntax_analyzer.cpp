@@ -3757,7 +3757,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		Invalid,
 		Struct,
 		Class,
-		Typedef,
+		TypeAlias,
 	};
 	TemplateKind template_kind= TemplateKind::Invalid;
 
@@ -3790,7 +3790,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 		name= it_->text;
 		template_name_src_loc= it_->src_loc;
 		NextLexem();
-		template_kind= TemplateKind::Typedef;
+		template_kind= TemplateKind::TypeAlias;
 	}
 	else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 	{
@@ -3881,7 +3881,7 @@ SyntaxAnalyzer::TemplateVar SyntaxAnalyzer::ParseTemplate()
 			return std::move(class_template);
 		}
 
-	case TemplateKind::Typedef:
+	case TemplateKind::TypeAlias:
 		{
 			TypeTemplate typedef_template( template_name_src_loc );
 			typedef_template.params= std::move(params);

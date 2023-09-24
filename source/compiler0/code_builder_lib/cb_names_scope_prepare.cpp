@@ -319,16 +319,16 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enu
 		REPORT_ERROR( Redefinition, names_scope.GetErrors(), enum_declaration.src_loc, enum_declaration.name );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& typedef_declaration )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration )
 {
-	if( IsKeyword( typedef_declaration.name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), typedef_declaration.src_loc );
+	if( IsKeyword( type_alias_declaration.name ) )
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), type_alias_declaration.src_loc );
 
-	Typedef typedef_;
-	typedef_.syntax_element= &typedef_declaration;
+	TypeAlias type_alias;
+	type_alias.syntax_element= &type_alias_declaration;
 
-	if( names_scope.AddName( typedef_declaration.name, NamesScopeValue( typedef_, typedef_declaration.src_loc ) ) == nullptr )
-		REPORT_ERROR( Redefinition, names_scope.GetErrors(), typedef_declaration.src_loc, typedef_declaration.name );
+	if( names_scope.AddName( type_alias_declaration.name, NamesScopeValue( type_alias, type_alias_declaration.src_loc ) ) == nullptr )
+		REPORT_ERROR( Redefinition, names_scope.GetErrors(), type_alias_declaration.src_loc, type_alias_declaration.name );
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_declaration )
