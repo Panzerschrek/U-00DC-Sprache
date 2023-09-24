@@ -56,7 +56,4 @@ del build_dir/compiler1/Tests1.exe
 del build_dir/compiler1/Tests1.pdb
 del build_dir/compiler1/Tests1.ilk
 
-cmake --build build_dir --target Tests2
-del build_dir/compiler2/Tests2.exe
-del build_dir/compiler2/Tests2.pdb
-del build_dir/compiler2/Tests2.ilk
+# Can't build even compiler1 - there is not enough disk space for it.
