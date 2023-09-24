@@ -264,15 +264,6 @@ struct NonSyncTagNone{};
 struct NonSyncTagTrue{};
 using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, ExpressionPtr>;
 
-struct SyntaxElementBase
-{
-	explicit SyntaxElementBase( const SrcLoc& src_loc );
-	// WARNING! This struct have NO virtual destructor for, size optimization.
-	// Do not like this:  SyntaxElementBase* x= new Derived();
-
-	SrcLoc src_loc;
-};
-
 enum class MutabilityModifier : uint8_t
 {
 	None,
@@ -287,94 +278,105 @@ enum class ReferenceModifier : uint8_t
 	Reference,
 };
 
-struct TypeofTypeName final : public SyntaxElementBase
+struct TypeofTypeName
 {
 	explicit TypeofTypeName( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct RootNamespaceNameLookup final : public SyntaxElementBase
+struct RootNamespaceNameLookup
 {
 	explicit RootNamespaceNameLookup( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 };
 
 // Variant of name lookup, used internally by language server for completion.
 // In normal compilation process it is not used.
-struct RootNamespaceNameLookupCompletion final : public SyntaxElementBase
+struct RootNamespaceNameLookupCompletion
 {
 	explicit RootNamespaceNameLookupCompletion( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 };
 
-struct NameLookup final : public SyntaxElementBase
+struct NameLookup
 {
 	explicit NameLookup( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 };
 
 // Variant of name lookup, used internally by language server for completion.
 // In normal compilation process it is not used.
-struct NameLookupCompletion final : public SyntaxElementBase
+struct NameLookupCompletion
 {
 	explicit NameLookupCompletion( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 };
 
-struct NamesScopeNameFetch final : public SyntaxElementBase
+struct NamesScopeNameFetch
 {
 	explicit NamesScopeNameFetch( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 	ComplexNamePtr base;
 };
 
 // Variant of name lookup, used internally by language server for completion.
 // In normal compilation process it is not used.
-struct NamesScopeNameFetchCompletion final : public SyntaxElementBase
+struct NamesScopeNameFetchCompletion
 {
 	explicit NamesScopeNameFetchCompletion( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 	ComplexNamePtr base;
 };
 
-struct TemplateParametrization final : public SyntaxElementBase
+struct TemplateParametrization
 {
 	explicit TemplateParametrization( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::vector<Expression> template_args;
 	ComplexNamePtr base;
 };
 
-struct ArrayTypeName final : public SyntaxElementBase
+struct ArrayTypeName
 {
 	explicit ArrayTypeName( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	TypeNamePtr element_type;
 	ExpressionPtr size;
 };
 
-struct TupleType final : public SyntaxElementBase
+struct TupleType
 {
 	TupleType( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::vector<TypeName> element_types;
 };
 
-struct RawPointerType final : public SyntaxElementBase
+struct RawPointerType
 {
 	RawPointerType( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	TypeNamePtr element_type;
 };
 
-struct GeneratorType final : public SyntaxElementBase
+struct GeneratorType
 {
 public:
 	GeneratorType( const SrcLoc& src_loc );
@@ -386,6 +388,7 @@ public:
 	};
 
 public:
+	SrcLoc src_loc;
 	std::optional<MutabilityModifier> inner_reference_mutability_modifier;
 	NonSyncTag non_sync_tag;
 	TypeName return_type;
@@ -401,10 +404,11 @@ using FunctionReferencesPollutionList= std::vector<FunctionReferencesPollution>;
 struct FunctionParam;
 using FunctionParams= std::vector<FunctionParam>;
 
-struct FunctionType final : public SyntaxElementBase
+struct FunctionType
 {
 	FunctionType( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::optional<std::string> calling_convention;
 	TypeNamePtr return_type;
 	std::string return_value_reference_tag;
@@ -417,10 +421,11 @@ struct FunctionType final : public SyntaxElementBase
 	bool unsafe= false;
 };
 
-struct FunctionParam final : public SyntaxElementBase
+struct FunctionParam
 {
 	FunctionParam( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 	TypeName type;
 	std::string reference_tag;
@@ -429,198 +434,225 @@ struct FunctionParam final : public SyntaxElementBase
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
 
-struct BinaryOperator final : public SyntaxElementBase
+struct BinaryOperator
 {
 	explicit BinaryOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	BinaryOperatorType operator_type;
 	ExpressionPtr left;
 	ExpressionPtr right;
 };
 
-struct TernaryOperator final : public SyntaxElementBase
+struct TernaryOperator
 {
 	explicit TernaryOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr condition;
 	ExpressionPtr true_branch;
 	ExpressionPtr false_branch;
 };
 
-struct ReferenceToRawPointerOperator final : public SyntaxElementBase
+struct ReferenceToRawPointerOperator
 {
 	explicit ReferenceToRawPointerOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct RawPointerToReferenceOperator final : public SyntaxElementBase
+struct RawPointerToReferenceOperator
 {
 	explicit RawPointerToReferenceOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct MoveOperator final : public SyntaxElementBase
+struct MoveOperator
 {
 	MoveOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string var_name;
 	bool completion_requested= false;
 };
 
-struct TakeOperator final : public SyntaxElementBase
+struct TakeOperator
 {
 	TakeOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct CastRef final : public SyntaxElementBase
+struct CastRef
 {
 	CastRef( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	TypeNamePtr type;
 	ExpressionPtr expression;
 };
 
-struct CastRefUnsafe : public SyntaxElementBase
+struct CastRefUnsafe
 {
 	CastRefUnsafe( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	TypeNamePtr type;
 	ExpressionPtr expression;
 };
 
-struct CastImut final : public SyntaxElementBase
+struct CastImut
 {
 	CastImut( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct CastMut final : public SyntaxElementBase
+struct CastMut
 {
 	CastMut( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct TypeInfo final : public SyntaxElementBase
+struct TypeInfo
 {
 	TypeInfo( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	TypeNamePtr type;
 };
 
-struct SameType final : public SyntaxElementBase
+struct SameType
 {
 	SameType( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	TypeNamePtr l;
 	TypeNamePtr r;
 };
 
-struct NonSyncExpression final : public SyntaxElementBase
+struct NonSyncExpression
 {
 	NonSyncExpression( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	TypeNamePtr type;
 };
 
-struct SafeExpression final : public SyntaxElementBase
+struct SafeExpression
 {
 	SafeExpression( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct UnsafeExpression final : public SyntaxElementBase
+struct UnsafeExpression
 {
 	UnsafeExpression( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct BooleanConstant final : public SyntaxElementBase
+struct BooleanConstant
 {
 	BooleanConstant( const SrcLoc& src_loc, bool value );
 
-	bool value;
+	SrcLoc src_loc;
+	bool value= false;
 };
 
 using TypeSuffix= std::array<char, 7>;
 
-struct NumericConstant final : public SyntaxElementBase, public NumberLexemData
+struct NumericConstant : public NumberLexemData
 {
 	NumericConstant( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
 };
 
-struct StringLiteral final : public SyntaxElementBase
+struct StringLiteral
 {
 	StringLiteral( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string value;
 	TypeSuffix type_suffix;
 };
 
-struct UnaryPlus final : public SyntaxElementBase
+struct UnaryPlus
 {
 	explicit UnaryPlus( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct UnaryMinus final : public SyntaxElementBase
+struct UnaryMinus
 {
 	explicit UnaryMinus( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct LogicalNot final : public SyntaxElementBase
+struct LogicalNot
 {
 	explicit LogicalNot( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct BitwiseNot final : public SyntaxElementBase
+struct BitwiseNot
 {
 	explicit BitwiseNot( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 };
 
-struct CallOperator final : public SyntaxElementBase
+struct CallOperator
 {
 	CallOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 	std::vector<Expression> arguments;
 };
 
 // Special kind of call operator, created only by language server to perform signature help.
-struct CallOperatorSignatureHelp final : public SyntaxElementBase
+struct CallOperatorSignatureHelp
 {
 	CallOperatorSignatureHelp( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
-	// Fo now no need to parse arguments.
+	// For now no need to parse arguments.
 };
 
-struct IndexationOperator final : public SyntaxElementBase
+struct IndexationOperator
 {
 	explicit IndexationOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 	ExpressionPtr index;
 };
 
-struct MemberAccessOperator final : public SyntaxElementBase
+struct MemberAccessOperator
 {
 	MemberAccessOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 	std::string member_name;
 	std::optional<std::vector<Expression>> template_parameters;
@@ -628,52 +660,61 @@ struct MemberAccessOperator final : public SyntaxElementBase
 
 // Variant of member access, used internally by language server for completion.
 // In normal compilation process it is not used.
-struct MemberAccessOperatorCompletion final : public SyntaxElementBase
+struct MemberAccessOperatorCompletion
 {
 	MemberAccessOperatorCompletion( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ExpressionPtr expression;
 	std::string member_name;
 };
 
-struct SequenceInitializer final : public SyntaxElementBase
+struct SequenceInitializer
 {
 	explicit SequenceInitializer( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::vector<Initializer> initializers;
 };
 
-struct StructNamedInitializer final : public SyntaxElementBase
+struct StructNamedInitializer
 {
 	explicit StructNamedInitializer( const SrcLoc& src_loc );
 
 	struct MemberInitializer;
 
+	SrcLoc src_loc;
 	std::vector<MemberInitializer> members_initializers;
 };
 
-struct ConstructorInitializer final : public SyntaxElementBase
+struct ConstructorInitializer
 {
 	ConstructorInitializer( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::vector<Expression> arguments;
 };
 
-struct ConstructorInitializerSignatureHelp final : public SyntaxElementBase
+struct ConstructorInitializerSignatureHelp
 {
 	ConstructorInitializerSignatureHelp( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::vector<Expression> arguments;
 };
 
-struct ZeroInitializer final : public SyntaxElementBase
+struct ZeroInitializer
 {
 	explicit ZeroInitializer( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
 };
 
-struct UninitializedInitializer final : public SyntaxElementBase
+struct UninitializedInitializer
 {
 	explicit UninitializedInitializer( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
 };
 
 struct StructNamedInitializer::MemberInitializer
@@ -684,18 +725,20 @@ struct StructNamedInitializer::MemberInitializer
 	bool completion_requested= false;
 };
 
-struct Label final : public SyntaxElementBase
+struct Label
 {
 	Label( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 };
 
 // Just block - as it used as part of other syntax elements.
-struct Block : public SyntaxElementBase
+struct Block
 {
 	Block( const SrcLoc& start_src_loc );
 
+	SrcLoc src_loc;
 	SrcLoc end_src_loc;
 	BlockElements elements;
 };
@@ -712,12 +755,12 @@ struct ScopeBlock final : public Block
 		Unsafe,
 	};
 
+	SrcLoc src_loc;
 	Safety safety= Safety::None;
-
 	std::optional<Label> label;
 };
 
-struct VariablesDeclaration final : public SyntaxElementBase
+struct VariablesDeclaration
 {
 	VariablesDeclaration( const SrcLoc& src_loc );
 
@@ -730,55 +773,62 @@ struct VariablesDeclaration final : public SyntaxElementBase
 		ReferenceModifier reference_modifier= ReferenceModifier::None;
 	};
 
-	std::vector<VariableEntry> variables;
+	SrcLoc src_loc;
 	TypeName type;
+	std::vector<VariableEntry> variables;
 };
 
-struct AutoVariableDeclaration final : public SyntaxElementBase
+struct AutoVariableDeclaration
 {
 	explicit AutoVariableDeclaration( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 	Expression initializer_expression;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
 
-struct ReturnOperator final : public SyntaxElementBase
+struct ReturnOperator
 {
 	ReturnOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	Expression expression;
 };
 
-struct YieldOperator final : public SyntaxElementBase
+struct YieldOperator
 {
 	YieldOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	Expression expression;
 };
 
-struct WhileOperator final : public SyntaxElementBase
+struct WhileOperator
 {
 	WhileOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	Expression condition;
 	std::optional<Label> label;
 	BlockPtr block;
 };
 
-struct LoopOperator final : public SyntaxElementBase
+struct LoopOperator
 {
 	LoopOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::optional<Label> label;
 	BlockPtr block;
 };
 
-struct RangeForOperator final : public SyntaxElementBase
+struct RangeForOperator
 {
 	RangeForOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	std::string loop_variable_name;
@@ -787,7 +837,7 @@ struct RangeForOperator final : public SyntaxElementBase
 	BlockPtr block;
 };
 
-struct CStyleForOperator final : public SyntaxElementBase
+struct CStyleForOperator
 {
 	CStyleForOperator( const SrcLoc& src_loc );
 
@@ -808,28 +858,32 @@ struct CStyleForOperator final : public SyntaxElementBase
 			DecrementOperator > >
 	iteration_part_elements;
 
+	SrcLoc src_loc;
 	std::optional<Label> label;
 	BlockPtr block;
 };
 
-struct BreakOperator final : public SyntaxElementBase
+struct BreakOperator
 {
 	explicit BreakOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::optional<Label> label;
 };
 
-struct ContinueOperator final : public SyntaxElementBase
+struct ContinueOperator
 {
 	explicit ContinueOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::optional<Label> label;
 };
 
-struct WithOperator final : public SyntaxElementBase
+struct WithOperator
 {
 	WithOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	std::string variable_name;
@@ -837,29 +891,32 @@ struct WithOperator final : public SyntaxElementBase
 	Block block;
 };
 
-struct IfOperator final : public SyntaxElementBase
+struct IfOperator
 {
 	IfOperator( const SrcLoc& start_src_loc );
 
+	SrcLoc src_loc;
 	Expression condition;
 	Block block;
 	IfAlternativePtr alternative; // non-null if "else" branch exists.
 	SrcLoc end_src_loc;
 };
 
-struct StaticIfOperator final : public SyntaxElementBase
+struct StaticIfOperator
 {
 	StaticIfOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	Expression condition;
 	Block block;
 	IfAlternativePtr alternative; // non-null if "else" branch exists.
 };
 
-struct IfCoroAdvanceOperator final : public SyntaxElementBase
+struct IfCoroAdvanceOperator
 {
 	IfCoroAdvanceOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	std::string variable_name;
@@ -869,7 +926,7 @@ struct IfCoroAdvanceOperator final : public SyntaxElementBase
 	SrcLoc end_src_loc;
 };
 
-struct SwitchOperator final : public SyntaxElementBase
+struct SwitchOperator
 {
 	SwitchOperator( const SrcLoc& src_loc );
 
@@ -893,80 +950,90 @@ struct SwitchOperator final : public SyntaxElementBase
 		Block block;
 	};
 
+	SrcLoc src_loc;
 	Expression value;
 	std::vector<Case> cases;
 	SrcLoc end_src_loc;
 };
 
-struct SingleExpressionOperator final : public SyntaxElementBase
+struct SingleExpressionOperator
 {
 	SingleExpressionOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	Expression expression;
 };
 
-struct AssignmentOperator final : public SyntaxElementBase
+struct AssignmentOperator
 {
 	AssignmentOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	Expression l_value;
 	Expression r_value;
 };
 
-struct AdditiveAssignmentOperator final : public SyntaxElementBase
+struct AdditiveAssignmentOperator
 {
 	explicit AdditiveAssignmentOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	BinaryOperatorType additive_operation;
 	Expression l_value;
 	Expression r_value;
 };
 
-struct IncrementOperator final : public SyntaxElementBase
+struct IncrementOperator
 {
 	explicit IncrementOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	Expression expression;
 };
 
-struct DecrementOperator final : public SyntaxElementBase
+struct DecrementOperator
 {
 	explicit DecrementOperator( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	Expression expression;
 };
 
-struct StaticAssert final : public SyntaxElementBase
+struct StaticAssert
 {
 	explicit StaticAssert( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	Expression expression;
 	std::optional<std::string> message;
 };
 
-struct Halt final : public SyntaxElementBase
-
+struct Halt
 {
 	explicit Halt( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
 };
 
-struct HaltIf final : public SyntaxElementBase
+struct HaltIf
 
 {
 	explicit HaltIf( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	Expression condition;
 };
 
-struct TypeAlias final : public SyntaxElementBase
+struct TypeAlias
 {
 	explicit TypeAlias( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 	TypeName value;
 };
 
-struct Enum final : public SyntaxElementBase
+struct Enum
 {
 	explicit Enum( const SrcLoc& src_loc );
 
@@ -976,6 +1043,7 @@ struct Enum final : public SyntaxElementBase
 		std::string name;
 	};
 
+	SrcLoc src_loc;
 	std::string name;
 	std::optional<ComplexName> underlaying_type_name;
 	std::vector<Member> members;
@@ -990,7 +1058,7 @@ enum class VirtualFunctionKind : uint8_t
 	VirtualPure,
 };
 
-struct Function final : public SyntaxElementBase
+struct Function
 {
 	Function( const SrcLoc& src_loc );
 
@@ -1014,6 +1082,7 @@ struct Function final : public SyntaxElementBase
 		bool completion_requested= false;
 	};
 
+	SrcLoc src_loc;
 	std::vector<NameComponent> name; // A, A::B, A::B::C::D, ::A, ::A::B
 	Expression condition;
 	FunctionType type;
@@ -1029,10 +1098,11 @@ struct Function final : public SyntaxElementBase
 	bool constexpr_= false;
 };
 
-struct ClassField final : public SyntaxElementBase
+struct ClassField
 {
 	explicit ClassField( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	TypeName type;
 	std::string name;
 	std::unique_ptr<const Initializer> initializer; // May be null.
@@ -1058,18 +1128,19 @@ enum class ClassMemberVisibility : uint8_t
 	Private,
 };
 
-struct ClassVisibilityLabel final : public SyntaxElementBase
+struct ClassVisibilityLabel
 {
 	ClassVisibilityLabel( const SrcLoc& src_loc, ClassMemberVisibility visibility );
 
+	SrcLoc src_loc;
 	const ClassMemberVisibility visibility;
 };
 
-
-struct Class final : public SyntaxElementBase
+struct Class
 {
 	explicit Class( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	ClassElements elements;
 	std::string name;
 	std::vector<ComplexName> parents;
@@ -1078,7 +1149,7 @@ struct Class final : public SyntaxElementBase
 	bool keep_fields_order= false;
 };
 
-struct TemplateBase : public SyntaxElementBase
+struct TemplateBase
 {
 	explicit TemplateBase( const SrcLoc& src_loc );
 
@@ -1089,6 +1160,7 @@ struct TemplateBase : public SyntaxElementBase
 		std::string name;
 	};
 
+	SrcLoc src_loc;
 	std::vector<Param> params;
 };
 
@@ -1119,18 +1191,20 @@ struct FunctionTemplate final : public TemplateBase
 	FunctionPtr function;
 };
 
-struct Namespace final : public SyntaxElementBase
+struct Namespace
 {
 	explicit Namespace( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string name;
 	ProgramElements elements;
 };
 
-struct Import final : public SyntaxElementBase
+struct Import
 {
 	explicit Import( const SrcLoc& src_loc );
 
+	SrcLoc src_loc;
 	std::string import_name;
 };
 
