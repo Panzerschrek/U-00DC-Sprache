@@ -35,10 +35,6 @@ del build_dir/compiler0/Tests.exe
 del build_dir/compiler0/Tests.pdb
 del build_dir/compiler0/Tests.ilk
 
-cmake --build build_dir --target PyTestsRun
-del build_dir/compiler0/sprache_compiler_tests_py_lib.pyd
-del build_dir/compiler0/sprache_compiler_tests_py_lib.pyd.pdb
-
 cmake --build build_dir --target LanguageServerTests
 del build_dir/language_server/LanguageServerTests.exe
 del build_dir/language_server/LanguageServerTests.pdb
@@ -60,15 +56,7 @@ del build_dir/compiler1/Tests1.exe
 del build_dir/compiler1/Tests1.pdb
 del build_dir/compiler1/Tests1.ilk
 
-cmake --build build_dir --target PyTestsRun1
-del build_dir/compiler1/sprache_compiler_tests_py_lib.pyd
-del build_dir/compiler1/sprache_compiler_tests_py_lib.pyd.pdb
-
 cmake --build build_dir --target Tests2
 del build_dir/compiler2/Tests2.exe
 del build_dir/compiler2/Tests2.pdb
 del build_dir/compiler2/Tests2.ilk
-
-cmake --build build_dir --target PyTestsRun2
-del build_dir/compiler2/sprache_compiler_tests_py_lib.pyd
-del build_dir/compiler2/sprache_compiler_tests_py_lib.pyd.pdb
