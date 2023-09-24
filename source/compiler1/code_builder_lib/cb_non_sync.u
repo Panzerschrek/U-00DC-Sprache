@@ -140,9 +140,9 @@ fn CodeBuilder::GetTypeNonSyncImpl( mut this, ust::vector</Type/> &mut prev_type
 			}
 		}
 
-		with( &class_ : class_type.lock_imut().deref() )
+		if_var( &coroutine_type_description : class_type.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />() )
 		{
-			if( !class_.coroutine_type_description.empty() && class_.coroutine_type_description.try_deref().non_sync_ )
+			if( coroutine_type_description.non_sync_ )
 			{
 				prev_types_stack.pop_back();
 				return true;

@@ -181,13 +181,12 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 
 	names_scope.AddName( class_name, NamesScopeValue( Type( class_type ), class_declaration.src_loc ) );
 	class_type->syntax_element= &class_declaration;
-	class_type->body_src_loc= class_declaration.src_loc;
+	class_type->src_loc= class_declaration.src_loc;
 	class_type->llvm_type= llvm::StructType::create( llvm_context_, mangler_->MangleType( class_type ) );
 
 	class_type->members->AddAccessRightsFor( class_type, ClassMemberVisibility::Private );
 	class_type->members->SetClass( class_type );
 
-	class_type->body_src_loc= class_declaration.src_loc;
 	class_type->syntax_element= &class_declaration;
 
 	struct Visitor final

@@ -332,7 +332,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 	if( const auto it= classes_di_cache_.find(type); it != classes_di_cache_.end() )
 		return it->second;
 
-	const auto di_file= GetDIFile( the_class.body_src_loc );
+	const auto di_file= GetDIFile( the_class.src_loc );
 
 	// Create only forward declaration.
 	// Build full body later.
@@ -344,7 +344,7 @@ llvm::DIType* DebugInfoBuilder::CreateDIType( const ClassPtr type )
 			Type(type).ToString(),
 			di_file,
 			di_file,
-			the_class.body_src_loc.GetLine() );
+			the_class.src_loc.GetLine() );
 
 	classes_di_cache_.insert( std::make_pair( type, forward_declaration ) );
 	classes_order_.push_back( type );
@@ -435,7 +435,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 
 	const Class& the_class= *class_type;
 
-	const auto di_file= GetDIFile( the_class.body_src_loc );
+	const auto di_file= GetDIFile( the_class.src_loc );
 
 	const llvm::StructLayout& struct_layout= *data_layout_.getStructLayout( the_class.llvm_type );
 
@@ -444,7 +444,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 	uint32_t alignment_in_bits= 1;
 
 	if( the_class.is_complete && // Build proper info for complete clases.
-		the_class.typeinfo_type == std::nullopt ) // Skip typeinfo, because it may contain recursive structures.)
+		std::get_if<Class::TypeinfoClassDescription>( &the_class.generated_class_data ) == nullptr ) // Skip typeinfo, because it may contain recursive structures.
 	{
 		for( const ClassFieldPtr& class_field : the_class.fields_order )
 		{
@@ -511,7 +511,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 			di_file,
 			Type(class_type).ToString(),
 			di_file,
-			the_class.body_src_loc.GetLine(),
+			the_class.src_loc.GetLine(),
 			size_in_bits,
 			alignment_in_bits,
 			0u,

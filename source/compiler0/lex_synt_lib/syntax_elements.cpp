@@ -1,5 +1,6 @@
 #include "../../lex_synt_lib_common/assert.hpp"
 #include "syntax_analyzer.hpp"
+#include "../../lex_synt_lib_common/size_assert.hpp"
 
 namespace U
 {
@@ -7,20 +8,15 @@ namespace U
 namespace Synt
 {
 
-namespace Asserts
-{
-
 // Sizes for x86-64.
 // If one of types inside variant becomes too big, put it inside "unique_ptr".
-static_assert( sizeof(ComplexName) <= 56u, "Size of variant too big" );
-static_assert( sizeof(TypeName) <= 64u, "Size of variant too big" );
-static_assert( sizeof(Expression) <= 88u, "Size of variant too big" );
-static_assert( sizeof(Initializer) <= 96u, "Size of variant too big" );
-static_assert( sizeof(BlockElement) <= 200u, "Size of variant too big" );
-static_assert( sizeof(ClassElement) <= 144u, "Size of variant too big" );
-static_assert( sizeof(ProgramElement) <= 144u, "Size of variant too big" );
-
-}
+SIZE_ASSERT( ComplexName, 56u )
+SIZE_ASSERT( TypeName, 64u )
+SIZE_ASSERT( Expression, 88u )
+SIZE_ASSERT( Initializer, 96u )
+SIZE_ASSERT( BlockElement, 200u )
+SIZE_ASSERT( ClassElement, 144u )
+SIZE_ASSERT( ProgramElement, 144u )
 
 TypeofTypeName::TypeofTypeName( const SrcLoc& src_loc )
 	: src_loc(src_loc)

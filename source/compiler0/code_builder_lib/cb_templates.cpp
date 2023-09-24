@@ -734,14 +734,14 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		if( const auto given_class= given_type->GetClassType() )
 		{
-			if( given_class->coroutine_type_description != std::nullopt )
+			if( const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &given_class->generated_class_data ) )
 			{
 				return
-					given_class->coroutine_type_description->kind == template_param.kind &&
-					given_class->coroutine_type_description->return_value_type == template_param.return_value_type &&
-					given_class->coroutine_type_description->inner_reference_type == template_param.inner_reference_type &&
-					given_class->coroutine_type_description->non_sync == template_param.non_sync &&
-					MatchTemplateArg( template_, args_names_scope, given_class->coroutine_type_description->return_type, *template_param.return_type );
+					coroutine_type_description->kind == template_param.kind &&
+					coroutine_type_description->return_value_type == template_param.return_value_type &&
+					coroutine_type_description->inner_reference_type == template_param.inner_reference_type &&
+					coroutine_type_description->non_sync == template_param.non_sync &&
+					MatchTemplateArg( template_, args_names_scope, coroutine_type_description->return_type, *template_param.return_type );
 			}
 		}
 	}
@@ -758,25 +758,25 @@ bool CodeBuilder::MatchTemplateArgImpl(
 	{
 		if( const auto given_class_type= given_type->GetClassType() )
 		{
-			const Class& given_class= *given_class_type;
-
-			if( !(
-					given_class.base_template != std::nullopt &&
-					std::find(
-						template_param.type_templates.begin(),
-						template_param.type_templates.end(),
-						given_class.base_template->class_template ) != template_param.type_templates.end() &&
-					template_param.params.size() == given_class.base_template->signature_args.size()
-				) )
-				return false;
-
-			for( size_t i= 0; i < template_param.params.size(); ++i )
+			if( const auto base_template= std::get_if< Class::BaseTemplate >( &given_class_type->generated_class_data ) )
 			{
-				if( !MatchTemplateArg( template_, args_names_scope, given_class.base_template->signature_args[i], template_param.params[i] ) )
+				if( !(
+						std::find(
+							template_param.type_templates.begin(),
+							template_param.type_templates.end(),
+							base_template->class_template ) != template_param.type_templates.end() &&
+						template_param.params.size() == base_template->signature_args.size()
+					) )
 					return false;
-			}
 
-			return true;
+				for( size_t i= 0; i < template_param.params.size(); ++i )
+				{
+					if( !MatchTemplateArg( template_, args_names_scope, base_template->signature_args[i], template_param.params[i] ) )
+						return false;
+				}
+
+				return true;
+			}
 		}
 	}
 
@@ -915,9 +915,7 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 
 		Class& the_class= *class_type;
 		// Save in class info about its base template.
-		the_class.base_template.emplace();
-		the_class.base_template->class_template= type_template_ptr;
-		the_class.base_template->signature_args= template_type_preparation_result.signature_args;
+		the_class.generated_class_data= Class::BaseTemplate{ type_template_ptr, template_type_preparation_result.signature_args };
 
 		template_classes_cache_[name_encoded]= class_type;
 

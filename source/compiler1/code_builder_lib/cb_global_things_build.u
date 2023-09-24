@@ -304,11 +304,15 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	{
 		return;
 	}
+	with( mut lock : class_type.lock_imut() )
 	{
-		auto typeinfo_src_type= class_type.lock_imut().deref().typeinfo_src_type_;
-		if( !typeinfo_src_type.empty() )
+		auto mut description_opt= lock.deref().generated_class_data.get</ ClassType::TypeinfoClassDescription />();
+		if( !description_opt.empty() )
 		{
-			BuildFullTypeinfo( typeinfo_src_type.try_deref() );
+			var Type t= description_opt.try_deref().source_type;
+			move(description_opt);
+			move(lock);
+			BuildFullTypeinfo( t );
 			return;
 		}
 	}
