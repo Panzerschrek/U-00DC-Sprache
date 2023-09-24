@@ -2955,10 +2955,10 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 				return nullptr;
 			}
 
-			/*
-			if( const auto block_node= std::get_if< std::unique_ptr< BlockElementsListNode< ScopeBlock > > >( &list_node ) )
+
+			if( auto scope_block= list.TryTakeStart<ScopeBlock>() )
 			{
-				ScopeBlock& block= (*block_node)->payload;
+				ScopeBlock& block= *scope_block;
 				if( block.safety == ScopeBlock::Safety::None && block.label == std::nullopt )
 				{
 					// Accept only pure blocks without safety modifiers and labels.
@@ -2973,13 +2973,13 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 					return nullptr;
 				}
 			}
-			if( const auto if_operator_node= std::get_if< std::unique_ptr< BlockElementsListNode< IfOperator > > >( &list_node ) )
-				return std::make_unique<IfAlternative>( std::move((*if_operator_node)->payload) );
-			if( const auto static_if_operator_node= std::get_if< std::unique_ptr< BlockElementsListNode< StaticIfOperator > > >( &list_node ) )
-				return std::make_unique<IfAlternative>( std::move((*static_if_operator_node)->payload) );
-			if( const auto if_coro_advance_operator_node= std::get_if< std::unique_ptr< BlockElementsListNode< IfCoroAdvanceOperator > > >( &list_node ) )
-				return std::make_unique<IfAlternative>( std::move((*if_coro_advance_operator_node)->payload) );
-			*/
+
+			if( auto if_operator= list.TryTakeStart< IfOperator >() )
+				return std::make_unique<IfAlternative>( std::move( *if_operator ) );
+			if( auto static_if= list.TryTakeStart< StaticIfOperator >() )
+				return std::make_unique<IfAlternative>( std::move( *static_if ) );
+			if( auto if_coro_advance_operator= list.TryTakeStart< IfCoroAdvanceOperator >() )
+				return std::make_unique<IfAlternative>( std::move( *if_coro_advance_operator ) );
 
 			LexSyntError error_message;
 			error_message.src_loc= it_->src_loc;

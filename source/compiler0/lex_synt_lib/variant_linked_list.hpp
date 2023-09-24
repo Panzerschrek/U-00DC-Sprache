@@ -16,14 +16,20 @@ public:
 		return std::visit( []( const auto& el ) { return HasTailImpl(el); }, start_ );
 	}
 
+	template<typename T>
+	std::optional<T> TryTakeStart()
+	{
+		if( const auto v= std::get_if< NodePtr<T> >( &start_ ) )
+			return std::move( (*v)->payload );
+		return std::nullopt;
+	}
+
 	template< typename Func >
 	void Iter( const Func& func ) const
 	{
 		const VariantElement* cur= &start_;
 		while( cur != nullptr )
-		{
 			cur= std::visit( [&]( const auto& el ){ return IterElement( el, func ); }, *cur );
-		}
 	}
 
 private:
@@ -50,8 +56,7 @@ public:
 	public:
 		Builder()
 			: tail_(&result_.start_)
-		{
-		}
+		{}
 
 		Builder( const Builder& )= delete;
 		Builder( Builder&& )= delete;
