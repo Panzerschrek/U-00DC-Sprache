@@ -123,7 +123,6 @@ struct Namespace;
 
 using FunctionTypePtr= std::unique_ptr<const FunctionType>;
 using GeneratorTypePtr= std::unique_ptr<const GeneratorType>;
-using BlockPtr= std::unique_ptr<const Block>;
 using ClassPtr= std::unique_ptr<const Class>;
 using FunctionPtr= std::unique_ptr<const Function>;
 using NamespacePtr= std::unique_ptr<const Namespace>;
@@ -832,7 +831,7 @@ struct WhileOperator
 	SrcLoc src_loc;
 	Expression condition;
 	std::optional<Label> label;
-	BlockPtr block;
+	Block block;
 };
 
 struct LoopOperator
@@ -841,7 +840,7 @@ struct LoopOperator
 
 	SrcLoc src_loc;
 	std::optional<Label> label;
-	BlockPtr block;
+	Block block;
 };
 
 struct RangeForOperator
@@ -854,7 +853,7 @@ struct RangeForOperator
 	std::string loop_variable_name;
 	Expression sequence;
 	std::optional<Label> label;
-	BlockPtr block;
+	Block block;
 };
 
 struct CStyleForOperator
@@ -880,7 +879,7 @@ struct CStyleForOperator
 
 	SrcLoc src_loc;
 	std::optional<Label> label;
-	BlockPtr block;
+	Block block;
 };
 
 struct BreakOperator
@@ -1036,7 +1035,6 @@ struct Halt
 };
 
 struct HaltIf
-
 {
 	explicit HaltIf( const SrcLoc& src_loc );
 
@@ -1107,7 +1105,7 @@ struct Function
 	Expression condition;
 	FunctionType type;
 	std::unique_ptr<const StructNamedInitializer> constructor_initialization_list;
-	BlockPtr block;
+	std::unique_ptr<const Block> block;
 	OverloadedOperator overloaded_operator= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind= VirtualFunctionKind::None;
 	BodyKind body_kind= BodyKind::None;

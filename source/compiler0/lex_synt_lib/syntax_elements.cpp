@@ -230,20 +230,20 @@ Label::Label( const SrcLoc& src_loc )
 	: src_loc(src_loc)
 {}
 
-WhileOperator::WhileOperator( const SrcLoc& src_loc)
-	: src_loc(src_loc)
+WhileOperator::WhileOperator( const SrcLoc& src_loc )
+	: src_loc(src_loc), block(src_loc)
 {}
 
-LoopOperator::LoopOperator( const SrcLoc& src_loc)
-	: src_loc(src_loc)
+LoopOperator::LoopOperator( const SrcLoc& src_loc )
+	: src_loc(src_loc), block(src_loc)
 {}
 
-RangeForOperator::RangeForOperator( const SrcLoc& src_loc)
-	: src_loc(src_loc)
+RangeForOperator::RangeForOperator( const SrcLoc& src_loc )
+	: src_loc(src_loc), block(src_loc)
 {}
 
-CStyleForOperator::CStyleForOperator( const SrcLoc& src_loc)
-	: src_loc(src_loc)
+CStyleForOperator::CStyleForOperator( const SrcLoc& src_loc )
+	: src_loc(src_loc), block(src_loc)
 {}
 
 BreakOperator::BreakOperator( const SrcLoc& src_loc )

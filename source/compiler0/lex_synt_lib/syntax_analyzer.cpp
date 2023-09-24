@@ -169,6 +169,7 @@ bool BlockElementsListHasTail( const BlockElementPtr& node )
 	return std::visit( []( const auto& el ) { return BlockElementsListHasTailImpl(el); }, node );
 }
 
+// By declaring this class and all its methods locally( using anonymous namespace ) we allow complier to optimize methods of this class aggressively (using inlining where it is possible).
 class SyntaxAnalyzer final
 {
 public:
@@ -2260,8 +2261,7 @@ WhileOperator SyntaxAnalyzer::ParseWhileOperator()
 
 	result.condition= ParseExpressionInBrackets();
 	result.label= TryParseLabel();
-
-	result.block= std::make_unique<Block>( ParseBlock() );
+	result.block= ParseBlock();
 	return result;
 }
 
@@ -2272,7 +2272,7 @@ LoopOperator SyntaxAnalyzer::ParseLoopOperator()
 	NextLexem();
 
 	result.label= TryParseLabel();
-	result.block= std::make_unique<Block>( ParseBlock() );
+	result.block= ParseBlock();
 
 	return result;
 }
@@ -2333,8 +2333,8 @@ RangeForOperator SyntaxAnalyzer::ParseRangeForOperator()
 	ExpectLexem( Lexem::Type::BracketRight );
 
 	result.label= TryParseLabel();
+	result.block= ParseBlock();
 
-	result.block= std::make_unique<Block>( ParseBlock() );
 	return result;
 }
 
@@ -2437,8 +2437,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 	ExpectLexem( Lexem::Type::BracketRight );
 
 	result.label= TryParseLabel();
-
-	result.block= std::make_unique<Block>( ParseBlock() );
+	result.block= ParseBlock();
 
 	return result;
 }

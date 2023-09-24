@@ -891,7 +891,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			// TODO - create template errors context.
 			// Build block without creating inner namespace - reuse namespace of tuple-for variable.
-			const BlockBuildInfo inner_block_build_info= BuildBlockElements( loop_names, function_context, range_for_operator.block->elements );
+			const BlockBuildInfo inner_block_build_info= BuildBlockElements( loop_names, function_context, range_for_operator.block.elements );
 			if( !inner_block_build_info.have_terminal_instruction_inside )
 			{
 				CallDestructors( element_pass_variables_storage, names, function_context, range_for_operator.src_loc );
@@ -902,7 +902,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Variables state for next iteration is combination of variables states in "continue" branches in previous iteration.
 			const bool continue_branches_is_empty= function_context.loops_stack.back().continue_variables_states.empty();
 			if( !continue_branches_is_empty )
-				function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), range_for_operator.block->end_src_loc );
+				function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), range_for_operator.block.end_src_loc );
 
 			for( ReferencesGraph& variables_state : function_context.loops_stack.back().break_variables_states )
 				break_variables_states.push_back( std::move(variables_state) );
@@ -944,7 +944,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{} // Just keep variables state.
 		// Variables state after tuple-for is combination of variables state of all branches with "break" of all iterations.
 		else if( !break_variables_states.empty() )
-			function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), range_for_operator.block->end_src_loc );
+			function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), range_for_operator.block.end_src_loc );
 		else
 			block_build_info.have_terminal_instruction_inside= true;
 	}
@@ -1025,7 +1025,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	const BlockBuildInfo loop_body_block_info= BuildBlock( loop_names_scope, function_context, *c_style_for_operator.block );
+	const BlockBuildInfo loop_body_block_info= BuildBlock( loop_names_scope, function_context, c_style_for_operator.block );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( loop_iteration_block );
@@ -1034,7 +1034,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	// Variables state before loop iteration block is combination of variables states of each branch terminated with "continue".
 	if( !function_context.loops_stack.back().continue_variables_states.empty() )
-		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block->end_src_loc );
+		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block.end_src_loc );
 
 	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
 	variables_state_for_merge.push_back( std::move(variables_state_after_test_block) );
@@ -1057,10 +1057,10 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
 	// Disallow outer variables state change in loop iteration part and its predecessors.
-	const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block->end_src_loc );
+	const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block.end_src_loc );
 	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 
-	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.block->end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.block.end_src_loc );
 
 	// Block after loop.
 	function_context.function->getBasicBlockList().push_back( block_after_loop );
@@ -1117,7 +1117,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
 
-	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, *while_operator.block );
+	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, while_operator.block );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( test_block );
@@ -1131,7 +1131,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Disallow outer variables state change in "continue" branches.
 	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
 	{
-		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, while_operator.block->end_src_loc );
+		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, while_operator.block.end_src_loc );
 		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 	}
 
@@ -1141,7 +1141,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.loops_stack.pop_back();
 
 	// Result variables state is combination of variables state before loop and variables state of all branches terminated with "break".
-	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), while_operator.block->end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), while_operator.block.end_src_loc );
 
 	return BlockBuildInfo();
 }
@@ -1164,7 +1164,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, *loop_operator.block );
+	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, loop_operator.block );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( loop_block );
@@ -1174,7 +1174,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Disallow outer variables state change in "continue" branches.
 	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
 	{
-		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, loop_operator.block->end_src_loc );
+		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, loop_operator.block.end_src_loc );
 		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 	}
 
@@ -1183,7 +1183,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.loops_stack.pop_back();
 
 	// Result variables state is combination of variables state of all branches terminated with "break".
-	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), loop_operator.block->end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), loop_operator.block.end_src_loc );
 
 	// This loop is terminal, if it contains no "break" inside - only "break" to outer labels or "return".
 	// Any code, that follows infinite loop without "break" inside is unreachable.
