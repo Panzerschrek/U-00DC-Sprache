@@ -1,0 +1,17 @@
+name: WindowsBuildAdvanced
+
+on: [workflow_dispatch]
+
+jobs:
+  build_windows_debug:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v1
+    - name: build project
+      run: ./ci/build_debug_windows.ps1
+  build_windows_release_32:
+    runs-on: windows-2019
+    steps:
+    - uses: actions/checkout@v1
+    - name: build project
+      run: ./ci/build_release_windows_32.ps1

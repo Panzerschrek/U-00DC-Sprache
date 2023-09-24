@@ -1546,7 +1546,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	const VariablePtr coro_expr= BuildExpressionCodeEnsureVariable( if_coro_advance.expression, names, function_context );
 
 	const ClassPtr coro_class_type= coro_expr->type.GetClassType();
-	if( coro_class_type == nullptr || coro_class_type->coroutine_type_description == std::nullopt )
+	if( coro_class_type == nullptr || std::get_if< CoroutineTypeDescription >( &coro_class_type->generated_class_data ) == nullptr )
 	{
 		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names.GetErrors(), if_coro_advance.src_loc_, coro_expr->type );
 		return BlockBuildInfo();
@@ -1616,11 +1616,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( not_done_after_resume_block );
 	function_context.llvm_ir_builder.SetInsertPoint( not_done_after_resume_block );
 
-	EnsureTypeComplete( coro_class_type->coroutine_type_description->return_type );
+	const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &coro_class_type->generated_class_data );
+	U_ASSERT( coroutine_type_description != nullptr );
+
+	EnsureTypeComplete( coroutine_type_description->return_type );
 
 	llvm::Type* const promise_llvm_type=
-		coro_class_type->coroutine_type_description->return_value_type == ValueType::Value
-			? coro_class_type->coroutine_type_description->return_type.GetLLVMType()
+		coroutine_type_description->return_value_type == ValueType::Value
+			? coroutine_type_description->return_type.GetLLVMType()
 			: llvm::PointerType::get( llvm_context_, 0 );
 
 	llvm::Value* const promise=
@@ -1637,8 +1640,8 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	{
 		StackVariablesStorage coro_result_variables_storage( function_context );
 
-		const Type& result_type= coro_class_type->coroutine_type_description->return_type;
-		const ValueType result_value_type= coro_class_type->coroutine_type_description->return_value_type;
+		const Type& result_type= coroutine_type_description->return_type;
+		const ValueType result_value_type= coroutine_type_description->return_value_type;
 
 		const VariableMutPtr variable_reference=
 			std::make_shared<Variable>(

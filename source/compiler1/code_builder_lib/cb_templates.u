@@ -873,7 +873,7 @@ fn CodeBuilder::FinishTypeTemplateGeneration(
 				.signature_args= template_args_evaluation_result.signature_args,
 			};
 
-			lock.deref().base_template= move(base_template);
+			lock.deref().generated_class_data= move(base_template);
 		}
 
 		auto mangled_llvm_type_name= mangler_.deref().MangleType( class_type.try_to_non_nullable() );
@@ -1573,17 +1573,14 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	{
 		if_var( &class_type : given_type.GetClassType() )
 		{
-			with( &class_ : class_type.lock_imut().deref() )
+			if_var( &coroutine_type_description : class_type.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />() )
 			{
-				if_var( &coroutine_type_description : class_.coroutine_type_description )
-				{
-					return
-						coroutine_type_description.kind == coroutine_type_param.kind &&
-						coroutine_type_description.return_value_type == coroutine_type_param.return_value_type &&
-						coroutine_type_description.inner_reference_kind == coroutine_type_param.inner_reference_kind &&
-						coroutine_type_description.non_sync_ == coroutine_type_param.non_sync_ &&
-						MatchTemplateArgument( names_scope, template_, coroutine_type_param.return_type, coroutine_type_description.return_type );
-				}
+				return
+					coroutine_type_description.kind == coroutine_type_param.kind &&
+					coroutine_type_description.return_value_type == coroutine_type_param.return_value_type &&
+					coroutine_type_description.inner_reference_kind == coroutine_type_param.inner_reference_kind &&
+					coroutine_type_description.non_sync_ == coroutine_type_param.non_sync_ &&
+					MatchTemplateArgument( names_scope, template_, coroutine_type_param.return_type, coroutine_type_description.return_type );
 			}
 		}
 	}
@@ -1602,8 +1599,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 	{
 		if_var( &class_type : given_type.GetClassType() )
 		{
-			auto class_type_lock= class_type.lock_imut();
-			if_var( &base_template : class_type_lock.deref().base_template )
+			if_var( &base_template : class_type.lock_imut().deref().generated_class_data.get</ ClassType::BaseTemplate />() )
 			{
 				auto mut is_one_of_templates= false;
 				foreach( &type_template_ptr : specialized_template_param.type_templates_set.lock_imut().deref().type_templates )

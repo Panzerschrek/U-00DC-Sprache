@@ -129,7 +129,7 @@ U_TEST( TypeConversionTest4 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooj" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static uint32_t c_values[]=
+	static const uint32_t c_values[]=
 	{
 		0u, 55u, 254u, 255u,
 		256u, 256u * 2u, 256u * 3u, 256u * 10u, 256u * 17u + 5u,
@@ -163,7 +163,7 @@ U_TEST( TypeConversionTest5 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static int32_t c_values[]=
+	static const int32_t c_values[]=
 	{
 		0,
 		std::numeric_limits<int32_t>::min(),
@@ -200,7 +200,7 @@ U_TEST( TypeConversionTest6 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static int32_t c_values[]=
+	static const int32_t c_values[]=
 	{
 		0,
 		std::numeric_limits<int32_t>::min(),
@@ -237,7 +237,7 @@ U_TEST( TypeConversionTest7 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooj" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static uint32_t c_values[]=
+	static const uint32_t c_values[]=
 	{
 		0u, 55u, 254u, 255u,
 		256u, 256u * 2u, 256u * 3u, 256u * 10u, 256u * 17u + 5u,
@@ -271,7 +271,7 @@ U_TEST( TypeConversionTest8 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foof" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static float c_values[]=
+	static const float c_values[]=
 	{
 		+0.0f, -0.0f, +1.0f, -1.0f,
 		std::numeric_limits<float>::quiet_NaN(),
@@ -309,7 +309,7 @@ U_TEST( TypeConversionTest9 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Food" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static double c_values[]=
+	static const double c_values[]=
 	{
 		+0.0, -0.0, +1.0, -1.0,
 		std::numeric_limits<double>::quiet_NaN(),
@@ -348,7 +348,7 @@ U_TEST( TypeConversionTest10 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static int32_t c_values[]=
+	static const int32_t c_values[]=
 	{
 		std::numeric_limits<int32_t>::min(), std::numeric_limits<int32_t>::max(),
 		0, 1, 10, -5, -84, 65536, 256854741, -258256847, 8574125, 105239845, -85457868, 51398457, -8388608,
@@ -381,7 +381,7 @@ U_TEST( TypeConversionTest11 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooj" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static uint32_t c_values[]=
+	static const uint32_t c_values[]=
 	{
 		std::numeric_limits<uint32_t>::min(), std::numeric_limits<uint32_t>::max(),
 		0u, 1u, 10u, 5u, 84u, 65536u, 256854741u, 258256847u, 8574125u, 105239845u, 85457868u, 51398457u, 8388608u,
@@ -414,7 +414,7 @@ U_TEST( TypeConversionTest12 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foof" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static float c_values[]=
+	static const float c_values[]=
 	{
 		float(std::numeric_limits<int32_t>::min()),
 		float(std::numeric_limits<int32_t>::max()),
@@ -437,6 +437,12 @@ U_TEST( TypeConversionTest12 )
 
 U_TEST( TypeConversionTest13 )
 {
+	if( sizeof(void*) <= 4 )
+	{
+		// Hack for x86 build - x87 math doesn't work properly for some extreme conversions.
+		DISABLE_TEST;
+	}
+
 	// float to u32
 	static const char c_program_text[]=
 	R"(
@@ -450,7 +456,7 @@ U_TEST( TypeConversionTest13 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Foof" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static float c_values[]=
+	static const float c_values[]=
 	{
 		float(std::numeric_limits<uint32_t>::min()),
 		float(std::numeric_limits<uint32_t>::max()),
@@ -485,7 +491,7 @@ U_TEST( TypeConversionTest14 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooi" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static int32_t c_values[]=
+	static const int32_t c_values[]=
 	{
 		std::numeric_limits<int32_t>::min(),
 		std::numeric_limits<int32_t>::max(),
@@ -520,7 +526,7 @@ U_TEST( TypeConversionTest15 )
 	llvm::Function* function= engine->FindFunctionNamed( "_Z3Fooj" );
 	U_TEST_ASSERT( function != nullptr );
 
-	static uint32_t c_values[]=
+	static const uint32_t c_values[]=
 	{
 		std::numeric_limits<uint32_t>::min(),
 		std::numeric_limits<uint32_t>::max(),

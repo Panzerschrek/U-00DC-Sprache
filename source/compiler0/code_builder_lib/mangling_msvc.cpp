@@ -385,7 +385,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 	{
 		mangler_state.PushElement( g_class_type_prefix );
 
-		if( class_type->typeinfo_type != std::nullopt )
+		if( const auto typeinfo_class_description= std::get_if< Class::TypeinfoClassDescription>( &class_type->generated_class_data ) )
 		{
 			// Encode typeinfo, like type template.
 
@@ -396,7 +396,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 
 				template_mangler_state.PushElement( g_template_prefix );
 				template_mangler_state.EncodeName( class_type->members->GetThisNamespaceName() );
-				EncodeType( template_mangler_state, *class_type->typeinfo_type );
+				EncodeType( template_mangler_state, typeinfo_class_description->source_type );
 				// Finish list of template arguments.
 				template_mangler_state.PushElement( g_terminator );
 			}
@@ -404,13 +404,13 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 			// Finish class name.
 			mangler_state.PushElement( g_terminator );
 		}
-		else if( class_type->base_template != std::nullopt )
+		else if( std::get_if< Class::BaseTemplate >( &class_type->generated_class_data ) != nullptr )
 		{
 			EncodeTemplateClassName( mangler_state, class_type );
 			// Finish list of name components.
 			mangler_state.PushElement( g_terminator );
 		}
-		else if( class_type->coroutine_type_description != std::nullopt )
+		else if( std::get_if< CoroutineTypeDescription >( &class_type->generated_class_data ) != nullptr )
 		{
 			EncodeCoroutineClassName( mangler_state, class_type );
 			// Finish list of name components.
@@ -650,12 +650,12 @@ void ManglerMSVC::EncodeNamespacePostfix_r( ManglerState& mangler_state, const N
 
 	if( const ClassPtr the_class= scope.GetClass() )
 	{
-		if( the_class->base_template != std::nullopt )
+		if( std::get_if<Class::BaseTemplate>( &the_class->generated_class_data ) != nullptr )
 		{
 			EncodeTemplateClassName( mangler_state, the_class );
 			return;
 		}
-		if( the_class->coroutine_type_description != std::nullopt )
+		if(std::get_if<CoroutineTypeDescription>( &the_class->generated_class_data ) != nullptr )
 		{
 			EncodeCoroutineClassName( mangler_state, the_class );
 			return;
@@ -669,9 +669,10 @@ void ManglerMSVC::EncodeNamespacePostfix_r( ManglerState& mangler_state, const N
 
 void ManglerMSVC::EncodeTemplateClassName( ManglerState& mangler_state, const ClassPtr the_class ) const
 {
-	U_ASSERT( the_class->base_template != std::nullopt );
+	const auto base_template= std::get_if<Class::BaseTemplate>( &the_class->generated_class_data );
+	U_ASSERT( base_template != nullptr );
 
-	const TypeTemplatePtr& type_template= the_class->base_template->class_template;
+	const TypeTemplatePtr& type_template= base_template->class_template;
 	const auto namespace_containing_template= type_template->parent_namespace;
 
 	// Use separate backreferences table.
@@ -681,7 +682,7 @@ void ManglerMSVC::EncodeTemplateClassName( ManglerState& mangler_state, const Cl
 
 		template_mangler_state.PushElement( g_template_prefix );
 		template_mangler_state.EncodeName( type_template->syntax_element->name_ );
-		EncodeTemplateArgs( template_mangler_state, the_class->base_template->signature_args );
+		EncodeTemplateArgs( template_mangler_state, base_template->signature_args );
 	}
 	mangler_state.EncodeNameNoTerminator( template_name );
 
@@ -691,8 +692,8 @@ void ManglerMSVC::EncodeTemplateClassName( ManglerState& mangler_state, const Cl
 
 void ManglerMSVC::EncodeCoroutineClassName( ManglerState& mangler_state, const ClassPtr the_class ) const
 {
-	U_ASSERT( the_class->coroutine_type_description != std::nullopt );
-	const CoroutineTypeDescription& coroutine_type_description= *the_class->coroutine_type_description;
+	const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &the_class->generated_class_data );
+	U_ASSERT( coroutine_type_description != nullptr );
 
 	// Encode coroutine as template.
 	// Use separate backreferences table.
@@ -704,16 +705,16 @@ void ManglerMSVC::EncodeCoroutineClassName( ManglerState& mangler_state, const C
 		template_mangler_state.EncodeName( the_class->members->GetThisNamespaceName() );
 
 		// Return value.
-		if( coroutine_type_description.return_value_type != ValueType::Value )
+		if( coroutine_type_description->return_value_type != ValueType::Value )
 		{
 			template_mangler_state.PushElement( g_reference_prefix );
 			template_mangler_state.PushElement( pointer_types_modifier_ );
-			template_mangler_state.PushElement( coroutine_type_description.return_value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix );
+			template_mangler_state.PushElement( coroutine_type_description->return_value_type == ValueType::ReferenceMut ? g_mut_prefix : g_imut_prefix );
 		}
-		EncodeType( template_mangler_state, coroutine_type_description.return_type );
+		EncodeType( template_mangler_state, coroutine_type_description->return_type );
 
 		// non-sync tag.
-		if( coroutine_type_description.non_sync )
+		if( coroutine_type_description->non_sync )
 		{
 			template_mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::bool_ ) );
 			template_mangler_state.PushElement( g_numeric_template_arg_prefix );
@@ -723,7 +724,7 @@ void ManglerMSVC::EncodeCoroutineClassName( ManglerState& mangler_state, const C
 		// Inner reference kind.
 		template_mangler_state.PushElement( GetFundamentalTypeMangledName( U_FundamentalType::u32_ ) );
 		template_mangler_state.PushElement( g_numeric_template_arg_prefix );
-		EncodeNumber( template_mangler_state, llvm::APInt( 64u, uint64_t(coroutine_type_description.inner_reference_type) ), false );
+		EncodeNumber( template_mangler_state, llvm::APInt( 64u, uint64_t(coroutine_type_description->inner_reference_type) ), false );
 
 		// Finish list of template arguments.
 		template_mangler_state.PushElement( g_terminator );

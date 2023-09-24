@@ -8,8 +8,8 @@
 #include "coroutine.hpp"
 #include "enum.hpp"
 #include "template_types.hpp"
+#include "../../lex_synt_lib_common/size_assert.hpp"
 #include "type.hpp"
-
 
 namespace U
 {
@@ -123,7 +123,7 @@ bool operator!=( const TupleType& l, const TupleType& r )
 //
 
 // No more, than 3 pointers on 64 bit platform.
-static_assert( sizeof(Type) <= 24u, "Type is too heavy!" );
+SIZE_ASSERT( Type, 24u )
 
 Type::Type( FundamentalType fundamental_type )
 	: something_( std::move(fundamental_type) )
@@ -157,7 +157,6 @@ const FundamentalType* Type::GetFundamentalType() const
 {
 	return std::get_if<FundamentalType>( &something_ );
 }
-
 
 const FunctionPointerType* Type::GetFunctionPointerType() const
 {
@@ -444,27 +443,27 @@ std::string Type::ToString() const
 		std::string operator()( const ClassPtr class_ ) const
 		{
 			std::string result;
-			if( class_->typeinfo_type != std::nullopt )
+			if( const auto typeinfo_class_description= std::get_if< Class::TypeinfoClassDescription>( &class_->generated_class_data ) )
 			{
 				result= Keyword(Keywords::typeof_);
 				result+= "(";
 				result+= Keyword(Keywords::typeinfo_);
 				result+= "</";
-				result+= class_->typeinfo_type->ToString();
+				result+= typeinfo_class_description->source_type.ToString();
 				result+= "/>";
 				result+=")";
 			}
-			else if( class_->base_template != std::nullopt )
+			else if( const auto base_template= std::get_if< Class::BaseTemplate >( &class_->generated_class_data ) )
 			{
 				// Skip template parameters namespace.
 				const std::string template_namespace_name= class_->members->GetParent()->GetParent()->ToString();
 				if( !template_namespace_name.empty() )
 					result+= template_namespace_name + "::";
 
-				const std::string& class_name= class_->base_template->class_template->syntax_element->name_;
+				const std::string& class_name= base_template->class_template->syntax_element->name_;
 				result+= class_name;
 				result+= "</";
-				for( const TemplateArg& arg : class_->base_template->signature_args )
+				for( const TemplateArg& arg : base_template->signature_args )
 				{
 					if( const Type* const param_as_type = std::get_if<Type>( &arg ) )
 						result+= param_as_type->ToString();
@@ -472,27 +471,26 @@ std::string Type::ToString() const
 						result+= ConstantVariableToString( *param_as_variable );
 					else U_ASSERT(false);
 
-					if( &arg != &class_->base_template->signature_args.back() )
+					if( &arg != &base_template->signature_args.back() )
 						result+= ", ";
 				}
 				result+= "/>";
 			}
-			else if( class_->coroutine_type_description != std::nullopt )
+			else if( const auto coroutine_type_description= std::get_if< CoroutineTypeDescription >( &class_->generated_class_data ) )
 			{
-				const CoroutineTypeDescription& coroutine_type_description= *class_->coroutine_type_description;
-				if( coroutine_type_description.kind == CoroutineKind::Generator )
+				if( coroutine_type_description->kind == CoroutineKind::Generator )
 					result+= Keyword( Keywords::generator_ );
 				else U_ASSERT(false);
 
-				if( coroutine_type_description.inner_reference_type == InnerReferenceType::None )
+				if( coroutine_type_description->inner_reference_type == InnerReferenceType::None )
 				{}
-				else if( coroutine_type_description.inner_reference_type == InnerReferenceType::Imut )
+				else if( coroutine_type_description->inner_reference_type == InnerReferenceType::Imut )
 				{
 					result+= "'";
 					result+= Keyword( Keywords::imut_ );
 					result+= "'";
 				}
-				else if( coroutine_type_description.inner_reference_type == InnerReferenceType::Mut )
+				else if( coroutine_type_description->inner_reference_type == InnerReferenceType::Mut )
 				{
 					result+= "'";
 					result+= Keyword( Keywords::mut_ );
@@ -501,21 +499,21 @@ std::string Type::ToString() const
 
 				result+= " ";
 
-				if( coroutine_type_description.non_sync )
+				if( coroutine_type_description->non_sync )
 					result+= Keyword( Keywords::non_sync_ );
 
 				result+= ": ";
 
-				result+= coroutine_type_description.return_type.ToString();
+				result+= coroutine_type_description->return_type.ToString();
 
-				if( coroutine_type_description.return_value_type == ValueType::Value )
+				if( coroutine_type_description->return_value_type == ValueType::Value )
 				{}
-				else if( coroutine_type_description.return_value_type == ValueType::ReferenceImut )
+				else if( coroutine_type_description->return_value_type == ValueType::ReferenceImut )
 				{
 					result+= " &";
 					result+= Keyword( Keywords::imut_ );
 				}
-				else if( coroutine_type_description.return_value_type == ValueType::ReferenceMut )
+				else if( coroutine_type_description->return_value_type == ValueType::ReferenceMut )
 				{
 					result+= " &";
 					result+= Keyword( Keywords::mut_ );
