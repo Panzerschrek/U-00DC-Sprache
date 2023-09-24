@@ -192,35 +192,55 @@ using Initializer= std::variant<
 	ZeroInitializer,
 	UninitializedInitializer >;
 
-using BlockElement= std::variant<
-	ScopeBlock,
-	VariablesDeclaration,
-	AutoVariableDeclaration,
-	ReturnOperator,
-	YieldOperator,
-	WhileOperator,
-	LoopOperator,
-	RangeForOperator,
-	CStyleForOperator,
-	BreakOperator,
-	ContinueOperator,
-	WithOperator,
-	IfOperator,
-	StaticIfOperator,
-	IfCoroAdvanceOperator,
-	SwitchOperator,
-	SingleExpressionOperator,
-	AssignmentOperator,
-	AdditiveAssignmentOperator,
-	IncrementOperator,
-	DecrementOperator,
-	StaticAssert,
-	TypeAlias,
-	Halt,
-	HaltIf
->;
+//
+// Block elements list structures.
+// Since size of each block element is so different, allocate each element in its own unique_ptr.
+// Since we are already allocating, use linked list (via BlockElementsListNode template) in order to build list, instead of using extra allocation for vector.
+//
 
-using BlockElements= std::vector<BlockElement>;
+template<typename T>
+struct BlockElementsListNode;
+
+using BlockElementPtr= std::variant<
+	EmptyVariant,
+	std::unique_ptr< BlockElementsListNode< ScopeBlock > >,
+	std::unique_ptr< BlockElementsListNode< VariablesDeclaration > >,
+	std::unique_ptr< BlockElementsListNode< AutoVariableDeclaration > >,
+	std::unique_ptr< BlockElementsListNode< ReturnOperator > >,
+	std::unique_ptr< BlockElementsListNode< YieldOperator > >,
+	std::unique_ptr< BlockElementsListNode< WhileOperator > >,
+	std::unique_ptr< BlockElementsListNode< LoopOperator > >,
+	std::unique_ptr< BlockElementsListNode< RangeForOperator > >,
+	std::unique_ptr< BlockElementsListNode< CStyleForOperator > >,
+	std::unique_ptr< BlockElementsListNode< BreakOperator > >,
+	std::unique_ptr< BlockElementsListNode< ContinueOperator > >,
+	std::unique_ptr< BlockElementsListNode< WithOperator > >,
+	std::unique_ptr< BlockElementsListNode< IfOperator > >,
+	std::unique_ptr< BlockElementsListNode< StaticIfOperator > >,
+	std::unique_ptr< BlockElementsListNode< IfCoroAdvanceOperator > >,
+	std::unique_ptr< BlockElementsListNode< SwitchOperator > >,
+	std::unique_ptr< BlockElementsListNode< SingleExpressionOperator > >,
+	std::unique_ptr< BlockElementsListNode< AssignmentOperator > >,
+	std::unique_ptr< BlockElementsListNode< AdditiveAssignmentOperator > >,
+	std::unique_ptr< BlockElementsListNode< IncrementOperator > >,
+	std::unique_ptr< BlockElementsListNode< DecrementOperator > >,
+	std::unique_ptr< BlockElementsListNode< StaticAssert > >,
+	std::unique_ptr< BlockElementsListNode< TypeAlias > >,
+	std::unique_ptr< BlockElementsListNode< Halt > >,
+	std::unique_ptr< BlockElementsListNode< HaltIf > >
+	>;
+
+template<typename T>
+struct BlockElementsListNode
+{
+	T payload;
+	BlockElementPtr next;
+};
+
+struct BlockElementsList
+{
+	BlockElementPtr start;
+};
 
 using IfAlternative= std::variant<
 	Block,
@@ -740,7 +760,7 @@ struct Block
 
 	SrcLoc src_loc;
 	SrcLoc end_src_loc;
-	BlockElements elements;
+	BlockElementsList elements;
 };
 
 // Block inside scope - with additional properties.
@@ -1213,7 +1233,7 @@ struct Import
 SrcLoc GetExpressionSrcLoc( const Expression& expression );
 SrcLoc GetComplexNameSrcLoc( const ComplexName& complex_name );
 SrcLoc GetInitializerSrcLoc( const Initializer& initializer );
-SrcLoc GetBlockElementSrcLoc( const BlockElement& block_element );
+SrcLoc GetBlockElementSrcLoc( const BlockElementPtr& block_element );
 
 } // namespace Synt
 

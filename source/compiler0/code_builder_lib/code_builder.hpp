@@ -820,7 +820,16 @@ private:
 
 	// Block elements
 	BlockBuildInfo BuildIfAlternative( NamesScope& names, FunctionContext& function_context, const Synt::IfAlternative& if_alterntative );
-	BlockBuildInfo BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::BlockElement& block_element );
+
+	// Returns also next node in the list.
+	template<typename T>
+	std::pair<BlockBuildInfo, const Synt::BlockElementPtr*> BuildBlockElement( NamesScope& names, FunctionContext& function_context, const std::unique_ptr< Synt::BlockElementsListNode<T> >& el )
+	{
+		return std::make_pair( BuildBlockElementImpl( names, function_context, el->payload ), &el->next );
+	}
+
+	std::pair<BlockBuildInfo, const Synt::BlockElementPtr*> BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& );
+
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::Block& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::ScopeBlock& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::VariablesDeclaration& variables_declaration );
@@ -850,7 +859,7 @@ private:
 
 	BlockBuildInfo BuildBlock( NamesScope& names, FunctionContext& function_context, const Synt::Block& block );
 	// Build elements, withut creating separate names scope.
-	BlockBuildInfo BuildBlockElements( NamesScope& names, FunctionContext& function_context, const Synt::BlockElements& block_elements );
+	BlockBuildInfo BuildBlockElements( NamesScope& names, FunctionContext& function_context, const Synt::BlockElementsList& block_elements );
 
 	void BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc );
 

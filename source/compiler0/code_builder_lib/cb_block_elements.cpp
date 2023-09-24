@@ -91,19 +91,12 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfAlternative(
 			if_alterntative );
 }
 
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	NamesScope& names,
-	FunctionContext& function_context,
-	const Synt::BlockElement& block_element )
+std::pair<CodeBuilder::BlockBuildInfo, const Synt::BlockElementPtr*> CodeBuilder::BuildBlockElement(
+	NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& )
 {
-	return
-		std::visit(
-			[&]( const auto& t )
-			{
-				debug_info_builder_->SetCurrentLocation( t.src_loc, function_context );
-				return BuildBlockElementImpl( names, function_context, t );
-			},
-			block_element );
+	(void)names;
+	(void)function_context;
+	return std::make_pair( BlockBuildInfo(), nullptr );
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
@@ -2672,24 +2665,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
-	NamesScope& names, FunctionContext& function_context, const Synt::BlockElements& block_elements )
+	NamesScope& names, FunctionContext& function_context, const Synt::BlockElementsList& block_elements )
 {
 	BlockBuildInfo block_build_info;
-	size_t block_element_index= 0u;
-	for( const Synt::BlockElement& block_element : block_elements )
+	const Synt::BlockElementPtr* current= &block_elements.start;
+	while( current != nullptr )
 	{
-		++block_element_index;
-
-		const BlockBuildInfo info= BuildBlockElement( names, function_context, block_element );
-		if( info.have_terminal_instruction_inside )
+		auto res= std::visit( [&]( const auto & el ) { return BuildBlockElement( names, function_context, el ); }, *current );
+		if( res.first.have_terminal_instruction_inside )
 		{
 			block_build_info.have_terminal_instruction_inside= true;
-			break;
+			if( res.second != nullptr && std::get_if< Synt::EmptyVariant >( res.second ) == nullptr )
+				REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( *res.second ) );
 		}
+		current= res.second;
 	}
-
-	if( block_element_index < block_elements.size() )
-		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( block_elements[ block_element_index ] ) );
 
 	return block_build_info;
 }

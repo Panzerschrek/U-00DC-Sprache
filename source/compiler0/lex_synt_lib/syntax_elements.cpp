@@ -14,7 +14,7 @@ SIZE_ASSERT( ComplexName, 56u )
 SIZE_ASSERT( TypeName, 64u )
 SIZE_ASSERT( Expression, 88u )
 SIZE_ASSERT( Initializer, 96u )
-SIZE_ASSERT( BlockElement, 200u )
+SIZE_ASSERT( BlockElementPtr, 16u ) // Variant index + unique_ptr
 SIZE_ASSERT( ClassElement, 144u )
 SIZE_ASSERT( ProgramElement, 144u )
 
@@ -392,6 +392,12 @@ struct GetSrcLocVisitor final
 	{
 		return (*this)(*element);
 	}
+
+	template<typename T>
+	SrcLoc operator()( const std::unique_ptr< BlockElementsListNode<T> >& element ) const
+	{
+		return element->payload.src_loc;
+	}
 };
 
 SrcLoc GetExpressionSrcLoc( const Expression& expression )
@@ -409,7 +415,7 @@ SrcLoc GetInitializerSrcLoc( const Initializer& initializer )
 	return std::visit( GetSrcLocVisitor(), initializer );
 }
 
-SrcLoc GetBlockElementSrcLoc( const BlockElement& block_element )
+SrcLoc GetBlockElementSrcLoc( const BlockElementPtr& block_element )
 {
 	return std::visit( GetSrcLocVisitor(), block_element );
 }
