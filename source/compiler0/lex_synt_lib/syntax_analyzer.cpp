@@ -153,6 +153,22 @@ BlockElementPtr* GetBlockElementsListTail( BlockElementPtr& node )
 	return std::visit( [](auto& el ){ return GetBlockElementsListTailImpl(el); }, node );
 }
 
+bool BlockElementsListHasTailImpl( const EmptyVariant& )
+{
+	return false;
+}
+
+template<typename T>
+bool BlockElementsListHasTailImpl( const std::unique_ptr< BlockElementsListNode<T> >& node )
+{
+	return std::get_if< EmptyVariant >( &node->next ) == nullptr;
+}
+
+bool BlockElementsListHasTail( const BlockElementPtr& node )
+{
+	return std::visit( []( const auto& el ) { return BlockElementsListHasTailImpl(el); }, node );
+}
+
 class SyntaxAnalyzer final
 {
 public:
@@ -2976,43 +2992,9 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 	{
 		if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
 		{
-			BlockElementsList macro_elements= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements );
-			// TODO
-			(void)macro_elements;
-			/*
-			if( macro_elements.size() == 1 )
-			{
-				BlockElement& element= macro_elements.front();
-				if( const auto block= std::get_if<ScopeBlock>( &element ) )
-				{
-					if( block->safety == ScopeBlock::Safety::None && block->label == std::nullopt )
-					{
-						// Accept only pure blocks without safety modifiers and labels.
-						return std::make_unique<IfAlternative>( std::move(*block) );
-					}
-					else
-					{
-						LexSyntError error_message;
-						error_message.src_loc= it_->src_loc;
-						error_message.text= "Syntax error - expected block without safety modifiers and labels for \"if\" alternative.";
-						error_messages_.push_back( std::move(error_message) );
-						return nullptr;
-					}
-				}
-				if( const auto if_operator= std::get_if<IfOperator>( &element ) )
-					return std::make_unique<IfAlternative>( std::move(*if_operator) );
-				if( const auto static_if_operator= std::get_if<StaticIfOperator>( &element ) )
-					return std::make_unique<IfAlternative>( std::move(*static_if_operator) );
-				if( const auto if_coro_advance_operator= std::get_if<IfCoroAdvanceOperator>( &element ) )
-					return std::make_unique<IfAlternative>( std::move(*if_coro_advance_operator) );
+			BlockElementPtr list_node= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements ).start;
 
-				LexSyntError error_message;
-				error_message.src_loc= it_->src_loc;
-				error_message.text= "Syntax error - unexpected element kind for \"if\" alternative.";
-				error_messages_.push_back( std::move(error_message) );
-				return nullptr;
-			}
-			else
+			if( BlockElementsListHasTail( list_node ) )
 			{
 				LexSyntError error_message;
 				error_message.src_loc= it_->src_loc;
@@ -3020,7 +3002,36 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 				error_messages_.push_back( std::move(error_message) );
 				return nullptr;
 			}
-			*/
+
+			if( const auto block_node= std::get_if< std::unique_ptr< BlockElementsListNode< ScopeBlock > > >( &list_node ) )
+			{
+				ScopeBlock& block= (*block_node)->payload;
+				if( block.safety == ScopeBlock::Safety::None && block.label == std::nullopt )
+				{
+					// Accept only pure blocks without safety modifiers and labels.
+					return std::make_unique<IfAlternative>( std::move(block) );
+				}
+				else
+				{
+					LexSyntError error_message;
+					error_message.src_loc= it_->src_loc;
+					error_message.text= "Syntax error - expected block without safety modifiers and labels for \"if\" alternative.";
+					error_messages_.push_back( std::move(error_message) );
+					return nullptr;
+				}
+			}
+			if( const auto if_operator_node= std::get_if< std::unique_ptr< BlockElementsListNode< IfOperator > > >( &list_node ) )
+				return std::make_unique<IfAlternative>( std::move((*if_operator_node)->payload) );
+			if( const auto static_if_operator_node= std::get_if< std::unique_ptr< BlockElementsListNode< StaticIfOperator > > >( &list_node ) )
+				return std::make_unique<IfAlternative>( std::move((*static_if_operator_node)->payload) );
+			if( const auto if_coro_advance_operator_node= std::get_if< std::unique_ptr< BlockElementsListNode< IfCoroAdvanceOperator > > >( &list_node ) )
+				return std::make_unique<IfAlternative>( std::move((*if_coro_advance_operator_node)->payload) );
+
+			LexSyntError error_message;
+			error_message.src_loc= it_->src_loc;
+			error_message.text= "Syntax error - unexpected element kind for \"if\" alternative.";
+			error_messages_.push_back( std::move(error_message) );
+			return nullptr;
 		}
 	}
 
