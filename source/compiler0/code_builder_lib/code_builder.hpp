@@ -215,10 +215,10 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassPtr& class_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ptr );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
 

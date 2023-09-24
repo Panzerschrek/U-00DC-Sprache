@@ -399,17 +399,14 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		function_variable.llvm_function->function->eraseFromParent();
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassPtr& class_ptr )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ )
 {
-	if( class_ptr == nullptr )
-		return;
-
 	// Complete names in parent names.
-	for( const Synt::ComplexName& parent_name : class_ptr->parents )
+	for( const Synt::ComplexName& parent_name : class_.parents )
 		PrepareTypeImpl( names_scope, *global_function_context_, parent_name );
 
 	// Complete names in non-sync tag.
-	if( const auto non_sync_expression= std::get_if<Synt::ExpressionPtr>( &class_ptr->non_sync_tag ) )
+	if( const auto non_sync_expression= std::get_if<Synt::ExpressionPtr>( &class_.non_sync_tag ) )
 	{
 		if( *non_sync_expression != nullptr )
 			BuildExpressionCode( **non_sync_expression, names_scope, *global_function_context_ );
@@ -432,11 +429,11 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)function_template;
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ptr )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ )
 {
 	// Nothing to do here, since completion for namespace has no sense and completion for namespace member will be trigered otherwise.
 	(void)names_scope;
-	(void)namespace_ptr;
+	(void)namespace_;
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field )

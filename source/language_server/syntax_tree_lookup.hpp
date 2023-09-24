@@ -18,7 +18,19 @@ using CompletionSyntaxElement= std::variant<
 	const Synt::CallOperatorSignatureHelp*,
 	const Synt::ConstructorInitializerSignatureHelp*>;
 
-using GlobalItem= std::variant<const Synt::ProgramElement*, const Synt::ClassElement*>;
+using GlobalItem= std::variant<
+	const Synt::Namespace*,
+	const Synt::VariablesDeclaration*,
+	const Synt::AutoVariableDeclaration*,
+	const Synt::StaticAssert*,
+	const Synt::TypeAlias*,
+	const Synt::Enum*,
+	const Synt::Function*,
+	const Synt::ClassField*,
+	const Synt::ClassVisibilityLabel*,
+	const Synt::Class*,
+	const Synt::TypeTemplate*,
+	const Synt::FunctionTemplate* >;
 
 struct SyntaxTreeLookupResult
 {

@@ -382,22 +382,24 @@ void FindImpl( const Synt::UninitializedInitializer& uninitialized_initializer )
 void FindImpl( const Synt::ProgramElementsList& program_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;
-	for( const Synt::ProgramElement& program_element : program_elements )
-	{
-		global_item_= GlobalItem(&program_element);
-		FindImplVariant( program_element );
-	}
+	program_elements.Iter(
+		[&]( const auto & el )
+		{
+			global_item_= GlobalItem(&el);
+			FindImpl( el );
+		} );
 	global_item_= prev_global_item;
 }
 
 void FindImpl( const Synt::ClassElementsList& class_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;
-	for( const Synt::ClassElement& class_element : class_elements )
-	{
-		global_item_= GlobalItem(&class_element);
-		FindImplVariant( class_element );
-	}
+	class_elements.Iter(
+		[&]( const auto & el )
+		{
+			global_item_= GlobalItem(&el);
+			FindImpl( el );
+		} );
 	global_item_= prev_global_item;
 }
 

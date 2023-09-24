@@ -124,8 +124,6 @@ struct Namespace;
 
 using FunctionTypePtr= std::unique_ptr<const FunctionType>;
 using GeneratorTypePtr= std::unique_ptr<const GeneratorType>;
-using ClassPtr= std::unique_ptr<const Class>;
-using NamespacePtr= std::unique_ptr<const Namespace>;
 
 using TypeName= std::variant<
 	EmptyVariant,
@@ -1178,7 +1176,7 @@ struct TypeTemplate : public TemplateBase
 	// Short form means that template argumenst are also signature arguments.
 	bool is_short_form= false;
 
-	std::variant<ClassPtr, std::unique_ptr<const TypeAlias>> something;
+	std::variant<std::unique_ptr<const Class>, std::unique_ptr<const TypeAlias>> something;
 };
 
 struct FunctionTemplate final : public TemplateBase

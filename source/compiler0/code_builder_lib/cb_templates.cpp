@@ -897,7 +897,7 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 		type_template,
 		type_template.syntax_element->name );
 
-	if( const auto class_ptr= std::get_if<Synt::ClassPtr>( &type_template.syntax_element->something ) )
+	if( const auto class_ptr= std::get_if< std::unique_ptr<const Synt::Class> >( &type_template.syntax_element->something ) )
 	{
 		U_ASSERT( (*class_ptr)->name == Class::c_template_class_name );
 
