@@ -59,7 +59,7 @@ void FindImpl( const Synt::BlockElementsListNode<T>& el )
 	FindImpl( el.next );
 }
 
-void FindImpl( const Synt::BlockElementPtr& el )
+void FindImpl( const Synt::BlockElement& el )
 {
 	FindImplVariant( el );
 }

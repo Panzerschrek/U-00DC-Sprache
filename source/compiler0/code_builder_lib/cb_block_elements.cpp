@@ -91,7 +91,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfAlternative(
 			if_alterntative );
 }
 
-std::pair<CodeBuilder::BlockBuildInfo, const Synt::BlockElementPtr*> CodeBuilder::BuildBlockElement(
+std::pair<CodeBuilder::BlockBuildInfo, const Synt::BlockElement*> CodeBuilder::BuildBlockElement(
 	NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& )
 {
 	(void)names;
@@ -2668,7 +2668,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
 	NamesScope& names, FunctionContext& function_context, const Synt::BlockElementsList& block_elements )
 {
 	BlockBuildInfo block_build_info;
-	const Synt::BlockElementPtr* current= &block_elements.start;
+	const Synt::BlockElement* current= &block_elements.start;
 	while( current != nullptr )
 	{
 		auto res= std::visit( [&]( const auto & el ) { return BuildBlockElement( names, function_context, el ); }, *current );

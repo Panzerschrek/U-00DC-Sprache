@@ -14,7 +14,7 @@ SIZE_ASSERT( ComplexName, 56u )
 SIZE_ASSERT( TypeName, 64u )
 SIZE_ASSERT( Expression, 88u )
 SIZE_ASSERT( Initializer, 96u )
-SIZE_ASSERT( BlockElementPtr, 16u ) // Variant index + unique_ptr
+SIZE_ASSERT( BlockElement, 16u ) // Variant index + unique_ptr
 SIZE_ASSERT( ClassElement, 144u )
 SIZE_ASSERT( ProgramElement, 144u )
 
@@ -415,7 +415,7 @@ SrcLoc GetInitializerSrcLoc( const Initializer& initializer )
 	return std::visit( GetSrcLocVisitor(), initializer );
 }
 
-SrcLoc GetBlockElementSrcLoc( const BlockElementPtr& block_element )
+SrcLoc GetBlockElementSrcLoc( const BlockElement& block_element )
 {
 	return std::visit( GetSrcLocVisitor(), block_element );
 }

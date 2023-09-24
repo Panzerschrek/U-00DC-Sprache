@@ -128,24 +128,24 @@ std::optional<BinaryOperatorType> GetAdditiveAssignmentOperator( const Lexem& le
 }
 
 template<typename T>
-void AppendBlockElementsListNode( BlockElementPtr*& tail, T t )
+void AppendBlockElementsListNode( BlockElement*& tail, T t )
 {
 	using NodeT= BlockElementsListNode<T>;
 	*tail= std::make_unique< NodeT >( NodeT{ std::move(t), EmptyVariant{} } );
 	tail= & std::get< std::unique_ptr< NodeT > >( *tail )->next;
 }
 
-BlockElementPtr* GetBlockElementsListTail( BlockElementPtr& node );
+BlockElement* GetBlockElementsListTail( BlockElement& node );
 
 template<typename T>
-BlockElementPtr* GetBlockElementsListTailImpl( std::unique_ptr< BlockElementsListNode<T> >& node )
+BlockElement* GetBlockElementsListTailImpl( std::unique_ptr< BlockElementsListNode<T> >& node )
 {
 	return GetBlockElementsListTail( node->next );
 }
 
-BlockElementPtr* GetBlockElementsListTailImpl( EmptyVariant& ) { return nullptr; }
+BlockElement* GetBlockElementsListTailImpl( EmptyVariant& ) { return nullptr; }
 
-BlockElementPtr* GetBlockElementsListTail( BlockElementPtr& node )
+BlockElement* GetBlockElementsListTail( BlockElement& node )
 {
 	if( std::get_if< EmptyVariant >( &node ) != nullptr )
 		return &node;
@@ -164,7 +164,7 @@ bool BlockElementsListHasTailImpl( const std::unique_ptr< BlockElementsListNode<
 	return std::get_if< EmptyVariant >( &node->next ) == nullptr;
 }
 
-bool BlockElementsListHasTail( const BlockElementPtr& node )
+bool BlockElementsListHasTail( const BlockElement& node )
 {
 	return std::visit( []( const auto& el ) { return BlockElementsListHasTailImpl(el); }, node );
 }
@@ -2791,7 +2791,7 @@ std::variant<Halt, HaltIf> SyntaxAnalyzer::ParseHalt()
 BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 {
 	BlockElementsList result;
-	BlockElementPtr* list_tail= &result.start;
+	BlockElement* list_tail= &result.start;
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
@@ -2991,7 +2991,7 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 	{
 		if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
 		{
-			BlockElementPtr list_node= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements ).start;
+			BlockElement list_node= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements ).start;
 
 			if( BlockElementsListHasTail( list_node ) )
 			{

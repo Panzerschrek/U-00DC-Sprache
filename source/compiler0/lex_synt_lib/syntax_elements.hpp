@@ -200,7 +200,7 @@ using Initializer= std::variant<
 template<typename T>
 struct BlockElementsListNode;
 
-using BlockElementPtr= std::variant<
+using BlockElement= std::variant<
 	EmptyVariant,
 	std::unique_ptr< BlockElementsListNode< ScopeBlock > >,
 	std::unique_ptr< BlockElementsListNode< VariablesDeclaration > >,
@@ -233,12 +233,12 @@ template<typename T>
 struct BlockElementsListNode
 {
 	T payload;
-	BlockElementPtr next;
+	BlockElement next;
 };
 
 struct BlockElementsList
 {
-	BlockElementPtr start;
+	BlockElement start;
 };
 
 using IfAlternative= std::variant<
@@ -1231,7 +1231,7 @@ struct Import
 SrcLoc GetExpressionSrcLoc( const Expression& expression );
 SrcLoc GetComplexNameSrcLoc( const ComplexName& complex_name );
 SrcLoc GetInitializerSrcLoc( const Initializer& initializer );
-SrcLoc GetBlockElementSrcLoc( const BlockElementPtr& block_element );
+SrcLoc GetBlockElementSrcLoc( const BlockElement& block_element );
 
 } // namespace Synt
 
