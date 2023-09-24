@@ -394,7 +394,7 @@ struct GetSrcLocVisitor final
 	}
 
 	template<typename T>
-	SrcLoc operator()( const std::unique_ptr< BlockElementsListNode<T> >& element ) const
+	SrcLoc operator()( const BlockElementsListNodePtr<T>& element ) const
 	{
 		return element->payload.src_loc;
 	}

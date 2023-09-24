@@ -823,7 +823,7 @@ private:
 
 	// Returns also next node in the list.
 	template<typename T>
-	std::pair<BlockBuildInfo, const Synt::BlockElement*> BuildBlockElement( NamesScope& names, FunctionContext& function_context, const std::unique_ptr< Synt::BlockElementsListNode<T> >& el )
+	std::pair<BlockBuildInfo, const Synt::BlockElement*> BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::BlockElementsListNodePtr<T>& el )
 	{
 		return std::make_pair( BuildBlockElementImpl( names, function_context, el->payload ), &el->next );
 	}

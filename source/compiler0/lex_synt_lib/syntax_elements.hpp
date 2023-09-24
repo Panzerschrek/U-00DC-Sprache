@@ -200,33 +200,36 @@ using Initializer= std::variant<
 template<typename T>
 struct BlockElementsListNode;
 
+template<typename T>
+using BlockElementsListNodePtr= std::unique_ptr< BlockElementsListNode<T> >;
+
 using BlockElement= std::variant<
 	EmptyVariant,
-	std::unique_ptr< BlockElementsListNode< ScopeBlock > >,
-	std::unique_ptr< BlockElementsListNode< VariablesDeclaration > >,
-	std::unique_ptr< BlockElementsListNode< AutoVariableDeclaration > >,
-	std::unique_ptr< BlockElementsListNode< ReturnOperator > >,
-	std::unique_ptr< BlockElementsListNode< YieldOperator > >,
-	std::unique_ptr< BlockElementsListNode< WhileOperator > >,
-	std::unique_ptr< BlockElementsListNode< LoopOperator > >,
-	std::unique_ptr< BlockElementsListNode< RangeForOperator > >,
-	std::unique_ptr< BlockElementsListNode< CStyleForOperator > >,
-	std::unique_ptr< BlockElementsListNode< BreakOperator > >,
-	std::unique_ptr< BlockElementsListNode< ContinueOperator > >,
-	std::unique_ptr< BlockElementsListNode< WithOperator > >,
-	std::unique_ptr< BlockElementsListNode< IfOperator > >,
-	std::unique_ptr< BlockElementsListNode< StaticIfOperator > >,
-	std::unique_ptr< BlockElementsListNode< IfCoroAdvanceOperator > >,
-	std::unique_ptr< BlockElementsListNode< SwitchOperator > >,
-	std::unique_ptr< BlockElementsListNode< SingleExpressionOperator > >,
-	std::unique_ptr< BlockElementsListNode< AssignmentOperator > >,
-	std::unique_ptr< BlockElementsListNode< AdditiveAssignmentOperator > >,
-	std::unique_ptr< BlockElementsListNode< IncrementOperator > >,
-	std::unique_ptr< BlockElementsListNode< DecrementOperator > >,
-	std::unique_ptr< BlockElementsListNode< StaticAssert > >,
-	std::unique_ptr< BlockElementsListNode< TypeAlias > >,
-	std::unique_ptr< BlockElementsListNode< Halt > >,
-	std::unique_ptr< BlockElementsListNode< HaltIf > >
+	BlockElementsListNodePtr< ScopeBlock >,
+	BlockElementsListNodePtr< VariablesDeclaration >,
+	BlockElementsListNodePtr< AutoVariableDeclaration >,
+	BlockElementsListNodePtr< ReturnOperator >,
+	BlockElementsListNodePtr< YieldOperator >,
+	BlockElementsListNodePtr< WhileOperator >,
+	BlockElementsListNodePtr< LoopOperator >,
+	BlockElementsListNodePtr< RangeForOperator >,
+	BlockElementsListNodePtr< CStyleForOperator >,
+	BlockElementsListNodePtr< BreakOperator >,
+	BlockElementsListNodePtr< ContinueOperator >,
+	BlockElementsListNodePtr< WithOperator >,
+	BlockElementsListNodePtr< IfOperator >,
+	BlockElementsListNodePtr< StaticIfOperator >,
+	BlockElementsListNodePtr< IfCoroAdvanceOperator >,
+	BlockElementsListNodePtr< SwitchOperator >,
+	BlockElementsListNodePtr< SingleExpressionOperator >,
+	BlockElementsListNodePtr< AssignmentOperator >,
+	BlockElementsListNodePtr< AdditiveAssignmentOperator >,
+	BlockElementsListNodePtr< IncrementOperator >,
+	BlockElementsListNodePtr< DecrementOperator >,
+	BlockElementsListNodePtr< StaticAssert >,
+	BlockElementsListNodePtr< TypeAlias >,
+	BlockElementsListNodePtr< Halt >,
+	BlockElementsListNodePtr< HaltIf >
 	>;
 
 template<typename T>
