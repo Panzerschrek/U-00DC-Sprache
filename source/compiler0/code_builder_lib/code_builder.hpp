@@ -820,16 +820,6 @@ private:
 
 	// Block elements
 	BlockBuildInfo BuildIfAlternative( NamesScope& names, FunctionContext& function_context, const Synt::IfAlternative& if_alterntative );
-
-	// Returns also next node in the list.
-	template<typename T>
-	std::pair<BlockBuildInfo, const Synt::BlockElement*> BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::BlockElementsListNodePtr<T>& el )
-	{
-		return std::make_pair( BuildBlockElementImpl( names, function_context, el->payload ), &el->next );
-	}
-
-	std::pair<BlockBuildInfo, const Synt::BlockElement*> BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& );
-
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::Block& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::ScopeBlock& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::VariablesDeclaration& variables_declaration );

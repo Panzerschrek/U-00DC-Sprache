@@ -8,6 +8,7 @@
 
 #include "lexical_analyzer.hpp"
 #include "operators.hpp"
+#include "variant_linked_list.hpp"
 
 namespace U
 {
@@ -197,52 +198,32 @@ using Initializer= std::variant<
 // Since we are already allocating, use linked list (via BlockElementsListNode template) in order to build list, instead of using extra allocation for vector.
 //
 
-template<typename T>
-struct BlockElementsListNode;
-
-template<typename T>
-using BlockElementsListNodePtr= std::unique_ptr< BlockElementsListNode<T> >;
-
-using BlockElement= std::variant<
-	EmptyVariant,
-	BlockElementsListNodePtr< ScopeBlock >,
-	BlockElementsListNodePtr< VariablesDeclaration >,
-	BlockElementsListNodePtr< AutoVariableDeclaration >,
-	BlockElementsListNodePtr< ReturnOperator >,
-	BlockElementsListNodePtr< YieldOperator >,
-	BlockElementsListNodePtr< WhileOperator >,
-	BlockElementsListNodePtr< LoopOperator >,
-	BlockElementsListNodePtr< RangeForOperator >,
-	BlockElementsListNodePtr< CStyleForOperator >,
-	BlockElementsListNodePtr< BreakOperator >,
-	BlockElementsListNodePtr< ContinueOperator >,
-	BlockElementsListNodePtr< WithOperator >,
-	BlockElementsListNodePtr< IfOperator >,
-	BlockElementsListNodePtr< StaticIfOperator >,
-	BlockElementsListNodePtr< IfCoroAdvanceOperator >,
-	BlockElementsListNodePtr< SwitchOperator >,
-	BlockElementsListNodePtr< SingleExpressionOperator >,
-	BlockElementsListNodePtr< AssignmentOperator >,
-	BlockElementsListNodePtr< AdditiveAssignmentOperator >,
-	BlockElementsListNodePtr< IncrementOperator >,
-	BlockElementsListNodePtr< DecrementOperator >,
-	BlockElementsListNodePtr< StaticAssert >,
-	BlockElementsListNodePtr< TypeAlias >,
-	BlockElementsListNodePtr< Halt >,
-	BlockElementsListNodePtr< HaltIf >
-	>;
-
-template<typename T>
-struct BlockElementsListNode
-{
-	T payload;
-	BlockElement next;
-};
-
-struct BlockElementsList
-{
-	BlockElement start;
-};
+using BlockElementsList= VariantLinkedList<
+	ScopeBlock,
+	VariablesDeclaration,
+	AutoVariableDeclaration,
+	ReturnOperator,
+	YieldOperator,
+	WhileOperator,
+	LoopOperator,
+	RangeForOperator,
+	CStyleForOperator,
+	BreakOperator,
+	ContinueOperator,
+	WithOperator,
+	IfOperator,
+	StaticIfOperator,
+	IfCoroAdvanceOperator,
+	SwitchOperator,
+	SingleExpressionOperator,
+	AssignmentOperator,
+	AdditiveAssignmentOperator,
+	IncrementOperator,
+	DecrementOperator,
+	StaticAssert,
+	TypeAlias,
+	Halt,
+	HaltIf >;
 
 using IfAlternative= std::variant<
 	Block,
@@ -1234,7 +1215,6 @@ struct Import
 SrcLoc GetExpressionSrcLoc( const Expression& expression );
 SrcLoc GetComplexNameSrcLoc( const ComplexName& complex_name );
 SrcLoc GetInitializerSrcLoc( const Initializer& initializer );
-SrcLoc GetBlockElementSrcLoc( const BlockElement& block_element );
 
 } // namespace Synt
 

@@ -91,14 +91,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfAlternative(
 			if_alterntative );
 }
 
-std::pair<CodeBuilder::BlockBuildInfo, const Synt::BlockElement*> CodeBuilder::BuildBlockElement(
-	NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& )
-{
-	(void)names;
-	(void)function_context;
-	return std::make_pair( BlockBuildInfo(), nullptr );
-}
-
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
@@ -2668,18 +2660,16 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
 	NamesScope& names, FunctionContext& function_context, const Synt::BlockElementsList& block_elements )
 {
 	BlockBuildInfo block_build_info;
-	const Synt::BlockElement* current= &block_elements.start;
-	while( current != nullptr )
-	{
-		auto res= std::visit( [&]( const auto & el ) { return BuildBlockElement( names, function_context, el ); }, *current );
-		if( res.first.have_terminal_instruction_inside )
+	block_elements.Iter(
+		[&]( const auto& el )
 		{
-			block_build_info.have_terminal_instruction_inside= true;
-			if( res.second != nullptr && std::get_if< Synt::EmptyVariant >( res.second ) == nullptr )
-				REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( *res.second ) );
-		}
-		current= res.second;
-	}
+			if( block_build_info.have_terminal_instruction_inside )
+				REPORT_ERROR( UnreachableCode, names.GetErrors(), el.src_loc );
+
+			const BlockBuildInfo info= BuildBlockElementImpl( names, function_context, el );
+			if( info.have_terminal_instruction_inside )
+				block_build_info.have_terminal_instruction_inside= true;
+		} );
 
 	return block_build_info;
 }

@@ -127,48 +127,6 @@ std::optional<BinaryOperatorType> GetAdditiveAssignmentOperator( const Lexem& le
 	};
 }
 
-template<typename T>
-void AppendBlockElementsListNode( BlockElement*& tail, T t )
-{
-	using NodeT= BlockElementsListNode<T>;
-	*tail= std::make_unique< NodeT >( NodeT{ std::move(t), EmptyVariant{} } );
-	tail= & std::get< std::unique_ptr< NodeT > >( *tail )->next;
-}
-
-BlockElement* GetBlockElementsListTail( BlockElement& node );
-
-template<typename T>
-BlockElement* GetBlockElementsListTailImpl( std::unique_ptr< BlockElementsListNode<T> >& node )
-{
-	return GetBlockElementsListTail( node->next );
-}
-
-BlockElement* GetBlockElementsListTailImpl( EmptyVariant& ) { return nullptr; }
-
-BlockElement* GetBlockElementsListTail( BlockElement& node )
-{
-	if( std::get_if< EmptyVariant >( &node ) != nullptr )
-		return &node;
-
-	return std::visit( [](auto& el ){ return GetBlockElementsListTailImpl(el); }, node );
-}
-
-bool BlockElementsListHasTailImpl( const EmptyVariant& )
-{
-	return false;
-}
-
-template<typename T>
-bool BlockElementsListHasTailImpl( const std::unique_ptr< BlockElementsListNode<T> >& node )
-{
-	return std::get_if< EmptyVariant >( &node->next ) == nullptr;
-}
-
-bool BlockElementsListHasTail( const BlockElement& node )
-{
-	return std::visit( []( const auto& el ) { return BlockElementsListHasTailImpl(el); }, node );
-}
-
 // By declaring this class and all its methods locally( using anonymous namespace ) we allow complier to optimize methods of this class aggressively (using inlining where it is possible).
 class SyntaxAnalyzer final
 {
@@ -2790,47 +2748,46 @@ std::variant<Halt, HaltIf> SyntaxAnalyzer::ParseHalt()
 
 BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 {
-	BlockElementsList result;
-	BlockElement* list_tail= &result.start;
+	BlockElementsList::Builder result_builder;
 
 	while( NotEndOfFile() && it_->type != Lexem::Type::EndOfFile )
 	{
 		if( it_->type == Lexem::Type::BraceRight )
 			break;
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
-			AppendBlockElementsListNode( list_tail, ParseVariablesDeclaration() );
+			result_builder.Append( ParseVariablesDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
-			AppendBlockElementsListNode( list_tail, ParseAutoVariableDeclaration() );
+			result_builder.Append( ParseAutoVariableDeclaration() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::return_ )
-			AppendBlockElementsListNode( list_tail, ParseReturnOperator() );
+			result_builder.Append( ParseReturnOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::yield_ )
-			AppendBlockElementsListNode( list_tail, ParseYieldOperator() );
+			result_builder.Append( ParseYieldOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::while_ )
-			AppendBlockElementsListNode( list_tail, ParseWhileOperator() );
+			result_builder.Append( ParseWhileOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::loop_ )
-			AppendBlockElementsListNode( list_tail, ParseLoopOperator() );
+			result_builder.Append( ParseLoopOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::for_ )
-			std::visit( [&]( auto el ) { AppendBlockElementsListNode( list_tail, std::move(el) ); }, ParseForOperator() );
+			std::visit( [&]( auto el ) { result_builder.Append( std::move(el) ); }, ParseForOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::break_ )
-			AppendBlockElementsListNode( list_tail, ParseBreakOperator() );
+			result_builder.Append( ParseBreakOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::continue_ )
-			AppendBlockElementsListNode( list_tail, ParseContinueOperator() );
+			result_builder.Append( ParseContinueOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::with_ )
-			AppendBlockElementsListNode( list_tail, ParseWithOperator() );
+			result_builder.Append( ParseWithOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_ )
-			AppendBlockElementsListNode( list_tail, ParseIfOperator() );
+			result_builder.Append( ParseIfOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_if_ )
-			AppendBlockElementsListNode( list_tail, ParseStaticIfOperator() );
+			result_builder.Append( ParseStaticIfOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::if_coro_advance_ )
-			AppendBlockElementsListNode( list_tail, ParseIfCoroAdvanceOperator() );
+			result_builder.Append( ParseIfCoroAdvanceOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::switch_ )
-			AppendBlockElementsListNode( list_tail, ParseSwitchOperator() );
+			result_builder.Append( ParseSwitchOperator() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
-			AppendBlockElementsListNode( list_tail, ParseStaticAssert() );
+			result_builder.Append( ParseStaticAssert() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
-			AppendBlockElementsListNode( list_tail, ParseTypeAlias() );
+			result_builder.Append( ParseTypeAlias() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::halt_ )
-			std::visit( [&]( auto el ) { AppendBlockElementsListNode( list_tail, std::move(el) ); }, ParseHalt() );
+			std::visit( [&]( auto el ) { result_builder.Append( std::move(el) ); }, ParseHalt() );
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::safe_ &&
 				std::next(it_)->type == Lexem::Type::BraceLeft )
 		{
@@ -2838,7 +2795,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 			ScopeBlock block= ParseBlock();
 			block.safety= ScopeBlock::Safety::Safe;
 			block.label= TryParseLabel();
-			AppendBlockElementsListNode( list_tail, std::move( block ) );
+			result_builder.Append( std::move( block ) );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::unsafe_ &&
 				std::next(it_)->type == Lexem::Type::BraceLeft )
@@ -2847,13 +2804,13 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 			ScopeBlock block= ParseBlock();
 			block.safety= ScopeBlock::Safety::Unsafe;
 			block.label= TryParseLabel();
-			AppendBlockElementsListNode( list_tail, std::move( block ) );
+			result_builder.Append( std::move( block ) );
 		}
 		else if( it_->type == Lexem::Type::BraceLeft )
 		{
 			ScopeBlock block= ParseBlock();
 			block.label= TryParseLabel();
-			AppendBlockElementsListNode( list_tail, std::move(block) );
+			result_builder.Append( std::move(block) );
 		}
 		else if( it_->type == Lexem::Type::Increment )
 		{
@@ -2861,7 +2818,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 			NextLexem();
 
 			op.expression= ParseExpression();
-			AppendBlockElementsListNode( list_tail, std::move(op) );
+			result_builder.Append( std::move(op) );
 
 			ExpectSemicolon();
 		}
@@ -2871,7 +2828,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 			NextLexem();
 
 			op.expression= ParseExpression();
-			AppendBlockElementsListNode( list_tail, std::move(op) );
+			result_builder.Append( std::move(op) );
 
 			ExpectSemicolon();
 		}
@@ -2881,11 +2838,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 			{
 				if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
 				{
-					BlockElementsList macro_elements= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements );
-					const auto next_tail= GetBlockElementsListTail( macro_elements.start );
-					*list_tail= std::move(macro_elements.start);
-					list_tail= next_tail;
-
+					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements ) );
 					continue;
 				}
 			}
@@ -2900,7 +2853,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 				assignment_operator.l_value= std::move(l_expression);
 				assignment_operator.r_value= ParseExpression();
 
-				AppendBlockElementsListNode( list_tail, std::move(assignment_operator) );
+				result_builder.Append( std::move(assignment_operator) );
 
 				if( it_->type != Lexem::Type::Semicolon )
 				{
@@ -2920,7 +2873,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 				op.l_value= std::move(l_expression);
 				op.r_value= ParseExpression();
 
-				AppendBlockElementsListNode( list_tail, std::move(op) );
+				result_builder.Append( std::move(op) );
 
 				if( it_->type != Lexem::Type::Semicolon )
 				{
@@ -2934,7 +2887,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 			{
 				SingleExpressionOperator expr(it_->src_loc );
 				expr.expression= std::move(l_expression);
-				AppendBlockElementsListNode( list_tail, std::move(expr) );
+				result_builder.Append( std::move(expr) );
 
 				if( it_->type == Lexem::Type::Semicolon )
 					NextLexem();
@@ -2947,7 +2900,7 @@ BlockElementsList SyntaxAnalyzer::ParseBlockElements()
 		}
 	}
 
-	return result;
+	return result_builder.Build();
 }
 
 Block SyntaxAnalyzer::ParseBlock()
@@ -2991,9 +2944,9 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 	{
 		if( const auto macro= FetchMacro( it_->text, Macro::Context::Block ) )
 		{
-			BlockElement list_node= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements ).start;
+			BlockElementsList list= ExpandMacro( *macro, &SyntaxAnalyzer::ParseBlockElements );
 
-			if( BlockElementsListHasTail( list_node ) )
+			if( list.HasTail() )
 			{
 				LexSyntError error_message;
 				error_message.src_loc= it_->src_loc;
@@ -3002,6 +2955,7 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 				return nullptr;
 			}
 
+			/*
 			if( const auto block_node= std::get_if< std::unique_ptr< BlockElementsListNode< ScopeBlock > > >( &list_node ) )
 			{
 				ScopeBlock& block= (*block_node)->payload;
@@ -3025,6 +2979,7 @@ IfAlternativePtr SyntaxAnalyzer::ParseIfAlternative()
 				return std::make_unique<IfAlternative>( std::move((*static_if_operator_node)->payload) );
 			if( const auto if_coro_advance_operator_node= std::get_if< std::unique_ptr< BlockElementsListNode< IfCoroAdvanceOperator > > >( &list_node ) )
 				return std::make_unique<IfAlternative>( std::move((*if_coro_advance_operator_node)->payload) );
+			*/
 
 			LexSyntError error_message;
 			error_message.src_loc= it_->src_loc;

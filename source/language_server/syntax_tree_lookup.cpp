@@ -52,18 +52,6 @@ void FindImpl( const std::unique_ptr<T>& el )
 	FindImpl( *el );
 }
 
-template<typename T>
-void FindImpl( const Synt::BlockElementsListNode<T>& el )
-{
-	FindImpl( el.payload );
-	FindImpl( el.next );
-}
-
-void FindImpl( const Synt::BlockElement& el )
-{
-	FindImplVariant( el );
-}
-
 void FindImpl( const Synt::Expression& expression )
 {
 	FindImplVariant( expression );
@@ -521,7 +509,7 @@ void FindImpl( const Synt::IfAlternative& if_alternative )
 
 void FindImpl( const Synt::Block& block )
 {
-	FindImpl( block.elements.start );
+	block.elements.Iter( [&]( const auto& el ) { FindImpl(el); } );
 }
 
 void FindImpl( const Synt::ScopeBlock& scope_block )
