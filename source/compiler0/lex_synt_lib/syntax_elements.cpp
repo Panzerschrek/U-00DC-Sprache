@@ -15,8 +15,8 @@ SIZE_ASSERT( TypeName, 64u )
 SIZE_ASSERT( Expression, 88u )
 SIZE_ASSERT( Initializer, 96u )
 SIZE_ASSERT( BlockElementsList, 16u ) // Variant index + unique_ptr
-SIZE_ASSERT( ClassElement, 144u )
-SIZE_ASSERT( ProgramElement, 144u )
+SIZE_ASSERT( ClassElementsList, 16u ) // Variant index + unique_ptr
+SIZE_ASSERT( ProgramElementsList, 16u ) // Variant index + unique_ptr
 
 TypeofTypeName::TypeofTypeName( const SrcLoc& src_loc )
 	: src_loc(src_loc)

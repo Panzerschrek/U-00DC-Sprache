@@ -120,11 +120,11 @@ public: // IDE helpers.
 	// Try to compile given program element, including internal completion syntax element.
 	// Return completion result.
 	// Prefix is used to find proper namespace/class (name lookups are used).
-	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
-	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
+	// std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
+	// std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
 
-	std::vector<SignatureHelpItem> GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
-	std::vector<SignatureHelpItem> GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
+	// std::vector<SignatureHelpItem> GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
+	// std::vector<SignatureHelpItem> GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
 
 	// Delete bodies of functions (excepth constexpr ones).
 	// This breaks result module and should not be used for a program compilation (with result object file).
@@ -191,14 +191,14 @@ private:
 	std::vector<CompletionItem> CompletionResultFinalize();
 	std::vector<SignatureHelpItem> SignatureHelpResultFinalize();
 
-	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element );
-	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element );
+	// void BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element );
+	// void BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionPtr& function_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassPtr& class_ptr );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template );
@@ -1111,18 +1111,18 @@ private:
 
 	// NamesScope fill
 
-	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionPtr& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::ClassPtr& class_declaration );
+	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplate& type_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
-	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
+	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
 
 	// Global things build
 

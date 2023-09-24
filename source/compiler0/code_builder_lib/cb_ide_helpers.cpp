@@ -332,15 +332,12 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)enum_;
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionPtr& function_ptr )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function )
 {
-	if( function_ptr == nullptr || function_ptr->name.empty() )
-		return;
-
 	NamesScope* actual_nams_scope= nullptr;
 	ClassPtr base_class= nullptr;
 
-	const auto& name= function_ptr->name;
+	const auto& name= function.name;
 
 	if( name.size() > 1 )
 	{
@@ -371,7 +368,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 			}
 
 			// Perform regular name lookup.
-			value= LookupName( names_scope, name[0].name, function_ptr->src_loc ).value;
+			value= LookupName( names_scope, name[0].name, function.src_loc ).value;
 			if( value != nullptr )
 				CollectDefinition( *value, name[0].src_loc );
 		}
@@ -430,7 +427,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	const bool out_of_line_flag= false;
 
 	// Prepare function - complete names in types of params and return value.
-	const size_t function_index= PrepareFunction( *actual_nams_scope, base_class, functions_set, *function_ptr, out_of_line_flag );
+	const size_t function_index= PrepareFunction( *actual_nams_scope, base_class, functions_set, function, out_of_line_flag );
 
 	if( function_index >= functions_set.functions.size() )
 	{
@@ -438,7 +435,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		return;
 	}
 
-	if( function_ptr->block == nullptr )
+	if( function.block == nullptr )
 		return; // This is only prototype.
 
 	FunctionVariable& function_variable= functions_set.functions[ function_index ];
@@ -449,9 +446,9 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		base_class,
 		*actual_nams_scope,
 		name.back().name,
-		function_ptr->type.params,
-		*function_ptr->block,
-		function_ptr->constructor_initialization_list.get() );
+		function.type.params,
+		*function.block,
+		function.constructor_initialization_list.get() );
 
 	// Clear garbage - remove created llvm function.
 	if( function_variable.llvm_function->function != nullptr )

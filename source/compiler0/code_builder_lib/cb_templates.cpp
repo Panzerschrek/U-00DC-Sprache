@@ -909,7 +909,7 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 					NamesScopeValue( Type( cache_class_it->second ), type_template.syntax_element->src_loc /* TODO - check src_loc */ ) );
 		}
 
-		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, *class_ptr );
+		const ClassPtr class_type= NamesScopeFill( *template_args_namespace, **class_ptr );
 		if( class_type == nullptr )
 			return nullptr;
 

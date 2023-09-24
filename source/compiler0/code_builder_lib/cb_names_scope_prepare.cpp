@@ -6,40 +6,32 @@
 namespace U
 {
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements )
 {
-	for( const Synt::ProgramElement& program_element : namespace_elements )
-	{
-		std::visit(
-			[&]( const auto& t )
-			{
-				NamesScopeFill( names_scope, t );
-			},
-			program_element );
-	}
+	namespace_elements.Iter( [&]( const auto& el ) { NamesScopeFill( names_scope, el ); } );
 }
 
-void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::NamespacePtr& namespace_  )
+void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Namespace& namespace_  )
 {
 	NamesScope* result_scope= &names_scope;
-	if( const NamesScopeValue* const same_value= names_scope.GetThisScopeValue( namespace_->name ) )
+	if( const NamesScopeValue* const same_value= names_scope.GetThisScopeValue( namespace_.name ) )
 	{
 		if( const NamesScopePtr same_namespace= same_value->value.GetNamespace() )
 			result_scope= same_namespace.get(); // Extend existend namespace.
 		else
-			REPORT_ERROR( Redefinition, names_scope.GetErrors(), namespace_->src_loc, namespace_->name );
+			REPORT_ERROR( Redefinition, names_scope.GetErrors(), namespace_.src_loc, namespace_.name );
 	}
 	else
 	{
-		if( IsKeyword( namespace_->name ) )
-			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_->src_loc );
+		if( IsKeyword( namespace_.name ) )
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), namespace_.src_loc );
 
-		const auto new_names_scope= std::make_shared<NamesScope>( namespace_->name, &names_scope );
-		names_scope.AddName( namespace_->name, NamesScopeValue( new_names_scope, namespace_->src_loc ) );
+		const auto new_names_scope= std::make_shared<NamesScope>( namespace_.name, &names_scope );
+		names_scope.AddName( namespace_.name, NamesScopeValue( new_names_scope, namespace_.src_loc ) );
 		result_scope= new_names_scope.get();
 	}
 
-	NamesScopeFill( *result_scope, namespace_->elements );
+	NamesScopeFill( *result_scope, namespace_.elements );
 }
 
 void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
@@ -72,12 +64,10 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::AutoVaria
 
 void CodeBuilder::NamesScopeFill(
 	NamesScope& names_scope,
-	const Synt::FunctionPtr& function_declaration_ptr,
+	const Synt::Function& function_declaration,
 	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
-{
-	const auto& function_declaration= *function_declaration_ptr;
-	
+{	
 	if( function_declaration.name.size() != 1u )
 		return; // process out of line functions later.
 
@@ -161,10 +151,8 @@ void CodeBuilder::NamesScopeFill(
 	}
 }
 
-ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::ClassPtr& class_declaration_ptr )
+ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration )
 {
-	const auto& class_declaration= *class_declaration_ptr;
-
 	const std::string& class_name= class_declaration.name;
 	if( IsKeyword( class_name ) )
 		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), class_declaration.src_loc );
@@ -216,7 +204,7 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 			++field_number;
 			class_type->SetMemberVisibility( in_class_field.name, current_visibility );
 		}
-		void operator()( const Synt::FunctionPtr& func )
+		void operator()( const Synt::Function& func )
 		{
 			this_.NamesScopeFill( *class_type->members, func, class_type, current_visibility );
 		}
@@ -259,16 +247,14 @@ ClassPtr CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::Class
 			this_.NamesScopeFill( *class_type->members, auto_variable_declaration );
 			class_type->SetMemberVisibility( auto_variable_declaration.name, current_visibility );
 		}
-		void operator()( const Synt::ClassPtr& inner_class )
+		void operator()( const Synt::Class& inner_class )
 		{
 			this_.NamesScopeFill( *class_type->members, inner_class );
-			class_type->SetMemberVisibility( inner_class->name, current_visibility );
+			class_type->SetMemberVisibility( inner_class.name, current_visibility );
 		}
 	};
 
-	Visitor visitor( *this, class_declaration, class_type, class_name );
-	for( const Synt::ClassElement& class_element : class_declaration.elements )
-		std::visit( visitor, class_element );
+	class_declaration.elements.Iter( Visitor( *this, class_declaration, class_type, class_name ) );
 
 	return class_type;
 }
@@ -342,8 +328,9 @@ void CodeBuilder::NamesScopeFill( NamesScope& names_scope, const Synt::StaticAss
 
 void CodeBuilder::NamesScopeFillOutOfLineElements(
 	NamesScope& names_scope,
-	const Synt::ProgramElements& namespace_elements )
+	const Synt::ProgramElementsList& namespace_elements )
 {
+	/*
 	for (const Synt::ProgramElement& program_element : namespace_elements )
 	{
 		if( const auto func_ptr= std::get_if<Synt::FunctionPtr>( &program_element ) )
@@ -411,6 +398,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 			}
 		}
 	}
+	*/
 }
 
 } // namespace U

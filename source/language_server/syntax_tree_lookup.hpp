@@ -30,7 +30,7 @@ struct SyntaxTreeLookupResult
 using SyntaxTreeLookupResultOpt= std::optional<SyntaxTreeLookupResult>;
 
 // Complexity is linear.
-SyntaxTreeLookupResultOpt FindCompletionSyntaxElement( uint32_t line, uint32_t column, const Synt::ProgramElements& program_elements );
+SyntaxTreeLookupResultOpt FindCompletionSyntaxElement( uint32_t line, uint32_t column, const Synt::ProgramElementsList& program_elements );
 
 } // namespace LangServer
 

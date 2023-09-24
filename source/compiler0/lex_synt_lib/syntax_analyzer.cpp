@@ -170,8 +170,8 @@ private:
 	Macro::MatchElements ParseMacroMatchBlock();
 	Macro::ResultElements ParseMacroResultBlock();
 
-	ProgramElements ParseNamespaceBody() { return ParseNamespaceBody( Lexem::Type::BraceRight ); }
-	ProgramElements ParseNamespaceBody( Lexem::Type end_lexem );
+	ProgramElementsList ParseNamespaceBody() { return ParseNamespaceBody( Lexem::Type::BraceRight ); }
+	ProgramElementsList ParseNamespaceBody( Lexem::Type end_lexem );
 
 	NumericConstant ParseNumericConstant();
 
@@ -243,7 +243,7 @@ private:
 	TypeAlias ParseTypeAliasBody();
 	Function ParseFunction();
 	Class ParseClass();
-	ClassElements ParseClassBodyElements();
+	ClassElementsList ParseClassBodyElements();
 	Class ParseClassBody();
 
 	using TemplateVar=
@@ -679,27 +679,27 @@ Macro::ResultElements SyntaxAnalyzer::ParseMacroResultBlock()
 	return result;
 }
 
-ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem )
+ProgramElementsList SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem )
 {
-	ProgramElements program_elements;
+	ProgramElementsList::Builder result_builder;
 
 	while( NotEndOfFile() )
 	{
 		if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
-			program_elements.emplace_back( std::make_unique<Function>(ParseFunction()) );
+			result_builder.Append( ParseFunction() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
-			program_elements.emplace_back( std::make_unique<Class>(ParseClass()) );
+			result_builder.Append( ParseClass() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			TemplateVar template_= ParseTemplate();
 			if( auto* const type_template= std::get_if<TypeTemplate>(&template_) )
-				program_elements.emplace_back( std::move( *type_template ) );
+				result_builder.Append( std::move( *type_template ) );
 			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
-				program_elements.emplace_back( std::move( *function_template ) );
+				result_builder.Append( std::move( *function_template ) );
 			else if( std::get_if<EmptyVariant>(&template_) )
 			{}
 			else
@@ -710,34 +710,34 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
-			program_elements.emplace_back( ParseVariablesDeclaration() );
+			result_builder.Append( ParseVariablesDeclaration() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 		{
-			program_elements.emplace_back( ParseAutoVariableDeclaration() );
+			result_builder.Append( ParseAutoVariableDeclaration() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
-			program_elements.emplace_back( ParseStaticAssert() );
+			result_builder.Append( ParseStaticAssert() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
 		{
-			program_elements.emplace_back( ParseEnum() );
+			result_builder.Append( ParseEnum() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
-			program_elements.emplace_back(ParseTypeAlias() );
+			result_builder.Append(ParseTypeAlias() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::namespace_ )
 		{
-			auto namespace_= std::make_unique<Namespace>( it_->src_loc );
+			Namespace namespace_( it_->src_loc );
 			NextLexem();
 
 			std::string name;
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				name= it_->text;
-				namespace_->src_loc= it_->src_loc;
+				namespace_.src_loc= it_->src_loc;
 				NextLexem();
 			}
 			else
@@ -751,17 +751,17 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 				TryRecoverAfterError( g_namespace_body_elements_start_lexems );
 			}
 
-			namespace_->name= std::move(name);
-			namespace_->elements= ParseNamespaceBody( Lexem::Type::BraceRight );
+			namespace_.name= std::move(name);
+			namespace_.elements= ParseNamespaceBody( Lexem::Type::BraceRight );
 
 			ExpectLexem( Lexem::Type::BraceRight );
 
-			program_elements.push_back( std::move( namespace_ ) );
+			result_builder.Append( std::move( namespace_ ) );
 		}
 		else if( it_->type == end_lexem )
 		{
 			// End of namespace
-			return program_elements;
+			break;
 		}
 		else
 		{
@@ -769,8 +769,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 			{
 				if( const Macro* const macro= FetchMacro( it_->text, Macro::Context::Namespace ) )
 				{
-					for( auto& element : ExpandMacro( *macro, &SyntaxAnalyzer::ParseNamespaceBody ) )
-						program_elements.push_back( std::move(element) );
+					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseNamespaceBody ) );
 					continue;
 				}
 			}
@@ -780,7 +779,7 @@ ProgramElements SyntaxAnalyzer::ParseNamespaceBody( const Lexem::Type end_lexem 
 		}
 	} // while not end of file
 
-	return program_elements;
+	return result_builder.Build();
 }
 
 NumericConstant SyntaxAnalyzer::ParseNumericConstant()
@@ -3530,9 +3529,9 @@ Class SyntaxAnalyzer::ParseClass()
 	return result;
 }
 
-ClassElements SyntaxAnalyzer::ParseClassBodyElements()
+ClassElementsList SyntaxAnalyzer::ParseClassBodyElements()
 {
-	ClassElements result;
+	ClassElementsList::Builder result_builder;
 
 	while( NotEndOfFile() )
 	{
@@ -3540,40 +3539,40 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			break;
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::fn_ || it_->text == Keywords::op_ ) )
 		{
-			result.emplace_back( std::make_unique<Function>(ParseFunction()) );
+			result_builder.Append( ParseFunction() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && ( it_->text == Keywords::struct_ || it_->text == Keywords::class_ ) )
 		{
-			result.emplace_back( std::make_unique<Class>(ParseClass()) );
+			result_builder.Append( ParseClass() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::var_ )
 		{
-			result.emplace_back( ParseVariablesDeclaration() );
+			result_builder.Append( ParseVariablesDeclaration() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::auto_ )
 		{
-			result.emplace_back( ParseAutoVariableDeclaration() );
+			result_builder.Append( ParseAutoVariableDeclaration() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::static_assert_ )
 		{
-			result.emplace_back( ParseStaticAssert() );
+			result_builder.Append( ParseStaticAssert() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::enum_ )
 		{
-			result.emplace_back( ParseEnum() );
+			result_builder.Append( ParseEnum() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::type_ )
 		{
-			result.emplace_back( ParseTypeAlias() );
+			result_builder.Append( ParseTypeAlias() );
 		}
 		else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::template_ )
 		{
 			TemplateVar template_= ParseTemplate();
 			
 			if( auto* const type_template= std::get_if<TypeTemplate>(&template_) )
-				result.emplace_back( std::move( *type_template ) );
+				result_builder.Append( std::move( *type_template ) );
 			else if( auto* const function_template= std::get_if<FunctionTemplate>(&template_) )
-				result.emplace_back( std::move( *function_template ) );
+				result_builder.Append( std::move( *function_template ) );
 			else if( std::get_if<EmptyVariant>(&template_) )
 			{}
 			else
@@ -3591,7 +3590,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			if( it_->text == Keywords::protected_ )
 				visibility= ClassMemberVisibility::Protected;
 
-			result.emplace_back( ClassVisibilityLabel( it_->src_loc, visibility ) );
+			result_builder.Append( ClassVisibilityLabel( it_->src_loc, visibility ) );
 
 			NextLexem();
 			ExpectLexem( Lexem::Type::Colon );
@@ -3602,8 +3601,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			{
 				if( const Macro* const macro= FetchMacro( it_->text, Macro::Context::Class ) )
 				{
-					for( auto& element : ExpandMacro( *macro, &SyntaxAnalyzer::ParseClassBodyElements ) )
-						result.push_back( std::move(element) );
+					result_builder.AppendList( ExpandMacro( *macro, &SyntaxAnalyzer::ParseClassBodyElements ) );
 					continue;
 				}
 			}
@@ -3647,7 +3645,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			}
 			else
 			{
-				result.emplace_back( std::move( field ) );
+				result_builder.Append( std::move( field ) );
 				PushErrorMessage();
 				TryRecoverAfterError( g_class_body_elements_control_lexems );
 				continue;
@@ -3657,7 +3655,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 			if( std::get_if<EmptyVariant>( &field_initializer ) == nullptr )
 				field.initializer= std::make_unique<Initializer>( std::move(field_initializer) );
 
-			result.emplace_back( std::move( field ) );
+			result_builder.Append( std::move( field ) );
 
 			if( it_->type == Lexem::Type::Semicolon )
 				NextLexem();
@@ -3669,7 +3667,7 @@ ClassElements SyntaxAnalyzer::ParseClassBodyElements()
 		}
 	}
 
-	return result;
+	return result_builder.Build();
 }
 
 Class SyntaxAnalyzer::ParseClassBody()

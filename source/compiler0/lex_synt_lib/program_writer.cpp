@@ -49,9 +49,8 @@ void ElementWrite( const TypeTemplate& type_template, std::ostream& stream );
 void ElementWrite( const FunctionTemplate& function_template, std::ostream& stream );
 void ElementWrite( const ClassField& class_field, std::ostream& stream );
 void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& stream );
-void ElementWrite( const ClassElements& class_elements, std::ostream& stream );
-void ElementWrite( const ProgramElement& element, std::ostream& stream );
-void ElementWrite( const ProgramElements& elements, std::ostream& stream );
+void ElementWrite( const ClassElementsList& class_elements, std::ostream& stream );
+void ElementWrite( const ProgramElementsList& elements, std::ostream& stream );
 // Prototypes end
 
 class UniversalVisitor final
@@ -814,26 +813,19 @@ void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& s
 	};
 }
 
-void ElementWrite( const ClassElements& class_elements, std::ostream& stream )
+void ElementWrite( const ClassElementsList& class_elements, std::ostream& stream )
 {
-	for( const ClassElement& element : class_elements )
-		std::visit( UniversalVisitor( stream ), element );
+	class_elements.Iter( UniversalVisitor( stream ) );
 }
 
-void ElementWrite( const ProgramElement& element, std::ostream& stream )
+void ElementWrite( const ProgramElementsList& elements, std::ostream& stream )
 {
-	std::visit( UniversalVisitor(stream), element );
-}
-
-void ElementWrite( const ProgramElements& elements, std::ostream& stream )
-{
-	for( const ProgramElement& element : elements )
-		ElementWrite( element, stream );
+	elements.Iter( UniversalVisitor(stream) );
 }
 
 } // namespace
 
-void WriteProgram( const ProgramElements& program_elements, std::ostream& stream )
+void WriteProgram( const ProgramElementsList& program_elements, std::ostream& stream )
 {
 	ElementWrite( program_elements, stream );
 }

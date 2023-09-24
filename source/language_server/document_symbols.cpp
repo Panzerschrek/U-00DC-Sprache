@@ -215,11 +215,11 @@ Symbols BuildProgramModel_r(
 }
 
 Symbols BuildProgramModel_r(
-	const Synt::ClassElements& elements,
+	const Synt::ClassElementsList& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
 
 Symbols BuildProgramModel_r(
-	const Synt::ProgramElements& elements,
+	const Synt::ProgramElementsList& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
 
 struct Visitor final
@@ -357,7 +357,7 @@ struct Visitor final
 };
 
 Symbols BuildProgramModel_r(
-	const Synt::ClassElements& elements,
+	const Synt::ClassElementsList& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
 	Visitor visitor( src_loc_to_range_mapping_function );
@@ -368,7 +368,7 @@ Symbols BuildProgramModel_r(
 }
 
 Symbols BuildProgramModel_r(
-	const Synt::ProgramElements& elements,
+	const Synt::ProgramElementsList& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
 	Visitor visitor( src_loc_to_range_mapping_function );

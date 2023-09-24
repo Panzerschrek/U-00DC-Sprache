@@ -23,7 +23,7 @@ class CppAstConsumer : public clang::ASTConsumer
 {
 public:
 	CppAstConsumer(
-		Synt::ProgramElements& out_elements,
+		Synt::ProgramElementsList& out_elements,
 		const clang::SourceManager& source_manager,
 		clang::Preprocessor& preprocessor,
 		const clang::TargetInfo& target_info,
@@ -37,13 +37,13 @@ public:
 	virtual void HandleTranslationUnit( clang:: ASTContext& ast_context ) override;
 
 private:
-	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, bool externc );
-	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc );
+	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList& program_elements, bool externc );
+	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElementsList& class_elements, bool externc );
 
 	Synt::ClassPtr ProcessRecord( const clang::RecordDecl& record_decl, bool externc );
 	Synt::TypeAlias ProcessTypedef( const clang::TypedefNameDecl& typedef_decl );
 	Synt::FunctionPtr ProcessFunction( const clang::FunctionDecl& func_decl, bool externc );
-	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElements& out_elements );
+	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElementsList& out_elements );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type );
 	std::string TranslateRecordType( const clang::RecordType& in_type );
@@ -54,7 +54,7 @@ private:
 	std::string TranslateIdentifier( llvm::StringRef identifier );
 
 private:
-	Synt::ProgramElements& root_program_elements_;
+	Synt::ProgramElementsList& root_program_elements_;
 
 	const clang::SourceManager& source_manager_;
 	clang::Preprocessor& preprocessor_;
@@ -88,7 +88,7 @@ private:
 const SrcLoc g_dummy_src_loc;
 
 CppAstConsumer::CppAstConsumer(
-	Synt::ProgramElements& out_elements,
+	Synt::ProgramElementsList& out_elements,
 	const clang::SourceManager& source_manager,
 	clang::Preprocessor& preprocessor,
 	const clang::TargetInfo& target_info,
@@ -287,7 +287,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 	} // for defines
 }
 
-void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, const bool externc )
+void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList& program_elements, const bool externc )
 {
 	if( skip_declarations_from_includes_ &&
 		source_manager_.getFileID( decl.getLocation() ) != source_manager_.getMainFileID() )
@@ -348,7 +348,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	}
 }
 
-void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc )
+void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassElementsList& class_elements, bool externc )
 {
 	if( decl.isImplicit() )
 		return;
@@ -536,7 +536,7 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 	return func;
 }
 
-void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElements& out_elements )
+void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElementsList& out_elements )
 {
 	if( !enum_decl.isComplete() )
 		return;

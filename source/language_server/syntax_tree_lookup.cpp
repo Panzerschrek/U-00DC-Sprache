@@ -17,7 +17,7 @@ namespace
 class Finder
 {
 public:
-	SyntaxTreeLookupResultOpt Find( const uint32_t line, const uint32_t column, const Synt::ProgramElements& program_elements )
+	SyntaxTreeLookupResultOpt Find( const uint32_t line, const uint32_t column, const Synt::ProgramElementsList& program_elements )
 	{
 		line_= line;
 		column_= column;
@@ -379,7 +379,7 @@ void FindImpl( const Synt::UninitializedInitializer& uninitialized_initializer )
 	(void)uninitialized_initializer;
 }
 
-void FindImpl( const Synt::ProgramElements& program_elements )
+void FindImpl( const Synt::ProgramElementsList& program_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;
 	for( const Synt::ProgramElement& program_element : program_elements )
@@ -390,7 +390,7 @@ void FindImpl( const Synt::ProgramElements& program_elements )
 	global_item_= prev_global_item;
 }
 
-void FindImpl( const Synt::ClassElements& class_elements )
+void FindImpl( const Synt::ClassElementsList& class_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;
 	for( const Synt::ClassElement& class_element : class_elements )
@@ -663,7 +663,7 @@ void FindImpl( const Synt::HaltIf& halt_if )
 
 } // namespace
 
-SyntaxTreeLookupResultOpt FindCompletionSyntaxElement( const uint32_t line, const uint32_t column, const Synt::ProgramElements& program_elements )
+SyntaxTreeLookupResultOpt FindCompletionSyntaxElement( const uint32_t line, const uint32_t column, const Synt::ProgramElementsList& program_elements )
 {
 	return Finder().Find( line, column, program_elements );
 }

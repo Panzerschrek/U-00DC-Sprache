@@ -125,7 +125,6 @@ struct Namespace;
 using FunctionTypePtr= std::unique_ptr<const FunctionType>;
 using GeneratorTypePtr= std::unique_ptr<const GeneratorType>;
 using ClassPtr= std::unique_ptr<const Class>;
-using FunctionPtr= std::unique_ptr<const Function>;
 using NamespacePtr= std::unique_ptr<const Namespace>;
 
 using TypeName= std::variant<
@@ -234,34 +233,30 @@ using IfAlternative= std::variant<
 
 using IfAlternativePtr= std::unique_ptr<const IfAlternative>;
 
-using ClassElement= std::variant<
+using ClassElementsList= VariantLinkedList<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	StaticAssert,
 	TypeAlias,
 	Enum,
-	FunctionPtr,
+	Function,
 	ClassField,
 	ClassVisibilityLabel,
-	ClassPtr,
+	Class,
 	TypeTemplate,
 	FunctionTemplate >;
 
-using ClassElements= std::vector<ClassElement>;
-
-using ProgramElement= std::variant<
+using ProgramElementsList= VariantLinkedList<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	StaticAssert,
 	TypeAlias,
 	Enum,
-	FunctionPtr,
-	ClassPtr,
+	Function,
+	Class,
 	TypeTemplate,
 	FunctionTemplate,
-	NamespacePtr >;
-
-using ProgramElements= std::vector<ProgramElement>;
+	Namespace >;
 
 struct NonSyncTagNone{};
 struct NonSyncTagTrue{};
@@ -1143,7 +1138,7 @@ struct Class
 	explicit Class( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ClassElements elements;
+	ClassElementsList elements;
 	std::string name;
 	std::vector<ComplexName> parents;
 	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
@@ -1190,7 +1185,7 @@ struct FunctionTemplate final : public TemplateBase
 {
 	explicit FunctionTemplate( const SrcLoc& src_loc );
 
-	FunctionPtr function;
+	std::unique_ptr<const Function> function;
 };
 
 struct Namespace
@@ -1199,7 +1194,7 @@ struct Namespace
 
 	SrcLoc src_loc;
 	std::string name;
-	ProgramElements elements;
+	ProgramElementsList elements;
 };
 
 struct Import
