@@ -1015,14 +1015,13 @@ fn CodeBuilder::BuildBlockElement( mut this, NamesScopePtr& names_scope, Functio
 		return BlockElementBuildInfo();
 	}
 	var ClassTypePtr coro_class_type= coro_class_type_opt.try_deref();
-	// TODO - avoid taking copy
-	auto coroutine_type_description_opt= coro_class_type.lock_imut().deref().coroutine_type_description;
-	if( coroutine_type_description_opt.empty() )
+	if( coro_class_type.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().empty() )
 	{
 		REPORT_ERROR( IfCoroAdvanceForNonCoroutineValue, names_scope, if_coro_advance_operator.src_loc, coro_expr.t )
 		return BlockElementBuildInfo();
 	}
-	var CoroutineTypeDescription& coroutine_type_description= coroutine_type_description_opt.try_deref();
+	// TODO - avoid taking copy
+	var CoroutineTypeDescription coroutine_type_description= coro_class_type.lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
 
 	if( coro_expr.value_type == ValueType::ReferenceImut )
 	{

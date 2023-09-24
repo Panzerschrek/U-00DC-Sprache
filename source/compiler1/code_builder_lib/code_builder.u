@@ -37,7 +37,7 @@ fn ClearClassInternals( ClassTypePtr& class_type, NamesScopeMutPtr& dummy_class_
 	class_.fields_order.clear();
 	class_.parents.clear();
 	class_.virtual_table.clear();
-	class_.typeinfo_src_type_.reset();
+	class_.generated_class_data= ClassType::NonGeneratedClassTag();
 }
 
 fn CodeBuilder::constructor(
@@ -1056,7 +1056,7 @@ fn CodeBuilder::BuildFuncCode( mut this, NamesScopePtr& names_scope, FunctionVar
 	{
 		// TODO - avoid taking copy
 		var CoroutineTypeDescription coroutine_type_description=
-			func_variable.t.return_type.GetClassType().try_deref().lock_imut().deref().coroutine_type_description.try_deref();
+			func_variable.t.return_type.GetClassType().try_deref().lock_imut().deref().generated_class_data.get</ CoroutineTypeDescription />().try_deref();
 
 		if( !EnsureTypeComplete( coroutine_type_description.return_type ) )
 		{

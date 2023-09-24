@@ -462,7 +462,7 @@ fn EncodeFunctionParams( ManglerState& mut mangler_state, ust::vector</FunctionT
 
 fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_type )
 {
-	auto& base_template= class_type.base_template.try_deref();
+	auto& base_template= class_type.generated_class_data.get</ ClassType::BaseTemplate />().try_deref();
 	ADD_NODE( mangler_state )
 	{
 		// Skip template parameters namespace.
@@ -480,7 +480,7 @@ fn EncodeTemplateClassName( ManglerState &mut mangler_state, ClassType& class_ty
 
 fn EncodeCoroutineClassName( ManglerState &mut mangler_state, ClassType& class_type )
 {
-	var CoroutineTypeDescription& coroutine_type_description= class_type.coroutine_type_description.try_deref();
+	var CoroutineTypeDescription& coroutine_type_description= class_type.generated_class_data.get</ CoroutineTypeDescription />().try_deref();
 
 	ADD_NODE( mangler_state )
 	{
@@ -578,7 +578,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 		auto class_members_lock= class_members.lock_imut();
 		auto& class_members_ref= class_members_lock.deref();
 
-		if( !class_type.typeinfo_src_type_.empty() )
+		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ ClassType::TypeinfoClassDescription />() )
 		{
 			ADD_NODE( mangler_state )
 			{
@@ -589,16 +589,16 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 				ADD_NODE( mangler_state )
 				{
 					var TemplateArgsFinished mut typeinfo_args;
-					typeinfo_args.push_back( class_type.typeinfo_src_type_.try_deref() );
+					typeinfo_args.push_back( typeinfo_class_description.source_type );
 					EncodeTemplateArgs( mangler_state, typeinfo_args );
 				}
 			}
 		}
-		else if( !class_type.base_template.empty() )
+		else if_var( &base_template : class_type.generated_class_data.get</ ClassType::BaseTemplate />() )
 		{
 			ADD_NODE( mangler_state )
 			{
-				auto t= class_type.base_template.try_deref().class_template;
+				auto t= base_template.class_template;
 				auto t_namespace= t.lock_imut().deref().parent_names_scope.lock();
 				if( !t_namespace.empty() && !t_namespace.try_lock_imut().deref().GetParent().empty() )
 				{
@@ -612,7 +612,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 				}
 			}
 		}
-		else if( !class_type.coroutine_type_description.empty() )
+		else if( !class_type.generated_class_data.get</ CoroutineTypeDescription />().empty() )
 		{
 			EncodeCoroutineClassName( mangler_state, class_type );
 		}
@@ -751,7 +751,7 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 	{
 		auto class_lock= class_ptr.try_lock_imut();
 		auto& class_= class_lock.deref();
-		if( !class_.base_template.empty() )
+		if( !class_.generated_class_data.get</ ClassType::BaseTemplate />().empty() )
 		{
 			ADD_NODE( mangler_state )
 			{
@@ -759,7 +759,7 @@ fn EncodeNamespacePrefix_r( ManglerState& mut mangler_state, NamesScope& names_s
 			}
 			return;
 		}
-		if( !class_.coroutine_type_description.empty() )
+		if( !class_.generated_class_data.get</ CoroutineTypeDescription />().empty() )
 		{
 			EncodeCoroutineClassName( mangler_state, class_ );
 			return;

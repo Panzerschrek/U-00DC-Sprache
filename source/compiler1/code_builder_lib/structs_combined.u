@@ -1286,7 +1286,7 @@ fn NamesScope::ToString( this ) : ust::string8
 	{
 		auto class_lock= class_.try_lock_imut();
 		auto& class_type= class_lock.deref();
-		if_var( &base_template : class_type.base_template )
+		if_var( &base_template : class_type.generated_class_data.get</ ClassType::BaseTemplate />() )
 		{
 			// This is class template. So, parent namespace is arguments names scope.
 			with( &type_template : base_template.class_template.lock_imut().deref() )
@@ -1329,19 +1329,19 @@ fn NamesScope::ToString( this ) : ust::string8
 				}
 			}
 		}
-		if_var( &typeinfo_src_type : class_type.typeinfo_src_type_ )
+		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ ClassType::TypeinfoClassDescription />() )
 		{
 			var ust::string8 mut res;
 			res= KeywordToString(Keyword::typeof_);
 			res+= "(";
 			res+= KeywordToString(Keyword::typeinfo_);
 			res+= "</";
-			res+= typeinfo_src_type.ToString();
+			res+= typeinfo_class_description.source_type.ToString();
 			res+= "/>";
 			res+=")";
 			return move(res);
 		}
-		if_var( &coroutine_type_description : class_type.coroutine_type_description )
+		if_var( &coroutine_type_description : class_type.generated_class_data.get</ CoroutineTypeDescription />() )
 		{
 			var ust::string8 mut res;
 			if( coroutine_type_description.kind == CoroutineKind::Generator )

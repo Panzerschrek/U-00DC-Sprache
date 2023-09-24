@@ -122,6 +122,66 @@ struct FunctionPointerType
 
 struct ClassType
 {
+	//
+	// Types
+	//
+
+	enum Kind
+	{
+		Struct,
+		NonPolymorph,
+		Interface,
+		Abstract,
+		PolymorphNonFinal,
+		PolymorphFinal,
+	}
+
+	struct BaseTemplate
+	{
+		TypeTemplatePtr class_template;
+		TemplateArgsFinished signature_args;
+	}
+	struct TypeinfoClassDescription
+	{
+		Type source_type; // Type for which this typeinfo class was generated.
+	}
+
+	struct NonGeneratedClassTag{}
+
+	// Class is just regular class or it has base template or it is typeinfo class or it is coroutine class.
+	type GeneratedClassData= ust::variant</ tup[ NonGeneratedClassTag, BaseTemplate, TypeinfoClassDescription, CoroutineTypeDescription ] />;
+
+	struct Parent
+	{
+		ClassTypePtr class_;
+		u32 field_number= ~0u; // Allways 0 for base class.
+	}
+
+	struct VirtualTableEntry
+	{
+		ust::string8 name;
+		FunctionVariable function_variable;
+		bool is_pure;
+		bool is_final;
+
+		// Virtual table may consist of many nested structs, because virtual table of child contains virtual tables of parents.
+		u32 index_in_table;
+		u32 parent_virtual_table_index;
+	}
+
+	//
+	// Methods
+	//
+
+	fn GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility;
+	fn SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility );
+
+	fn HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool;
+
+	//
+	// Fields
+	//
+
 	NamesScopeMutPtr members; // Mutable, because it may be filled in class build process in case of inheritance.
 
 	// Namespace of class declaration.
@@ -132,16 +192,6 @@ struct ClassType
 
 	// This class fields names ordered by offset.
 	ust::vector</tup[ust::string8, ClassFieldPtr]/> fields_order;
-
-	struct BaseTemplate
-	{
-		TypeTemplatePtr class_template;
-		TemplateArgsFinished signature_args;
-	}
-	ust::optional</BaseTemplate/> base_template;
-
-	// Non-empty if this is a coroutine type.
-	ust::optional</CoroutineTypeDescription/> coroutine_type_description;
 
 	LLVMTypeRef llvm_type= LLVMTypeRef::Null;
 
@@ -156,54 +206,21 @@ struct ClassType
 	bool can_be_constexpr= false;
 
 	InnerReferenceKind inner_reference_kind= InnerReferenceKind::None;
-
-	enum Kind
-	{
-		Struct,
-		NonPolymorph,
-		Interface,
-		Abstract,
-		PolymorphNonFinal,
-		PolymorphFinal,
-	}
 	Kind kind= Kind::Struct;
 
-	struct Parent
-	{
-		ClassTypePtr class_;
-		u32 field_number= ~0u; // Allways 0 for base class.
-	}
 	ust::shared_ptr_nullable_mut</ClassType/> base_class;
 	ust::vector</Parent/> parents; // Parents, include base class.
 	bool parents_list_prepared = false;
-
-	struct VirtualTableEntry
-	{
-		ust::string8 name;
-		FunctionVariable function_variable;
-		bool is_pure;
-		bool is_final;
-
-		// Virtual table may consist of many nested structs, because virtual table of child contains virtual tables of parents.
-		u32 index_in_table;
-		u32 parent_virtual_table_index;
-	}
 
 	ust::vector</VirtualTableEntry/> virtual_table;
 	LLVMTypeRef virtual_table_llvm_type= LLVMTypeRef::Null;
 	LLVMValueRef virtual_table_llvm_variable= LLVMValueRef::Null; // May be null for interfaces and abstract classes.
 	LLVMValueRef polymorph_type_id_table= LLVMValueRef::Null; // Exists in polymorph classes.
 
-	// non-empty, if this is typeinfo class (root or some of list nodes)
-	ust::optional</Type/> typeinfo_src_type_;
+	GeneratedClassData generated_class_data;
 
 	// Contains only "protected" and "private" members. If ther is no entry for member - it has "public" visibility
 	ust::unordered_map</ust::string8, Synt::ClassVisibility/> members_visibility;
-
-	fn GetMemberVisibility( this, ust::string8& member_name ) : Synt::ClassVisibility;
-	fn SetMemberVisibility( mut this, ust::string8& member_name, Synt::ClassVisibility visibility );
-
-	fn HasAncestor( this, ClassTypePtr& possible_ancestor ) : bool;
 }
 
 type ClassTypePtr= ust::shared_ptr_mut</ClassType/>;

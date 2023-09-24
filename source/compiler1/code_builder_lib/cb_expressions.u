@@ -1995,7 +1995,7 @@ fn CodeBuilder::AccessDirectClassField(
 					}
 					else
 					{
-						if( !class_type.lock_imut().deref().typeinfo_src_type_.empty() && field_name == "type_id" )
+						if( !class_type.lock_imut().deref().generated_class_data.get</ ClassType::TypeinfoClassDescription />().empty() && field_name == "type_id" )
 						{
 							// HACK!
 							// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.

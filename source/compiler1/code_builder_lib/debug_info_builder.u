@@ -576,7 +576,7 @@ fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_
 	var u32 mut alignment_in_bits(1);
 
 	if( class_type.is_complete && // Build proper info for complete clases.
-		class_type.typeinfo_src_type_.empty() ) // Skip typeinfo structs because of potential dependency loops.
+		class_type.generated_class_data.get</ ClassType::TypeinfoClassDescription />().empty() ) // Skip typeinfo structs because of potential dependency loops.
 	{
 		foreach( &field_pair : class_type.fields_order )
 		{

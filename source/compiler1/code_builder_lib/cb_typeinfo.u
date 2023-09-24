@@ -414,12 +414,11 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 
 		ADD_BOOL_FIELD( "is_interface", class_.kind == ClassType::Kind::Interface )
 
-		ADD_BOOL_FIELD( "is_typeinfo", !class_.typeinfo_src_type_.empty() )
+		ADD_BOOL_FIELD( "is_typeinfo", !class_.generated_class_data.get</ ClassType::TypeinfoClassDescription />().empty() )
 
-		ADD_BOOL_FIELD( "is_coroutine", !class_.coroutine_type_description.empty() )
-		if( !class_.coroutine_type_description.empty() )
+		if_var( &coroutine_type_description : class_.generated_class_data.get</ CoroutineTypeDescription />() )
 		{
-			var CoroutineTypeDescription& coroutine_type_description= class_.coroutine_type_description.try_deref();
+			ADD_BOOL_FIELD( "is_coroutine", true )
 
 			ADD_BOOL_FIELD( "is_generator", coroutine_type_description.kind == CoroutineKind::Generator )
 
@@ -427,7 +426,10 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 			ADD_BOOL_FIELD( "coroutine_return_value_is_reference", coroutine_type_description.return_value_type != ValueType::Value )
 			ADD_BOOL_FIELD( "coroutine_return_value_is_mutable"  , coroutine_type_description.return_value_type == ValueType::ReferenceMut )
 		}
-
+		else
+		{
+			ADD_BOOL_FIELD( "is_coroutine", false )
+		}
 	}
 	else if_var( &enum_ptr : t.GetEnumType() )
 	{
@@ -458,11 +460,12 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr
 {
 	var NamesScopeMutPtr class_members( NamesScope( name, root_namespace ) );
+	var ClassType::TypeinfoClassDescription mut typeinfo_class_description{ .source_type = src_type };
 	var ClassType mut class_type
 	{
 		.members= class_members,
 		.members_initial= class_members,
-		.typeinfo_src_type_(src_type),
+		.generated_class_data( move(typeinfo_class_description) ),
 		.can_be_constexpr= true,
 	};
 
