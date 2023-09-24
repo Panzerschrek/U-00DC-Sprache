@@ -6,6 +6,7 @@ namespace U
 {
 
 // Single-direction (relaitvely) compact linked list of different type values.
+// Each value is stored in separate allocation.
 // Size is not stored.
 template< typename ... ContainedTypes>
 class VariantLinkedList
@@ -24,6 +25,7 @@ public:
 		return std::nullopt;
 	}
 
+	// Iterate from start to end, applying given function to all stored values.
 	template< typename Func >
 	void Iter( const Func& func ) const
 	{
@@ -33,7 +35,7 @@ public:
 	}
 
 private:
-	struct EmptyNode{};
+	struct EmptyNode{}; // Indicate list end with it.
 
 	template<typename T>
 	struct Node;
@@ -51,6 +53,7 @@ private:
 	};
 
 public:
+	// Helper builder class, that allows to apped values to the end of the list.
 	class Builder
 	{
 	public:
@@ -58,6 +61,7 @@ public:
 			: tail_(&result_.start_)
 		{}
 
+		// This class stores raw pointer to itself. So, disable any move.
 		Builder( const Builder& )= delete;
 		Builder( Builder&& )= delete;
 		Builder& operator=( const Builder& )= delete;
@@ -71,6 +75,7 @@ public:
 			tail_= & std::get< std::unique_ptr< NodeT > >( *tail_ )->next;
 		}
 
+		// Append other list and make sure insertion position is at last element of that list.
 		void AppendList( VariantLinkedList other_list )
 		{
 			const auto next_tail= GetListTail( other_list.start_ );
@@ -78,6 +83,7 @@ public:
 			tail_= next_tail;
 		}
 
+		// Take result, reset internal state.
 		VariantLinkedList Build()
 		{
 			VariantLinkedList result= std::move(result_);
@@ -92,12 +98,12 @@ public:
 
 private:
 	template<typename T>
-	static VariantElement* GetListTailImpl( NodePtr<T>& node )
+	static VariantElement* GetListTailImpl( const NodePtr<T>& node )
 	{
 		return GetListTail( node->next );
 	}
 
-	static VariantElement* GetListTailImpl( EmptyNode& ) { return nullptr; }
+	static VariantElement* GetListTailImpl( const EmptyNode& ) { return nullptr; }
 
 	static VariantElement* GetListTail( VariantElement& node )
 	{
