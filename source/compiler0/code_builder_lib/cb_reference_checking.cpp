@@ -14,25 +14,25 @@ void CodeBuilder::ProcessFunctionParamReferencesTags(
 	const size_t arg_number )
 {
 
-	if( function_type.return_value_type != ValueType::Value && !func.return_value_reference_tag_.empty() )
+	if( function_type.return_value_type != ValueType::Value && !func.return_value_reference_tag.empty() )
 	{
 		// Arg reference to return reference
-		if( out_param.value_type != ValueType::Value && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_reference_tag_ )
+		if( out_param.value_type != ValueType::Value && !in_param.reference_tag.empty() && in_param.reference_tag == func.return_value_reference_tag )
 			function_type.return_references.emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return reference
-		if( in_param.inner_arg_reference_tag_ == func.return_value_reference_tag_ )
+		if( in_param.inner_arg_reference_tag == func.return_value_reference_tag )
 			function_type.return_references.emplace( uint8_t(arg_number), 0u );
 	}
 
-	if( function_type.return_value_type == ValueType::Value && !func.return_value_inner_reference_tag_.empty() )
+	if( function_type.return_value_type == ValueType::Value && !func.return_value_inner_reference_tag.empty() )
 	{
 		// In arg reference to return value references
-		if( out_param.value_type != ValueType::Value && !in_param.reference_tag_.empty() && in_param.reference_tag_ == func.return_value_inner_reference_tag_ )
+		if( out_param.value_type != ValueType::Value && !in_param.reference_tag.empty() && in_param.reference_tag == func.return_value_inner_reference_tag )
 			function_type.return_references.emplace( uint8_t(arg_number), FunctionType::c_arg_reference_tag_number );
 
 		// Inner arg references to return value references
-		if( in_param.inner_arg_reference_tag_ == func.return_value_inner_reference_tag_ )
+		if( in_param.inner_arg_reference_tag == func.return_value_inner_reference_tag )
 			function_type.return_references.emplace( uint8_t(arg_number), 0u );
 	}
 }
@@ -45,20 +45,20 @@ void CodeBuilder::ProcessFunctionReturnValueReferenceTags(
 	if( function_type.return_value_type == ValueType::Value )
 	{
 		// Check names of tags, report about unknown tag names.
-		if( !func.return_value_inner_reference_tag_.empty() )
+		if( !func.return_value_inner_reference_tag.empty() )
 		{
 			bool found= false;
-			for( const Synt::FunctionParam& arg : func.params_ )
+			for( const Synt::FunctionParam& arg : func.params )
 			{
-				if( func.return_value_inner_reference_tag_ == arg.reference_tag_ ||
-					func.return_value_inner_reference_tag_ == arg.inner_arg_reference_tag_ )
+				if( func.return_value_inner_reference_tag == arg.reference_tag ||
+					func.return_value_inner_reference_tag == arg.inner_arg_reference_tag )
 				{
 					found= true;
 					break;
 				}
 			}
 			if( !found )
-				REPORT_ERROR( NameNotFound, errors_container, func.src_loc_, func.return_value_inner_reference_tag_ );
+				REPORT_ERROR( NameNotFound, errors_container, func.src_loc, func.return_value_inner_reference_tag );
 		}
 	}
 }
@@ -72,13 +72,13 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 
 	if( function_type.return_value_type != ValueType::Value && function_type.return_references.empty() )
 	{
-		if( !func.return_value_reference_tag_.empty() )
+		if( !func.return_value_reference_tag.empty() )
 		{
 			bool tag_found= false;
-			for( const Synt::FunctionParam& arg : func.params_ )
+			for( const Synt::FunctionParam& arg : func.params )
 			{
-				if( func.return_value_reference_tag_ == arg.inner_arg_reference_tag_ ||
-					func.return_value_reference_tag_ == arg.reference_tag_)
+				if( func.return_value_reference_tag == arg.inner_arg_reference_tag ||
+					func.return_value_reference_tag == arg.reference_tag)
 				{
 					tag_found= true;
 					break;
@@ -86,7 +86,7 @@ void CodeBuilder::TryGenerateFunctionReturnReferencesMapping(
 			}
 
 			if( !tag_found ) // Tag exists, but referenced args is empty - means tag apperas only in return value, but not in any argument.
-				REPORT_ERROR( NameNotFound, errors_container, func.src_loc_, func.return_value_reference_tag_ );
+				REPORT_ERROR( NameNotFound, errors_container, func.src_loc, func.return_value_reference_tag );
 		}
 
 		// If there is no tag for return reference, assume, that it may refer to any reference argument, but not inner reference of any argument.
@@ -104,11 +104,11 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	FunctionType& function_type,
 	const ClassPtr base_class )
 {
-	const std::string& func_name= func.name_.back().name;
+	const std::string& func_name= func.name.back().name;
 	if( func_name == Keywords::constructor_ && IsCopyConstructor( function_type, base_class ) )
 	{
-		if( !func.type_.references_pollution_list_.empty() )
-			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.src_loc_ );
+		if( !func.type.references_pollution_list.empty() )
+			REPORT_ERROR( ExplicitReferencePollutionForCopyConstructor, errors_container, func.src_loc );
 
 		// This is copy constructor. Generate reference pollution for it automatically.
 		FunctionType::ReferencePollution ref_pollution;
@@ -120,8 +120,8 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 	else if( func_name == OverloadedOperatorToString( OverloadedOperator::Assign ) && IsCopyAssignmentOperator( function_type, base_class ) )
 	{
-		if( !func.type_.references_pollution_list_.empty() )
-			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.src_loc_ );
+		if( !func.type.references_pollution_list.empty() )
+			REPORT_ERROR( ExplicitReferencePollutionForCopyAssignmentOperator, errors_container, func.src_loc );
 
 		// This is copy assignment operator. Generate reference pollution for it automatically.
 		FunctionType::ReferencePollution ref_pollution;
@@ -133,19 +133,19 @@ void CodeBuilder::ProcessFunctionReferencesPollution(
 	}
 	else if( func_name == OverloadedOperatorToString( OverloadedOperator::CompareEqual ) && IsEqualityCompareOperator( function_type, base_class ) )
 	{
-		if( !func.type_.references_pollution_list_.empty() )
-			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, errors_container, func.src_loc_ );
+		if( !func.type.references_pollution_list.empty() )
+			REPORT_ERROR( ExplicitReferencePollutionForEqualityCompareOperator, errors_container, func.src_loc );
 	}
 	else
 	{
 		if( func_name == Keywords::constructor_ )
 		{
-			for( const Synt::FunctionReferencesPollution& pollution : func.type_.references_pollution_list_ )
+			for( const Synt::FunctionReferencesPollution& pollution : func.type.references_pollution_list )
 				if( pollution.second == Keywords::this_ )
-					REPORT_ERROR( ConstructorThisReferencePollution, errors_container, func.src_loc_ );
+					REPORT_ERROR( ConstructorThisReferencePollution, errors_container, func.src_loc );
 		}
 
-		ProcessFunctionTypeReferencesPollution( errors_container, func.type_, function_type );
+		ProcessFunctionTypeReferencesPollution( errors_container, func.type, function_type );
 	}
 }
 
@@ -161,25 +161,25 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 
 		for( size_t arg_n= 0u; arg_n < function_type.params.size(); ++arg_n )
 		{
-			const Synt::FunctionParam& in_arg= func.params_[ arg_n ];
+			const Synt::FunctionParam& in_arg= func.params[ arg_n ];
 
-			if( name == in_arg.reference_tag_ )
+			if( name == in_arg.reference_tag )
 				result.emplace_back( arg_n, FunctionType::c_arg_reference_tag_number );
-			if( name == in_arg.inner_arg_reference_tag_ )
+			if( name == in_arg.inner_arg_reference_tag )
 				result.emplace_back( arg_n, 0u );
 		}
 
 		if( result.empty() )
-			REPORT_ERROR( NameNotFound, errors_container, func.src_loc_, name );
+			REPORT_ERROR( NameNotFound, errors_container, func.src_loc, name );
 
 		return result;
 	};
 
-	for( const Synt::FunctionReferencesPollution& pollution : func.references_pollution_list_ )
+	for( const Synt::FunctionReferencesPollution& pollution : func.references_pollution_list )
 	{
 		if( pollution.first == pollution.second )
 		{
-			REPORT_ERROR( SelfReferencePollution, errors_container, func.src_loc_ );
+			REPORT_ERROR( SelfReferencePollution, errors_container, func.src_loc );
 			continue;
 		}
 
@@ -190,7 +190,7 @@ void CodeBuilder::ProcessFunctionTypeReferencesPollution(
 		{
 			if( dst_ref.second == FunctionType::c_arg_reference_tag_number )
 			{
-				REPORT_ERROR( ArgReferencePollution, errors_container, func.src_loc_ );
+				REPORT_ERROR( ArgReferencePollution, errors_container, func.src_loc );
 				continue;
 			}
 

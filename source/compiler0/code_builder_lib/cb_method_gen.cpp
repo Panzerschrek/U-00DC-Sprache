@@ -791,7 +791,7 @@ void CodeBuilder::ProcessGeneratedMethodConstexprFlag( const ClassPtr class_type
 	if( !is_constexpr && method.syntax_element != nullptr && method.syntax_element->constexpr_ )
 	{
 		// User requested method generation with "constexpr" flag, but result is not "constexpr".
-		REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, class_type->members->GetErrors(), method.syntax_element->src_loc_ );
+		REPORT_ERROR( ConstexprFunctionContainsUnallowedOperations, class_type->members->GetErrors(), method.syntax_element->src_loc );
 	}
 }
 

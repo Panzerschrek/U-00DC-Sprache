@@ -51,7 +51,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		{
 			REPORT_ERROR( ArrayInitializersCountMismatch,
 				names.GetErrors(),
-				initializer.src_loc_,
+				initializer.src_loc,
 				array_type->element_count,
 				initializer.initializers.size() );
 			return nullptr;
@@ -66,7 +66,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				variable->name + "[]" );
 
 		function_context.variables_state.AddNode( array_member );
-		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc_ );
+		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc );
 
 		bool is_constant= array_type->element_type.CanBeConstexpr();
 		llvm::SmallVector<llvm::Constant*, 16> members_constants;
@@ -97,7 +97,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		{
 			REPORT_ERROR( TupleInitializersCountMismatch,
 				names.GetErrors(),
-				initializer.src_loc_,
+				initializer.src_loc,
 				tuple_type->element_types.size(),
 				initializer.initializers.size() );
 			return nullptr;
@@ -117,7 +117,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					CreateTupleElementGEP( function_context, *variable, i ) );
 
 			function_context.variables_state.AddNode( tuple_element );
-			function_context.variables_state.TryAddLink( variable, tuple_element, names.GetErrors(), initializer.src_loc_ );
+			function_context.variables_state.TryAddLink( variable, tuple_element, names.GetErrors(), initializer.src_loc );
 
 			llvm::Constant* const member_constant=
 				ApplyInitializer( tuple_element, names, function_context, initializer.initializers[i] );
@@ -137,7 +137,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	}
 	else
 	{
-		REPORT_ERROR( ArrayInitializerForNonArray, names.GetErrors(), initializer.src_loc_ );
+		REPORT_ERROR( ArrayInitializerForNonArray, names.GetErrors(), initializer.src_loc );
 		return nullptr;
 	}
 
@@ -153,12 +153,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Class* const class_type= variable->type.GetClassType();
 	if( class_type == nullptr || class_type->kind != Class::Kind::Struct )
 	{
-		REPORT_ERROR( StructInitializerForNonStruct, names.GetErrors(), initializer.src_loc_ );
+		REPORT_ERROR( StructInitializerForNonStruct, names.GetErrors(), initializer.src_loc );
 		return nullptr;
 	}
 
 	if( class_type->have_explicit_noncopy_constructors )
-		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.src_loc_ );
+		REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.src_loc );
 
 	ClassFieldsVector<bool> initialized_fields;
 	initialized_fields.resize( class_type->llvm_type->getNumElements(), false );
@@ -182,7 +182,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		const NamesScopeValue* const class_member= class_type->members->GetThisScopeValue( member_initializer.name );
 		if( class_member == nullptr )
 		{
-			REPORT_ERROR( NameNotFound, names.GetErrors(), initializer.src_loc_, member_initializer.name );
+			REPORT_ERROR( NameNotFound, names.GetErrors(), initializer.src_loc, member_initializer.name );
 			continue;
 		}
 		CollectDefinition( *class_member, member_initializer.src_loc );
@@ -190,12 +190,12 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		const ClassFieldPtr field= class_member->value.GetClassField();
 		if( field == nullptr )
 		{
-			REPORT_ERROR( InitializerForNonfieldStructMember, names.GetErrors(), initializer.src_loc_, member_initializer.name );
+			REPORT_ERROR( InitializerForNonfieldStructMember, names.GetErrors(), initializer.src_loc, member_initializer.name );
 			continue;
 		}
 		if( field->class_ != variable->type )
 		{
-			REPORT_ERROR( InitializerForBaseClassField, names.GetErrors(), initializer.src_loc_, member_initializer.name );
+			REPORT_ERROR( InitializerForBaseClassField, names.GetErrors(), initializer.src_loc, member_initializer.name );
 			continue;
 		}
 
@@ -203,7 +203,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		{
 			if( initialized_fields[field->index] )
 			{
-				REPORT_ERROR( DuplicatedStructMemberInitializer, names.GetErrors(), initializer.src_loc_, member_initializer.name );
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names.GetErrors(), initializer.src_loc, member_initializer.name );
 				continue;
 			}
 			initialized_fields[field->index]= true;
@@ -224,7 +224,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					CreateClassFieldGEP( function_context, *variable, field->index ) );
 
 			function_context.variables_state.AddNode( struct_member );
-			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc_ );
+			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc );
 
 			constant_initializer=
 				ApplyInitializer( struct_member, names, function_context, member_initializer.initializer );
@@ -250,7 +250,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 		if( field->is_reference )
 		{
 			if( field->syntax_element == nullptr || field->syntax_element->initializer == nullptr )
-				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), initializer.src_loc_, field->GetName() ); // References is not default-constructible.
+				REPORT_ERROR( ExpectedInitializer, names.GetErrors(), initializer.src_loc, field->GetName() ); // References is not default-constructible.
 			else
 				constant_initializer= InitializeReferenceClassFieldWithInClassIninitalizer( variable, *field, function_context );
 		}
@@ -265,14 +265,14 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					CreateClassFieldGEP( function_context, *variable, field->index ) );
 
 			function_context.variables_state.AddNode( struct_member );
-			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc_ );
+			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc );
 
 			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				constant_initializer=
 					InitializeClassFieldWithInClassIninitalizer( struct_member, *field, function_context );
 			else
 				constant_initializer=
-					ApplyEmptyInitializer( field->GetName(), initializer.src_loc_, struct_member, names, function_context );
+					ApplyEmptyInitializer( field->GetName(), initializer.src_loc, struct_member, names, function_context );
 
 			function_context.variables_state.RemoveNode( struct_member );
 		}
@@ -295,7 +295,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	FunctionContext& function_context,
 	const Synt::ConstructorInitializer& initializer )
 {
-	return ApplyConstructorInitializer( variable, initializer.arguments, initializer.src_loc_, names, function_context );
+	return ApplyConstructorInitializer( variable, initializer.arguments, initializer.src_loc, names, function_context );
 }
 
 llvm::Constant* CodeBuilder::ApplyInitializerImpl(
@@ -466,7 +466,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 				variable->name + "[]" );
 
 		function_context.variables_state.AddNode( array_member );
-		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc_ );
+		function_context.variables_state.TryAddLink( variable, array_member, names.GetErrors(), initializer.src_loc );
 
 		GenerateLoop(
 			array_type->element_count,
@@ -498,7 +498,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					CreateTupleElementGEP( function_context, *variable, i ) );
 
 			function_context.variables_state.AddNode( tuple_element );
-			function_context.variables_state.TryAddLink( variable, tuple_element, names.GetErrors(), initializer.src_loc_ );
+			function_context.variables_state.TryAddLink( variable, tuple_element, names.GetErrors(), initializer.src_loc );
 
 			ApplyInitializer( tuple_element, names, function_context, initializer );
 
@@ -513,9 +513,9 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	else if( const Class* const class_type= variable->type.GetClassType() )
 	{
 		if( class_type->have_explicit_noncopy_constructors )
-			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.src_loc_ );
+			REPORT_ERROR( InitializerDisabledBecauseClassHaveExplicitNoncopyConstructors, names.GetErrors(), initializer.src_loc );
 		if( class_type->kind != Class::Kind::Struct )
-			REPORT_ERROR( ZeroInitializerForClass, names.GetErrors(), initializer.src_loc_ );
+			REPORT_ERROR( ZeroInitializerForClass, names.GetErrors(), initializer.src_loc );
 
 		bool all_fields_are_constant= variable->type.CanBeConstexpr();
 		for( const ClassFieldPtr& field : class_type->fields_order )
@@ -526,7 +526,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 			if( field->is_reference )
 			{
 				all_fields_are_constant= false;
-				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), initializer.src_loc_ );
+				REPORT_ERROR( UnsupportedInitializerForReference, names.GetErrors(), initializer.src_loc );
 				continue;
 			}
 
@@ -539,7 +539,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 					CreateClassFieldGEP( function_context, *variable, field->index ) );
 
 			function_context.variables_state.AddNode( struct_member );
-			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc_ );
+			function_context.variables_state.TryAddLink( variable, struct_member, names.GetErrors(), initializer.src_loc );
 
 			ApplyInitializer( struct_member, names, function_context, initializer );
 
@@ -563,7 +563,7 @@ llvm::Constant* CodeBuilder::ApplyInitializerImpl(
 	const Synt::UninitializedInitializer& initializer )
 {
 	if( !function_context.is_in_unsafe_block )
-		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, block_names.GetErrors(), initializer.src_loc_ );
+		REPORT_ERROR( UninitializedInitializerOutsideUnsafeBlock, block_names.GetErrors(), initializer.src_loc );
 
 	return nullptr;
 }
@@ -993,13 +993,13 @@ void CodeBuilder::BuildConstructorInitialization(
 			if( base_class.base_class == nullptr )
 			{
 				have_fields_errors= true;
-				REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), constructor_initialization_list.src_loc_ );
+				REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), constructor_initialization_list.src_loc );
 				continue;
 			}
 			if( base_initialized )
 			{
 				have_fields_errors= true;
-				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc, field_initializer.name );
 				continue;
 			}
 			base_initialized= true;
@@ -1011,7 +1011,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( class_member == nullptr )
 		{
 			have_fields_errors= true;
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), constructor_initialization_list.src_loc, field_initializer.name );
 			continue;
 		}
 		CollectDefinition( *class_member, field_initializer.src_loc );
@@ -1020,13 +1020,13 @@ void CodeBuilder::BuildConstructorInitialization(
 		if( field == nullptr )
 		{
 			have_fields_errors= true;
-			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+			REPORT_ERROR( InitializerForNonfieldStructMember, names_scope.GetErrors(), constructor_initialization_list.src_loc, field_initializer.name );
 			continue;
 		}
 		if( field->class_ != &base_class )
 		{
 			have_fields_errors= true;
-			REPORT_ERROR( InitializerForBaseClassField, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+			REPORT_ERROR( InitializerForBaseClassField, names_scope.GetErrors(), constructor_initialization_list.src_loc, field_initializer.name );
 			continue;
 		}
 
@@ -1035,7 +1035,7 @@ void CodeBuilder::BuildConstructorInitialization(
 			if( initialized_fields[ field->index ] )
 			{
 				have_fields_errors= true;
-				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field_initializer.name );
+				REPORT_ERROR( DuplicatedStructMemberInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc, field_initializer.name );
 				continue;
 			}
 
@@ -1061,7 +1061,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		{
 			if( field->syntax_element == nullptr || field->syntax_element->initializer == nullptr )
 			{
-				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc_, field->GetName() );
+				REPORT_ERROR( ExpectedInitializer, names_scope.GetErrors(), constructor_initialization_list.src_loc, field->GetName() );
 				continue;
 			}
 			InitializeReferenceClassFieldWithInClassIninitalizer( this_, *field, function_context );
@@ -1079,25 +1079,25 @@ void CodeBuilder::BuildConstructorInitialization(
 					CreateClassFieldGEP( function_context, *this_, field->index ) );
 
 			function_context.variables_state.AddNode( field_variable );
-			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc_ );
+			function_context.variables_state.TryAddLink( this_, field_variable, names_scope.GetErrors(), constructor_initialization_list.src_loc );
 
 			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 			else
-				ApplyEmptyInitializer( field->GetName(), constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
+				ApplyEmptyInitializer( field->GetName(), constructor_initialization_list.src_loc, field_variable, names_scope, function_context );
 
 			function_context.variables_state.RemoveNode( field_variable );
 		}
 		else
 		{
 			const VariablePtr field_variable=
-				AccessClassField( names_scope, function_context, this_, *field, field->GetName(), constructor_initialization_list.src_loc_ ).GetVariable();
+				AccessClassField( names_scope, function_context, this_, *field, field->GetName(), constructor_initialization_list.src_loc ).GetVariable();
 			U_ASSERT( field_variable != nullptr );
 
 			if( field->syntax_element != nullptr && field->syntax_element->initializer != nullptr )
 				InitializeClassFieldWithInClassIninitalizer( field_variable, *field, function_context );
 			else
-				ApplyEmptyInitializer( field->GetName(), constructor_initialization_list.src_loc_, field_variable, names_scope, function_context );
+				ApplyEmptyInitializer( field->GetName(), constructor_initialization_list.src_loc, field_variable, names_scope, function_context );
 		}
 
 		function_context.initialized_this_fields[ field->index ]= true;
@@ -1111,7 +1111,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		// It is safe to access "base" as child node here since it is possible to call only constructor but not any virtual method.
 		const VariablePtr base_variable= AccessClassBase( this_, function_context );
 
-		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc_, base_variable, names_scope, function_context );
+		ApplyEmptyInitializer( base_class.base_class->members->GetThisNamespaceName(), constructor_initialization_list.src_loc, base_variable, names_scope, function_context );
 		function_context.base_initialized= true;
 	}
 
@@ -1158,7 +1158,7 @@ void CodeBuilder::BuildConstructorInitialization(
 		else
 		{
 			const VariablePtr field_variable=
-				AccessClassField( names_scope, function_context, this_, *field, field_initializer.name, constructor_initialization_list.src_loc_ ).GetVariable();
+				AccessClassField( names_scope, function_context, this_, *field, field_initializer.name, constructor_initialization_list.src_loc ).GetVariable();
 			U_ASSERT( field_variable != nullptr );
 
 			ApplyInitializer( field_variable, names_scope, function_context, field_initializer.initializer );
@@ -1170,7 +1170,7 @@ void CodeBuilder::BuildConstructorInitialization(
 	function_context.whole_this_is_unavailable= false;
 	function_context.initialized_this_fields.clear();
 
-	CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc_ );
+	CallDestructors( temp_variables_storage, names_scope, function_context, constructor_initialization_list.src_loc );
 	SetupVirtualTablePointers( this_->llvm_value, base_class, function_context );
 }
 
@@ -1192,7 +1192,7 @@ llvm::Constant* CodeBuilder::InitializeReferenceField(
 	{
 		if( constructor_initializer->arguments.size() != 1u )
 		{
-			REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), constructor_initializer->src_loc_ );
+			REPORT_ERROR( ReferencesHaveConstructorsWithExactlyOneParameter, block_names.GetErrors(), constructor_initializer->src_loc );
 			return nullptr;
 		}
 		initializer_expression= &constructor_initializer->arguments.front();

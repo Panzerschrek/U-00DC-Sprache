@@ -76,10 +76,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CallOperator& call_operator )
 {
-	const Value function_value= BuildExpressionCode( *call_operator.expression_, names, function_context );
+	const Value function_value= BuildExpressionCode( *call_operator.expression, names, function_context );
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
-	return CallFunction( function_value, call_operator.arguments_, call_operator.src_loc_, names, function_context );
+	return CallFunction( function_value, call_operator.arguments, call_operator.src_loc, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -87,7 +87,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CallOperatorSignatureHelp& call_operator_signature_help )
 {
-	PerformSignatureHelp( BuildExpressionCode( *call_operator_signature_help.expression_, names, function_context ) );
+	PerformSignatureHelp( BuildExpressionCode( *call_operator_signature_help.expression, names, function_context ) );
 	return ErrorValue();
 }
 
@@ -96,21 +96,21 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::IndexationOperator& indexation_operator )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *indexation_operator.expression_, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *indexation_operator.expression, names, function_context );
 
 	if( variable->type.GetClassType() != nullptr ) // If this is class - try call overloaded [] operator.
 	{
 		if( auto res=
 				TryCallOverloadedPostfixOperator(
 					variable,
-					llvm::ArrayRef<Synt::Expression>(*indexation_operator.index_),
+					llvm::ArrayRef<Synt::Expression>(*indexation_operator.index),
 					OverloadedOperator::Indexing,
-					indexation_operator.src_loc_,
+					indexation_operator.src_loc,
 					names,
 					function_context ) )
 			return std::move(*res);
 
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), indexation_operator.src_loc_, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), indexation_operator.src_loc, variable->type );
 		return ErrorValue();
 	}
 
@@ -125,16 +125,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				variable->location,
 				variable->name + " lock" );
 		function_context.variables_state.AddNode( variable_lock );
-		function_context.variables_state.TryAddLink( variable, variable_lock, names.GetErrors(), indexation_operator.src_loc_ );
+		function_context.variables_state.TryAddLink( variable, variable_lock, names.GetErrors(), indexation_operator.src_loc );
 
-		const VariablePtr index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
+		const VariablePtr index= BuildExpressionCodeEnsureVariable( *indexation_operator.index, names, function_context );
 
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
 		if( !( index_fundamental_type != nullptr && (
 			( index->constexpr_value != nullptr && IsInteger( index_fundamental_type->fundamental_type ) ) ||
 			( index->constexpr_value == nullptr && IsUnsignedInteger( index_fundamental_type->fundamental_type ) ) ) ) )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc_, "any uint32_teger", index->type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc, "any integer", index->type );
 			function_context.variables_state.RemoveNode( variable_lock );
 			return ErrorValue();
 		}
@@ -146,19 +146,19 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			if( IsSignedInteger(index_fundamental_type->fundamental_type) )
 			{
 				if( index_value.getLimitedValue() >= array_type->element_count || index_value.isNegative() )
-					REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value.getSExtValue(), array_type->element_count );
+					REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc, index_value.getSExtValue(), array_type->element_count );
 			}
 			else
 			{
 				if( index_value.getLimitedValue() >= array_type->element_count )
-					REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value.getLimitedValue(), array_type->element_count );
+					REPORT_ERROR( ArrayIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc, index_value.getLimitedValue(), array_type->element_count );
 			}
 		}
 
 		// Make first index = 0 for array to pointer conversion.
 		llvm::Value* index_value= CreateMoveToLLVMRegisterInstruction( *index, function_context );
 
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc_ ); // Destroy temporaries of index expression.
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), indexation_operator.src_loc ); // Destroy temporaries of index expression.
 
 		const VariableMutPtr result=
 			std::make_shared<Variable>(
@@ -201,7 +201,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->llvm_value= CreateArrayElementGEP( function_context, *variable, index_value );
 
 		function_context.variables_state.AddNode( result );
-		function_context.variables_state.TryAddLink( variable_lock, result, names.GetErrors(), indexation_operator.src_loc_ );
+		function_context.variables_state.TryAddLink( variable_lock, result, names.GetErrors(), indexation_operator.src_loc );
 
 		function_context.variables_state.RemoveNode( variable_lock );
 
@@ -216,15 +216,15 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// This is needed to properly access multiple mutable child nodes of same tuple variable.
 		{
 			const StackVariablesStorage temp_variables_storage( function_context );
-			index= BuildExpressionCodeEnsureVariable( *indexation_operator.index_, names, function_context );
-			CallDestructors( temp_variables_storage, names, function_context, indexation_operator.src_loc_ );
+			index= BuildExpressionCodeEnsureVariable( *indexation_operator.index, names, function_context );
+			CallDestructors( temp_variables_storage, names, function_context, indexation_operator.src_loc );
 			// It is fine if "index" will be destroyed here. We needed only "constexpr" value of index here.
 		}
 
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
 		if( index_fundamental_type == nullptr || !IsInteger( index_fundamental_type->fundamental_type ) )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc_, "any integer", index->type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), indexation_operator.src_loc, "any integer", index->type );
 			return ErrorValue();
 		}
 
@@ -237,7 +237,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// For tuple indexing only constexpr indeces are valid.
 		if( index->constexpr_value == nullptr )
 		{
-			REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), indexation_operator.src_loc_ );
+			REPORT_ERROR( ExpectedConstantExpression, names.GetErrors(), indexation_operator.src_loc );
 			return ErrorValue();
 		}
 		const llvm::APInt index_value_raw= index->constexpr_value->getUniqueInteger();
@@ -246,7 +246,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			if( index_value >= uint64_t(tuple_type->element_types.size()) || index_value_raw.isNegative() )
 			{
-				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value_raw.getSExtValue(), tuple_type->element_types.size() );
+				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc, index_value_raw.getSExtValue(), tuple_type->element_types.size() );
 				return ErrorValue();
 			}
 		}
@@ -254,7 +254,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			if( index_value >= uint64_t(tuple_type->element_types.size()) )
 			{
-				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc_, index_value, tuple_type->element_types.size() );
+				REPORT_ERROR( TupleIndexOutOfBounds, names.GetErrors(), indexation_operator.src_loc, index_value, tuple_type->element_types.size() );
 				return ErrorValue();
 			}
 		}
@@ -288,7 +288,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 	else
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), indexation_operator.src_loc_, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), indexation_operator.src_loc, variable->type );
 		return ErrorValue();
 	}
 }
@@ -298,49 +298,49 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MemberAccessOperator& member_access_operator )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *member_access_operator.expression_, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *member_access_operator.expression, names, function_context );
 
 	Class* const class_type= variable->type.GetClassType();
 	if( class_type == nullptr )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), member_access_operator.src_loc_, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), member_access_operator.src_loc, variable->type );
 		return ErrorValue();
 	}
 
 	if( !EnsureTypeComplete( variable->type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), member_access_operator.src_loc_, variable->type );
+		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), member_access_operator.src_loc, variable->type );
 		return ErrorValue();
 	}
 
-	const auto class_value= ResolveClassValue( class_type, member_access_operator.member_name_ );
+	const auto class_value= ResolveClassValue( class_type, member_access_operator.member_name );
 	NamesScopeValue* const class_member= class_value.first;
 	if( class_member == nullptr )
 	{
-		REPORT_ERROR( NameNotFound, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_ );
+		REPORT_ERROR( NameNotFound, names.GetErrors(), member_access_operator.src_loc, member_access_operator.member_name );
 		return ErrorValue();
 	}
 
-	CollectDefinition( *class_member, member_access_operator.src_loc_ );
+	CollectDefinition( *class_member, member_access_operator.src_loc );
 
 	if( !function_context.is_in_unsafe_block &&
-		( member_access_operator.member_name_ == Keywords::constructor_ || member_access_operator.member_name_ == Keywords::destructor_ ) )
-		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names.GetErrors(), member_access_operator.src_loc_,  member_access_operator.member_name_ );
+		( member_access_operator.member_name == Keywords::constructor_ || member_access_operator.member_name == Keywords::destructor_ ) )
+		REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names.GetErrors(), member_access_operator.src_loc,  member_access_operator.member_name );
 
 	if( names.GetAccessFor( variable->type.GetClassType() ) < class_value.second )
-		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.src_loc_, member_access_operator.member_name_, class_type->members->GetThisNamespaceName() );
+		REPORT_ERROR( AccessingNonpublicClassMember, names.GetErrors(), member_access_operator.src_loc, member_access_operator.member_name, class_type->members->GetThisNamespaceName() );
 
 	if( OverloadedFunctionsSetConstPtr functions_set= class_member->value.GetFunctionsSet() )
 	{
 		if( member_access_operator.template_parameters != std::nullopt )
 		{
 			if( functions_set->template_functions.empty() )
-				REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc_ );
+				REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc );
 			else
 			{
 				const NamesScopeValue* const inserted_value=
 					ParametrizeFunctionTemplate(
-						member_access_operator.src_loc_,
+						member_access_operator.src_loc,
 						*functions_set,
 						*member_access_operator.template_parameters,
 						names,
@@ -358,22 +358,22 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	if( member_access_operator.template_parameters != std::nullopt )
-		REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc_ );
+		REPORT_ERROR( ValueIsNotTemplate, names.GetErrors(), member_access_operator.src_loc );
 
 	if( const ClassFieldPtr field= class_member->value.GetClassField() )
 	{
 		class_member->referenced= true;
-		return AccessClassField( names, function_context, variable, *field, member_access_operator.member_name_, member_access_operator.src_loc_ );
+		return AccessClassField( names, function_context, variable, *field, member_access_operator.member_name, member_access_operator.src_loc );
 	}
 
-	REPORT_ERROR( NotImplemented, names.GetErrors(), member_access_operator.src_loc_, "class members, except fields or methods" );
+	REPORT_ERROR( NotImplemented, names.GetErrors(), member_access_operator.src_loc, "class members, except fields or methods" );
 	return ErrorValue();
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *member_access_operator_completion.expression_, names, function_context );
-	MemberAccessCompleteImpl( variable, member_access_operator_completion.member_name_ );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *member_access_operator_completion.expression, names, function_context );
+	MemberAccessCompleteImpl( variable, member_access_operator_completion.member_name );
 	return ErrorValue();
 }
 
@@ -382,22 +382,22 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::UnaryMinus& unary_minus )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *unary_minus.expression_, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *unary_minus.expression, names, function_context );
 
-	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::Sub, unary_minus.src_loc_, names, function_context ) )
+	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::Sub, unary_minus.src_loc, names, function_context ) )
 		return std::move(*res);
 
 	const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), unary_minus.src_loc_, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), unary_minus.src_loc, variable->type );
 		return ErrorValue();
 	}
 
 	const bool is_float= IsFloatingPoint( fundamental_type->fundamental_type );
 	if( !( IsInteger( fundamental_type->fundamental_type ) || is_float ) )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), unary_minus.src_loc_, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), unary_minus.src_loc, variable->type );
 		return ErrorValue();
 	}
 	// TODO - maybe not support unary minus for 8 and 16 bit integer types?
@@ -430,7 +430,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::UnaryPlus& unary_plus )
 {
 	// TODO - maybe check type of expression here?
-	return BuildExpressionCode( *unary_plus.expression_, names, function_context );
+	return BuildExpressionCode( *unary_plus.expression, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -438,14 +438,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::LogicalNot& logical_not )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *logical_not.expression_, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *logical_not.expression, names, function_context );
 
-	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::LogicalNot, logical_not.src_loc_, names, function_context ) )
+	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::LogicalNot, logical_not.src_loc, names, function_context ) )
 		return std::move(*res);
 
 	if( variable->type != bool_type_ )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), logical_not.src_loc_, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), logical_not.src_loc, variable->type );
 		return ErrorValue();
 	}
 
@@ -473,20 +473,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::BitwiseNot& bitwise_not )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *bitwise_not.expression_, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *bitwise_not.expression, names, function_context );
 
-	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::BitwiseNot, bitwise_not.src_loc_, names, function_context ) )
+	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::BitwiseNot, bitwise_not.src_loc, names, function_context ) )
 		return std::move(*res);
 
 	const FundamentalType* const fundamental_type= variable->type.GetFundamentalType();
 	if( fundamental_type == nullptr )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), bitwise_not.src_loc_, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), bitwise_not.src_loc, variable->type );
 		return ErrorValue();
 	}
 	if( !IsInteger( fundamental_type->fundamental_type ) )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), bitwise_not.src_loc_, variable->type );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), bitwise_not.src_loc, variable->type );
 		return ErrorValue();
 	}
 
@@ -514,34 +514,34 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::BinaryOperator& binary_operator	)
 {
-	if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd ||
-		binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
+	if( binary_operator.operator_type == BinaryOperatorType::LazyLogicalAnd ||
+		binary_operator.operator_type == BinaryOperatorType::LazyLogicalOr )
 	{
 		return
 			BuildLazyBinaryOperator(
-				*binary_operator.left_,
-				*binary_operator.right_,
+				*binary_operator.left,
+				*binary_operator.right,
 				binary_operator,
-				binary_operator.src_loc_,
+				binary_operator.src_loc,
 				names,
 				function_context );
 	}
 
-	const auto overloaded_operator= GetOverloadedOperatorForBinaryOperator( binary_operator.operator_type_ );
+	const auto overloaded_operator= GetOverloadedOperatorForBinaryOperator( binary_operator.operator_type );
 
 	std::optional<Value> overloaded_operator_call_try=
 		TryCallOverloadedBinaryOperator(
 			overloaded_operator,
-			*binary_operator.left_, *binary_operator.right_,
+			*binary_operator.left, *binary_operator.right,
 			false,
-			binary_operator.src_loc_,
+			binary_operator.src_loc,
 			names,
 			function_context );
 	if( overloaded_operator_call_try != std::nullopt )
 	{
 		if( const VariablePtr call_variable= overloaded_operator_call_try->GetVariable())
 		{
-			if( binary_operator.operator_type_ == BinaryOperatorType::NotEqual && call_variable->type == bool_type_ )
+			if( binary_operator.operator_type == BinaryOperatorType::NotEqual && call_variable->type == bool_type_ )
 			{
 				const VariableMutPtr variable=
 					std::make_shared<Variable>(
@@ -563,7 +563,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 			}
 			else if( overloaded_operator == OverloadedOperator::CompareOrder &&
-				binary_operator.operator_type_ != BinaryOperatorType::CompareOrder &&
+				binary_operator.operator_type != BinaryOperatorType::CompareOrder &&
 				call_variable->type.GetFundamentalType() != nullptr &&
 				IsSignedInteger( call_variable->type.GetFundamentalType()->fundamental_type ) )
 			{
@@ -577,13 +577,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				if( const auto call_value_in_register= CreateMoveToLLVMRegisterInstruction( *call_variable, function_context ) )
 				{
 					const auto zero= llvm::Constant::getNullValue( call_variable->type.GetLLVMType() );
-					if( binary_operator.operator_type_ == BinaryOperatorType::Less )
+					if( binary_operator.operator_type == BinaryOperatorType::Less )
 						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLT( call_value_in_register, zero );
-					else if( binary_operator.operator_type_ == BinaryOperatorType::LessEqual )
+					else if( binary_operator.operator_type == BinaryOperatorType::LessEqual )
 						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSLE( call_value_in_register, zero );
-					else if( binary_operator.operator_type_ == BinaryOperatorType::Greater )
+					else if( binary_operator.operator_type == BinaryOperatorType::Greater )
 						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGT( call_value_in_register, zero );
-					else if( binary_operator.operator_type_ == BinaryOperatorType::GreaterEqual )
+					else if( binary_operator.operator_type == BinaryOperatorType::GreaterEqual )
 						variable->llvm_value= function_context.llvm_ir_builder.CreateICmpSGE( call_value_in_register, zero );
 					else U_ASSERT(false);
 
@@ -601,7 +601,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	VariablePtr l_var=
 		BuildExpressionCodeEnsureVariable(
-			*binary_operator.left_,
+			*binary_operator.left,
 			names,
 			function_context );
 
@@ -622,21 +622,21 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					: CreateMoveToLLVMRegisterInstruction( *l_var, function_context ),
 				l_var->constexpr_value );
 
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), binary_operator.src_loc_ );
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), binary_operator.src_loc );
 
 		function_context.variables_state.AddNode( l_var );
 		RegisterTemporaryVariable( function_context, l_var );
 	}
 	else
-		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), binary_operator.src_loc_ );
+		DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), binary_operator.src_loc );
 
 	const VariablePtr r_var=
 		BuildExpressionCodeEnsureVariable(
-			*binary_operator.right_,
+			*binary_operator.right,
 			names,
 			function_context );
 
-	return BuildBinaryOperator( *l_var, *r_var, binary_operator.operator_type_, binary_operator.src_loc_, names, function_context );
+	return BuildBinaryOperator( *l_var, *r_var, binary_operator.operator_type, binary_operator.src_loc, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -644,14 +644,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::ComplexName& named_operand )
 {
-	if( const auto name_lookup = std::get_if<Synt::NameLookup>( &named_operand) )
+	if( const auto name_lookup = std::get_if<Synt::NameLookup>( &named_operand ) )
 	{
 		const std::string& start_name= name_lookup->name;
 		if( start_name == Keywords::this_ )
 		{
 			if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
 			{
-				REPORT_ERROR( ThisUnavailable, names.GetErrors(), name_lookup->src_loc_ );
+				REPORT_ERROR( ThisUnavailable, names.GetErrors(), name_lookup->src_loc );
 				return ErrorValue();
 			}
 			return function_context.this_;
@@ -660,18 +660,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		{
 			if( function_context.this_ == nullptr )
 			{
-				REPORT_ERROR( BaseUnavailable, names.GetErrors(), name_lookup->src_loc_ );
+				REPORT_ERROR( BaseUnavailable, names.GetErrors(), name_lookup->src_loc );
 				return ErrorValue();
 			}
 			const Class& class_= *function_context.this_->type.GetClassType();
 			if( class_.base_class == nullptr )
 			{
-				REPORT_ERROR( BaseUnavailable, names.GetErrors(), name_lookup->src_loc_ );
+				REPORT_ERROR( BaseUnavailable, names.GetErrors(), name_lookup->src_loc );
 				return ErrorValue();
 			}
 			if( function_context.whole_this_is_unavailable && ( !function_context.base_initialized || class_.base_class->kind == Class::Kind::Abstract ) )
 			{
-				REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), name_lookup->src_loc_, Keyword( Keywords::base_ ) );
+				REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), name_lookup->src_loc, Keyword( Keywords::base_ ) );
 				return ErrorValue();
 			}
 
@@ -688,7 +688,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, class_.base_class, function_context ) );
 
 			function_context.variables_state.AddNode( base );
-			function_context.variables_state.TryAddLink( function_context.this_, base, names.GetErrors(),name_lookup->src_loc_ );
+			function_context.variables_state.TryAddLink( function_context.this_, base, names.GetErrors(),name_lookup->src_loc );
 
 			RegisterTemporaryVariable( function_context, base );
 
@@ -785,7 +785,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const VariablePtr condition= BuildExpressionCodeEnsureVariable( *ternary_operator.condition, names, function_context );
 	if( condition->type != bool_type_ )
 	{
-		REPORT_ERROR( TypesMismatch, names.GetErrors(), ternary_operator.src_loc_, bool_type_, condition->type );
+		REPORT_ERROR( TypesMismatch, names.GetErrors(), ternary_operator.src_loc, bool_type_, condition->type );
 		return ErrorValue();
 	}
 
@@ -805,7 +805,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				const VariablePtr var= BuildExpressionCodeEnsureVariable( i == 0u ? *ternary_operator.true_branch : *ternary_operator.false_branch, names, function_context );
 				branches_types[i]= var->type;
 				branches_value_types[i]= var->value_type;
-				DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), ternary_operator.src_loc_ );
+				DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), ternary_operator.src_loc );
 			}
 			RestoreFunctionContextState( function_context, state );
 		}
@@ -814,7 +814,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( branches_types[0] != branches_types[1] )
 	{
-		REPORT_ERROR( TypesMismatch, names.GetErrors(), ternary_operator.src_loc_, branches_types[0], branches_types[1] );
+		REPORT_ERROR( TypesMismatch, names.GetErrors(), ternary_operator.src_loc, branches_types[0], branches_types[1] );
 		return ErrorValue();
 	}
 
@@ -827,7 +827,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->value_type= ValueType::Value;
 		if( !EnsureTypeComplete( result->type ) )
 		{
-			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.src_loc_, result->type );
+			REPORT_ERROR( UsingIncompleteType, names.GetErrors(), ternary_operator.src_loc, result->type );
 			return ErrorValue();
 		}
 
@@ -896,7 +896,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					result->type.GetTupleType() != nullptr ||
 					result->type.GetArrayType() != nullptr )
 				{
-					SetupReferencesInCopyOrMove( function_context, result, branch_result, names.GetErrors(), ternary_operator.src_loc_ );
+					SetupReferencesInCopyOrMove( function_context, result, branch_result, names.GetErrors(), ternary_operator.src_loc );
 
 					if( branch_result->value_type == ValueType::Value )
 					{
@@ -913,9 +913,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 					{
 						// Copy.
 						if( !result->type.IsCopyConstructible() )
-							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), ternary_operator.src_loc_, result->type );
+							REPORT_ERROR( CopyConstructValueOfNoncopyableType, names.GetErrors(), ternary_operator.src_loc, result->type );
 						else if( result->type.IsAbstract() )
-							REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), ternary_operator.src_loc_, result->type );
+							REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), ternary_operator.src_loc, result->type );
 						else if( !function_context.is_functionless_context )
 							BuildCopyConstructorPart( result->llvm_value, branch_result->llvm_value, result->type, function_context );
 					}
@@ -926,7 +926,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			{
 				branches_reference_values[i]= branch_result->llvm_value;
 
-				function_context.variables_state.TryAddLink( branch_result, result, names.GetErrors(), ternary_operator.src_loc_ );
+				function_context.variables_state.TryAddLink( branch_result, result, names.GetErrors(), ternary_operator.src_loc );
 			}
 
 			CallDestructors( branch_temp_variables_storage, names, function_context, Synt::GetExpressionSrcLoc( branch_expr ) );
@@ -938,7 +938,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		branches_variables_state[i]= function_context.variables_state;
 	}
 
-	function_context.variables_state= MergeVariablesStateAfterIf( branches_variables_state, names.GetErrors(), ternary_operator.src_loc_ );
+	function_context.variables_state= MergeVariablesStateAfterIf( branches_variables_state, names.GetErrors(), ternary_operator.src_loc );
 
 	if( !function_context.is_functionless_context )
 	{
@@ -972,13 +972,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const VariablePtr v= BuildExpressionCodeEnsureVariable( *reference_to_raw_pointer_operator.expression, names, function_context );
 	if( v->value_type == ValueType::Value )
 	{
-		REPORT_ERROR( ValueIsNotReference, names.GetErrors(), reference_to_raw_pointer_operator.src_loc_ );
+		REPORT_ERROR( ValueIsNotReference, names.GetErrors(), reference_to_raw_pointer_operator.src_loc );
 		return ErrorValue();
 	}
 	if( v->value_type == ValueType::ReferenceImut )
 	{
 		// Disable immutable reference to pointer conversion, because pointer dereference produces mutable value.
-		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), reference_to_raw_pointer_operator.src_loc_ );
+		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), reference_to_raw_pointer_operator.src_loc );
 		return ErrorValue();
 	}
 
@@ -1011,14 +1011,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator )
 {
 	if( !function_context.is_in_unsafe_block )
-		REPORT_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, names.GetErrors(), raw_pointer_to_reference_operator.src_loc_ );
+		REPORT_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, names.GetErrors(), raw_pointer_to_reference_operator.src_loc );
 
 	const VariablePtr v= BuildExpressionCodeEnsureVariable( *raw_pointer_to_reference_operator.expression, names, function_context );
 	const RawPointerType* const raw_pointer_type= v->type.GetRawPointerType();
 
 	if( raw_pointer_type == nullptr )
 	{
-		REPORT_ERROR( ValueIsNotPointer, names.GetErrors(), raw_pointer_to_reference_operator.src_loc_, v->type );
+		REPORT_ERROR( ValueIsNotPointer, names.GetErrors(), raw_pointer_to_reference_operator.src_loc, v->type );
 		return ErrorValue();
 	}
 
@@ -1067,7 +1067,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( type == U_FundamentalType::InvalidType )
 	{
-		REPORT_ERROR( UnknownNumericConstantType, names.GetErrors(), numeric_constant.src_loc_, numeric_constant.type_suffix.data() );
+		REPORT_ERROR( UnknownNumericConstantType, names.GetErrors(), numeric_constant.src_loc, numeric_constant.type_suffix.data() );
 		return ErrorValue();
 	}
 	llvm::Type* const llvm_type= GetFundamentalLLVMType( type );
@@ -1108,9 +1108,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			bool_type_,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			std::string( Keyword( boolean_constant.value_ ? Keywords::true_ : Keywords::false_ ) ) );
+			std::string( Keyword( boolean_constant.value ? Keywords::true_ : Keywords::false_ ) ) );
 
-	result->llvm_value= result->constexpr_value= llvm::ConstantInt::getBool( llvm_context_, boolean_constant.value_ );
+	result->llvm_value= result->constexpr_value= llvm::ConstantInt::getBool( llvm_context_, boolean_constant.value );
 
 	function_context.variables_state.AddNode( result );
 
@@ -1129,18 +1129,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	uint64_t array_size= ~0u; // ~0 - means non-array
 	llvm::Constant* initializer= nullptr;
 
-	const std::string type_suffix= string_literal.type_suffix_.data();
+	const std::string type_suffix= string_literal.type_suffix.data();
 
 	if( type_suffix.empty() || type_suffix == "u8" )
 	{
 		char_type= U_FundamentalType::char8_;
-		array_size= string_literal.value_.size();
-		initializer= llvm::ConstantDataArray::getString( llvm_context_, string_literal.value_, false /* not null terminated */ );
+		array_size= string_literal.value.size();
+		initializer= llvm::ConstantDataArray::getString( llvm_context_, string_literal.value, false /* not null terminated */ );
 	}
 	else if( type_suffix == "u16" )
 	{
 		llvm::SmallVector<llvm::UTF16, 32> str;
-		llvm::convertUTF8ToUTF16String( string_literal.value_, str );
+		llvm::convertUTF8ToUTF16String( string_literal.value, str );
 
 		char_type= U_FundamentalType::char16_;
 		array_size= str.size();
@@ -1149,7 +1149,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	else if( type_suffix == "u32" )
 	{
 		llvm::SmallVector<uint32_t, 32> str;
-		for( auto it = string_literal.value_.data(), it_end= it + string_literal.value_.size(); it < it_end; )
+		for( auto it = string_literal.value.data(), it_end= it + string_literal.value.size(); it < it_end; )
 			str.push_back( ReadNextUTF8Char( it, it_end ) );
 
 		char_type= U_FundamentalType::char32_;
@@ -1159,18 +1159,18 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	// If string literal have char suffix, process it as single char literal.
 	else if( type_suffix == "c8" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char8_  ) )
 	{
-		if( string_literal.value_.size() == 1u )
+		if( string_literal.value.size() == 1u )
 		{
 			char_type= U_FundamentalType::char8_ ;
-			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char8_ , uint64_t(string_literal.value_[0]), false );
+			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char8_ , uint64_t(string_literal.value[0]), false );
 		}
 		else
-			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.src_loc_, string_literal.value_ );
+			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.src_loc, string_literal.value );
 	}
 	else if( type_suffix == "c16" || type_suffix == GetFundamentalTypeName( U_FundamentalType::char16_ ) )
 	{
-		const char* it_start= string_literal.value_.data();
-		const char* const it_end= it_start + string_literal.value_.size();
+		const char* it_start= string_literal.value.data();
+		const char* const it_end= it_start + string_literal.value.size();
 		const sprache_char c= ReadNextUTF8Char( it_start, it_end );
 		if( it_start == it_end && c <= 65535u )
 		{
@@ -1178,12 +1178,12 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char16_, uint64_t(c), false );
 		}
 		else
-			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.src_loc_, string_literal.value_ );
+			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.src_loc, string_literal.value );
 	}
 	else if( type_suffix == "c32" || type_suffix== GetFundamentalTypeName( U_FundamentalType::char32_ ) )
 	{
-		const char* it_start= string_literal.value_.data();
-		const char* const it_end= it_start + string_literal.value_.size() ;
+		const char* it_start= string_literal.value.data();
+		const char* const it_end= it_start + string_literal.value.size() ;
 		const sprache_char c= ReadNextUTF8Char( it_start, it_end );
 		if( it_start == it_end )
 		{
@@ -1191,10 +1191,10 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			initializer= llvm::ConstantInt::get( fundamental_llvm_types_.char32_, uint64_t(c), false );
 		}
 		else
-			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.src_loc_, string_literal.value_ );
+			REPORT_ERROR( InvalidSizeForCharLiteral, names.GetErrors(), string_literal.src_loc, string_literal.value );
 	}
 	else
-		REPORT_ERROR( UnknownStringLiteralSuffix, names.GetErrors(), string_literal.src_loc_, type_suffix );
+		REPORT_ERROR( UnknownStringLiteralSuffix, names.GetErrors(), string_literal.src_loc, type_suffix );
 
 	if( initializer == nullptr )
 		return ErrorValue();
@@ -1246,14 +1246,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::MoveOperator& move_operator	)
 {
 	if( move_operator.completion_requested )
-		NameLookupCompleteImpl( names, move_operator.var_name_ );
+		NameLookupCompleteImpl( names, move_operator.var_name );
 
-	NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name_, move_operator.src_loc_ ).value;
+	NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name, move_operator.src_loc ).value;
 	if( resolved_value_ptr == nullptr )
 		return ErrorValue();
 
 	resolved_value_ptr->referenced= true;
-	CollectDefinition( *resolved_value_ptr, move_operator.src_loc_ );
+	CollectDefinition( *resolved_value_ptr, move_operator.src_loc );
 
 	const Value& resolved_value= resolved_value_ptr->value;
 	const VariablePtr resolved_variable= resolved_value.GetVariable();
@@ -1262,31 +1262,31 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	if( resolved_variable == nullptr || IsGlobalVariable( resolved_variable ) )
 	{
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, resolved_value.GetKindName() );
 		return ErrorValue();
 	}
 	if( resolved_variable->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), move_operator.src_loc_ );
+		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), move_operator.src_loc );
 		return ErrorValue();
 	}
 
 	if( function_context.variables_state.HaveOutgoingLinks( resolved_variable ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), move_operator.src_loc_, resolved_variable->name );
+		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), move_operator.src_loc, resolved_variable->name );
 		return ErrorValue();
 	}
 
 	if( function_context.variables_state.NodeMoved( resolved_variable ) )
 	{
-		REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), move_operator.src_loc_, resolved_variable->name );
+		REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), move_operator.src_loc, resolved_variable->name );
 		return ErrorValue();
 	}
 
 	const auto input_nodes= function_context.variables_state.GetNodeInputLinks( resolved_variable );
 	if( input_nodes.size() != 1u )
 	{
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, resolved_value.GetKindName() );
 		return ErrorValue();
 	}
 
@@ -1294,7 +1294,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( variable_for_move->value_type != ValueType::Value )
 	{
 		// This is not a variable, but some reference.
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, resolved_value.GetKindName() );
 		return ErrorValue();
 	}
 
@@ -1311,7 +1311,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	end_variable_search:
 	if( !found_in_variables )
 	{
-		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc_, resolved_value.GetKindName() );
+		REPORT_ERROR( ExpectedVariable, names.GetErrors(), move_operator.src_loc, resolved_value.GetKindName() );
 		return ErrorValue();
 	}
 
@@ -1348,23 +1348,23 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::TakeOperator& take_operator	)
 {
-	const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *take_operator.expression_, names, function_context );
+	const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *take_operator.expression, names, function_context );
 	if( expression_result->value_type == ValueType::Value ) // If it is value - just pass it.
 		return expression_result;
 
 	if( expression_result->value_type != ValueType::ReferenceMut )
 	{
-		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), take_operator.src_loc_ );
+		REPORT_ERROR( ExpectedReferenceValue, names.GetErrors(), take_operator.src_loc );
 		return ErrorValue();
 	}
 	if( function_context.variables_state.HaveOutgoingLinks( expression_result ) )
 	{
-		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), take_operator.src_loc_, expression_result->name );
+		REPORT_ERROR( MovedVariableHaveReferences, names.GetErrors(), take_operator.src_loc, expression_result->name );
 		return ErrorValue();
 	}
 	if( expression_result->type.IsAbstract() )
 	{
-		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), take_operator.src_loc_, expression_result->type );
+		REPORT_ERROR( ConstructingAbstractClassOrInterface, names.GetErrors(), take_operator.src_loc, expression_result->type );
 		return ErrorValue();
 	}
 	if( const auto class_type= expression_result->type.GetClassType() )
@@ -1373,7 +1373,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// It may break derived class invariants and will overwrite virtual table pointer.
 		if( class_type->kind == Class::Kind::Interface || class_type->kind == Class::Kind::Abstract || class_type->kind == Class::Kind::PolymorphNonFinal )
 		{
-			REPORT_ERROR( TakeForNonFinalPolymorphClass, names.GetErrors(), take_operator.src_loc_, expression_result->type );
+			REPORT_ERROR( TakeForNonFinalPolymorphClass, names.GetErrors(), take_operator.src_loc, expression_result->type );
 			return ErrorValue();
 		}
 	}
@@ -1388,7 +1388,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// Copy content to new variable.
 	function_context.variables_state.AddNode( result );
-	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc_ );
+	SetupReferencesInCopyOrMove( function_context, result, expression_result, names.GetErrors(), take_operator.src_loc );
 
 	if( !function_context.is_functionless_context )
 	{
@@ -1402,7 +1402,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	// Construct empty value in old place.
-	ApplyEmptyInitializer( expression_result->name, take_operator.src_loc_, expression_result, names, function_context );
+	ApplyEmptyInitializer( expression_result->name, take_operator.src_loc, expression_result, names, function_context );
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
@@ -1414,9 +1414,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::CastMut& cast_mut )
 {
 	if( !function_context.is_in_unsafe_block )
-		REPORT_ERROR( MutableReferenceCastOutsideUnsafeBlock, names.GetErrors(), cast_mut.src_loc_ );
+		REPORT_ERROR( MutableReferenceCastOutsideUnsafeBlock, names.GetErrors(), cast_mut.src_loc );
 
-	const VariablePtr var= BuildExpressionCodeEnsureVariable( *cast_mut.expression_, names, function_context );
+	const VariablePtr var= BuildExpressionCodeEnsureVariable( *cast_mut.expression, names, function_context );
 
 	const VariableMutPtr result=
 		std::make_shared<Variable>(
@@ -1438,7 +1438,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	// TODO - check if it is correct to create mutable links to possible immutable links.
 	function_context.variables_state.AddNode( result );
-	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_mut.src_loc_ );
+	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_mut.src_loc );
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
@@ -1449,7 +1449,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CastImut& cast_imut	)
 {
-	const VariablePtr var= BuildExpressionCodeEnsureVariable( *cast_imut.expression_, names, function_context );
+	const VariablePtr var= BuildExpressionCodeEnsureVariable( *cast_imut.expression, names, function_context );
 
 	const VariableMutPtr result=
 		std::make_shared<Variable>(
@@ -1472,7 +1472,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		result->llvm_value= var->llvm_value;
 
 	function_context.variables_state.AddNode( result );
-	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_imut.src_loc_ );
+	function_context.variables_state.TryAddLink( var, result, names.GetErrors(), cast_imut.src_loc );
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
@@ -1483,7 +1483,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CastRef& cast_ref )
 {
-	return DoReferenceCast( cast_ref.src_loc_, *cast_ref.type_, *cast_ref.expression_, false, names, function_context );
+	return DoReferenceCast( cast_ref.src_loc, *cast_ref.type, *cast_ref.expression, false, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1492,9 +1492,9 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::CastRefUnsafe& cast_ref_unsafe )
 {
 	if( !function_context.is_in_unsafe_block )
-		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, names.GetErrors(), cast_ref_unsafe.src_loc_ );
+		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, names.GetErrors(), cast_ref_unsafe.src_loc );
 
-	return DoReferenceCast( cast_ref_unsafe.src_loc_, *cast_ref_unsafe.type_, *cast_ref_unsafe.expression_, true, names, function_context );
+	return DoReferenceCast( cast_ref_unsafe.src_loc, *cast_ref_unsafe.type, *cast_ref_unsafe.expression, true, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1502,13 +1502,13 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::TypeInfo& typeinfo )
 {
-	const Type type= PrepareType( *typeinfo.type_, names, function_context );
+	const Type type= PrepareType( *typeinfo.type, names, function_context );
 	if( type == invalid_type_ )
 		return ErrorValue();
 
 	if( !EnsureTypeComplete( type ) )
 	{
-		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), typeinfo.src_loc_, type );
+		REPORT_ERROR( UsingIncompleteType, names.GetErrors(), typeinfo.src_loc, type );
 		return ErrorValue();
 	}
 
@@ -1553,8 +1553,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::NonSyncExpression& non_sync_expression )
 {
-	const Type type= PrepareType( *non_sync_expression.type_, names, function_context );
-	const bool is_non_sync= GetTypeNonSync( type, names, non_sync_expression.src_loc_ );
+	const Type type= PrepareType( *non_sync_expression.type, names, function_context );
+	const bool is_non_sync= GetTypeNonSync( type, names, non_sync_expression.src_loc );
 
 	const VariableMutPtr result=
 		std::make_shared<Variable>(
@@ -1578,7 +1578,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const bool prev_unsafe= function_context.is_in_unsafe_block;
 	function_context.is_in_unsafe_block= false;
-	Value result= BuildExpressionCode( *safe_expression.expression_, names, function_context );
+	Value result= BuildExpressionCode( *safe_expression.expression, names, function_context );
 	function_context.is_in_unsafe_block= prev_unsafe;
 	return result;
 }
@@ -1589,14 +1589,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::UnsafeExpression& unsafe_expression )
 {
 	if( function_context.function == global_function_context_->function )
-		REPORT_ERROR( UnsafeExpressionInGlobalContext, names.GetErrors(), unsafe_expression.src_loc_ );
+		REPORT_ERROR( UnsafeExpressionInGlobalContext, names.GetErrors(), unsafe_expression.src_loc );
 
 	// "unsafe" expression usage should prevent function to be "constexpr".
 	function_context.have_non_constexpr_operations_inside= true;
 
 	const bool prev_unsafe= function_context.is_in_unsafe_block;
 	function_context.is_in_unsafe_block= true;
-	Value result= BuildExpressionCode( *unsafe_expression.expression_, names, function_context );
+	Value result= BuildExpressionCode( *unsafe_expression.expression, names, function_context );
 	function_context.is_in_unsafe_block= prev_unsafe;
 
 	// Avoid passing constexpr values trough unsafe expression.
@@ -1625,7 +1625,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				}
 			}
 			else
-				function_context.variables_state.TryAddLink( variable_ptr, variable_copy, names.GetErrors(), unsafe_expression.src_loc_ );
+				function_context.variables_state.TryAddLink( variable_ptr, variable_copy, names.GetErrors(), unsafe_expression.src_loc );
 
 			function_context.variables_state.MoveNode( variable_ptr );
 
@@ -2811,7 +2811,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 
 	if( l_var->type != bool_type_ )
 	{
-		REPORT_ERROR( TypesMismatch, names.GetErrors(), binary_operator.src_loc_, bool_type_, l_var->type );
+		REPORT_ERROR( TypesMismatch, names.GetErrors(), binary_operator.src_loc, bool_type_, l_var->type );
 		return ErrorValue();
 	}
 
@@ -2826,9 +2826,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		r_part_block= llvm::BasicBlock::Create( llvm_context_ );
 		block_after_operator= llvm::BasicBlock::Create( llvm_context_ );
 
-		if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
+		if( binary_operator.operator_type == BinaryOperatorType::LazyLogicalAnd )
 			function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, r_part_block, block_after_operator );
-		else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
+		else if( binary_operator.operator_type == BinaryOperatorType::LazyLogicalOr )
 			function_context.llvm_ir_builder.CreateCondBr( l_var_in_register, block_after_operator, r_part_block );
 		else U_ASSERT(false);
 
@@ -2848,7 +2848,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 		const VariablePtr r_var= BuildExpressionCodeEnsureVariable( r_expression, names, function_context );
 		if( r_var->type != bool_type_ )
 		{
-			REPORT_ERROR( TypesMismatch, names.GetErrors(), binary_operator.src_loc_, bool_type_, r_var->type );
+			REPORT_ERROR( TypesMismatch, names.GetErrors(), binary_operator.src_loc, bool_type_, r_var->type );
 			return ErrorValue();
 		}
 		r_var_constepxr_value= r_var->constexpr_value;
@@ -2864,7 +2864,7 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 			bool_type_,
 			ValueType::Value,
 			Variable::Location::LLVMRegister,
-			std::string( BinaryOperatorToString(binary_operator.operator_type_) ) );
+			std::string( BinaryOperatorToString(binary_operator.operator_type) ) );
 
 	if( !function_context.is_functionless_context )
 	{
@@ -2885,9 +2885,9 @@ Value CodeBuilder::BuildLazyBinaryOperator(
 	// TODO - remove all blocks code in case of constexpr?
 	if( l_var->constexpr_value != nullptr && r_var_constepxr_value != nullptr )
 	{
-		if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalAnd )
+		if( binary_operator.operator_type == BinaryOperatorType::LazyLogicalAnd )
 			result->constexpr_value= llvm::ConstantExpr::getAnd( l_var->constexpr_value, r_var_constepxr_value );
-		else if( binary_operator.operator_type_ == BinaryOperatorType::LazyLogicalOr )
+		else if( binary_operator.operator_type == BinaryOperatorType::LazyLogicalOr )
 			result->constexpr_value= llvm::ConstantExpr::getOr ( l_var->constexpr_value, r_var_constepxr_value );
 		else
 			U_ASSERT(false);

@@ -680,7 +680,7 @@ void ManglerMSVC::EncodeTemplateClassName( ManglerState& mangler_state, const Cl
 		ManglerState template_mangler_state( template_name );
 
 		template_mangler_state.PushElement( g_template_prefix );
-		template_mangler_state.EncodeName( type_template->syntax_element->name_ );
+		template_mangler_state.EncodeName( type_template->syntax_element->name );
 		EncodeTemplateArgs( template_mangler_state, the_class->base_template->signature_args );
 	}
 	mangler_state.EncodeNameNoTerminator( template_name );

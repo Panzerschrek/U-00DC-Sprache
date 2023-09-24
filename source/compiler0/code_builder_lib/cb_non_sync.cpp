@@ -96,14 +96,14 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 		// Check "non_sync" tag existence first.
 		if( class_type->syntax_element != nullptr )
 		{
-			if( std::get_if<Synt::NonSyncTagNone>( &class_type->syntax_element->non_sync_tag_ ) != nullptr )
+			if( std::get_if<Synt::NonSyncTagNone>( &class_type->syntax_element->non_sync_tag ) != nullptr )
 			{}
-			else if( std::get_if<Synt::NonSyncTagTrue>( &class_type->syntax_element->non_sync_tag_ ) != nullptr )
+			else if( std::get_if<Synt::NonSyncTagTrue>( &class_type->syntax_element->non_sync_tag ) != nullptr )
 			{
 				prev_types_stack.pop_back();
 				return true;
 			}
-			else if( const auto expression_ptr= std::get_if<Synt::ExpressionPtr>( &class_type->syntax_element->non_sync_tag_ ) )
+			else if( const auto expression_ptr= std::get_if<Synt::ExpressionPtr>( &class_type->syntax_element->non_sync_tag ) )
 			{
 				const Synt::Expression& expression= **expression_ptr;
 
@@ -113,7 +113,7 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 				{
 					// Process "non_sync</T/>" expression specially to handle cases with recursive dependencies.
 					// TODO - handle also simple logical expressions with "non_sync" tag?
-					const Type dependent_type= PrepareType( *non_sync_expression->type_, class_parent_scope, *global_function_context_ );
+					const Type dependent_type= PrepareType( *non_sync_expression->type, class_parent_scope, *global_function_context_ );
 					if( GetTypeNonSyncImpl( prev_types_stack, dependent_type, names_scope, src_loc ) )
 					{
 						prev_types_stack.pop_back();
@@ -199,7 +199,7 @@ void CodeBuilder::CheckClassNonSyncTagExpression( const ClassPtr class_type )
 	if( class_type->syntax_element != nullptr )
 	{
 		// Evaluate non_sync condition using initial class members parent scope.
-		ImmediateEvaluateNonSyncTag(  *class_type->members_initial->GetParent(), *global_function_context_, class_type->syntax_element->non_sync_tag_ );
+		ImmediateEvaluateNonSyncTag(  *class_type->members_initial->GetParent(), *global_function_context_, class_type->syntax_element->non_sync_tag );
 	}
 }
 
@@ -215,7 +215,7 @@ void CodeBuilder::CheckClassNonSyncTagInheritance( const ClassPtr class_type )
 
 	SrcLoc src_loc;
 	if( class_type->syntax_element != nullptr )
-		src_loc= class_type->syntax_element->src_loc_;
+		src_loc= class_type->syntax_element->src_loc;
 
 	if( !GetTypeNonSync( class_type, *class_type->members->GetParent(), src_loc ) )
 		return;
@@ -226,7 +226,7 @@ void CodeBuilder::CheckClassNonSyncTagInheritance( const ClassPtr class_type )
 
 		SrcLoc parent_src_loc;
 		if( parent_class_type->syntax_element != nullptr )
-			parent_src_loc= parent_class_type->syntax_element->src_loc_;
+			parent_src_loc= parent_class_type->syntax_element->src_loc;
 
 		if( !GetTypeNonSync( parent_class_type, *parent_class_type->members->GetParent(), parent_src_loc ) )
 		{

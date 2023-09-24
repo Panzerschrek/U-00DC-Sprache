@@ -270,7 +270,7 @@ struct SyntaxElementBase
 	// WARNING! This struct have NO virtual destructor for, size optimization.
 	// Do not like this:  SyntaxElementBase* x= new Derived();
 
-	SrcLoc src_loc_;
+	SrcLoc src_loc;
 };
 
 enum class MutabilityModifier : uint8_t
@@ -364,7 +364,7 @@ struct TupleType final : public SyntaxElementBase
 {
 	TupleType( const SrcLoc& src_loc );
 
-	std::vector<TypeName> element_types_;
+	std::vector<TypeName> element_types;
 };
 
 struct RawPointerType final : public SyntaxElementBase
@@ -405,37 +405,37 @@ struct FunctionType final : public SyntaxElementBase
 {
 	FunctionType( const SrcLoc& src_loc );
 
-	std::optional<std::string> calling_convention_;
-	TypeNamePtr return_type_;
-	std::string return_value_reference_tag_;
-	FunctionReferencesPollutionList references_pollution_list_;
-	FunctionParams params_;
-	std::string return_value_inner_reference_tag_;
+	std::optional<std::string> calling_convention;
+	TypeNamePtr return_type;
+	std::string return_value_reference_tag;
+	FunctionReferencesPollutionList references_pollution_list;
+	FunctionParams params;
+	std::string return_value_inner_reference_tag;
 
-	MutabilityModifier return_value_mutability_modifier_= MutabilityModifier::None;
-	ReferenceModifier return_value_reference_modifier_= ReferenceModifier::None;
-	bool unsafe_= false;
+	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
+	bool unsafe= false;
 };
 
 struct FunctionParam final : public SyntaxElementBase
 {
 	FunctionParam( const SrcLoc& src_loc );
 
-	std::string name_;
-	TypeName type_;
-	std::string reference_tag_;
-	std::string inner_arg_reference_tag_;
-	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
-	ReferenceModifier reference_modifier_= ReferenceModifier::None;
+	std::string name;
+	TypeName type;
+	std::string reference_tag;
+	std::string inner_arg_reference_tag;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
 
 struct BinaryOperator final : public SyntaxElementBase
 {
 	explicit BinaryOperator( const SrcLoc& src_loc );
 
-	BinaryOperatorType operator_type_;
-	ExpressionPtr left_;
-	ExpressionPtr right_;
+	BinaryOperatorType operator_type;
+	ExpressionPtr left;
+	ExpressionPtr right;
 };
 
 struct TernaryOperator final : public SyntaxElementBase
@@ -465,7 +465,7 @@ struct MoveOperator final : public SyntaxElementBase
 {
 	MoveOperator( const SrcLoc& src_loc );
 
-	std::string var_name_;
+	std::string var_name;
 	bool completion_requested= false;
 };
 
@@ -473,44 +473,44 @@ struct TakeOperator final : public SyntaxElementBase
 {
 	TakeOperator( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
+	ExpressionPtr expression;
 };
 
 struct CastRef final : public SyntaxElementBase
 {
 	CastRef( const SrcLoc& src_loc );
 
-	TypeNamePtr type_;
-	ExpressionPtr expression_;
+	TypeNamePtr type;
+	ExpressionPtr expression;
 };
 
 struct CastRefUnsafe : public SyntaxElementBase
 {
 	CastRefUnsafe( const SrcLoc& src_loc );
 
-	TypeNamePtr type_;
-	ExpressionPtr expression_;
+	TypeNamePtr type;
+	ExpressionPtr expression;
 };
 
 struct CastImut final : public SyntaxElementBase
 {
 	CastImut( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
+	ExpressionPtr expression;
 };
 
 struct CastMut final : public SyntaxElementBase
 {
 	CastMut( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
+	ExpressionPtr expression;
 };
 
 struct TypeInfo final : public SyntaxElementBase
 {
 	TypeInfo( const SrcLoc& src_loc );
 
-	TypeNamePtr type_;
+	TypeNamePtr type;
 };
 
 struct SameType final : public SyntaxElementBase
@@ -525,28 +525,28 @@ struct NonSyncExpression final : public SyntaxElementBase
 {
 	NonSyncExpression( const SrcLoc& src_loc );
 
-	TypeNamePtr type_;
+	TypeNamePtr type;
 };
 
 struct SafeExpression final : public SyntaxElementBase
 {
 	SafeExpression( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
+	ExpressionPtr expression;
 };
 
 struct UnsafeExpression final : public SyntaxElementBase
 {
 	UnsafeExpression( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
+	ExpressionPtr expression;
 };
 
 struct BooleanConstant final : public SyntaxElementBase
 {
 	BooleanConstant( const SrcLoc& src_loc, bool value );
 
-	bool value_;
+	bool value;
 };
 
 using TypeSuffix= std::array<char, 7>;
@@ -560,44 +560,44 @@ struct StringLiteral final : public SyntaxElementBase
 {
 	StringLiteral( const SrcLoc& src_loc );
 
-	std::string value_;
-	TypeSuffix type_suffix_;
+	std::string value;
+	TypeSuffix type_suffix;
 };
 
 struct UnaryPlus final : public SyntaxElementBase
 {
 	explicit UnaryPlus( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
+	ExpressionPtr expression;
 };
 
 struct UnaryMinus final : public SyntaxElementBase
 {
 	explicit UnaryMinus( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
+	ExpressionPtr expression;
 };
 
 struct LogicalNot final : public SyntaxElementBase
 {
 	explicit LogicalNot( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
+	ExpressionPtr expression;
 };
 
 struct BitwiseNot final : public SyntaxElementBase
 {
 	explicit BitwiseNot( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
+	ExpressionPtr expression;
 };
 
 struct CallOperator final : public SyntaxElementBase
 {
 	CallOperator( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
-	std::vector<Expression> arguments_;
+	ExpressionPtr expression;
+	std::vector<Expression> arguments;
 };
 
 // Special kind of call operator, created only by language server to perform signature help.
@@ -605,7 +605,7 @@ struct CallOperatorSignatureHelp final : public SyntaxElementBase
 {
 	CallOperatorSignatureHelp( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
+	ExpressionPtr expression;
 	// Fo now no need to parse arguments.
 };
 
@@ -613,16 +613,16 @@ struct IndexationOperator final : public SyntaxElementBase
 {
 	explicit IndexationOperator( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
-	ExpressionPtr index_;
+	ExpressionPtr expression;
+	ExpressionPtr index;
 };
 
 struct MemberAccessOperator final : public SyntaxElementBase
 {
 	MemberAccessOperator( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
-	std::string member_name_;
+	ExpressionPtr expression;
+	std::string member_name;
 	std::optional<std::vector<Expression>> template_parameters;
 };
 
@@ -632,8 +632,8 @@ struct MemberAccessOperatorCompletion final : public SyntaxElementBase
 {
 	MemberAccessOperatorCompletion( const SrcLoc& src_loc );
 
-	ExpressionPtr expression_;
-	std::string member_name_;
+	ExpressionPtr expression;
+	std::string member_name;
 };
 
 struct SequenceInitializer final : public SyntaxElementBase
@@ -696,8 +696,8 @@ struct Block : public SyntaxElementBase
 {
 	Block( const SrcLoc& start_src_loc );
 
-	SrcLoc end_src_loc_;
-	BlockElements elements_;
+	SrcLoc end_src_loc;
+	BlockElements elements;
 };
 
 // Block inside scope - with additional properties.
@@ -712,7 +712,7 @@ struct ScopeBlock final : public Block
 		Unsafe,
 	};
 
-	Safety safety_= Safety::None;
+	Safety safety= Safety::None;
 
 	std::optional<Label> label;
 };
@@ -748,7 +748,7 @@ struct ReturnOperator final : public SyntaxElementBase
 {
 	ReturnOperator( const SrcLoc& src_loc );
 
-	Expression expression_;
+	Expression expression;
 };
 
 struct YieldOperator final : public SyntaxElementBase
@@ -762,29 +762,29 @@ struct WhileOperator final : public SyntaxElementBase
 {
 	WhileOperator( const SrcLoc& src_loc );
 
-	Expression condition_;
-	std::optional<Label> label_;
-	BlockPtr block_;
+	Expression condition;
+	std::optional<Label> label;
+	BlockPtr block;
 };
 
 struct LoopOperator final : public SyntaxElementBase
 {
 	LoopOperator( const SrcLoc& src_loc );
 
-	std::optional<Label> label_;
-	BlockPtr block_;
+	std::optional<Label> label;
+	BlockPtr block;
 };
 
 struct RangeForOperator final : public SyntaxElementBase
 {
 	RangeForOperator( const SrcLoc& src_loc );
 
-	ReferenceModifier reference_modifier_= ReferenceModifier::None;
-	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
-	std::string loop_variable_name_;
-	Expression sequence_;
-	std::optional<Label> label_;
-	BlockPtr block_;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	std::string loop_variable_name;
+	Expression sequence;
+	std::optional<Label> label;
+	BlockPtr block;
 };
 
 struct CStyleForOperator final : public SyntaxElementBase
@@ -795,9 +795,9 @@ struct CStyleForOperator final : public SyntaxElementBase
 		const std::variant<
 			VariablesDeclaration,
 			AutoVariableDeclaration > >
-	variable_declaration_part_;
+	variable_declaration_part;
 
-	Expression loop_condition_;
+	Expression loop_condition;
 
 	std::vector<
 		std::variant<
@@ -806,35 +806,35 @@ struct CStyleForOperator final : public SyntaxElementBase
 			AdditiveAssignmentOperator,
 			IncrementOperator,
 			DecrementOperator > >
-	iteration_part_elements_;
+	iteration_part_elements;
 
-	std::optional<Label> label_;
-	BlockPtr block_;
+	std::optional<Label> label;
+	BlockPtr block;
 };
 
 struct BreakOperator final : public SyntaxElementBase
 {
 	explicit BreakOperator( const SrcLoc& src_loc );
 
-	std::optional<Label> label_;
+	std::optional<Label> label;
 };
 
 struct ContinueOperator final : public SyntaxElementBase
 {
 	explicit ContinueOperator( const SrcLoc& src_loc );
 
-	std::optional<Label> label_;
+	std::optional<Label> label;
 };
 
 struct WithOperator final : public SyntaxElementBase
 {
 	WithOperator( const SrcLoc& src_loc );
 
-	ReferenceModifier reference_modifier_= ReferenceModifier::None;
-	MutabilityModifier mutability_modifier_= MutabilityModifier::None;
-	std::string variable_name_;
-	Expression expression_;
-	Block block_;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	std::string variable_name;
+	Expression expression;
+	Block block;
 };
 
 struct IfOperator final : public SyntaxElementBase
@@ -902,24 +902,24 @@ struct SingleExpressionOperator final : public SyntaxElementBase
 {
 	SingleExpressionOperator( const SrcLoc& src_loc );
 
-	Expression expression_;
+	Expression expression;
 };
 
 struct AssignmentOperator final : public SyntaxElementBase
 {
 	AssignmentOperator( const SrcLoc& src_loc );
 
-	Expression l_value_;
-	Expression r_value_;
+	Expression l_value;
+	Expression r_value;
 };
 
 struct AdditiveAssignmentOperator final : public SyntaxElementBase
 {
 	explicit AdditiveAssignmentOperator( const SrcLoc& src_loc );
 
-	BinaryOperatorType additive_operation_;
-	Expression l_value_;
-	Expression r_value_;
+	BinaryOperatorType additive_operation;
+	Expression l_value;
+	Expression r_value;
 };
 
 struct IncrementOperator final : public SyntaxElementBase
@@ -1014,18 +1014,18 @@ struct Function final : public SyntaxElementBase
 		bool completion_requested= false;
 	};
 
-	std::vector<NameComponent> name_; // A, A::B, A::B::C::D, ::A, ::A::B
-	Expression condition_;
-	FunctionType type_;
-	std::unique_ptr<const StructNamedInitializer> constructor_initialization_list_;
-	BlockPtr block_;
-	OverloadedOperator overloaded_operator_= OverloadedOperator::None;
-	VirtualFunctionKind virtual_function_kind_= VirtualFunctionKind::None;
+	std::vector<NameComponent> name; // A, A::B, A::B::C::D, ::A, ::A::B
+	Expression condition;
+	FunctionType type;
+	std::unique_ptr<const StructNamedInitializer> constructor_initialization_list;
+	BlockPtr block;
+	OverloadedOperator overloaded_operator= OverloadedOperator::None;
+	VirtualFunctionKind virtual_function_kind= VirtualFunctionKind::None;
 	BodyKind body_kind= BodyKind::None;
 	NonSyncTag coroutine_non_sync_tag; // Non-empty for generators
 	Kind kind= Kind::Regular;
-	bool no_mangle_= false;
-	bool is_conversion_constructor_= false;
+	bool no_mangle= false;
+	bool is_conversion_constructor= false;
 	bool constexpr_= false;
 };
 
@@ -1062,7 +1062,7 @@ struct ClassVisibilityLabel final : public SyntaxElementBase
 {
 	ClassVisibilityLabel( const SrcLoc& src_loc, ClassMemberVisibility visibility );
 
-	const ClassMemberVisibility visibility_;
+	const ClassMemberVisibility visibility;
 };
 
 
@@ -1070,12 +1070,12 @@ struct Class final : public SyntaxElementBase
 {
 	explicit Class( const SrcLoc& src_loc );
 
-	ClassElements elements_;
-	std::string name_;
-	std::vector<ComplexName> parents_;
+	ClassElements elements;
+	std::string name;
+	std::vector<ComplexName> parents;
 	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
-	NonSyncTag non_sync_tag_;
-	bool keep_fields_order_= false;
+	NonSyncTag non_sync_tag;
+	bool keep_fields_order= false;
 };
 
 struct TemplateBase : public SyntaxElementBase
@@ -1089,7 +1089,7 @@ struct TemplateBase : public SyntaxElementBase
 		std::string name;
 	};
 
-	std::vector<Param> params_;
+	std::vector<Param> params;
 };
 
 struct TypeTemplate : public TemplateBase
@@ -1103,28 +1103,28 @@ struct TypeTemplate : public TemplateBase
 		Expression default_value;
 	};
 
-	std::vector<SignatureParam> signature_params_;
-	std::string name_;
+	std::vector<SignatureParam> signature_params;
+	std::string name;
 
 	// Short form means that template argumenst are also signature arguments.
-	bool is_short_form_= false;
+	bool is_short_form= false;
 
-	std::variant<ClassPtr, std::unique_ptr<const TypeAlias>> something_;
+	std::variant<ClassPtr, std::unique_ptr<const TypeAlias>> something;
 };
 
 struct FunctionTemplate final : public TemplateBase
 {
 	explicit FunctionTemplate( const SrcLoc& src_loc );
 
-	FunctionPtr function_;
+	FunctionPtr function;
 };
 
 struct Namespace final : public SyntaxElementBase
 {
 	explicit Namespace( const SrcLoc& src_loc );
 
-	std::string name_;
-	ProgramElements elements_;
+	std::string name;
+	ProgramElements elements;
 };
 
 struct Import final : public SyntaxElementBase

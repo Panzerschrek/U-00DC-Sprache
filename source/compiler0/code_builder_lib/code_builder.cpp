@@ -956,35 +956,35 @@ size_t CodeBuilder::PrepareFunction(
 	const Synt::Function& func,
 	const bool is_out_of_line_function )
 {
-	const std::string& func_name= func.name_.back().name;
+	const std::string& func_name= func.name.back().name;
 	const bool is_constructor= func_name == Keywords::constructor_;
 	const bool is_destructor= func_name == Keywords::destructor_;
 	const bool is_special_method= is_constructor || is_destructor;
 
 	if( is_destructor || is_constructor )
-		U_ASSERT( func.type_.params_.size() >= 1u && func.type_.params_.front().name_ == Keywords::this_ );
+		U_ASSERT( func.type.params.size() >= 1u && func.type.params.front().name == Keywords::this_ );
 
 	if( !is_special_method && IsKeyword( func_name ) )
-		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), func.src_loc_ );
+		REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), func.src_loc );
 
 	if( is_special_method && base_class == nullptr )
 	{
-		REPORT_ERROR( ConstructorOrDestructorOutsideClass, names_scope.GetErrors(), func.src_loc_ );
+		REPORT_ERROR( ConstructorOrDestructorOutsideClass, names_scope.GetErrors(), func.src_loc );
 		return ~0u;
 	}
-	if( !is_constructor && func.constructor_initialization_list_ != nullptr )
+	if( !is_constructor && func.constructor_initialization_list != nullptr )
 	{
-		REPORT_ERROR( InitializationListInNonConstructor, names_scope.GetErrors(), func.constructor_initialization_list_->src_loc_ );
+		REPORT_ERROR( InitializationListInNonConstructor, names_scope.GetErrors(), func.constructor_initialization_list->src_loc );
 		return ~0u;
 	}
-	if( is_destructor && func.type_.params_.size() >= 2u )
+	if( is_destructor && func.type.params.size() >= 2u )
 	{
-		REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope.GetErrors(), func.src_loc_ );
+		REPORT_ERROR( ExplicitArgumentsInDestructor, names_scope.GetErrors(), func.src_loc );
 		return ~0u;
 	}
 
-	if( std::get_if<Synt::EmptyVariant>( &func.condition_ ) == nullptr &&
-		!EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition_ ) )
+	if( std::get_if<Synt::EmptyVariant>( &func.condition ) == nullptr &&
+		!EvaluateBoolConstantExpression( names_scope, *global_function_context_, func.condition ) )
 		return ~0u;
 
 	FunctionVariable func_variable;
@@ -994,11 +994,11 @@ size_t CodeBuilder::PrepareFunction(
 	{ // Prepare function type
 		FunctionType function_type;
 
-		if( func.type_.return_type_ == nullptr )
+		if( func.type.return_type == nullptr )
 			function_type.return_type= void_type_;
 		else
 		{
-			if( const auto named_return_type = std::get_if<Synt::ComplexName>(func.type_.return_type_.get()) )
+			if( const auto named_return_type = std::get_if<Synt::ComplexName>(func.type.return_type.get()) )
 			{
 				if( const auto name_lookup = std::get_if<Synt::NameLookup>( named_return_type ) )
 				{
@@ -1006,9 +1006,9 @@ size_t CodeBuilder::PrepareFunction(
 					{
 						func_variable.return_type_is_auto= true;
 						if( base_class != nullptr )
-							REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, names_scope.GetErrors(), func.src_loc_, func_name );
-						if( func.block_ == nullptr )
-							REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc_, func_name );
+							REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, names_scope.GetErrors(), func.src_loc, func_name );
+						if( func.block == nullptr )
+							REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
 
 						function_type.return_type= void_type_;
 					}
@@ -1017,34 +1017,34 @@ size_t CodeBuilder::PrepareFunction(
 
 			if( !func_variable.return_type_is_auto )
 			{
-				function_type.return_type= PrepareType( *func.type_.return_type_, names_scope, *global_function_context_ );
+				function_type.return_type= PrepareType( *func.type.return_type, names_scope, *global_function_context_ );
 				if( function_type.return_type == invalid_type_ )
 					return ~0u;
 			}
 		}
 
-		if( func.type_.return_value_reference_modifier_ == ReferenceModifier::None )
+		if( func.type.return_value_reference_modifier == ReferenceModifier::None )
 			function_type.return_value_type= ValueType::Value;
 		else
-			function_type.return_value_type= func.type_.return_value_mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+			function_type.return_value_type= func.type.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 		if( is_special_method && !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
-			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.src_loc_ );
+			REPORT_ERROR( ConstructorAndDestructorMustReturnVoid, names_scope.GetErrors(), func.src_loc );
 
-		ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), func.type_, function_type );
+		ProcessFunctionReturnValueReferenceTags( names_scope.GetErrors(), func.type, function_type );
 
 		// Params.
-		function_type.params.reserve( func.type_.params_.size() );
+		function_type.params.reserve( func.type.params.size() );
 
-		for( const Synt::FunctionParam& in_param : func.type_.params_ )
+		for( const Synt::FunctionParam& in_param : func.type.params )
 		{
 			const bool is_this=
-				&in_param == &func.type_.params_.front() &&
-				in_param.name_ == Keywords::this_ &&
-				std::get_if<Synt::EmptyVariant>(&in_param.type_) != nullptr;
+				&in_param == &func.type.params.front() &&
+				in_param.name == Keywords::this_ &&
+				std::get_if<Synt::EmptyVariant>(&in_param.type) != nullptr;
 
-			if( !is_this && IsKeyword( in_param.name_ ) )
-				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_param.src_loc_ );
+			if( !is_this && IsKeyword( in_param.name ) )
+				REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_param.src_loc );
 
 			function_type.params.emplace_back();
 			FunctionType::Param& out_param= function_type.params.back();
@@ -1054,25 +1054,25 @@ size_t CodeBuilder::PrepareFunction(
 				func_variable.is_this_call= true;
 				if( base_class == nullptr )
 				{
-					REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), in_param.src_loc_, func_name );
+					REPORT_ERROR( ThisInNonclassFunction, names_scope.GetErrors(), in_param.src_loc, func_name );
 					return ~0u;
 				}
 				out_param.type= base_class;
 			}
 			else
-				out_param.type= PrepareType( in_param.type_, names_scope, *global_function_context_ );
+				out_param.type= PrepareType( in_param.type, names_scope, *global_function_context_ );
 
 			if( is_this )
-				out_param.value_type= ( is_special_method || in_param.mutability_modifier_ == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
-			else if( in_param.reference_modifier_ == ReferenceModifier::Reference )
-				out_param.value_type= in_param.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+				out_param.value_type= ( is_special_method || in_param.mutability_modifier == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+			else if( in_param.reference_modifier == ReferenceModifier::Reference )
+				out_param.value_type= in_param.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 			else
 				out_param.value_type= ValueType::Value;
 
-			ProcessFunctionParamReferencesTags( func.type_, function_type, in_param, out_param, function_type.params.size() - 1u );
+			ProcessFunctionParamReferencesTags( func.type, function_type, in_param, out_param, function_type.params.size() - 1u );
 		} // for arguments
 
-		function_type.unsafe= func.type_.unsafe_;
+		function_type.unsafe= func.type.unsafe;
 
 		if (function_type.unsafe && base_class != nullptr )
 		{
@@ -1080,29 +1080,29 @@ size_t CodeBuilder::PrepareFunction(
 			// So, to avoid problems with generated unsafe calls just forbid some methods to be unsafe.
 			if( is_destructor ||
 				( is_constructor && ( IsDefaultConstructor( function_type, base_class ) || IsCopyConstructor( function_type, base_class ) ) ) ||
-				( func.overloaded_operator_ == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_type, base_class ) ) ||
-				( func.overloaded_operator_ == OverloadedOperator::CompareEqual && IsEqualityCompareOperator( function_type, base_class ) ) )
+				( func.overloaded_operator == OverloadedOperator::Assign && IsCopyAssignmentOperator( function_type, base_class ) ) ||
+				( func.overloaded_operator == OverloadedOperator::CompareEqual && IsEqualityCompareOperator( function_type, base_class ) ) )
 			{
-				REPORT_ERROR( ThisMethodCanNotBeUnsafe, names_scope.GetErrors(), func.src_loc_ );
+				REPORT_ERROR( ThisMethodCanNotBeUnsafe, names_scope.GetErrors(), func.src_loc );
 				function_type.unsafe= false;
 			}
 		}
 
-		function_type.calling_convention= GetLLVMCallingConvention( func.type_.calling_convention_, func.type_.src_loc_, names_scope.GetErrors() );
+		function_type.calling_convention= GetLLVMCallingConvention( func.type.calling_convention, func.type.src_loc, names_scope.GetErrors() );
 		// Disable non-default calling conventions for this-call methods and operators because of problems with call of generated methods/operators.
 		// But it's fine to use custom calling convention for static methods.
 		if( function_type.calling_convention != llvm::CallingConv::C &&
-			( func_variable.is_this_call || func.overloaded_operator_ != OverloadedOperator::None ) )
-			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc_ );
+			( func_variable.is_this_call || func.overloaded_operator != OverloadedOperator::None ) )
+			REPORT_ERROR( NonDefaultCallingConventionForClassMethod, names_scope.GetErrors(), func.src_loc );
 
 		if( func_variable.return_type_is_auto && func_variable.is_generator )
 		{
-			REPORT_ERROR( AutoReturnGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
+			REPORT_ERROR( AutoReturnGenerator, names_scope.GetErrors(), func.type.src_loc );
 			func_variable.is_generator= false;
 		}
 		if( is_special_method && func_variable.is_generator )
 		{
-			REPORT_ERROR( GeneratorSpecialMethod, names_scope.GetErrors(), func.type_.src_loc_ );
+			REPORT_ERROR( GeneratorSpecialMethod, names_scope.GetErrors(), func.type.src_loc );
 			func_variable.is_generator= false;
 		}
 
@@ -1122,27 +1122,27 @@ size_t CodeBuilder::PrepareFunction(
 			generator_function_type.return_references= GetGeneratorFunctionReturnReferences( function_type );
 
 			// Disable explicit return tags for generators. They are almost useless, because generators can return references only to internal reference node.
-			if( !func.type_.return_value_reference_tag_.empty() || !func.type_.return_value_inner_reference_tag_.empty() )
-				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type_.src_loc_, "Explicit return tags for generators." );
+			if( !func.type.return_value_reference_tag.empty() || !func.type.return_value_inner_reference_tag.empty() )
+				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "Explicit return tags for generators." );
 
 			// Disable references pollution for generator. It is too complicated for now.
-			if( !func.type_.references_pollution_list_.empty() )
-				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type_.src_loc_, "References pollution for generators." );
+			if( !func.type.references_pollution_list.empty() )
+				REPORT_ERROR( NotImplemented, names_scope.GetErrors(), func.type.src_loc, "References pollution for generators." );
 
 			if( function_type.calling_convention != llvm::CallingConv::C )
-				REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
+				REPORT_ERROR( NonDefaultCallingConventionForGenerator, names_scope.GetErrors(), func.type.src_loc );
 
 			// It is too complicated to support virtual generators. It is simplier to just forbid such generators.
 			// But this is still possible to return a generator value from virtual function.
-			if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
-				REPORT_ERROR( VirtualGenerator, names_scope.GetErrors(), func.type_.src_loc_ );
+			if( func.virtual_function_kind != Synt::VirtualFunctionKind::None )
+				REPORT_ERROR( VirtualGenerator, names_scope.GetErrors(), func.type.src_loc );
 
 			function_type= std::move(generator_function_type);
 		}
 
-		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type_, function_type );
+		TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), func.type, function_type );
 		ProcessFunctionReferencesPollution( names_scope.GetErrors(), func, function_type, base_class );
-		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator_, names_scope.GetErrors(), func.src_loc_ );
+		CheckOverloadedOperator( base_class, function_type, func.overloaded_operator, names_scope.GetErrors(), func.src_loc );
 
 		func_variable.type= std::move(function_type);
 	} // end prepare function type
@@ -1150,52 +1150,52 @@ size_t CodeBuilder::PrepareFunction(
 	// Set constexpr.
 	if( func.constexpr_ )
 	{
-		if( func.block_ == nullptr )
-			REPORT_ERROR( ConstexprFunctionsMustHaveBody, names_scope.GetErrors(), func.src_loc_ );
-		if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
-			REPORT_ERROR( ConstexprFunctionCanNotBeVirtual, names_scope.GetErrors(), func.src_loc_ );
+		if( func.block == nullptr )
+			REPORT_ERROR( ConstexprFunctionsMustHaveBody, names_scope.GetErrors(), func.src_loc );
+		if( func.virtual_function_kind != Synt::VirtualFunctionKind::None )
+			REPORT_ERROR( ConstexprFunctionCanNotBeVirtual, names_scope.GetErrors(), func.src_loc );
 
 		func_variable.constexpr_kind= FunctionVariable::ConstexprKind::ConstexprIncomplete;
 	}
 
 	// Set virtual.
-	if( func.virtual_function_kind_ != Synt::VirtualFunctionKind::None )
+	if( func.virtual_function_kind != Synt::VirtualFunctionKind::None )
 	{
 		if( base_class == nullptr )
-			REPORT_ERROR( VirtualForNonclassFunction, names_scope.GetErrors(), func.src_loc_, func_name );
+			REPORT_ERROR( VirtualForNonclassFunction, names_scope.GetErrors(), func.src_loc, func_name );
 		if( !func_variable.is_this_call )
-			REPORT_ERROR( VirtualForNonThisCallFunction, names_scope.GetErrors(), func.src_loc_, func_name );
+			REPORT_ERROR( VirtualForNonThisCallFunction, names_scope.GetErrors(), func.src_loc, func_name );
 		if( is_constructor )
-			REPORT_ERROR( FunctionCanNotBeVirtual, names_scope.GetErrors(), func.src_loc_, func_name );
+			REPORT_ERROR( FunctionCanNotBeVirtual, names_scope.GetErrors(), func.src_loc, func_name );
 		if( base_class != nullptr && ( base_class->kind == Class::Kind::Struct || base_class->kind == Class::Kind::NonPolymorph ) )
-			REPORT_ERROR( VirtualForNonpolymorphClass, names_scope.GetErrors(), func.src_loc_, func_name );
+			REPORT_ERROR( VirtualForNonpolymorphClass, names_scope.GetErrors(), func.src_loc, func_name );
 		if( is_out_of_line_function )
-			REPORT_ERROR( VirtualForFunctionImplementation, names_scope.GetErrors(), func.src_loc_, func_name );
+			REPORT_ERROR( VirtualForFunctionImplementation, names_scope.GetErrors(), func.src_loc, func_name );
 
-		func_variable.virtual_function_kind= func.virtual_function_kind_;
+		func_variable.virtual_function_kind= func.virtual_function_kind;
 	}
 
 	// Set no_mangle
-	if( func.no_mangle_ )
+	if( func.no_mangle )
 	{
 		// Allow only global no-mangle function. This prevents existing of multiple "nomangle" functions with same name in different namespaces.
 		// If function is operator, it can not be global.
 		if( names_scope.GetParent() != nullptr )
-			REPORT_ERROR( NoMangleForNonglobalFunction, names_scope.GetErrors(), func.src_loc_, func_name );
+			REPORT_ERROR( NoMangleForNonglobalFunction, names_scope.GetErrors(), func.src_loc, func_name );
 		func_variable.no_mangle= true;
 	}
 
 	// Set conversion constructor.
-	func_variable.is_conversion_constructor= func.is_conversion_constructor_;
-	U_ASSERT( !( func.is_conversion_constructor_ && !is_constructor ) );
-	if( func.is_conversion_constructor_ && func_variable.type.params.size() != 2u )
-		REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope.GetErrors(), func.src_loc_ );
+	func_variable.is_conversion_constructor= func.is_conversion_constructor;
+	U_ASSERT( !( func.is_conversion_constructor && !is_constructor ) );
+	if( func.is_conversion_constructor && func_variable.type.params.size() != 2u )
+		REPORT_ERROR( ConversionConstructorMustHaveOneArgument, names_scope.GetErrors(), func.src_loc );
 	func_variable.is_constructor= is_constructor;
 
 	// Check "=default" / "=delete".
 	if( func.body_kind != Synt::Function::BodyKind::None )
 	{
-		U_ASSERT( func.block_ == nullptr );
+		U_ASSERT( func.block == nullptr );
 		const FunctionType& function_type= func_variable.type;
 
 		bool invalid_func= false;
@@ -1203,15 +1203,15 @@ size_t CodeBuilder::PrepareFunction(
 			invalid_func= true;
 		else if( is_constructor )
 			invalid_func= !( IsDefaultConstructor( function_type, base_class ) || IsCopyConstructor( function_type, base_class ) );
-		else if( func.overloaded_operator_ == OverloadedOperator::Assign )
+		else if( func.overloaded_operator == OverloadedOperator::Assign )
 			invalid_func= !IsCopyAssignmentOperator( function_type, base_class );
-		else if( func.overloaded_operator_ == OverloadedOperator::CompareEqual )
+		else if( func.overloaded_operator == OverloadedOperator::CompareEqual )
 			invalid_func= !IsEqualityCompareOperator( function_type, base_class );
 		else
 			invalid_func= true;
 
 		if( invalid_func )
-			REPORT_ERROR( InvalidMethodForBodyGeneration, names_scope.GetErrors(), func.src_loc_ );
+			REPORT_ERROR( InvalidMethodForBodyGeneration, names_scope.GetErrors(), func.src_loc );
 		else
 		{
 			if( func.body_kind == Synt::Function::BodyKind::BodyGenerationRequired )
@@ -1223,27 +1223,27 @@ size_t CodeBuilder::PrepareFunction(
 
 	if( FunctionVariable* const prev_function= GetFunctionWithSameType( func_variable.type, functions_set ) )
 	{
-			 if( prev_function->syntax_element->block_ == nullptr && func.block_ != nullptr )
+			 if( prev_function->syntax_element->block == nullptr && func.block != nullptr )
 		{ // Ok, body after prototype.
 			prev_function->syntax_element= &func;
-			prev_function->body_src_loc= func.src_loc_;
+			prev_function->body_src_loc= func.src_loc;
 		}
-		else if( prev_function->syntax_element->block_ != nullptr && func.block_ == nullptr )
+		else if( prev_function->syntax_element->block != nullptr && func.block == nullptr )
 		{ // Ok, prototype after body. Since order-independent resolving this is correct.
-			prev_function->prototype_src_loc= func.src_loc_;
+			prev_function->prototype_src_loc= func.src_loc;
 		}
-		else if( prev_function->syntax_element->block_ == nullptr && func.block_ == nullptr )
-			REPORT_ERROR( FunctionPrototypeDuplication, names_scope.GetErrors(), func.src_loc_, func_name );
-		else if( prev_function->syntax_element->block_ != nullptr && func.block_ != nullptr )
-			REPORT_ERROR( FunctionBodyDuplication, names_scope.GetErrors(), func.src_loc_, func_name );
+		else if( prev_function->syntax_element->block == nullptr && func.block == nullptr )
+			REPORT_ERROR( FunctionPrototypeDuplication, names_scope.GetErrors(), func.src_loc, func_name );
+		else if( prev_function->syntax_element->block != nullptr && func.block != nullptr )
+			REPORT_ERROR( FunctionBodyDuplication, names_scope.GetErrors(), func.src_loc, func_name );
 
 		if( prev_function->is_this_call != func_variable.is_this_call )
-			REPORT_ERROR( ThiscallMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
+			REPORT_ERROR( ThiscallMismatch, names_scope.GetErrors(), func.src_loc, func_name );
 
 		if( !is_out_of_line_function )
 		{
-			if( prev_function->virtual_function_kind != func.virtual_function_kind_ )
-				REPORT_ERROR( VirtualMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
+			if( prev_function->virtual_function_kind != func.virtual_function_kind )
+				REPORT_ERROR( VirtualMismatch, names_scope.GetErrors(), func.src_loc, func_name );
 		}
 		if( prev_function->is_deleted != func_variable.is_deleted )
 			REPORT_ERROR( BodyForDeletedFunction, names_scope.GetErrors(), prev_function->prototype_src_loc, func_name );
@@ -1251,16 +1251,16 @@ size_t CodeBuilder::PrepareFunction(
 			REPORT_ERROR( BodyForGeneratedFunction, names_scope.GetErrors(), prev_function->prototype_src_loc, func_name );
 
 		if( prev_function->no_mangle != func_variable.no_mangle )
-			REPORT_ERROR( NoMangleMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
+			REPORT_ERROR( NoMangleMismatch, names_scope.GetErrors(), func.src_loc, func_name );
 
 		if( prev_function->is_generator != func_variable.is_generator )
-			REPORT_ERROR( GeneratorMismatch, names_scope.GetErrors(), func.src_loc_, func_name );
+			REPORT_ERROR( GeneratorMismatch, names_scope.GetErrors(), func.src_loc, func_name );
 
 		if( prev_function->is_conversion_constructor != func_variable.is_conversion_constructor )
-			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc_ );
+			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc );
 
 		if( prev_function->is_inherited )
-			REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.src_loc_ );
+			REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.src_loc );
 
 		return size_t(prev_function - functions_set.functions.data());
 	}
@@ -1268,16 +1268,16 @@ size_t CodeBuilder::PrepareFunction(
 	{
 		if( is_out_of_line_function )
 		{
-			REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.src_loc_ );
+			REPORT_ERROR( FunctionDeclarationOutsideItsScope, names_scope.GetErrors(), func.src_loc );
 			return ~0u;
 		}
 		if( functions_set.have_nomangle_function || ( !functions_set.functions.empty() && func_variable.no_mangle ) )
 		{
-			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc_ );
+			REPORT_ERROR( CouldNotOverloadFunction, names_scope.GetErrors(), func.src_loc );
 			return ~0u;
 		}
 
-		const bool overloading_ok= ApplyOverloadedFunction( functions_set, func_variable, names_scope.GetErrors(), func.src_loc_ );
+		const bool overloading_ok= ApplyOverloadedFunction( functions_set, func_variable, names_scope.GetErrors(), func.src_loc );
 		if( !overloading_ok )
 			return ~0u;
 
@@ -1285,7 +1285,7 @@ size_t CodeBuilder::PrepareFunction(
 			functions_set.have_nomangle_function= true;
 
 		FunctionVariable& inserted_func_variable= functions_set.functions.back();
-		inserted_func_variable.body_src_loc= inserted_func_variable.prototype_src_loc= func.src_loc_;
+		inserted_func_variable.body_src_loc= inserted_func_variable.prototype_src_loc= func.src_loc;
 		inserted_func_variable.syntax_element= &func;
 
 		inserted_func_variable.llvm_function=
@@ -1478,7 +1478,7 @@ Type CodeBuilder::BuildFuncCode(
 	for( const FunctionType::Param& arg : function_type.params )
 	{
 		if( !EnsureTypeComplete( arg.type ) )
-			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc_, arg.type );
+			REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), params.front().src_loc, arg.type );
 	}
 	if( !EnsureTypeComplete( function_type.return_type ) )
 		REPORT_ERROR( UsingIncompleteType, parent_names_scope.GetErrors(), func_variable.body_src_loc, function_type.return_type );
@@ -1497,16 +1497,16 @@ Type CodeBuilder::BuildFuncCode(
 			// So, check if this rule is not violated for generators.
 			// Do this now, because it's impossible to check this in generator declaration, because this check requires complete types of parameters.
 			if( arg.value_type != ValueType::Value && arg.type.GetInnerReferenceType() != InnerReferenceType::None )
-				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc_, "some arg" ); // TODO - use separate error code.
+				REPORT_ERROR( ReferenceFieldOfTypeWithReferencesInside, parent_names_scope.GetErrors(), params.front().src_loc, "some arg" ); // TODO - use separate error code.
 
 			// Generator is not declared as non-sync, but param is non-sync. This is an error.
 			// Check this while building function code in order to avoid complete arguments type preparation in "non_sync" tag evaluation during function preparation.
-			if( !coroutine_type_description.non_sync && GetTypeNonSync( arg.type, parent_names_scope, params.front().src_loc_ ) )
-				REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc_ );
+			if( !coroutine_type_description.non_sync && GetTypeNonSync( arg.type, parent_names_scope, params.front().src_loc ) )
+				REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), params.front().src_loc );
 		}
 
-		if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, parent_names_scope, block.src_loc_ ) )
-			REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), block.src_loc_ );
+		if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, parent_names_scope, block.src_loc ) )
+			REPORT_ERROR( GeneratorNonSyncRequired, parent_names_scope.GetErrors(), block.src_loc );
 	}
 
 	NamesScope function_names( "", &parent_names_scope );
@@ -1539,7 +1539,7 @@ Type CodeBuilder::BuildFuncCode(
 		const FunctionType::Param& param= function_type.params[ arg_number ];
 
 		const Synt::FunctionParam& declaration_arg= params[arg_number ];
-		const std::string& arg_name= declaration_arg.name_;
+		const std::string& arg_name= declaration_arg.name;
 
 		const VariableMutPtr variable=
 			std::make_shared<Variable>(
@@ -1592,12 +1592,12 @@ Type CodeBuilder::BuildFuncCode(
 			}
 			else U_ASSERT(false);
 
-			debug_info_builder_->CreateVariableInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
+			debug_info_builder_->CreateVariableInfo( *variable, arg_name, declaration_arg.src_loc, function_context );
 		}
 		else
 		{
 			variable->llvm_value= &llvm_arg;
-			debug_info_builder_->CreateReferenceVariableInfo( *variable, arg_name, declaration_arg.src_loc_, function_context );
+			debug_info_builder_->CreateReferenceVariableInfo( *variable, arg_name, declaration_arg.src_loc, function_context );
 		}
 
 		function_context.args_nodes[ arg_number ].first= variable;
@@ -1625,7 +1625,7 @@ Type CodeBuilder::BuildFuncCode(
 		const VariablePtr variable_reference=
 			std::make_shared<Variable>(
 				param.type,
-				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier_ == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
+				( param.value_type == ValueType::ReferenceMut || declaration_arg.mutability_modifier == MutabilityModifier::Mutable ) ? ValueType::ReferenceMut : ValueType::ReferenceImut,
 				Variable::Location::Pointer,
 				arg_name,
 				variable->llvm_value );
@@ -1645,9 +1645,9 @@ Type CodeBuilder::BuildFuncCode(
 			const bool force_referenced= param.value_type == ValueType::Value && VariableExistanceMayHaveSideEffects(variable_reference->type);
 
 			const NamesScopeValue* const inserted_arg=
-				function_names.AddName( arg_name, NamesScopeValue( variable_reference, declaration_arg.src_loc_, force_referenced ) );
+				function_names.AddName( arg_name, NamesScopeValue( variable_reference, declaration_arg.src_loc, force_referenced ) );
 			if( inserted_arg == nullptr )
-				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.src_loc_, arg_name );
+				REPORT_ERROR( Redefinition, function_names.GetErrors(), declaration_arg.src_loc, arg_name );
 		}
 
 		llvm_arg.setName( "_arg_" + arg_name );
@@ -1659,7 +1659,7 @@ Type CodeBuilder::BuildFuncCode(
 		// Create generator entry block after saving args to stack.
 		PrepareGeneratorBlocks( function_context );
 		// Generate also initial suspend.
-		GeneratorSuspend( function_names, function_context, block.src_loc_ );
+		GeneratorSuspend( function_names, function_context, block.src_loc );
 	}
 
 	if( is_constructor )
@@ -1670,7 +1670,7 @@ Type CodeBuilder::BuildFuncCode(
 		if( constructor_initialization_list == nullptr )
 		{
 			// Create dummy initialization list for constructors without explicit initialization list.
-			const Synt::StructNamedInitializer dumy_initialization_list( block.src_loc_ );
+			const Synt::StructNamedInitializer dumy_initialization_list( block.src_loc );
 
 			BuildConstructorInitialization(
 				function_context.this_,
@@ -1698,7 +1698,7 @@ Type CodeBuilder::BuildFuncCode(
 	}
 
 	// Do not create separate namespace for function root block, reuse namespace of args.
-	const BlockBuildInfo block_build_info= BuildBlockElements( function_names, function_context, block.elements_ );
+	const BlockBuildInfo block_build_info= BuildBlockElements( function_names, function_context, block.elements );
 	U_ASSERT( function_context.stack_variables_stack.size() == 1u );
 
 	// If we build func code only for return type deducing - we can return. Function code will be generated later.
@@ -1773,17 +1773,17 @@ Type CodeBuilder::BuildFuncCode(
 		if( func_variable.is_generator )
 		{
 			// Add final suspention point for generators.
-			GeneratorFinalSuspend( function_names, function_context, block.end_src_loc_ );
+			GeneratorFinalSuspend( function_names, function_context, block.end_src_loc );
 		}
 		else
 		{
 			// Manually generate "return" for void-return functions.
 			if( !( function_type.return_type == void_type_ && function_type.return_value_type == ValueType::Value ) )
 			{
-				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc_ );
+				REPORT_ERROR( NoReturnInFunctionReturningNonVoid, function_names.GetErrors(), block.end_src_loc );
 				return function_type.return_type;
 			}
-			BuildEmptyReturn( function_names, function_context, block.end_src_loc_ );
+			BuildEmptyReturn( function_names, function_context, block.end_src_loc );
 		}
 	}
 
@@ -1794,7 +1794,7 @@ Type CodeBuilder::BuildFuncCode(
 		function_context.llvm_ir_builder.SetInsertPoint( function_context.destructor_end_block );
 		llvm_function->getBasicBlockList().push_back( function_context.destructor_end_block );
 
-		CallMembersDestructors( function_context, function_names.GetErrors(), block.end_src_loc_ );
+		CallMembersDestructors( function_context, function_names.GetErrors(), block.end_src_loc );
 		function_context.llvm_ir_builder.CreateRetVoid();
 	}
 

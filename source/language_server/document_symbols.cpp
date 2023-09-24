@@ -105,14 +105,14 @@ void WriteTemplateParams( const std::vector<Synt::TypeTemplate::Param>& params, 
 std::string Stringify( const Synt::TypeTemplate& type_template )
 {
 	std::stringstream ss;
-	ss << type_template.name_;
+	ss << type_template.name;
 
 	ss << "</";
-	if( type_template.is_short_form_ )
-		WriteTemplateParams( type_template.params_, ss );
+	if( type_template.is_short_form )
+		WriteTemplateParams( type_template.params, ss );
 	else
 	{
-		for( const Synt::TypeTemplate::SignatureParam& param : type_template.signature_params_ )
+		for( const Synt::TypeTemplate::SignatureParam& param : type_template.signature_params )
 		{
 			Synt::WriteExpression( param.name, ss );
 			if( std::get_if<Synt::EmptyVariant>(&param.default_value) != nullptr )
@@ -120,7 +120,7 @@ std::string Stringify( const Synt::TypeTemplate& type_template )
 				ss << "= ";
 				Synt::WriteExpression( param.default_value, ss );
 			}
-			if( &param != &type_template.signature_params_.back() )
+			if( &param != &type_template.signature_params.back() )
 				ss << ", ";
 		}
 	}
@@ -135,12 +135,12 @@ std::string Stringify( const Synt::FunctionTemplate& function_template )
 
 	ss << Keyword( Keywords::template_ );
 	ss << "</";
-	WriteTemplateParams( function_template.params_, ss );
+	WriteTemplateParams( function_template.params, ss );
 	ss << "/>";
 
 	ss << " ";
-	if( function_template.function_ != nullptr )
-		Synt::WriteFunctionDeclaration( *function_template.function_, ss );
+	if( function_template.function != nullptr )
+		Synt::WriteFunctionDeclaration( *function_template.function, ss );
 
 	return ss.str();
 }
@@ -235,31 +235,31 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( class_field_ );
-		symbol.range= MakeRange( class_field_.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( class_field_.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Field;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::FunctionPtr& func )
 	{
-		if( func == nullptr || func->name_.empty() )
+		if( func == nullptr || func->name.empty() )
 			return;
 
 		Symbol symbol;
 		symbol.name= Stringify( *func );
-		symbol.range= MakeRange( func->src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( func->src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::FunctionTemplate& func_template )
 	{
-		if( func_template.function_ == nullptr || func_template.function_->name_.empty() )
+		if( func_template.function == nullptr || func_template.function->name.empty() )
 			return;
 
 		Symbol symbol;
 		symbol.name= Stringify( func_template );
-		symbol.range= MakeRange( func_template.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( func_template.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
@@ -271,15 +271,15 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( type_template );
-		symbol.range= MakeRange( type_template.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( type_template.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range; // TODO - set it properly.
 		symbol.kind= SymbolKind::Class;
 
-		if( const auto class_= std::get_if<Synt::ClassPtr>( &type_template.something_ ) )
+		if( const auto class_= std::get_if<Synt::ClassPtr>( &type_template.something ) )
 		{
-			symbol.children= BuildProgramModel_r( (*class_)->elements_, src_loc_to_range_mapping_function );
+			symbol.children= BuildProgramModel_r( (*class_)->elements, src_loc_to_range_mapping_function );
 		}
-		if( std::get_if<std::unique_ptr<const Synt::TypeAlias>>( &type_template.something_ ) != nullptr )
+		if( std::get_if<std::unique_ptr<const Synt::TypeAlias>>( &type_template.something ) != nullptr )
 		{}
 
 		result.push_back( std::move(symbol) );
@@ -288,7 +288,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= enum_.name;
-		symbol.range= MakeRange( enum_.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( enum_.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Enum;
 		symbol.children= BuildProgramModel_r( enum_, src_loc_to_range_mapping_function );
@@ -301,7 +301,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= typedef_.name;
-		symbol.range= MakeRange( typedef_.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( typedef_.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Class;
 		result.push_back( std::move(symbol) );
@@ -323,7 +323,7 @@ struct Visitor final
 	{
 		Symbol symbol;
 		symbol.name= Stringify( auto_variable_declaration );
-		symbol.range= MakeRange( auto_variable_declaration.src_loc_, src_loc_to_range_mapping_function );
+		symbol.range= MakeRange( auto_variable_declaration.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Variable;
 		result.push_back( std::move(symbol) );
@@ -334,11 +334,11 @@ struct Visitor final
 			return;
 
 		Symbol symbol;
-		symbol.name= class_->name_;
-		symbol.range= MakeRange( class_->src_loc_, src_loc_to_range_mapping_function );
+		symbol.name= class_->name;
+		symbol.range= MakeRange( class_->src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? SymbolKind::Struct : SymbolKind::Class;
-		symbol.children= BuildProgramModel_r( class_->elements_, src_loc_to_range_mapping_function );
+		symbol.children= BuildProgramModel_r( class_->elements, src_loc_to_range_mapping_function );
 		result.push_back( std::move(symbol) );
 	}
 	void operator()( const Synt::NamespacePtr& namespace_ )
@@ -347,11 +347,11 @@ struct Visitor final
 			return;
 
 		Symbol symbol;
-		symbol.name= namespace_->name_;
-		symbol.range= MakeRange( namespace_->src_loc_, src_loc_to_range_mapping_function );
+		symbol.name= namespace_->name;
+		symbol.range= MakeRange( namespace_->src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Namespace;
-		symbol.children= BuildProgramModel_r( namespace_->elements_, src_loc_to_range_mapping_function );
+		symbol.children= BuildProgramModel_r( namespace_->elements, src_loc_to_range_mapping_function );
 		result.push_back( std::move(symbol) );
 	}
 };

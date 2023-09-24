@@ -383,17 +383,17 @@ FunctionType::Param CodeBuilder::OverloadingResolutionItemGetParamExtendedType( 
 	}
 	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
 	{
-		const Synt::FunctionParams& params= template_function_preparation_result->function_template->syntax_element->function_->type_.params_;
+		const Synt::FunctionParams& params= template_function_preparation_result->function_template->syntax_element->function->type.params;
 		U_ASSERT( param_index < params.size() );
 		const Synt::FunctionParam& param= params[ param_index ];
 
 		FunctionType::Param result;
-		if( param.reference_modifier_ == ReferenceModifier::Reference || param.name_ == Keyword( Keywords::this_ ) )
-			result.value_type= param.mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		if( param.reference_modifier == ReferenceModifier::Reference || param.name == Keyword( Keywords::this_ ) )
+			result.value_type= param.mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 		else
 			result.value_type= ValueType::Value;
 
-		if( param.name_ == Keyword( Keywords::this_ ) )
+		if( param.name == Keyword( Keywords::this_ ) )
 		{
 			const auto base_class= template_function_preparation_result->function_template->base_class;
 			if( base_class != nullptr )
@@ -402,7 +402,7 @@ FunctionType::Param CodeBuilder::OverloadingResolutionItemGetParamExtendedType( 
 				result.type= invalid_type_; // May be in case of error.
 		}
 		else
-			result.type= PrepareType( param.type_, *template_function_preparation_result->template_args_namespace, *global_function_context_ );
+			result.type= PrepareType( param.type, *template_function_preparation_result->template_args_namespace, *global_function_context_ );
 
 		return result;
 	}
@@ -438,8 +438,8 @@ bool CodeBuilder::OverloadingResolutionItemIsThisCall( const OverloadingResoluti
 	}
 	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
 	{
-		const Synt::FunctionParams& params= template_function_preparation_result->function_template->syntax_element->function_->type_.params_;
-		return !params.empty() && params.front().name_ == Keyword( Keywords::this_ );
+		const Synt::FunctionParams& params= template_function_preparation_result->function_template->syntax_element->function->type.params;
+		return !params.empty() && params.front().name == Keyword( Keywords::this_ );
 	}
 	else
 	{
@@ -453,7 +453,7 @@ bool CodeBuilder::OverloadingResolutionItemIsConversionConstructor( const Overlo
 	if( const auto function_variable= std::get_if<const FunctionVariable*>( &item ) )
 		return (*function_variable)->is_conversion_constructor;
 	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
-		return template_function_preparation_result->function_template->syntax_element->function_->is_conversion_constructor_;
+		return template_function_preparation_result->function_template->syntax_element->function->is_conversion_constructor;
 	else
 	{
 		U_ASSERT(false);

@@ -23,7 +23,7 @@ static_assert( sizeof(ProgramElement) <= 144u, "Size of variant too big" );
 }
 
 SyntaxElementBase::SyntaxElementBase( const SrcLoc& src_loc )
-	: src_loc_(src_loc)
+	: src_loc(src_loc)
 {}
 
 TypeofTypeName::TypeofTypeName( const SrcLoc& src_loc )
@@ -198,7 +198,7 @@ UnsafeExpression::UnsafeExpression( const SrcLoc& src_loc )
 
 BooleanConstant::BooleanConstant( const SrcLoc& src_loc, bool value )
 	: SyntaxElementBase(src_loc)
-	, value_( value )
+	, value( value )
 {}
 
 NumericConstant::NumericConstant( const SrcLoc& src_loc )
@@ -209,7 +209,7 @@ NumericConstant::NumericConstant( const SrcLoc& src_loc )
 StringLiteral::StringLiteral( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
 {
-	std::fill( type_suffix_.begin(), type_suffix_.end(), 0 );
+	std::fill( type_suffix.begin(), type_suffix.end(), 0 );
 }
 
 Block::Block( const SrcLoc& start_src_loc )
@@ -266,7 +266,7 @@ ContinueOperator::ContinueOperator( const SrcLoc& src_loc )
 
 WithOperator::WithOperator( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
-	, block_(src_loc)
+	, block(src_loc)
 {}
 
 IfOperator::IfOperator( const SrcLoc& start_src_loc )
@@ -339,7 +339,7 @@ FunctionType::FunctionType( const SrcLoc& src_loc )
 
 Function::Function( const SrcLoc& src_loc )
 	: SyntaxElementBase(src_loc)
-	, type_(src_loc)
+	, type(src_loc)
 {}
 
 ClassField::ClassField( const SrcLoc& src_loc )
@@ -347,7 +347,7 @@ ClassField::ClassField( const SrcLoc& src_loc )
 {}
 
 ClassVisibilityLabel::ClassVisibilityLabel( const SrcLoc& src_loc, ClassMemberVisibility visibility )
- : SyntaxElementBase(src_loc), visibility_(visibility)
+ : SyntaxElementBase(src_loc), visibility(visibility)
 {}
 
 Class::Class( const SrcLoc& src_loc )
@@ -393,7 +393,7 @@ struct GetSrcLocVisitor final
 
 	SrcLoc operator()( const SyntaxElementBase& element ) const
 	{
-		return element.src_loc_;
+		return element.src_loc;
 	}
 
 	template<class T>

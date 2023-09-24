@@ -29,14 +29,14 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	NamesScopeValue* const value= root_namespace->GetThisScopeValue( root_namespace_lookup.name );
 	if( value == nullptr )
 	{
-		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), root_namespace_lookup.src_loc_, root_namespace_lookup.name );
+		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), root_namespace_lookup.src_loc, root_namespace_lookup.name );
 		return ErrorValue();
 	}
 
 	BuildGlobalThingDuringResolveIfNecessary( *root_namespace, value );
 
 	value->referenced= true;
-	CollectDefinition( *value, root_namespace_lookup.src_loc_ );
+	CollectDefinition( *value, root_namespace_lookup.src_loc );
 
 	return value->value;
 }
@@ -51,7 +51,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
 {
 	(void)function_context;
-	const NameLookupResult result= LookupName( names_scope, name_lookup.name, name_lookup.src_loc_ );
+	const NameLookupResult result= LookupName( names_scope, name_lookup.name, name_lookup.src_loc );
 
 	if( result.value == nullptr )
 		return ErrorValue();
@@ -60,7 +60,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		BuildGlobalThingDuringResolveIfNecessary( *result.space, result.value );
 
 	result.value->referenced= true;
-	CollectDefinition( *result.value, name_lookup.src_loc_ );
+	CollectDefinition( *result.value, name_lookup.src_loc );
 
 	return result.value->value;
 }
@@ -89,10 +89,10 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		{
 			const auto class_value= ResolveClassValue( class_, names_scope_fetch.name );
 			if( names_scope.GetAccessFor( class_ ) < class_value.second )
-				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name, class_->members->GetThisNamespaceName() );
+				REPORT_ERROR( AccessingNonpublicClassMember, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.name, class_->members->GetThisNamespaceName() );
 
 			if( ( names_scope_fetch.name == Keywords::constructor_ || names_scope_fetch.name == Keywords::destructor_ ) && !function_context.is_in_unsafe_block )
-				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
+				REPORT_ERROR( ExplicitAccessToThisMethodIsUnsafe, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.name );
 
 			value= class_value.first;
 			// ResolveClassValue performs proper building of resolved value.
@@ -104,16 +104,16 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		}
 	}
 	else if( base.GetTypeTemplatesSet() != nullptr )
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc_, *names_scope_fetch.base );
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc, *names_scope_fetch.base );
 
 	if( value == nullptr )
 	{
-		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), names_scope_fetch.src_loc_, names_scope_fetch.name );
+		REPORT_ERROR( NameNotFound, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.name );
 		return ErrorValue();
 	}
 
 	value->referenced= true;
-	CollectDefinition( *value, names_scope_fetch.src_loc_ );
+	CollectDefinition( *value, names_scope_fetch.src_loc );
 
 	return value->value;
 }
@@ -135,7 +135,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	if( const TypeTemplatesSet* const type_templates_set= base.GetTypeTemplatesSet() )
 		value=
 			GenTemplateType(
-				template_parametrization.src_loc_,
+				template_parametrization.src_loc,
 				*type_templates_set,
 				template_parametrization.template_args,
 				names_scope,
@@ -143,18 +143,18 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	else if( const OverloadedFunctionsSetPtr functions_set= base.GetFunctionsSet() )
 	{
 		if( functions_set->template_functions.empty() )
-			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc_ );
+			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc );
 		else
 			value=
 				ParametrizeFunctionTemplate(
-					template_parametrization.src_loc_,
+					template_parametrization.src_loc,
 					*functions_set,
 					template_parametrization.template_args,
 					names_scope,
 					function_context );
 	}
 	else
-		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc_ );
+		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc );
 
 	if( value == nullptr )
 		return ErrorValue();

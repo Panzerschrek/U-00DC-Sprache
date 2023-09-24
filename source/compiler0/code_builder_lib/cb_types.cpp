@@ -101,28 +101,28 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 	FunctionType function_type;
 
-	if( function_type_name.return_type_ == nullptr )
+	if( function_type_name.return_type == nullptr )
 		function_type.return_type= void_type_;
 	else
-		function_type.return_type= PrepareType( *function_type_name.return_type_, names_scope, function_context );
+		function_type.return_type= PrepareType( *function_type_name.return_type, names_scope, function_context );
 
-	if( function_type_name.return_value_reference_modifier_ == ReferenceModifier::None )
+	if( function_type_name.return_value_reference_modifier == ReferenceModifier::None )
 		function_type.return_value_type= ValueType::Value;
 	else
-		function_type.return_value_type= function_type_name.return_value_mutability_modifier_ == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
+		function_type.return_value_type= function_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
-	for( const Synt::FunctionParam& in_param : function_type_name.params_ )
+	for( const Synt::FunctionParam& in_param : function_type_name.params )
 	{
-		if( IsKeyword( in_param.name_ ) )
-			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_param.src_loc_ );
+		if( IsKeyword( in_param.name ) )
+			REPORT_ERROR( UsingKeywordAsName, names_scope.GetErrors(), in_param.src_loc );
 
 		function_type.params.emplace_back();
 		FunctionType::Param& out_param= function_type.params.back();
-		out_param.type= PrepareType( in_param.type_, names_scope, function_context );
+		out_param.type= PrepareType( in_param.type, names_scope, function_context );
 
-		if( in_param.reference_modifier_ == Synt::ReferenceModifier::None )
+		if( in_param.reference_modifier == Synt::ReferenceModifier::None )
 			out_param.value_type= ValueType::Value;
-		else if( in_param.mutability_modifier_ == Synt::MutabilityModifier::Mutable )
+		else if( in_param.mutability_modifier == Synt::MutabilityModifier::Mutable )
 			out_param.value_type= ValueType::ReferenceMut;
 		else
 			out_param.value_type= ValueType::ReferenceImut;
@@ -130,12 +130,12 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 		ProcessFunctionParamReferencesTags( function_type_name, function_type, in_param, out_param, function_type.params.size() - 1u );
 	}
 
-	function_type.unsafe= function_type_name.unsafe_;
+	function_type.unsafe= function_type_name.unsafe;
 
 	TryGenerateFunctionReturnReferencesMapping( names_scope.GetErrors(), function_type_name, function_type );
 	ProcessFunctionTypeReferencesPollution( names_scope.GetErrors(), function_type_name, function_type );
 
-	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention_, function_type_name.src_loc_, names_scope.GetErrors() );
+	function_type.calling_convention= GetLLVMCallingConvention( function_type_name.calling_convention, function_type_name.src_loc, names_scope.GetErrors() );
 
 	return FunctionTypeToPointer( std::move(function_type) );
 }
@@ -143,12 +143,12 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name )
 {
 	TupleType tuple;
-	tuple.element_types.reserve( tuple_type_name.element_types_.size() );
+	tuple.element_types.reserve( tuple_type_name.element_types.size() );
 
 	llvm::SmallVector<llvm::Type*, 16> elements_llvm_types;
-	elements_llvm_types.reserve( tuple_type_name.element_types_.size() );
+	elements_llvm_types.reserve( tuple_type_name.element_types.size() );
 
-	for( const Synt::TypeName& element_type_name : tuple_type_name.element_types_ )
+	for( const Synt::TypeName& element_type_name : tuple_type_name.element_types )
 	{
 		Type element_type= PrepareType( element_type_name, names_scope, function_context );
 		if( element_type == invalid_type_ )
@@ -198,8 +198,8 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 
 	coroutine_type_description.non_sync= ImmediateEvaluateNonSyncTag( names_scope, function_context, generator_type_name.non_sync_tag );
 
-	if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type_name.src_loc_ ) )
-		REPORT_ERROR( GeneratorNonSyncRequired, names_scope.GetErrors(), generator_type_name.src_loc_ );
+	if( !coroutine_type_description.non_sync && GetTypeNonSync( coroutine_type_description.return_type, names_scope, generator_type_name.src_loc ) )
+		REPORT_ERROR( GeneratorNonSyncRequired, names_scope.GetErrors(), generator_type_name.src_loc );
 
 	if( !generator_type_name.return_value_reference_tag.empty() )
 	{
@@ -208,7 +208,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 			found= true;
 
 		if( !found )
-			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc_, generator_type_name.return_value_reference_tag );
+			REPORT_ERROR( NameNotFound, names_scope.GetErrors(), generator_type_name.src_loc, generator_type_name.return_value_reference_tag );
 	}
 
 	// For now there is no reason to process reference tag.

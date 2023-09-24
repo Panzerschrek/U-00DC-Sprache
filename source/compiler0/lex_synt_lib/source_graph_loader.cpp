@@ -86,7 +86,7 @@ size_t LoadNode_r(
 				import.import_name,
 				full_file_path,
 				processed_files_stack,
-				import.src_loc_,
+				import.src_loc,
 				result );
 		if( child_node_index != ~0u )
 		{

@@ -140,15 +140,15 @@ void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream )
 void ElementWrite( const TupleType& tuple_type_name, std::ostream& stream )
 {
 	stream << Keyword( Keywords::tup_ );
-	if( tuple_type_name.element_types_.empty() )
+	if( tuple_type_name.element_types.empty() )
 		stream << "[]";
 	else
 	{
 		stream << "[ ";
-		for( const TypeName& element_type : tuple_type_name.element_types_ )
+		for( const TypeName& element_type : tuple_type_name.element_types )
 		{
 			ElementWrite( element_type, stream );
-			if( &element_type != &tuple_type_name.element_types_.back() )
+			if( &element_type != &tuple_type_name.element_types.back() )
 				stream << ", ";
 		}
 		stream << " ]";
@@ -205,40 +205,40 @@ void ElementWrite( const FunctionType& function_type_name, std::ostream& stream 
 
 void ElementWrite( const FunctionParam& param, std::ostream& stream )
 {
-	if( param.name_ == Keywords::this_ )
+	if( param.name == Keywords::this_ )
 	{
-		if( param.mutability_modifier_ != MutabilityModifier::None )
+		if( param.mutability_modifier != MutabilityModifier::None )
 		{
-			ElementWrite( param.mutability_modifier_, stream );
+			ElementWrite( param.mutability_modifier, stream );
 			stream << " ";
 		}
 		stream << Keyword( Keywords::this_ );
 	}
 	else
 	{
-		ElementWrite( param.type_, stream );
+		ElementWrite( param.type, stream );
 
 		stream << " ";
 
-		ElementWrite( param.reference_modifier_, stream );
+		ElementWrite( param.reference_modifier, stream );
 
-		if( !param.reference_tag_.empty() )
+		if( !param.reference_tag.empty() )
 		{
 			stream << "'";
-			stream << param.reference_tag_;
+			stream << param.reference_tag;
 		}
 
-		ElementWrite( param.mutability_modifier_, stream );
+		ElementWrite( param.mutability_modifier, stream );
 
-		if( param.mutability_modifier_ != MutabilityModifier::None )
+		if( param.mutability_modifier != MutabilityModifier::None )
 			stream << " ";
-		stream << param.name_;
+		stream << param.name;
 	}
 
-	if( !param.inner_arg_reference_tag_.empty() )
+	if( !param.inner_arg_reference_tag.empty() )
 	{
 		stream << "'";
-		stream << param.inner_arg_reference_tag_;
+		stream << param.inner_arg_reference_tag;
 		stream << "'";
 	}
 }
@@ -261,11 +261,11 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const BinaryOperator& binary_operator ) const
 		{
-			if( binary_operator.left_ == nullptr || binary_operator.right_ == nullptr )
+			if( binary_operator.left == nullptr || binary_operator.right == nullptr )
 				return;
-			ElementWrite( *binary_operator.left_ , stream );
-			stream << " " << BinaryOperatorToString(binary_operator.operator_type_) << " ";
-			ElementWrite( *binary_operator.right_, stream );
+			ElementWrite( *binary_operator.left , stream );
+			stream << " " << BinaryOperatorToString(binary_operator.operator_type) << " ";
+			ElementWrite( *binary_operator.right, stream );
 		}
 		void operator()( const ComplexName& complex_name ) const
 		{
@@ -319,7 +319,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		void operator()( const StringLiteral& string_literal ) const
 		{
 			std::string escaped;
-			for( const char c : string_literal.value_ )
+			for( const char c : string_literal.value )
 			{
 				switch(c)
 				{
@@ -374,64 +374,64 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 					break;
 				};
 			}
-			stream << "\"" << escaped << "\"" << string_literal.type_suffix_.data();
+			stream << "\"" << escaped << "\"" << string_literal.type_suffix.data();
 		}
 		void operator()( const BooleanConstant& boolean_constant ) const
 		{
-			stream << ( boolean_constant.value_ ? Keyword( Keywords::true_ ) : Keyword( Keywords::false_ ) );
+			stream << ( boolean_constant.value ? Keyword( Keywords::true_ ) : Keyword( Keywords::false_ ) );
 		}
 		void operator()( const MoveOperator& move_operator ) const
 		{
-			stream << Keyword( Keywords::move_ ) << "( " << move_operator.var_name_ << " )";
+			stream << Keyword( Keywords::move_ ) << "( " << move_operator.var_name << " )";
 		}
 		void operator()( const TakeOperator& take_operator ) const
 		{
 			stream << Keyword( Keywords::take_ ) << "( ";
-			ElementWrite( *take_operator.expression_, stream );
+			ElementWrite( *take_operator.expression, stream );
 			stream << " )";
 		}
 		void operator()( const CastRef& cast_ref ) const
 		{
-			if( cast_ref.type_ == nullptr || cast_ref.expression_ == nullptr )
+			if( cast_ref.type == nullptr || cast_ref.expression == nullptr )
 				return;
 			stream << Keyword( Keywords::cast_ref_ ) << "</ ";
-			ElementWrite( *cast_ref.type_, stream );
+			ElementWrite( *cast_ref.type, stream );
 			stream << " />( ";
-			ElementWrite( *cast_ref.expression_, stream );
+			ElementWrite( *cast_ref.expression, stream );
 			stream << " )";
 		}
 		void operator()( const CastRefUnsafe& cast_ref_unsafe ) const
 		{
-			if( cast_ref_unsafe.type_ == nullptr || cast_ref_unsafe.expression_ == nullptr )
+			if( cast_ref_unsafe.type == nullptr || cast_ref_unsafe.expression == nullptr )
 				return;
 			stream << Keyword( Keywords::cast_ref_unsafe_ ) << "</ ";
-			ElementWrite( *cast_ref_unsafe.type_, stream );
+			ElementWrite( *cast_ref_unsafe.type, stream );
 			stream << " />( ";
-			ElementWrite( *cast_ref_unsafe.expression_, stream );
+			ElementWrite( *cast_ref_unsafe.expression, stream );
 			stream << " )";
 		}
 		void operator()( const CastImut& cast_imut ) const
 		{
-			if( cast_imut.expression_ == nullptr )
+			if( cast_imut.expression == nullptr )
 				return;
 			stream << Keyword( Keywords::cast_imut_ ) << "( ";
-			ElementWrite( *cast_imut.expression_, stream );
+			ElementWrite( *cast_imut.expression, stream );
 			stream << " )";
 		}
 		void operator()( const CastMut& cast_mut ) const
 		{
-			if( cast_mut.expression_ == nullptr )
+			if( cast_mut.expression == nullptr )
 				return;
 			stream << Keyword( Keywords::cast_mut_ ) << "( ";
-			ElementWrite( *cast_mut.expression_, stream );
+			ElementWrite( *cast_mut.expression, stream );
 			stream << " )";
 		}
 		void operator()( const TypeInfo& typeinfo_ ) const
 		{
-			if( typeinfo_.type_ == nullptr )
+			if( typeinfo_.type == nullptr )
 				return;
 			stream << "</ ";
-			ElementWrite( *typeinfo_.type_, stream );
+			ElementWrite( *typeinfo_.type, stream );
 			stream << " />";
 		}
 		void operator()( const SameType& same_type ) const
@@ -446,57 +446,57 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const NonSyncExpression& non_sync_expression ) const
 		{
-			if( non_sync_expression.type_ == nullptr )
+			if( non_sync_expression.type == nullptr )
 				return;
 			stream << "</ ";
-			ElementWrite( *non_sync_expression.type_, stream );
+			ElementWrite( *non_sync_expression.type, stream );
 			stream << " />";
 		}
 		void operator()( const SafeExpression& safe_expression ) const
 		{
 			stream << Keyword( Keywords::safe_ );
 			stream << "( ";
-			ElementWrite( *safe_expression.expression_, stream );
+			ElementWrite( *safe_expression.expression, stream );
 			stream << " )";
 		}
 		void operator()( const UnsafeExpression& unsafe_expression ) const
 		{
 			stream << Keyword( Keywords::unsafe_ );
 			stream << "( ";
-			ElementWrite( *unsafe_expression.expression_, stream );
+			ElementWrite( *unsafe_expression.expression, stream );
 			stream << " )";
 		}
 		void operator()( const UnaryMinus& unary_minus ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::Sub );
-			ElementWrite( *unary_minus.expression_, stream );
+			ElementWrite( *unary_minus.expression, stream );
 		}
 		void operator()( const UnaryPlus& unary_plus ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::Add );
-			ElementWrite( *unary_plus.expression_, stream );
+			ElementWrite( *unary_plus.expression, stream );
 		}
 		void operator()( const LogicalNot& logical_not ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::LogicalNot );
-			ElementWrite( *logical_not.expression_, stream );
+			ElementWrite( *logical_not.expression, stream );
 		}
 		void operator()( const BitwiseNot& bitwise_not ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::BitwiseNot );
-			ElementWrite( *bitwise_not.expression_, stream );
+			ElementWrite( *bitwise_not.expression, stream );
 		}
 		void operator()( const IndexationOperator& indexation_operator )
 		{
-			ElementWrite( *indexation_operator.expression_, stream );
+			ElementWrite( *indexation_operator.expression, stream );
 			stream << "[ ";
-			ElementWrite( *indexation_operator.index_, stream );
+			ElementWrite( *indexation_operator.index, stream );
 			stream << " ]";
 		}
 		void operator()( const MemberAccessOperator& member_access_operator ) const
 		{
-			ElementWrite( *member_access_operator.expression_, stream );
-			stream << "." << member_access_operator.member_name_;
+			ElementWrite( *member_access_operator.expression, stream );
+			stream << "." << member_access_operator.member_name;
 			if( member_access_operator.template_parameters != std::nullopt )
 			{
 				stream << "</";
@@ -511,25 +511,25 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		}
 		void operator()( const MemberAccessOperatorCompletion& member_access_operator_completion ) const
 		{
-			ElementWrite( *member_access_operator_completion.expression_, stream );
-			stream << "." << member_access_operator_completion.member_name_;
+			ElementWrite( *member_access_operator_completion.expression, stream );
+			stream << "." << member_access_operator_completion.member_name;
 		}
 		void operator()( const CallOperator& call_operator ) const
 		{
-			ElementWrite( *call_operator.expression_, stream );
+			ElementWrite( *call_operator.expression, stream );
 			stream << "( ";
-			for( const Expression& arg : call_operator.arguments_ )
+			for( const Expression& arg : call_operator.arguments )
 			{
 				ElementWrite( arg, stream );
 
-				if( &arg != &call_operator.arguments_.back() )
+				if( &arg != &call_operator.arguments.back() )
 					stream << ", ";
 			}
 			stream << ")";
 		}
 		void operator()( const CallOperatorSignatureHelp& call_operator_signature_help ) const
 		{
-			ElementWrite( *call_operator_signature_help.expression_, stream );
+			ElementWrite( *call_operator_signature_help.expression, stream );
 			stream << "( ";
 			stream << ")";
 		}
@@ -633,7 +633,7 @@ void ElementWrite( const Function& function, std::ostream& stream )
 {
 	WriteFunctionDeclaration( function, stream );
 
-	if( function.block_ == nullptr )
+	if( function.block == nullptr )
 		stream << ";\n";
 	else
 	{} // TODO
@@ -642,7 +642,7 @@ void ElementWrite( const Function& function, std::ostream& stream )
 void ElementWrite( const Class& class_, std::ostream& stream )
 {
 	stream << Keyword(class_.kind_attribute_ == ClassKindAttribute::Struct ? Keywords::struct_ : Keywords::class_ );
-	stream << " " << class_.name_ << " ";
+	stream << " " << class_.name << " ";
 
 	switch( class_.kind_attribute_ )
 	{
@@ -663,24 +663,24 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 		break;
 	};
 
-	if( !class_.parents_.empty() )
+	if( !class_.parents.empty() )
 	{
 		stream << " : ";
-		for( const ComplexName& parent : class_.parents_ )
+		for( const ComplexName& parent : class_.parents )
 		{
 			ElementWrite( parent, stream );
-			if( &parent != &class_.parents_.back() )
+			if( &parent != &class_.parents.back() )
 				stream << ", ";
 		}
 	}
 
-	ElementWrite( class_.non_sync_tag_, stream );
+	ElementWrite( class_.non_sync_tag, stream );
 
-	if( class_.keep_fields_order_ )
+	if( class_.keep_fields_order )
 		stream << Keyword( Keywords::ordered_ ) << " ";
 
 	stream << "\n{\n";
-	ElementWrite( class_.elements_, stream );
+	ElementWrite( class_.elements, stream );
 	stream << "}\n";
 }
 
@@ -700,8 +700,8 @@ void ElementWrite( const NonSyncTag& non_sync_tag, std::ostream& stream )
 
 void ElementWrite( const Namespace& namespace_, std::ostream& stream )
 {
-	stream << Keyword( Keywords::namespace_ ) << " " << namespace_.name_ << "\n{\n\n";
-	ElementWrite( namespace_.elements_, stream );
+	stream << Keyword( Keywords::namespace_ ) << " " << namespace_.name << "\n{\n\n";
+	ElementWrite( namespace_.elements, stream );
 	stream << "\n}\n";
 }
 
@@ -800,7 +800,7 @@ void ElementWrite( const ClassField& class_field, std::ostream& stream )
 
 void ElementWrite( const ClassVisibilityLabel& visibility_label, std::ostream& stream )
 {
-	switch( visibility_label.visibility_ )
+	switch( visibility_label.visibility )
 	{
 	case ClassMemberVisibility::Public:
 		stream << Keyword( Keywords::public_ ) << ": \n";
@@ -855,13 +855,13 @@ void WriteTypeName( const Synt::TypeName& type_name, std::ostream& stream )
 
 void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& stream )
 {
-	if( function.overloaded_operator_ == OverloadedOperator::None )
+	if( function.overloaded_operator == OverloadedOperator::None )
 		stream << Keyword( Keywords::fn_ );
 	else
 		stream << Keyword( Keywords::op_ );
 	stream << " ";
 
-	switch( function.virtual_function_kind_ )
+	switch( function.virtual_function_kind )
 	{
 	case VirtualFunctionKind::None:
 		break;
@@ -886,26 +886,26 @@ void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& str
 
 	if( function.constexpr_ )
 		stream << Keyword( Keywords::constexpr_ ) << " ";
-	if( function.no_mangle_ )
+	if( function.no_mangle )
 		stream << Keyword( Keywords::nomangle_ ) << " ";
 
-	if( std::get_if<EmptyVariant>(&function.condition_) == nullptr )
+	if( std::get_if<EmptyVariant>(&function.condition) == nullptr )
 	{
 		stream << Keyword( Keywords::enable_if_ ) << "( ";
-		ElementWrite( function.condition_, stream );
+		ElementWrite( function.condition, stream );
 		stream << " ) ";
 	}
 
-	for( const Function::NameComponent& component : function.name_ )
+	for( const Function::NameComponent& component : function.name )
 	{
 		stream << component.name;
-		if( &component != &function.name_.back() )
+		if( &component != &function.name.back() )
 			stream << "::";
 	}
 
-	WriteFunctionParamsList( function.type_, stream );
+	WriteFunctionParamsList( function.type, stream );
 
-	WriteFunctionTypeEnding( function.type_, stream );
+	WriteFunctionTypeEnding( function.type, stream );
 
 	switch( function.body_kind )
 	{
@@ -922,15 +922,15 @@ void WriteFunctionDeclaration( const Synt::Function& function, std::ostream& str
 
 void WriteFunctionParamsList( const Synt::FunctionType& function_type, std::ostream& stream )
 {
-	if( function_type.params_.empty() )
+	if( function_type.params.empty() )
 		stream << "()";
 	else
 	{
 		stream << "( ";
-		for( const FunctionParam& param : function_type.params_ )
+		for( const FunctionParam& param : function_type.params )
 		{
 			ElementWrite( param, stream );
-			if( &param != &function_type.params_.back() )
+			if( &param != &function_type.params.back() )
 				stream << ", ";
 		}
 		stream << " )";
@@ -940,36 +940,36 @@ void WriteFunctionParamsList( const Synt::FunctionType& function_type, std::ostr
 
 void WriteFunctionTypeEnding( const FunctionType& function_type, std::ostream& stream )
 {
-	if( function_type.unsafe_ )
+	if( function_type.unsafe )
 		stream << Keyword( Keywords::unsafe_ ) << " ";
 
 	stream << ": ";
-	if( function_type.return_type_ != nullptr )
-		ElementWrite( *function_type.return_type_, stream );
+	if( function_type.return_type != nullptr )
+		ElementWrite( *function_type.return_type, stream );
 	else
 		stream << Keyword( Keywords::void_ );
 
-	if( !function_type.return_value_inner_reference_tag_.empty() )
+	if( !function_type.return_value_inner_reference_tag.empty() )
 	{
 		stream << "'";
-		stream << function_type.return_value_inner_reference_tag_;
+		stream << function_type.return_value_inner_reference_tag;
 		stream << "'";
 	}
 
-	if( function_type.return_value_reference_modifier_ != ReferenceModifier::None )
+	if( function_type.return_value_reference_modifier != ReferenceModifier::None )
 	{
 		stream << " ";
 
-		ElementWrite( function_type.return_value_reference_modifier_, stream );
-		if( !function_type.return_value_reference_tag_.empty() )
-			stream << "'" << function_type.return_value_reference_tag_;
+		ElementWrite( function_type.return_value_reference_modifier, stream );
+		if( !function_type.return_value_reference_tag.empty() )
+			stream << "'" << function_type.return_value_reference_tag;
 
-		ElementWrite( function_type.return_value_mutability_modifier_, stream );
+		ElementWrite( function_type.return_value_mutability_modifier, stream );
 	}
-	else if( function_type.return_value_mutability_modifier_ != MutabilityModifier::None )
+	else if( function_type.return_value_mutability_modifier != MutabilityModifier::None )
 	{
 		stream << " ";
-		ElementWrite( function_type.return_value_mutability_modifier_, stream );
+		ElementWrite( function_type.return_value_mutability_modifier, stream );
 	}
 }
 
@@ -978,7 +978,7 @@ void WriteFunctionTemplate( const FunctionTemplate& function_template, std::ostr
 	stream << Keyword( Keywords::template_ );
 	stream << "</ ";
 
-	for( const TemplateBase::Param& param : function_template.params_ )
+	for( const TemplateBase::Param& param : function_template.params )
 	{
 		if( param.param_type != std::nullopt )
 		{
@@ -990,14 +990,14 @@ void WriteFunctionTemplate( const FunctionTemplate& function_template, std::ostr
 
 		stream << param.name;
 
-		if( &param != &function_template.params_.back() )
+		if( &param != &function_template.params.back() )
 			stream << ", ";
 	}
 
 	stream << " /> ";
 
-	if( function_template.function_ != nullptr )
-		WriteFunctionDeclaration( *function_template.function_, stream );
+	if( function_template.function != nullptr )
+		WriteFunctionDeclaration( *function_template.function, stream );
 }
 
 } // namespace Synt

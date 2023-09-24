@@ -247,7 +247,7 @@ void EncodeTemplateClassName( ManglerState& mangler_state, const Class& the_clas
 			if( !parent->GetThisNamespaceName().empty() )
 				EncodeNamespacePrefix_r( mangler_state, *parent );
 
-		mangler_state.PushLengthPrefixed( the_class.base_template->class_template->syntax_element->name_ );
+		mangler_state.PushLengthPrefixed( the_class.base_template->class_template->syntax_element->name );
 	}
 
 	EncodeTemplateArgs( mangler_state, the_class.base_template->signature_args );

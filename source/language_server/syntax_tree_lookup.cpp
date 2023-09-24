@@ -74,17 +74,17 @@ void FindImpl( const Synt::EmptyVariant& empty_variant )
 
 void FindImpl( const Synt::CallOperator& call_operator )
 {
-	FindImpl( call_operator.expression_ );
+	FindImpl( call_operator.expression );
 
-	for( const Synt::Expression& expression : call_operator.arguments_ )
+	for( const Synt::Expression& expression : call_operator.arguments )
 		FindImpl( expression );
 }
 
 void FindImpl( const Synt::CallOperatorSignatureHelp& call_operator_signature_help )
 {
-	FindImpl( call_operator_signature_help.expression_ );
+	FindImpl( call_operator_signature_help.expression );
 
-	if( call_operator_signature_help.src_loc_.GetLine() == line_ && call_operator_signature_help.src_loc_.GetColumn() == column_ )
+	if( call_operator_signature_help.src_loc.GetLine() == line_ && call_operator_signature_help.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
 		result_= SyntaxTreeLookupResult{ prefix_, &call_operator_signature_help, *global_item_ };
@@ -93,13 +93,13 @@ void FindImpl( const Synt::CallOperatorSignatureHelp& call_operator_signature_he
 
 void FindImpl( const Synt::IndexationOperator& indexation_operator )
 {
-	FindImpl( indexation_operator.expression_ );
-	FindImpl( indexation_operator.index_ );
+	FindImpl( indexation_operator.expression );
+	FindImpl( indexation_operator.index );
 }
 
 void FindImpl( const Synt::MemberAccessOperator& member_access_operator )
 {
-	FindImpl( member_access_operator.expression_ );
+	FindImpl( member_access_operator.expression );
 	if( member_access_operator.template_parameters != std::nullopt )
 	{
 		for( const Synt::Expression& template_arg : *member_access_operator.template_parameters )
@@ -109,7 +109,7 @@ void FindImpl( const Synt::MemberAccessOperator& member_access_operator )
 
 void FindImpl( const Synt::MemberAccessOperatorCompletion& member_access_operator_completion )
 {
-	if( member_access_operator_completion.src_loc_.GetLine() == line_ && member_access_operator_completion.src_loc_.GetColumn() == column_ )
+	if( member_access_operator_completion.src_loc.GetLine() == line_ && member_access_operator_completion.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
 		result_= SyntaxTreeLookupResult{ prefix_, &member_access_operator_completion, *global_item_ };
@@ -118,22 +118,22 @@ void FindImpl( const Synt::MemberAccessOperatorCompletion& member_access_operato
 
 void FindImpl( const Synt::UnaryPlus& unary_plus )
 {
-	FindImpl( unary_plus.expression_ );
+	FindImpl( unary_plus.expression );
 }
 
 void FindImpl( const Synt::UnaryMinus& unary_minus )
 {
-	FindImpl( unary_minus.expression_ );
+	FindImpl( unary_minus.expression );
 }
 
 void FindImpl( const Synt::LogicalNot& ligical_not )
 {
-	FindImpl( ligical_not.expression_ );
+	FindImpl( ligical_not.expression );
 }
 
 void FindImpl( const Synt::BitwiseNot& bitwise_not )
 {
-	FindImpl( bitwise_not.expression_ );
+	FindImpl( bitwise_not.expression );
 }
 
 void FindImpl( const Synt::ComplexName& complex_name )
@@ -143,8 +143,8 @@ void FindImpl( const Synt::ComplexName& complex_name )
 
 void FindImpl( const Synt::BinaryOperator& binary_operator )
 {
-	FindImpl( binary_operator.left_ );
-	FindImpl( binary_operator.right_ );
+	FindImpl( binary_operator.left );
+	FindImpl( binary_operator.right );
 }
 
 void FindImpl( const Synt::TernaryOperator& ternary_operator )
@@ -181,7 +181,7 @@ void FindImpl( const Synt::StringLiteral& string_literal )
 
 void FindImpl( const Synt::MoveOperator& move_operator )
 {
-	if( move_operator.src_loc_.GetLine() == line_ && move_operator.src_loc_.GetColumn() == column_ )
+	if( move_operator.src_loc.GetLine() == line_ && move_operator.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
 		result_= SyntaxTreeLookupResult{ prefix_, &move_operator, *global_item_ };
@@ -190,34 +190,34 @@ void FindImpl( const Synt::MoveOperator& move_operator )
 
 void FindImpl( const Synt::TakeOperator& take_operator )
 {
-	FindImpl( take_operator.expression_ );
+	FindImpl( take_operator.expression );
 }
 
 void FindImpl( const Synt::CastMut& cast_mut )
 {
-	FindImpl( cast_mut.expression_ );
+	FindImpl( cast_mut.expression );
 }
 
 void FindImpl( const Synt::CastImut& cast_imut )
 {
-	FindImpl( cast_imut.expression_ );
+	FindImpl( cast_imut.expression );
 }
 
 void FindImpl( const Synt::CastRef& cast_ref )
 {
-	FindImpl( cast_ref.type_ );
-	FindImpl( cast_ref.expression_ );
+	FindImpl( cast_ref.type );
+	FindImpl( cast_ref.expression );
 }
 
 void FindImpl( const Synt::CastRefUnsafe& cast_ref_unsafe )
 {
-	FindImpl( cast_ref_unsafe.type_ );
-	FindImpl( cast_ref_unsafe.expression_ );
+	FindImpl( cast_ref_unsafe.type );
+	FindImpl( cast_ref_unsafe.expression );
 }
 
 void FindImpl( const Synt::TypeInfo& type_info )
 {
-	FindImpl( type_info.type_ );
+	FindImpl( type_info.type );
 }
 
 void FindImpl( const Synt::SameType& same_type )
@@ -228,17 +228,17 @@ void FindImpl( const Synt::SameType& same_type )
 
 void FindImpl( const Synt::NonSyncExpression& non_sync_expression )
 {
-	FindImpl( non_sync_expression.type_ );
+	FindImpl( non_sync_expression.type );
 }
 
 void FindImpl( const Synt::SafeExpression& safe_expression )
 {
-	FindImpl( safe_expression.expression_ );
+	FindImpl( safe_expression.expression );
 }
 
 void FindImpl( const Synt::UnsafeExpression& unsafe_expression )
 {
-	FindImpl( unsafe_expression.expression_ );
+	FindImpl( unsafe_expression.expression );
 }
 
 void FindImpl( const Synt::ArrayTypeName& array_type_name )
@@ -249,15 +249,15 @@ void FindImpl( const Synt::ArrayTypeName& array_type_name )
 
 void FindImpl( const Synt::FunctionType& function_type )
 {
-	FindImpl( function_type.return_type_ );
+	FindImpl( function_type.return_type );
 
-	for( const Synt::FunctionParam& param : function_type.params_ )
-		FindImpl( param.type_ );
+	for( const Synt::FunctionParam& param : function_type.params )
+		FindImpl( param.type );
 }
 
 void FindImpl( const Synt::TupleType& tuple_type )
 {
-	for( const Synt::TypeName& element_type_name : tuple_type.element_types_ )
+	for( const Synt::TypeName& element_type_name : tuple_type.element_types )
 		FindImpl( element_type_name );
 }
 
@@ -284,7 +284,7 @@ void FindImpl( const Synt::RootNamespaceNameLookup& root_namespace_name_lookup )
 
 void FindImpl( const Synt::RootNamespaceNameLookupCompletion& root_namespace_name_lookup_completion )
 {
-	if( line_ == root_namespace_name_lookup_completion.src_loc_.GetLine() && column_ == root_namespace_name_lookup_completion.src_loc_.GetColumn() )
+	if( line_ == root_namespace_name_lookup_completion.src_loc.GetLine() && column_ == root_namespace_name_lookup_completion.src_loc.GetColumn() )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
 		result_= SyntaxTreeLookupResult{ prefix_, &root_namespace_name_lookup_completion, *global_item_ };
@@ -298,7 +298,7 @@ void FindImpl( const Synt::NameLookup& name_lookup )
 
 void FindImpl( const Synt::NameLookupCompletion& name_lookup_completion )
 {
-	if( line_ == name_lookup_completion.src_loc_.GetLine() && column_ == name_lookup_completion.src_loc_.GetColumn() )
+	if( line_ == name_lookup_completion.src_loc.GetLine() && column_ == name_lookup_completion.src_loc.GetColumn() )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
 		result_= SyntaxTreeLookupResult{ prefix_, &name_lookup_completion, *global_item_ };
@@ -314,7 +314,7 @@ void FindImpl( const Synt::NamesScopeNameFetchCompletion& names_scope_name_fetch
 {
 	FindImpl( names_scope_name_fetch_completion.base );
 
-	if( line_ == names_scope_name_fetch_completion.src_loc_.GetLine() && column_ == names_scope_name_fetch_completion.src_loc_.GetColumn() )
+	if( line_ == names_scope_name_fetch_completion.src_loc.GetLine() && column_ == names_scope_name_fetch_completion.src_loc.GetColumn() )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
 		result_= SyntaxTreeLookupResult{ prefix_, &names_scope_name_fetch_completion, *global_item_ };
@@ -362,7 +362,7 @@ void FindImpl( const Synt::ConstructorInitializer& constructor_initializer )
 
 void FindImpl( const Synt::ConstructorInitializerSignatureHelp& constructor_initializer_signature_help )
 {
-	if( constructor_initializer_signature_help.src_loc_.GetLine() == line_ && constructor_initializer_signature_help.src_loc_.GetColumn() == column_ )
+	if( constructor_initializer_signature_help.src_loc.GetLine() == line_ && constructor_initializer_signature_help.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
 		result_= SyntaxTreeLookupResult{ prefix_, &constructor_initializer_signature_help, *global_item_ };
@@ -432,7 +432,7 @@ void FindImpl( const Synt::Enum& enum_ )
 
 void FindImpl( const Synt::Function& function )
 {
-	for( const Synt::Function::NameComponent& name_component : function.name_ )
+	for( const Synt::Function::NameComponent& name_component : function.name )
 	{
 		if( line_ == name_component.src_loc.GetLine() && column_ == name_component.src_loc.GetColumn() )
 		{
@@ -441,29 +441,29 @@ void FindImpl( const Synt::Function& function )
 		}
 	}
 
-	FindImpl( function.condition_ );
-	FindImpl( function.type_ );
-	FindImpl( function.constructor_initialization_list_ );
+	FindImpl( function.condition );
+	FindImpl( function.type );
+	FindImpl( function.constructor_initialization_list );
 	FindImpl( function.coroutine_non_sync_tag );
-	FindImpl( function.block_ );
+	FindImpl( function.block );
 }
 
 void FindImpl( const Synt::Class& class_ )
 {
 	prefix_.push_back( &class_ );
-	FindImpl( class_.elements_ );
+	FindImpl( class_.elements );
 	prefix_.pop_back();
 
-	for( const Synt::ComplexName& parent : class_.parents_ )
+	for( const Synt::ComplexName& parent : class_.parents )
 		FindImpl( parent );
 
-	FindImpl( class_.non_sync_tag_ );
+	FindImpl( class_.non_sync_tag );
 }
 
 void FindImpl( const Synt::TypeTemplate& type_template )
 {
 	prefix_.push_back( &type_template );
-	FindImplVariant( type_template.something_ );
+	FindImplVariant( type_template.something );
 	prefix_.pop_back();
 
 	// TODO - process template arguments and signature arguments.
@@ -478,7 +478,7 @@ void FindImpl( const Synt::FunctionTemplate& function_template )
 void FindImpl( const Synt::Namespace& namespace_ )
 {
 	prefix_.push_back( &namespace_ );
-	FindImpl( namespace_.elements_ );
+	FindImpl( namespace_.elements );
 	prefix_.pop_back();
 }
 
@@ -509,7 +509,7 @@ void FindImpl( const Synt::IfAlternative& if_alternative )
 
 void FindImpl( const Synt::Block& block )
 {
-	for( const Synt::BlockElement& block_element : block.elements_ )
+	for( const Synt::BlockElement& block_element : block.elements )
 		FindImplVariant( block_element );
 }
 
@@ -520,7 +520,7 @@ void FindImpl( const Synt::ScopeBlock& scope_block )
 
 void FindImpl( const Synt::ReturnOperator& return_operator )
 {
-	FindImpl( return_operator.expression_ );
+	FindImpl( return_operator.expression );
 }
 
 void FindImpl( const Synt::YieldOperator& yield_operator )
@@ -530,32 +530,32 @@ void FindImpl( const Synt::YieldOperator& yield_operator )
 
 void FindImpl( const Synt::WhileOperator& while_operator )
 {
-	FindImpl( while_operator.condition_ );
-	FindImpl( while_operator.block_ );
+	FindImpl( while_operator.condition );
+	FindImpl( while_operator.block );
 }
 
 void FindImpl( const Synt::LoopOperator& loop_operator )
 {
-	FindImpl( loop_operator.block_ );
+	FindImpl( loop_operator.block );
 }
 
 void FindImpl( const Synt::RangeForOperator& range_for_operator )
 {
-	FindImpl( range_for_operator.sequence_ );
-	FindImpl( range_for_operator.block_ );
+	FindImpl( range_for_operator.sequence );
+	FindImpl( range_for_operator.block );
 }
 
 void FindImpl( const Synt::CStyleForOperator& c_style_for_operator )
 {
-	if( c_style_for_operator.variable_declaration_part_ != nullptr )
-		FindImplVariant( *c_style_for_operator.variable_declaration_part_ );
+	if( c_style_for_operator.variable_declaration_part != nullptr )
+		FindImplVariant( *c_style_for_operator.variable_declaration_part );
 
-	FindImpl( c_style_for_operator.loop_condition_ );
+	FindImpl( c_style_for_operator.loop_condition );
 
-	for( const auto& element : c_style_for_operator.iteration_part_elements_ )
+	for( const auto& element : c_style_for_operator.iteration_part_elements )
 		FindImplVariant( element );
 
-	FindImpl( c_style_for_operator.block_ );
+	FindImpl( c_style_for_operator.block );
 }
 
 void FindImpl( const Synt::BreakOperator& break_operator )
@@ -570,8 +570,8 @@ void FindImpl( const Synt::ContinueOperator& continue_operator )
 
 void FindImpl( const Synt::WithOperator& with_operator )
 {
-	FindImpl( with_operator.expression_ );
-	FindImpl( with_operator.block_ );
+	FindImpl( with_operator.expression );
+	FindImpl( with_operator.block );
 }
 
 void FindImpl( const Synt::IfOperator& if_operator )
@@ -625,19 +625,19 @@ void FindImpl( const Synt::SwitchOperator& switch_operator )
 
 void FindImpl( const Synt::SingleExpressionOperator& single_expression_operator )
 {
-	FindImpl( single_expression_operator.expression_ );
+	FindImpl( single_expression_operator.expression );
 }
 
 void FindImpl( const Synt::AssignmentOperator& assignment_operator )
 {
-	FindImpl( assignment_operator.l_value_ );
-	FindImpl( assignment_operator.r_value_ );
+	FindImpl( assignment_operator.l_value );
+	FindImpl( assignment_operator.r_value );
 }
 
 void FindImpl( const Synt::AdditiveAssignmentOperator& additive_assignment_operator )
 {
-	FindImpl( additive_assignment_operator.l_value_ );
-	FindImpl( additive_assignment_operator.r_value_ );
+	FindImpl( additive_assignment_operator.l_value );
+	FindImpl( additive_assignment_operator.r_value );
 }
 
 void FindImpl( const Synt::IncrementOperator& increment_operator )

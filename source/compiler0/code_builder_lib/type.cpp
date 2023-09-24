@@ -461,7 +461,7 @@ std::string Type::ToString() const
 				if( !template_namespace_name.empty() )
 					result+= template_namespace_name + "::";
 
-				const std::string& class_name= class_->base_template->class_template->syntax_element->name_;
+				const std::string& class_name= class_->base_template->class_template->syntax_element->name;
 				result+= class_name;
 				result+= "</";
 				for( const TemplateArg& arg : class_->base_template->signature_args )

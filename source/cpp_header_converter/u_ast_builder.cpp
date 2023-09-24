@@ -223,8 +223,8 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
 			{
-				string_constant.value_= string_literal_parser.GetString();
-				string_constant.value_.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+				string_constant.value= string_literal_parser.GetString();
+				string_constant.value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.push_back( std::move( auto_variable_declaration ) );
@@ -236,12 +236,12 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 					llvm::ArrayRef<llvm::UTF16>(
 						reinterpret_cast<const llvm::UTF16*>(string_literal_parser.GetString().data()),
 						string_literal_parser.GetNumStringChars() ),
-					string_constant.value_ );
-				string_constant.value_.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+					string_constant.value );
+				string_constant.value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
-				string_constant.type_suffix_[0]= 'u';
-				string_constant.type_suffix_[1]= '1';
-				string_constant.type_suffix_[2]= '6';
+				string_constant.type_suffix[0]= 'u';
+				string_constant.type_suffix[1]= '1';
+				string_constant.type_suffix[2]= '6';
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.push_back( std::move( auto_variable_declaration ) );
@@ -251,13 +251,13 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			{
 				const auto string_ref = string_literal_parser.GetString();
 				for( size_t i= 0u; i < string_literal_parser.GetNumStringChars(); ++i )
-					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant.value_ );
+					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant.value );
 
-				string_constant.value_.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+				string_constant.value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
-				string_constant.type_suffix_[0]= 'u';
-				string_constant.type_suffix_[1]= '3';
-				string_constant.type_suffix_[2]= '2';
+				string_constant.type_suffix[0]= 'u';
+				string_constant.type_suffix[1]= '3';
+				string_constant.type_suffix[2]= '2';
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.push_back( std::move( auto_variable_declaration ) );
@@ -277,9 +277,9 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			auto_variable_declaration.name= TranslateIdentifier( name );
 
 			Synt::StringLiteral string_constant( g_dummy_src_loc );
-			string_constant.value_.push_back( char(char_literal_parser.getValue()) );
-			string_constant.type_suffix_[0]= 'c';
-			string_constant.type_suffix_[1]= '8';
+			string_constant.value.push_back( char(char_literal_parser.getValue()) );
+			string_constant.type_suffix[0]= 'c';
+			string_constant.type_suffix[1]= '8';
 
 			auto_variable_declaration.initializer_expression= std::move(string_constant);
 			root_program_elements_.push_back( std::move( auto_variable_declaration ) );
@@ -335,9 +335,9 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	else if( const auto namespace_decl= llvm::dyn_cast<clang::NamespaceDecl>(&decl) )
 	{
 		auto namespace_= std::make_unique<Synt::Namespace>( g_dummy_src_loc );
-		namespace_->name_= TranslateIdentifier( namespace_decl->getName() );
+		namespace_->name= TranslateIdentifier( namespace_decl->getName() );
 		for( const clang::Decl* const sub_decl : namespace_decl->decls() )
-			ProcessDecl( *sub_decl, namespace_->elements_, current_externc );
+			ProcessDecl( *sub_decl, namespace_->elements, current_externc );
 
 		program_elements.push_back(std::move(namespace_));
 	}
@@ -402,13 +402,13 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 	if( record_decl.isStruct() || record_decl.isClass() )
 	{
 		auto class_= std::make_unique<Synt::Class>(g_dummy_src_loc);
-		class_->name_= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
-		class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
+		class_->name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+		class_->keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
 		if( record_decl.isCompleteDefinition() )
 		{
 			for( const clang::Decl* const sub_decl : record_decl.decls() )
-				ProcessClassDecl( *sub_decl, class_->elements_, externc );
+				ProcessClassDecl( *sub_decl, class_->elements, externc );
 		}
 
 		return class_;
@@ -418,8 +418,8 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 		// Emulate union, using array of ints with required alignment.
 
 		auto class_= std::make_unique<Synt::Class>(g_dummy_src_loc);
-		class_->name_= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
-		class_->keep_fields_order_= true; // C/C++ structs/classes have fixed fields order.
+		class_->name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+		class_->keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
 		if( record_decl.isCompleteDefinition() )
 		{
@@ -449,7 +449,7 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			Synt::ClassField field( g_dummy_src_loc );
 			field.name= "union_content";
 			field.type= std::move(array_type);
-			class_->elements_.push_back( std::move(field) );
+			class_->elements.push_back( std::move(field) );
 		}
 
 		return class_;
@@ -486,52 +486,52 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 {
 	auto func= std::make_unique<Synt::Function>(g_dummy_src_loc);
 
-	func->name_.push_back( Synt::Function::NameComponent{ TranslateIdentifier( func_decl.getName() ), g_dummy_src_loc } );
-	func->no_mangle_= externc;
-	func->type_.unsafe_= true; // All C/C++ functions are unsafe.
+	func->name.push_back( Synt::Function::NameComponent{ TranslateIdentifier( func_decl.getName() ), g_dummy_src_loc } );
+	func->no_mangle= externc;
+	func->type.unsafe= true; // All C/C++ functions are unsafe.
 
-	func->type_.params_.reserve( func_decl.param_size() );
+	func->type.params.reserve( func_decl.param_size() );
 	size_t i= 0u;
 	for( const clang::ParmVarDecl* const param : func_decl.parameters() )
 	{
 		Synt::FunctionParam arg( g_dummy_src_loc );
-		arg.name_= TranslateIdentifier( param->getName() );
-		if( arg.name_.empty() )
-			arg.name_= "arg" + std::to_string(i);
-		if( IsKeyword( arg.name_ ) )
-			arg.name_+= "_";
+		arg.name= TranslateIdentifier( param->getName() );
+		if( arg.name.empty() )
+			arg.name= "arg" + std::to_string(i);
+		if( IsKeyword( arg.name ) )
+			arg.name+= "_";
 
 		const clang::Type* arg_type= param->getType().getTypePtr();
 		if( arg_type->isReferenceType() )
 		{
-			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
+			arg.reference_modifier= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= arg_type->getPointeeType();
 			arg_type= type_qual.getTypePtr();
 
 			if( type_qual.isConstQualified() )
-				arg.mutability_modifier_= Synt::MutabilityModifier::Immutable;
+				arg.mutability_modifier= Synt::MutabilityModifier::Immutable;
 			else
-				arg.mutability_modifier_= Synt::MutabilityModifier::Mutable;
+				arg.mutability_modifier= Synt::MutabilityModifier::Mutable;
 		}
 
-		arg.type_= TranslateType( *arg_type );
-		func->type_.params_.push_back(std::move(arg));
+		arg.type= TranslateType( *arg_type );
+		func->type.params.push_back(std::move(arg));
 		++i;
 	}
 
 	const clang::Type* return_type= func_decl.getReturnType().getTypePtr();
 	if( return_type->isReferenceType() )
 	{
-		func->type_.return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
+		func->type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
 		const clang::QualType type_qual= return_type->getPointeeType();
 		return_type= type_qual.getTypePtr();
 
 		if( type_qual.isConstQualified() )
-			func->type_.return_value_mutability_modifier_= Synt::MutabilityModifier::Immutable;
+			func->type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
 		else
-			func->type_.return_value_mutability_modifier_= Synt::MutabilityModifier::Mutable;
+			func->type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
 	}
-	func->type_.return_type_= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
+	func->type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
 	return func;
 }
@@ -628,18 +628,18 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 		// Since such struct contains singe scalar inside, it is passed via this scalar.
 
 		auto enum_class_= std::make_unique<Synt::Class>( g_dummy_src_loc );
-		enum_class_->name_= TranslateIdentifier( enum_name );
+		enum_class_->name= TranslateIdentifier( enum_name );
 
 		const std::string field_name= "ü_underlaying_value";
 		{
 			Synt::ClassField field( g_dummy_src_loc );
 			field.name= field_name;
 			field.type= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
-			enum_class_->elements_.push_back( std::move(field) );
+			enum_class_->elements.push_back( std::move(field) );
 		}
 
 		Synt::NameLookup enum_class_name( g_dummy_src_loc );
-		enum_class_name.name= enum_class_->name_;
+		enum_class_name.name= enum_class_->name;
 
 		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
 		{
@@ -671,7 +671,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 			variables_declaration.type= enum_class_name;
 			variables_declaration.variables.push_back( std::move(var) );
 
-			enum_class_->elements_.push_back( std::move(variables_declaration) );
+			enum_class_->elements.push_back( std::move(variables_declaration) );
 		}
 
 		out_elements.push_back( std::move(enum_class_) );
@@ -820,46 +820,46 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 {
 	auto function_type= std::make_unique<Synt::FunctionType>( g_dummy_src_loc );
 
-	function_type->unsafe_= true; // All C/C++ functions is unsafe.
+	function_type->unsafe= true; // All C/C++ functions is unsafe.
 
-	function_type->params_.reserve( in_type.getNumParams() );
+	function_type->params.reserve( in_type.getNumParams() );
 	size_t i= 0u;
 	for( const clang::QualType& param_qual : in_type.getParamTypes() )
 	{
 		Synt::FunctionParam arg( g_dummy_src_loc );
-		arg.name_= "arg" + std::to_string(i);
+		arg.name= "arg" + std::to_string(i);
 
 		const clang::Type* arg_type= param_qual.getTypePtr();
 		if( arg_type->isReferenceType() )
 		{
-			arg.reference_modifier_= Synt::ReferenceModifier::Reference;
+			arg.reference_modifier= Synt::ReferenceModifier::Reference;
 			const clang::QualType type_qual= arg_type->getPointeeType();
 			arg_type= type_qual.getTypePtr();
 
 			if( type_qual.isConstQualified() )
-				arg.mutability_modifier_= Synt::MutabilityModifier::Immutable;
+				arg.mutability_modifier= Synt::MutabilityModifier::Immutable;
 			else
-				arg.mutability_modifier_= Synt::MutabilityModifier::Mutable;
+				arg.mutability_modifier= Synt::MutabilityModifier::Mutable;
 		}
 
-		arg.type_= TranslateType( *arg_type );
-		function_type->params_.push_back(std::move(arg));
+		arg.type= TranslateType( *arg_type );
+		function_type->params.push_back(std::move(arg));
 		++i;
 	}
 
 	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
 	if( return_type->isReferenceType() )
 	{
-		function_type->return_value_reference_modifier_= Synt::ReferenceModifier::Reference;
+		function_type->return_value_reference_modifier= Synt::ReferenceModifier::Reference;
 		const clang::QualType type_qual= return_type->getPointeeType();
 		return_type= type_qual.getTypePtr();
 
 		if( type_qual.isConstQualified() )
-			function_type->return_value_mutability_modifier_= Synt::MutabilityModifier::Immutable;
+			function_type->return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
 		else
-			function_type->return_value_mutability_modifier_= Synt::MutabilityModifier::Mutable;
+			function_type->return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
 	}
-	function_type->return_type_= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
+	function_type->return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
 	return function_type;
 }

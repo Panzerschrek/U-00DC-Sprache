@@ -119,9 +119,9 @@ SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
 		if( !functions_set->template_functions.empty() )
 			return functions_set->template_functions.front()->src_loc;
 		if( !functions_set->syntax_elements.empty() )
-			return functions_set->syntax_elements.front()->src_loc_;
+			return functions_set->syntax_elements.front()->src_loc;
 		if( !functions_set->out_of_line_syntax_elements.empty() )
-			return functions_set->out_of_line_syntax_elements.front()->src_loc_;
+			return functions_set->out_of_line_syntax_elements.front()->src_loc;
 	}
 	if( const auto type_templates_set= value.value.GetTypeTemplatesSet() )
 	{
@@ -168,7 +168,7 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_sc
 
 	if( const auto namespace_= std::get_if<const Synt::Namespace*>( &prefix_head ) )
 	{
-		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*namespace_)->name_ ) )
+		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*namespace_)->name ) )
 		{
 			if( const auto names_scope= value->value.GetNamespace() )
 				return EvaluateCompletionRequestPrefix_r( *names_scope, prefix_tail );
@@ -176,7 +176,7 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_sc
 	}
 	else if( const auto class_= std::get_if<const Synt::Class*>( &prefix_head ) )
 	{
-		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*class_)->name_ ) )
+		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*class_)->name ) )
 		{
 			if( const auto type_name= value->value.GetTypeName() )
 			{
@@ -187,7 +187,7 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_sc
 	}
 	else if( const auto type_template= std::get_if<const Synt::TypeTemplate*>( &prefix_head ) )
 	{
-		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*type_template)->name_ ) )
+		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*type_template)->name ) )
 		{
 			if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
 			{
@@ -334,13 +334,13 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionPtr& function_ptr )
 {
-	if( function_ptr == nullptr || function_ptr->name_.empty() )
+	if( function_ptr == nullptr || function_ptr->name.empty() )
 		return;
 
 	NamesScope* actual_nams_scope= nullptr;
 	ClassPtr base_class= nullptr;
 
-	const auto& name= function_ptr->name_;
+	const auto& name= function_ptr->name;
 
 	if( name.size() > 1 )
 	{
@@ -371,7 +371,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 			}
 
 			// Perform regular name lookup.
-			value= LookupName( names_scope, name[0].name, function_ptr->src_loc_ ).value;
+			value= LookupName( names_scope, name[0].name, function_ptr->src_loc ).value;
 			if( value != nullptr )
 				CollectDefinition( *value, name[0].src_loc );
 		}
@@ -438,7 +438,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		return;
 	}
 
-	if( function_ptr->block_ == nullptr )
+	if( function_ptr->block == nullptr )
 		return; // This is only prototype.
 
 	FunctionVariable& function_variable= functions_set.functions[ function_index ];
@@ -449,9 +449,9 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		base_class,
 		*actual_nams_scope,
 		name.back().name,
-		function_ptr->type_.params_,
-		*function_ptr->block_,
-		function_ptr->constructor_initialization_list_.get() );
+		function_ptr->type.params,
+		*function_ptr->block,
+		function_ptr->constructor_initialization_list.get() );
 
 	// Clear garbage - remove created llvm function.
 	if( function_variable.llvm_function->function != nullptr )
@@ -464,11 +464,11 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		return;
 
 	// Complete names in parent names.
-	for( const Synt::ComplexName& parent_name : class_ptr->parents_ )
+	for( const Synt::ComplexName& parent_name : class_ptr->parents )
 		PrepareTypeImpl( names_scope, *global_function_context_, parent_name );
 
 	// Complete names in non-sync tag.
-	if( const auto non_sync_expression= std::get_if<Synt::ExpressionPtr>( &class_ptr->non_sync_tag_ ) )
+	if( const auto non_sync_expression= std::get_if<Synt::ExpressionPtr>( &class_ptr->non_sync_tag ) )
 	{
 		if( *non_sync_expression != nullptr )
 			BuildExpressionCode( **non_sync_expression, names_scope, *global_function_context_ );
@@ -724,11 +724,11 @@ void CodeBuilder::PerformSignatureHelp( const Value& value )
 
 		if( function.syntax_element != nullptr )
 		{
-			if( !function.syntax_element->name_.empty() )
-				ss << function.syntax_element->name_.back().name;
+			if( !function.syntax_element->name.empty() )
+				ss << function.syntax_element->name.back().name;
 
-			Synt::WriteFunctionParamsList( function.syntax_element->type_, ss );
-			Synt::WriteFunctionTypeEnding( function.syntax_element->type_, ss );
+			Synt::WriteFunctionParamsList( function.syntax_element->type, ss );
+			Synt::WriteFunctionTypeEnding( function.syntax_element->type, ss );
 		}
 		else
 		{

@@ -126,7 +126,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 		FunctionVariable& function= *class_function.function;
 
 		const std::string& function_name= class_function.name;
-		const SrcLoc& src_loc= function.syntax_element->src_loc_;
+		const SrcLoc& src_loc= function.syntax_element->src_loc;
 		CodeBuilderErrorsContainer& errors_container= the_class.members->GetErrors();
 
 		if( function.virtual_function_kind != Synt::VirtualFunctionKind::None &&
@@ -237,7 +237,7 @@ void CodeBuilder::PrepareClassVirtualTable( Class& the_class )
 				REPORT_ERROR( OverrideRequired, errors_container, src_loc, function_name );
 			else
 			{
-				if( function.syntax_element->block_ != nullptr )
+				if( function.syntax_element->block != nullptr )
 					REPORT_ERROR( BodyForPureVirtualFunction, errors_container, src_loc, function_name );
 				if( function_name == Keyword( Keywords::destructor_ ) )
 					REPORT_ERROR( PureDestructor, errors_container, src_loc, the_class.members->GetThisNamespaceName() );
@@ -378,7 +378,7 @@ void CodeBuilder::BuildPolymorphClassTypeId( const ClassPtr class_type )
 			llvm::ConstantArray::get( type_id_table_type, table_initializers ),
 			"_type_id_for_" + mangler_->MangleType( class_type ) );
 
-	if( class_type->syntax_element->src_loc_.GetFileIndex() != 0 )
+	if( class_type->syntax_element->src_loc.GetFileIndex() != 0 )
 	{
 		// This is a class, declared in imported file.
 		// Create comdat in order to ensure uniquiness of the table across different modules, that import file with declaration of this class.
