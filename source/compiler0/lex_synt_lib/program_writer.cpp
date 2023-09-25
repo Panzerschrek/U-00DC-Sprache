@@ -130,9 +130,9 @@ void ElementWrite( const ComplexName& complex_name, std::ostream& stream )
 void ElementWrite( const ArrayTypeName& array_type_name, std::ostream& stream )
 {
 	stream << "[ ";
-	ElementWrite( *array_type_name.element_type, stream );
+	ElementWrite( array_type_name.element_type, stream );
 	stream << ", ";
-	ElementWrite( *array_type_name.size, stream );
+	ElementWrite( array_type_name.size, stream );
 	stream << " ]";
 }
 
@@ -158,7 +158,7 @@ void ElementWrite( const RawPointerType& raw_pointer_type_name, std::ostream& st
 {
 	stream << "$";
 	stream << "(";
-	ElementWrite( *raw_pointer_type_name.element_type, stream );
+	ElementWrite( raw_pointer_type_name.element_type, stream );
 	stream << ")";
 }
 
@@ -526,11 +526,11 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			stream << "( ";
 			stream << ")";
 		}
-		void operator()( const ArrayTypeName& array_type_name ) const
+		void operator()( const std::unique_ptr<const ArrayTypeName>& array_type_name ) const
 		{
-			ElementWrite( array_type_name, stream );
+			ElementWrite( *array_type_name, stream );
 		}
-		void operator()( const FunctionTypePtr& function_type ) const
+		void operator()( const std::unique_ptr<const FunctionType>& function_type ) const
 		{
 			ElementWrite( *function_type, stream );
 		}
@@ -538,11 +538,11 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			ElementWrite( tuple_type, stream );
 		}
-		void operator()( const RawPointerType& raw_pointer_type ) const
+		void operator()( const std::unique_ptr<const RawPointerType>& raw_pointer_type ) const
 		{
-			ElementWrite( raw_pointer_type, stream );
+			ElementWrite( *raw_pointer_type, stream );
 		}
-		void operator()( const GeneratorTypePtr& generator_type ) const
+		void operator()( const std::unique_ptr<const GeneratorType>& generator_type ) const
 		{
 			ElementWrite( *generator_type, stream );
 		}

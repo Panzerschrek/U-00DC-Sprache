@@ -1649,7 +1649,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::FunctionTypePtr& type_name )
+	const Synt::FunctionType& type_name )
 {
 	return PrepareTypeImpl( names, function_context, type_name );
 }
@@ -1673,7 +1673,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& names,
 	FunctionContext& function_context,
-	const Synt::GeneratorTypePtr& type_name )
+	const Synt::GeneratorType& type_name )
 {
 	return PrepareTypeImpl( names, function_context, type_name );
 }

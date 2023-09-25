@@ -49,7 +49,7 @@ private:
 	std::string TranslateRecordType( const clang::RecordType& in_type );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::ComplexName TranslateNamedType( std::string_view cpp_type_name );
-	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
+	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
 
@@ -367,10 +367,10 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 			const clang::QualType type_qual= field_type->getPointeeType();
 			field_type= type_qual.getTypePtr();
 
-			Synt::RawPointerType raw_pointer_type( g_dummy_src_loc );
-			raw_pointer_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *field_type ) );
+			auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+			raw_pointer_type->element_type= TranslateType( *field_type );
 
-			field.type= std::move(raw_pointer_type );
+			field.type= std::move(raw_pointer_type);
 		}
 		else
 			field.type= TranslateType( *field_type );
@@ -442,13 +442,13 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 			default: U_ASSERT(false); break;
 			};
 
-			Synt::ArrayTypeName array_type( g_dummy_src_loc );
-			array_type.element_type= std::make_unique<Synt::TypeName>( TranslateNamedType( int_name ) );
+			auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
+			array_type->element_type=TranslateNamedType( int_name );
 
 			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 			numeric_constant.value_int= num;
 			numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
-			array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
+			array_type->size= std::move(numeric_constant);
 
 			Synt::ClassField field( g_dummy_src_loc );
 			field.name= "union_content";
@@ -705,28 +705,28 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	else if( const auto constna_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
 	{
 		// For arrays with constant size use normal Ü array.
-		Synt::ArrayTypeName array_type(g_dummy_src_loc);
-		array_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *constna_array_type->getElementType().getTypePtr() ) );
+		auto array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+		array_type->element_type= TranslateType( *constna_array_type->getElementType().getTypePtr() );
 
 		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 		numeric_constant.value_int= constna_array_type->getSize().getLimitedValue();
 		numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
 		numeric_constant.type_suffix[0]= 'u';
-		array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
+		array_type->size= std::move(numeric_constant);
 
 		return std::move(array_type);
 	}
 	else if( const auto array_type= llvm::dyn_cast<clang::ArrayType>(&in_type) )
 	{
 		// For other variants of array types use zero size.
-		Synt::ArrayTypeName out_array_type(g_dummy_src_loc);
-		out_array_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *array_type->getElementType().getTypePtr() ) );
+		auto out_array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+		out_array_type->element_type= TranslateType( *array_type->getElementType().getTypePtr() );
 
 		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 		numeric_constant.value_int= 0;
 		numeric_constant.value_double= 0.0;
 		numeric_constant.type_suffix[0]= 'u';
-		out_array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
+		out_array_type->size= std::move(numeric_constant);
 
 		return std::move(out_array_type);
 	}
@@ -737,12 +737,12 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 			function_type= paren_type->getInnerType().getTypePtr();
 
 		if( const auto function_proto_type= llvm::dyn_cast<clang::FunctionProtoType>( function_type ) )
-			return TranslateFunctionType( *function_proto_type );
+			return std::make_unique<Synt::FunctionType>( TranslateFunctionType( *function_proto_type ) );
 	}
 	else if( const auto pointer_type= llvm::dyn_cast<clang::PointerType>(&in_type) )
 	{
-		Synt::RawPointerType raw_pointer_type( g_dummy_src_loc );
-		raw_pointer_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *pointer_type->getPointeeType().getTypePtr() ) );
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *pointer_type->getPointeeType().getTypePtr() );
 
 		return std::move(raw_pointer_type);
 	}
@@ -827,13 +827,13 @@ Synt::ComplexName CppAstConsumer::TranslateNamedType( const std::string_view cpp
 	return Synt::ComplexName( std::move(named_type) );
 }
 
-Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type )
+Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type )
 {
-	auto function_type= std::make_unique<Synt::FunctionType>( g_dummy_src_loc );
+	Synt::FunctionType function_type( g_dummy_src_loc );
 
-	function_type->unsafe= true; // All C/C++ functions is unsafe.
+	function_type.unsafe= true; // All C/C++ functions are unsafe.
 
-	function_type->params.reserve( in_type.getNumParams() );
+	function_type.params.reserve( in_type.getNumParams() );
 	size_t i= 0u;
 	for( const clang::QualType& param_qual : in_type.getParamTypes() )
 	{
@@ -854,23 +854,23 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 		}
 
 		arg.type= TranslateType( *arg_type );
-		function_type->params.push_back(std::move(arg));
+		function_type.params.push_back(std::move(arg));
 		++i;
 	}
 
 	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
 	if( return_type->isReferenceType() )
 	{
-		function_type->return_value_reference_modifier= Synt::ReferenceModifier::Reference;
+		function_type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
 		const clang::QualType type_qual= return_type->getPointeeType();
 		return_type= type_qual.getTypePtr();
 
 		if( type_qual.isConstQualified() )
-			function_type->return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
+			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
 		else
-			function_type->return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
+			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
 	}
-	function_type->return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
+	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
 	return function_type;
 }

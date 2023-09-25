@@ -247,13 +247,20 @@ private:
 
 	// Function context required for accesing local constexpr variables.
 	Type PrepareType( const Synt::TypeName& type_name, NamesScope& names_scope, FunctionContext& function_context );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::EmptyVariant& type_nam );
+
+	template<typename T>
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<T>& el )
+	{
+		return PrepareTypeImpl( names_scope, function_context, *el );
+	}
+
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::EmptyVariant& type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionTypePtr& function_type_name_ptr );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorTypePtr& generator_type_name_ptr );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 
 	FunctionPointerType FunctionTypeToPointer( FunctionType function_type );
@@ -331,6 +338,17 @@ private:
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags );
 
+	template<typename T>
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const std::unique_ptr<T>& el )
+	{
+		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *el );
+	}
+
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
@@ -371,7 +389,7 @@ private:
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::FunctionTypePtr& function_pointer_type_name_ptr );
+		const Synt::FunctionType& function_pointer_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
@@ -392,7 +410,7 @@ private:
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::GeneratorTypePtr& generator_type_name_ptr );
+		const Synt::GeneratorType& generator_type_nam );
 
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope, const SrcLoc& src_loc );
 
@@ -689,10 +707,10 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::SafeExpression& safe_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnsafeExpression& unsafe_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionTypePtr& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::GeneratorTypePtr& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::GeneratorType& type_name );
 
 	VariablePtr AccessClassBase( const VariablePtr& variable, FunctionContext& function_context );
 	Value AccessClassField(

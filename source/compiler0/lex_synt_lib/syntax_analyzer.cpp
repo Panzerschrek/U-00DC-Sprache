@@ -187,7 +187,7 @@ private:
 
 	FunctionParam ParseFunctionParam();
 	void ParseFunctionTypeEnding( FunctionType& result );
-	FunctionTypePtr ParseFunctionType();
+	FunctionType ParseFunctionType();
 
 	TypeName ParseTypeName();
 	std::vector<Expression> ParseTemplateParameters();
@@ -1346,9 +1346,9 @@ void SyntaxAnalyzer::ParseFunctionTypeEnding( FunctionType& result )
 	}
 }
 
-FunctionTypePtr SyntaxAnalyzer::ParseFunctionType()
+FunctionType SyntaxAnalyzer::ParseFunctionType()
 {
-	auto result= std::make_unique<FunctionType>( it_->src_loc );
+	FunctionType result( it_->src_loc );
 
 	U_ASSERT( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ );
 	NextLexem();
@@ -1363,7 +1363,7 @@ FunctionTypePtr SyntaxAnalyzer::ParseFunctionType()
 			break;
 		}
 
-		result->params.push_back( ParseFunctionParam() );
+		result.params.push_back( ParseFunctionParam() );
 
 		if( it_->type == Lexem::Type::Comma )
 		{
@@ -1381,7 +1381,7 @@ FunctionTypePtr SyntaxAnalyzer::ParseFunctionType()
 		}
 	} // for arguments
 
-	ParseFunctionTypeEnding( *result );
+	ParseFunctionTypeEnding( result );
 
 	return result;
 }
@@ -1390,15 +1390,12 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 {
 	if( it_->type == Lexem::Type::SquareBracketLeft )
 	{
+		auto array_type_name= std::make_unique<ArrayTypeName>(it_->src_loc);
+
 		NextLexem();
-
-		ArrayTypeName array_type_name(it_->src_loc);
-		array_type_name.element_type= std::make_unique<TypeName>( ParseTypeName() );
-
+		array_type_name->element_type= ParseTypeName();
 		ExpectLexem( Lexem::Type::Comma );
-
-		array_type_name.size= std::make_unique<Expression>( ParseExpression() );
-
+		array_type_name->size= ParseExpression();
 		ExpectLexem( Lexem::Type::SquareBracketRight );
 
 		return std::move(array_type_name);
@@ -1416,9 +1413,8 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::tup_ )
 	{
-		NextLexem();
-
 		TupleType tuple_type( it_->src_loc );
+		NextLexem();
 
 		ExpectLexem(Lexem::Type::SquareBracketLeft );
 
@@ -1458,13 +1454,11 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 	}
 	else if( it_->type == Lexem::Type::PointerTypeMark )
 	{
-		RawPointerType raw_pointer_type( it_->src_loc );
+		auto raw_pointer_type= std::make_unique<RawPointerType>( it_->src_loc );
 		NextLexem();
 
 		ExpectLexem( Lexem::Type::BracketLeft );
-
-		raw_pointer_type.element_type= std::make_unique<TypeName>( ParseTypeName() );
-
+		raw_pointer_type->element_type= ParseTypeName();
 		ExpectLexem(Lexem::Type::BracketRight );
 
 		return std::move(raw_pointer_type);
@@ -1544,7 +1538,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 		return std::make_unique<GeneratorType>(std::move(generator_type));
 	}
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
-		return ParseFunctionType();
+		return std::make_unique<FunctionType>( ParseFunctionType() );
 	else
 		return ParseComplexName();
 }

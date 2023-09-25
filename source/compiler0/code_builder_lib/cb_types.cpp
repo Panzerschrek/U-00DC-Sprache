@@ -38,9 +38,9 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope&, FunctionContext&, const Synt::Em
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name )
 {
 	ArrayType array_type;
-	array_type.element_type= PrepareType( *array_type_name.element_type, names_scope, function_context );
+	array_type.element_type= PrepareType( array_type_name.element_type, names_scope, function_context );
 
-	const Synt::Expression& num= *array_type_name.size;
+	const Synt::Expression& num= array_type_name.size;
 	const SrcLoc num_src_loc= Synt::GetExpressionSrcLoc( num );
 
 	VariablePtr size_variable;
@@ -95,10 +95,8 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return result;
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionTypePtr& function_type_name_ptr )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name )
 {
-	const Synt::FunctionType& function_type_name= *function_type_name_ptr;
-
 	FunctionType function_type;
 
 	if( function_type_name.return_type == nullptr )
@@ -166,16 +164,14 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name )
 {
 	RawPointerType raw_pointer;
-	raw_pointer.element_type= PrepareType( *raw_pointer_type_name.element_type, names_scope, function_context );
+	raw_pointer.element_type= PrepareType( raw_pointer_type_name.element_type, names_scope, function_context );
 	raw_pointer.llvm_type= raw_pointer.element_type.GetLLVMType()->getPointerTo();
 
 	return raw_pointer;
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorTypePtr& generator_type_name_ptr )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name )
 {
-	const Synt::GeneratorType& generator_type_name= *generator_type_name_ptr;
-
 	CoroutineTypeDescription coroutine_type_description;
 	coroutine_type_description.kind= CoroutineKind::Generator;
 	coroutine_type_description.return_type= PrepareType( generator_type_name.return_type, names_scope, function_context );

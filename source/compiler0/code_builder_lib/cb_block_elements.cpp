@@ -64,11 +64,11 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const std::unique_ptr<const Synt::SafeExpression>& safe_expression ) { return SingleExpressionIsUseless( safe_expression->expression ); }
 		bool operator()( const std::unique_ptr<const Synt::UnsafeExpression>& unsafe_expression ) { return SingleExpressionIsUseless( unsafe_expression->expression ); }
 		// Type names have no side-effects.
-		bool operator()( const Synt::ArrayTypeName& ) { return true; }
-		bool operator()( const Synt::FunctionTypePtr& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::ArrayTypeName>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::FunctionType>& ) { return true; }
 		bool operator()( const Synt::TupleType& ) { return true; }
-		bool operator()( const Synt::RawPointerType& ) { return true; }
-		bool operator()( const Synt::GeneratorTypePtr& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::RawPointerType>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::GeneratorType>& ) { return true; }
 	};
 
 	return std::visit( Visitor(), expression );

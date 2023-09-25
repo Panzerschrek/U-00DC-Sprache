@@ -133,17 +133,15 @@ using ComplexNamePtr= std::unique_ptr<ComplexName>;
 
 struct Namespace;
 
-using FunctionTypePtr= std::unique_ptr<const FunctionType>;
-using GeneratorTypePtr= std::unique_ptr<const GeneratorType>;
-
 using TypeName= std::variant<
 	EmptyVariant,
-	ArrayTypeName,
 	ComplexName,
-	FunctionTypePtr,
-	TupleType,
-	RawPointerType,
-	GeneratorTypePtr >;
+	// Non-terminals.
+	TupleType, // Just vector of contained types
+	std::unique_ptr<const RawPointerType>,
+	std::unique_ptr<const ArrayTypeName>,
+	std::unique_ptr<const FunctionType>,
+	std::unique_ptr<const GeneratorType> >;
 
 using TypeNamePtr= std::unique_ptr<const TypeName>;
 
@@ -215,11 +213,11 @@ using Expression= std::variant<
 	std::unique_ptr<const CastRef>,
 	std::unique_ptr<const CastRefUnsafe>,
 	// Type name in expression context
-	ArrayTypeName,
-	FunctionTypePtr,
 	TupleType,
-	RawPointerType,
-	GeneratorTypePtr
+	std::unique_ptr<const ArrayTypeName>,
+	std::unique_ptr<const FunctionType>,
+	std::unique_ptr<const RawPointerType>,
+	std::unique_ptr<const GeneratorType>
 	>;
 
 using ExpressionPtr= std::unique_ptr<const Expression>;
@@ -386,18 +384,9 @@ struct TemplateParametrization
 	ComplexName base;
 };
 
-struct ArrayTypeName
-{
-	explicit ArrayTypeName( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	TypeNamePtr element_type;
-	ExpressionPtr size;
-};
-
 struct TupleType
 {
-	TupleType( const SrcLoc& src_loc );
+	explicit TupleType( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
 	std::vector<TypeName> element_types;
@@ -408,7 +397,7 @@ struct RawPointerType
 	RawPointerType( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	TypeNamePtr element_type;
+	TypeName element_type;
 };
 
 struct GeneratorType
@@ -667,6 +656,15 @@ struct CastMut
 
 	SrcLoc src_loc;
 	Expression expression;
+};
+
+struct ArrayTypeName
+{
+	explicit ArrayTypeName( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	TypeName element_type;
+	Expression size;
 };
 
 struct SequenceInitializer

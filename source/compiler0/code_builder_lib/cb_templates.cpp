@@ -259,16 +259,16 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 {
 	if( const auto named_operand= std::get_if<Synt::ComplexName>( &template_parameter ) )
 		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *named_operand );
-	else if( const auto array_type_name= std::get_if<Synt::ArrayTypeName>(&template_parameter) )
-		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *array_type_name );
+	else if( const auto array_type_name_ptr= std::get_if< std::unique_ptr< const Synt::ArrayTypeName > >(&template_parameter) )
+		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, **array_type_name_ptr );
 	else if( const auto tuple_type_name= std::get_if<Synt::TupleType>(&template_parameter) )
 		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *tuple_type_name );
-	else if( const auto raw_pointer_type_name= std::get_if<Synt::RawPointerType>(&template_parameter) )
-		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *raw_pointer_type_name );
-	else if( const auto function_pointer_type_name_ptr= std::get_if<Synt::FunctionTypePtr>(&template_parameter) )
-		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *function_pointer_type_name_ptr );
-	else if( const auto generator_type_name_ptr= std::get_if<Synt::GeneratorTypePtr>(&template_parameter) )
-		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *generator_type_name_ptr );
+	else if( const auto raw_pointer_type_name_ptr= std::get_if< std::unique_ptr< const Synt::RawPointerType> >(&template_parameter) )
+		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, **raw_pointer_type_name_ptr );
+	else if( const auto function_pointer_type_name_ptr= std::get_if< std::unique_ptr< const Synt::FunctionType > >(&template_parameter) )
+		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, **function_pointer_type_name_ptr );
+	else if( const auto generator_type_name_ptr= std::get_if< std::unique_ptr< const Synt::GeneratorType > >(&template_parameter) )
+		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, **generator_type_name_ptr );
 
 	return ValueToTemplateParam( BuildExpressionCode( template_parameter, names_scope, function_context ), names_scope, Synt::GetExpressionSrcLoc(template_parameter) );
 }
@@ -310,8 +310,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	const Synt::ArrayTypeName& array_type_name )
 {
 	TemplateSignatureParam::ArrayParam array_param;
-	array_param.element_count= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *array_type_name.size ) );
-	array_param.element_type= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *array_type_name.element_type ) );
+	array_param.element_count= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, array_type_name.size ) );
+	array_param.element_type= std::make_unique<TemplateSignatureParam>( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, array_type_name.element_type ) );
 
 	if( array_param.element_count->IsVariable() && array_param.element_type->IsType() )
 		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, array_type_name ) };
@@ -324,13 +324,11 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	FunctionContext& function_context,
 	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-	const Synt::FunctionTypePtr& function_pointer_type_name_ptr )
+	const Synt::FunctionType& function_pointer_type_name )
 {
 	TemplateSignatureParam::FunctionParam function_param;
 
 	bool all_types_are_known= true;
-
-	const Synt::FunctionType& function_pointer_type_name= *function_pointer_type_name_ptr;
 
 	if( function_pointer_type_name.return_value_reference_modifier == ReferenceModifier::None )
 		function_param.return_value_type= ValueType::Value;
@@ -338,7 +336,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		function_param.return_value_type= function_pointer_type_name.return_value_mutability_modifier == MutabilityModifier::Mutable ? ValueType::ReferenceMut : ValueType::ReferenceImut;
 
 	function_param.is_unsafe= function_pointer_type_name.unsafe;
-	function_param.calling_convention= GetLLVMCallingConvention(function_pointer_type_name.calling_convention, function_pointer_type_name_ptr->src_loc, names_scope.GetErrors() );
+	function_param.calling_convention= GetLLVMCallingConvention(function_pointer_type_name.calling_convention, function_pointer_type_name.src_loc, names_scope.GetErrors() );
 
 	// TODO - maybe check also reference tags?
 	if( function_pointer_type_name.return_type != nullptr )
@@ -366,7 +364,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	}
 
 	if( all_types_are_known )
-		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, function_pointer_type_name_ptr ) };
+		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, function_pointer_type_name ) };
 
 	return std::move(function_param);
 }
@@ -408,7 +406,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 				function_context,
 				template_parameters,
 				template_parameters_usage_flags,
-				*raw_pointer_type_name.element_type ) );
+				raw_pointer_type_name.element_type ) );
 
 	if( raw_pointer_param.element_type->IsType() )
 		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, raw_pointer_type_name ) };
@@ -421,10 +419,8 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	FunctionContext& function_context,
 	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-	const Synt::GeneratorTypePtr& generator_type_name_ptr )
+	const Synt::GeneratorType& generator_type_name )
 {
-	const Synt::GeneratorType& generator_type_name= *generator_type_name_ptr;
-
 	TemplateSignatureParam::CoroutineParam coroutine_param;
 
 	coroutine_param.return_type=
@@ -437,7 +433,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 				generator_type_name.return_type ) );
 
 	if( coroutine_param.return_type->IsType() )
-		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, generator_type_name_ptr ) };
+		return TemplateSignatureParam::TypeParam{ PrepareTypeImpl( names_scope, function_context, generator_type_name ) };
 
 	coroutine_param.kind= CoroutineKind::Generator;
 
