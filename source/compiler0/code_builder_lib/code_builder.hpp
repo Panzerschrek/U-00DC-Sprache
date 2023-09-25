@@ -752,8 +752,6 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::GeneratorType& type_name );
 
-	Value ProcessNamedOperandExpression( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc );
-
 	VariablePtr AccessClassBase( const VariablePtr& variable, FunctionContext& function_context );
 	Value AccessClassField(
 		NamesScope& names,
@@ -978,6 +976,7 @@ private:
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization );
 
 	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* value );
+	Value ContextualizeValueInResolve( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc );
 
 	struct NameLookupResult
 	{

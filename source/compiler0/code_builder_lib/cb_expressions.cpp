@@ -1512,7 +1512,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::RootNamespaceNameLookup& root_namespace_lookup )
 {
-	return ProcessNamedOperandExpression( names, function_context, ResolveValueImpl( names, function_context, root_namespace_lookup ), root_namespace_lookup.src_loc );
+	return ResolveValueImpl( names, function_context, root_namespace_lookup );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1520,7 +1520,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
 {
-	return ProcessNamedOperandExpression( names, function_context, ResolveValueImpl( names, function_context, root_namespace_lookup_completion ), root_namespace_lookup_completion.src_loc );
+	return ResolveValueImpl( names, function_context, root_namespace_lookup_completion );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1528,56 +1528,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::NameLookup& name_lookup )
 {
-	const std::string& start_name= name_lookup.name;
-	if( start_name == Keywords::this_ )
-	{
-		if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
-		{
-			REPORT_ERROR( ThisUnavailable, names.GetErrors(), name_lookup.src_loc );
-			return ErrorValue();
-		}
-		return function_context.this_;
-	}
-	else if( start_name == Keywords::base_ )
-	{
-		if( function_context.this_ == nullptr )
-		{
-			REPORT_ERROR( BaseUnavailable, names.GetErrors(), name_lookup.src_loc );
-			return ErrorValue();
-		}
-		const Class& class_= *function_context.this_->type.GetClassType();
-		if( class_.base_class == nullptr )
-		{
-			REPORT_ERROR( BaseUnavailable, names.GetErrors(), name_lookup.src_loc );
-			return ErrorValue();
-		}
-		if( function_context.whole_this_is_unavailable && ( !function_context.base_initialized || class_.base_class->kind == Class::Kind::Abstract ) )
-		{
-			REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), name_lookup.src_loc, Keyword( Keywords::base_ ) );
-			return ErrorValue();
-		}
-
-		// Do not call here "AccessClassBase" method.
-		// We can not create child node for "this", because it's still possible to access whole "this" using "base" by calling a virtual method.
-		// So, create regular node pointing to "this".
-		// TODO - maybe access "base" child node in constructor initializer list since it is not possible to call real virtual method of "this"?
-		const VariablePtr base=
-			std::make_shared<Variable>(
-				class_.base_class,
-				function_context.this_->value_type,
-				Variable::Location::Pointer,
-				std::string( Keyword( Keywords::base_ ) ),
-				CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, class_.base_class, function_context ) );
-
-		function_context.variables_state.AddNode( base );
-		function_context.variables_state.TryAddLink( function_context.this_, base, names.GetErrors(),name_lookup.src_loc );
-
-		RegisterTemporaryVariable( function_context, base );
-
-		return base;
-	}
-
-	return ProcessNamedOperandExpression( names, function_context, ResolveValueImpl( names, function_context, name_lookup ), name_lookup.src_loc );
+	return ResolveValueImpl( names, function_context, name_lookup );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1585,7 +1536,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::NameLookupCompletion& name_lookup_completion )
 {
-	return ProcessNamedOperandExpression( names, function_context, ResolveValueImpl( names, function_context, name_lookup_completion ), name_lookup_completion.src_loc );
+	return ResolveValueImpl( names, function_context, name_lookup_completion );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1593,7 +1544,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::TypeofTypeName& typeof_type_name )
 {
-	return ProcessNamedOperandExpression( names, function_context, ResolveValueImpl( names, function_context, typeof_type_name ), typeof_type_name.src_loc );
+	return ResolveValueImpl( names, function_context, typeof_type_name );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1601,7 +1552,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::NamesScopeNameFetch& names_scope_fetch )
 {
-	return ProcessNamedOperandExpression( names, function_context, ResolveValueImpl( names, function_context, names_scope_fetch ), names_scope_fetch.src_loc );
+	return ResolveValueImpl( names, function_context, names_scope_fetch );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1609,7 +1560,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion )
 {
-	return ProcessNamedOperandExpression( names, function_context, ResolveValueImpl( names, function_context, names_scope_fetch_completion ), names_scope_fetch_completion.src_loc );
+	return ResolveValueImpl( names, function_context, names_scope_fetch_completion );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1617,7 +1568,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::TemplateParametrization& template_parametrization )
 {
-	return ProcessNamedOperandExpression( names, function_context, ResolveValueImpl( names, function_context, template_parametrization ), template_parametrization.src_loc );
+	return ResolveValueImpl( names, function_context, template_parametrization );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1658,81 +1609,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::GeneratorType& type_name )
 {
 	return PrepareTypeImpl( names, function_context, type_name );
-}
-
-Value CodeBuilder::ProcessNamedOperandExpression( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc )
-{
-	if( const ClassFieldPtr field= value.GetClassField() )
-	{
-		if( function_context.this_ == nullptr )
-		{
-			REPORT_ERROR( ClassFieldAccessInStaticMethod, names.GetErrors(), src_loc, field->GetName() );
-			return ErrorValue();
-		}
-
-		const ClassPtr class_= field->class_;
-		U_ASSERT( class_ != nullptr && "Class is dead? WTF?" );
-
-		if( function_context.whole_this_is_unavailable )
-		{
-			if( class_ == function_context.this_->type.GetClassType() )
-			{
-				if( field->index < function_context.initialized_this_fields.size() &&
-					!function_context.initialized_this_fields[ field->index ] )
-				{
-					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, field->GetName() );
-					return ErrorValue();
-				}
-			}
-			else
-			{
-				if(!function_context.base_initialized )
-				{
-					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, Keyword( Keywords::base_ ) );
-					return ErrorValue();
-				}
-			}
-		}
-
-		return AccessClassField( names, function_context, function_context.this_, *field, "TODO - field name", src_loc );
-	}
-	else if( const OverloadedFunctionsSetConstPtr overloaded_functions_set= value.GetFunctionsSet() )
-	{
-		if( function_context.this_ != nullptr )
-		{
-			// Trying add "this" to functions set, but only if whole "this" is available.
-			if( ( function_context.this_->type.GetClassType() == overloaded_functions_set->base_class ||
-				  function_context.this_->type.GetClassType()->HaveAncestor( overloaded_functions_set->base_class ) ) &&
-				!function_context.whole_this_is_unavailable )
-			{
-				ThisOverloadedMethodsSet this_overloaded_methods_set;
-				this_overloaded_methods_set.this_= function_context.this_;
-				this_overloaded_methods_set.overloaded_methods_set= overloaded_functions_set;
-				return std::move(this_overloaded_methods_set);
-			}
-		}
-	}
-	else if( const VariablePtr variable= value.GetVariable() )
-	{
-		if( function_context.variables_state.NodeMoved( variable ) )
-			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, variable->name );
-
-		// Forbid mutable global variables access outside unsafe block.
-		// Detect global variable by checking dynamic type of variable's LLVM value.
-		// TODO - what if variable is constant GEP result with global variable base?
-		if( variable->value_type == ValueType::ReferenceMut &&
-			llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) != nullptr &&
-			!function_context.is_in_unsafe_block )
-			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), src_loc );
-
-		if( IsGlobalVariable(variable) )
-		{
-			// Add global variable nodes lazily.
-			function_context.variables_state.AddNodeIfNotExists( variable );
-		}
-	}
-
-	return value;
 }
 
 VariablePtr CodeBuilder::AccessClassBase( const VariablePtr& variable, FunctionContext& function_context )
