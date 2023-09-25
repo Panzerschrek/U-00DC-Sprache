@@ -346,7 +346,8 @@ enum class ClassMemberVisibility : uint8_t
 
 struct RootNamespaceNameLookup
 {
-	explicit RootNamespaceNameLookup( const SrcLoc& src_loc );
+	explicit RootNamespaceNameLookup( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string name;
@@ -356,7 +357,8 @@ struct RootNamespaceNameLookup
 // In normal compilation process it is not used.
 struct RootNamespaceNameLookupCompletion
 {
-	explicit RootNamespaceNameLookupCompletion( const SrcLoc& src_loc );
+	explicit RootNamespaceNameLookupCompletion( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string name;
@@ -364,7 +366,8 @@ struct RootNamespaceNameLookupCompletion
 
 struct NameLookup
 {
-	explicit NameLookup( const SrcLoc& src_loc );
+	explicit NameLookup( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string name;
@@ -374,7 +377,8 @@ struct NameLookup
 // In normal compilation process it is not used.
 struct NameLookupCompletion
 {
-	explicit NameLookupCompletion( const SrcLoc& src_loc );
+	explicit NameLookupCompletion( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string name;
@@ -382,14 +386,16 @@ struct NameLookupCompletion
 
 struct NumericConstant : public NumberLexemData
 {
-	NumericConstant( const SrcLoc& src_loc );
+	NumericConstant( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 };
 
 struct BooleanConstant
 {
-	BooleanConstant( const SrcLoc& src_loc, bool value );
+	BooleanConstant( const SrcLoc& src_loc, const bool value )
+		: src_loc(src_loc), value(value) {}
 
 	SrcLoc src_loc;
 	bool value= false;
@@ -397,7 +403,8 @@ struct BooleanConstant
 
 struct MoveOperator
 {
-	MoveOperator( const SrcLoc& src_loc );
+	MoveOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string var_name;
@@ -405,7 +412,8 @@ struct MoveOperator
 
 struct MoveOperatorCompletion
 {
-	MoveOperatorCompletion( const SrcLoc& src_loc );
+	MoveOperatorCompletion( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string var_name;
@@ -413,7 +421,8 @@ struct MoveOperatorCompletion
 
 struct StringLiteral
 {
-	StringLiteral( const SrcLoc& src_loc );
+	StringLiteral( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string value;
@@ -445,7 +454,8 @@ struct TemplateParametrization
 
 struct TupleType
 {
-	explicit TupleType( const SrcLoc& src_loc );
+	explicit TupleType( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::vector<TypeName> element_types;
@@ -453,7 +463,8 @@ struct TupleType
 
 struct RawPointerType
 {
-	RawPointerType( const SrcLoc& src_loc );
+	RawPointerType( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	TypeName element_type;
@@ -461,7 +472,8 @@ struct RawPointerType
 
 struct ArrayTypeName
 {
-	explicit ArrayTypeName( const SrcLoc& src_loc );
+	explicit ArrayTypeName( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	TypeName element_type;
@@ -473,7 +485,8 @@ using FunctionReferencesPollutionList= std::vector<FunctionReferencesPollution>;
 
 struct FunctionParam
 {
-	FunctionParam( const SrcLoc& src_loc );
+	FunctionParam( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string name;
@@ -486,7 +499,8 @@ struct FunctionParam
 
 struct FunctionType
 {
-	FunctionType( const SrcLoc& src_loc );
+	FunctionType( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::optional<std::string> calling_convention;
@@ -504,7 +518,8 @@ struct FunctionType
 struct GeneratorType
 {
 public:
-	GeneratorType( const SrcLoc& src_loc );
+	GeneratorType( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	struct InnerReferenceTag
 	{
@@ -525,7 +540,8 @@ public:
 
 struct TypeofTypeName
 {
-	explicit TypeofTypeName( const SrcLoc& src_loc );
+	explicit TypeofTypeName( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -533,7 +549,8 @@ struct TypeofTypeName
 
 struct TypeInfo
 {
-	TypeInfo( const SrcLoc& src_loc );
+	explicit TypeInfo( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	TypeName type;
@@ -541,7 +558,8 @@ struct TypeInfo
 
 struct SameType
 {
-	SameType( const SrcLoc& src_loc );
+	explicit SameType( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	TypeName l;
@@ -550,7 +568,8 @@ struct SameType
 
 struct NonSyncExpression
 {
-	NonSyncExpression( const SrcLoc& src_loc );
+	explicit NonSyncExpression( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	TypeName type;
@@ -558,7 +577,8 @@ struct NonSyncExpression
 
 struct CallOperator
 {
-	CallOperator( const SrcLoc& src_loc );
+	explicit CallOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -568,7 +588,8 @@ struct CallOperator
 // Special kind of call operator, created only by language server to perform signature help.
 struct CallOperatorSignatureHelp
 {
-	CallOperatorSignatureHelp( const SrcLoc& src_loc );
+	explicit CallOperatorSignatureHelp( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -577,7 +598,8 @@ struct CallOperatorSignatureHelp
 
 struct IndexationOperator
 {
-	explicit IndexationOperator( const SrcLoc& src_loc );
+	explicit IndexationOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -586,7 +608,8 @@ struct IndexationOperator
 
 struct MemberAccessOperator
 {
-	MemberAccessOperator( const SrcLoc& src_loc );
+	explicit MemberAccessOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -598,7 +621,8 @@ struct MemberAccessOperator
 // In normal compilation process it is not used.
 struct MemberAccessOperatorCompletion
 {
-	MemberAccessOperatorCompletion( const SrcLoc& src_loc );
+	explicit MemberAccessOperatorCompletion( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -607,7 +631,8 @@ struct MemberAccessOperatorCompletion
 
 struct UnaryPlus
 {
-	explicit UnaryPlus( const SrcLoc& src_loc );
+	explicit UnaryPlus( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -615,7 +640,8 @@ struct UnaryPlus
 
 struct UnaryMinus
 {
-	explicit UnaryMinus( const SrcLoc& src_loc );
+	explicit UnaryMinus( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -623,7 +649,8 @@ struct UnaryMinus
 
 struct LogicalNot
 {
-	explicit LogicalNot( const SrcLoc& src_loc );
+	explicit LogicalNot( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -631,7 +658,8 @@ struct LogicalNot
 
 struct BitwiseNot
 {
-	explicit BitwiseNot( const SrcLoc& src_loc );
+	explicit BitwiseNot( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -639,7 +667,8 @@ struct BitwiseNot
 
 struct SafeExpression
 {
-	SafeExpression( const SrcLoc& src_loc );
+	explicit SafeExpression( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -647,7 +676,8 @@ struct SafeExpression
 
 struct UnsafeExpression
 {
-	UnsafeExpression( const SrcLoc& src_loc );
+	explicit UnsafeExpression( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -655,7 +685,8 @@ struct UnsafeExpression
 
 struct BinaryOperator
 {
-	explicit BinaryOperator( const SrcLoc& src_loc );
+	explicit BinaryOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	BinaryOperatorType operator_type;
@@ -665,7 +696,8 @@ struct BinaryOperator
 
 struct TernaryOperator
 {
-	explicit TernaryOperator( const SrcLoc& src_loc );
+	explicit TernaryOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression condition;
@@ -675,7 +707,8 @@ struct TernaryOperator
 
 struct ReferenceToRawPointerOperator
 {
-	explicit ReferenceToRawPointerOperator( const SrcLoc& src_loc );
+	explicit ReferenceToRawPointerOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -683,7 +716,8 @@ struct ReferenceToRawPointerOperator
 
 struct RawPointerToReferenceOperator
 {
-	explicit RawPointerToReferenceOperator( const SrcLoc& src_loc );
+	explicit RawPointerToReferenceOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -691,7 +725,8 @@ struct RawPointerToReferenceOperator
 
 struct TakeOperator
 {
-	TakeOperator( const SrcLoc& src_loc );
+	explicit TakeOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -699,7 +734,8 @@ struct TakeOperator
 
 struct CastMut
 {
-	CastMut( const SrcLoc& src_loc );
+	explicit CastMut( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -707,7 +743,8 @@ struct CastMut
 
 struct CastImut
 {
-	CastImut( const SrcLoc& src_loc );
+	explicit CastImut( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -715,7 +752,8 @@ struct CastImut
 
 struct CastRef
 {
-	CastRef( const SrcLoc& src_loc );
+	explicit CastRef( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	TypeName type;
@@ -724,7 +762,8 @@ struct CastRef
 
 struct CastRefUnsafe
 {
-	CastRefUnsafe( const SrcLoc& src_loc );
+	explicit CastRefUnsafe( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	TypeName type;
@@ -733,21 +772,24 @@ struct CastRefUnsafe
 
 struct ZeroInitializer
 {
-	explicit ZeroInitializer( const SrcLoc& src_loc );
+	explicit ZeroInitializer( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 };
 
 struct UninitializedInitializer
 {
-	explicit UninitializedInitializer( const SrcLoc& src_loc );
+	explicit UninitializedInitializer( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 };
 
 struct SequenceInitializer
 {
-	explicit SequenceInitializer( const SrcLoc& src_loc );
+	explicit SequenceInitializer( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::vector<Initializer> initializers;
@@ -755,7 +797,8 @@ struct SequenceInitializer
 
 struct StructNamedInitializer
 {
-	explicit StructNamedInitializer( const SrcLoc& src_loc );
+	explicit StructNamedInitializer( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	struct MemberInitializer;
 
@@ -765,7 +808,8 @@ struct StructNamedInitializer
 
 struct ConstructorInitializer
 {
-	ConstructorInitializer( const SrcLoc& src_loc );
+	explicit ConstructorInitializer( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::vector<Expression> arguments;
@@ -773,7 +817,8 @@ struct ConstructorInitializer
 
 struct ConstructorInitializerSignatureHelp
 {
-	ConstructorInitializerSignatureHelp( const SrcLoc& src_loc );
+	explicit ConstructorInitializerSignatureHelp( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::vector<Expression> arguments;
@@ -789,7 +834,8 @@ struct StructNamedInitializer::MemberInitializer
 
 struct Label
 {
-	Label( const SrcLoc& src_loc );
+	explicit Label( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string name;
@@ -798,7 +844,8 @@ struct Label
 // Just block - as it used as part of other syntax elements.
 struct Block
 {
-	Block( const SrcLoc& start_src_loc );
+	explicit Block( const SrcLoc& start_src_loc )
+		: src_loc(start_src_loc) {}
 
 	SrcLoc src_loc;
 	SrcLoc end_src_loc;
@@ -808,7 +855,8 @@ struct Block
 // Block inside scope - with additional properties.
 struct ScopeBlock final : public Block
 {
-	ScopeBlock( Block block );
+	ScopeBlock( Block block )
+		: Block(std::move(block)) {}
 
 	enum class Safety : uint8_t
 	{
@@ -824,7 +872,8 @@ struct ScopeBlock final : public Block
 
 struct VariablesDeclaration
 {
-	VariablesDeclaration( const SrcLoc& src_loc );
+	explicit VariablesDeclaration( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	struct VariableEntry
 	{
@@ -842,7 +891,8 @@ struct VariablesDeclaration
 
 struct AutoVariableDeclaration
 {
-	explicit AutoVariableDeclaration( const SrcLoc& src_loc );
+	explicit AutoVariableDeclaration( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string name;
@@ -853,7 +903,8 @@ struct AutoVariableDeclaration
 
 struct ReturnOperator
 {
-	ReturnOperator( const SrcLoc& src_loc );
+	explicit ReturnOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -861,7 +912,8 @@ struct ReturnOperator
 
 struct YieldOperator
 {
-	YieldOperator( const SrcLoc& src_loc );
+	explicit YieldOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -869,7 +921,8 @@ struct YieldOperator
 
 struct WhileOperator
 {
-	WhileOperator( const SrcLoc& src_loc );
+	explicit WhileOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression condition;
@@ -879,7 +932,8 @@ struct WhileOperator
 
 struct LoopOperator
 {
-	LoopOperator( const SrcLoc& src_loc );
+	explicit LoopOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
 	std::optional<Label> label;
@@ -888,7 +942,8 @@ struct LoopOperator
 
 struct RangeForOperator
 {
-	RangeForOperator( const SrcLoc& src_loc );
+	explicit RangeForOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
@@ -901,7 +956,8 @@ struct RangeForOperator
 
 struct CStyleForOperator
 {
-	CStyleForOperator( const SrcLoc& src_loc );
+	explicit CStyleForOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc), block(src_loc) {}
 
 	std::unique_ptr<
 		const std::variant<
@@ -927,7 +983,8 @@ struct CStyleForOperator
 
 struct BreakOperator
 {
-	explicit BreakOperator( const SrcLoc& src_loc );
+	explicit BreakOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::optional<Label> label;
@@ -935,7 +992,8 @@ struct BreakOperator
 
 struct ContinueOperator
 {
-	explicit ContinueOperator( const SrcLoc& src_loc );
+	explicit ContinueOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::optional<Label> label;
@@ -943,7 +1001,8 @@ struct ContinueOperator
 
 struct WithOperator
 {
-	WithOperator( const SrcLoc& src_loc );
+	explicit WithOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
@@ -955,7 +1014,8 @@ struct WithOperator
 
 struct IfOperator
 {
-	IfOperator( const SrcLoc& start_src_loc );
+	explicit IfOperator( const SrcLoc& start_src_loc )
+		: src_loc(start_src_loc), block(start_src_loc) {}
 
 	SrcLoc src_loc;
 	Expression condition;
@@ -966,7 +1026,8 @@ struct IfOperator
 
 struct StaticIfOperator
 {
-	StaticIfOperator( const SrcLoc& src_loc );
+	explicit StaticIfOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression condition;
@@ -976,7 +1037,8 @@ struct StaticIfOperator
 
 struct IfCoroAdvanceOperator
 {
-	IfCoroAdvanceOperator( const SrcLoc& src_loc );
+	explicit IfCoroAdvanceOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
@@ -990,7 +1052,8 @@ struct IfCoroAdvanceOperator
 
 struct SwitchOperator
 {
-	SwitchOperator( const SrcLoc& src_loc );
+	explicit SwitchOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	struct DefaultPlaceholder{};
 	struct CaseRange
@@ -1020,7 +1083,8 @@ struct SwitchOperator
 
 struct SingleExpressionOperator
 {
-	SingleExpressionOperator( const SrcLoc& src_loc );
+	explicit SingleExpressionOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -1028,7 +1092,8 @@ struct SingleExpressionOperator
 
 struct AssignmentOperator
 {
-	AssignmentOperator( const SrcLoc& src_loc );
+	explicit AssignmentOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression l_value;
@@ -1037,7 +1102,8 @@ struct AssignmentOperator
 
 struct AdditiveAssignmentOperator
 {
-	explicit AdditiveAssignmentOperator( const SrcLoc& src_loc );
+	explicit AdditiveAssignmentOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	BinaryOperatorType additive_operation;
@@ -1047,7 +1113,8 @@ struct AdditiveAssignmentOperator
 
 struct IncrementOperator
 {
-	explicit IncrementOperator( const SrcLoc& src_loc );
+	explicit IncrementOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -1055,7 +1122,8 @@ struct IncrementOperator
 
 struct DecrementOperator
 {
-	explicit DecrementOperator( const SrcLoc& src_loc );
+	explicit DecrementOperator( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -1063,7 +1131,8 @@ struct DecrementOperator
 
 struct StaticAssert
 {
-	explicit StaticAssert( const SrcLoc& src_loc );
+	explicit StaticAssert( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression expression;
@@ -1072,14 +1141,16 @@ struct StaticAssert
 
 struct Halt
 {
-	explicit Halt( const SrcLoc& src_loc );
+	explicit Halt( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 };
 
 struct HaltIf
 {
-	explicit HaltIf( const SrcLoc& src_loc );
+	explicit HaltIf( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	Expression condition;
@@ -1087,7 +1158,8 @@ struct HaltIf
 
 struct Function
 {
-	Function( const SrcLoc& src_loc );
+	explicit Function( const SrcLoc& src_loc )
+		: src_loc(src_loc), type(src_loc) {}
 
 	enum class BodyKind : uint8_t
 	{
@@ -1127,7 +1199,8 @@ struct Function
 
 struct TypeAlias
 {
-	explicit TypeAlias( const SrcLoc& src_loc );
+	explicit TypeAlias( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string name;
@@ -1136,7 +1209,8 @@ struct TypeAlias
 
 struct Enum
 {
-	explicit Enum( const SrcLoc& src_loc );
+	explicit Enum( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	struct Member
 	{
@@ -1152,7 +1226,8 @@ struct Enum
 
 struct Class
 {
-	explicit Class( const SrcLoc& src_loc );
+	explicit Class( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	ClassElementsList elements;
@@ -1165,7 +1240,8 @@ struct Class
 
 struct ClassField
 {
-	explicit ClassField( const SrcLoc& src_loc );
+	explicit ClassField( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	TypeName type;
@@ -1177,7 +1253,8 @@ struct ClassField
 
 struct ClassVisibilityLabel
 {
-	ClassVisibilityLabel( const SrcLoc& src_loc, ClassMemberVisibility visibility );
+	ClassVisibilityLabel( const SrcLoc& src_loc, ClassMemberVisibility visibility )
+		: src_loc(src_loc), visibility(visibility) {}
 
 	SrcLoc src_loc;
 	const ClassMemberVisibility visibility;
@@ -1185,7 +1262,8 @@ struct ClassVisibilityLabel
 
 struct TemplateBase
 {
-	explicit TemplateBase( const SrcLoc& src_loc );
+	explicit TemplateBase( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	struct Param
 	{
@@ -1200,7 +1278,8 @@ struct TemplateBase
 
 struct TypeTemplate : public TemplateBase
 {
-	explicit TypeTemplate( const SrcLoc& src_loc );
+	explicit TypeTemplate( const SrcLoc& src_loc )
+		: TemplateBase(src_loc) {}
 
 	// Argument in template signature.
 	struct SignatureParam
@@ -1220,14 +1299,16 @@ struct TypeTemplate : public TemplateBase
 
 struct FunctionTemplate final : public TemplateBase
 {
-	explicit FunctionTemplate( const SrcLoc& src_loc );
+	explicit FunctionTemplate( const SrcLoc& src_loc )
+		: TemplateBase(src_loc) {}
 
 	std::unique_ptr<const Function> function;
 };
 
 struct Namespace
 {
-	explicit Namespace( const SrcLoc& src_loc );
+	explicit Namespace( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string name;
@@ -1236,7 +1317,8 @@ struct Namespace
 
 struct Import
 {
-	explicit Import( const SrcLoc& src_loc );
+	explicit Import( const SrcLoc& src_loc )
+		: src_loc(src_loc) {}
 
 	SrcLoc src_loc;
 	std::string import_name;
