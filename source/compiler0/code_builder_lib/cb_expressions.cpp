@@ -298,7 +298,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MemberAccessOperator& member_access_operator )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *member_access_operator.expression, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( member_access_operator.expression, names, function_context );
 
 	Class* const class_type= variable->type.GetClassType();
 	if( class_type == nullptr )
@@ -372,7 +372,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 Value CodeBuilder::BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MemberAccessOperatorCompletion& member_access_operator_completion )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *member_access_operator_completion.expression, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( member_access_operator_completion.expression, names, function_context );
 	MemberAccessCompleteImpl( variable, member_access_operator_completion.member_name );
 	return ErrorValue();
 }

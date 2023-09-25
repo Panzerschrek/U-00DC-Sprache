@@ -12,7 +12,7 @@ namespace Synt
 // If one of types inside variant becomes too big, put it inside "unique_ptr".
 SIZE_ASSERT( ComplexName, 48u )
 SIZE_ASSERT( TypeName, 56u )
-SIZE_ASSERT( Expression, 88u )
+SIZE_ASSERT( Expression, 56u )
 SIZE_ASSERT( Initializer, 96u )
 SIZE_ASSERT( BlockElementsList, 16u ) // Variant index + unique_ptr
 SIZE_ASSERT( ClassElementsList, 16u ) // Variant index + unique_ptr

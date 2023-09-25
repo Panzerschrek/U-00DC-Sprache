@@ -153,8 +153,8 @@ using Expression= std::variant<
 	CallOperator,
 	CallOperatorSignatureHelp,
 	IndexationOperator,
-	MemberAccessOperator,
-	MemberAccessOperatorCompletion,
+	std::unique_ptr<const MemberAccessOperator>,
+	std::unique_ptr<const MemberAccessOperatorCompletion>,
 	// Prefix operators
 	UnaryPlus,
 	UnaryMinus,
@@ -654,7 +654,7 @@ struct MemberAccessOperator
 	MemberAccessOperator( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
+	Expression expression;
 	std::string member_name;
 	std::optional<std::vector<Expression>> template_parameters;
 };
@@ -666,7 +666,7 @@ struct MemberAccessOperatorCompletion
 	MemberAccessOperatorCompletion( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
+	Expression expression;
 	std::string member_name;
 };
 

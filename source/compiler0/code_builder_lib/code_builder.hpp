@@ -652,6 +652,13 @@ private:
 		FunctionContext& function_context );
 
 	Value BuildExpressionCode( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
+
+	template<typename T>
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const std::unique_ptr<T>& el )
+	{
+		return BuildExpressionCodeImpl( names, function_context, *el );
+	}
+
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperator& call_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperatorSignatureHelp& call_operator_signature_help );

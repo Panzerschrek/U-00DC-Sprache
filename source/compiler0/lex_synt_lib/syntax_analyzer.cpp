@@ -910,12 +910,12 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 				member_access_operator.member_name= it_->text;
 				NextLexem();
 
-				member_access_operator.expression= std::make_unique<Expression>(std::move(expr));
+				member_access_operator.expression= std::move(expr);
 
 				if( it_->type == Lexem::Type::TemplateBracketLeft )
 					member_access_operator.template_parameters= ParseTemplateParameters();
 
-				return TryParseBinaryOperatorComponentPostfixOperator(std::move(member_access_operator));
+				return TryParseBinaryOperatorComponentPostfixOperator( std::make_unique<MemberAccessOperator>( std::move(member_access_operator) ) );
 			}
 			else if( it_->type == Lexem::Type::CompletionIdentifier )
 			{
@@ -923,9 +923,9 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 				member_access_operator_completion.member_name= it_->text;
 				NextLexem();
 
-				member_access_operator_completion.expression= std::make_unique<Expression>(std::move(expr));
+				member_access_operator_completion.expression= std::move(expr);
 
-				return std::move(member_access_operator_completion);
+				return std::make_unique<MemberAccessOperatorCompletion>( std::move(member_access_operator_completion) );
 			}
 			else
 			{
@@ -940,9 +940,9 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 			member_access_operator_completion.member_name= "";
 			NextLexem();
 
-			member_access_operator_completion.expression= std::make_unique<Expression>(std::move(expr));
+			member_access_operator_completion.expression= std::move(expr);
 
-			return std::move(member_access_operator_completion);
+			return std::make_unique<MemberAccessOperatorCompletion>( std::move(member_access_operator_completion) );
 		}
 
 	default:
