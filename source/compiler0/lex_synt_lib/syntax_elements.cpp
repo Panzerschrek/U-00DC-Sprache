@@ -134,6 +134,10 @@ MoveOperator::MoveOperator( const SrcLoc& src_loc )
 	: src_loc(src_loc)
 {}
 
+MoveOperatorCompletion::MoveOperatorCompletion( const SrcLoc& src_loc )
+	: src_loc(src_loc)
+{}
+
 TakeOperator::TakeOperator( const SrcLoc& src_loc )
 	: src_loc(src_loc)
 {}

@@ -1054,19 +1054,20 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			NextLexem();
 			ExpectLexem( Lexem::Type::BracketLeft );
 
+			if( it_->type == Lexem::Type::CompletionIdentifier )
+			{
+				MoveOperatorCompletion move_operator_completion( it_->src_loc );
+				move_operator_completion.var_name= it_->text;
+				NextLexem();
+				return std::move(move_operator_completion);
+			}
+
 			MoveOperator move_operator( it_->src_loc );
 
 			if( it_->type == Lexem::Type::Identifier )
 			{
 				move_operator.var_name= it_->text;
 				NextLexem();
-			}
-			else if( it_->type == Lexem::Type::CompletionIdentifier )
-			{
-				move_operator.var_name= it_->text;
-				move_operator.src_loc= it_->src_loc;
-				NextLexem();
-				move_operator.completion_requested= true;
 			}
 			else
 			{

@@ -129,8 +129,6 @@ using ComplexName= std::variant<
 	std::unique_ptr<const TemplateParametrization>
 	>;
 
-using ComplexNamePtr= std::unique_ptr<ComplexName>;
-
 struct Namespace;
 
 using TypeName= std::variant<
@@ -186,7 +184,14 @@ struct MoveOperator
 
 	SrcLoc src_loc;
 	std::string var_name;
-	bool completion_requested= false;
+};
+
+struct MoveOperatorCompletion
+{
+	MoveOperatorCompletion( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	std::string var_name;
 };
 
 using Expression= std::variant<
@@ -197,6 +202,7 @@ using Expression= std::variant<
 	BooleanConstant,
 	StringLiteral,
 	MoveOperator,
+	MoveOperatorCompletion,
 	TypeInfo,
 	SameType,
 	NonSyncExpression,

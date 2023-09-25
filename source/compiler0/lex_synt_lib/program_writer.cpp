@@ -375,6 +375,10 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			stream << Keyword( Keywords::move_ ) << "( " << move_operator.var_name << " )";
 		}
+		void operator()( const MoveOperatorCompletion& move_operator_completion ) const
+		{
+			stream << Keyword( Keywords::move_ ) << "( " << move_operator_completion.var_name << " )";
+		}
 		void operator()( const std::unique_ptr<const TakeOperator>& take_operator ) const
 		{
 			stream << Keyword( Keywords::take_ ) << "( ";

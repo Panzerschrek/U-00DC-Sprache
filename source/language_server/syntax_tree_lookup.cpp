@@ -181,10 +181,15 @@ void FindImpl( const Synt::StringLiteral& string_literal )
 
 void FindImpl( const Synt::MoveOperator& move_operator )
 {
-	if( move_operator.src_loc.GetLine() == line_ && move_operator.src_loc.GetColumn() == column_ )
+	(void)move_operator;
+}
+
+void FindImpl( const Synt::MoveOperatorCompletion& move_operator_completion )
+{
+	if( move_operator_completion.src_loc.GetLine() == line_ && move_operator_completion.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &move_operator, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, &move_operator_completion, *global_item_ };
 	}
 }
 

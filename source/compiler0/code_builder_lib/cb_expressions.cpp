@@ -1245,9 +1245,6 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::MoveOperator& move_operator	)
 {
-	if( move_operator.completion_requested )
-		NameLookupCompleteImpl( names, move_operator.var_name );
-
 	NamesScopeValue* const resolved_value_ptr= LookupName( names, move_operator.var_name, move_operator.src_loc ).value;
 	if( resolved_value_ptr == nullptr )
 		return ErrorValue();
@@ -1341,6 +1338,16 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	RegisterTemporaryVariable( function_context, result );
 	return result;
+}
+
+Value CodeBuilder::BuildExpressionCodeImpl(
+	NamesScope& names,
+	FunctionContext& function_context,
+	const Synt::MoveOperatorCompletion& move_operator_completion )
+{
+	(void)function_context;
+	NameLookupCompleteImpl( names, move_operator_completion.var_name );
+	return ErrorValue();
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
