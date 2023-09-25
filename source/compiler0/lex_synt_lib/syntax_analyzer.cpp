@@ -1009,7 +1009,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		return ParseExpressionInBrackets();
 	case Lexem::Type::SquareBracketLeft:
 	case Lexem::Type::PointerTypeMark:
-			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
+			return TypeNameToExpression( ParseTypeName() );
 	case Lexem::Type::ReferenceToPointer:
 		{
 			auto reference_to_raw_pointer_operator= std::make_unique<ReferenceToRawPointerOperator>( it_->src_loc );
@@ -1175,7 +1175,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			return std::move(expr);
 		}
 		if( it_->text == Keywords::fn_ || it_->text == Keywords::typeof_ || it_->text == Keywords::tup_ || it_->text == Keywords::generator_ )
-			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
+			return TypeNameToExpression( ParseTypeName() );
 		if( auto macro= FetchMacro( it_->text, Macro::Context::Expression ) )
 		{
 			Expression macro_expression= ExpandMacro( *macro, &SyntaxAnalyzer::ParseExpression );
@@ -1533,7 +1533,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return std::make_unique<FunctionType>( ParseFunctionType() );
 	else
-		return std::visit( []( auto&& el ) { return TypeName( std::move(el) ); }, ParseComplexName() );
+		return ComplexNameToTypeName( ParseComplexName() );
 }
 
 std::vector<Expression> SyntaxAnalyzer::ParseTemplateParameters()

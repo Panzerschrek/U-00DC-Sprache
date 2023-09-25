@@ -1223,6 +1223,16 @@ SrcLoc GetExpressionSrcLoc( const Expression& expression );
 SrcLoc GetComplexNameSrcLoc( const ComplexName& complex_name );
 SrcLoc GetInitializerSrcLoc( const Initializer& initializer );
 
+inline TypeName ComplexNameToTypeName( ComplexName n )
+{
+	return std::visit( []( auto&& el ) { return TypeName(std::move(el)); }, std::move(n) );
+}
+
+inline Expression TypeNameToExpression( TypeName t )
+{
+	return std::visit( []( auto&& el ) { return Expression(std::move(el)); }, std::move(t) );
+}
+
 } // namespace Synt
 
 } // namespace U
