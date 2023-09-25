@@ -268,7 +268,6 @@ private:
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name );
-	Type PrepareNamedType( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
 	Type ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc );
 
 	FunctionPointerType FunctionTypeToPointer( FunctionType function_type );

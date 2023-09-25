@@ -248,11 +248,6 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 }
 
-Type CodeBuilder::PrepareNamedType( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name )
-{
-	return ValueToType( names_scope, ResolveValue( names_scope, function_context, named_type_name ), Synt::GetComplexNameSrcLoc(named_type_name) );
-}
-
 Type CodeBuilder::ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc )
 {
 	if( const Type* const type= value.GetTypeName() )

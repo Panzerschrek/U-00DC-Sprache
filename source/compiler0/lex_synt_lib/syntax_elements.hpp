@@ -1228,7 +1228,6 @@ struct Import
 // Utility functions for manipulations with variants.
 
 SrcLoc GetExpressionSrcLoc( const Expression& expression );
-SrcLoc GetComplexNameSrcLoc( const ComplexName& complex_name );
 SrcLoc GetInitializerSrcLoc( const Initializer& initializer );
 
 inline TypeName ComplexNameToTypeName( ComplexName n )

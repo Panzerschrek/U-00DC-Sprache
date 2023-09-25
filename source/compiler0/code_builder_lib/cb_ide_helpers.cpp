@@ -403,7 +403,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 {
 	// Complete names in parent names.
 	for( const Synt::ComplexName& parent_name : class_.parents )
-		PrepareNamedType( names_scope, *global_function_context_, parent_name );
+		ResolveValue( names_scope, *global_function_context_, parent_name );
 
 	// Complete names in non-sync tag.
 	if( const auto non_sync_expression= std::get_if< std::unique_ptr<const Synt::Expression> >( &class_.non_sync_tag ) )

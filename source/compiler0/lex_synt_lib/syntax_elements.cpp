@@ -366,11 +366,6 @@ struct GetSrcLocVisitor final
 		return GetExpressionSrcLoc(expression);
 	}
 
-	SrcLoc operator()( const ComplexName& complex_name ) const
-	{
-		return GetComplexNameSrcLoc(complex_name);
-	}
-
 	template<typename T>
 	SrcLoc operator()( const T& element ) const
 	{
@@ -387,11 +382,6 @@ struct GetSrcLocVisitor final
 SrcLoc GetExpressionSrcLoc( const Expression& expression )
 {
 	return std::visit( GetSrcLocVisitor(), expression );
-}
-
-SrcLoc GetComplexNameSrcLoc( const ComplexName& complex_name )
-{
-	return std::visit( GetSrcLocVisitor(), complex_name );
 }
 
 SrcLoc GetInitializerSrcLoc( const Initializer& initializer )
