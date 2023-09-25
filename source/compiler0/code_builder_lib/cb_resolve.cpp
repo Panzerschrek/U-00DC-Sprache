@@ -74,7 +74,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch )
 {
-	const Value base= ResolveValue( names_scope, function_context, *names_scope_fetch.base );
+	const Value base= ResolveValue( names_scope, function_context, names_scope_fetch.base );
 
 	NamesScopeValue* value= nullptr;
 
@@ -104,7 +104,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		}
 	}
 	else if( base.GetTypeTemplatesSet() != nullptr )
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc, *names_scope_fetch.base );
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.base );
 
 	if( value == nullptr )
 	{
@@ -120,7 +120,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion )
 {
-	const Value base= ResolveValue( names_scope, function_context, *names_scope_fetch_completion.base );
+	const Value base= ResolveValue( names_scope, function_context, names_scope_fetch_completion.base );
 	NamesScopeFetchComleteImpl( base, names_scope_fetch_completion.name );
 
 	return ErrorValue();
@@ -128,7 +128,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization )
 {
-	const Value base= ResolveValue( names_scope, function_context, *template_parametrization.base );
+	const Value base= ResolveValue( names_scope, function_context, template_parametrization.base );
 
 	NamesScopeValue* value= nullptr;
 

@@ -1671,21 +1671,19 @@ ComplexName SyntaxAnalyzer::ParseComplexNameTail( ComplexName base )
 
 		if( it_->type == Lexem::Type::Identifier )
 		{
-			NamesScopeNameFetch names_scope_fetch( it_->src_loc );
-			names_scope_fetch.name= it_->text;
+			const SrcLoc src_loc= it_->src_loc;
+			const std::string& name= it_->text;
 			NextLexem();
 
-			names_scope_fetch.base= std::make_unique<ComplexName>( std::move(base) );
-			return TryParseComplexNameTailWithTemplateArgs( std::move(names_scope_fetch) );
+			return TryParseComplexNameTailWithTemplateArgs( std::make_unique<NamesScopeNameFetch>( NamesScopeNameFetch{ src_loc, name, std::move(base) } ) );
 		}
 		else if( it_->type == Lexem::Type::CompletionIdentifier )
 		{
-			NamesScopeNameFetchCompletion names_scope_fetch_completion( it_->src_loc );
-			names_scope_fetch_completion.name= it_->text;
+			const SrcLoc src_loc= it_->src_loc;
+			const std::string& name= it_->text;
 			NextLexem();
 
-			names_scope_fetch_completion.base= std::make_unique<ComplexName>( std::move(base) );
-			return std::move(names_scope_fetch_completion);
+			return std::make_unique<NamesScopeNameFetchCompletion>( NamesScopeNameFetchCompletion{ src_loc, name, std::move(base) } );
 		}
 		else
 		{
@@ -1695,12 +1693,11 @@ ComplexName SyntaxAnalyzer::ParseComplexNameTail( ComplexName base )
 	}
 	else if( it_->type == Lexem::Type::CompletionScope )
 	{
-		NamesScopeNameFetchCompletion names_scope_fetch_completion( it_->src_loc ); // Use "src_loc" of completion scope lexem, since there is no identifier lexem here.
-		names_scope_fetch_completion.name= ""; // Complete with empty string.
+		const SrcLoc src_loc= it_->src_loc;  // Use "src_loc" of completion scope lexem, since there is no identifier lexem here.
+		const std::string name= ""; // Complete with empty string.
 		NextLexem(); // Skip ::
 
-		names_scope_fetch_completion.base= std::make_unique<ComplexName>( std::move(base) );
-		return std::move(names_scope_fetch_completion);
+		return std::make_unique<NamesScopeNameFetchCompletion>( NamesScopeNameFetchCompletion{ src_loc, name, std::move(base) } );
 	}
 	else
 		return base;
@@ -1710,11 +1707,8 @@ ComplexName SyntaxAnalyzer::TryParseComplexNameTailWithTemplateArgs( ComplexName
 {
 	if( it_->type == Lexem::Type::TemplateBracketLeft )
 	{
-		TemplateParametrization template_parametrization( it_->src_loc );
-		template_parametrization.template_args= ParseTemplateParameters();
-		template_parametrization.base= std::make_unique<ComplexName>( std::move(base) );
-
-		return ParseComplexNameTail( std::move(template_parametrization) );
+		const SrcLoc src_loc= it_->src_loc;
+		return ParseComplexNameTail( std::make_unique<TemplateParametrization>( TemplateParametrization{ src_loc, ParseTemplateParameters(), std::move(base) } ) );
 	}
 	else
 		return ParseComplexNameTail( std::move(base) );

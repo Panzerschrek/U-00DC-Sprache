@@ -10,8 +10,8 @@ namespace Synt
 
 // Sizes for x86-64.
 // If one of types inside variant becomes too big, put it inside "unique_ptr".
-SIZE_ASSERT( ComplexName, 56u )
-SIZE_ASSERT( TypeName, 64u )
+SIZE_ASSERT( ComplexName, 48u )
+SIZE_ASSERT( TypeName, 56u )
 SIZE_ASSERT( Expression, 88u )
 SIZE_ASSERT( Initializer, 96u )
 SIZE_ASSERT( BlockElementsList, 16u ) // Variant index + unique_ptr
@@ -35,18 +35,6 @@ NameLookup::NameLookup( const SrcLoc& src_loc )
 {}
 
 NameLookupCompletion::NameLookupCompletion( const SrcLoc& src_loc )
-	: src_loc(src_loc)
-{}
-
-NamesScopeNameFetch::NamesScopeNameFetch( const SrcLoc& src_loc )
-	: src_loc(src_loc)
-{}
-
-NamesScopeNameFetchCompletion::NamesScopeNameFetchCompletion( const SrcLoc& src_loc )
-	: src_loc(src_loc)
-{}
-
-TemplateParametrization::TemplateParametrization( const SrcLoc& src_loc )
 	: src_loc(src_loc)
 {}
 

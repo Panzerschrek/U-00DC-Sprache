@@ -98,19 +98,19 @@ void ElementWrite( const NameLookupCompletion& name_lookup_completion, std::ostr
 
 void ElementWrite( const NamesScopeNameFetch& names_scope_fetch, std::ostream& stream )
 {
-	ElementWrite( *names_scope_fetch.base, stream );
+	ElementWrite( names_scope_fetch.base, stream );
 	stream << "::" << names_scope_fetch.name;
 }
 
 void ElementWrite( const NamesScopeNameFetchCompletion& names_scope_fetch_completion, std::ostream& stream )
 {
-	ElementWrite( *names_scope_fetch_completion.base, stream );
+	ElementWrite( names_scope_fetch_completion.base, stream );
 	stream << "::" << names_scope_fetch_completion.name;
 }
 
 void ElementWrite( const TemplateParametrization& template_parametrization, std::ostream& stream )
 {
-	ElementWrite( *template_parametrization.base, stream );
+	ElementWrite( template_parametrization.base, stream );
 
 	stream << "</ ";
 	for( const Expression& expr : template_parametrization.template_args )

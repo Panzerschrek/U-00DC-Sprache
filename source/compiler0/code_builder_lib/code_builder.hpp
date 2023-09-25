@@ -894,6 +894,13 @@ private:
 	//
 
 	Value ResolveValue( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& complex_name );
+
+	template<typename T>
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<T>& el )
+	{
+		return ResolveValueImpl( names_scope, function_context, *el );
+	}
+
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );

@@ -16,8 +16,17 @@ namespace U
 namespace Synt
 {
 
-struct EmptyVariant{};
+/*
+	A note about variant usage.
+	It is used widely for some structures, like Expressions.
+	But it is imprortant to use it wisely, in order to reduce total structs size and number of indirections.
+	It is fine to store terminal nodes directly (like number, boolean constant), sine such nodes are small.
+	Recursive nodes (like binary operators) should be stored in variant via pointer (unique_ptr), since indirection already required.
+	Doing so, instead of storing such nodes by-value and storing pointers inside them allows to reduce size of variant and reduce number of allocations.
+	Exception - node with single "vector" inside and (maybe) a little bit of extra data, that doesn't increase result variant size.
+*/
 
+struct EmptyVariant{};
 
 struct ArrayTypeName;
 struct TypeofTypeName;
@@ -108,14 +117,16 @@ struct NamesScopeNameFetchCompletion;
 struct TemplateParametrization;
 
 using ComplexName= std::variant<
+	// Terminal nodes.
 	TypeofTypeName,
 	RootNamespaceNameLookup,
 	RootNamespaceNameLookupCompletion,
 	NameLookup,
 	NameLookupCompletion,
-	NamesScopeNameFetch,
-	NamesScopeNameFetchCompletion,
-	TemplateParametrization
+	// Non-terminal nodes (that contain ComplexName inside).
+	std::unique_ptr<const NamesScopeNameFetch>,
+	std::unique_ptr<const NamesScopeNameFetchCompletion>,
+	std::unique_ptr<const TemplateParametrization>
 	>;
 
 using ComplexNamePtr= std::unique_ptr<ComplexName>;
@@ -320,31 +331,25 @@ struct NameLookupCompletion
 
 struct NamesScopeNameFetch
 {
-	explicit NamesScopeNameFetch( const SrcLoc& src_loc );
-
 	SrcLoc src_loc;
 	std::string name;
-	ComplexNamePtr base;
+	ComplexName base;
 };
 
 // Variant of name lookup, used internally by language server for completion.
 // In normal compilation process it is not used.
 struct NamesScopeNameFetchCompletion
 {
-	explicit NamesScopeNameFetchCompletion( const SrcLoc& src_loc );
-
 	SrcLoc src_loc;
 	std::string name;
-	ComplexNamePtr base;
+	ComplexName base;
 };
 
 struct TemplateParametrization
 {
-	explicit TemplateParametrization( const SrcLoc& src_loc );
-
 	SrcLoc src_loc;
 	std::vector<Expression> template_args;
-	ComplexNamePtr base;
+	ComplexName base;
 };
 
 struct ArrayTypeName

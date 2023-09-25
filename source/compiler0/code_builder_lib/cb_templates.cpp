@@ -223,22 +223,23 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 		}
 	}
 
-	if( const auto template_parametrization= std::get_if<Synt::TemplateParametrization>( &signature_parameter ) )
+	if( const auto template_parametrization_ptr= std::get_if< std::unique_ptr<const Synt::TemplateParametrization> >( &signature_parameter ) )
 	{
-		const Value base_value= ResolveValue( names_scope, *global_function_context_, *template_parametrization->base );
+		const auto& template_parametrization= **template_parametrization_ptr;
+		const Value base_value= ResolveValue( names_scope, *global_function_context_, template_parametrization.base );
 		if( const auto type_templates_set= base_value.GetTypeTemplatesSet() )
 		{
 			TemplateSignatureParam::SpecializedTemplateParam specialized_template;
 
 			bool all_args_are_known= true;
-			for( const Synt::Expression& template_arg : template_parametrization->template_args )
+			for( const Synt::Expression& template_arg : template_parametrization.template_args )
 			{
 				specialized_template.params.push_back( CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, template_arg ) );
 				all_args_are_known&= specialized_template.params.back().IsType() || specialized_template.params.back().IsVariable();
 			}
 
 			if( all_args_are_known )
-				return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope, template_parametrization->src_loc );
+				return ValueToTemplateParam( ResolveValue( names_scope, function_context, signature_parameter ), names_scope, template_parametrization.src_loc );
 
 			specialized_template.type_templates= type_templates_set->type_templates;
 
