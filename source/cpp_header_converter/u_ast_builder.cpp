@@ -219,12 +219,12 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			auto_variable_declaration.name= TranslateIdentifier( name );
 
-			Synt::StringLiteral string_constant( g_dummy_src_loc );
+			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
 
 			if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
 			{
-				string_constant.value= string_literal_parser.GetString();
-				string_constant.value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+				string_constant->value= string_literal_parser.GetString();
+				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
@@ -236,12 +236,10 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 					llvm::ArrayRef<llvm::UTF16>(
 						reinterpret_cast<const llvm::UTF16*>(string_literal_parser.GetString().data()),
 						string_literal_parser.GetNumStringChars() ),
-					string_constant.value );
-				string_constant.value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+					string_constant->value );
+				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
-				string_constant.type_suffix[0]= 'u';
-				string_constant.type_suffix[1]= '1';
-				string_constant.type_suffix[2]= '6';
+				string_constant->type_suffix= "u16";
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
@@ -251,13 +249,11 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			{
 				const auto string_ref = string_literal_parser.GetString();
 				for( size_t i= 0u; i < string_literal_parser.GetNumStringChars(); ++i )
-					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant.value );
+					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant->value );
 
-				string_constant.value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
-				string_constant.type_suffix[0]= 'u';
-				string_constant.type_suffix[1]= '3';
-				string_constant.type_suffix[2]= '2';
+				string_constant->type_suffix= "u32";
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
 				root_program_elements_.Append( std::move( auto_variable_declaration ) );
@@ -276,10 +272,9 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			auto_variable_declaration.name= TranslateIdentifier( name );
 
-			Synt::StringLiteral string_constant( g_dummy_src_loc );
-			string_constant.value.push_back( char(char_literal_parser.getValue()) );
-			string_constant.type_suffix[0]= 'c';
-			string_constant.type_suffix[1]= '8';
+			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
+			string_constant->value.push_back( char(char_literal_parser.getValue()) );
+			string_constant->type_suffix= "c8";
 
 			auto_variable_declaration.initializer_expression= std::move(string_constant);
 			root_program_elements_.Append( std::move( auto_variable_declaration ) );
