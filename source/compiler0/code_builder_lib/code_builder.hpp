@@ -346,6 +346,28 @@ private:
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags );
 
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const Synt::ComplexName& signature_parameter );
+
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const Synt::TypeName& template_parameter );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const Synt::Expression& template_parameter );
+
 	template<typename T>
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
@@ -357,26 +379,19 @@ private:
 		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *el );
 	}
 
+	template<typename T>
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::ComplexName& signature_parameter );
-
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::Expression& template_parameter );
-
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::TypeName& template_parameter );
+		const T& el )
+	{
+		// Default handler for any other expression.
+		(void)template_parameters;
+		(void)template_parameters_usage_flags;
+		return ValueToTemplateParam( BuildExpressionCodeImpl( names_scope, function_context, el ), names_scope, el.src_loc );
+	}
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
@@ -425,27 +440,6 @@ private:
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const std::unique_ptr<const Synt::TypeofTypeName>& typeof_type_name );
-
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::RootNamespaceNameLookup& root_namespace_lookup );
-
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
-
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::NameLookup& name_lookup );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
@@ -453,28 +447,7 @@ private:
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::NameLookupCompletion& name_lookup_completion );
-
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch );
-
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion );
-
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const std::unique_ptr<const Synt::TemplateParametrization>& template_parametrization );
+		const Synt::TemplateParametrization& template_parametrization );
 
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope, const SrcLoc& src_loc );
 
@@ -752,7 +725,6 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::LogicalNot& logical_not );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BitwiseNot& bitwise_not );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BinaryOperator& binary_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ComplexName& named_operand );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TernaryOperator& ternary_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator );
@@ -771,11 +743,21 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncExpression& non_sync_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::SafeExpression& safe_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnsafeExpression& unsafe_expression );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::GeneratorType& type_name );
+
+	Value ProcessNamedOperandExpression( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc );
 
 	VariablePtr AccessClassBase( const VariablePtr& variable, FunctionContext& function_context );
 	Value AccessClassField(

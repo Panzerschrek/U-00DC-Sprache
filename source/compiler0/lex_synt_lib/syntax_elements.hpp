@@ -144,11 +144,12 @@ using TypeName= std::variant<
 	std::unique_ptr<const NamesScopeNameFetchCompletion>,
 	std::unique_ptr<const TemplateParametrization>,
 	// Non-terminals.
-	TupleType, // Just vector of contained types
+	TupleType, // Just vector of contained types.
 	std::unique_ptr<const RawPointerType>,
 	std::unique_ptr<const ArrayTypeName>,
 	std::unique_ptr<const FunctionType>,
-	std::unique_ptr<const GeneratorType> >;
+	std::unique_ptr<const GeneratorType>
+	>;
 
 struct BooleanConstant
 {
@@ -193,7 +194,6 @@ struct MoveOperatorCompletion
 using Expression= std::variant<
 	EmptyVariant,
 	// Terminal nodes.
-	ComplexName,
 	NumericConstant,
 	BooleanConstant,
 	MoveOperator,
@@ -224,10 +224,18 @@ using Expression= std::variant<
 	std::unique_ptr<const CastRef>,
 	std::unique_ptr<const CastRefUnsafe>,
 	// Type name in expression context.
-	TupleType,
+	RootNamespaceNameLookup,
+	RootNamespaceNameLookupCompletion,
+	NameLookup,
+	NameLookupCompletion,
+	std::unique_ptr<const TypeofTypeName>,
+	std::unique_ptr<const NamesScopeNameFetch>,
+	std::unique_ptr<const NamesScopeNameFetchCompletion>,
+	std::unique_ptr<const TemplateParametrization>,
+	TupleType, // Just vector of contained types.
+	std::unique_ptr<const RawPointerType>,
 	std::unique_ptr<const ArrayTypeName>,
 	std::unique_ptr<const FunctionType>,
-	std::unique_ptr<const RawPointerType>,
 	std::unique_ptr<const GeneratorType>
 	>;
 
@@ -1226,6 +1234,11 @@ SrcLoc GetInitializerSrcLoc( const Initializer& initializer );
 inline TypeName ComplexNameToTypeName( ComplexName n )
 {
 	return std::visit( []( auto&& el ) { return TypeName(std::move(el)); }, std::move(n) );
+}
+
+inline Expression ComplexNameToExpression( ComplexName n )
+{
+	return std::visit( []( auto&& el ) { return Expression(std::move(el)); }, std::move(n) );
 }
 
 inline Expression TypeNameToExpression( TypeName t )

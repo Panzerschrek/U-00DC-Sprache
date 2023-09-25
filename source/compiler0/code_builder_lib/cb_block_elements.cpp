@@ -43,7 +43,14 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const std::unique_ptr<const Synt::ReferenceToRawPointerOperator>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::RawPointerToReferenceOperator>& ) { return true; }
 		// Name resolving itself has no side effects.
-		bool operator()( const Synt::ComplexName& ) { return true; }
+		bool operator()( const Synt::RootNamespaceNameLookup& ) { return true; }
+		bool operator()( const Synt::RootNamespaceNameLookupCompletion& ) { return true; }
+		bool operator()( const Synt::NameLookup& ) { return true; }
+		bool operator()( const Synt::NameLookupCompletion& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::TypeofTypeName>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::NamesScopeNameFetch>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::TemplateParametrization>& ) { return true; }
 		// Simple constant expressions have no side effects.
 		bool operator()( const Synt::NumericConstant& ) { return true; }
 		bool operator()( const Synt::BooleanConstant& ) { return true; }

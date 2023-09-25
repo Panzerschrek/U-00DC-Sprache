@@ -524,6 +524,22 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			stream << "( ";
 			stream << ")";
 		}
+		void operator()( const std::unique_ptr<const NamesScopeNameFetch>& names_scope_fetch ) const
+		{
+			ElementWrite( *names_scope_fetch, stream );
+		}
+		void operator()( const std::unique_ptr<const TypeofTypeName>& typeof_type_name ) const
+		{
+			ElementWrite( *typeof_type_name, stream );
+		}
+		void operator()( const std::unique_ptr<const NamesScopeNameFetchCompletion>& names_scope_fetch_completion ) const
+		{
+			ElementWrite( *names_scope_fetch_completion, stream );
+		}
+		void operator()( const std::unique_ptr<const TemplateParametrization>& template_parametrization ) const
+		{
+			ElementWrite( *template_parametrization, stream );
+		}
 		void operator()( const std::unique_ptr<const ArrayTypeName>& array_type_name ) const
 		{
 			ElementWrite( *array_type_name, stream );

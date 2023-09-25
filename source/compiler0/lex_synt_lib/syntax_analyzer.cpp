@@ -988,7 +988,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		}
 	case Lexem::Type::Scope:
 	case Lexem::Type::CompletionScope:
-			return ParseComplexName();
+			return ComplexNameToExpression( ParseComplexName() );
 	case Lexem::Type::Number:
 			return ParseNumericConstant();
 	case Lexem::Type::String:
@@ -1185,10 +1185,10 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			return macro_expression;
 		}
 
-		return ParseComplexName();
+		return ComplexNameToExpression( ParseComplexName() );
 
 	case Lexem::Type::CompletionIdentifier:
-		return ParseComplexName();
+		return ComplexNameToExpression( ParseComplexName() );
 
 	default:
 		PushErrorMessage();
