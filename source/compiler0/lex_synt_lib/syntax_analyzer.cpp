@@ -3281,7 +3281,7 @@ Function SyntaxAnalyzer::ParseFunction()
 
 	ExpectLexem( Lexem::Type::BracketLeft );
 
-	FunctionParams& params= result.type.params;
+	std::vector<FunctionParam>& params= result.type.params;
 
 	// Try parse "this"
 	if( it_->type == Lexem::Type::Identifier )

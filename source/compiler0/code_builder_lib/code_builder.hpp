@@ -691,7 +691,7 @@ private:
 		ClassPtr base_class,
 		NamesScope& parent_names_scope,
 		std::string_view func_name,
-		const Synt::FunctionParams& params,
+		llvm::ArrayRef<Synt::FunctionParam> params,
 		const Synt::Block& block,
 		const Synt::StructNamedInitializer* constructor_initialization_list );
 

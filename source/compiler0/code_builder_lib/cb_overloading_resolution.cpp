@@ -383,7 +383,7 @@ FunctionType::Param CodeBuilder::OverloadingResolutionItemGetParamExtendedType( 
 	}
 	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
 	{
-		const Synt::FunctionParams& params= template_function_preparation_result->function_template->syntax_element->function->type.params;
+		const auto& params= template_function_preparation_result->function_template->syntax_element->function->type.params;
 		U_ASSERT( param_index < params.size() );
 		const Synt::FunctionParam& param= params[ param_index ];
 
@@ -438,7 +438,7 @@ bool CodeBuilder::OverloadingResolutionItemIsThisCall( const OverloadingResoluti
 	}
 	else if( const auto template_function_preparation_result= std::get_if<TemplateFunctionPreparationResult>( &item ) )
 	{
-		const Synt::FunctionParams& params= template_function_preparation_result->function_template->syntax_element->function->type.params;
+		const auto& params= template_function_preparation_result->function_template->syntax_element->function->type.params;
 		return !params.empty() && params.front().name == Keyword( Keywords::this_ );
 	}
 	else

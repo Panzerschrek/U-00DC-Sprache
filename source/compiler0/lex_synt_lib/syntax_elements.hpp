@@ -26,52 +26,68 @@ namespace Synt
 	Exception - node with single "vector" inside and (maybe) a little bit of extra data, that doesn't increase result variant size.
 */
 
+//
+// Forward declarations.
+//
+
 struct EmptyVariant{};
 
-struct ArrayTypeName;
+// ComplexName
+struct RootNamespaceNameLookup;
+struct RootNamespaceNameLookupCompletion;
+struct NameLookup;
+struct NameLookupCompletion;
 struct TypeofTypeName;
-struct FunctionType;
+struct NamesScopeNameFetch;
+struct NamesScopeNameFetchCompletion;
+struct TemplateParametrization;
+
+// TypeName
 struct TupleType;
 struct RawPointerType;
+struct ArrayTypeName;
+struct FunctionType;
 struct GeneratorType;
 
-struct UnaryPlus;
-struct UnaryMinus;
-struct LogicalNot;
-struct BitwiseNot;
-
+// Expression
+struct NumericConstant;
+struct BooleanConstant;
+struct MoveOperator;
+struct MoveOperatorCompletion;
+struct StringLiteral;
+struct TypeInfo;
+struct SameType;
+struct NonSyncExpression;
 struct CallOperator;
 struct CallOperatorSignatureHelp;
 struct IndexationOperator;
 struct MemberAccessOperator;
 struct MemberAccessOperatorCompletion;
-
+struct UnaryPlus;
+struct UnaryMinus;
+struct LogicalNot;
+struct BitwiseNot;
+struct SafeExpression;
+struct UnsafeExpression;
 struct BinaryOperator;
 struct TernaryOperator;
 struct ReferenceToRawPointerOperator;
 struct RawPointerToReferenceOperator;
-struct NumericConstant;
-struct BooleanConstant;
-struct StringLiteral;
-struct MoveOperator;
 struct TakeOperator;
 struct CastMut;
 struct CastImut;
 struct CastRef;
 struct CastRefUnsafe;
-struct TypeInfo;
-struct SameType;
-struct NonSyncExpression;
-struct SafeExpression;
-struct UnsafeExpression;
 
+// Initializers
+struct ZeroInitializer;
+struct UninitializedInitializer;
 struct SequenceInitializer;
 struct StructNamedInitializer;
 struct ConstructorInitializer;
 struct ConstructorInitializerSignatureHelp;
-struct ZeroInitializer;
-struct UninitializedInitializer;
 
+// Block elements
 struct Block;
 struct ScopeBlock;
 struct VariablesDeclaration;
@@ -98,6 +114,8 @@ struct StaticAssert;
 struct Halt;
 struct HaltIf;
 
+// Class/namespace elements.
+
 struct Function;
 struct TypeAlias;
 struct Enum;
@@ -106,15 +124,11 @@ struct ClassField;
 struct ClassVisibilityLabel;
 struct TypeTemplate;
 struct FunctionTemplate;
+struct Namespace;
 
-struct TypeofTypeName;
-struct RootNamespaceNameLookup;
-struct RootNamespaceNameLookupCompletion;
-struct NameLookup;
-struct NameLookupCompletion;
-struct NamesScopeNameFetch;
-struct NamesScopeNameFetchCompletion;
-struct TemplateParametrization;
+//
+// Variants
+//
 
 using ComplexName= std::variant<
 	// Terminal nodes.
@@ -128,8 +142,6 @@ using ComplexName= std::variant<
 	std::unique_ptr<const NamesScopeNameFetchCompletion>,
 	std::unique_ptr<const TemplateParametrization>
 	>;
-
-struct Namespace;
 
 using TypeName= std::variant<
 	EmptyVariant,
@@ -150,46 +162,6 @@ using TypeName= std::variant<
 	std::unique_ptr<const FunctionType>,
 	std::unique_ptr<const GeneratorType>
 	>;
-
-struct BooleanConstant
-{
-	BooleanConstant( const SrcLoc& src_loc, bool value );
-
-	SrcLoc src_loc;
-	bool value= false;
-};
-
-struct NumericConstant : public NumberLexemData
-{
-	NumericConstant( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-};
-
-struct StringLiteral
-{
-	StringLiteral( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	std::string value;
-	std::string type_suffix;
-};
-
-struct MoveOperator
-{
-	MoveOperator( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	std::string var_name;
-};
-
-struct MoveOperatorCompletion
-{
-	MoveOperatorCompletion( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	std::string var_name;
-};
 
 using Expression= std::variant<
 	EmptyVariant,
@@ -298,12 +270,12 @@ using ClassElementsList= VariantLinkedList<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	StaticAssert,
+	Function,
 	TypeAlias,
 	Enum,
-	Function,
+	Class,
 	ClassField,
 	ClassVisibilityLabel,
-	Class,
 	TypeTemplate,
 	FunctionTemplate >;
 
@@ -311,9 +283,9 @@ using ProgramElementsList= VariantLinkedList<
 	VariablesDeclaration,
 	AutoVariableDeclaration,
 	StaticAssert,
+	Function,
 	TypeAlias,
 	Enum,
-	Function,
 	Class,
 	TypeTemplate,
 	FunctionTemplate,
@@ -322,6 +294,10 @@ using ProgramElementsList= VariantLinkedList<
 struct NonSyncTagNone{};
 struct NonSyncTagTrue{};
 using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, std::unique_ptr<const Expression>>;
+
+//
+// Enums definitions.
+//
 
 enum class MutabilityModifier : uint8_t
 {
@@ -336,6 +312,37 @@ enum class ReferenceModifier : uint8_t
 	None,
 	Reference,
 };
+
+enum class VirtualFunctionKind : uint8_t
+{
+	None, // Regular, non-virtual
+	DeclareVirtual,
+	VirtualOverride,
+	VirtualFinal,
+	VirtualPure,
+};
+
+enum class ClassKindAttribute : uint8_t
+{
+	Struct,
+	Class,
+	Final,
+	Polymorph,
+	Interface,
+	Abstract,
+};
+
+enum class ClassMemberVisibility : uint8_t
+{
+	// Must be ordered from less access to more access.
+	Public,
+	Protected,
+	Private,
+};
+
+//
+// Struct definitions.
+//
 
 struct RootNamespaceNameLookup
 {
@@ -371,6 +378,46 @@ struct NameLookupCompletion
 
 	SrcLoc src_loc;
 	std::string name;
+};
+
+struct NumericConstant : public NumberLexemData
+{
+	NumericConstant( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+};
+
+struct BooleanConstant
+{
+	BooleanConstant( const SrcLoc& src_loc, bool value );
+
+	SrcLoc src_loc;
+	bool value= false;
+};
+
+struct MoveOperator
+{
+	MoveOperator( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	std::string var_name;
+};
+
+struct MoveOperatorCompletion
+{
+	MoveOperatorCompletion( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	std::string var_name;
+};
+
+struct StringLiteral
+{
+	StringLiteral( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	std::string value;
+	std::string type_suffix;
 };
 
 struct NamesScopeNameFetch
@@ -412,6 +459,48 @@ struct RawPointerType
 	TypeName element_type;
 };
 
+struct ArrayTypeName
+{
+	explicit ArrayTypeName( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	TypeName element_type;
+	Expression size;
+};
+
+using FunctionReferencesPollution= std::pair< std::string, std::string >;
+using FunctionReferencesPollutionList= std::vector<FunctionReferencesPollution>;
+
+struct FunctionParam
+{
+	FunctionParam( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	std::string name;
+	TypeName type;
+	std::string reference_tag;
+	std::string inner_arg_reference_tag;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+};
+
+struct FunctionType
+{
+	FunctionType( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	std::optional<std::string> calling_convention;
+	std::unique_ptr<const TypeName> return_type;
+	std::string return_value_reference_tag;
+	FunctionReferencesPollutionList references_pollution_list;
+	std::vector<FunctionParam> params;
+	std::string return_value_inner_reference_tag;
+
+	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
+	bool unsafe= false;
+};
+
 struct GeneratorType
 {
 public:
@@ -434,40 +523,12 @@ public:
 	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
 };
 
-using FunctionReferencesPollution= std::pair< std::string, std::string >;
-using FunctionReferencesPollutionList= std::vector<FunctionReferencesPollution>;
-
-struct FunctionParam;
-using FunctionParams= std::vector<FunctionParam>;
-
-struct FunctionType
+struct TypeofTypeName
 {
-	FunctionType( const SrcLoc& src_loc );
+	explicit TypeofTypeName( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	std::optional<std::string> calling_convention;
-	std::unique_ptr<const TypeName> return_type;
-	std::string return_value_reference_tag;
-	FunctionReferencesPollutionList references_pollution_list;
-	FunctionParams params;
-	std::string return_value_inner_reference_tag;
-
-	MutabilityModifier return_value_mutability_modifier= MutabilityModifier::None;
-	ReferenceModifier return_value_reference_modifier= ReferenceModifier::None;
-	bool unsafe= false;
-};
-
-struct FunctionParam
-{
-	FunctionParam( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	std::string name;
-	TypeName type;
-	std::string reference_tag;
-	std::string inner_arg_reference_tag;
-	MutabilityModifier mutability_modifier= MutabilityModifier::None;
-	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	Expression expression;
 };
 
 struct TypeInfo
@@ -493,54 +554,6 @@ struct NonSyncExpression
 
 	SrcLoc src_loc;
 	TypeName type;
-};
-
-struct SafeExpression
-{
-	SafeExpression( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	Expression expression;
-};
-
-struct UnsafeExpression
-{
-	UnsafeExpression( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	Expression expression;
-};
-
-struct UnaryPlus
-{
-	explicit UnaryPlus( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	Expression expression;
-};
-
-struct UnaryMinus
-{
-	explicit UnaryMinus( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	Expression expression;
-};
-
-struct LogicalNot
-{
-	explicit LogicalNot( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	Expression expression;
-};
-
-struct BitwiseNot
-{
-	explicit BitwiseNot( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	Expression expression;
 };
 
 struct CallOperator
@@ -592,6 +605,54 @@ struct MemberAccessOperatorCompletion
 	std::string member_name;
 };
 
+struct UnaryPlus
+{
+	explicit UnaryPlus( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
+struct UnaryMinus
+{
+	explicit UnaryMinus( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
+struct LogicalNot
+{
+	explicit LogicalNot( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
+struct BitwiseNot
+{
+	explicit BitwiseNot( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
+struct SafeExpression
+{
+	SafeExpression( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
+struct UnsafeExpression
+{
+	UnsafeExpression( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
 struct BinaryOperator
 {
 	explicit BinaryOperator( const SrcLoc& src_loc );
@@ -636,6 +697,22 @@ struct TakeOperator
 	Expression expression;
 };
 
+struct CastMut
+{
+	CastMut( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
+struct CastImut
+{
+	CastImut( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
 struct CastRef
 {
 	CastRef( const SrcLoc& src_loc );
@@ -654,37 +731,18 @@ struct CastRefUnsafe
 	Expression expression;
 };
 
-struct CastImut
+struct ZeroInitializer
 {
-	CastImut( const SrcLoc& src_loc );
+	explicit ZeroInitializer( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	Expression expression;
 };
 
-struct CastMut
+struct UninitializedInitializer
 {
-	CastMut( const SrcLoc& src_loc );
+	explicit UninitializedInitializer( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	Expression expression;
-};
-
-struct ArrayTypeName
-{
-	explicit ArrayTypeName( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	TypeName element_type;
-	Expression size;
-};
-
-struct TypeofTypeName
-{
-	explicit TypeofTypeName( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	Expression expression;
 };
 
 struct SequenceInitializer
@@ -719,20 +777,6 @@ struct ConstructorInitializerSignatureHelp
 
 	SrcLoc src_loc;
 	std::vector<Expression> arguments;
-};
-
-struct ZeroInitializer
-{
-	explicit ZeroInitializer( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-};
-
-struct UninitializedInitializer
-{
-	explicit UninitializedInitializer( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
 };
 
 struct StructNamedInitializer::MemberInitializer
@@ -1041,40 +1085,6 @@ struct HaltIf
 	Expression condition;
 };
 
-struct TypeAlias
-{
-	explicit TypeAlias( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	std::string name;
-	TypeName value;
-};
-
-struct Enum
-{
-	explicit Enum( const SrcLoc& src_loc );
-
-	struct Member
-	{
-		SrcLoc src_loc;
-		std::string name;
-	};
-
-	SrcLoc src_loc;
-	std::string name;
-	std::optional<ComplexName> underlaying_type_name;
-	std::vector<Member> members;
-};
-
-enum class VirtualFunctionKind : uint8_t
-{
-	None, // Regular, non-virtual
-	DeclareVirtual,
-	VirtualOverride,
-	VirtualFinal,
-	VirtualPure,
-};
-
 struct Function
 {
 	Function( const SrcLoc& src_loc );
@@ -1115,42 +1125,29 @@ struct Function
 	bool constexpr_= false;
 };
 
-struct ClassField
+struct TypeAlias
 {
-	explicit ClassField( const SrcLoc& src_loc );
+	explicit TypeAlias( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	TypeName type;
 	std::string name;
-	std::unique_ptr<const Initializer> initializer; // May be null.
-	MutabilityModifier mutability_modifier= MutabilityModifier::None;
-	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	TypeName value;
 };
 
-enum class ClassKindAttribute : uint8_t
+struct Enum
 {
-	Struct,
-	Class,
-	Final,
-	Polymorph,
-	Interface,
-	Abstract,
-};
+	explicit Enum( const SrcLoc& src_loc );
 
-enum class ClassMemberVisibility : uint8_t
-{
-	// Must be ordered from less access to more access.
-	Public,
-	Protected,
-	Private,
-};
-
-struct ClassVisibilityLabel
-{
-	ClassVisibilityLabel( const SrcLoc& src_loc, ClassMemberVisibility visibility );
+	struct Member
+	{
+		SrcLoc src_loc;
+		std::string name;
+	};
 
 	SrcLoc src_loc;
-	const ClassMemberVisibility visibility;
+	std::string name;
+	std::optional<ComplexName> underlaying_type_name;
+	std::vector<Member> members;
 };
 
 struct Class
@@ -1164,6 +1161,26 @@ struct Class
 	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
 	NonSyncTag non_sync_tag;
 	bool keep_fields_order= false;
+};
+
+struct ClassField
+{
+	explicit ClassField( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	TypeName type;
+	std::string name;
+	std::unique_ptr<const Initializer> initializer; // May be null.
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+};
+
+struct ClassVisibilityLabel
+{
+	ClassVisibilityLabel( const SrcLoc& src_loc, ClassMemberVisibility visibility );
+
+	SrcLoc src_loc;
+	const ClassMemberVisibility visibility;
 };
 
 struct TemplateBase

@@ -1426,7 +1426,7 @@ Type CodeBuilder::BuildFuncCode(
 	const ClassPtr base_class,
 	NamesScope& parent_names_scope,
 	const std::string_view func_name,
-	const Synt::FunctionParams& params,
+	const llvm::ArrayRef<Synt::FunctionParam> params,
 	const Synt::Block& block,
 	const Synt::StructNamedInitializer* const constructor_initialization_list )
 {
