@@ -19,6 +19,11 @@ namespace U
 namespace
 {
 
+Synt::TypeName ComplexNameToTypeName( Synt::ComplexName name )
+{
+	return std::visit( []( auto&& el ) { return Synt::TypeName(std::move(el)); }, std::move(name) );
+}
+
 class CppAstConsumer : public clang::ASTConsumer
 {
 public:
@@ -314,12 +319,9 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 			Synt::TypeAlias type_alias= ProcessTypedef(*type_alias_decl);
 
 			bool is_same_name= false;
-			if( const auto named_type_name= std::get_if<Synt::ComplexName>( &type_alias.value ) )
-			{
-				is_same_name= false;
-				if( const auto name_lookup= std::get_if<Synt::NameLookup>( named_type_name ) )
-					is_same_name= name_lookup->name == type_alias.name;
-			}
+			if( const auto name_lookup= std::get_if<Synt::NameLookup>( &type_alias.value ) )
+				is_same_name= name_lookup->name == type_alias.name;
+
 			if( !is_same_name )
 				program_elements.Append( std::move(type_alias) );
 		}
@@ -443,7 +445,7 @@ std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDec
 			};
 
 			auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
-			array_type->element_type=TranslateNamedType( int_name );
+			array_type->element_type=ComplexNameToTypeName( TranslateNamedType( int_name ) );
 
 			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 			numeric_constant.value_int= num;
@@ -617,7 +619,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 		enum_.name= enum_name;
 
 		Synt::TypeName type_name= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
-		if( const auto named_type_name= std::get_if<Synt::ComplexName>( &type_name ) )
+		if( const auto named_type_name= std::get_if<Synt::NameLookup>( &type_name ) )
 			enum_.underlaying_type_name= std::move(*named_type_name);
 
 		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
@@ -692,16 +694,16 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 {
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
-		return TranslateNamedType( GetUFundamentalType( *built_in_type ) );
+		return ComplexNameToTypeName( TranslateNamedType( GetUFundamentalType( *built_in_type ) ) );
 	else if( const auto record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
-		return TranslateNamedType( TranslateRecordType( *record_type ) );
+		return ComplexNameToTypeName( TranslateNamedType( TranslateRecordType( *record_type ) ) );
 	else if( const auto enum_type= llvm::dyn_cast<clang::EnumType>(&in_type) )
 	{
 		if( const auto it= enum_names_cache_.find( enum_type->getDecl() ); it != enum_names_cache_.end() )
-			return TranslateNamedType( it->second );
+			return ComplexNameToTypeName( TranslateNamedType( it->second ) );
 	}
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
-		return TranslateNamedType( typedef_type->getDecl()->getName().str() );
+		return ComplexNameToTypeName( TranslateNamedType( typedef_type->getDecl()->getName().str() ) );
 	else if( const auto constna_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
 	{
 		// For arrays with constant size use normal Ü array.
@@ -753,7 +755,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( &in_type ) )
 		return TranslateType( *elaborated_type->desugar().getTypePtr() );
 
-	return TranslateNamedType( "void" );
+	return ComplexNameToTypeName( TranslateNamedType( "void" ) );
 }
 
 std::string CppAstConsumer::TranslateRecordType( const clang::RecordType& in_type )
