@@ -425,7 +425,7 @@ private:
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::TypeofTypeName& typeof_type_name );
+		const std::unique_ptr<const Synt::TypeofTypeName>& typeof_type_name );
 
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,

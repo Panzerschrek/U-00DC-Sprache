@@ -190,7 +190,7 @@ void ElementWrite( const GeneratorType& generator_name, std::ostream& stream )
 void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream )
 {
 	stream << Keyword( Keywords::typeof_ ) << "( ";
-	ElementWrite( *typeof_type_name.expression, stream );
+	ElementWrite( typeof_type_name.expression, stream );
 	stream << " )";
 }
 
@@ -388,7 +388,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		void operator()( const std::unique_ptr<const CastRef>& cast_ref ) const
 		{
 			stream << Keyword( Keywords::cast_ref_ ) << "</ ";
-			ElementWrite( *cast_ref->type, stream );
+			ElementWrite( cast_ref->type, stream );
 			stream << " />( ";
 			ElementWrite( cast_ref->expression, stream );
 			stream << " )";
@@ -396,7 +396,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		void operator()( const std::unique_ptr<const CastRefUnsafe>& cast_ref_unsafe ) const
 		{
 			stream << Keyword( Keywords::cast_ref_unsafe_ ) << "</ ";
-			ElementWrite( *cast_ref_unsafe->type, stream );
+			ElementWrite( cast_ref_unsafe->type, stream );
 			stream << " />( ";
 			ElementWrite( cast_ref_unsafe->expression, stream );
 			stream << " )";
@@ -413,30 +413,24 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( cast_mut->expression, stream );
 			stream << " )";
 		}
-		void operator()( const TypeInfo& typeinfo_ ) const
+		void operator()( const std::unique_ptr<const TypeInfo>& typeinfo_ ) const
 		{
-			if( typeinfo_.type == nullptr )
-				return;
 			stream << "</ ";
-			ElementWrite( *typeinfo_.type, stream );
+			ElementWrite( typeinfo_->type, stream );
 			stream << " />";
 		}
-		void operator()( const SameType& same_type ) const
+		void operator()( const std::unique_ptr<const SameType>& same_type ) const
 		{
-			if( same_type.l == nullptr || same_type.r == nullptr )
-				return;
 			stream << Keyword( Keywords::same_type_ ) << "</ ";
-			ElementWrite( *same_type.l, stream );
+			ElementWrite( same_type->l, stream );
 			stream << ", ";
-			ElementWrite( *same_type.r, stream );
+			ElementWrite( same_type->r, stream );
 			stream << " />";
 		}
-		void operator()( const NonSyncExpression& non_sync_expression ) const
+		void operator()( const std::unique_ptr<const NonSyncExpression>& non_sync_expression ) const
 		{
-			if( non_sync_expression.type == nullptr )
-				return;
 			stream << "</ ";
-			ElementWrite( *non_sync_expression.type, stream );
+			ElementWrite( non_sync_expression->type, stream );
 			stream << " />";
 		}
 		void operator()( const std::unique_ptr<const SafeExpression>& safe_expression ) const
@@ -687,7 +681,7 @@ void ElementWrite( const NonSyncTag& non_sync_tag, std::ostream& stream )
 	{}
 	else if( std::get_if<NonSyncTagTrue>( &non_sync_tag ) != nullptr )
 		stream << Keyword( Keywords::non_sync_ ) << " ";
-	else if( const auto expression_ptr = std::get_if<ExpressionPtr>( &non_sync_tag ) )
+	else if( const auto expression_ptr = std::get_if< std::unique_ptr<const Expression> >( &non_sync_tag ) )
 	{
 		stream << Keyword( Keywords::non_sync_ ) << "( ";
 		ElementWrite( **expression_ptr, stream );

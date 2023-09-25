@@ -120,7 +120,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	const auto state= SaveFunctionContextState( function_context );
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-		const VariablePtr variable= BuildExpressionCodeEnsureVariable( *typeof_type_name.expression, names_scope, function_context );
+		const VariablePtr variable= BuildExpressionCodeEnsureVariable( typeof_type_name.expression, names_scope, function_context );
 		result= variable->type;
 	}
 

@@ -1107,7 +1107,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		{
 			auto cast= std::make_unique<CastRef>( it_->src_loc );
 			NextLexem();
-			cast->type= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
+			cast->type= ParseTypeNameInTemplateBrackets();
 			cast->expression= ParseExpressionInBrackets();
 
 			return std::move(cast);
@@ -1116,7 +1116,7 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		{
 			auto cast= std::make_unique<CastRefUnsafe>( it_->src_loc );
 			NextLexem();
-			cast->type= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
+			cast->type= ParseTypeNameInTemplateBrackets();
 			cast->expression= ParseExpressionInBrackets();
 
 			return std::move(cast);
@@ -1139,30 +1139,30 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		}
 		if( it_->text == Keywords::typeinfo_ )
 		{
-			TypeInfo typeinfo_(it_->src_loc );
+			auto typeinfo_= std::make_unique<TypeInfo>(it_->src_loc );
 			NextLexem();
-			typeinfo_.type= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
+			typeinfo_->type= ParseTypeNameInTemplateBrackets();
 
 			return std::move(typeinfo_);
 		}
 		if( it_->text == Keywords::same_type_ )
 		{
-			SameType same_type(it_->src_loc );
+			auto same_type= std::make_unique<SameType>(it_->src_loc );
 
 			NextLexem();
 			ExpectLexem( Lexem::Type::TemplateBracketLeft );
-			same_type.l= std::make_unique<TypeName>( ParseTypeName() );
+			same_type->l= ParseTypeName();
 			ExpectLexem( Lexem::Type::Comma );
-			same_type.r= std::make_unique<TypeName>( ParseTypeName() );
+			same_type->r= ParseTypeName();
 			ExpectLexem( Lexem::Type::TemplateBracketRight );
 
 			return std::move(same_type);
 		}
 		if( it_->text == Keywords::non_sync_ )
 		{
-			NonSyncExpression non_sync_expression(it_->src_loc );
+			auto non_sync_expression= std::make_unique<NonSyncExpression>(it_->src_loc );
 			NextLexem();
-			non_sync_expression.type= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
+			non_sync_expression->type= ParseTypeNameInTemplateBrackets();
 
 			return std::move(non_sync_expression);
 		}
@@ -1620,9 +1620,9 @@ ComplexName SyntaxAnalyzer::ParseComplexName()
 	{
 		if( it_->text == Keywords::typeof_ )
 		{
-			TypeofTypeName typeof_type_name( it_->src_loc );
+			auto typeof_type_name= std::make_unique<TypeofTypeName>( it_->src_loc );
 			NextLexem();
-			typeof_type_name.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			typeof_type_name->expression=  ParseExpressionInBrackets();
 			return ParseComplexNameTail( std::move( typeof_type_name ) );
 		}
 		else

@@ -118,12 +118,12 @@ struct TemplateParametrization;
 
 using ComplexName= std::variant<
 	// Terminal nodes.
-	TypeofTypeName,
 	RootNamespaceNameLookup,
 	RootNamespaceNameLookupCompletion,
 	NameLookup,
 	NameLookupCompletion,
 	// Non-terminal nodes (that contain ComplexName inside).
+	std::unique_ptr<const TypeofTypeName>,
 	std::unique_ptr<const NamesScopeNameFetch>,
 	std::unique_ptr<const NamesScopeNameFetchCompletion>,
 	std::unique_ptr<const TemplateParametrization>
@@ -135,11 +135,11 @@ using TypeName= std::variant<
 	EmptyVariant,
 	// Include all ComplexName variants.
 	// Do not store ComplexName itself, since it adds extra size because of nested variants.
-	TypeofTypeName,
 	RootNamespaceNameLookup,
 	RootNamespaceNameLookupCompletion,
 	NameLookup,
 	NameLookupCompletion,
+	std::unique_ptr<const TypeofTypeName>,
 	std::unique_ptr<const NamesScopeNameFetch>,
 	std::unique_ptr<const NamesScopeNameFetchCompletion>,
 	std::unique_ptr<const TemplateParametrization>,
@@ -149,8 +149,6 @@ using TypeName= std::variant<
 	std::unique_ptr<const ArrayTypeName>,
 	std::unique_ptr<const FunctionType>,
 	std::unique_ptr<const GeneratorType> >;
-
-using TypeNamePtr= std::unique_ptr<const TypeName>;
 
 struct BooleanConstant
 {
@@ -203,10 +201,10 @@ using Expression= std::variant<
 	StringLiteral,
 	MoveOperator,
 	MoveOperatorCompletion,
-	TypeInfo,
-	SameType,
-	NonSyncExpression,
-	// Non-terminal nodes (with Expression containing inside).
+	// Non-terminal nodes (with Expression or TypeName containing inside).
+	std::unique_ptr<const TypeInfo>,
+	std::unique_ptr<const SameType>,
+	std::unique_ptr<const NonSyncExpression>,
 	std::unique_ptr<const CallOperator>,
 	std::unique_ptr<const CallOperatorSignatureHelp>,
 	std::unique_ptr<const IndexationOperator>,
@@ -227,15 +225,13 @@ using Expression= std::variant<
 	std::unique_ptr<const CastImut>,
 	std::unique_ptr<const CastRef>,
 	std::unique_ptr<const CastRefUnsafe>,
-	// Type name in expression context
+	// Type name in expression context.
 	TupleType,
 	std::unique_ptr<const ArrayTypeName>,
 	std::unique_ptr<const FunctionType>,
 	std::unique_ptr<const RawPointerType>,
 	std::unique_ptr<const GeneratorType>
 	>;
-
-using ExpressionPtr= std::unique_ptr<const Expression>;
 
 using Initializer= std::variant<
 	EmptyVariant,
@@ -316,7 +312,7 @@ using ProgramElementsList= VariantLinkedList<
 
 struct NonSyncTagNone{};
 struct NonSyncTagTrue{};
-using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, ExpressionPtr>;
+using NonSyncTag= std::variant<NonSyncTagNone, NonSyncTagTrue, std::unique_ptr<const Expression>>;
 
 enum class MutabilityModifier : uint8_t
 {
@@ -330,14 +326,6 @@ enum class ReferenceModifier : uint8_t
 {
 	None,
 	Reference,
-};
-
-struct TypeofTypeName
-{
-	explicit TypeofTypeName( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	ExpressionPtr expression;
 };
 
 struct RootNamespaceNameLookup
@@ -449,7 +437,7 @@ struct FunctionType
 
 	SrcLoc src_loc;
 	std::optional<std::string> calling_convention;
-	TypeNamePtr return_type;
+	std::unique_ptr<const TypeName> return_type;
 	std::string return_value_reference_tag;
 	FunctionReferencesPollutionList references_pollution_list;
 	FunctionParams params;
@@ -478,7 +466,7 @@ struct TypeInfo
 	TypeInfo( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	TypeNamePtr type;
+	TypeName type;
 };
 
 struct SameType
@@ -486,8 +474,8 @@ struct SameType
 	SameType( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	TypeNamePtr l;
-	TypeNamePtr r;
+	TypeName l;
+	TypeName r;
 };
 
 struct NonSyncExpression
@@ -495,7 +483,7 @@ struct NonSyncExpression
 	NonSyncExpression( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	TypeNamePtr type;
+	TypeName type;
 };
 
 struct SafeExpression
@@ -644,7 +632,7 @@ struct CastRef
 	CastRef( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	TypeNamePtr type;
+	TypeName type;
 	Expression expression;
 };
 
@@ -653,7 +641,7 @@ struct CastRefUnsafe
 	CastRefUnsafe( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	TypeNamePtr type;
+	TypeName type;
 	Expression expression;
 };
 
@@ -680,6 +668,14 @@ struct ArrayTypeName
 	SrcLoc src_loc;
 	TypeName element_type;
 	Expression size;
+};
+
+struct TypeofTypeName
+{
+	explicit TypeofTypeName( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
 };
 
 struct SequenceInitializer

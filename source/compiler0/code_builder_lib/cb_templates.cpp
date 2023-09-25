@@ -441,11 +441,11 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	FunctionContext& function_context,
 	llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-	const Synt::TypeofTypeName& typeof_type_name )
+	const std::unique_ptr<const Synt::TypeofTypeName>& typeof_type_name )
 {
 	(void)template_parameters;
 	(void)template_parameters_usage_flags;
-	return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, typeof_type_name ), names_scope, typeof_type_name.src_loc );
+	return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, typeof_type_name ), names_scope, typeof_type_name->src_loc );
 }
 
 TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(

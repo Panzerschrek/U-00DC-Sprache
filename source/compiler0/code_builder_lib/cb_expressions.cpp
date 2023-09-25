@@ -1490,7 +1490,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CastRef& cast_ref )
 {
-	return DoReferenceCast( cast_ref.src_loc, *cast_ref.type, cast_ref.expression, false, names, function_context );
+	return DoReferenceCast( cast_ref.src_loc, cast_ref.type, cast_ref.expression, false, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1501,7 +1501,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, names.GetErrors(), cast_ref_unsafe.src_loc );
 
-	return DoReferenceCast( cast_ref_unsafe.src_loc, *cast_ref_unsafe.type, cast_ref_unsafe.expression, true, names, function_context );
+	return DoReferenceCast( cast_ref_unsafe.src_loc, cast_ref_unsafe.type, cast_ref_unsafe.expression, true, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1509,7 +1509,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::TypeInfo& typeinfo )
 {
-	const Type type= PrepareType( *typeinfo.type, names, function_context );
+	const Type type= PrepareType( typeinfo.type, names, function_context );
 	if( type == invalid_type_ )
 		return ErrorValue();
 
@@ -1535,8 +1535,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::SameType& same_type )
 {
-	const Type type_l= PrepareType( *same_type.l, names, function_context );
-	const Type type_r= PrepareType( *same_type.r, names, function_context );
+	const Type type_l= PrepareType( same_type.l, names, function_context );
+	const Type type_r= PrepareType( same_type.r, names, function_context );
 	const bool same= type_l == type_r;
 
 	llvm::Constant* const constant= llvm::ConstantInt::getBool( llvm_context_, same );
@@ -1560,7 +1560,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::NonSyncExpression& non_sync_expression )
 {
-	const Type type= PrepareType( *non_sync_expression.type, names, function_context );
+	const Type type= PrepareType( non_sync_expression.type, names, function_context );
 	const bool is_non_sync= GetTypeNonSync( type, names, non_sync_expression.src_loc );
 
 	const VariableMutPtr result=
