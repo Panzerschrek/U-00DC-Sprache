@@ -202,46 +202,7 @@ void CodeBuilder::ProcessTemplateParams(
 	}
 }
 
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
-	NamesScope& names_scope,
-	FunctionContext& function_context,
-	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-	const Synt::ComplexName& signature_parameter )
-{
-	return
-		std::visit(
-			[&]( const auto& t ) { return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, t ); },
-			signature_parameter );
-}
-
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
-	NamesScope& names_scope,
-	FunctionContext& function_context,
-	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-	const Synt::TypeName& type_name_template_parameter )
-{
-	return
-		std::visit(
-			[&]( const auto& t ) { return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, t ); },
-			type_name_template_parameter );
-}
-
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
-	NamesScope& names_scope,
-	FunctionContext& function_context,
-	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-	llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-	const Synt::Expression& template_parameter )
-{
-	return
-		std::visit(
-			[&]( const auto& t ) { return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, t ); },
-			template_parameter );
-}
-
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
+TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
@@ -257,7 +218,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	return TemplateSignatureParam::TypeParam();
 }
 
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
+TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
@@ -274,7 +235,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	return std::move(array_param);
 }
 
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
+TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
@@ -324,7 +285,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	return std::move(function_param);
 }
 
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
+TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
@@ -346,7 +307,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	return tuple_param;
 }
 
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
+TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
@@ -369,7 +330,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	return raw_pointer_param;
 }
 
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
+TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
@@ -423,7 +384,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	return coroutine_param;
 }
 
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
+TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
@@ -444,7 +405,7 @@ TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
 	return ValueToTemplateParam( ResolveValueImpl( names_scope, function_context, name_lookup ), names_scope, name_lookup.src_loc );
 }
 
-TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameter(
+TemplateSignatureParam CodeBuilder::CreateTemplateSignatureParameterImpl(
 	NamesScope& names_scope,
 	FunctionContext& function_context,
 	llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,

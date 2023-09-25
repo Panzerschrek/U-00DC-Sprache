@@ -346,103 +346,99 @@ private:
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags );
 
+	// Handler for ComplexName/TypeName/Expression.
+	template< typename ... VariantArgs >
 	TemplateSignatureParam CreateTemplateSignatureParameter(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::ComplexName& signature_parameter );
+		const std::variant< VariantArgs ... >& template_parameter )
+	{
+		return
+			std::visit(
+				[&]( const auto& t ) { return CreateTemplateSignatureParameterImpl( names_scope, function_context, template_parameters, template_parameters_usage_flags, t ); },
+				template_parameter );
+	}
 
-
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::TypeName& template_parameter );
-
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::Expression& template_parameter );
-
+	// Handler for unique_ptr unwrapping.
 	template<typename T>
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const std::unique_ptr<T>& el )
 	{
-		return CreateTemplateSignatureParameter( names_scope, function_context, template_parameters, template_parameters_usage_flags, *el );
+		return CreateTemplateSignatureParameterImpl( names_scope, function_context, template_parameters, template_parameters_usage_flags, *el );
 	}
 
+	// Handler for non-important for template args creation nodes - just evaluate expression.
 	template<typename T>
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const T& el )
 	{
-		// Default handler for any other expression.
 		(void)template_parameters;
 		(void)template_parameters_usage_flags;
 		return ValueToTemplateParam( BuildExpressionCodeImpl( names_scope, function_context, el ), names_scope, el.src_loc );
 	}
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	// Template signature parameter handlers for different expression node kinds.
+
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::EmptyVariant& empty_variant );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::ArrayTypeName& array_type_name );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::FunctionType& function_pointer_type_name );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::TupleType& tuple_type_name );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::RawPointerType& raw_pointer_type_name );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::GeneratorType& generator_type_name );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::NameLookup& name_lookup );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
