@@ -474,36 +474,26 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( indexation_operator->index, stream );
 			stream << " ]";
 		}
-		void operator()( const std::unique_ptr<const MemberAccessOperator>& member_access_operator_ptr ) const
+		void operator()( const std::unique_ptr<const MemberAccessOperator>& member_access_operator ) const
 		{
-			if( member_access_operator_ptr != nullptr )
-				(*this)( *member_access_operator_ptr );
-		}
-		void operator()( const MemberAccessOperator& member_access_operator ) const
-		{
-			ElementWrite( member_access_operator.expression, stream );
-			stream << "." << member_access_operator.member_name;
-			if( member_access_operator.template_parameters != std::nullopt )
+			ElementWrite( member_access_operator->expression, stream );
+			stream << "." << member_access_operator->member_name;
+			if( member_access_operator->template_parameters != std::nullopt )
 			{
 				stream << "</";
-				for( const Expression& template_param : *member_access_operator.template_parameters )
+				for( const Expression& template_param : *member_access_operator->template_parameters )
 				{
 					ElementWrite( template_param, stream );
-					if( &template_param != &member_access_operator.template_parameters->back() )
+					if( &template_param != &member_access_operator->template_parameters->back() )
 						stream<< ", ";
 				}
 				stream << "/>";
 			}
 		}
-		void operator()( const std::unique_ptr<const MemberAccessOperatorCompletion>& member_access_operator_completion_ptr ) const
+		void operator()( const std::unique_ptr<const MemberAccessOperatorCompletion>& member_access_operator_completion ) const
 		{
-			if( member_access_operator_completion_ptr != nullptr )
-				(*this)( *member_access_operator_completion_ptr );
-		}
-		void operator()( const MemberAccessOperatorCompletion& member_access_operator_completion ) const
-		{
-			ElementWrite( member_access_operator_completion.expression, stream );
-			stream << "." << member_access_operator_completion.member_name;
+			ElementWrite( member_access_operator_completion->expression, stream );
+			stream << "." << member_access_operator_completion->member_name;
 		}
 		void operator()( const std::unique_ptr<const CallOperator>& call_operator ) const
 		{

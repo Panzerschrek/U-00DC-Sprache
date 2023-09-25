@@ -1213,7 +1213,7 @@ private:
 	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
 
 	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
-	template<typename T> void NamesScopeFillOutOfLineElement( NamesScope&, const T& ) {}
+	template<typename T> void NamesScopeFillOutOfLineElement( NamesScope&, const T& ) {} // Ignore almost all nodes in out of line filling, except a couple of special nodes.
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Function& function );
 	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 

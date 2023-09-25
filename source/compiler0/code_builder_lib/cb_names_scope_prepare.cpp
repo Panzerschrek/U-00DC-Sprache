@@ -67,7 +67,7 @@ void CodeBuilder::NamesScopeFill(
 	const Synt::Function& function_declaration,
 	const ClassPtr base_class,
 	const ClassMemberVisibility visibility )
-{	
+{
 	if( function_declaration.name.size() != 1u )
 		return; // process out of line functions later.
 
@@ -332,6 +332,7 @@ void CodeBuilder::NamesScopeFillOutOfLineElements(
 {
 	namespace_elements.Iter( [&]( const auto& el ) { NamesScopeFillOutOfLineElement( names_scope, el ); } );
 }
+
 void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Function& function )
 {
 	if( function.name.size() <= 1u )

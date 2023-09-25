@@ -906,26 +906,26 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 			if( it_->type == Lexem::Type::Identifier )
 			{
-				MemberAccessOperator member_access_operator( it_->src_loc );
-				member_access_operator.member_name= it_->text;
+				auto member_access_operator= std::make_unique<MemberAccessOperator>( it_->src_loc );
+				member_access_operator->member_name= it_->text;
 				NextLexem();
 
-				member_access_operator.expression= std::move(expr);
+				member_access_operator->expression= std::move(expr);
 
 				if( it_->type == Lexem::Type::TemplateBracketLeft )
-					member_access_operator.template_parameters= ParseTemplateParameters();
+					member_access_operator->template_parameters= ParseTemplateParameters();
 
-				return TryParseBinaryOperatorComponentPostfixOperator( std::make_unique<MemberAccessOperator>( std::move(member_access_operator) ) );
+				return TryParseBinaryOperatorComponentPostfixOperator( std::move(member_access_operator) );
 			}
 			else if( it_->type == Lexem::Type::CompletionIdentifier )
 			{
-				MemberAccessOperatorCompletion member_access_operator_completion( it_->src_loc );
-				member_access_operator_completion.member_name= it_->text;
+				auto member_access_operator_completion= std::make_unique<MemberAccessOperatorCompletion>( it_->src_loc );
+				member_access_operator_completion->member_name= it_->text;
 				NextLexem();
 
-				member_access_operator_completion.expression= std::move(expr);
+				member_access_operator_completion->expression= std::move(expr);
 
-				return std::make_unique<MemberAccessOperatorCompletion>( std::move(member_access_operator_completion) );
+				return std::move(member_access_operator_completion);
 			}
 			else
 			{
@@ -936,13 +936,13 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 	case Lexem::Type::CompletionDot:
 		{
-			MemberAccessOperatorCompletion member_access_operator_completion( it_->src_loc );
-			member_access_operator_completion.member_name= "";
+			auto member_access_operator_completion= std::make_unique<MemberAccessOperatorCompletion>( it_->src_loc );
+			member_access_operator_completion->member_name= "";
 			NextLexem();
 
-			member_access_operator_completion.expression= std::move(expr);
+			member_access_operator_completion->expression= std::move(expr);
 
-			return std::make_unique<MemberAccessOperatorCompletion>( std::move(member_access_operator_completion) );
+			return std::move(member_access_operator_completion);
 		}
 
 	default:
