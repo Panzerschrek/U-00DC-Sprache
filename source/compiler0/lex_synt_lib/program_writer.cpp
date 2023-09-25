@@ -307,10 +307,10 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			}
 			stream << numeric_constant.type_suffix.data();
 		}
-		void operator()( const StringLiteral& string_literal ) const
+		void operator()( const std::unique_ptr<const StringLiteral>& string_literal ) const
 		{
 			std::string escaped;
-			for( const char c : string_literal.value )
+			for( const char c : string_literal->value )
 			{
 				switch(c)
 				{
@@ -365,7 +365,7 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 					break;
 				};
 			}
-			stream << "\"" << escaped << "\"" << string_literal.type_suffix.data();
+			stream << "\"" << escaped << "\"" << string_literal->type_suffix;
 		}
 		void operator()( const BooleanConstant& boolean_constant ) const
 		{

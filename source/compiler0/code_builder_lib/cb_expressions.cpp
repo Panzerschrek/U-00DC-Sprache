@@ -1129,7 +1129,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	uint64_t array_size= ~0u; // ~0 - means non-array
 	llvm::Constant* initializer= nullptr;
 
-	const std::string type_suffix= string_literal.type_suffix.data();
+	const std::string& type_suffix= string_literal.type_suffix;
 
 	if( type_suffix.empty() || type_suffix == "u8" )
 	{

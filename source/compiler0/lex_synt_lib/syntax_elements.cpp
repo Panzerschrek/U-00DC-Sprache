@@ -13,7 +13,7 @@ namespace Synt
 SIZE_ASSERT( ComplexName, 48u )
 SIZE_ASSERT( TypeName, 48u )
 SIZE_ASSERT( Expression, 56u )
-SIZE_ASSERT( Initializer, 96u )
+SIZE_ASSERT( Initializer, 64u )
 SIZE_ASSERT( BlockElementsList, 16u ) // Variant index + unique_ptr
 SIZE_ASSERT( ClassElementsList, 16u ) // Variant index + unique_ptr
 SIZE_ASSERT( ProgramElementsList, 16u ) // Variant index + unique_ptr
@@ -190,9 +190,7 @@ NumericConstant::NumericConstant( const SrcLoc& src_loc )
 
 StringLiteral::StringLiteral( const SrcLoc& src_loc )
 	: src_loc(src_loc)
-{
-	std::fill( type_suffix.begin(), type_suffix.end(), 0 );
-}
+{}
 
 Block::Block( const SrcLoc& start_src_loc )
 	: src_loc(start_src_loc)

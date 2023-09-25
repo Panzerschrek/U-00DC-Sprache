@@ -47,7 +47,7 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		// Simple constant expressions have no side effects.
 		bool operator()( const Synt::NumericConstant& ) { return true; }
 		bool operator()( const Synt::BooleanConstant& ) { return true; }
-		bool operator()( const Synt::StringLiteral& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::StringLiteral>& ) { return true; }
 		// Move and take have side effects.
 		bool operator()( const Synt::MoveOperator& ) { return false; }
 		bool operator()( const Synt::MoveOperatorCompletion& ) { return false; }

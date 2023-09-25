@@ -993,21 +993,13 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			return ParseNumericConstant();
 	case Lexem::Type::String:
 		{
-			StringLiteral string_literal( it_->src_loc );
-			string_literal.value= it_->text;
+			auto string_literal= std::make_unique<StringLiteral>( it_->src_loc );
+			string_literal->value= it_->text;
 			NextLexem();
 
 			if( it_->type == Lexem::Type::LiteralSuffix )
 			{
-				if( it_->text.size() > sizeof(TypeSuffix) / sizeof(TypeSuffix::value_type) - 1 )
-				{
-					LexSyntError msg;
-					msg.src_loc= it_->src_loc;
-					msg.text= "String literal is too long";
-					error_messages_.push_back( msg );
-					return EmptyVariant();
-				}
-				std::copy( it_->text.begin(), it_->text.end(), string_literal.type_suffix.begin() );
+				string_literal->type_suffix= it_->text;
 				NextLexem();
 			}
 

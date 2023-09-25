@@ -158,8 +158,6 @@ struct BooleanConstant
 	bool value= false;
 };
 
-using TypeSuffix= std::array<char, 7>;
-
 struct NumericConstant : public NumberLexemData
 {
 	NumericConstant( const SrcLoc& src_loc );
@@ -173,7 +171,7 @@ struct StringLiteral
 
 	SrcLoc src_loc;
 	std::string value;
-	TypeSuffix type_suffix;
+	std::string type_suffix;
 };
 
 struct MoveOperator
@@ -198,9 +196,9 @@ using Expression= std::variant<
 	ComplexName,
 	NumericConstant,
 	BooleanConstant,
-	StringLiteral,
 	MoveOperator,
 	MoveOperatorCompletion,
+	std::unique_ptr<const StringLiteral>, // Terminal, but too heavy, to store by-value.
 	// Non-terminal nodes (with Expression or TypeName containing inside).
 	std::unique_ptr<const TypeInfo>,
 	std::unique_ptr<const SameType>,
@@ -235,13 +233,16 @@ using Expression= std::variant<
 
 using Initializer= std::variant<
 	EmptyVariant,
+	// Terminals.
+	ZeroInitializer,
+	UninitializedInitializer,
+	// Non-terminals.
+	Expression,
 	SequenceInitializer,
 	StructNamedInitializer,
 	ConstructorInitializer,
-	ConstructorInitializerSignatureHelp,
-	Expression,
-	ZeroInitializer,
-	UninitializedInitializer >;
+	ConstructorInitializerSignatureHelp
+	>;
 
 //
 // Block elements list structures.
