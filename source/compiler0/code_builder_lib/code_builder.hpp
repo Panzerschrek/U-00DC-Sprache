@@ -255,13 +255,21 @@ private:
 	}
 
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::EmptyVariant& type_name );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParametrization>& template_parametrization );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
+	Type PrepareNamedType( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
+	Type ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc );
 
 	FunctionPointerType FunctionTypeToPointer( FunctionType function_type );
 
@@ -410,7 +418,63 @@ private:
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::GeneratorType& generator_type_nam );
+		const Synt::GeneratorType& generator_type_name );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const Synt::TypeofTypeName& typeof_type_name );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const Synt::RootNamespaceNameLookup& root_namespace_lookup );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const Synt::NameLookup& name_lookup );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const Synt::NameLookupCompletion& name_lookup_completion );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion );
+
+	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const std::unique_ptr<const Synt::TemplateParametrization>& template_parametrization );
 
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope, const SrcLoc& src_loc );
 

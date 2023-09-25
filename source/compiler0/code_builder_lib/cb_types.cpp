@@ -35,6 +35,41 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope&, FunctionContext&, const Synt::Em
 	return invalid_type_;
 }
 
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, root_namespace_lookup ), root_namespace_lookup.src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, root_namespace_lookup_completion ), root_namespace_lookup_completion.src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, name_lookup ), name_lookup.src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, name_lookup_completion ), name_lookup_completion.src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch ), names_scope_name_fetch->src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch_completion ), names_scope_name_fetch_completion->src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParametrization>& template_parametrization )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, template_parametrization ), template_parametrization->src_loc );
+}
+
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name )
 {
 	ArrayType array_type;
@@ -213,13 +248,17 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name )
+Type CodeBuilder::PrepareNamedType( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name )
 {
-	const Value value= ResolveValue( names_scope, function_context, named_type_name );
+	return ValueToType( names_scope, ResolveValue( names_scope, function_context, named_type_name ), Synt::GetComplexNameSrcLoc(named_type_name) );
+}
+
+Type CodeBuilder::ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc )
+{
 	if( const Type* const type= value.GetTypeName() )
 		return *type;
 	else
-		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), Synt::GetComplexNameSrcLoc(named_type_name), named_type_name );
+		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), src_loc, value.GetKindName() );
 
 	return invalid_type_;
 }

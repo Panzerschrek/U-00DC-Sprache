@@ -1540,7 +1540,7 @@ TypeName SyntaxAnalyzer::ParseTypeName()
 	else if( it_->type == Lexem::Type::Identifier && it_->text == Keywords::fn_ )
 		return std::make_unique<FunctionType>( ParseFunctionType() );
 	else
-		return ParseComplexName();
+		return std::visit( []( auto&& el ) { return TypeName( std::move(el) ); }, ParseComplexName() );
 }
 
 std::vector<Expression> SyntaxAnalyzer::ParseTemplateParameters()

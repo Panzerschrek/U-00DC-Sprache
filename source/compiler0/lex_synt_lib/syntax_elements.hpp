@@ -135,7 +135,16 @@ struct Namespace;
 
 using TypeName= std::variant<
 	EmptyVariant,
-	ComplexName,
+	// Include all ComplexName variants.
+	// Do not store ComplexName itself, since it adds extra size because of nested variants.
+	TypeofTypeName,
+	RootNamespaceNameLookup,
+	RootNamespaceNameLookupCompletion,
+	NameLookup,
+	NameLookupCompletion,
+	std::unique_ptr<const NamesScopeNameFetch>,
+	std::unique_ptr<const NamesScopeNameFetchCompletion>,
+	std::unique_ptr<const TemplateParametrization>,
 	// Non-terminals.
 	TupleType, // Just vector of contained types
 	std::unique_ptr<const RawPointerType>,

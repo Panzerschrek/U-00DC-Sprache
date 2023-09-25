@@ -998,20 +998,17 @@ size_t CodeBuilder::PrepareFunction(
 			function_type.return_type= void_type_;
 		else
 		{
-			if( const auto named_return_type = std::get_if<Synt::ComplexName>(func.type.return_type.get()) )
+			if( const auto name_lookup = std::get_if<Synt::NameLookup>( func.type.return_type.get() ) )
 			{
-				if( const auto name_lookup = std::get_if<Synt::NameLookup>( named_return_type ) )
+				if( name_lookup->name == Keywords::auto_ )
 				{
-					if( name_lookup->name == Keywords::auto_ )
-					{
-						func_variable.return_type_is_auto= true;
-						if( base_class != nullptr )
-							REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, names_scope.GetErrors(), func.src_loc, func_name );
-						if( func.block == nullptr )
-							REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
+					func_variable.return_type_is_auto= true;
+					if( base_class != nullptr )
+						REPORT_ERROR( AutoFunctionInsideClassesNotAllowed, names_scope.GetErrors(), func.src_loc, func_name );
+					if( func.block == nullptr )
+						REPORT_ERROR( ExpectedBodyForAutoFunction, names_scope.GetErrors(), func.src_loc, func_name );
 
-						function_type.return_type= void_type_;
-					}
+					function_type.return_type= void_type_;
 				}
 			}
 
