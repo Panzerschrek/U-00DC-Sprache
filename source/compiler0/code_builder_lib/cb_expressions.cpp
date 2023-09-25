@@ -76,7 +76,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CallOperator& call_operator )
 {
-	const Value function_value= BuildExpressionCode( *call_operator.expression, names, function_context );
+	const Value function_value= BuildExpressionCode( call_operator.expression, names, function_context );
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
 	return CallFunction( function_value, call_operator.arguments, call_operator.src_loc, names, function_context );
@@ -87,7 +87,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CallOperatorSignatureHelp& call_operator_signature_help )
 {
-	PerformSignatureHelp( BuildExpressionCode( *call_operator_signature_help.expression, names, function_context ) );
+	PerformSignatureHelp( BuildExpressionCode( call_operator_signature_help.expression, names, function_context ) );
 	return ErrorValue();
 }
 
@@ -96,14 +96,14 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::IndexationOperator& indexation_operator )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *indexation_operator.expression, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( indexation_operator.expression, names, function_context );
 
 	if( variable->type.GetClassType() != nullptr ) // If this is class - try call overloaded [] operator.
 	{
 		if( auto res=
 				TryCallOverloadedPostfixOperator(
 					variable,
-					llvm::ArrayRef<Synt::Expression>(*indexation_operator.index),
+					llvm::ArrayRef<Synt::Expression>(indexation_operator.index),
 					OverloadedOperator::Indexing,
 					indexation_operator.src_loc,
 					names,
@@ -127,7 +127,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		function_context.variables_state.AddNode( variable_lock );
 		function_context.variables_state.TryAddLink( variable, variable_lock, names.GetErrors(), indexation_operator.src_loc );
 
-		const VariablePtr index= BuildExpressionCodeEnsureVariable( *indexation_operator.index, names, function_context );
+		const VariablePtr index= BuildExpressionCodeEnsureVariable( indexation_operator.index, names, function_context );
 
 		const FundamentalType* const index_fundamental_type= index->type.GetFundamentalType();
 		if( !( index_fundamental_type != nullptr && (
@@ -216,7 +216,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		// This is needed to properly access multiple mutable child nodes of same tuple variable.
 		{
 			const StackVariablesStorage temp_variables_storage( function_context );
-			index= BuildExpressionCodeEnsureVariable( *indexation_operator.index, names, function_context );
+			index= BuildExpressionCodeEnsureVariable( indexation_operator.index, names, function_context );
 			CallDestructors( temp_variables_storage, names, function_context, indexation_operator.src_loc );
 			// It is fine if "index" will be destroyed here. We needed only "constexpr" value of index here.
 		}
@@ -382,7 +382,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::UnaryMinus& unary_minus )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *unary_minus.expression, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( unary_minus.expression, names, function_context );
 
 	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::Sub, unary_minus.src_loc, names, function_context ) )
 		return std::move(*res);
@@ -430,7 +430,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Synt::UnaryPlus& unary_plus )
 {
 	// TODO - maybe check type of expression here?
-	return BuildExpressionCode( *unary_plus.expression, names, function_context );
+	return BuildExpressionCode( unary_plus.expression, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -438,7 +438,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::LogicalNot& logical_not )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *logical_not.expression, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( logical_not.expression, names, function_context );
 
 	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::LogicalNot, logical_not.src_loc, names, function_context ) )
 		return std::move(*res);
@@ -473,7 +473,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::BitwiseNot& bitwise_not )
 {
-	const VariablePtr variable= BuildExpressionCodeEnsureVariable( *bitwise_not.expression, names, function_context );
+	const VariablePtr variable= BuildExpressionCodeEnsureVariable( bitwise_not.expression, names, function_context );
 
 	if( auto res= TryCallOverloadedUnaryOperator( variable, OverloadedOperator::BitwiseNot, bitwise_not.src_loc, names, function_context ) )
 		return std::move(*res);
@@ -519,8 +519,8 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	{
 		return
 			BuildLazyBinaryOperator(
-				*binary_operator.left,
-				*binary_operator.right,
+				binary_operator.left,
+				binary_operator.right,
 				binary_operator,
 				binary_operator.src_loc,
 				names,
@@ -532,7 +532,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	std::optional<Value> overloaded_operator_call_try=
 		TryCallOverloadedBinaryOperator(
 			overloaded_operator,
-			*binary_operator.left, *binary_operator.right,
+			binary_operator.left, binary_operator.right,
 			false,
 			binary_operator.src_loc,
 			names,
@@ -601,7 +601,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	VariablePtr l_var=
 		BuildExpressionCodeEnsureVariable(
-			*binary_operator.left,
+			binary_operator.left,
 			names,
 			function_context );
 
@@ -632,7 +632,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	const VariablePtr r_var=
 		BuildExpressionCodeEnsureVariable(
-			*binary_operator.right,
+			binary_operator.right,
 			names,
 			function_context );
 
@@ -782,7 +782,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::TernaryOperator& ternary_operator )
 {
-	const VariablePtr condition= BuildExpressionCodeEnsureVariable( *ternary_operator.condition, names, function_context );
+	const VariablePtr condition= BuildExpressionCodeEnsureVariable( ternary_operator.condition, names, function_context );
 	if( condition->type != bool_type_ )
 	{
 		REPORT_ERROR( TypesMismatch, names.GetErrors(), ternary_operator.src_loc, bool_type_, condition->type );
@@ -802,7 +802,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			const auto state= SaveFunctionContextState( function_context );
 			{
 				const StackVariablesStorage dummy_stack_variables_storage( function_context );
-				const VariablePtr var= BuildExpressionCodeEnsureVariable( i == 0u ? *ternary_operator.true_branch : *ternary_operator.false_branch, names, function_context );
+				const VariablePtr var= BuildExpressionCodeEnsureVariable( i == 0u ? ternary_operator.true_branch : ternary_operator.false_branch, names, function_context );
 				branches_types[i]= var->type;
 				branches_value_types[i]= var->value_type;
 				DestroyUnusedTemporaryVariables( function_context, names.GetErrors(), ternary_operator.src_loc );
@@ -877,7 +877,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				function_context.llvm_ir_builder.SetInsertPoint( branches_basic_blocks[i] );
 			}
 
-			const Synt::Expression& branch_expr= i == 0u ? *ternary_operator.true_branch : *ternary_operator.false_branch;
+			const Synt::Expression& branch_expr= i == 0u ? ternary_operator.true_branch : ternary_operator.false_branch;
 
 			const VariablePtr branch_result= BuildExpressionCodeEnsureVariable( branch_expr, names, function_context );
 
@@ -969,7 +969,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator )
 {
-	const VariablePtr v= BuildExpressionCodeEnsureVariable( *reference_to_raw_pointer_operator.expression, names, function_context );
+	const VariablePtr v= BuildExpressionCodeEnsureVariable( reference_to_raw_pointer_operator.expression, names, function_context );
 	if( v->value_type == ValueType::Value )
 	{
 		REPORT_ERROR( ValueIsNotReference, names.GetErrors(), reference_to_raw_pointer_operator.src_loc );
@@ -1013,7 +1013,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( RawPointerToReferenceConversionOutsideUnsafeBlock, names.GetErrors(), raw_pointer_to_reference_operator.src_loc );
 
-	const VariablePtr v= BuildExpressionCodeEnsureVariable( *raw_pointer_to_reference_operator.expression, names, function_context );
+	const VariablePtr v= BuildExpressionCodeEnsureVariable( raw_pointer_to_reference_operator.expression, names, function_context );
 	const RawPointerType* const raw_pointer_type= v->type.GetRawPointerType();
 
 	if( raw_pointer_type == nullptr )
@@ -1348,7 +1348,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::TakeOperator& take_operator	)
 {
-	const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( *take_operator.expression, names, function_context );
+	const VariablePtr expression_result= BuildExpressionCodeEnsureVariable( take_operator.expression, names, function_context );
 	if( expression_result->value_type == ValueType::Value ) // If it is value - just pass it.
 		return expression_result;
 
@@ -1416,7 +1416,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( MutableReferenceCastOutsideUnsafeBlock, names.GetErrors(), cast_mut.src_loc );
 
-	const VariablePtr var= BuildExpressionCodeEnsureVariable( *cast_mut.expression, names, function_context );
+	const VariablePtr var= BuildExpressionCodeEnsureVariable( cast_mut.expression, names, function_context );
 
 	const VariableMutPtr result=
 		std::make_shared<Variable>(
@@ -1449,7 +1449,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CastImut& cast_imut	)
 {
-	const VariablePtr var= BuildExpressionCodeEnsureVariable( *cast_imut.expression, names, function_context );
+	const VariablePtr var= BuildExpressionCodeEnsureVariable( cast_imut.expression, names, function_context );
 
 	const VariableMutPtr result=
 		std::make_shared<Variable>(
@@ -1483,7 +1483,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	FunctionContext& function_context,
 	const Synt::CastRef& cast_ref )
 {
-	return DoReferenceCast( cast_ref.src_loc, *cast_ref.type, *cast_ref.expression, false, names, function_context );
+	return DoReferenceCast( cast_ref.src_loc, *cast_ref.type, cast_ref.expression, false, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1494,7 +1494,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	if( !function_context.is_in_unsafe_block )
 		REPORT_ERROR( UnsafeReferenceCastOutsideUnsafeBlock, names.GetErrors(), cast_ref_unsafe.src_loc );
 
-	return DoReferenceCast( cast_ref_unsafe.src_loc, *cast_ref_unsafe.type, *cast_ref_unsafe.expression, true, names, function_context );
+	return DoReferenceCast( cast_ref_unsafe.src_loc, *cast_ref_unsafe.type, cast_ref_unsafe.expression, true, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -1578,7 +1578,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 {
 	const bool prev_unsafe= function_context.is_in_unsafe_block;
 	function_context.is_in_unsafe_block= false;
-	Value result= BuildExpressionCode( *safe_expression.expression, names, function_context );
+	Value result= BuildExpressionCode( safe_expression.expression, names, function_context );
 	function_context.is_in_unsafe_block= prev_unsafe;
 	return result;
 }
@@ -1596,7 +1596,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 
 	const bool prev_unsafe= function_context.is_in_unsafe_block;
 	function_context.is_in_unsafe_block= true;
-	Value result= BuildExpressionCode( *unsafe_expression.expression, names, function_context );
+	Value result= BuildExpressionCode( unsafe_expression.expression, names, function_context );
 	function_context.is_in_unsafe_block= prev_unsafe;
 
 	// Avoid passing constexpr values trough unsafe expression.

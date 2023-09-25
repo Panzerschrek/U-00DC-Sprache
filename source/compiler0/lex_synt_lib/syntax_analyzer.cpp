@@ -819,12 +819,12 @@ template<size_t priority> Expression SyntaxAnalyzer::TryParseBinaryOperator()
 		{
 			if( it_->type == op_pair.first )
 			{
-				BinaryOperator binary_operator( it_->src_loc );
+				auto binary_operator= std::make_unique<BinaryOperator>( it_->src_loc );
 				NextLexem();
 
-				binary_operator.left= std::make_unique<Expression>( std::move(expr) );
-				binary_operator.operator_type= op_pair.second;
-				binary_operator.right= std::make_unique<Expression>( TryParseBinaryOperator<next_priority>() );
+				binary_operator->left= std::move(expr);
+				binary_operator->operator_type= op_pair.second;
+				binary_operator->right= TryParseBinaryOperator<next_priority>();
 
 				expr= std::move(binary_operator);
 				binary_op_parsed= true;
@@ -858,11 +858,11 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 	{
 	case Lexem::Type::SquareBracketLeft:
 		{
-			IndexationOperator indexation_opearator( it_->src_loc );
+			auto indexation_opearator= std::make_unique<IndexationOperator>( it_->src_loc );
 			NextLexem();
 
-			indexation_opearator.expression= std::make_unique<Expression>(std::move(expr));
-			indexation_opearator.index= std::make_unique<Expression>(ParseExpression());
+			indexation_opearator->expression= std::move(expr);
+			indexation_opearator->index= ParseExpression();
 
 			ExpectLexem( Lexem::Type::SquareBracketRight );
 
@@ -871,18 +871,18 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 	case Lexem::Type::BracketLeft:
 		{
-			CallOperator call_operator( it_->src_loc );
+			auto call_operator= std::make_unique<CallOperator>( it_->src_loc );
 
-			call_operator.expression= std::make_unique<Expression>(std::move(expr));
+			call_operator->expression= std::move(expr);
 
 			auto call_result= ParseCall();
 			if( const auto args= std::get_if< std::vector<Expression> >( &call_result ) )
-				call_operator.arguments= std::move(*args);
+				call_operator->arguments= std::move(*args);
 			else if( std::get_if< SignatureHelpTag >( &call_result ) != nullptr )
 			{
-				CallOperatorSignatureHelp signature_help_result( it_->src_loc );
+				auto signature_help_result= std::make_unique<CallOperatorSignatureHelp>( it_->src_loc );
 				NextLexem();
-				signature_help_result.expression= std::move(call_operator.expression);
+				signature_help_result->expression= std::move(call_operator->expression);
 				return std::move(signature_help_result);
 			}
 			else U_ASSERT(false);
@@ -892,10 +892,10 @@ Expression SyntaxAnalyzer::TryParseBinaryOperatorComponentPostfixOperator( Expre
 
 	case Lexem::Type::SignatureHelpBracketLeft:
 		{
-			CallOperatorSignatureHelp call_operator_signature_help( it_->src_loc );
+			auto call_operator_signature_help= std::make_unique<CallOperatorSignatureHelp>( it_->src_loc );
 			NextLexem();
 
-			call_operator_signature_help.expression= std::make_unique<Expression>(std::move(expr));
+			call_operator_signature_help->expression= std::move(expr);
 
 			return TryParseBinaryOperatorComponentPostfixOperator(std::move(call_operator_signature_help));
 		}
@@ -956,34 +956,34 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 	{
 	case Lexem::Type::Plus:
 		{
-			UnaryPlus unary_plus( it_->src_loc );
+			auto unary_plus= std::make_unique<UnaryPlus>( it_->src_loc );
 			NextLexem();
 
-			unary_plus.expression= std::make_unique<Expression>(ParseBinaryOperatorComponent());
+			unary_plus->expression= ParseBinaryOperatorComponent();
 			return std::move(unary_plus);
 		}
 	case Lexem::Type::Minus:
 		{
-			UnaryMinus unary_minus( it_->src_loc );
+			auto unary_minus= std::make_unique<UnaryMinus>( it_->src_loc );
 			NextLexem();
 
-			unary_minus.expression= std::make_unique<Expression>(ParseBinaryOperatorComponent());
+			unary_minus->expression= ParseBinaryOperatorComponent();
 			return std::move(unary_minus);
 		}
 	case Lexem::Type::Not:
 		{
-			LogicalNot logical_not( it_->src_loc );
+			auto logical_not= std::make_unique<LogicalNot>( it_->src_loc );
 			NextLexem();
 
-			logical_not.expression= std::make_unique<Expression>(ParseBinaryOperatorComponent());
+			logical_not->expression= ParseBinaryOperatorComponent();
 			return std::move(logical_not);
 		}
 	case Lexem::Type::Tilda:
 		{
-			BitwiseNot bitwise_not( it_->src_loc );
+			auto bitwise_not= std::make_unique<BitwiseNot>( it_->src_loc );
 			NextLexem();
 
-			bitwise_not.expression= std::make_unique<Expression>(ParseBinaryOperatorComponent());
+			bitwise_not->expression= ParseBinaryOperatorComponent();
 			return std::move(bitwise_not);
 		}
 	case Lexem::Type::Scope:
@@ -1020,19 +1020,19 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 			return std::visit( [&](auto&& t) -> Expression { return std::move(t); }, ParseTypeName() );
 	case Lexem::Type::ReferenceToPointer:
 		{
-			ReferenceToRawPointerOperator reference_to_raw_pointer_operator( it_->src_loc );
+			auto reference_to_raw_pointer_operator= std::make_unique<ReferenceToRawPointerOperator>( it_->src_loc );
 			NextLexem();
 
-			reference_to_raw_pointer_operator.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			reference_to_raw_pointer_operator->expression= ParseExpressionInBrackets();
 
 			return std::move(reference_to_raw_pointer_operator);
 		}
 	case Lexem::Type::PointerToReference:
 		{
-			RawPointerToReferenceOperator raw_pointer_to_reference_operator( it_->src_loc );
+			auto raw_pointer_to_reference_operator= std::make_unique<RawPointerToReferenceOperator>( it_->src_loc );
 			NextLexem();
 
-			raw_pointer_to_reference_operator.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			raw_pointer_to_reference_operator->expression= ParseExpressionInBrackets();
 
 			return std::move(raw_pointer_to_reference_operator);
 		}
@@ -1080,65 +1080,59 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		}
 		if( it_->text == Keywords::take_ )
 		{
-			TakeOperator take_operator( it_->src_loc );
+			auto take_operator= std::make_unique<TakeOperator>( it_->src_loc );
 			NextLexem();
 
-			take_operator.expression= std::make_unique<Expression>(ParseExpressionInBrackets());
+			take_operator->expression= ParseExpressionInBrackets();
 
 			return std::move(take_operator);
 		}
 		if( it_->text == Keywords::select_ )
 		{
-			TernaryOperator ternary_operator( it_->src_loc );
+			auto ternary_operator= std::make_unique<TernaryOperator>( it_->src_loc );
 			NextLexem();
 
 			ExpectLexem( Lexem::Type::BracketLeft );
-
-			ternary_operator.condition= std::make_unique<Expression>( ParseExpression() );
-
+			ternary_operator->condition= ParseExpression();
 			ExpectLexem( Lexem::Type::Question );
-
-			ternary_operator.true_branch= std::make_unique<Expression>( ParseExpression() );
-
+			ternary_operator->true_branch= ParseExpression();
 			ExpectLexem( Lexem::Type::Colon );
-
-			ternary_operator.false_branch= std::make_unique<Expression>( ParseExpression() );
-
+			ternary_operator->false_branch= ParseExpression();
 			ExpectLexem( Lexem::Type::BracketRight );
 
 			return std::move(ternary_operator);
 		}
 		if( it_->text == Keywords::cast_ref_ )
 		{
-			CastRef cast( it_->src_loc );
+			auto cast= std::make_unique<CastRef>( it_->src_loc );
 			NextLexem();
-			cast.type= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
-			cast.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			cast->type= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
+			cast->expression= ParseExpressionInBrackets();
 
 			return std::move(cast);
 		}
 		if( it_->text == Keywords::cast_ref_unsafe_ )
 		{
-			CastRefUnsafe cast( it_->src_loc );
+			auto cast= std::make_unique<CastRefUnsafe>( it_->src_loc );
 			NextLexem();
-			cast.type= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
-			cast.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			cast->type= std::make_unique<TypeName>( ParseTypeNameInTemplateBrackets() );
+			cast->expression= ParseExpressionInBrackets();
 
 			return std::move(cast);
 		}
 		if( it_->text == Keywords::cast_imut_ )
 		{
-			CastImut cast( it_->src_loc );
+			auto cast= std::make_unique<CastImut>( it_->src_loc );
 			NextLexem();
-			cast.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			cast->expression= ParseExpressionInBrackets();
 
 			return std::move(cast);
 		}
 		if( it_->text == Keywords::cast_mut_ )
 		{
-			CastMut cast( it_->src_loc );
+			auto cast= std::make_unique<CastMut>( it_->src_loc );
 			NextLexem();
-			cast.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			cast->expression= ParseExpressionInBrackets();
 
 			return std::move(cast);
 		}
@@ -1173,17 +1167,17 @@ Expression SyntaxAnalyzer::ParseBinaryOperatorComponentCore()
 		}
 		if( it_->text == Keywords::safe_ )
 		{
-			SafeExpression expr( it_->src_loc );
+			auto expr= std::make_unique<SafeExpression>( it_->src_loc );
 			NextLexem();
-			expr.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			expr->expression= ParseExpressionInBrackets();
 
 			return std::move(expr);
 		}
 		if( it_->text == Keywords::unsafe_ )
 		{
-			UnsafeExpression expr( it_->src_loc );
+			auto expr= std::make_unique<UnsafeExpression>( it_->src_loc );
 			NextLexem();
-			expr.expression= std::make_unique<Expression>( ParseExpressionInBrackets() );
+			expr->expression= ParseExpressionInBrackets();
 
 			return std::move(expr);
 		}

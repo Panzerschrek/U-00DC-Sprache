@@ -28,20 +28,20 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		// Calls generally are not useless. Useless may be constexpr calls.
 		// But sometimes constexpr/non-constepxr call result may depend on template context.
 		// So, in order to avoid generating too many errors, assume, that all calls are not useless.
-		bool operator()( const Synt::CallOperator& ) { return false; }
-		bool operator()( const Synt::CallOperatorSignatureHelp& ) { return false; }
+		bool operator()( const std::unique_ptr<const Synt::CallOperator>& ) { return false; }
+		bool operator()( const std::unique_ptr<const Synt::CallOperatorSignatureHelp>& ) { return false; }
 		// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
-		bool operator()( const Synt::IndexationOperator& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::IndexationOperator>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::MemberAccessOperator>& ) { return true; }
 		bool operator()( const std::unique_ptr<const Synt::MemberAccessOperatorCompletion>& ) { return true; }
-		bool operator()( const Synt::UnaryPlus& ) { return true; }
-		bool operator()( const Synt::UnaryMinus& ) { return true; }
-		bool operator()( const Synt::LogicalNot& ) { return true; }
-		bool operator()( const Synt::BitwiseNot& ) { return true; }
-		bool operator()( const Synt::BinaryOperator& ) { return true; }
-		bool operator()( const Synt::TernaryOperator& ) { return true; }
-		bool operator()( const Synt::ReferenceToRawPointerOperator& ) { return true; }
-		bool operator()( const Synt::RawPointerToReferenceOperator& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::UnaryPlus>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::UnaryMinus>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::LogicalNot>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::BitwiseNot>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::BinaryOperator>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::TernaryOperator>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::ReferenceToRawPointerOperator>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::RawPointerToReferenceOperator>& ) { return true; }
 		// Name resolving itself has no side effects.
 		bool operator()( const Synt::ComplexName& ) { return true; }
 		// Simple constant expressions have no side effects.
@@ -50,19 +50,19 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		bool operator()( const Synt::StringLiteral& ) { return true; }
 		// Move and take have side effects.
 		bool operator()( const Synt::MoveOperator& ) { return false; }
-		bool operator()( const Synt::TakeOperator& ) { return false; }
+		bool operator()( const std::unique_ptr<const Synt::TakeOperator>& ) { return false; }
 		// Casts have no side effects.
-		bool operator()( const Synt::CastMut& ) { return true; }
-		bool operator()( const Synt::CastImut& ) { return true; }
-		bool operator()( const Synt::CastRef& ) { return true; }
-		bool operator()( const Synt::CastRefUnsafe& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::CastMut>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::CastImut>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::CastRef>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::CastRefUnsafe>& ) { return true; }
 		bool operator()( const Synt::TypeInfo& ) { return true; }
 		bool operator()( const Synt::SameType& ) { return true; }
 		bool operator()( const Synt::NonSyncExpression& ) { return true; }
 		// safe/unsafe expressions needs to be visited deeply.
 		// safe/unsafe expression can't be discarded, because it has meaning.
-		bool operator()( const Synt::SafeExpression& safe_expression ) { return SingleExpressionIsUseless( *safe_expression.expression ); }
-		bool operator()( const Synt::UnsafeExpression& unsafe_expression ) { return SingleExpressionIsUseless( *unsafe_expression.expression ); }
+		bool operator()( const std::unique_ptr<const Synt::SafeExpression>& safe_expression ) { return SingleExpressionIsUseless( safe_expression->expression ); }
+		bool operator()( const std::unique_ptr<const Synt::UnsafeExpression>& unsafe_expression ) { return SingleExpressionIsUseless( unsafe_expression->expression ); }
 		// Type names have no side-effects.
 		bool operator()( const Synt::ArrayTypeName& ) { return true; }
 		bool operator()( const Synt::FunctionTypePtr& ) { return true; }

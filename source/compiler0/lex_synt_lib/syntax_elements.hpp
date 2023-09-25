@@ -147,39 +147,73 @@ using TypeName= std::variant<
 
 using TypeNamePtr= std::unique_ptr<const TypeName>;
 
+struct BooleanConstant
+{
+	BooleanConstant( const SrcLoc& src_loc, bool value );
+
+	SrcLoc src_loc;
+	bool value= false;
+};
+
+using TypeSuffix= std::array<char, 7>;
+
+struct NumericConstant : public NumberLexemData
+{
+	NumericConstant( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+};
+
+struct StringLiteral
+{
+	StringLiteral( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	std::string value;
+	TypeSuffix type_suffix;
+};
+
+struct MoveOperator
+{
+	MoveOperator( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	std::string var_name;
+	bool completion_requested= false;
+};
+
 using Expression= std::variant<
 	EmptyVariant,
-	// Postfix operators
-	CallOperator,
-	CallOperatorSignatureHelp,
-	IndexationOperator,
-	std::unique_ptr<const MemberAccessOperator>,
-	std::unique_ptr<const MemberAccessOperatorCompletion>,
-	// Prefix operators
-	UnaryPlus,
-	UnaryMinus,
-	LogicalNot,
-	BitwiseNot,
-	// Main components
+	// Terminal nodes.
 	ComplexName,
-	BinaryOperator,
-	TernaryOperator,
-	ReferenceToRawPointerOperator,
-	RawPointerToReferenceOperator,
 	NumericConstant,
 	BooleanConstant,
 	StringLiteral,
 	MoveOperator,
-	TakeOperator,
-	CastMut,
-	CastImut,
-	CastRef,
-	CastRefUnsafe,
 	TypeInfo,
 	SameType,
 	NonSyncExpression,
-	SafeExpression,
-	UnsafeExpression,
+	// Non-terminal nodes (with Expression containing inside).
+	std::unique_ptr<const CallOperator>,
+	std::unique_ptr<const CallOperatorSignatureHelp>,
+	std::unique_ptr<const IndexationOperator>,
+	std::unique_ptr<const MemberAccessOperator>,
+	std::unique_ptr<const MemberAccessOperatorCompletion>,
+	std::unique_ptr<const UnaryPlus>,
+	std::unique_ptr<const UnaryMinus>,
+	std::unique_ptr<const LogicalNot>,
+	std::unique_ptr<const BitwiseNot>,
+	std::unique_ptr<const SafeExpression>,
+	std::unique_ptr<const UnsafeExpression>,
+	std::unique_ptr<const BinaryOperator>,
+	std::unique_ptr<const TernaryOperator>,
+	std::unique_ptr<const ReferenceToRawPointerOperator>,
+	std::unique_ptr<const RawPointerToReferenceOperator>,
+	std::unique_ptr<const TakeOperator>,
+	std::unique_ptr<const CastMut>,
+	std::unique_ptr<const CastImut>,
+	std::unique_ptr<const CastRef>,
+	std::unique_ptr<const CastRefUnsafe>,
 	// Type name in expression context
 	ArrayTypeName,
 	FunctionTypePtr,
@@ -435,93 +469,6 @@ struct FunctionParam
 	ReferenceModifier reference_modifier= ReferenceModifier::None;
 };
 
-struct BinaryOperator
-{
-	explicit BinaryOperator( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	BinaryOperatorType operator_type;
-	ExpressionPtr left;
-	ExpressionPtr right;
-};
-
-struct TernaryOperator
-{
-	explicit TernaryOperator( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	ExpressionPtr condition;
-	ExpressionPtr true_branch;
-	ExpressionPtr false_branch;
-};
-
-struct ReferenceToRawPointerOperator
-{
-	explicit ReferenceToRawPointerOperator( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	ExpressionPtr expression;
-};
-
-struct RawPointerToReferenceOperator
-{
-	explicit RawPointerToReferenceOperator( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	ExpressionPtr expression;
-};
-
-struct MoveOperator
-{
-	MoveOperator( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	std::string var_name;
-	bool completion_requested= false;
-};
-
-struct TakeOperator
-{
-	TakeOperator( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	ExpressionPtr expression;
-};
-
-struct CastRef
-{
-	CastRef( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	TypeNamePtr type;
-	ExpressionPtr expression;
-};
-
-struct CastRefUnsafe
-{
-	CastRefUnsafe( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	TypeNamePtr type;
-	ExpressionPtr expression;
-};
-
-struct CastImut
-{
-	CastImut( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	ExpressionPtr expression;
-};
-
-struct CastMut
-{
-	CastMut( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	ExpressionPtr expression;
-};
-
 struct TypeInfo
 {
 	TypeInfo( const SrcLoc& src_loc );
@@ -552,7 +499,7 @@ struct SafeExpression
 	SafeExpression( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
+	Expression expression;
 };
 
 struct UnsafeExpression
@@ -560,33 +507,7 @@ struct UnsafeExpression
 	UnsafeExpression( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
-};
-
-struct BooleanConstant
-{
-	BooleanConstant( const SrcLoc& src_loc, bool value );
-
-	SrcLoc src_loc;
-	bool value= false;
-};
-
-using TypeSuffix= std::array<char, 7>;
-
-struct NumericConstant : public NumberLexemData
-{
-	NumericConstant( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-};
-
-struct StringLiteral
-{
-	StringLiteral( const SrcLoc& src_loc );
-
-	SrcLoc src_loc;
-	std::string value;
-	TypeSuffix type_suffix;
+	Expression expression;
 };
 
 struct UnaryPlus
@@ -594,7 +515,7 @@ struct UnaryPlus
 	explicit UnaryPlus( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
+	Expression expression;
 };
 
 struct UnaryMinus
@@ -602,7 +523,7 @@ struct UnaryMinus
 	explicit UnaryMinus( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
+	Expression expression;
 };
 
 struct LogicalNot
@@ -610,7 +531,7 @@ struct LogicalNot
 	explicit LogicalNot( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
+	Expression expression;
 };
 
 struct BitwiseNot
@@ -618,7 +539,7 @@ struct BitwiseNot
 	explicit BitwiseNot( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
+	Expression expression;
 };
 
 struct CallOperator
@@ -626,7 +547,7 @@ struct CallOperator
 	CallOperator( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
+	Expression expression;
 	std::vector<Expression> arguments;
 };
 
@@ -636,7 +557,7 @@ struct CallOperatorSignatureHelp
 	CallOperatorSignatureHelp( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
+	Expression expression;
 	// For now no need to parse arguments.
 };
 
@@ -645,8 +566,8 @@ struct IndexationOperator
 	explicit IndexationOperator( const SrcLoc& src_loc );
 
 	SrcLoc src_loc;
-	ExpressionPtr expression;
-	ExpressionPtr index;
+	Expression expression;
+	Expression index;
 };
 
 struct MemberAccessOperator
@@ -668,6 +589,84 @@ struct MemberAccessOperatorCompletion
 	SrcLoc src_loc;
 	Expression expression;
 	std::string member_name;
+};
+
+struct BinaryOperator
+{
+	explicit BinaryOperator( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	BinaryOperatorType operator_type;
+	Expression left;
+	Expression right;
+};
+
+struct TernaryOperator
+{
+	explicit TernaryOperator( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression condition;
+	Expression true_branch;
+	Expression false_branch;
+};
+
+struct ReferenceToRawPointerOperator
+{
+	explicit ReferenceToRawPointerOperator( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
+struct RawPointerToReferenceOperator
+{
+	explicit RawPointerToReferenceOperator( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
+struct TakeOperator
+{
+	TakeOperator( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
+struct CastRef
+{
+	CastRef( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	TypeNamePtr type;
+	Expression expression;
+};
+
+struct CastRefUnsafe
+{
+	CastRefUnsafe( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	TypeNamePtr type;
+	Expression expression;
+};
+
+struct CastImut
+{
+	CastImut( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
+};
+
+struct CastMut
+{
+	CastMut( const SrcLoc& src_loc );
+
+	SrcLoc src_loc;
+	Expression expression;
 };
 
 struct SequenceInitializer

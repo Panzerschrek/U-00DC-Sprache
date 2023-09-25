@@ -258,46 +258,38 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			return;
 		}
-		void operator()( const BinaryOperator& binary_operator ) const
+		void operator()( const std::unique_ptr<const BinaryOperator>& binary_operator ) const
 		{
-			if( binary_operator.left == nullptr || binary_operator.right == nullptr )
-				return;
-			ElementWrite( *binary_operator.left , stream );
-			stream << " " << BinaryOperatorToString(binary_operator.operator_type) << " ";
-			ElementWrite( *binary_operator.right, stream );
+			ElementWrite( binary_operator->left , stream );
+			stream << " " << BinaryOperatorToString(binary_operator->operator_type) << " ";
+			ElementWrite( binary_operator->right, stream );
 		}
 		void operator()( const ComplexName& complex_name ) const
 		{
 			ElementWrite( complex_name, stream );
 		}
-		void operator()( const TernaryOperator& ternary_operator ) const
+		void operator()( const std::unique_ptr<const TernaryOperator>& ternary_operator ) const
 		{
-			if( ternary_operator.condition == nullptr || ternary_operator.true_branch == nullptr || ternary_operator.false_branch == nullptr )
-				return;
 			stream << Keyword( Keywords::select_ ) << "( ";
-			ElementWrite( *ternary_operator.condition, stream );
+			ElementWrite( ternary_operator->condition, stream );
 			stream << " ? ";
-			ElementWrite( *ternary_operator.true_branch, stream );
+			ElementWrite( ternary_operator->true_branch, stream );
 			stream << " : ";
-			ElementWrite( *ternary_operator.false_branch, stream );
+			ElementWrite( ternary_operator->false_branch, stream );
 			stream << " )";
 		}
-		void operator()( const ReferenceToRawPointerOperator& reference_to_raw_pointer_operator ) const
+		void operator()( const std::unique_ptr<const ReferenceToRawPointerOperator>& reference_to_raw_pointer_operator ) const
 		{
-			if( reference_to_raw_pointer_operator.expression == nullptr )
-				return;
 			stream << "$<";
 			stream << "(";
-			ElementWrite( *reference_to_raw_pointer_operator.expression, stream );
+			ElementWrite( reference_to_raw_pointer_operator->expression, stream );
 			stream << ")";
 		}
-		void operator()( const RawPointerToReferenceOperator& raw_pointer_to_reference_operator ) const
+		void operator()( const std::unique_ptr<const RawPointerToReferenceOperator>& raw_pointer_to_reference_operator ) const
 		{
-			if( raw_pointer_to_reference_operator.expression == nullptr )
-				return;
 			stream << "$>";
 			stream << "(";
-			ElementWrite( *raw_pointer_to_reference_operator.expression, stream );
+			ElementWrite( raw_pointer_to_reference_operator->expression, stream );
 			stream << ")";
 		}
 		void operator()( const NumericConstant& numeric_constant ) const
@@ -383,46 +375,38 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 		{
 			stream << Keyword( Keywords::move_ ) << "( " << move_operator.var_name << " )";
 		}
-		void operator()( const TakeOperator& take_operator ) const
+		void operator()( const std::unique_ptr<const TakeOperator>& take_operator ) const
 		{
 			stream << Keyword( Keywords::take_ ) << "( ";
-			ElementWrite( *take_operator.expression, stream );
+			ElementWrite( take_operator->expression, stream );
 			stream << " )";
 		}
-		void operator()( const CastRef& cast_ref ) const
+		void operator()( const std::unique_ptr<const CastRef>& cast_ref ) const
 		{
-			if( cast_ref.type == nullptr || cast_ref.expression == nullptr )
-				return;
 			stream << Keyword( Keywords::cast_ref_ ) << "</ ";
-			ElementWrite( *cast_ref.type, stream );
+			ElementWrite( *cast_ref->type, stream );
 			stream << " />( ";
-			ElementWrite( *cast_ref.expression, stream );
+			ElementWrite( cast_ref->expression, stream );
 			stream << " )";
 		}
-		void operator()( const CastRefUnsafe& cast_ref_unsafe ) const
+		void operator()( const std::unique_ptr<const CastRefUnsafe>& cast_ref_unsafe ) const
 		{
-			if( cast_ref_unsafe.type == nullptr || cast_ref_unsafe.expression == nullptr )
-				return;
 			stream << Keyword( Keywords::cast_ref_unsafe_ ) << "</ ";
-			ElementWrite( *cast_ref_unsafe.type, stream );
+			ElementWrite( *cast_ref_unsafe->type, stream );
 			stream << " />( ";
-			ElementWrite( *cast_ref_unsafe.expression, stream );
+			ElementWrite( cast_ref_unsafe->expression, stream );
 			stream << " )";
 		}
-		void operator()( const CastImut& cast_imut ) const
+		void operator()( const std::unique_ptr<const CastImut>& cast_imut ) const
 		{
-			if( cast_imut.expression == nullptr )
-				return;
 			stream << Keyword( Keywords::cast_imut_ ) << "( ";
-			ElementWrite( *cast_imut.expression, stream );
+			ElementWrite( cast_imut->expression, stream );
 			stream << " )";
 		}
-		void operator()( const CastMut& cast_mut ) const
+		void operator()( const std::unique_ptr<const CastMut>& cast_mut ) const
 		{
-			if( cast_mut.expression == nullptr )
-				return;
 			stream << Keyword( Keywords::cast_mut_ ) << "( ";
-			ElementWrite( *cast_mut.expression, stream );
+			ElementWrite( cast_mut->expression, stream );
 			stream << " )";
 		}
 		void operator()( const TypeInfo& typeinfo_ ) const
@@ -451,45 +435,45 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( *non_sync_expression.type, stream );
 			stream << " />";
 		}
-		void operator()( const SafeExpression& safe_expression ) const
+		void operator()( const std::unique_ptr<const SafeExpression>& safe_expression ) const
 		{
 			stream << Keyword( Keywords::safe_ );
 			stream << "( ";
-			ElementWrite( *safe_expression.expression, stream );
+			ElementWrite( safe_expression->expression, stream );
 			stream << " )";
 		}
-		void operator()( const UnsafeExpression& unsafe_expression ) const
+		void operator()( const std::unique_ptr<const UnsafeExpression>& unsafe_expression ) const
 		{
 			stream << Keyword( Keywords::unsafe_ );
 			stream << "( ";
-			ElementWrite( *unsafe_expression.expression, stream );
+			ElementWrite( unsafe_expression->expression, stream );
 			stream << " )";
 		}
-		void operator()( const UnaryMinus& unary_minus ) const
+		void operator()( const std::unique_ptr<const UnaryMinus>& unary_minus ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::Sub );
-			ElementWrite( *unary_minus.expression, stream );
+			ElementWrite( unary_minus->expression, stream );
 		}
-		void operator()( const UnaryPlus& unary_plus ) const
+		void operator()( const std::unique_ptr<const UnaryPlus>& unary_plus ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::Add );
-			ElementWrite( *unary_plus.expression, stream );
+			ElementWrite( unary_plus->expression, stream );
 		}
-		void operator()( const LogicalNot& logical_not ) const
+		void operator()( const std::unique_ptr<const LogicalNot>& logical_not ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::LogicalNot );
-			ElementWrite( *logical_not.expression, stream );
+			ElementWrite( logical_not->expression, stream );
 		}
-		void operator()( const BitwiseNot& bitwise_not ) const
+		void operator()( const std::unique_ptr<const BitwiseNot>& bitwise_not ) const
 		{
 			stream << OverloadedOperatorToString( OverloadedOperator::BitwiseNot );
-			ElementWrite( *bitwise_not.expression, stream );
+			ElementWrite( bitwise_not->expression, stream );
 		}
-		void operator()( const IndexationOperator& indexation_operator )
+		void operator()( const std::unique_ptr<const IndexationOperator>& indexation_operator )
 		{
-			ElementWrite( *indexation_operator.expression, stream );
+			ElementWrite( indexation_operator->expression, stream );
 			stream << "[ ";
-			ElementWrite( *indexation_operator.index, stream );
+			ElementWrite( indexation_operator->index, stream );
 			stream << " ]";
 		}
 		void operator()( const std::unique_ptr<const MemberAccessOperator>& member_access_operator_ptr ) const
@@ -523,22 +507,22 @@ void ElementWrite( const Expression& expression, std::ostream& stream )
 			ElementWrite( member_access_operator_completion.expression, stream );
 			stream << "." << member_access_operator_completion.member_name;
 		}
-		void operator()( const CallOperator& call_operator ) const
+		void operator()( const std::unique_ptr<const CallOperator>& call_operator ) const
 		{
-			ElementWrite( *call_operator.expression, stream );
+			ElementWrite( call_operator->expression, stream );
 			stream << "( ";
-			for( const Expression& arg : call_operator.arguments )
+			for( const Expression& arg : call_operator->arguments )
 			{
 				ElementWrite( arg, stream );
 
-				if( &arg != &call_operator.arguments.back() )
+				if( &arg != &call_operator->arguments.back() )
 					stream << ", ";
 			}
 			stream << ")";
 		}
-		void operator()( const CallOperatorSignatureHelp& call_operator_signature_help ) const
+		void operator()( const std::unique_ptr<const CallOperatorSignatureHelp>& call_operator_signature_help ) const
 		{
-			ElementWrite( *call_operator_signature_help.expression, stream );
+			ElementWrite( call_operator_signature_help->expression, stream );
 			stream << "( ";
 			stream << ")";
 		}
