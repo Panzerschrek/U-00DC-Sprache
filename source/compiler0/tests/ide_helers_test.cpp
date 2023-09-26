@@ -457,6 +457,26 @@ U_TEST( GoToDefinition_Test12 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 20 ) == SrcLoc( 0, 9, 5 ) );
 }
 
+U_TEST( GoToDefinition_Test13 )
+{
+	// Should return none for fundamental type names.
+	static const char c_program_text[]=
+	R"(
+		type Int= i32;
+		var f32 x(0.0f);
+		struct S{ bool b; }
+		fn Foo() : void;
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 2, 13 ) == std::nullopt );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 3,  6 ) == std::nullopt );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 4, 14 ) == std::nullopt );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 5, 14 ) == std::nullopt );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=

@@ -96,6 +96,9 @@ void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc&
 	DefinitionPoint point;
 	point.src_loc= GetDefinitionFetchSrcLoc( value );
 
+	if( point.src_loc.GetFileIndex() >= compiled_sources_.size() )
+		return; // Ignore names with generated location (like built-in types).
+
 	// Reset macro expansion contexts.
 	// This fixes search of definitions/usages inside macro expansions.
 	// This breaks search within macro definitions itself, but it is anyway irrelevant.
