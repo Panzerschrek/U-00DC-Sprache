@@ -64,6 +64,8 @@ public: // Diagnostics.
 	const DiagnosticsByDocument& GetDiagnostics() const;
 
 public: // Requests.
+	std::optional<Uri> GetFileForImportPoint( const DocumentPosition& position );
+
 	std::optional<SrcLocInDocument> GetDefinitionPoint( const DocumentPosition& position );
 
 	// Returns highlights only for this document.
@@ -88,9 +90,6 @@ public: // Requests.
 public: // Other stuff.
 	// Start rebuild. Rebuilding itself is performed in background thread.
 	void StartRebuild( llvm::ThreadPool& thread_pool );
-
-private:
-	std::optional<Uri> GetFileForImportPoint( const DocumentPosition& position );
 
 	// This metod checks if compilation future has a new result. If so - it updates compiled state.
 	void TryTakeBackgroundStateUpdate();
