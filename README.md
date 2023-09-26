@@ -30,6 +30,8 @@ Python 3 is required to build and run tests, written in Python.
 
 Sphynx is required to build documentation.
 
+For more information/examples see build scripts in *ci* directory.
+
 
 ### Components
 

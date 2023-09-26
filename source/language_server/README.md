@@ -19,6 +19,7 @@ Additionally it is possible to specify include directories and log file location
 * Highlighting
 * Symbols tree construction
 * Completion
+* Signature help
 
 
 #### Limitations

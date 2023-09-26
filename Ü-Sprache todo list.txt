@@ -32,9 +32,11 @@ Templates:
 
 Standart library:
 *) Compilation speed-up - avoid generating some helper classes/functions
+*) Improve/fix unordered_map
+*) switch-like macro for variant
 *) Associative containers - map, set, string_map
 *) More algorithms
-*) Iterators library with transformations/operations (map, filter, reduce, etc.)
+*) Iterators library with transformations/operations (map, filter, reduce, fold, etc.)
 *) Time library - get time functions, timers
 *) File library
 *) Console input/output library
