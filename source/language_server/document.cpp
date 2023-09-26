@@ -1,4 +1,5 @@
 #include "../code_builder_lib_common/source_file_contents_hash.hpp"
+#include "../code_builder_lib_common/string_ref.hpp"
 #include "../compiler0/lex_synt_lib/lex_utils.hpp"
 #include "../compiler0/lex_synt_lib/syntax_analyzer.hpp"
 #include "../lex_synt_lib_common/assert.hpp"
@@ -289,6 +290,9 @@ std::optional<SrcLocInDocument> Document::GetDefinitionPoint( const DocumentPosi
 
 	if( compiled_state_ == nullptr )
 		return std::nullopt;
+
+	if( auto uri_opt= GetFileForImportPoint( position ) )
+		return SrcLocInDocument{ SrcLoc( 0, 1, 0 ), std::move(*uri_opt) };
 
 	const auto src_loc= GetIdentifierStartSrcLoc( position );
 	if( src_loc == std::nullopt )
@@ -845,6 +849,51 @@ void Document::StartRebuild( llvm::ThreadPool& thread_pool )
 			{
 				return (*lambda_ptr)();
 			} );
+}
+
+std::optional<Uri> Document::GetFileForImportPoint( const DocumentPosition& position )
+{
+	// Try to extract imported file name for given point.
+	// Etract current line for it and check if it starts with "import".
+	// If so - try to parse string for this import.
+	// If it is successfull - try to get full file path, using VFS.
+	// This approach is relativy fast, but doesn't work for cases, when import keyword and import string are on different lines.
+
+	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
+	if( linear_position == std::nullopt )
+		return std::nullopt;
+
+	const uint32_t line= LinearPositionToLine( compiled_state_->line_to_linear_position_index, *linear_position );
+	U_ASSERT( line < compiled_state_->line_to_linear_position_index.size() );
+
+	const TextLinearPosition line_offset= compiled_state_->line_to_linear_position_index[line];
+	U_ASSERT( *linear_position >= line_offset );
+
+	const std::string_view line_text= std::string_view( compiled_state_->text ).substr( line_offset );
+
+	static const char whitespaces[]= " \t"; // Since we process only single line, use only spaces and tabs.
+
+	llvm::StringRef line_text_trimmed= StringViewToStringRef( line_text ).ltrim( whitespaces );
+
+	const llvm::StringRef import_str= "import";
+	if( !line_text_trimmed.startswith( import_str ) )
+		return std::nullopt; // Not an import.
+
+	line_text_trimmed= line_text_trimmed.drop_front( import_str.size() );
+	line_text_trimmed= line_text_trimmed.ltrim( whitespaces );
+
+	if( !line_text_trimmed.startswith( "\"" ) )
+		return std::nullopt; // Not a string.
+
+	const std::optional<std::string> str= ParseStringLiteral( StringRefToStringView( line_text_trimmed ) );
+	if( str == std::nullopt )
+		return std::nullopt;
+
+	const IVfs::Path path= vfs_.GetFullFilePath( *str, path_ );
+	if( path.empty() )
+		return std::nullopt;
+
+	return Uri::FromFilePath( path );
 }
 
 void Document::TryTakeBackgroundStateUpdate()

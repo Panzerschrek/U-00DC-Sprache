@@ -90,6 +90,8 @@ public: // Other stuff.
 	void StartRebuild( llvm::ThreadPool& thread_pool );
 
 private:
+	std::optional<Uri> GetFileForImportPoint( const DocumentPosition& position );
+
 	// This metod checks if compilation future has a new result. If so - it updates compiled state.
 	void TryTakeBackgroundStateUpdate();
 

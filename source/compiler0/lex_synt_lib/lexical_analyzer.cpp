@@ -155,7 +155,7 @@ bool IsIdentifierChar( const sprache_char c )
 	return IsIdentifierStartChar(c) || IsNumberStartChar(c) || c == '_';
 }
 
-Lexem ParseString( Iterator& it, const Iterator it_end, const SrcLoc& src_loc, LexSyntErrors& out_errors )
+Lexem ParseStringImpl( Iterator& it, const Iterator it_end, const SrcLoc& src_loc, LexSyntErrors& out_errors )
 {
 	U_ASSERT( *it == '"' );
 	++it;
@@ -629,7 +629,7 @@ LexicalAnalysisResult LexicalAnalysis( const std::string_view program_text, cons
 		}
 		else if( c == '"' )
 		{
-			lexem= ParseString( it, it_end, SrcLoc( 0u, line, column ), result.errors );
+			lexem= ParseStringImpl( it, it_end, SrcLoc( 0u, line, column ), result.errors );
 			if( IsIdentifierStartChar( GetUTF8FirstChar( it, it_end ) ) )
 			{
 				// Parse string suffix.
@@ -872,6 +872,21 @@ std::optional<TextLinearPosition> GetIdentifierEndForPosition( const std::string
 		return std::nullopt; // Not an identifier.
 
 	return end_position;
+}
+
+std::optional<std::string> ParseStringLiteral( const std::string_view text )
+{
+	if( text.empty() || text.front() != '"' )
+		return std::nullopt;
+
+	const auto it_end= text.data() + text.size();
+	auto it= text.data();
+
+	LexSyntErrors errors;
+	Lexem string_lexem= ParseStringImpl( it, it_end, SrcLoc(), errors );
+	if( !errors.empty() )
+		return std::nullopt;
+	return std::move( string_lexem.text );
 }
 
 } // namespace U
