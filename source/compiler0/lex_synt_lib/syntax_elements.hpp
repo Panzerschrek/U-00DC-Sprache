@@ -866,8 +866,8 @@ struct ScopeBlock final : public Block
 	};
 
 	SrcLoc src_loc;
-	Safety safety= Safety::None;
 	std::optional<Label> label;
+	Safety safety= Safety::None;
 };
 
 struct VariablesDeclaration
@@ -946,12 +946,12 @@ struct RangeForOperator
 		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
-	ReferenceModifier reference_modifier= ReferenceModifier::None;
-	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	std::string loop_variable_name;
 	Expression sequence;
 	std::optional<Label> label;
 	Block block;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 };
 
 struct CStyleForOperator
@@ -966,17 +966,11 @@ struct CStyleForOperator
 	explicit CStyleForOperator( const SrcLoc& src_loc )
 		: src_loc(src_loc), block(src_loc) {}
 
-	std::unique_ptr<
-		const std::variant<
-			VariablesDeclaration,
-			AutoVariableDeclaration > >
-	variable_declaration_part;
-
-	Expression loop_condition;
-
-	IterationPartElementsList iteration_part_elements;
-
 	SrcLoc src_loc;
+
+	std::unique_ptr< const std::variant< VariablesDeclaration, AutoVariableDeclaration > > variable_declaration_part;
+	Expression loop_condition;
+	IterationPartElementsList iteration_part_elements;
 	std::optional<Label> label;
 	Block block;
 };
@@ -1005,11 +999,11 @@ struct WithOperator
 		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
-	ReferenceModifier reference_modifier= ReferenceModifier::None;
-	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 	std::string variable_name;
 	Expression expression;
 	Block block;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 };
 
 struct IfOperator
@@ -1018,10 +1012,10 @@ struct IfOperator
 		: src_loc(start_src_loc), block(start_src_loc) {}
 
 	SrcLoc src_loc;
+	SrcLoc end_src_loc;
 	Expression condition;
 	Block block;
 	IfAlternativePtr alternative; // non-null if "else" branch exists.
-	SrcLoc end_src_loc;
 };
 
 struct StaticIfOperator
@@ -1041,13 +1035,13 @@ struct IfCoroAdvanceOperator
 		: src_loc(src_loc), block(src_loc) {}
 
 	SrcLoc src_loc;
-	ReferenceModifier reference_modifier= ReferenceModifier::None;
-	MutabilityModifier mutability_modifier= MutabilityModifier::None;
+	SrcLoc end_src_loc;
 	std::string variable_name;
 	Expression expression;
 	Block block;
 	IfAlternativePtr alternative;
-	SrcLoc end_src_loc;
+	ReferenceModifier reference_modifier= ReferenceModifier::None;
+	MutabilityModifier mutability_modifier= MutabilityModifier::None;
 };
 
 struct SwitchOperator
@@ -1076,9 +1070,9 @@ struct SwitchOperator
 	};
 
 	SrcLoc src_loc;
+	SrcLoc end_src_loc;
 	Expression value;
 	std::vector<Case> cases;
-	SrcLoc end_src_loc;
 };
 
 struct SingleExpressionOperator
@@ -1183,14 +1177,14 @@ struct Function
 
 	SrcLoc src_loc;
 	std::vector<NameComponent> name; // A, A::B, A::B::C::D, ::A, ::A::B
-	Expression condition;
+	Expression condition; // Empty variant if has no condition.
 	FunctionType type;
 	std::unique_ptr<const StructNamedInitializer> constructor_initialization_list;
 	std::unique_ptr<const Block> block;
+	NonSyncTag coroutine_non_sync_tag; // Non-empty for generators
 	OverloadedOperator overloaded_operator= OverloadedOperator::None;
 	VirtualFunctionKind virtual_function_kind= VirtualFunctionKind::None;
 	BodyKind body_kind= BodyKind::None;
-	NonSyncTag coroutine_non_sync_tag; // Non-empty for generators
 	Kind kind= Kind::Regular;
 	bool no_mangle= false;
 	bool is_conversion_constructor= false;
@@ -1233,8 +1227,8 @@ struct Class
 	ClassElementsList elements;
 	std::string name;
 	std::vector<ComplexName> parents;
-	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
 	NonSyncTag non_sync_tag;
+	ClassKindAttribute kind_attribute_ = ClassKindAttribute::Struct;
 	bool keep_fields_order= false;
 };
 
@@ -1291,10 +1285,10 @@ struct TypeTemplate : public TemplateBase
 	std::vector<SignatureParam> signature_params;
 	std::string name;
 
-	// Short form means that template argumenst are also signature arguments.
-	bool is_short_form= false;
-
 	std::variant<std::unique_ptr<const Class>, std::unique_ptr<const TypeAlias>> something;
+
+	// Short form means that template params are also signature params.
+	bool is_short_form= false;
 };
 
 struct FunctionTemplate final : public TemplateBase
