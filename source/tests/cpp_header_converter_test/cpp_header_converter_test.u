@@ -3,27 +3,6 @@ import "/c_converted.u"
 fn SomeLocalFunc( f32 x ){}
 
 
-template</ type A />
-struct is_same_type_impl
-{
-	// Use type templates overloading for type equality comparison.
-	template</ type B /> struct same</ B />
-	{
-		auto constexpr value= false;
-	}
-
-	template</ /> struct same</ A />
-	{
-		auto constexpr value= true;
-	}
-}
-
-template</ type A, type B />
-fn constexpr types_are_same() : bool
-{
-	return is_same_type_impl</A/>::same</B/>::value;
-}
-
 template</ type char_type, size_type size0, size_type size1 />
 fn constexpr string_equals( [ char_type, size0 ]& s0, [ char_type, size1 ]& s1 ) : bool
 {
@@ -81,19 +60,19 @@ fn nomangle main() : i32
 		DuplicatedProto(0);
 	}
 	{
-		static_assert( types_are_same</ CPP_char8, char8 />() );
-		static_assert( types_are_same</ CPP_i8 ,  i8 />() );
-		static_assert( types_are_same</ CPP_u8 ,  u8 />() );
-		static_assert( types_are_same</ CPP_i16, i16 />() );
-		static_assert( types_are_same</ CPP_u16, u16 />() );
-		static_assert( types_are_same</ CPP_i32, i32 />() );
-		static_assert( types_are_same</ CPP_u32, u32 />() );
-		static_assert( types_are_same</ CPP_i64, i64 />() );
-		static_assert( types_are_same</ CPP_u64, u64 />() );
-		static_assert( types_are_same</ CPP_f32, f32 />() );
-		static_assert( types_are_same</ CPP_f64, f64 />() );
-		static_assert( types_are_same</ ArrayType15, [ i32, 15 ] />() );
-		static_assert( types_are_same</ MultidimentionalArrayType44, [ [ f32, 4 ], 4 ] />() );
+		static_assert( same_type</ CPP_char8, char8 /> );
+		static_assert( same_type</ CPP_i8 ,  i8 /> );
+		static_assert( same_type</ CPP_u8 ,  u8 /> );
+		static_assert( same_type</ CPP_i16, i16 /> );
+		static_assert( same_type</ CPP_u16, u16 /> );
+		static_assert( same_type</ CPP_i32, i32 /> );
+		static_assert( same_type</ CPP_u32, u32 /> );
+		static_assert( same_type</ CPP_i64, i64 /> );
+		static_assert( same_type</ CPP_u64, u64 /> );
+		static_assert( same_type</ CPP_f32, f32 /> );
+		static_assert( same_type</ CPP_f64, f64 /> );
+		static_assert( same_type</ ArrayType15, [ i32, 15 ] /> );
+		static_assert( same_type</ MultidimentionalArrayType44, [ [ f32, 4 ], 4 ] /> );
 	}
 	{
 		var i32 mut a= 0, mut b= 0;
@@ -164,7 +143,7 @@ fn nomangle main() : i32
 
 	var DifferentNamesForStructAndTypedef_0 different_names_for_struct_and_typedef_0{ .dummy0= 0, .dummy1= 0.0f };
 	var DifferentNamesForStructAndTypedef_1 different_names_for_struct_and_typedef_1{ .dummy0= 1, .dummy1= 1.0f };
-	static_assert( types_are_same</ DifferentNamesForStructAndTypedef_0 , DifferentNamesForStructAndTypedef_1 />() );
+	static_assert( same_type</ DifferentNamesForStructAndTypedef_0 , DifferentNamesForStructAndTypedef_1 /> );
 
 	return 0;
 }
