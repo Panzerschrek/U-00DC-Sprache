@@ -1044,16 +1044,14 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Loop iteration block
 	function_context.function->getBasicBlockList().push_back( loop_iteration_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_iteration_block );
-	for( const auto& element : c_style_for_operator.iteration_part_elements )
-	{
-		std::visit(
-			[&]( const auto& t )
-			{
-				debug_info_builder_->SetCurrentLocation( t.src_loc, function_context );
-				BuildBlockElementImpl( loop_names_scope, function_context, t );
-			},
-			element );
-	}
+
+	c_style_for_operator.iteration_part_elements.Iter(
+		[&]( const auto& el )
+		{
+			debug_info_builder_->SetCurrentLocation( el.src_loc, function_context );
+			BuildBlockElementImpl( loop_names_scope, function_context, el );
+		} );
+
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
 	// Disallow outer variables state change in loop iteration part and its predecessors.

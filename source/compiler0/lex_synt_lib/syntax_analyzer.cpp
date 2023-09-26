@@ -2301,6 +2301,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 
 	ExpectSemicolon();
 
+	CStyleForOperator::IterationPartElementsList::Builder iteration_part_elements_list_builder;
 	while( NotEndOfFile() && it_->type != Lexem::Type::BracketRight )
 	{
 		if( it_->type == Lexem::Type::Increment )
@@ -2309,7 +2310,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 			NextLexem();
 			increment_operator.expression= ParseExpression();
 
-			result.iteration_part_elements.push_back( std::move(increment_operator) );
+			iteration_part_elements_list_builder.Append( std::move(increment_operator) );
 		}
 		else if( it_->type == Lexem::Type::Decrement )
 		{
@@ -2317,7 +2318,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 			NextLexem();
 			decrement_operator.expression= ParseExpression();
 
-			result.iteration_part_elements.push_back( std::move(decrement_operator) );
+			iteration_part_elements_list_builder.Append( std::move(decrement_operator) );
 		}
 		else
 		{
@@ -2330,7 +2331,7 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 				assignment_operator.l_value= std::move(expression_l);
 				assignment_operator.r_value= ParseExpression();
 
-				result.iteration_part_elements.push_back( std::move(assignment_operator) );
+				iteration_part_elements_list_builder.Append( std::move(assignment_operator) );
 			}
 			else if( const auto additive_operation= GetAdditiveAssignmentOperator( *it_ ) )
 			{
@@ -2340,14 +2341,14 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 				additive_assignment_operator.l_value= std::move(expression_l);
 				additive_assignment_operator.r_value= ParseExpression();
 
-				result.iteration_part_elements.push_back( std::move(additive_assignment_operator) );
+				iteration_part_elements_list_builder.Append( std::move(additive_assignment_operator) );
 			}
 			else
 			{
 				SingleExpressionOperator single_expression_operator( GetExpressionSrcLoc( expression_l ) );
 				single_expression_operator.expression= std::move(expression_l);
 
-				result.iteration_part_elements.push_back( std::move(single_expression_operator) );
+				iteration_part_elements_list_builder.Append( std::move(single_expression_operator) );
 			}
 		}
 
@@ -2365,6 +2366,8 @@ CStyleForOperator SyntaxAnalyzer::ParseCStyleForOperator()
 		else
 			break;
 	}
+
+	result.iteration_part_elements= iteration_part_elements_list_builder.Build();
 
 	ExpectLexem( Lexem::Type::BracketRight );
 

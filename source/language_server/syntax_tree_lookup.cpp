@@ -558,8 +558,7 @@ void FindImpl( const Synt::CStyleForOperator& c_style_for_operator )
 
 	FindImpl( c_style_for_operator.loop_condition );
 
-	for( const auto& element : c_style_for_operator.iteration_part_elements )
-		FindImplVariant( element );
+	c_style_for_operator.iteration_part_elements.Iter( [&]( const auto& el ){ FindImpl( el ); } );
 
 	FindImpl( c_style_for_operator.block );
 }

@@ -956,6 +956,13 @@ struct RangeForOperator
 
 struct CStyleForOperator
 {
+	using IterationPartElementsList= VariantLinkedList<
+		SingleExpressionOperator,
+		AssignmentOperator,
+		AdditiveAssignmentOperator,
+		IncrementOperator,
+		DecrementOperator>;
+
 	explicit CStyleForOperator( const SrcLoc& src_loc )
 		: src_loc(src_loc), block(src_loc) {}
 
@@ -967,14 +974,7 @@ struct CStyleForOperator
 
 	Expression loop_condition;
 
-	std::vector<
-		std::variant<
-			SingleExpressionOperator,
-			AssignmentOperator,
-			AdditiveAssignmentOperator,
-			IncrementOperator,
-			DecrementOperator > >
-	iteration_part_elements;
+	IterationPartElementsList iteration_part_elements;
 
 	SrcLoc src_loc;
 	std::optional<Label> label;
