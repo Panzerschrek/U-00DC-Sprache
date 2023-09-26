@@ -663,6 +663,7 @@ fn DebugInfoBuilder::BuildClassTypeFullDebugInfo( mut this, ClassTypePtr& class_
 	// Replace temporary forward declaration with correct node.
 	var LLVMMetadataRef &mut cache_value= classes_di_types_.find( class_ ).try_deref(); // Should be non-empty.
 	unsafe( LLVMMetadataReplaceAllUsesWith( cache_value, di_type ) );
+	// No need to delete temporary here - previous call already does this.
 	cache_value= di_type;
 }
 

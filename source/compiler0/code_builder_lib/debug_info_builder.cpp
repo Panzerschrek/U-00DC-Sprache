@@ -525,6 +525,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 	const auto cache_value= classes_di_cache_.find( class_type );
 	U_ASSERT( cache_value != classes_di_cache_.end() );
 	cache_value->second->replaceAllUsesWith( result );
+	llvm::MDNode::deleteTemporary(cache_value->second);
 	cache_value->second= result;
 }
 
