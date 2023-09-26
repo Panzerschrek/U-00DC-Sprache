@@ -23,7 +23,7 @@ class CppAstConsumer : public clang::ASTConsumer
 {
 public:
 	CppAstConsumer(
-		Synt::ProgramElements& out_elements,
+		Synt::ProgramElementsList::Builder& out_elements,
 		const clang::SourceManager& source_manager,
 		clang::Preprocessor& preprocessor,
 		const clang::TargetInfo& target_info,
@@ -37,24 +37,24 @@ public:
 	virtual void HandleTranslationUnit( clang:: ASTContext& ast_context ) override;
 
 private:
-	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, bool externc );
-	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc );
+	void ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, bool externc );
+	void ProcessClassDecl( const clang::Decl& decl, Synt::ClassElementsList::Builder& class_elements, bool externc );
 
-	Synt::ClassPtr ProcessRecord( const clang::RecordDecl& record_decl, bool externc );
+	std::optional<Synt::Class> ProcessRecord( const clang::RecordDecl& record_decl, bool externc );
 	Synt::TypeAlias ProcessTypedef( const clang::TypedefNameDecl& typedef_decl );
-	Synt::FunctionPtr ProcessFunction( const clang::FunctionDecl& func_decl, bool externc );
-	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElements& out_elements );
+	Synt::Function ProcessFunction( const clang::FunctionDecl& func_decl, bool externc );
+	void ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElementsList::Builder& out_elements );
 
 	Synt::TypeName TranslateType( const clang::Type& in_type );
 	std::string TranslateRecordType( const clang::RecordType& in_type );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
 	Synt::ComplexName TranslateNamedType( std::string_view cpp_type_name );
-	Synt::FunctionTypePtr TranslateFunctionType( const clang::FunctionProtoType& in_type );
+	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
 
 private:
-	Synt::ProgramElements& root_program_elements_;
+	Synt::ProgramElementsList::Builder& root_program_elements_;
 
 	const clang::SourceManager& source_manager_;
 	clang::Preprocessor& preprocessor_;
@@ -88,7 +88,7 @@ private:
 const SrcLoc g_dummy_src_loc;
 
 CppAstConsumer::CppAstConsumer(
-	Synt::ProgramElements& out_elements,
+	Synt::ProgramElementsList::Builder& out_elements,
 	const clang::SourceManager& source_manager,
 	clang::Preprocessor& preprocessor,
 	const clang::TargetInfo& target_info,
@@ -208,7 +208,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			numeric_constant.has_fractional_point= numeric_literal_parser.isFloatingLiteral();
 
 			auto_variable_declaration.initializer_expression= std::move(numeric_constant);
-			root_program_elements_.push_back( std::move( auto_variable_declaration ) );
+			root_program_elements_.Append( std::move( auto_variable_declaration ) );
 		}
 		else if( clang::tok::isStringLiteral( token.getKind() ) )
 		{
@@ -219,15 +219,15 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			auto_variable_declaration.name= TranslateIdentifier( name );
 
-			Synt::StringLiteral string_constant( g_dummy_src_loc );
+			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
 
 			if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
 			{
-				string_constant.value= string_literal_parser.GetString();
-				string_constant.value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+				string_constant->value= string_literal_parser.GetString();
+				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.push_back( std::move( auto_variable_declaration ) );
+				root_program_elements_.Append( std::move( auto_variable_declaration ) );
 			}
 			else if( string_literal_parser.isUTF16() ||
 				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 16 ) )
@@ -236,31 +236,27 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 					llvm::ArrayRef<llvm::UTF16>(
 						reinterpret_cast<const llvm::UTF16*>(string_literal_parser.GetString().data()),
 						string_literal_parser.GetNumStringChars() ),
-					string_constant.value );
-				string_constant.value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+					string_constant->value );
+				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
-				string_constant.type_suffix[0]= 'u';
-				string_constant.type_suffix[1]= '1';
-				string_constant.type_suffix[2]= '6';
+				string_constant->type_suffix= "u16";
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.push_back( std::move( auto_variable_declaration ) );
+				root_program_elements_.Append( std::move( auto_variable_declaration ) );
 			}
 			else if( string_literal_parser.isUTF32() ||
 				( string_literal_parser.isWide() && ast_context_.getTypeSize(ast_context_.getWCharType()) == 32 ) )
 			{
 				const auto string_ref = string_literal_parser.GetString();
 				for( size_t i= 0u; i < string_literal_parser.GetNumStringChars(); ++i )
-					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant.value );
+					PushCharToUTF8String( reinterpret_cast<const sprache_char*>(string_ref.data())[i], string_constant->value );
 
-				string_constant.value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
+				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
-				string_constant.type_suffix[0]= 'u';
-				string_constant.type_suffix[1]= '3';
-				string_constant.type_suffix[2]= '2';
+				string_constant->type_suffix= "u32";
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
-				root_program_elements_.push_back( std::move( auto_variable_declaration ) );
+				root_program_elements_.Append( std::move( auto_variable_declaration ) );
 			}
 		}
 		else if( token.getKind() == clang::tok::char_constant || token.getKind() == clang::tok::utf8_char_constant )
@@ -276,18 +272,17 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 			auto_variable_declaration.mutability_modifier= Synt::MutabilityModifier::Constexpr;
 			auto_variable_declaration.name= TranslateIdentifier( name );
 
-			Synt::StringLiteral string_constant( g_dummy_src_loc );
-			string_constant.value.push_back( char(char_literal_parser.getValue()) );
-			string_constant.type_suffix[0]= 'c';
-			string_constant.type_suffix[1]= '8';
+			auto string_constant= std::make_unique<Synt::StringLiteral>( g_dummy_src_loc );
+			string_constant->value.push_back( char(char_literal_parser.getValue()) );
+			string_constant->type_suffix= "c8";
 
 			auto_variable_declaration.initializer_expression= std::move(string_constant);
-			root_program_elements_.push_back( std::move( auto_variable_declaration ) );
+			root_program_elements_.Append( std::move( auto_variable_declaration ) );
 		}
 	} // for defines
 }
 
-void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements& program_elements, const bool externc )
+void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElementsList::Builder& program_elements, const bool externc )
 {
 	if( skip_declarations_from_includes_ &&
 		source_manager_.getFileID( decl.getLocation() ) != source_manager_.getMainFileID() )
@@ -304,9 +299,8 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 
 	if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
-		Synt::ClassPtr record= ProcessRecord( *record_decl, current_externc );
-		if( record != nullptr )
-			program_elements.push_back( std::move(record) );
+		if( auto record= ProcessRecord( *record_decl, current_externc ) )
+			program_elements.Append( std::move(*record) );
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
@@ -315,31 +309,31 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 			Synt::TypeAlias type_alias= ProcessTypedef(*type_alias_decl);
 
 			bool is_same_name= false;
-			if( const auto named_type_name= std::get_if<Synt::ComplexName>( &type_alias.value ) )
-			{
-				is_same_name= false;
-				if( const auto name_lookup= std::get_if<Synt::NameLookup>( named_type_name ) )
-					is_same_name= name_lookup->name == type_alias.name;
-			}
+			if( const auto name_lookup= std::get_if<Synt::NameLookup>( &type_alias.value ) )
+				is_same_name= name_lookup->name == type_alias.name;
+
 			if( !is_same_name )
-				program_elements.push_back( std::move(type_alias) );
+				program_elements.Append( std::move(type_alias) );
 		}
 	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() )
-			program_elements.push_back( ProcessFunction( *func_decl, current_externc ) );
+			program_elements.Append( ProcessFunction( *func_decl, current_externc ) );
 	}
 	else if( const auto enum_decl= llvm::dyn_cast<clang::EnumDecl>(&decl) )
 		ProcessEnum( *enum_decl, program_elements );
 	else if( const auto namespace_decl= llvm::dyn_cast<clang::NamespaceDecl>(&decl) )
 	{
-		auto namespace_= std::make_unique<Synt::Namespace>( g_dummy_src_loc );
-		namespace_->name= TranslateIdentifier( namespace_decl->getName() );
-		for( const clang::Decl* const sub_decl : namespace_decl->decls() )
-			ProcessDecl( *sub_decl, namespace_->elements, current_externc );
+		Synt::Namespace namespace_( g_dummy_src_loc );
+		namespace_.name= TranslateIdentifier( namespace_decl->getName() );
 
-		program_elements.push_back(std::move(namespace_));
+		Synt::ProgramElementsList::Builder namespace_elements;
+		for( const clang::Decl* const sub_decl : namespace_decl->decls() )
+			ProcessDecl( *sub_decl, namespace_elements, current_externc );
+		namespace_.elements= namespace_elements.Build();
+
+		program_elements.Append(std::move(namespace_));
 	}
 	else if( const auto decl_context= llvm::dyn_cast<clang::DeclContext>(&decl) )
 	{
@@ -348,7 +342,7 @@ void CppAstConsumer::ProcessDecl( const clang::Decl& decl, Synt::ProgramElements
 	}
 }
 
-void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassElements& class_elements, bool externc )
+void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassElementsList::Builder& class_elements, bool externc )
 {
 	if( decl.isImplicit() )
 		return;
@@ -365,10 +359,10 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 			const clang::QualType type_qual= field_type->getPointeeType();
 			field_type= type_qual.getTypePtr();
 
-			Synt::RawPointerType raw_pointer_type( g_dummy_src_loc );
-			raw_pointer_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *field_type ) );
+			auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+			raw_pointer_type->element_type= TranslateType( *field_type );
 
-			field.type= std::move(raw_pointer_type );
+			field.type= std::move(raw_pointer_type);
 		}
 		else
 			field.type= TranslateType( *field_type );
@@ -377,49 +371,51 @@ void CppAstConsumer::ProcessClassDecl( const clang::Decl& decl, Synt::ClassEleme
 		if( IsKeyword( field.name ) )
 			field.name+= "_";
 
-		class_elements.push_back( std::move(field) );
+		class_elements.Append( std::move(field) );
 	}
 	else if( const auto record_decl= llvm::dyn_cast<clang::RecordDecl>(&decl) )
 	{
-		Synt::ClassPtr record= ProcessRecord( *record_decl, externc );
-		if( record != nullptr )
-			class_elements.push_back( std::move(record) );
+		if( auto record = ProcessRecord( *record_decl, externc ) )
+			class_elements.Append( std::move(*record) );
 	}
 	else if( const auto func_decl= llvm::dyn_cast<clang::FunctionDecl>(&decl) )
 	{
 		if( func_decl->isFirstDecl() )
-			class_elements.push_back( ProcessFunction(* func_decl, false ) );
+			class_elements.Append( ProcessFunction(* func_decl, false ) );
 	}
 	else if( const auto type_alias_decl= llvm::dyn_cast<clang::TypedefNameDecl>(&decl) )
 	{
 		if( type_alias_decl->isFirstDecl() )
-			class_elements.push_back( ProcessTypedef(*type_alias_decl) );
+			class_elements.Append( ProcessTypedef(*type_alias_decl) );
 	}
 }
 
-Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_decl, const bool externc )
+std::optional<Synt::Class> CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_decl, const bool externc )
 {
 	if( record_decl.isStruct() || record_decl.isClass() )
 	{
-		auto class_= std::make_unique<Synt::Class>(g_dummy_src_loc);
-		class_->name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
-		class_->keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+		Synt::Class class_(g_dummy_src_loc);
+		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
 		if( record_decl.isCompleteDefinition() )
 		{
+			Synt::ClassElementsList::Builder class_elements;
 			for( const clang::Decl* const sub_decl : record_decl.decls() )
-				ProcessClassDecl( *sub_decl, class_->elements, externc );
+				ProcessClassDecl( *sub_decl, class_elements, externc );
+
+			class_.elements= class_elements.Build();
 		}
 
-		return class_;
+		return std::move(class_);
 	}
 	else if( record_decl.isUnion() )
 	{
 		// Emulate union, using array of ints with required alignment.
 
-		auto class_= std::make_unique<Synt::Class>(g_dummy_src_loc);
-		class_->name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
-		class_->keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
+		Synt::Class class_(g_dummy_src_loc);
+		class_.name= TranslateRecordType( *llvm::dyn_cast<clang::RecordType>( record_decl.getTypeForDecl() ) );
+		class_.keep_fields_order= true; // C/C++ structs/classes have fixed fields order.
 
 		if( record_decl.isCompleteDefinition() )
 		{
@@ -438,24 +434,27 @@ Synt::ClassPtr CppAstConsumer::ProcessRecord( const clang::RecordDecl& record_de
 			default: U_ASSERT(false); break;
 			};
 
-			Synt::ArrayTypeName array_type( g_dummy_src_loc );
-			array_type.element_type= std::make_unique<Synt::TypeName>( TranslateNamedType( int_name ) );
+			auto array_type= std::make_unique<Synt::ArrayTypeName>( g_dummy_src_loc );
+			array_type->element_type= Synt::ComplexNameToTypeName( TranslateNamedType( int_name ) );
 
 			Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 			numeric_constant.value_int= num;
 			numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
-			array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
+			array_type->size= std::move(numeric_constant);
 
 			Synt::ClassField field( g_dummy_src_loc );
 			field.name= "union_content";
 			field.type= std::move(array_type);
-			class_->elements.push_back( std::move(field) );
+
+			Synt::ClassElementsList::Builder class_elements;
+			class_elements.Append( std::move(field) );
+			class_.elements= class_elements.Build();
 		}
 
-		return class_;
+		return std::move(class_);
 	}
 
-	return nullptr;
+	return std::nullopt;
 }
 
 Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& typedef_decl )
@@ -482,15 +481,15 @@ Synt::TypeAlias CppAstConsumer::ProcessTypedef( const clang::TypedefNameDecl& ty
 	return type_alias;
 }
 
-Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_decl, const bool externc )
+Synt::Function CppAstConsumer::ProcessFunction( const clang::FunctionDecl& func_decl, const bool externc )
 {
-	auto func= std::make_unique<Synt::Function>(g_dummy_src_loc);
+	Synt::Function func(g_dummy_src_loc);
 
-	func->name.push_back( Synt::Function::NameComponent{ TranslateIdentifier( func_decl.getName() ), g_dummy_src_loc } );
-	func->no_mangle= externc;
-	func->type.unsafe= true; // All C/C++ functions are unsafe.
+	func.name.push_back( Synt::Function::NameComponent{ TranslateIdentifier( func_decl.getName() ), g_dummy_src_loc } );
+	func.no_mangle= externc;
+	func.type.unsafe= true; // All C/C++ functions are unsafe.
 
-	func->type.params.reserve( func_decl.param_size() );
+	func.type.params.reserve( func_decl.param_size() );
 	size_t i= 0u;
 	for( const clang::ParmVarDecl* const param : func_decl.parameters() )
 	{
@@ -515,28 +514,28 @@ Synt::FunctionPtr CppAstConsumer::ProcessFunction( const clang::FunctionDecl& fu
 		}
 
 		arg.type= TranslateType( *arg_type );
-		func->type.params.push_back(std::move(arg));
+		func.type.params.push_back(std::move(arg));
 		++i;
 	}
 
 	const clang::Type* return_type= func_decl.getReturnType().getTypePtr();
 	if( return_type->isReferenceType() )
 	{
-		func->type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
+		func.type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
 		const clang::QualType type_qual= return_type->getPointeeType();
 		return_type= type_qual.getTypePtr();
 
 		if( type_qual.isConstQualified() )
-			func->type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
+			func.type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
 		else
-			func->type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
+			func.type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
 	}
-	func->type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
+	func.type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
 	return func;
 }
 
-void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElements& out_elements )
+void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::ProgramElementsList::Builder& out_elements )
 {
 	if( !enum_decl.isComplete() )
 		return;
@@ -574,7 +573,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 			variables_declaration.variables.push_back( std::move(var) );
 		}
 
-		out_elements.push_back( std::move(variables_declaration) );
+		out_elements.Append( std::move(variables_declaration) );
 
 		return;
 	}
@@ -610,7 +609,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 		enum_.name= enum_name;
 
 		Synt::TypeName type_name= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
-		if( const auto named_type_name= std::get_if<Synt::ComplexName>( &type_name ) )
+		if( const auto named_type_name= std::get_if<Synt::NameLookup>( &type_name ) )
 			enum_.underlaying_type_name= std::move(*named_type_name);
 
 		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
@@ -620,26 +619,28 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 			enum_.members.back().name= TranslateIdentifier( enumerator->getName() );
 		}
 
-		out_elements.push_back( std::move(enum_) );
+		out_elements.Append( std::move(enum_) );
 	}
 	else
 	{
 		// Can't use Ü enum. So, create struct type and a bunch of constants inside.
 		// Since such struct contains singe scalar inside, it is passed via this scalar.
 
-		auto enum_class_= std::make_unique<Synt::Class>( g_dummy_src_loc );
-		enum_class_->name= TranslateIdentifier( enum_name );
+		Synt::Class enum_class_( g_dummy_src_loc );
+		enum_class_.name= TranslateIdentifier( enum_name );
+
+		Synt::ClassElementsList::Builder class_elements;
 
 		const std::string field_name= "ü_underlaying_value";
 		{
 			Synt::ClassField field( g_dummy_src_loc );
 			field.name= field_name;
 			field.type= TranslateType( *enum_decl.getIntegerType().getTypePtr() );
-			enum_class_->elements.push_back( std::move(field) );
+			class_elements.Append( std::move(field) );
 		}
 
 		Synt::NameLookup enum_class_name( g_dummy_src_loc );
-		enum_class_name.name= enum_class_->name;
+		enum_class_name.name= enum_class_.name;
 
 		for( const clang::EnumConstantDecl* const enumerator : enumerators_range )
 		{
@@ -671,51 +672,53 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 			variables_declaration.type= enum_class_name;
 			variables_declaration.variables.push_back( std::move(var) );
 
-			enum_class_->elements.push_back( std::move(variables_declaration) );
+			class_elements.Append( std::move(variables_declaration) );
 		}
 
-		out_elements.push_back( std::move(enum_class_) );
+		enum_class_.elements= class_elements.Build();
+
+		out_elements.Append( std::move(enum_class_) );
 	}
 }
 
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 {
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
-		return TranslateNamedType( GetUFundamentalType( *built_in_type ) );
+		return Synt::ComplexNameToTypeName( TranslateNamedType( GetUFundamentalType( *built_in_type ) ) );
 	else if( const auto record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
-		return TranslateNamedType( TranslateRecordType( *record_type ) );
+		return Synt::ComplexNameToTypeName( TranslateNamedType( TranslateRecordType( *record_type ) ) );
 	else if( const auto enum_type= llvm::dyn_cast<clang::EnumType>(&in_type) )
 	{
 		if( const auto it= enum_names_cache_.find( enum_type->getDecl() ); it != enum_names_cache_.end() )
-			return TranslateNamedType( it->second );
+			return Synt::ComplexNameToTypeName( TranslateNamedType( it->second ) );
 	}
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
-		return TranslateNamedType( typedef_type->getDecl()->getName().str() );
+		return Synt::ComplexNameToTypeName( TranslateNamedType( typedef_type->getDecl()->getName().str() ) );
 	else if( const auto constna_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
 	{
 		// For arrays with constant size use normal Ü array.
-		Synt::ArrayTypeName array_type(g_dummy_src_loc);
-		array_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *constna_array_type->getElementType().getTypePtr() ) );
+		auto array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+		array_type->element_type= TranslateType( *constna_array_type->getElementType().getTypePtr() );
 
 		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 		numeric_constant.value_int= constna_array_type->getSize().getLimitedValue();
 		numeric_constant.value_double= static_cast<double>(numeric_constant.value_int);
 		numeric_constant.type_suffix[0]= 'u';
-		array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
+		array_type->size= std::move(numeric_constant);
 
 		return std::move(array_type);
 	}
 	else if( const auto array_type= llvm::dyn_cast<clang::ArrayType>(&in_type) )
 	{
 		// For other variants of array types use zero size.
-		Synt::ArrayTypeName out_array_type(g_dummy_src_loc);
-		out_array_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *array_type->getElementType().getTypePtr() ) );
+		auto out_array_type= std::make_unique<Synt::ArrayTypeName>(g_dummy_src_loc);
+		out_array_type->element_type= TranslateType( *array_type->getElementType().getTypePtr() );
 
 		Synt::NumericConstant numeric_constant( g_dummy_src_loc );
 		numeric_constant.value_int= 0;
 		numeric_constant.value_double= 0.0;
 		numeric_constant.type_suffix[0]= 'u';
-		out_array_type.size= std::make_unique<Synt::Expression>( std::move(numeric_constant) );
+		out_array_type->size= std::move(numeric_constant);
 
 		return std::move(out_array_type);
 	}
@@ -726,12 +729,12 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 			function_type= paren_type->getInnerType().getTypePtr();
 
 		if( const auto function_proto_type= llvm::dyn_cast<clang::FunctionProtoType>( function_type ) )
-			return TranslateFunctionType( *function_proto_type );
+			return std::make_unique<Synt::FunctionType>( TranslateFunctionType( *function_proto_type ) );
 	}
 	else if( const auto pointer_type= llvm::dyn_cast<clang::PointerType>(&in_type) )
 	{
-		Synt::RawPointerType raw_pointer_type( g_dummy_src_loc );
-		raw_pointer_type.element_type= std::make_unique<Synt::TypeName>( TranslateType( *pointer_type->getPointeeType().getTypePtr() ) );
+		auto raw_pointer_type= std::make_unique<Synt::RawPointerType>( g_dummy_src_loc );
+		raw_pointer_type->element_type= TranslateType( *pointer_type->getPointeeType().getTypePtr() );
 
 		return std::move(raw_pointer_type);
 	}
@@ -742,7 +745,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 	else if( const auto elaborated_type= llvm::dyn_cast<clang::ElaboratedType>( &in_type ) )
 		return TranslateType( *elaborated_type->desugar().getTypePtr() );
 
-	return TranslateNamedType( "void" );
+	return Synt::ComplexNameToTypeName( TranslateNamedType( "void" ) );
 }
 
 std::string CppAstConsumer::TranslateRecordType( const clang::RecordType& in_type )
@@ -816,13 +819,13 @@ Synt::ComplexName CppAstConsumer::TranslateNamedType( const std::string_view cpp
 	return Synt::ComplexName( std::move(named_type) );
 }
 
-Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type )
+Synt::FunctionType CppAstConsumer::TranslateFunctionType( const clang::FunctionProtoType& in_type )
 {
-	auto function_type= std::make_unique<Synt::FunctionType>( g_dummy_src_loc );
+	Synt::FunctionType function_type( g_dummy_src_loc );
 
-	function_type->unsafe= true; // All C/C++ functions is unsafe.
+	function_type.unsafe= true; // All C/C++ functions are unsafe.
 
-	function_type->params.reserve( in_type.getNumParams() );
+	function_type.params.reserve( in_type.getNumParams() );
 	size_t i= 0u;
 	for( const clang::QualType& param_qual : in_type.getParamTypes() )
 	{
@@ -843,23 +846,23 @@ Synt::FunctionTypePtr CppAstConsumer::TranslateFunctionType( const clang::Functi
 		}
 
 		arg.type= TranslateType( *arg_type );
-		function_type->params.push_back(std::move(arg));
+		function_type.params.push_back(std::move(arg));
 		++i;
 	}
 
 	const clang::Type* return_type= in_type.getReturnType().getTypePtr();
 	if( return_type->isReferenceType() )
 	{
-		function_type->return_value_reference_modifier= Synt::ReferenceModifier::Reference;
+		function_type.return_value_reference_modifier= Synt::ReferenceModifier::Reference;
 		const clang::QualType type_qual= return_type->getPointeeType();
 		return_type= type_qual.getTypePtr();
 
 		if( type_qual.isConstQualified() )
-			function_type->return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
+			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Immutable;
 		else
-			function_type->return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
+			function_type.return_value_mutability_modifier= Synt::MutabilityModifier::Mutable;
 	}
-	function_type->return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
+	function_type.return_type= std::make_unique<Synt::TypeName>( TranslateType( *return_type ) );
 
 	return function_type;
 }

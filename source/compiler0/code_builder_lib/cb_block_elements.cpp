@@ -28,47 +28,55 @@ bool SingleExpressionIsUseless( const Synt::Expression& expression )
 		// Calls generally are not useless. Useless may be constexpr calls.
 		// But sometimes constexpr/non-constepxr call result may depend on template context.
 		// So, in order to avoid generating too many errors, assume, that all calls are not useless.
-		bool operator()( const Synt::CallOperator& ) { return false; }
-		bool operator()( const Synt::CallOperatorSignatureHelp& ) { return false; }
+		bool operator()( const std::unique_ptr<const Synt::CallOperator>& ) { return false; }
+		bool operator()( const std::unique_ptr<const Synt::CallOperatorSignatureHelp>& ) { return false; }
 		// It is useless to call such operators, even if they are overloaded, because logically these operators are created to produce some value.
-		bool operator()( const Synt::IndexationOperator& ) { return true; }
-		bool operator()( const Synt::MemberAccessOperator& ) { return true; }
-		bool operator()( const Synt::MemberAccessOperatorCompletion& ) { return true; }
-		bool operator()( const Synt::UnaryPlus& ) { return true; }
-		bool operator()( const Synt::UnaryMinus& ) { return true; }
-		bool operator()( const Synt::LogicalNot& ) { return true; }
-		bool operator()( const Synt::BitwiseNot& ) { return true; }
-		bool operator()( const Synt::BinaryOperator& ) { return true; }
-		bool operator()( const Synt::TernaryOperator& ) { return true; }
-		bool operator()( const Synt::ReferenceToRawPointerOperator& ) { return true; }
-		bool operator()( const Synt::RawPointerToReferenceOperator& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::IndexationOperator>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::MemberAccessOperator>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::MemberAccessOperatorCompletion>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::UnaryPlus>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::UnaryMinus>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::LogicalNot>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::BitwiseNot>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::BinaryOperator>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::TernaryOperator>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::ReferenceToRawPointerOperator>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::RawPointerToReferenceOperator>& ) { return true; }
 		// Name resolving itself has no side effects.
-		bool operator()( const Synt::ComplexName& ) { return true; }
+		bool operator()( const Synt::RootNamespaceNameLookup& ) { return true; }
+		bool operator()( const Synt::RootNamespaceNameLookupCompletion& ) { return true; }
+		bool operator()( const Synt::NameLookup& ) { return true; }
+		bool operator()( const Synt::NameLookupCompletion& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::TypeofTypeName>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::NamesScopeNameFetch>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::TemplateParametrization>& ) { return true; }
 		// Simple constant expressions have no side effects.
 		bool operator()( const Synt::NumericConstant& ) { return true; }
 		bool operator()( const Synt::BooleanConstant& ) { return true; }
-		bool operator()( const Synt::StringLiteral& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::StringLiteral>& ) { return true; }
 		// Move and take have side effects.
 		bool operator()( const Synt::MoveOperator& ) { return false; }
-		bool operator()( const Synt::TakeOperator& ) { return false; }
+		bool operator()( const Synt::MoveOperatorCompletion& ) { return false; }
+		bool operator()( const std::unique_ptr<const Synt::TakeOperator>& ) { return false; }
 		// Casts have no side effects.
-		bool operator()( const Synt::CastMut& ) { return true; }
-		bool operator()( const Synt::CastImut& ) { return true; }
-		bool operator()( const Synt::CastRef& ) { return true; }
-		bool operator()( const Synt::CastRefUnsafe& ) { return true; }
-		bool operator()( const Synt::TypeInfo& ) { return true; }
-		bool operator()( const Synt::SameType& ) { return true; }
-		bool operator()( const Synt::NonSyncExpression& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::CastMut>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::CastImut>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::CastRef>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::CastRefUnsafe>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::TypeInfo>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::SameType>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::NonSyncExpression>& ) { return true; }
 		// safe/unsafe expressions needs to be visited deeply.
 		// safe/unsafe expression can't be discarded, because it has meaning.
-		bool operator()( const Synt::SafeExpression& safe_expression ) { return SingleExpressionIsUseless( *safe_expression.expression ); }
-		bool operator()( const Synt::UnsafeExpression& unsafe_expression ) { return SingleExpressionIsUseless( *unsafe_expression.expression ); }
+		bool operator()( const std::unique_ptr<const Synt::SafeExpression>& safe_expression ) { return SingleExpressionIsUseless( safe_expression->expression ); }
+		bool operator()( const std::unique_ptr<const Synt::UnsafeExpression>& unsafe_expression ) { return SingleExpressionIsUseless( unsafe_expression->expression ); }
 		// Type names have no side-effects.
-		bool operator()( const Synt::ArrayTypeName& ) { return true; }
-		bool operator()( const Synt::FunctionTypePtr& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::ArrayTypeName>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::FunctionType>& ) { return true; }
 		bool operator()( const Synt::TupleType& ) { return true; }
-		bool operator()( const Synt::RawPointerType& ) { return true; }
-		bool operator()( const Synt::GeneratorTypePtr& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::RawPointerType>& ) { return true; }
+		bool operator()( const std::unique_ptr<const Synt::GeneratorType>& ) { return true; }
 	};
 
 	return std::visit( Visitor(), expression );
@@ -89,21 +97,6 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildIfAlternative(
 				return BuildBlockElementImpl( names, function_context, t );
 			},
 			if_alterntative );
-}
-
-CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElement(
-	NamesScope& names,
-	FunctionContext& function_context,
-	const Synt::BlockElement& block_element )
-{
-	return
-		std::visit(
-			[&]( const auto& t )
-			{
-				debug_info_builder_->SetCurrentLocation( t.src_loc, function_context );
-				return BuildBlockElementImpl( names, function_context, t );
-			},
-			block_element );
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
@@ -898,7 +891,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 			// TODO - create template errors context.
 			// Build block without creating inner namespace - reuse namespace of tuple-for variable.
-			const BlockBuildInfo inner_block_build_info= BuildBlockElements( loop_names, function_context, range_for_operator.block->elements );
+			const BlockBuildInfo inner_block_build_info= BuildBlockElements( loop_names, function_context, range_for_operator.block.elements );
 			if( !inner_block_build_info.have_terminal_instruction_inside )
 			{
 				CallDestructors( element_pass_variables_storage, names, function_context, range_for_operator.src_loc );
@@ -909,7 +902,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 			// Variables state for next iteration is combination of variables states in "continue" branches in previous iteration.
 			const bool continue_branches_is_empty= function_context.loops_stack.back().continue_variables_states.empty();
 			if( !continue_branches_is_empty )
-				function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), range_for_operator.block->end_src_loc );
+				function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), range_for_operator.block.end_src_loc );
 
 			for( ReferencesGraph& variables_state : function_context.loops_stack.back().break_variables_states )
 				break_variables_states.push_back( std::move(variables_state) );
@@ -951,7 +944,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 		{} // Just keep variables state.
 		// Variables state after tuple-for is combination of variables state of all branches with "break" of all iterations.
 		else if( !break_variables_states.empty() )
-			function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), range_for_operator.block->end_src_loc );
+			function_context.variables_state= MergeVariablesStateAfterIf( break_variables_states, names.GetErrors(), range_for_operator.block.end_src_loc );
 		else
 			block_build_info.have_terminal_instruction_inside= true;
 	}
@@ -1032,7 +1025,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	const BlockBuildInfo loop_body_block_info= BuildBlock( loop_names_scope, function_context, *c_style_for_operator.block );
+	const BlockBuildInfo loop_body_block_info= BuildBlock( loop_names_scope, function_context, c_style_for_operator.block );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( loop_iteration_block );
@@ -1041,7 +1034,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 
 	// Variables state before loop iteration block is combination of variables states of each branch terminated with "continue".
 	if( !function_context.loops_stack.back().continue_variables_states.empty() )
-		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block->end_src_loc );
+		function_context.variables_state= MergeVariablesStateAfterIf( function_context.loops_stack.back().continue_variables_states, names.GetErrors(), c_style_for_operator.block.end_src_loc );
 
 	std::vector<ReferencesGraph> variables_state_for_merge= std::move( function_context.loops_stack.back().break_variables_states );
 	variables_state_for_merge.push_back( std::move(variables_state_after_test_block) );
@@ -1051,23 +1044,21 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Loop iteration block
 	function_context.function->getBasicBlockList().push_back( loop_iteration_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_iteration_block );
-	for( const auto& element : c_style_for_operator.iteration_part_elements )
-	{
-		std::visit(
-			[&]( const auto& t )
-			{
-				debug_info_builder_->SetCurrentLocation( t.src_loc, function_context );
-				BuildBlockElementImpl( loop_names_scope, function_context, t );
-			},
-			element );
-	}
+
+	c_style_for_operator.iteration_part_elements.Iter(
+		[&]( const auto& el )
+		{
+			debug_info_builder_->SetCurrentLocation( el.src_loc, function_context );
+			BuildBlockElementImpl( loop_names_scope, function_context, el );
+		} );
+
 	function_context.llvm_ir_builder.CreateBr( test_block );
 
 	// Disallow outer variables state change in loop iteration part and its predecessors.
-	const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block->end_src_loc );
+	const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, function_context.variables_state, c_style_for_operator.block.end_src_loc );
 	names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 
-	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.block->end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), c_style_for_operator.block.end_src_loc );
 
 	// Block after loop.
 	function_context.function->getBasicBlockList().push_back( block_after_loop );
@@ -1124,7 +1115,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( while_block );
 	function_context.llvm_ir_builder.SetInsertPoint( while_block );
 
-	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, *while_operator.block );
+	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, while_operator.block );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( test_block );
@@ -1138,7 +1129,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Disallow outer variables state change in "continue" branches.
 	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
 	{
-		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, while_operator.block->end_src_loc );
+		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, while_operator.block.end_src_loc );
 		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 	}
 
@@ -1148,7 +1139,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.loops_stack.pop_back();
 
 	// Result variables state is combination of variables state before loop and variables state of all branches terminated with "break".
-	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), while_operator.block->end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), while_operator.block.end_src_loc );
 
 	return BlockBuildInfo();
 }
@@ -1171,7 +1162,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.function->getBasicBlockList().push_back( loop_block );
 	function_context.llvm_ir_builder.SetInsertPoint( loop_block );
 
-	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, *loop_operator.block );
+	const BlockBuildInfo loop_body_block_info= BuildBlock( names, function_context, loop_operator.block );
 	if( !loop_body_block_info.have_terminal_instruction_inside )
 	{
 		function_context.llvm_ir_builder.CreateBr( loop_block );
@@ -1181,7 +1172,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	// Disallow outer variables state change in "continue" branches.
 	for( const ReferencesGraph& variables_state : function_context.loops_stack.back().continue_variables_states )
 	{
-		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, loop_operator.block->end_src_loc );
+		const auto errors= ReferencesGraph::CheckWhileBlockVariablesState( variables_state_before_loop, variables_state, loop_operator.block.end_src_loc );
 		names.GetErrors().insert( names.GetErrors().end(), errors.begin(), errors.end() );
 	}
 
@@ -1190,7 +1181,7 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElementImpl(
 	function_context.loops_stack.pop_back();
 
 	// Result variables state is combination of variables state of all branches terminated with "break".
-	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), loop_operator.block->end_src_loc );
+	function_context.variables_state= MergeVariablesStateAfterIf( variables_state_for_merge, names.GetErrors(), loop_operator.block.end_src_loc );
 
 	// This loop is terminal, if it contains no "break" inside - only "break" to outer labels or "return".
 	// Any code, that follows infinite loop without "break" inside is unreachable.
@@ -2672,24 +2663,20 @@ CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlock(
 }
 
 CodeBuilder::BlockBuildInfo CodeBuilder::BuildBlockElements(
-	NamesScope& names, FunctionContext& function_context, const Synt::BlockElements& block_elements )
+	NamesScope& names, FunctionContext& function_context, const Synt::BlockElementsList& block_elements )
 {
 	BlockBuildInfo block_build_info;
-	size_t block_element_index= 0u;
-	for( const Synt::BlockElement& block_element : block_elements )
-	{
-		++block_element_index;
-
-		const BlockBuildInfo info= BuildBlockElement( names, function_context, block_element );
-		if( info.have_terminal_instruction_inside )
+	block_elements.Iter(
+		[&]( const auto& el )
 		{
-			block_build_info.have_terminal_instruction_inside= true;
-			break;
-		}
-	}
+			if( block_build_info.have_terminal_instruction_inside )
+				REPORT_ERROR( UnreachableCode, names.GetErrors(), el.src_loc );
 
-	if( block_element_index < block_elements.size() )
-		REPORT_ERROR( UnreachableCode, names.GetErrors(), Synt::GetBlockElementSrcLoc( block_elements[ block_element_index ] ) );
+			debug_info_builder_->SetCurrentLocation( el.src_loc, function_context );
+			const BlockBuildInfo info= BuildBlockElementImpl( names, function_context, el );
+			if( info.have_terminal_instruction_inside )
+				block_build_info.have_terminal_instruction_inside= true;
+		} );
 
 	return block_build_info;
 }

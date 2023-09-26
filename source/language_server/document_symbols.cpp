@@ -215,11 +215,11 @@ Symbols BuildProgramModel_r(
 }
 
 Symbols BuildProgramModel_r(
-	const Synt::ClassElements& elements,
+	const Synt::ClassElementsList& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
 
 Symbols BuildProgramModel_r(
-	const Synt::ProgramElements& elements,
+	const Synt::ProgramElementsList& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function );
 
 struct Visitor final
@@ -240,14 +240,14 @@ struct Visitor final
 		symbol.kind= SymbolKind::Field;
 		result.push_back( std::move(symbol) );
 	}
-	void operator()( const Synt::FunctionPtr& func )
+	void operator()( const Synt::Function& func )
 	{
-		if( func == nullptr || func->name.empty() )
+		if( func.name.empty() )
 			return;
 
 		Symbol symbol;
-		symbol.name= Stringify( *func );
-		symbol.range= MakeRange( func->src_loc, src_loc_to_range_mapping_function );
+		symbol.name= Stringify( func );
+		symbol.range= MakeRange( func.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Function;
 		result.push_back( std::move(symbol) );
@@ -275,7 +275,7 @@ struct Visitor final
 		symbol.selection_range= symbol.range; // TODO - set it properly.
 		symbol.kind= SymbolKind::Class;
 
-		if( const auto class_= std::get_if<Synt::ClassPtr>( &type_template.something ) )
+		if( const auto class_= std::get_if< std::unique_ptr<const Synt::Class> >( &type_template.something ) )
 		{
 			symbol.children= BuildProgramModel_r( (*class_)->elements, src_loc_to_range_mapping_function );
 		}
@@ -328,52 +328,44 @@ struct Visitor final
 		symbol.kind= SymbolKind::Variable;
 		result.push_back( std::move(symbol) );
 	}
-	void operator()( const Synt::ClassPtr& class_ )
+	void operator()( const Synt::Class& class_ )
 	{
-		if( class_ == nullptr )
-			return;
-
 		Symbol symbol;
-		symbol.name= class_->name;
-		symbol.range= MakeRange( class_->src_loc, src_loc_to_range_mapping_function );
+		symbol.name= class_.name;
+		symbol.range= MakeRange( class_.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
-		symbol.kind= class_->kind_attribute_ == Synt::ClassKindAttribute::Struct ? SymbolKind::Struct : SymbolKind::Class;
-		symbol.children= BuildProgramModel_r( class_->elements, src_loc_to_range_mapping_function );
+		symbol.kind= class_.kind_attribute_ == Synt::ClassKindAttribute::Struct ? SymbolKind::Struct : SymbolKind::Class;
+		symbol.children= BuildProgramModel_r( class_.elements, src_loc_to_range_mapping_function );
 		result.push_back( std::move(symbol) );
 	}
-	void operator()( const Synt::NamespacePtr& namespace_ )
+	void operator()( const Synt::Namespace& namespace_ )
 	{
-		if( namespace_ == nullptr )
-			return;
-
 		Symbol symbol;
-		symbol.name= namespace_->name;
-		symbol.range= MakeRange( namespace_->src_loc, src_loc_to_range_mapping_function );
+		symbol.name= namespace_.name;
+		symbol.range= MakeRange( namespace_.src_loc, src_loc_to_range_mapping_function );
 		symbol.selection_range= symbol.range;
 		symbol.kind= SymbolKind::Namespace;
-		symbol.children= BuildProgramModel_r( namespace_->elements, src_loc_to_range_mapping_function );
+		symbol.children= BuildProgramModel_r( namespace_.elements, src_loc_to_range_mapping_function );
 		result.push_back( std::move(symbol) );
 	}
 };
 
 Symbols BuildProgramModel_r(
-	const Synt::ClassElements& elements,
+	const Synt::ClassElementsList& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
 	Visitor visitor( src_loc_to_range_mapping_function );
-	for( const Synt::ClassElement& class_element : elements )
-		std::visit( visitor, class_element );
+	elements.Iter( visitor );
 
 	return std::move(visitor.result);
 }
 
 Symbols BuildProgramModel_r(
-	const Synt::ProgramElements& elements,
+	const Synt::ProgramElementsList& elements,
 	const SrcLocToRangeMappingFunction& src_loc_to_range_mapping_function )
 {
 	Visitor visitor( src_loc_to_range_mapping_function );
-	for( const Synt::ProgramElement& program_element : elements )
-		std::visit( visitor, program_element );
+	elements.Iter( visitor );
 
 	return std::move(visitor.result);
 }

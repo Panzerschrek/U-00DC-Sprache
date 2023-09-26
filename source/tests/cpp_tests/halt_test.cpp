@@ -115,10 +115,7 @@ U_TEST( HaltTest3_CodeAfterHaltMustBeUnreachable )
 	const ErrorTestBuildResult build_result= BuildProgramWithErrors( c_program_text );
 
 	U_TEST_ASSERT( !build_result.errors.empty() );
-	const CodeBuilderError& error= build_result.errors.front();
-
-	U_TEST_ASSERT( error.code == CodeBuilderErrorCode::UnreachableCode );
-	U_TEST_ASSERT( error.src_loc.GetLine() == 5u );
+	U_TEST_ASSERT( HaveError( build_result.errors, CodeBuilderErrorCode::UnreachableCode, 5u ) );
 }
 
 U_TEST( HaltTest4_HaltIsLikeReturn )

@@ -38,7 +38,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	value->referenced= true;
 	CollectDefinition( *value, root_namespace_lookup.src_loc );
 
-	return value->value;
+	return ContextualizeValueInResolve( names_scope, function_context, value->value, root_namespace_lookup.src_loc );
 }
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
@@ -50,7 +50,55 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
 {
-	(void)function_context;
+	// Process specially this/base name.
+	if( name_lookup.name == Keywords::this_ )
+	{
+		if( function_context.this_ == nullptr || function_context.whole_this_is_unavailable )
+		{
+			REPORT_ERROR( ThisUnavailable, names_scope.GetErrors(), name_lookup.src_loc );
+			return ErrorValue();
+		}
+		return function_context.this_;
+	}
+	else if( name_lookup.name == Keywords::base_ )
+	{
+		if( function_context.this_ == nullptr )
+		{
+			REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), name_lookup.src_loc );
+			return ErrorValue();
+		}
+		const Class& class_= *function_context.this_->type.GetClassType();
+		if( class_.base_class == nullptr )
+		{
+			REPORT_ERROR( BaseUnavailable, names_scope.GetErrors(), name_lookup.src_loc );
+			return ErrorValue();
+		}
+		if( function_context.whole_this_is_unavailable && ( !function_context.base_initialized || class_.base_class->kind == Class::Kind::Abstract ) )
+		{
+			REPORT_ERROR( FieldIsNotInitializedYet, names_scope.GetErrors(), name_lookup.src_loc, Keyword( Keywords::base_ ) );
+			return ErrorValue();
+		}
+
+		// Do not call here "AccessClassBase" method.
+		// We can not create child node for "this", because it's still possible to access whole "this" using "base" by calling a virtual method.
+		// So, create regular node pointing to "this".
+		// TODO - maybe access "base" child node in constructor initializer list since it is not possible to call real virtual method of "this"?
+		const VariablePtr base=
+			std::make_shared<Variable>(
+				class_.base_class,
+				function_context.this_->value_type,
+				Variable::Location::Pointer,
+				std::string( Keyword( Keywords::base_ ) ),
+				CreateReferenceCast( function_context.this_->llvm_value, function_context.this_->type, class_.base_class, function_context ) );
+
+		function_context.variables_state.AddNode( base );
+		function_context.variables_state.TryAddLink( function_context.this_, base, names_scope.GetErrors(),name_lookup.src_loc );
+
+		RegisterTemporaryVariable( function_context, base );
+
+		return base;
+	}
+
 	const NameLookupResult result= LookupName( names_scope, name_lookup.name, name_lookup.src_loc );
 
 	if( result.value == nullptr )
@@ -62,7 +110,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	result.value->referenced= true;
 	CollectDefinition( *result.value, name_lookup.src_loc );
 
-	return result.value->value;
+	return ContextualizeValueInResolve( names_scope, function_context, result.value->value, name_lookup.src_loc );
 }
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion )
@@ -74,7 +122,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch )
 {
-	const Value base= ResolveValue( names_scope, function_context, *names_scope_fetch.base );
+	const Value base= ResolveValue( names_scope, function_context, names_scope_fetch.base );
 
 	NamesScopeValue* value= nullptr;
 
@@ -104,7 +152,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 		}
 	}
 	else if( base.GetTypeTemplatesSet() != nullptr )
-		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc, *names_scope_fetch.base );
+		REPORT_ERROR( TemplateInstantiationRequired, names_scope.GetErrors(), names_scope_fetch.src_loc, names_scope_fetch.base );
 
 	if( value == nullptr )
 	{
@@ -115,12 +163,12 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 	value->referenced= true;
 	CollectDefinition( *value, names_scope_fetch.src_loc );
 
-	return value->value;
+	return ContextualizeValueInResolve( names_scope, function_context, value->value, names_scope_fetch.src_loc );
 }
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion )
 {
-	const Value base= ResolveValue( names_scope, function_context, *names_scope_fetch_completion.base );
+	const Value base= ResolveValue( names_scope, function_context, names_scope_fetch_completion.base );
 	NamesScopeFetchComleteImpl( base, names_scope_fetch_completion.name );
 
 	return ErrorValue();
@@ -128,7 +176,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization )
 {
-	const Value base= ResolveValue( names_scope, function_context, *template_parametrization.base );
+	const Value base= ResolveValue( names_scope, function_context, template_parametrization.base );
 
 	NamesScopeValue* value= nullptr;
 
@@ -153,6 +201,27 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 					names_scope,
 					function_context );
 	}
+	else if( const auto this_overloaded_methods_set= base.GetThisOverloadedMethodsSet() )
+	{
+		if( this_overloaded_methods_set->overloaded_methods_set->template_functions.empty() )
+		{
+			REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc );
+			return ErrorValue();
+		}
+
+		auto parametrization_result=
+			ParametrizeFunctionTemplate(
+				template_parametrization.src_loc,
+				*this_overloaded_methods_set->overloaded_methods_set,
+				template_parametrization.template_args,
+				names_scope,
+				function_context );
+		if( parametrization_result == nullptr )
+			return ErrorValue();
+
+		if( const auto parametrization_result_funtions_set= parametrization_result->value.GetFunctionsSet() )
+			return ThisOverloadedMethodsSet{ this_overloaded_methods_set->this_, parametrization_result_funtions_set };
+	}
 	else
 		REPORT_ERROR( ValueIsNotTemplate, names_scope.GetErrors(), template_parametrization.src_loc );
 
@@ -161,7 +230,7 @@ Value CodeBuilder::ResolveValueImpl( NamesScope& names_scope, FunctionContext& f
 
 	value->referenced= true;
 
-	return value->value;
+	return ContextualizeValueInResolve( names_scope, function_context, value->value, template_parametrization.src_loc );;
 }
 
 void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* const value )
@@ -185,6 +254,83 @@ void CodeBuilder::BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_sc
 		if( const EnumPtr enum_= type->GetEnumType() )
 			GlobalThingBuildEnum( enum_ );
 	}
+}
+
+Value CodeBuilder::ContextualizeValueInResolve( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc )
+{
+	if( const ClassFieldPtr field= value.GetClassField() )
+	{
+		// Convert resolved field name to field variable inside thiscall method.
+
+		if( function_context.this_ == nullptr )
+		{
+			REPORT_ERROR( ClassFieldAccessInStaticMethod, names.GetErrors(), src_loc, field->GetName() );
+			return ErrorValue();
+		}
+
+		const ClassPtr class_= field->class_;
+		U_ASSERT( class_ != nullptr && "Class is dead? WTF?" );
+
+		if( function_context.whole_this_is_unavailable )
+		{
+			if( class_ == function_context.this_->type.GetClassType() )
+			{
+				if( field->index < function_context.initialized_this_fields.size() &&
+					!function_context.initialized_this_fields[ field->index ] )
+				{
+					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, field->GetName() );
+					return ErrorValue();
+				}
+			}
+			else
+			{
+				if(!function_context.base_initialized )
+				{
+					REPORT_ERROR( FieldIsNotInitializedYet, names.GetErrors(), src_loc, Keyword( Keywords::base_ ) );
+					return ErrorValue();
+				}
+			}
+		}
+
+		return AccessClassField( names, function_context, function_context.this_, *field, "TODO - field name", src_loc );
+	}
+	else if( const OverloadedFunctionsSetConstPtr overloaded_functions_set= value.GetFunctionsSet() )
+	{
+		if( function_context.this_ != nullptr )
+		{
+			// Trying add "this" to functions set, but only if whole "this" is available.
+			if( ( function_context.this_->type.GetClassType() == overloaded_functions_set->base_class ||
+				  function_context.this_->type.GetClassType()->HaveAncestor( overloaded_functions_set->base_class ) ) &&
+				!function_context.whole_this_is_unavailable )
+			{
+				ThisOverloadedMethodsSet this_overloaded_methods_set;
+				this_overloaded_methods_set.this_= function_context.this_;
+				this_overloaded_methods_set.overloaded_methods_set= overloaded_functions_set;
+				return std::move(this_overloaded_methods_set);
+			}
+		}
+	}
+	else if( const VariablePtr variable= value.GetVariable() )
+	{
+		if( function_context.variables_state.NodeMoved( variable ) )
+			REPORT_ERROR( AccessingMovedVariable, names.GetErrors(), src_loc, variable->name );
+
+		// Forbid mutable global variables access outside unsafe block.
+		// Detect global variable by checking dynamic type of variable's LLVM value.
+		// TODO - what if variable is constant GEP result with global variable base?
+		if( variable->value_type == ValueType::ReferenceMut &&
+			llvm::dyn_cast<llvm::GlobalVariable>( variable->llvm_value ) != nullptr &&
+			!function_context.is_in_unsafe_block )
+			REPORT_ERROR( GlobalMutableVariableAccessOutsideUnsafeBlock, names.GetErrors(), src_loc );
+
+		if( IsGlobalVariable(variable) )
+		{
+			// Add global variable nodes lazily.
+			function_context.variables_state.AddNodeIfNotExists( variable );
+		}
+	}
+
+	return value;
 }
 
 CodeBuilder::NameLookupResult CodeBuilder::LookupName( NamesScope& names_scope, const std::string_view name, const SrcLoc& src_loc )

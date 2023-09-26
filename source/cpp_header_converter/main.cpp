@@ -56,8 +56,8 @@ int main( int argc, const char* argv[] )
 	for( const std::string& import : force_import )
 		out_file << "import " << "\"" << import << "\"\n";
 
-	for( const auto& unit : *parsed_units )
-		U::Synt::WriteProgram( unit.second, out_file );
+	for( auto& unit : *parsed_units )
+		U::Synt::WriteProgram( unit.second.Build(), out_file );
 
 	return 0;
 }

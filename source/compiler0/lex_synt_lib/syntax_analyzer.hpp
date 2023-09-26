@@ -26,7 +26,7 @@ struct SyntaxAnalysisResult
 {
 	std::vector<Import> imports;
 	MacrosPtr macros;
-	ProgramElements program_elements;
+	ProgramElementsList program_elements;
 	LexSyntErrors error_messages;
 };
 

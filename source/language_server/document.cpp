@@ -521,20 +521,10 @@ std::vector<CompletionItem> Document::Complete( const DocumentPosition& position
 	// Use existing compiled program to perform names lookup.
 	// Do not try to compile current text, because it is broken and completion will not return what should be returned.
 	// Also it is too slow to recompile program for each completion.
-
-	const GlobalItem& global_item= lookup_result->global_item;
-	std::vector<CodeBuilder::CompletionItem> completion_result;
-	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
-	{
-		U_ASSERT( *program_element != nullptr );
-		completion_result= compiled_state_->code_builder->Complete( lookup_result->prefix, **program_element );
-	}
-	else if( const auto class_element= std::get_if<const Synt::ClassElement*>( &global_item ) )
-	{
-		U_ASSERT( *class_element != nullptr );
-		completion_result= compiled_state_->code_builder->Complete( lookup_result->prefix, **class_element );
-	}
-	else U_ASSERT( false );
+	const std::vector<CodeBuilder::CompletionItem> completion_result=
+		std::visit(
+			[&]( const auto& el ) { return compiled_state_->code_builder->Complete( lookup_result->prefix, *el ); },
+			lookup_result->global_item );
 
 	std::vector<CompletionItem> result_transformed;
 	result_transformed.reserve( completion_result.size() );
@@ -662,21 +652,10 @@ std::vector<CodeBuilder::SignatureHelpItem> Document::GetSignatureHelp( const Do
 	// Use existing compiled program to perform signature help.
 	// Do not try to compile current text, because it is broken and completion will not return what should be returned.
 	// Also it is too slow to recompile program for each signature help.
-
-	const GlobalItem& global_item= lookup_result->global_item;
-	if( const auto program_element= std::get_if<const Synt::ProgramElement*>( &global_item ) )
-	{
-		U_ASSERT( *program_element != nullptr );
-		return compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, **program_element );
-	}
-	else if( const auto class_element= std::get_if<const Synt::ClassElement*>( &global_item ) )
-	{
-		U_ASSERT( *class_element != nullptr );
-		return compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, **class_element );
-	}
-	else U_ASSERT( false );
-
-	return {};
+	return
+		std::visit(
+			[&]( const auto& el ) { return compiled_state_->code_builder->GetSignatureHelp( lookup_result->prefix, *el ); },
+			lookup_result->global_item );
 }
 
 std::optional<DocumentRange> Document::GetIdentifierRange( const SrcLoc& src_loc ) const

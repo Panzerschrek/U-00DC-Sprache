@@ -120,11 +120,29 @@ public: // IDE helpers.
 	// Try to compile given program element, including internal completion syntax element.
 	// Return completion result.
 	// Prefix is used to find proper namespace/class (name lookups are used).
-	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
-	std::vector<CompletionItem> Complete( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
+	template<typename T>
+	std::vector<CompletionItem> Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const T& el )
+	{
+		NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+		if( names_scope == nullptr )
+			return {};
 
-	std::vector<SignatureHelpItem> GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element );
-	std::vector<SignatureHelpItem> GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element );
+		BuildElementForCompletionImpl( *names_scope, el );
+		return CompletionResultFinalize();
+	}
+
+	template<typename T>
+	std::vector<SignatureHelpItem> GetSignatureHelp( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const T& el )
+	{
+		// Use same routines for completion and signature help.
+
+		NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
+		if( names_scope == nullptr )
+			return {};
+
+		BuildElementForCompletionImpl( *names_scope, el );
+		return SignatureHelpResultFinalize();
+	}
 
 	// Delete bodies of functions (excepth constexpr ones).
 	// This breaks result module and should not be used for a program compilation (with result object file).
@@ -191,18 +209,16 @@ private:
 	std::vector<CompletionItem> CompletionResultFinalize();
 	std::vector<SignatureHelpItem> SignatureHelpResultFinalize();
 
-	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element );
-	void BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::AutoVariableDeclaration& auto_variable_declaration );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeAlias& type_alias );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Enum& enum_ );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionPtr& function_ptr );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassPtr& class_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ptr );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template );
-	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ptr );
+	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
 
@@ -231,14 +247,28 @@ private:
 
 	// Function context required for accesing local constexpr variables.
 	Type PrepareType( const Synt::TypeName& type_name, NamesScope& names_scope, FunctionContext& function_context );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::EmptyVariant& type_nam );
+
+	template<typename T>
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<T>& el )
+	{
+		return PrepareTypeImpl( names_scope, function_context, *el );
+	}
+
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::EmptyVariant& type_name );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParametrization>& template_parametrization );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionTypePtr& function_type_name_ptr );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TupleType& tuple_type_name );
 	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorTypePtr& generator_type_name_ptr );
-	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name );
+	Type PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name );
+	Type ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc );
 
 	FunctionPointerType FunctionTypeToPointer( FunctionType function_type );
 
@@ -315,68 +345,104 @@ private:
 		std::vector<TypeTemplate::TemplateParameter>& template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags );
 
+	// Handler for ComplexName/TypeName/Expression.
+	template< typename ... VariantArgs >
 	TemplateSignatureParam CreateTemplateSignatureParameter(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		const llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const std::variant< VariantArgs ... >& template_parameter )
+	{
+		return
+			std::visit(
+				[&]( const auto& t ) { return CreateTemplateSignatureParameterImpl( names_scope, function_context, template_parameters, template_parameters_usage_flags, t ); },
+				template_parameter );
+	}
+
+	// Handler for unique_ptr unwrapping.
+	template<typename T>
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::ComplexName& signature_parameter );
+		const std::unique_ptr<T>& el )
+	{
+		return CreateTemplateSignatureParameterImpl( names_scope, function_context, template_parameters, template_parameters_usage_flags, *el );
+	}
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	// Handler for non-important for template args creation nodes - just evaluate expression.
+	template<typename T>
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::Expression& template_parameter );
+		const T& el )
+	{
+		(void)template_parameters;
+		(void)template_parameters_usage_flags;
+		return ValueToTemplateParam( BuildExpressionCodeImpl( names_scope, function_context, el ), names_scope, el.src_loc );
+	}
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
-		NamesScope& names_scope,
-		FunctionContext& function_context,
-		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
-		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::TypeName& template_parameter );
+	// Template signature parameter handlers for different expression node kinds.
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::EmptyVariant& empty_variant );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::ArrayTypeName& array_type_name );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::FunctionTypePtr& function_pointer_type_name_ptr );
+		const Synt::FunctionType& function_pointer_type_name );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::TupleType& tuple_type_name );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
 		const Synt::RawPointerType& raw_pointer_type_name );
 
-	TemplateSignatureParam CreateTemplateSignatureParameter(
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
 		NamesScope& names_scope,
 		FunctionContext& function_context,
 		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
 		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
-		const Synt::GeneratorTypePtr& generator_type_name_ptr );
+		const Synt::GeneratorType& generator_type_name );
+
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const Synt::NameLookup& name_lookup );
+
+	TemplateSignatureParam CreateTemplateSignatureParameterImpl(
+		NamesScope& names_scope,
+		FunctionContext& function_context,
+		llvm::ArrayRef<TemplateBase::TemplateParameter> template_parameters,
+		llvm::SmallVectorImpl<bool>& template_parameters_usage_flags,
+		const Synt::TemplateParametrization& template_parametrization );
 
 	TemplateSignatureParam ValueToTemplateParam( const Value& value, NamesScope& names_scope, const SrcLoc& src_loc );
 
@@ -625,7 +691,7 @@ private:
 		ClassPtr base_class,
 		NamesScope& parent_names_scope,
 		std::string_view func_name,
-		const Synt::FunctionParams& params,
+		llvm::ArrayRef<Synt::FunctionParam> params,
 		const Synt::Block& block,
 		const Synt::StructNamedInitializer* constructor_initialization_list );
 
@@ -636,6 +702,13 @@ private:
 		FunctionContext& function_context );
 
 	Value BuildExpressionCode( const Synt::Expression& expression, NamesScope& names, FunctionContext& function_context );
+
+	template<typename T>
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const std::unique_ptr<T>& el )
+	{
+		return BuildExpressionCodeImpl( names, function_context, *el );
+	}
+
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::EmptyVariant& expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperator& call_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CallOperatorSignatureHelp& call_operator_signature_help );
@@ -647,7 +720,6 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::LogicalNot& logical_not );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BitwiseNot& bitwise_not );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BinaryOperator& binary_operator );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ComplexName& named_operand );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TernaryOperator& ternary_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ReferenceToRawPointerOperator& reference_to_raw_pointer_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerToReferenceOperator& raw_pointer_to_reference_operator );
@@ -655,6 +727,7 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::BooleanConstant& boolean_constant );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::StringLiteral& string_literal );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MoveOperator& move_operator );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::MoveOperatorCompletion& move_operator_completion );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TakeOperator& move_operator );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastMut& cast_mut );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::CastImut& cast_imut );
@@ -665,11 +738,19 @@ private:
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NonSyncExpression& non_sync_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::SafeExpression& safe_expression );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::UnsafeExpression& unsafe_expression );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NameLookup& name_lookup );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamesScopeNameFetch& names_scope_fetch );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::NamesScopeNameFetchCompletion& names_scope_fetch_completion );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::ArrayTypeName& type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionTypePtr& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::FunctionType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::TupleType& type_name );
 	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::RawPointerType& type_name );
-	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::GeneratorTypePtr& type_name );
+	Value BuildExpressionCodeImpl( NamesScope& names, FunctionContext& function_context, const Synt::GeneratorType& type_name );
 
 	VariablePtr AccessClassBase( const VariablePtr& variable, FunctionContext& function_context );
 	Value AccessClassField(
@@ -820,7 +901,6 @@ private:
 
 	// Block elements
 	BlockBuildInfo BuildIfAlternative( NamesScope& names, FunctionContext& function_context, const Synt::IfAlternative& if_alterntative );
-	BlockBuildInfo BuildBlockElement( NamesScope& names, FunctionContext& function_context, const Synt::BlockElement& block_element );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::Block& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::ScopeBlock& block );
 	BlockBuildInfo BuildBlockElementImpl( NamesScope& names, FunctionContext& function_context, const Synt::VariablesDeclaration& variables_declaration );
@@ -850,7 +930,7 @@ private:
 
 	BlockBuildInfo BuildBlock( NamesScope& names, FunctionContext& function_context, const Synt::Block& block );
 	// Build elements, withut creating separate names scope.
-	BlockBuildInfo BuildBlockElements( NamesScope& names, FunctionContext& function_context, const Synt::BlockElements& block_elements );
+	BlockBuildInfo BuildBlockElements( NamesScope& names, FunctionContext& function_context, const Synt::BlockElementsList& block_elements );
 
 	void BuildEmptyReturn( NamesScope& names, FunctionContext& function_context, const SrcLoc& src_loc );
 
@@ -879,6 +959,13 @@ private:
 	//
 
 	Value ResolveValue( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& complex_name );
+
+	template<typename T>
+	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<T>& el )
+	{
+		return ResolveValueImpl( names_scope, function_context, *el );
+	}
+
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TypeofTypeName& typeof_type_name );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup );
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion );
@@ -889,6 +976,7 @@ private:
 	Value ResolveValueImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::TemplateParametrization& template_parametrization );
 
 	void BuildGlobalThingDuringResolveIfNecessary( NamesScope& names_scope, NamesScopeValue* value );
+	Value ContextualizeValueInResolve( NamesScope& names, FunctionContext& function_context, const Value& value, const SrcLoc& src_loc );
 
 	struct NameLookupResult
 	{
@@ -1112,18 +1200,22 @@ private:
 
 	// NamesScope fill
 
-	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::AutoVariableDeclaration& variable_declaration );
-	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionPtr& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
+	void NamesScopeFill( NamesScope& names_scope, const Synt::Function& function_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
-	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::ClassPtr& class_declaration );
+	ClassPtr NamesScopeFill( NamesScope& names_scope, const Synt::Class& class_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeTemplate& type_template_declaration, ClassPtr base_class= nullptr, ClassMemberVisibility visibility= ClassMemberVisibility::Public );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::Enum& enum_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::TypeAlias& type_alias_declaration );
 	void NamesScopeFill( NamesScope& names_scope, const Synt::StaticAssert& static_assert_ );
-	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElements& namespace_elements );
+
+	void NamesScopeFillOutOfLineElements( NamesScope& names_scope, const Synt::ProgramElementsList& namespace_elements );
+	template<typename T> void NamesScopeFillOutOfLineElement( NamesScope&, const T& ) {} // Ignore almost all nodes in out of line filling, except a couple of special nodes.
+	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Function& function );
+	void NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ );
 
 	// Global things build
 

@@ -47,52 +47,6 @@ std::vector<SrcLoc> CodeBuilder::GetAllOccurrences( const SrcLoc& src_loc )
 	return result;
 }
 
-std::vector<CodeBuilder::CompletionItem> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element )
-{
-	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
-	if( names_scope == nullptr )
-		return {};
-
-	BuildElementForCompletion( *names_scope, program_element );
-
-	return CompletionResultFinalize();
-}
-
-std::vector<CodeBuilder::CompletionItem> CodeBuilder::Complete( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element )
-{
-	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
-	if( names_scope == nullptr )
-		return {};
-
-	BuildElementForCompletion( *names_scope, class_element );
-
-	return CompletionResultFinalize();
-}
-
-std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ProgramElement& program_element )
-{
-	// Use same routines for completion and signature help.
-
-	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
-	if( names_scope == nullptr )
-		return {};
-
-	BuildElementForCompletion( *names_scope, program_element );
-	return SignatureHelpResultFinalize();
-}
-
-std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::GetSignatureHelp( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix, const Synt::ClassElement& class_element )
-{
-	// Use same routines for completion and signature help.
-
-	NamesScope* const names_scope= GetNamesScopeForCompletion( prefix );
-	if( names_scope == nullptr )
-		return {};
-
-	BuildElementForCompletion( *names_scope, class_element );
-	return SignatureHelpResultFinalize();
-}
-
 void CodeBuilder::DeleteFunctionsBodies()
 {
 	// Delete bodies of in code.
@@ -257,16 +211,6 @@ std::vector<CodeBuilder::SignatureHelpItem> CodeBuilder::SignatureHelpResultFina
 	return result;
 }
 
-void CodeBuilder::BuildElementForCompletion( NamesScope& names_scope, const Synt::ProgramElement& program_element )
-{
-	return std::visit( [&](const auto &el){ return BuildElementForCompletionImpl( names_scope, el ); }, program_element );
-}
-
-void CodeBuilder::BuildElementForCompletion( NamesScope& names_scope, const Synt::ClassElement& class_element )
-{
-	return std::visit( [&](const auto &el){ return BuildElementForCompletionImpl( names_scope, el ); }, class_element );
-}
-
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::VariablesDeclaration& variables_declaration )
 {
 	FunctionContext& function_context= *global_function_context_;
@@ -332,15 +276,12 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)enum_;
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionPtr& function_ptr )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Function& function )
 {
-	if( function_ptr == nullptr || function_ptr->name.empty() )
-		return;
-
 	NamesScope* actual_nams_scope= nullptr;
 	ClassPtr base_class= nullptr;
 
-	const auto& name= function_ptr->name;
+	const auto& name= function.name;
 
 	if( name.size() > 1 )
 	{
@@ -371,7 +312,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 			}
 
 			// Perform regular name lookup.
-			value= LookupName( names_scope, name[0].name, function_ptr->src_loc ).value;
+			value= LookupName( names_scope, name[0].name, function.src_loc ).value;
 			if( value != nullptr )
 				CollectDefinition( *value, name[0].src_loc );
 		}
@@ -430,7 +371,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	const bool out_of_line_flag= false;
 
 	// Prepare function - complete names in types of params and return value.
-	const size_t function_index= PrepareFunction( *actual_nams_scope, base_class, functions_set, *function_ptr, out_of_line_flag );
+	const size_t function_index= PrepareFunction( *actual_nams_scope, base_class, functions_set, function, out_of_line_flag );
 
 	if( function_index >= functions_set.functions.size() )
 	{
@@ -438,7 +379,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		return;
 	}
 
-	if( function_ptr->block == nullptr )
+	if( function.block == nullptr )
 		return; // This is only prototype.
 
 	FunctionVariable& function_variable= functions_set.functions[ function_index ];
@@ -449,26 +390,23 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		base_class,
 		*actual_nams_scope,
 		name.back().name,
-		function_ptr->type.params,
-		*function_ptr->block,
-		function_ptr->constructor_initialization_list.get() );
+		function.type.params,
+		*function.block,
+		function.constructor_initialization_list.get() );
 
 	// Clear garbage - remove created llvm function.
 	if( function_variable.llvm_function->function != nullptr )
 		function_variable.llvm_function->function->eraseFromParent();
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassPtr& class_ptr )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Class& class_ )
 {
-	if( class_ptr == nullptr )
-		return;
-
 	// Complete names in parent names.
-	for( const Synt::ComplexName& parent_name : class_ptr->parents )
-		PrepareTypeImpl( names_scope, *global_function_context_, parent_name );
+	for( const Synt::ComplexName& parent_name : class_.parents )
+		ResolveValue( names_scope, *global_function_context_, parent_name );
 
 	// Complete names in non-sync tag.
-	if( const auto non_sync_expression= std::get_if<Synt::ExpressionPtr>( &class_ptr->non_sync_tag ) )
+	if( const auto non_sync_expression= std::get_if< std::unique_ptr<const Synt::Expression> >( &class_.non_sync_tag ) )
 	{
 		if( *non_sync_expression != nullptr )
 			BuildExpressionCode( **non_sync_expression, names_scope, *global_function_context_ );
@@ -491,11 +429,11 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)function_template;
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::NamespacePtr& namespace_ptr )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ )
 {
 	// Nothing to do here, since completion for namespace has no sense and completion for namespace member will be trigered otherwise.
 	(void)names_scope;
-	(void)namespace_ptr;
+	(void)namespace_;
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field )

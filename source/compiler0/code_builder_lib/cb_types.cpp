@@ -35,12 +35,47 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope&, FunctionContext&, const Synt::Em
 	return invalid_type_;
 }
 
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookup& root_namespace_lookup )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, root_namespace_lookup ), root_namespace_lookup.src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RootNamespaceNameLookupCompletion& root_namespace_lookup_completion )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, root_namespace_lookup_completion ), root_namespace_lookup_completion.src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookup& name_lookup )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, name_lookup ), name_lookup.src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::NameLookupCompletion& name_lookup_completion )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, name_lookup_completion ), name_lookup_completion.src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetch>& names_scope_name_fetch )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch ), names_scope_name_fetch->src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::NamesScopeNameFetchCompletion>& names_scope_name_fetch_completion )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, names_scope_name_fetch_completion ), names_scope_name_fetch_completion->src_loc );
+}
+
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const std::unique_ptr<const Synt::TemplateParametrization>& template_parametrization )
+{
+	return ValueToType( names_scope, ResolveValueImpl( names_scope, function_context, template_parametrization ), template_parametrization->src_loc );
+}
+
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ArrayTypeName& array_type_name )
 {
 	ArrayType array_type;
-	array_type.element_type= PrepareType( *array_type_name.element_type, names_scope, function_context );
+	array_type.element_type= PrepareType( array_type_name.element_type, names_scope, function_context );
 
-	const Synt::Expression& num= *array_type_name.size;
+	const Synt::Expression& num= array_type_name.size;
 	const SrcLoc num_src_loc= Synt::GetExpressionSrcLoc( num );
 
 	VariablePtr size_variable;
@@ -85,7 +120,7 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	const auto state= SaveFunctionContextState( function_context );
 	{
 		const StackVariablesStorage dummy_stack_variables_storage( function_context );
-		const VariablePtr variable= BuildExpressionCodeEnsureVariable( *typeof_type_name.expression, names_scope, function_context );
+		const VariablePtr variable= BuildExpressionCodeEnsureVariable( typeof_type_name.expression, names_scope, function_context );
 		result= variable->type;
 	}
 
@@ -95,10 +130,8 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return result;
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionTypePtr& function_type_name_ptr )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::FunctionType& function_type_name )
 {
-	const Synt::FunctionType& function_type_name= *function_type_name_ptr;
-
 	FunctionType function_type;
 
 	if( function_type_name.return_type == nullptr )
@@ -166,16 +199,14 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::RawPointerType& raw_pointer_type_name )
 {
 	RawPointerType raw_pointer;
-	raw_pointer.element_type= PrepareType( *raw_pointer_type_name.element_type, names_scope, function_context );
+	raw_pointer.element_type= PrepareType( raw_pointer_type_name.element_type, names_scope, function_context );
 	raw_pointer.llvm_type= raw_pointer.element_type.GetLLVMType()->getPointerTo();
 
 	return raw_pointer;
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorTypePtr& generator_type_name_ptr )
+Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::GeneratorType& generator_type_name )
 {
-	const Synt::GeneratorType& generator_type_name= *generator_type_name_ptr;
-
 	CoroutineTypeDescription coroutine_type_description;
 	coroutine_type_description.kind= CoroutineKind::Generator;
 	coroutine_type_description.return_type= PrepareType( generator_type_name.return_type, names_scope, function_context );
@@ -217,13 +248,12 @@ Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& fun
 	return GetCoroutineType( *names_scope.GetRoot(), coroutine_type_description );
 }
 
-Type CodeBuilder::PrepareTypeImpl( NamesScope& names_scope, FunctionContext& function_context, const Synt::ComplexName& named_type_name )
+Type CodeBuilder::ValueToType( NamesScope& names_scope, const Value& value, const SrcLoc& src_loc )
 {
-	const Value value= ResolveValue( names_scope, function_context, named_type_name );
 	if( const Type* const type= value.GetTypeName() )
 		return *type;
 	else
-		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), Synt::GetComplexNameSrcLoc(named_type_name), named_type_name );
+		REPORT_ERROR( NameIsNotTypeName, names_scope.GetErrors(), src_loc, value.GetKindName() );
 
 	return invalid_type_;
 }

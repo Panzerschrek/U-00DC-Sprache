@@ -17,7 +17,7 @@ namespace
 class Finder
 {
 public:
-	SyntaxTreeLookupResultOpt Find( const uint32_t line, const uint32_t column, const Synt::ProgramElements& program_elements )
+	SyntaxTreeLookupResultOpt Find( const uint32_t line, const uint32_t column, const Synt::ProgramElementsList& program_elements )
 	{
 		line_= line;
 		column_= column;
@@ -181,10 +181,15 @@ void FindImpl( const Synt::StringLiteral& string_literal )
 
 void FindImpl( const Synt::MoveOperator& move_operator )
 {
-	if( move_operator.src_loc.GetLine() == line_ && move_operator.src_loc.GetColumn() == column_ )
+	(void)move_operator;
+}
+
+void FindImpl( const Synt::MoveOperatorCompletion& move_operator_completion )
+{
+	if( move_operator_completion.src_loc.GetLine() == line_ && move_operator_completion.src_loc.GetColumn() == column_ )
 	{
 		U_ASSERT( global_item_ != std::nullopt );
-		result_= SyntaxTreeLookupResult{ prefix_, &move_operator, *global_item_ };
+		result_= SyntaxTreeLookupResult{ prefix_, &move_operator_completion, *global_item_ };
 	}
 }
 
@@ -379,25 +384,27 @@ void FindImpl( const Synt::UninitializedInitializer& uninitialized_initializer )
 	(void)uninitialized_initializer;
 }
 
-void FindImpl( const Synt::ProgramElements& program_elements )
+void FindImpl( const Synt::ProgramElementsList& program_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;
-	for( const Synt::ProgramElement& program_element : program_elements )
-	{
-		global_item_= GlobalItem(&program_element);
-		FindImplVariant( program_element );
-	}
+	program_elements.Iter(
+		[&]( const auto & el )
+		{
+			global_item_= GlobalItem(&el);
+			FindImpl( el );
+		} );
 	global_item_= prev_global_item;
 }
 
-void FindImpl( const Synt::ClassElements& class_elements )
+void FindImpl( const Synt::ClassElementsList& class_elements )
 {
 	std::optional<GlobalItem> prev_global_item= global_item_;
-	for( const Synt::ClassElement& class_element : class_elements )
-	{
-		global_item_= GlobalItem(&class_element);
-		FindImplVariant( class_element );
-	}
+	class_elements.Iter(
+		[&]( const auto & el )
+		{
+			global_item_= GlobalItem(&el);
+			FindImpl( el );
+		} );
 	global_item_= prev_global_item;
 }
 
@@ -509,8 +516,7 @@ void FindImpl( const Synt::IfAlternative& if_alternative )
 
 void FindImpl( const Synt::Block& block )
 {
-	for( const Synt::BlockElement& block_element : block.elements )
-		FindImplVariant( block_element );
+	block.elements.Iter( [&]( const auto& el ) { FindImpl(el); } );
 }
 
 void FindImpl( const Synt::ScopeBlock& scope_block )
@@ -552,8 +558,7 @@ void FindImpl( const Synt::CStyleForOperator& c_style_for_operator )
 
 	FindImpl( c_style_for_operator.loop_condition );
 
-	for( const auto& element : c_style_for_operator.iteration_part_elements )
-		FindImplVariant( element );
+	c_style_for_operator.iteration_part_elements.Iter( [&]( const auto& el ){ FindImpl( el ); } );
 
 	FindImpl( c_style_for_operator.block );
 }
@@ -664,7 +669,7 @@ void FindImpl( const Synt::HaltIf& halt_if )
 
 } // namespace
 
-SyntaxTreeLookupResultOpt FindCompletionSyntaxElement( const uint32_t line, const uint32_t column, const Synt::ProgramElements& program_elements )
+SyntaxTreeLookupResultOpt FindCompletionSyntaxElement( const uint32_t line, const uint32_t column, const Synt::ProgramElementsList& program_elements )
 {
 	return Finder().Find( line, column, program_elements );
 }

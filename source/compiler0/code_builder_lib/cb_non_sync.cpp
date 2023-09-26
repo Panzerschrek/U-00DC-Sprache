@@ -103,17 +103,17 @@ bool CodeBuilder::GetTypeNonSyncImpl( llvm::SmallVectorImpl<Type>& prev_types_st
 				prev_types_stack.pop_back();
 				return true;
 			}
-			else if( const auto expression_ptr= std::get_if<Synt::ExpressionPtr>( &class_type->syntax_element->non_sync_tag ) )
+			else if( const auto expression_ptr= std::get_if< std::unique_ptr<const Synt::Expression> >( &class_type->syntax_element->non_sync_tag ) )
 			{
 				const Synt::Expression& expression= **expression_ptr;
 
 				// Evaluate non_sync condition using initial class members parent scope.
 				NamesScope& class_parent_scope= *class_type->members_initial->GetParent();
-				if( const auto non_sync_expression= std::get_if<Synt::NonSyncExpression>( &expression ) )
+				if( const auto non_sync_expression_ptr= std::get_if< std::unique_ptr<const Synt::NonSyncExpression> >( &expression ) )
 				{
 					// Process "non_sync</T/>" expression specially to handle cases with recursive dependencies.
 					// TODO - handle also simple logical expressions with "non_sync" tag?
-					const Type dependent_type= PrepareType( *non_sync_expression->type, class_parent_scope, *global_function_context_ );
+					const Type dependent_type= PrepareType( (*non_sync_expression_ptr)->type, class_parent_scope, *global_function_context_ );
 					if( GetTypeNonSyncImpl( prev_types_stack, dependent_type, names_scope, src_loc ) )
 					{
 						prev_types_stack.pop_back();
@@ -191,7 +191,7 @@ bool CodeBuilder::ImmediateEvaluateNonSyncTag( NamesScope& names, FunctionContex
 		return false;
 	if( std::get_if<Synt::NonSyncTagTrue>( &non_sync_tag ) != nullptr )
 		return true;
-	if( const auto expression_ptr= std::get_if<Synt::ExpressionPtr>( &non_sync_tag ) )
+	if( const auto expression_ptr= std::get_if< std::unique_ptr<const Synt::Expression> >( &non_sync_tag ) )
 		return EvaluateBoolConstantExpression( names, function_context, **expression_ptr );
 	U_ASSERT(false); // Unhandled non_sync tag kind.
 	return false;
