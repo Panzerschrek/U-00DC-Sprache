@@ -639,7 +639,7 @@ void ElementWrite( const Function& function, std::ostream& stream )
 void ElementWrite( const Class& class_, std::ostream& stream )
 {
 	stream << Keyword(class_.kind_attribute_ == ClassKindAttribute::Struct ? Keywords::struct_ : Keywords::class_ );
-	stream << " " << class_.name << " ";
+	stream << " " << class_.name;
 
 	switch( class_.kind_attribute_ )
 	{
@@ -647,16 +647,16 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 	case ClassKindAttribute::Class:
 		break;
 	case ClassKindAttribute::Final:
-		stream << Keyword( Keywords::final_ ) << " ";
+		stream << " " << Keyword( Keywords::final_ );
 		break;
 	case ClassKindAttribute::Polymorph:
-		stream << Keyword( Keywords::polymorph_ ) << " ";
+		stream << " " << Keyword( Keywords::polymorph_ );
 		break;
 	case ClassKindAttribute::Interface:
-		stream << Keyword( Keywords::interface_ ) << " ";
+		stream << " " << Keyword( Keywords::interface_ );
 		break;
 	case ClassKindAttribute::Abstract:
-		stream << Keyword( Keywords::abstract_ ) << " ";
+		stream << " " << Keyword( Keywords::abstract_ );
 		break;
 	};
 
@@ -674,7 +674,7 @@ void ElementWrite( const Class& class_, std::ostream& stream )
 	ElementWrite( class_.non_sync_tag, stream );
 
 	if( class_.keep_fields_order )
-		stream << Keyword( Keywords::ordered_ ) << " ";
+		stream << " " << Keyword( Keywords::ordered_ );
 
 	stream << "\n{\n";
 	ElementWrite( class_.elements, stream );
@@ -686,13 +686,14 @@ void ElementWrite( const NonSyncTag& non_sync_tag, std::ostream& stream )
 	if( std::get_if<NonSyncTagNone>( &non_sync_tag ) != nullptr )
 	{}
 	else if( std::get_if<NonSyncTagTrue>( &non_sync_tag ) != nullptr )
-		stream << Keyword( Keywords::non_sync_ ) << " ";
+		stream << " " << Keyword( Keywords::non_sync_ );
 	else if( const auto expression_ptr = std::get_if< std::unique_ptr<const Expression> >( &non_sync_tag ) )
 	{
-		stream << Keyword( Keywords::non_sync_ ) << "( ";
+		stream << Keyword( Keywords::non_sync_ ) << " ( ";
 		ElementWrite( **expression_ptr, stream );
-		stream << " ) ";
+		stream << " )";
 	}
+	else U_ASSERT(false);
 }
 
 void ElementWrite( const Namespace& namespace_, std::ostream& stream )
@@ -706,21 +707,38 @@ void ElementWrite( const VariablesDeclaration& variables_declaration, std::ostre
 {
 	stream << Keyword( Keywords::var_ ) << " ";
 	ElementWrite( variables_declaration.type, stream );
-	stream << "\n";
 
-	for( const VariablesDeclaration::VariableEntry& var : variables_declaration.variables )
+	if( variables_declaration.variables.size () <= 1 )
 	{
-		stream << "\t";
-		ElementWrite( var.reference_modifier, stream );
-		ElementWrite( var.mutability_modifier, stream );
-		stream << " "  << var.name;
+		stream << " ";
+		for( const VariablesDeclaration::VariableEntry& var : variables_declaration.variables )
+		{
+			ElementWrite( var.reference_modifier, stream );
+			ElementWrite( var.mutability_modifier, stream );
+			stream << " " << var.name;
 
-		if( var.initializer != nullptr )
-			ElementWrite( *var.initializer, stream );
-
-		if( &var != &variables_declaration.variables.back() )
-			stream << ",\n";
+			if( var.initializer != nullptr )
+				ElementWrite( *var.initializer, stream );
+		}
 	}
+	else
+	{
+		stream << "\n";
+		for( const VariablesDeclaration::VariableEntry& var : variables_declaration.variables )
+		{
+			stream << "\t";
+			ElementWrite( var.reference_modifier, stream );
+			ElementWrite( var.mutability_modifier, stream );
+			stream << " " << var.name;
+
+			if( var.initializer != nullptr )
+				ElementWrite( *var.initializer, stream );
+
+			if( &var != &variables_declaration.variables.back() )
+				stream << ",\n";
+		}
+	}
+
 	stream << ";\n";
 }
 
