@@ -1318,7 +1318,7 @@ void CodeBuilder::GlobalThingReportAboutLoop( const size_t loop_start_stack_inde
 	}
 	description+= last_loop_element_name;
 
-	REPORT_ERROR( GlobalsLoopDetected, global_errors_, min_src_loc, description );
+	REPORT_ERROR( GlobalsLoopDetected, *global_errors_, min_src_loc, description );
 }
 
 } // namespace U

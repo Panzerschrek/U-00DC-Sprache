@@ -37,7 +37,7 @@ bool CodeBuilder::GetTypeNonSync( const Type& type, NamesScope& names_scope, con
 		description += type.ToString();
 		description += "/>";
 
-		REPORT_ERROR( GlobalsLoopDetected, global_errors_, src_loc, description );
+		REPORT_ERROR( GlobalsLoopDetected, *global_errors_, src_loc, description );
 		return false;
 	}
 

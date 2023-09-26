@@ -134,9 +134,9 @@ bool NamesScope::IsInsideTemplate() const
 	return false;
 }
 
-void NamesScope::SetErrors( CodeBuilderErrorsContainer& errors )
+void NamesScope::SetErrors( std::shared_ptr<CodeBuilderErrorsContainer> errors )
 {
-	errors_= &errors;
+	errors_= std::move(errors);
 }
 
 CodeBuilderErrorsContainer& NamesScope::GetErrors() const

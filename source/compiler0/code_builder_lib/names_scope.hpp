@@ -48,7 +48,7 @@ public:
 	static const std::string c_template_args_namespace_name;
 	bool IsInsideTemplate() const;
 
-	void SetErrors( CodeBuilderErrorsContainer& errors );
+	void SetErrors( std::shared_ptr<CodeBuilderErrorsContainer> errors );
 	CodeBuilderErrorsContainer& GetErrors() const;
 
 	template<class Func>
@@ -98,7 +98,7 @@ private:
 	mutable size_t iterating_= 0u;
 	std::unordered_map<ClassPtr, ClassMemberVisibility> access_rights_;
 
-	CodeBuilderErrorsContainer* errors_= nullptr;
+	std::shared_ptr<CodeBuilderErrorsContainer> errors_;
 };
 
 } // namespace U

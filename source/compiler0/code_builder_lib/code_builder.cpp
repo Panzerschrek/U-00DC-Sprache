@@ -78,7 +78,7 @@ std::unique_ptr<CodeBuilder> CodeBuilder::BuildProgramAndLeaveInternalState(
 CodeBuilderErrorsContainer CodeBuilder::TakeErrors()
 {
 	CodeBuilderErrorsContainer result;
-	result.swap( global_errors_ );
+	result.swap( *global_errors_ );
 	return result;
 }
 
@@ -269,7 +269,7 @@ void CodeBuilder::BuildProgramInternal( const SourceGraph& source_graph )
 	// Leave internal structures intact.
 
 	// Normalize result errors.
-	global_errors_= NormalizeErrors( global_errors_, *source_graph.macro_expansion_contexts );
+	*global_errors_= NormalizeErrors( *global_errors_, *source_graph.macro_expansion_contexts );
 }
 
 void CodeBuilder::FinalizeProgram()

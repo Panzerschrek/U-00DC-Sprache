@@ -13,7 +13,7 @@ namespace U
 class Type;
 
 // Macro for errors reporting.
-#define REPORT_ERROR( error_code, errors_container, ... ) errors_container.push_back( ErrorReportingImpl::ReportError( CodeBuilderErrorCode::error_code, __VA_ARGS__ ) )
+#define REPORT_ERROR( error_code, errors_container, ... ) (errors_container).push_back( ErrorReportingImpl::ReportError( CodeBuilderErrorCode::error_code, __VA_ARGS__ ) )
 
 CodeBuilderErrorsContainer NormalizeErrors(
 	const CodeBuilderErrorsContainer& errors,

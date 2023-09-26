@@ -1302,9 +1302,10 @@ void CodeBuilder::CreateTemplateErrorsContext(
 	const auto template_error_context= std::make_shared<TemplateErrorsContext>();
 	template_error_context->context_declaration_src_loc= template_.src_loc;
 	errors_container.back().template_context= template_error_context;
-	template_args_namespace->SetErrors( template_error_context->errors );
 
-	template_error_contexts_.push_back( template_error_context ); // Save it - we need pointer to "errors" live longer, than template args namespace.
+	// Use shared_ptr aliasing in order to create shared_ptr for errors container from shared_ptr for template errors context.
+	std::shared_ptr<CodeBuilderErrorsContainer> template_errors_container( template_error_context, &template_error_context->errors );
+	template_args_namespace->SetErrors( template_errors_container );
 
 	{
 		std::string args_description;

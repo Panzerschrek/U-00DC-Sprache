@@ -1362,7 +1362,7 @@ private:
 	std::unique_ptr<StackVariablesStorage> global_function_context_variables_storage_;
 
 	std::unique_ptr<llvm::Module> module_;
-	std::vector<CodeBuilderError> global_errors_; // Do not use directly. Use NamesScope::GetErrors() instead.
+	const std::shared_ptr<CodeBuilderErrorsContainer> global_errors_= std::make_shared<CodeBuilderErrorsContainer>();
 
 	std::vector<SourceBuildResult> compiled_sources_;
 
@@ -1387,10 +1387,6 @@ private:
 	ProgramStringMap<NamesScopeValue> generated_template_things_storage_;
 	// Template things for current source graph node added sequentialy into this vector too.
 	std::vector<std::string> generated_template_things_sequence_;
-
-	// Store error contexts for templates.
-	// We need to store this, since raw pointer to errors inside context may be stored inside template namespace.
-	std::vector<std::shared_ptr<TemplateErrorsContext>> template_error_contexts_;
 
 	std::vector<GlobalThing> global_things_stack_;
 
