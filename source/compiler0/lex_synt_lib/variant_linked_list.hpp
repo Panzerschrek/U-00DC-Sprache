@@ -27,7 +27,7 @@ public:
 
 	// Iterate from start to end, applying given function to all stored values.
 	template< typename Func >
-	void Iter( Func func ) const
+	void Iter( Func&& func ) const
 	{
 		const VariantElement* cur= &start_;
 		while( cur != nullptr )
