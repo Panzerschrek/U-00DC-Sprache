@@ -196,7 +196,7 @@ void ElementWrite( const TypeofTypeName& typeof_type_name, std::ostream& stream 
 
 void ElementWrite( const FunctionType& function_type_name, std::ostream& stream )
 {
-	stream << "( " << Keyword( Keywords::fn_ ) << "( ";
+	stream << "( " << Keyword( Keywords::fn_ );
 	WriteFunctionParamsList( function_type_name, stream );
 	WriteFunctionTypeEnding( function_type_name, stream );
 	stream << " )";
