@@ -305,9 +305,9 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	llvm::dyn_cast<llvm::GlobalVariable>(typeinfo_variable->llvm_value)->setInitializer( typeinfo_variable->constexpr_value );
 }
 
-VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Variable& typeinfo_variable, const std::string_view name )
+VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_type, const std::string_view name )
 {
-	const ClassPtr typeinfo_class_type= typeinfo_variable.type.GetClassType();
+	const ClassPtr typeinfo_class_type= typeinfo_type.GetClassType();
 	if( typeinfo_class_type == nullptr )
 		return nullptr;
 

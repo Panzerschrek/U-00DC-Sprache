@@ -314,13 +314,36 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	}
 
 	if( std::holds_alternative< Class::TypeinfoClassDescription >( class_type->generated_class_data ) &&
-		variable->constexpr_value != nullptr &&
 		member_access_operator.template_parameters == std::nullopt )
 	{
-		if( const VariablePtr fetch_result= TryFetchTypeinfoClassLazyField( *variable, member_access_operator.member_name ) )
+		if( const VariablePtr fetch_result= TryFetchTypeinfoClassLazyField( variable->type, member_access_operator.member_name ) )
 		{
+			U_ASSERT( fetch_result->constexpr_value != nullptr );
 			function_context.variables_state.AddNodeIfNotExists( fetch_result );
-			return fetch_result;
+			if( variable->constexpr_value != nullptr )
+				return fetch_result; // Pass constexpr fetch result for constexpr typeinfo variable.
+			else
+			{
+				// This is a typeinfo element access via non-constexpr typeinfo variable.
+				// Since typeinfo classes have no constructors it's unpossible to construct typeinfo variable.
+				// So, assume this instance is instance of single true (generated) typeinfo variable.
+				// It is still possible to create value of typeinfo class via unsafe-hacks, but ignore such possibility and return one legit possible value.
+
+				// Create reference node with null constexpr value, since source variable is not constexpr.
+				const VariableMutPtr non_constexpr_ref=
+					std::make_shared<Variable>(
+						fetch_result->type,
+						ValueType::ReferenceImut,
+						Variable::Location::Pointer,
+						fetch_result->name,
+						fetch_result->llvm_value,
+						nullptr );
+
+				function_context.variables_state.AddNode( non_constexpr_ref );
+				function_context.variables_state.TryAddLink( fetch_result, non_constexpr_ref, names.GetErrors(), member_access_operator.src_loc );
+				RegisterTemporaryVariable( function_context, non_constexpr_ref );
+				return non_constexpr_ref;
+			}
 		}
 	}
 
