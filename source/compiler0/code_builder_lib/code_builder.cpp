@@ -286,8 +286,8 @@ void CodeBuilder::FinalizeProgram()
 	// Fix incomplete typeinfo.
 	for( const auto& typeinfo_entry : typeinfo_cache_ )
 	{
-		if( !typeinfo_entry.second->type.GetLLVMType()->isSized() )
-			typeinfo_entry.second->type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
+		if( !typeinfo_entry.second.variable->type.GetLLVMType()->isSized() )
+			typeinfo_entry.second.variable->type.GetClassType()->llvm_type->setBody( llvm::ArrayRef<llvm::Type*>() );
 	}
 
 	// Replace usage of temporary allocation functions with usage of library allocation functions.

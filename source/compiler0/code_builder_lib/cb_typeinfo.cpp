@@ -69,10 +69,10 @@ TypeinfoPartVariable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, llvm
 VariablePtr CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespace )
 {
 	if( const auto it= typeinfo_cache_.find( type ); it != typeinfo_cache_.end() )
-		return it->second;
+		return it->second.variable;
 
 	const auto result= BuildTypeinfoPrototype( type, root_namespace );
-	typeinfo_cache_.emplace( type, result );
+	typeinfo_cache_.emplace( type, TypeinfoCacheElement{ result } );
 	return result;
 }
 

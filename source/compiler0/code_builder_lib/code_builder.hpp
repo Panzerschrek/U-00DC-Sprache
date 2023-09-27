@@ -46,6 +46,11 @@ struct TypeinfoPartVariable
 	llvm::Constant* constexpr_value= nullptr;
 };
 
+struct TypeinfoCacheElement
+{
+	VariableMutPtr variable; // variable - result of typeinfo operator call.
+};
+
 class CodeBuilder
 {
 public:
@@ -1378,7 +1383,7 @@ private:
 	ProgramStringMap< ClassPtr > template_classes_cache_;
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
-	std::unordered_map< Type, VariableMutPtr, TypeHasher > typeinfo_cache_;
+	std::unordered_map< Type, TypeinfoCacheElement, TypeHasher > typeinfo_cache_;
 	std::vector<std::unique_ptr<Class>> typeinfo_class_table_;
 
 	std::vector<Type> non_sync_expression_stack_;

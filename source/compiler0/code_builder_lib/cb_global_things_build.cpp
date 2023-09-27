@@ -417,7 +417,7 @@ void CodeBuilder::GlobalThingBuildClass( const ClassPtr class_type )
 	if( const auto typeinfo_class_description= std::get_if<Class::TypeinfoClassDescription>( &class_type->generated_class_data ) )
 	{
 		const Type& type= typeinfo_class_description->source_type;
-		BuildFullTypeinfo( type, typeinfo_cache_[type], *the_class.members->GetRoot() );
+		BuildFullTypeinfo( type, typeinfo_cache_[type].variable, *the_class.members->GetRoot() );
 		return;
 	}
 

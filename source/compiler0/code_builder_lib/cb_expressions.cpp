@@ -1384,7 +1384,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& root_namespace= *names.GetRoot();
 	BuildTypeInfo( type, *names.GetRoot() );
 
-	const VariableMutPtr& var_ptr= typeinfo_cache_[type];
+	const VariableMutPtr& var_ptr= typeinfo_cache_[type].variable;
 	BuildFullTypeinfo( type, var_ptr, root_namespace );
 
 	function_context.variables_state.AddNodeIfNotExists( var_ptr );
