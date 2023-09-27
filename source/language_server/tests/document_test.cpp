@@ -1303,6 +1303,29 @@ U_TEST( Document_GetFileForImportPoint_Test2 )
 	U_TEST_ASSERT( result == std::nullopt );
 }
 
+U_TEST( Document_GetFileForImportPoint_Test3 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	const IVfs::Path imported_path= "/some.u";
+	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[ imported_path ]= &imported_document;
+
+	document.SetText( "import \"some.u\"         " );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should return none if click position is outside import string.
+	U_TEST_ASSERT( document.GetFileForImportPoint( { 1,  2 } ) == std::nullopt );
+	U_TEST_ASSERT( document.GetFileForImportPoint( { 1, 12 } ) == Uri::FromFilePath( imported_path ) );
+	U_TEST_ASSERT( document.GetFileForImportPoint( { 1, 18 } ) == std::nullopt );
+}
+
 } // namespace
 
 } // namespace LangServer

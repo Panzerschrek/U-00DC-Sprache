@@ -305,10 +305,14 @@ std::optional<Uri> Document::GetFileForImportPoint( const DocumentPosition& posi
 	U_ASSERT( *linear_position >= line_offset );
 
 	const std::string_view line_text= std::string_view( compiled_state_->text ).substr( line_offset );
+	const TextLinearPosition offset_in_line= *linear_position - line_offset;
 
 	static const char whitespaces[]= " \t"; // Since we process only single line, use only spaces and tabs.
 
-	llvm::StringRef line_text_trimmed= StringViewToStringRef( line_text ).ltrim( whitespaces );
+	llvm::StringRef line_text_trimmed= StringViewToStringRef( line_text ).trim( whitespaces );
+
+	if( line_text.data() + offset_in_line >= line_text_trimmed.data() + line_text_trimmed.size() )
+		return std::nullopt; // Click point is in some whitespace.
 
 	const llvm::StringRef import_str= "import";
 	if( !line_text_trimmed.startswith( import_str ) )
@@ -316,6 +320,9 @@ std::optional<Uri> Document::GetFileForImportPoint( const DocumentPosition& posi
 
 	line_text_trimmed= line_text_trimmed.drop_front( import_str.size() );
 	line_text_trimmed= line_text_trimmed.ltrim( whitespaces );
+
+	if( line_text.data() + offset_in_line < line_text_trimmed.data() )
+		return std::nullopt; // Click point is before string literal.
 
 	if( !line_text_trimmed.startswith( "\"" ) )
 		return std::nullopt; // Not a string.
