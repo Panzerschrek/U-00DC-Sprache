@@ -91,6 +91,7 @@ public: // Other stuff.
 	// Start rebuild. Rebuilding itself is performed in background thread.
 	void StartRebuild( llvm::ThreadPool& thread_pool );
 
+private:
 	// This metod checks if compilation future has a new result. If so - it updates compiled state.
 	void TryTakeBackgroundStateUpdate();
 

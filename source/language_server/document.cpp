@@ -286,6 +286,8 @@ const DiagnosticsByDocument& Document::GetDiagnostics() const
 
 std::optional<Uri> Document::GetFileForImportPoint( const DocumentPosition& position )
 {
+	TryTakeBackgroundStateUpdate();
+
 	// Try to extract imported file name for given point.
 	// Etract current line for it and check if it starts with "import".
 	// If so - try to parse string for this import.
