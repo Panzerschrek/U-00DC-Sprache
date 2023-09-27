@@ -313,6 +313,17 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
+	if( std::holds_alternative< Class::TypeinfoClassDescription >( class_type->generated_class_data ) &&
+		variable->constexpr_value != nullptr &&
+		member_access_operator.template_parameters == std::nullopt )
+	{
+		if( const VariablePtr fetch_result= TryFetchTypeinfoClassLazyField( *variable, member_access_operator.member_name ) )
+		{
+			function_context.variables_state.AddNodeIfNotExists( fetch_result );
+			return fetch_result;
+		}
+	}
+
 	const auto class_value= ResolveClassValue( class_type, member_access_operator.member_name );
 	NamesScopeValue* const class_member= class_value.first;
 	if( class_member == nullptr )

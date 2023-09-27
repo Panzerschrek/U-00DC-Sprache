@@ -49,6 +49,14 @@ struct TypeinfoPartVariable
 struct TypeinfoCacheElement
 {
 	VariableMutPtr variable; // variable - result of typeinfo operator call.
+
+	// Various typeinfo lists. They are created lazily.
+	VariablePtr elements_list= nullptr; // For enums and tuples.
+	VariablePtr fields_list= nullptr;
+	VariablePtr types_list= nullptr;
+	VariablePtr functions_list= nullptr;
+	VariablePtr parents_list= nullptr;
+	VariablePtr arguments_list= nullptr;
 };
 
 class CodeBuilder
@@ -890,6 +898,8 @@ private:
 	ClassPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name );
 	VariableMutPtr BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, const VariableMutPtr& typeinfo_variable, NamesScope& root_namespace );
+	VariablePtr TryFetchTypeinfoClassLazyField( const Variable& typeinfo_variable, std::string_view name ); // Returns nullptr if can't fetch.
+	VariablePtr MakeTypeinfoListVariable( const TypeinfoPartVariable& typeinfo_part_variable );
 	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
 	void FinishTypeinfoClass( ClassPtr class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
 	TypeinfoPartVariable BuildTypeinfoEnumElementsList( EnumPtr enum_type, NamesScope& root_namespace );
