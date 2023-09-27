@@ -21,7 +21,13 @@ fn is_parent_for() : bool
 {
 	static_if( typeinfo</A/>.is_class & typeinfo</B/>.is_class )
 	{
-		return type_traits_impl::has_parent</ A />( typeinfo</B/>.parents_list );
+		// Statically check if both classes are polymorph, beffore requesting parents lists and building extra template function.
+		// This check is valid, since only polymorph classes can have parents or be parents.
+		static_if( typeinfo</A/>.is_polymorph && typeinfo</B/>.is_polymorph )
+		{
+			return type_traits_impl::has_parent</ A />( typeinfo</B/>.parents_list );
+		}
+		else{ return false; }
 	}
 	else{ return false; }
 }
@@ -31,7 +37,13 @@ fn is_ancestor_for() : bool
 {
 	static_if( typeinfo</A/>.is_class & typeinfo</B/>.is_class )
 	{
-		return type_traits_impl::has_ancestor</ A />( typeinfo</B/>.parents_list );
+		// Statically check if both classes are polymorph, beffore requesting parents lists and building extra template function.
+		// This check is valid, since only polymorph classes can have parents or be parents.
+		static_if( typeinfo</A/>.is_polymorph && typeinfo</B/>.is_polymorph )
+		{
+			return type_traits_impl::has_ancestor</ A />( typeinfo</B/>.parents_list );
+		}
+		else{ return false; }
 	}
 	else{ return false; }
 }
