@@ -7,13 +7,6 @@ import "code_builder.uh"
 namespace U1
 {
 
-template</type Dst, type Src/>
-fn CastPtr($(Src) src) unsafe : $(Dst)
-{
-	// Cast reference to pointer to reference to pointer of other type.
-	return unsafe( cast_ref_unsafe</$(Dst)/>(src) );
-}
-
 fn CodeBuilder::BuildExpressionCodeEnsureVariable( mut this, NamesScopePtr& names_scope, FunctionContext &mut function_context, Synt::Expression& expression ) : VariablePtr
 {
 	var Value mut value= BuildExpressionCode( names_scope, function_context, expression );
@@ -236,7 +229,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				halt if(array_size > buff.size());
 				buff.resize( array_size, "\0"c16 );
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, CastPtr</char8/>(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, CastPtr</byte8/>(buff.data()), array_size * typeinfo</char16/>.size_of, array_size );
 
 				if( string_literals_cache_[1].find( buff ).empty() )
 				{
@@ -258,7 +251,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				halt if(array_size > buff.size());
 				buff.resize( array_size, "\0"c32 );
 
-				constexpr_value= U1_ConstDataArray( element_llvm_type, CastPtr</char8/>(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
+				constexpr_value= U1_ConstDataArray( element_llvm_type, CastPtr</byte8/>(buff.data()), array_size * typeinfo</char32/>.size_of, array_size );
 
 				if( string_literals_cache_[2].find( buff ).empty() )
 				{
@@ -4162,6 +4155,15 @@ fn CodeBuilder::EvaluateBoolConstantExpression( mut this, NamesScopePtr& names_s
 	// Do not need to destroy variables here, because this function is normally called only in constexr context.
 
 	return unsafe( LLVMConstIntGetZExtValue( v.constexpr_value ) ) != 0u64;
+}
+
+// Various helpers.
+
+template</type Dst, type Src/>
+fn CastPtr( $(Src) src ) unsafe : $(Dst)
+{
+	// Cast reference to pointer to reference to pointer of other type.
+	return unsafe( cast_ref_unsafe</$(Dst)/>(src) );
 }
 
 } // namespace U1
