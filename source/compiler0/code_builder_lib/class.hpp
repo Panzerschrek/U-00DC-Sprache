@@ -39,6 +39,7 @@ public:
 	struct TypeinfoClassDescription
 	{
 		Type source_type; // Type for which this typeinfo class was generated.
+		bool is_main_class= false; // Main class - a class produced by typeinfo operator. Non-main class - some other typeinfo class, like list node class.
 	};
 
 	struct NonGeneratedClassTag{};

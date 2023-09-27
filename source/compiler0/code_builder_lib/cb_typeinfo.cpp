@@ -86,7 +86,7 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	typeinfo_class_table_.push_back( std::move(typeinfo_class_ptr) );
 
 	typeinfo_class->llvm_type= llvm_type;
-	typeinfo_class->generated_class_data= Class::TypeinfoClassDescription{ src_type };
+	typeinfo_class->generated_class_data= Class::TypeinfoClassDescription{ src_type, false /* non-main by default */ };
 
 	llvm_type->setName( mangler_->MangleType( typeinfo_class ) );
 
@@ -114,6 +114,9 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 
 	// This allows to get typename itself, using typeinfo variable and use such type as normal.
 	typeinfo_class->members->AddName( "src_type", NamesScopeValue( type, g_dummy_src_loc ) );
+
+	// Mark this typeinfo class as main typeinfo class.
+	std::get_if< Class::TypeinfoClassDescription>( &typeinfo_class->generated_class_data )->is_main_class= true;
 
 	return result;
 }
