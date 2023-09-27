@@ -392,22 +392,20 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Variable& typeinf
 
 VariablePtr CodeBuilder::MakeTypeinfoListVariable( const TypeinfoPartVariable& typeinfo_part_variable )
 {
-	std::string variable_name= GetTypeinfoVariableName( typeinfo_part_variable.type.GetClassType() );
-
 	const VariableMutPtr result=
 		std::make_shared<Variable>(
 			typeinfo_part_variable.type,
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			variable_name,
+			"typeinfo_lazy_list", // TODO - set something more relevant?
 			nullptr,
 			typeinfo_part_variable.constexpr_value );
 
 	result->llvm_value=
 		CreateGlobalConstantVariable(
-			result->type,
-			variable_name,
-			result->constexpr_value );
+			typeinfo_part_variable.type,
+			"", // Save some space - avoid to give LLVM variable a name. This is irrelevant, since this variable has private visibility.
+			typeinfo_part_variable.constexpr_value );
 
 	return result;
 }
