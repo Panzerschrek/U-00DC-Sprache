@@ -250,7 +250,12 @@ std::optional<RangeInDocument> DocumentManager::GetDefinitionPoint( const Positi
 		return std::nullopt;
 	}
 
-	if( const auto result_position= it->second.GetDefinitionPoint( position.position ) )
+	Document& document= it->second;
+
+	if( auto uri_opt= document.GetFileForImportPoint( position.position ) )
+		return RangeInDocument{ DocumentRange{ { 1, 0 }, { 1, 0 } }, std::move(*uri_opt) };
+
+	if( const auto result_position= document.GetDefinitionPoint( position.position ) )
 		return GetDocumentIdentifierRangeOrDummy( *result_position );
 
 	return std::nullopt;

@@ -165,4 +165,7 @@ std::optional<TextLinearPosition> GetIdentifierStartForPosition( std::string_vie
 // Returns none if there is no identifier here.
 std::optional<TextLinearPosition> GetIdentifierEndForPosition( std::string_view text, TextLinearPosition position );
 
+// Returns true if successfuly parsed string literal at start of given string.
+std::optional<std::string> ParseStringLiteral( std::string_view text );
+
 } // namespace U

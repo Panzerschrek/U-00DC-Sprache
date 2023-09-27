@@ -64,6 +64,8 @@ public: // Diagnostics.
 	const DiagnosticsByDocument& GetDiagnostics() const;
 
 public: // Requests.
+	std::optional<Uri> GetFileForImportPoint( const DocumentPosition& position );
+
 	std::optional<SrcLocInDocument> GetDefinitionPoint( const DocumentPosition& position );
 
 	// Returns highlights only for this document.

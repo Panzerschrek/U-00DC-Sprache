@@ -62,7 +62,9 @@ public:
 	virtual Path GetFullFilePath( const Path& file_path, const Path& full_parent_file_path ) override
 	{
 		U_UNUSED(full_parent_file_path);
-		return file_path;
+		if( !file_path.empty() && file_path.front() == '/' )
+			return file_path;
+		return "/" + file_path;
 	}
 
 private:
@@ -103,7 +105,7 @@ U_TEST( DocumentSetText_Test0 )
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
 
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -132,7 +134,7 @@ U_TEST( DocumentUpdateText_Test0 )
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
 
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -176,7 +178,7 @@ U_TEST( DocumentRebuild_Test0 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -193,7 +195,7 @@ U_TEST( DocumentRebuild_Test1 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -221,7 +223,7 @@ U_TEST( DocumentRebuild_Test2 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -246,7 +248,7 @@ U_TEST( DocumentCompletion_Test0 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -279,7 +281,7 @@ U_TEST( DocumentCompletion_Test1 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -302,7 +304,7 @@ U_TEST( DocumentCompletion_Test2 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -324,7 +326,7 @@ U_TEST( DocumentCompletion_Test3 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -346,7 +348,7 @@ U_TEST( DocumentCompletion_Test4 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -382,7 +384,7 @@ U_TEST( DocumentCompletion_Test5 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -404,7 +406,7 @@ U_TEST( DocumentCompletion_Test6 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -462,7 +464,7 @@ U_TEST( DocumentCompletion_Test7 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -495,7 +497,7 @@ U_TEST( DocumentCompletion_Test8 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -528,7 +530,7 @@ U_TEST( DocumentCompletion_Test9 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -550,7 +552,7 @@ U_TEST( DocumentCompletion_Test10 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -590,7 +592,7 @@ U_TEST( DocumentCompletion_Test11 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -635,7 +637,7 @@ U_TEST( DocumentCompletion_Test12 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -683,7 +685,7 @@ U_TEST( DocumentCompletion_Test13 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -704,7 +706,7 @@ U_TEST( DocumentCompletion_Test14 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -725,7 +727,7 @@ U_TEST( DocumentCompletion_Test15 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -746,7 +748,7 @@ U_TEST( DocumentCompletion_Test16 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -802,7 +804,7 @@ U_TEST( DocumentCompletion_Test17 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -823,7 +825,7 @@ U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -844,7 +846,7 @@ U_TEST( DocumentSignatureHelp_Test1 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -865,7 +867,7 @@ U_TEST( DocumentSignatureHelp_Test2 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -886,7 +888,7 @@ U_TEST( DocumentSignatureHelp_Test3 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -907,7 +909,7 @@ U_TEST( DocumentSignatureHelp_Test4 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -928,7 +930,7 @@ U_TEST( DocumentSignatureHelp_Test5 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -949,7 +951,7 @@ U_TEST( DocumentSignatureHelp_Test6 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -970,7 +972,7 @@ U_TEST( DocumentSignatureHelp_Test7 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -991,7 +993,7 @@ U_TEST( DocumentSignatureHelp_Test8 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1012,7 +1014,7 @@ U_TEST( DocumentSignatureHelp_Test9 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1033,7 +1035,7 @@ U_TEST( DocumentSignatureHelp_Test10 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1054,7 +1056,7 @@ U_TEST( DocumentSignatureHelp_Test11 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1075,7 +1077,7 @@ U_TEST( DocumentSignatureHelp_Test12 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1096,7 +1098,7 @@ U_TEST( DocumentSignatureHelp_Test13 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1117,7 +1119,7 @@ U_TEST( DocumentSignatureHelp_Test14 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1138,7 +1140,7 @@ U_TEST( DocumentSignatureHelp_Test15 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1159,7 +1161,7 @@ U_TEST( DocumentSignatureHelp_Test16 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1180,7 +1182,7 @@ U_TEST( DocumentSignatureHelp_Test17 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1201,7 +1203,7 @@ U_TEST( DocumentSignatureHelp_Test18 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1222,7 +1224,7 @@ U_TEST( DocumentSignatureHelp_Test19 )
 {
 	DocumentsContainer documents;
 	TestVfs vfs(documents);
-	const IVfs::Path path= "test.u";
+	const IVfs::Path path= "/test.u";
 	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
 	documents[path]= &document;
 
@@ -1237,6 +1239,116 @@ U_TEST( DocumentSignatureHelp_Test19 )
 	const auto result= document.GetSignatureHelp( DocumentPosition{ 1, 20 } );
 	const SignatureHelpResultNormalized expected_result{ "template</ type T /> fn foo() : T" };
 	U_TEST_ASSERT( NormalizeSignatureHelpResult( result ) == expected_result );
+}
+
+U_TEST( Document_GetFileForImportPoint_Test0 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	const IVfs::Path imported_path= "/some.u";
+	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[ imported_path ]= &imported_document;
+
+	document.SetText( "import \"some.u\" " );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+	const auto result= document.GetFileForImportPoint( { 1, 10 } );
+	const Uri expected_result= Uri::FromFilePath( imported_path );
+	U_TEST_ASSERT( result == expected_result );
+}
+
+U_TEST( Document_GetFileForImportPoint_Test1 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	const IVfs::Path imported_path= "/some_global.u";
+	Document imported_document( imported_path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[ imported_path ]= &imported_document;
+
+	document.SetText( "import \"/some_global.u\" " );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should properly handle file with "/" at start.
+	const auto result= document.GetFileForImportPoint( { 1, 15 } );
+	const Uri expected_result= Uri::FromFilePath( imported_path );
+	U_TEST_ASSERT( result == expected_result );
+}
+
+U_TEST( Document_GetFileForImportPoint_Test2 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "auto this_is_not_import= 0;" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should return none for non-import point.
+	const auto result= document.GetFileForImportPoint( { 1, 15 } );
+	U_TEST_ASSERT( result == std::nullopt );
+}
+
+U_TEST( Document_GetFileForImportPoint_Test3 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	const IVfs::Path imported_path= "/some.u";
+	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[ imported_path ]= &imported_document;
+
+	document.SetText( "import \"some.u\"         " );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should return none if click position is outside import string.
+	U_TEST_ASSERT( document.GetFileForImportPoint( { 1,  2 } ) == std::nullopt );
+	U_TEST_ASSERT( document.GetFileForImportPoint( { 1, 12 } ) == Uri::FromFilePath( imported_path ) );
+	U_TEST_ASSERT( document.GetFileForImportPoint( { 1, 18 } ) == std::nullopt );
+}
+
+U_TEST( Document_GetFileForImportPoint_Test4 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	const IVfs::Path imported_path= "/file with spaces.u";
+	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[ imported_path ]= &imported_document;
+
+	// Should properly handle whitespaces in import line and in import string.
+	document.SetText( R"(
+	  import   "file with spaces.u"
+)" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	const auto result= document.GetFileForImportPoint( { 2, 22 } );
+	const Uri expected_result= Uri::FromFilePath( imported_path );
+	U_TEST_ASSERT( result == expected_result );
 }
 
 } // namespace
