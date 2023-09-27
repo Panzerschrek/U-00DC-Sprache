@@ -1326,6 +1326,31 @@ U_TEST( Document_GetFileForImportPoint_Test3 )
 	U_TEST_ASSERT( document.GetFileForImportPoint( { 1, 18 } ) == std::nullopt );
 }
 
+U_TEST( Document_GetFileForImportPoint_Test4 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	const IVfs::Path imported_path= "/file with spaces.u";
+	Document imported_document(  path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[ imported_path ]= &imported_document;
+
+	// Should properly handle whitespaces in import line and in import string.
+	document.SetText( R"(
+	  import   "file with spaces.u"
+)" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	const auto result= document.GetFileForImportPoint( { 2, 22 } );
+	const Uri expected_result= Uri::FromFilePath( imported_path );
+	U_TEST_ASSERT( result == expected_result );
+}
+
 } // namespace
 
 } // namespace LangServer

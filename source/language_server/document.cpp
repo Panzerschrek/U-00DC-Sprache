@@ -289,10 +289,10 @@ std::optional<Uri> Document::GetFileForImportPoint( const DocumentPosition& posi
 	TryTakeBackgroundStateUpdate();
 
 	// Try to extract imported file name for given point.
-	// Etract current line for it and check if it starts with "import".
+	// Extract current line for it and check if it starts with "import".
 	// If so - try to parse string for this import.
 	// If it is successfull - try to get full file path, using VFS.
-	// This approach is relativy fast, but doesn't work for cases, when import keyword and import string are on different lines.
+	// This approach is relatively fast, but doesn't work for cases, when import keyword and import string are on different lines.
 
 	const std::optional<TextLinearPosition> linear_position= GetPositionInLastValidText( position );
 	if( linear_position == std::nullopt )
