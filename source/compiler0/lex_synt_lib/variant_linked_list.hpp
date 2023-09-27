@@ -83,9 +83,8 @@ public:
 		// Append other list and make sure insertion position is at last element of that list.
 		void AppendList( VariantLinkedList other_list )
 		{
-			const auto next_tail= GetListTail( other_list.start_ );
 			*tail_= std::move(other_list.start_);
-			tail_= next_tail;
+			tail_= GetListTail( *tail_ );
 		}
 
 		// Take result, reset internal state.
