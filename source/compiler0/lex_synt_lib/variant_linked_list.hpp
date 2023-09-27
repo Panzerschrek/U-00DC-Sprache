@@ -14,13 +14,13 @@ class VariantLinkedList
 public:
 	bool HasTail() const
 	{
-		return std::visit( []( const auto& el ) { return HasTailImpl(el); }, start_ );
+		return std::visit( []( const auto& el ) { return HasTailImpl(el); }, start_.val );
 	}
 
 	template<typename T>
 	std::optional<T> TryTakeStart()
 	{
-		if( const auto v= std::get_if< NodePtr<T> >( &start_ ) )
+		if( const auto v= std::get_if< NodePtr<T> >( &start_.val ) )
 			return std::move( (*v)->payload );
 		return std::nullopt;
 	}
@@ -31,25 +31,30 @@ public:
 	{
 		const VariantElement* cur= &start_;
 		while( cur != nullptr )
-			cur= std::visit( [&]( const auto& el ){ return IterElement( el, func ); }, *cur );
+			cur= std::visit( [&]( const auto& el ){ return IterElement( el, func ); }, cur->val );
 	}
 
 private:
 	struct EmptyNode{}; // Indicate list end with it.
 
-	template<typename T>
-	struct Node;
-
-	template<typename T>
-	using NodePtr= std::unique_ptr< Node<T> >;
-
-	using VariantElement= std::variant< EmptyNode, NodePtr<ContainedTypes> ... >;
+	struct VariantElement;
 
 	template<typename T>
 	struct Node
 	{
 		T payload;
 		VariantElement next;
+	};
+
+	template<typename T>
+	using NodePtr= std::unique_ptr< Node<T> >;
+
+	// Wrap variant element into struct, instead of unsing type alias for variant< ... >.
+	// Doing so we prevent quadratic complexity of mangled names construction.
+	// Such trick significantly reduces compilation type and debug binaries size.
+	struct VariantElement
+	{
+		std::variant< EmptyNode, NodePtr<ContainedTypes> ... > val;
 	};
 
 public:
@@ -71,8 +76,8 @@ public:
 		void Append( T t )
 		{
 			using NodeT= Node<T>;
-			*tail_= std::make_unique< NodeT >( NodeT{ std::move(t), EmptyNode{} } );
-			tail_= & std::get< std::unique_ptr< NodeT > >( *tail_ )->next;
+			tail_->val= std::make_unique< NodeT >( NodeT{ std::move(t), VariantElement{} } );
+			tail_= & std::get< std::unique_ptr< NodeT > >( tail_->val )->next;
 		}
 
 		// Append other list and make sure insertion position is at last element of that list.
@@ -107,10 +112,10 @@ private:
 
 	static VariantElement* GetListTail( VariantElement& node )
 	{
-		if( std::get_if< EmptyNode >( &node ) != nullptr )
+		if( std::get_if< EmptyNode >( &node.val ) != nullptr )
 			return &node;
 
-		return std::visit( [](auto& el ){ return GetListTailImpl(el); }, node );
+		return std::visit( [](auto& el ){ return GetListTailImpl(el); }, node.val );
 	}
 
 	static bool HasTailImpl( const EmptyNode& )
@@ -121,7 +126,7 @@ private:
 	template<typename T>
 	static bool HasTailImpl( const NodePtr<T>& node )
 	{
-		return std::get_if< EmptyNode >( &node->next ) == nullptr;
+		return std::get_if< EmptyNode >( &node->next.val ) == nullptr;
 	}
 
 	template< typename Func >
