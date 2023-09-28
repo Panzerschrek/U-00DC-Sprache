@@ -8,6 +8,7 @@
 #include "../../code_builder_lib_common/pop_llvm_warnings.hpp"
 
 #include "../../lex_synt_lib_common/assert.hpp"
+#include "../../code_builder_lib_common/string_ref.hpp"
 #include "keywords.hpp"
 #include "../lex_synt_lib/program_string.hpp"
 
@@ -48,7 +49,7 @@ private:
 	Synt::TypeName TranslateType( const clang::Type& in_type );
 	std::string TranslateRecordType( const clang::RecordType& in_type );
 	std::string_view GetUFundamentalType( const clang::BuiltinType& in_type );
-	Synt::ComplexName TranslateNamedType( std::string_view cpp_type_name );
+	Synt::ComplexName TranslateNamedType( llvm::StringRef cpp_type_name );
 	Synt::FunctionType TranslateFunctionType( const clang::FunctionProtoType& in_type );
 
 	std::string TranslateIdentifier( llvm::StringRef identifier );
@@ -223,7 +224,7 @@ void CppAstConsumer::HandleTranslationUnit( clang::ASTContext& ast_context )
 
 			if( string_literal_parser.isOrdinary() || string_literal_parser.isUTF8() )
 			{
-				string_constant->value= string_literal_parser.GetString();
+				string_constant->value= string_literal_parser.GetString().str();
 				string_constant->value.push_back( '\0' ); // C/C++ have null-terminated strings, instead of Ü.
 
 				auto_variable_declaration.initializer_expression= std::move(string_constant);
@@ -684,7 +685,7 @@ void CppAstConsumer::ProcessEnum( const clang::EnumDecl& enum_decl, Synt::Progra
 Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 {
 	if( const auto built_in_type= llvm::dyn_cast<clang::BuiltinType>(&in_type) )
-		return Synt::ComplexNameToTypeName( TranslateNamedType( GetUFundamentalType( *built_in_type ) ) );
+		return Synt::ComplexNameToTypeName( TranslateNamedType( StringViewToStringRef( GetUFundamentalType( *built_in_type ) ) ) );
 	else if( const auto record_type= llvm::dyn_cast<clang::RecordType>(&in_type) )
 		return Synt::ComplexNameToTypeName( TranslateNamedType( TranslateRecordType( *record_type ) ) );
 	else if( const auto enum_type= llvm::dyn_cast<clang::EnumType>(&in_type) )
@@ -693,7 +694,7 @@ Synt::TypeName CppAstConsumer::TranslateType( const clang::Type& in_type )
 			return Synt::ComplexNameToTypeName( TranslateNamedType( it->second ) );
 	}
 	else if( const auto typedef_type= llvm::dyn_cast<clang::TypedefType>(&in_type) )
-		return Synt::ComplexNameToTypeName( TranslateNamedType( typedef_type->getDecl()->getName().str() ) );
+		return Synt::ComplexNameToTypeName( TranslateNamedType( typedef_type->getDecl()->getName() ) );
 	else if( const auto constna_array_type= llvm::dyn_cast<clang::ConstantArrayType>(&in_type) )
 	{
 		// For arrays with constant size use normal Ü array.
@@ -812,7 +813,7 @@ std::string_view CppAstConsumer::GetUFundamentalType( const clang::BuiltinType& 
 	};
 }
 
-Synt::ComplexName CppAstConsumer::TranslateNamedType( const std::string_view cpp_type_name )
+Synt::ComplexName CppAstConsumer::TranslateNamedType( const llvm::StringRef cpp_type_name )
 {
 	Synt::NameLookup named_type(g_dummy_src_loc);
 	named_type.name= TranslateIdentifier( cpp_type_name );
