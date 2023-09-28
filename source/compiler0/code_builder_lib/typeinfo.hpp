@@ -4,7 +4,6 @@
 namespace U
 {
 
-
 struct TypeinfoListElement
 {
 	std::string name_for_ordering;

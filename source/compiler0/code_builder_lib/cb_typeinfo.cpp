@@ -287,6 +287,12 @@ void CodeBuilder::FinishTypeinfoClass( const ClassPtr class_type, const ClassFie
 
 VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_type, const std::string_view name )
 {
+	// Generate typeinfo list fields on-demand, instead of creating lists as typeinfo class fields as usual.
+	// The main reason to to this - for faster compilation.
+	// Building typeinfo lists is too costly - requires creation of buch of node classes, each with members namespace, destructor, fields, etc.
+	// So, avoid doing this unless typeinfo list isn't direclty accessed.
+	// Such optimization also reduces total memory usage, that is especially important for the Language Server.
+
 	const ClassPtr typeinfo_class_type= typeinfo_type.GetClassType();
 	if( typeinfo_class_type == nullptr )
 		return nullptr;
@@ -298,19 +304,21 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 	if( !typeinfo_type_description->is_main_class )
 		return nullptr;
 
-	const auto typeinfo_table_it= typeinfo_cache_.find( typeinfo_type_description->source_type );
+	const Type& source_type= typeinfo_type_description->source_type;
+
+	const auto typeinfo_table_it= typeinfo_cache_.find( source_type );
 	U_ASSERT( typeinfo_table_it != typeinfo_cache_.end() );
 	TypeinfoCacheElement& cache_element= typeinfo_table_it->second;
 
 	NamesScope& root_namespace= *typeinfo_class_type->members->GetRoot();
 
-	if( typeinfo_type_description->source_type.GetFundamentalType() != nullptr ||
-		typeinfo_type_description->source_type.GetArrayType() != nullptr ||
-		typeinfo_type_description->source_type.GetRawPointerType() != nullptr )
+	if( source_type.GetFundamentalType() != nullptr ||
+		source_type.GetArrayType() != nullptr ||
+		source_type.GetRawPointerType() != nullptr )
 	{
 		// These kinds of types have no lists.
 	}
-	else if( const EnumPtr enum_type= typeinfo_type_description->source_type.GetEnumType() )
+	else if( const EnumPtr enum_type= source_type.GetEnumType() )
 	{
 		if( name == "elements_list" )
 		{
@@ -319,7 +327,7 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 			return cache_element.elements_list;
 		}
 	}
-	else if( const TupleType* const tuple_type= typeinfo_type_description->source_type.GetTupleType() )
+	else if( const TupleType* const tuple_type= source_type.GetTupleType() )
 	{
 		if( name == "elements_list" )
 		{
@@ -328,7 +336,7 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 			return cache_element.elements_list;
 		}
 	}
-	else if( const ClassPtr class_type= typeinfo_type_description->source_type.GetClassType() )
+	else if( const ClassPtr class_type= source_type.GetClassType() )
 	{
 		if( name == "fields_list" )
 		{
@@ -355,7 +363,7 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 			return cache_element.parents_list;
 		}
 	}
-	else if( const FunctionPointerType* const function_pointer_type= typeinfo_type_description->source_type.GetFunctionPointerType() )
+	else if( const FunctionPointerType* const function_pointer_type= source_type.GetFunctionPointerType() )
 	{
 		if( name == "arguments_list" )
 		{

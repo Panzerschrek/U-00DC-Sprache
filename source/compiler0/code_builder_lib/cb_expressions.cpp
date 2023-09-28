@@ -313,6 +313,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
+	// Try to perform lazy typeinfo field fetch.
 	if( std::holds_alternative< TypeinfoClassDescription >( class_type->generated_class_data ) &&
 		member_access_operator.template_parameters == std::nullopt )
 	{
@@ -328,8 +329,11 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 				// Since typeinfo classes have no constructors it's unpossible to construct typeinfo variable.
 				// So, assume this instance is instance of single true (generated) typeinfo variable.
 				// It is still possible to create value of typeinfo class via unsafe-hacks, but ignore such possibility and return one legit possible value.
+				//
+				// Note that we create here immutable reference, even if source variable is mutable.
+				// So, typeinfo list pseudo-field behaves like immutable field.
+				// Doing so we prevent possible modification of returned variable, since it is de-facto global constant and thus can't be modified.
 
-				// Create reference node with null constexpr value, since source variable is not constexpr.
 				const VariableMutPtr non_constexpr_ref=
 					std::make_shared<Variable>(
 						fetch_result->type,
@@ -337,7 +341,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 						Variable::Location::Pointer,
 						fetch_result->name,
 						fetch_result->llvm_value,
-						nullptr );
+						nullptr ); // Create reference node with null constexpr value, since source variable is not constexpr.
 
 				function_context.variables_state.AddNode( non_constexpr_ref );
 				function_context.variables_state.TryAddLink( fetch_result, non_constexpr_ref, names.GetErrors(), member_access_operator.src_loc );
