@@ -28,42 +28,6 @@ std::string GetTypeinfoVariableName( const ClassPtr typeinfo_class )
 	return "_val_of_" + std::string(typeinfo_class->llvm_type->getName());
 }
 
-struct TypeinfoListElement
-{
-	std::string name_for_ordering;
-	llvm::Constant* initializer= nullptr;
-	ClassPtr type= nullptr;
-};
-
-TypeinfoPartVariable FinalizeTypeinfoList( llvm::LLVMContext& llvm_context, llvm::SmallVectorImpl<TypeinfoListElement>& list )
-{
-	std::sort(
-		list.begin(), list.end(),
-		[]( const TypeinfoListElement& l, const TypeinfoListElement& r )
-		{
-			return l.name_for_ordering < r.name_for_ordering;
-		} );
-
-	TupleType list_type;
-	llvm::SmallVector< llvm::Type*, 16 > list_elements_llvm_types;
-	llvm::SmallVector< llvm::Constant*, 16 > list_elements_initializers;
-	list_type.element_types.reserve( list.size() );
-	list_elements_llvm_types.reserve( list.size() );
-	list_elements_initializers.reserve( list.size() );
-
-	for( const TypeinfoListElement& list_element : list )
-	{
-		list_type.element_types.emplace_back( list_element.type );
-		list_elements_llvm_types.push_back( list_element.type->llvm_type );
-		list_elements_initializers.push_back( list_element.initializer );
-	}
-
-	list_type.llvm_type= llvm::StructType::get( llvm_context, list_elements_llvm_types );
-	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
-
-	return TypeinfoPartVariable{ std::move(list_type), initializer };
-}
-
 } // namespace
 
 VariablePtr CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespace )
@@ -86,7 +50,7 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 	typeinfo_class_table_.push_back( std::move(typeinfo_class_ptr) );
 
 	typeinfo_class->llvm_type= llvm_type;
-	typeinfo_class->generated_class_data= Class::TypeinfoClassDescription{ src_type, false /* non-main by default */ };
+	typeinfo_class->generated_class_data= TypeinfoClassDescription{ src_type, false /* non-main by default */ };
 
 	llvm_type->setName( mangler_->MangleType( typeinfo_class ) );
 
@@ -116,7 +80,7 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 	typeinfo_class->members->AddName( "src_type", NamesScopeValue( type, g_dummy_src_loc ) );
 
 	// Mark this typeinfo class as main typeinfo class.
-	std::get_if< Class::TypeinfoClassDescription>( &typeinfo_class->generated_class_data )->is_main_class= true;
+	std::get_if<TypeinfoClassDescription>( &typeinfo_class->generated_class_data )->is_main_class= true;
 
 	return result;
 }
@@ -267,7 +231,7 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 
 		add_bool_field( "is_interface", class_type->kind == Class::Kind::Interface );
 
-		add_bool_field( "is_typeinfo", std::get_if<Class::TypeinfoClassDescription>( &class_type->generated_class_data ) != nullptr );
+		add_bool_field( "is_typeinfo", std::get_if<TypeinfoClassDescription>( &class_type->generated_class_data ) != nullptr );
 
 		if( const auto coroutine_type_description= std::get_if<CoroutineTypeDescription>( &class_type->generated_class_data ) )
 		{
@@ -305,13 +269,29 @@ void CodeBuilder::BuildFullTypeinfo( const Type& type, const VariableMutPtr& typ
 	llvm::dyn_cast<llvm::GlobalVariable>(typeinfo_variable->llvm_value)->setInitializer( typeinfo_variable->constexpr_value );
 }
 
+void CodeBuilder::FinishTypeinfoClass( const ClassPtr class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types )
+{
+	Class& class_= *class_type;
+	class_.llvm_type->setBody( fields_llvm_types );
+	class_.kind= Class::Kind::Struct;
+	class_.is_complete= true;
+	class_.can_be_constexpr= true;
+
+	// Generate only destructor, because almost all structs and classes must have it.
+	// Other methods - constructors, assignment operators does not needs for typeinfo classes.
+	TryGenerateDestructor( class_type );
+
+	const FunctionVariable& destructor= class_.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) )->value.GetFunctionsSet()->functions.front();
+	EnsureLLVMFunctionCreated( destructor )->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), destructor.type ) );
+}
+
 VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_type, const std::string_view name )
 {
 	const ClassPtr typeinfo_class_type= typeinfo_type.GetClassType();
 	if( typeinfo_class_type == nullptr )
 		return nullptr;
 
-	const auto typeinfo_type_description= std::get_if< Class::TypeinfoClassDescription >( &typeinfo_class_type->generated_class_data );
+	const auto typeinfo_type_description= std::get_if<TypeinfoClassDescription >( &typeinfo_class_type->generated_class_data );
 	if( typeinfo_type_description == nullptr )
 		return nullptr;
 
@@ -335,7 +315,7 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 		if( name == "elements_list" )
 		{
 			if( cache_element.elements_list == nullptr )
-				cache_element.elements_list= MakeTypeinfoListVariable( BuildTypeinfoEnumElementsList( enum_type, root_namespace ) );
+				cache_element.elements_list= BuildTypeinfoEnumElementsList( enum_type, root_namespace );
 			return cache_element.elements_list;
 		}
 	}
@@ -344,7 +324,7 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 		if( name == "elements_list" )
 		{
 			if( cache_element.elements_list == nullptr )
-				cache_element.elements_list= MakeTypeinfoListVariable( BuildTypeinfoTupleElements( *tuple_type, root_namespace ) );
+				cache_element.elements_list= BuildTypeinfoTupleElements( *tuple_type, root_namespace );
 			return cache_element.elements_list;
 		}
 	}
@@ -353,25 +333,25 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 		if( name == "fields_list" )
 		{
 			if( cache_element.fields_list == nullptr )
-				cache_element.fields_list= MakeTypeinfoListVariable( BuildTypeinfoClassFieldsList( class_type, root_namespace ) );
+				cache_element.fields_list= BuildTypeinfoClassFieldsList( class_type, root_namespace );
 			return cache_element.fields_list;
 		}
 		if( name == "types_list" )
 		{
 			if( cache_element.types_list == nullptr )
-				cache_element.types_list= MakeTypeinfoListVariable( BuildTypeinfoClassTypesList( class_type, root_namespace ) );
+				cache_element.types_list= BuildTypeinfoClassTypesList( class_type, root_namespace );
 			return cache_element.types_list;
 		}
 		if( name == "functions_list" )
 		{
 			if( cache_element.functions_list == nullptr )
-				cache_element.functions_list= MakeTypeinfoListVariable( BuildTypeinfoClassFunctionsList( class_type, root_namespace ) );
+				cache_element.functions_list= BuildTypeinfoClassFunctionsList( class_type, root_namespace );
 			return cache_element.functions_list;
 		}
 		if( name == "parents_list" )
 		{
 			if( cache_element.parents_list == nullptr )
-				cache_element.parents_list= MakeTypeinfoListVariable( BuildTypeinfoClassParentsList( class_type, root_namespace ) );
+				cache_element.parents_list= BuildTypeinfoClassParentsList( class_type, root_namespace );
 			return cache_element.parents_list;
 		}
 	}
@@ -380,7 +360,7 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 		if( name == "arguments_list" )
 		{
 			if( cache_element.arguments_list == nullptr )
-				cache_element.arguments_list= MakeTypeinfoListVariable( BuildTypeinfoFunctionArguments( function_pointer_type->function_type, root_namespace ) );
+				cache_element.arguments_list= BuildTypeinfoFunctionArguments( function_pointer_type->function_type, root_namespace );
 			return cache_element.arguments_list;
 		}
 	}
@@ -390,43 +370,51 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 	return nullptr;
 }
 
-VariablePtr CodeBuilder::MakeTypeinfoListVariable( const TypeinfoPartVariable& typeinfo_part_variable )
+VariablePtr CodeBuilder::CreateTypeinfoListVariable( llvm::SmallVectorImpl<TypeinfoListElement>& list )
 {
+	std::sort(
+		list.begin(), list.end(),
+		[]( const TypeinfoListElement& l, const TypeinfoListElement& r )
+		{
+			return l.name_for_ordering < r.name_for_ordering;
+		} );
+
+	TupleType list_type;
+	llvm::SmallVector< llvm::Type*, 16 > list_elements_llvm_types;
+	llvm::SmallVector< llvm::Constant*, 16 > list_elements_initializers;
+	list_type.element_types.reserve( list.size() );
+	list_elements_llvm_types.reserve( list.size() );
+	list_elements_initializers.reserve( list.size() );
+
+	for( const TypeinfoListElement& list_element : list )
+	{
+		list_type.element_types.emplace_back( list_element.type );
+		list_elements_llvm_types.push_back( list_element.type->llvm_type );
+		list_elements_initializers.push_back( list_element.initializer );
+	}
+
+	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
+	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
+
 	const VariableMutPtr result=
 		std::make_shared<Variable>(
-			typeinfo_part_variable.type,
+			std::move(list_type),
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
 			"typeinfo_lazy_list", // TODO - set something more relevant?
 			nullptr,
-			typeinfo_part_variable.constexpr_value );
+			initializer );
 
 	result->llvm_value=
 		CreateGlobalConstantVariable(
-			typeinfo_part_variable.type,
+			result->type,
 			"", // Save some space - avoid to give LLVM variable a name. This is irrelevant, since this variable has private visibility.
-			typeinfo_part_variable.constexpr_value );
+			initializer );
 
 	return result;
 }
 
-void CodeBuilder::FinishTypeinfoClass( const ClassPtr class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types )
-{
-	Class& class_= *class_type;
-	class_.llvm_type->setBody( fields_llvm_types );
-	class_.kind= Class::Kind::Struct;
-	class_.is_complete= true;
-	class_.can_be_constexpr= true;
-
-	// Generate only destructor, because almost all structs and classes must have it.
-	// Other methods - constructors, assignment operators does not needs for typeinfo classes.
-	TryGenerateDestructor( class_type );
-
-	const FunctionVariable& destructor= class_.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) )->value.GetFunctionsSet()->functions.front();
-	EnsureLLVMFunctionCreated( destructor )->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), destructor.type ) );
-}
-
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr enum_type, NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 	list_elements.reserve( enum_type->element_count );
@@ -472,7 +460,7 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoEnumElementsList( const EnumPtr e
 					node_type } );
 		} );
 
-	return FinalizeTypeinfoList( llvm_context_, list_elements );
+	return CreateTypeinfoListVariable( list_elements );
 }
 
 void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
@@ -516,7 +504,7 @@ void CodeBuilder::CreateTypeinfoClassMembersListNodeCommonFields(
 	fields_initializers.push_back( llvm::Constant::getIntegerValue( fundamental_llvm_types_.bool_, llvm::APInt( 1u, member_visibility == ClassMemberVisibility::Private   ) ) );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr class_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr class_type, NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
@@ -600,10 +588,10 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFieldsList( const ClassPtr c
 
 	class_type->members->ForEachInThisScope( process_class_member );
 
-	return FinalizeTypeinfoList( llvm_context_, list_elements );
+	return CreateTypeinfoListVariable( list_elements );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr class_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr class_type, NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
@@ -646,10 +634,10 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassTypesList( const ClassPtr cl
 
 	class_type->members->ForEachInThisScope( process_class_member );
 
-	return FinalizeTypeinfoList( llvm_context_, list_elements );
+	return CreateTypeinfoListVariable( list_elements );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPtr class_type, NamesScope& root_namespace )
 {
 	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
@@ -718,20 +706,16 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassFunctionsList( const ClassPt
 
 	class_type->members->ForEachInThisScope( process_class_member );
 
-	return FinalizeTypeinfoList( llvm_context_, list_elements );
+	return CreateTypeinfoListVariable( list_elements );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr class_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr class_type, NamesScope& root_namespace )
 {
 	const Class& class_= *class_type;
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( class_.llvm_type );
 
-	TupleType list_type;
-	llvm::SmallVector< llvm::Type*, 16 > list_elements_llvm_types;
-	llvm::SmallVector< llvm::Constant*, 16 > list_elements_initializers;
-	list_type.element_types.reserve( class_.parents.size() );
-	list_elements_llvm_types.reserve( class_.parents.size() );
-	list_elements_initializers.reserve( class_.parents.size() );
+	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
+	list_elements.reserve( class_.parents.size() );
 
 	for( size_t i= 0u; i < class_.parents.size(); ++i )
 	{
@@ -758,25 +742,15 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoClassParentsList( const ClassPtr 
 
 		FinishTypeinfoClass( node_type, fields_llvm_types );
 
-		list_type.element_types.push_back( node_type );
-		list_elements_llvm_types.push_back( node_type_class.llvm_type );
-		list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
+		list_elements.push_back( TypeinfoListElement{ std::to_string(i), llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ), node_type } );
 	} // for parents
 
-	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
-	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
-
-	return TypeinfoPartVariable{ std::move(list_type), initializer };
+	return CreateTypeinfoListVariable( list_elements );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace )
 {
-	TupleType list_type;
-	llvm::SmallVector< llvm::Type*, 16 > list_elements_llvm_types;
-	llvm::SmallVector< llvm::Constant*, 16 > list_elements_initializers;
-	list_type.element_types.reserve( function_type.params.size() );
-	list_elements_llvm_types.reserve( function_type.params.size() );
-	list_elements_initializers.reserve( function_type.params.size() );
+	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
 
 	const FunctionPointerType function_pointer_type= FunctionTypeToPointer( function_type );
 
@@ -813,25 +787,16 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoFunctionArguments( const Function
 
 		FinishTypeinfoClass( node_type, fields_llvm_types );
 
-		list_type.element_types.push_back( node_type );
-		list_elements_llvm_types.push_back( node_type_class.llvm_type );
-		list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
+		list_elements.push_back( TypeinfoListElement{ std::to_string(param_index), llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ), node_type } );
 	}
 
-	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
-	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
-
-	return TypeinfoPartVariable{ std::move(list_type), initializer };
+	return CreateTypeinfoListVariable( list_elements );
 }
 
-TypeinfoPartVariable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace )
+VariablePtr CodeBuilder::BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace )
 {
-	TupleType list_type;
-	llvm::SmallVector< llvm::Type*, 16 > list_elements_llvm_types;
-	llvm::SmallVector< llvm::Constant*, 16 > list_elements_initializers;
-	list_type.element_types.reserve( tuple_type.element_types.size() );
-	list_elements_llvm_types.reserve( tuple_type.element_types.size() );
-	list_elements_initializers.reserve( tuple_type.element_types.size() );
+	llvm::SmallVector<TypeinfoListElement, 16> list_elements;
+	list_elements.reserve( tuple_type.element_types.size() );
 
 	const llvm::StructLayout* const struct_layout= data_layout_.getStructLayout( tuple_type.llvm_type );
 
@@ -869,15 +834,10 @@ TypeinfoPartVariable CodeBuilder::BuildTypeinfoTupleElements( const TupleType& t
 		}
 		FinishTypeinfoClass( node_type, fields_llvm_types );
 
-		list_type.element_types.push_back( node_type );
-		list_elements_llvm_types.push_back( node_type_class.llvm_type );
-		list_elements_initializers.push_back( llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ) );
+		list_elements.push_back( TypeinfoListElement{ std::to_string(element_index), llvm::ConstantStruct::get( node_type_class.llvm_type, fields_initializers ), node_type } );
 	}
 
-	list_type.llvm_type= llvm::StructType::get( llvm_context_, list_elements_llvm_types );
-	llvm::Constant* const initializer= llvm::ConstantStruct::get( list_type.llvm_type, list_elements_initializers );
-
-	return TypeinfoPartVariable{ std::move(list_type), initializer };
+	return CreateTypeinfoListVariable( list_elements );
 }
 
 } // namespace U

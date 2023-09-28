@@ -385,7 +385,7 @@ void ManglerMSVC::EncodeType( ManglerState& mangler_state, const Type& type ) co
 	{
 		mangler_state.PushElement( g_class_type_prefix );
 
-		if( const auto typeinfo_class_description= std::get_if< Class::TypeinfoClassDescription>( &class_type->generated_class_data ) )
+		if( const auto typeinfo_class_description= std::get_if<TypeinfoClassDescription>( &class_type->generated_class_data ) )
 		{
 			// Encode typeinfo, like type template.
 

@@ -454,7 +454,7 @@ void EncodeTypeName( ManglerState& mangler_state, const Type& type )
 	}
 	else if( const auto class_type= type.GetClassType() )
 	{
-		if( const auto typeinfo_class_description= std::get_if< Class::TypeinfoClassDescription>( &class_type->generated_class_data ) )
+		if( const auto typeinfo_class_description= std::get_if<TypeinfoClassDescription>( &class_type->generated_class_data ) )
 		{
 			const ManglerState::NodeHolder result_node( mangler_state );
 			{

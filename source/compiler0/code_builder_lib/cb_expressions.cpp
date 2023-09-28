@@ -313,7 +313,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
-	if( std::holds_alternative< Class::TypeinfoClassDescription >( class_type->generated_class_data ) &&
+	if( std::holds_alternative< TypeinfoClassDescription >( class_type->generated_class_data ) &&
 		member_access_operator.template_parameters == std::nullopt )
 	{
 		if( const VariablePtr fetch_result= TryFetchTypeinfoClassLazyField( variable->type, member_access_operator.member_name ) )
@@ -1726,7 +1726,7 @@ Value CodeBuilder::AccessClassField(
 
 				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
 				{
-					if( std::get_if< Class::TypeinfoClassDescription>( &field.class_->generated_class_data ) != nullptr && field_name == "type_id" )
+					if( std::get_if<TypeinfoClassDescription>( &field.class_->generated_class_data ) != nullptr && field_name == "type_id" )
 					{
 						// HACK!
 						// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.

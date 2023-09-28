@@ -2,6 +2,7 @@
 #include "../lex_synt_lib/program_string.hpp"
 #include "coroutine.hpp"
 #include "template_types.hpp"
+#include "typeinfo.hpp"
 
 namespace U
 {
@@ -34,12 +35,6 @@ public:
 	{
 		TypeTemplatePtr class_template;
 		TemplateArgs signature_args;
-	};
-
-	struct TypeinfoClassDescription
-	{
-		Type source_type; // Type for which this typeinfo class was generated.
-		bool is_main_class= false; // Main class - a class produced by typeinfo operator. Non-main class - some other typeinfo class, like list node class.
 	};
 
 	struct NonGeneratedClassTag{};
