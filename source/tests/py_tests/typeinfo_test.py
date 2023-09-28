@@ -994,5 +994,90 @@ def TypeId_Test():
 			var size_type b_id_copy= typeinfo</B/>.type_id;
 		}
 	"""
-
 	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoListsAreLazy_Test0():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr ClassHasField( [ char8, name_size ]& name ) : bool
+		{
+			for( &field_info : typeinfo</T/>.fields_list )
+			{
+				if( StringEquals( field_info.name, name ) )
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		namespace ClassCheck
+		{
+			class SomeClass{}
+			auto& some_class_typeinfo= typeinfo</ SomeClass />;
+			type SomeTypeinfoClass= typeof( some_class_typeinfo );
+			static_assert( typeinfo</ SomeTypeinfoClass />.is_class );
+			static_assert( typeinfo</ SomeTypeinfoClass />.is_typeinfo );
+			// Regular fields - must be listed.
+			static_assert( ClassHasField</ SomeTypeinfoClass />( "size_of" ) );
+			static_assert( ClassHasField</ SomeTypeinfoClass />( "is_array" ) );
+			static_assert( ClassHasField</ SomeTypeinfoClass />( "is_copy_assignable" ) );
+			// List fields - must not be listed.
+			static_assert( !ClassHasField</ SomeTypeinfoClass />( "fields_list" ) );
+			static_assert( !ClassHasField</ SomeTypeinfoClass />( "types_list" ) );
+			static_assert( !ClassHasField</ SomeTypeinfoClass />( "functions_list" ) );
+			static_assert( !ClassHasField</ SomeTypeinfoClass />( "parents_list" ) );
+			// But list fields must be accessible.
+			auto& fields_list= some_class_typeinfo.fields_list;
+			auto& types_list= some_class_typeinfo.types_list;
+			auto& functions_list= some_class_typeinfo.functions_list;
+			auto& parents_list= some_class_typeinfo.parents_list;
+		}
+		namespace TupleCheck
+		{
+			auto& some_tuple_typeinfo= typeinfo</ tup[ f32, i32 ] />;
+			type SomeTypeinfoClass= typeof(some_tuple_typeinfo);
+			static_assert( typeinfo</ SomeTypeinfoClass />.is_class );
+			static_assert( typeinfo</ SomeTypeinfoClass />.is_typeinfo );
+			// Regular fields - must be listed.
+			static_assert( ClassHasField</ SomeTypeinfoClass />( "align_of" ) );
+			static_assert( ClassHasField</ SomeTypeinfoClass />( "is_fundamental" ) );
+			static_assert( ClassHasField</ SomeTypeinfoClass />( "is_copy_constructible" ) );
+			// List fields - must not be listed.
+			static_assert( !ClassHasField</ SomeTypeinfoClass />( "elements_list" ) );
+			// But list fields must be accessible.
+			auto& elements_list= some_tuple_typeinfo.elements_list;
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+
+
+def TypeinfoListsAreLazy_Test1():
+	c_program_text= """
+		fn Foo()
+		{
+			unsafe
+			{
+				var typeof( typeinfo</ tup[ f32, i32 ] /> ) mut variable_of_typeinfo_type= uninitialized;
+				// Even we can create own mutable variable of typeinfo type (via unsafe) elements list is still immutable.
+				variable_of_typeinfo_type.elements_list[0].offset= 42s;
+			}
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
