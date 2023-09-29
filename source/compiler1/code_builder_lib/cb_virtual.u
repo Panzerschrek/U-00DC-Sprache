@@ -570,7 +570,7 @@ fn CodeBuilder::BuildClassVirtualTable( mut this, ClassTypePtr& class_type_ptr )
 	auto &mut class_= class_lock.deref();
 
 	class_.virtual_table_llvm_variable=
-		AddGlobalConstantVariable( name_mangled, class_.virtual_table_llvm_type, virtual_table_initializer );
+		AddGlobalConstantVariable( name_mangled.range(), class_.virtual_table_llvm_type, virtual_table_initializer );
 }
 
 fn CodeBuilder::SetupVirtualTablePointers_r(

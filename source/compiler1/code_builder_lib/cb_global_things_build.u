@@ -1109,7 +1109,7 @@ fn CodeBuilder::BuildEnum( mut this, NamesScopePtr& names_scope_ptr, EnumTypePtr
 
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( enum_inernal_names_scope.lock_imut().deref(), element.name, enum_type, true );
 		out_element.constexpr_value= unsafe( LLVMConstInt( underlaying_type.llvm_type, u64(enum_elements.size()), LLVMBool::False ) );
-		out_element.llvm_value= AddGlobalConstantVariable( name_mangled, underlaying_type.llvm_type, out_element.constexpr_value );
+		out_element.llvm_value= AddGlobalConstantVariable( name_mangled.range(), underlaying_type.llvm_type, out_element.constexpr_value );
 
 		enum_elements.insert( element.name, move(out_element) );
 	}
@@ -1224,8 +1224,8 @@ fn CodeBuilder::BuildGlobalVariable( mut this, NamesScopePtr& names_scope_ptr, u
 	{
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), variable_declaration.name, t, !is_mutable );
 		auto llvm_value= select( is_mutable
-			? AddGlobalMutableVariable( name_mangled, t.GetLLVMType(), externally_available )
-			: AddGlobalConstantVariable( name_mangled, t.GetLLVMType(), LLVMValueRef::Null ) );
+			? AddGlobalMutableVariable( name_mangled.range(), t.GetLLVMType(), externally_available )
+			: AddGlobalConstantVariable( name_mangled.range(), t.GetLLVMType(), LLVMValueRef::Null ) );
 
 		with( mut lock : variable_ptr.lock_mut() )
 		{
@@ -1413,8 +1413,8 @@ fn CodeBuilder::BuildGlobalAutoVariable( mut this, NamesScopePtr& names_scope_pt
 	{
 		auto name_mangled= mangler_.deref().MangleGlobalVariable( names_scope_ptr.lock_imut().deref(), auto_variable_declaration.name, variable.t, !is_mutable );
 		variable.llvm_value= select( is_mutable
-			? AddGlobalMutableVariable( name_mangled, variable.t.GetLLVMType(), externally_available )
-			: AddGlobalConstantVariable( name_mangled, variable.t.GetLLVMType(), expr.constexpr_value ) );
+			? AddGlobalMutableVariable( name_mangled.range(), variable.t.GetLLVMType(), externally_available )
+			: AddGlobalConstantVariable( name_mangled.range(), variable.t.GetLLVMType(), expr.constexpr_value ) );
 
 		unsafe( LLVMSetInitializer( variable.llvm_value, expr.constexpr_value ) );
 	}

@@ -1327,7 +1327,7 @@ fn CodeBuilder::MatchTemplateArgumentImpl(
 					.value_type= ValueType::ReferenceImut,
 					.location= Variable::Location::Pointer,
 					.constexpr_value= given_variable.constexpr_value,
-					.llvm_value= AddGlobalConstantVariable( param_name + "\0", given_variable.t.GetLLVMType(), given_variable.constexpr_value ),
+					.llvm_value= AddGlobalConstantVariable( (param_name + "\0").range(), given_variable.t.GetLLVMType(), given_variable.constexpr_value ),
 					.name= param_name,
 				};
 
@@ -1718,7 +1718,7 @@ fn CodeBuilder::FillKnownFunctionTemplateArgsIntoNamespace(
 					.t= v.t,
 					.value_type= ValueType::ReferenceImut,
 					.location= Variable::Location::Pointer,
-					.llvm_value= AddGlobalConstantVariable( param_name + "\0", v.t.GetLLVMType(), v.constexpr_value ),
+					.llvm_value= AddGlobalConstantVariable( (param_name + "\0").range(), v.t.GetLLVMType(), v.constexpr_value ),
 					.constexpr_value= v.constexpr_value,
 					.name= param_name,
 				};

@@ -765,7 +765,7 @@ private:
 		ust::array_view_imut</TemplateArgFinished/> known_template_args,
 		NamesScopeMutPtr& target_namespace );
 
-	fn AddNewTemplateThing( mut this, ust::string8 mut key, NamesScopePtr& thing );
+	fn AddNewTemplateThing( mut this, ust::string8 key, NamesScopePtr& thing );
 
 	fn TypeIsValidForTemplateVariableArgument( Type& t ) : bool;
 
@@ -774,8 +774,8 @@ private:
 	fn GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : VariablePtr;
 	fn BuildFullTypeinfo( mut this, Type& t ) : VariablePtr;
 
-	fn CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name, bool is_main_class ) : ClassTypePtr;
-	fn CreateTypeinfoHelperClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
+	fn CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8 name, bool is_main_class ) : ClassTypePtr;
+	fn CreateTypeinfoHelperClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8 name ) : ClassTypePtr;
 	fn FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::array_view_imut</LLVMTypeRef/> fields_llvm_types );
 	fn TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, ust::string_view8 name ) : VariableNullablePtr;
 
@@ -976,8 +976,8 @@ private:
 	fn IsCopyAssignmentOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
 	fn IsEqualityCompareOperator( FunctionVariable& function_variable, ClassTypePtr& class_type ) : bool;
 
-	fn AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef;
-	fn AddGlobalMutableVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, bool externally_available ) : LLVMValueRef;
+	fn AddGlobalConstantVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef;
+	fn AddGlobalMutableVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, bool externally_available ) : LLVMValueRef;
 
 	fn GetAttributeKindByName( ust::string_view8 attr_name ) : u32;
 	fn AddFunctionAttribute( this, LLVMValueRef llvm_function, u32 index, ust::string_view8 attr_name );

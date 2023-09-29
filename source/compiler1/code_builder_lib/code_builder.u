@@ -2016,8 +2016,10 @@ fn CodeBuilder::IsEqualityCompareOperator( FunctionVariable& function_variable, 
 		function_variable.t.return_value_type == ValueType::Value;
 }
 
-fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef
+fn CodeBuilder::AddGlobalConstantVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, LLVMValueRef initializer ) : LLVMValueRef
 {
+	debug_assert( !name_null_terminated.empty() && name_null_terminated.back() == "\0"c8, "String is not null-terminated as expected!" );
+
 	unsafe
 	{
 		// Reuse existing global variable with same name and initializer.
@@ -2039,11 +2041,12 @@ fn CodeBuilder::AddGlobalConstantVariable( this, ust::string8& name_null_termina
 	}
 }
 
-fn CodeBuilder::AddGlobalMutableVariable( this, ust::string8& name_null_terminated, LLVMTypeRef llvm_type, bool externally_available ) : LLVMValueRef
+fn CodeBuilder::AddGlobalMutableVariable( this, ust::string_view8 name_null_terminated, LLVMTypeRef llvm_type, bool externally_available ) : LLVMValueRef
 {
+	debug_assert( !name_null_terminated.empty() && name_null_terminated.back() == "\0"c8, "String is not null-terminated as expected!" );
+
 	unsafe
 	{
-
 		var LLVMValueRef global_variable= LLVMAddGlobal( module_, llvm_type, name_null_terminated.front() );
 		LLVMSetUnnamedAddress( global_variable, LLVMUnnamedAddr::GlobalUnnamedAddr );
 		LLVMSetGlobalConstant( global_variable, LLVMBool::False );
