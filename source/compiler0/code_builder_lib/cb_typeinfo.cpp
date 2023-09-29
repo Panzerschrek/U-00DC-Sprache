@@ -23,11 +23,6 @@ const std::string g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
 const std::string g_typeinfo_function_arguments_list_node_class_name= "_TIAL_";
 const std::string g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 
-std::string GetTypeinfoVariableName( const ClassPtr typeinfo_class )
-{
-	return "_val_of_" + std::string(typeinfo_class->llvm_type->getName());
-}
-
 } // namespace
 
 VariablePtr CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespace )
@@ -70,11 +65,7 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 			"typeinfo</" + type.ToString() + "/>");
 
 	result->constexpr_value= llvm::UndefValue::get( typeinfo_class->llvm_type ); // Currently uninitialized.
-	result->llvm_value=
-		CreateGlobalConstantVariable(
-			result->type,
-			GetTypeinfoVariableName( typeinfo_class ),
-			result->constexpr_value );
+	result->llvm_value= CreateGlobalConstantVariable( result->type, "", result->constexpr_value );
 
 	// This allows to get typename itself, using typeinfo variable and use such type as normal.
 	typeinfo_class->members->AddName( "src_type", NamesScopeValue( type, g_dummy_src_loc ) );
