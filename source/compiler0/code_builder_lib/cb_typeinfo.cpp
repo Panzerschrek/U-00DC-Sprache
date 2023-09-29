@@ -43,6 +43,8 @@ VariablePtr CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_names
 ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name )
 {
 	// Currently, give "random" names for typeinfo classes.
+	// There is no reason to give meaningfull names to LLVM types, since these names are insignificant.
+	// Avoiding calculation and storing of mangled names reduces compilation time and memory usage.
 	llvm::StructType* const llvm_type= llvm::StructType::create( llvm_context_ );
 
 	auto typeinfo_class_ptr= std::make_unique<Class>( std::move(name), &root_namespace );
@@ -51,8 +53,6 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 
 	typeinfo_class->llvm_type= llvm_type;
 	typeinfo_class->generated_class_data= TypeinfoClassDescription{ src_type, false /* non-main by default */ };
-
-	llvm_type->setName( mangler_->MangleType( typeinfo_class ) );
 
 	typeinfo_class->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
 
