@@ -1568,6 +1568,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				};
 
 				var VariablePtr mut result_ptr( move(result) );
+				function_context.references_graph.AddNode( result_ptr );
 				function_context.references_graph.TryAddLink( fetch_result, result_ptr, names_scope, member_access_operator.src_loc );
 				return move(result_ptr);
 			}
