@@ -308,7 +308,8 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 
 	const auto typeinfo_table_it= typeinfo_cache_.find( source_type );
 	U_ASSERT( typeinfo_table_it != typeinfo_cache_.end() );
-	TypeinfoCacheElement& cache_element= typeinfo_table_it->second;
+	// Take copy of cache element, in order to avoid reference invalidation in possible recursive calls.
+	TypeinfoCacheElement cache_element= typeinfo_table_it->second;
 
 	NamesScope& root_namespace= *typeinfo_class_type->members->GetRoot();
 
@@ -323,7 +324,10 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 		if( name == "elements_list" )
 		{
 			if( cache_element.elements_list == nullptr )
+			{
 				cache_element.elements_list= BuildTypeinfoEnumElementsList( enum_type, root_namespace );
+				typeinfo_cache_[source_type]= cache_element;
+			}
 			return cache_element.elements_list;
 		}
 	}
@@ -332,7 +336,10 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 		if( name == "elements_list" )
 		{
 			if( cache_element.elements_list == nullptr )
+			{
 				cache_element.elements_list= BuildTypeinfoTupleElements( *tuple_type, root_namespace );
+				typeinfo_cache_[source_type]= cache_element;
+			}
 			return cache_element.elements_list;
 		}
 	}
@@ -341,25 +348,37 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 		if( name == "fields_list" )
 		{
 			if( cache_element.fields_list == nullptr )
+			{
 				cache_element.fields_list= BuildTypeinfoClassFieldsList( class_type, root_namespace );
+				typeinfo_cache_[source_type]= cache_element;
+			}
 			return cache_element.fields_list;
 		}
 		if( name == "types_list" )
 		{
 			if( cache_element.types_list == nullptr )
+			{
 				cache_element.types_list= BuildTypeinfoClassTypesList( class_type, root_namespace );
+				typeinfo_cache_[source_type]= cache_element;
+			}
 			return cache_element.types_list;
 		}
 		if( name == "functions_list" )
 		{
 			if( cache_element.functions_list == nullptr )
+			{
 				cache_element.functions_list= BuildTypeinfoClassFunctionsList( class_type, root_namespace );
+				typeinfo_cache_[source_type]= cache_element;
+			}
 			return cache_element.functions_list;
 		}
 		if( name == "parents_list" )
 		{
 			if( cache_element.parents_list == nullptr )
+			{
 				cache_element.parents_list= BuildTypeinfoClassParentsList( class_type, root_namespace );
+				typeinfo_cache_[source_type]= cache_element;
+			}
 			return cache_element.parents_list;
 		}
 	}
@@ -368,7 +387,10 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 		if( name == "arguments_list" )
 		{
 			if( cache_element.arguments_list == nullptr )
+			{
 				cache_element.arguments_list= BuildTypeinfoFunctionArguments( function_pointer_type->function_type, root_namespace );
+				typeinfo_cache_[source_type]= cache_element;
+			}
 			return cache_element.arguments_list;
 		}
 	}

@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/sort.u"
 import "/keywords.uh"
 import "error_reporting.uh"
@@ -483,20 +484,20 @@ fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, u
 	}
 	var ClassTypePtr class_type= class_type_opt.try_deref();
 
-	auto generated_class_data= class_type.lock_imut().deref().generated_class_data;
-	auto typeinfo_type_description_opt= generated_class_data.get</ TypeinfoClassDescription />();
-	if( typeinfo_type_description_opt.empty() )
+	var Type mut source_type;
+	if_var( & typeinfo_type_description : class_type.lock_imut().deref().generated_class_data.get</ TypeinfoClassDescription />() )
+	{
+		if( !typeinfo_type_description.is_main_class )
+		{
+			// This is some helper typeinfo class (like list node class), not main class (type of "typeinfo") operator.
+			return VariableNullablePtr();
+		}
+		source_type= typeinfo_type_description.source_type;
+	}
+	else
 	{
 		return VariableNullablePtr();
 	}
-	var TypeinfoClassDescription& typeinfo_type_description= typeinfo_type_description_opt.try_deref();
-
-	if( !typeinfo_type_description.is_main_class )
-	{
-		return VariableNullablePtr();
-	}
-
-	var Type& source_type= typeinfo_type_description.source_type;
 
 	var TypeinfoCacheElement mut cache_element= typeinfo_cache_.find( source_type ).try_deref();
 
@@ -943,6 +944,8 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 
 fn CodeBuilder::FinishTypeinfoList( mut this, ust::vector</Type/> mut element_types, ust::array_view_imut</LLVMValueRef/> initializers ) : VariablePtr
 {
+	debug_assert( element_types.size() == initializers.size(), "typeinfo list types/initializers size mismatch!" );
+
 	var TupleType mut tuple_type{ .element_types= move(element_types) };
 
 	var ust::vector</LLVMTypeRef/> mut element_llvm_types;
@@ -952,7 +955,6 @@ fn CodeBuilder::FinishTypeinfoList( mut this, ust::vector</Type/> mut element_ty
 	}
 
 	tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
-
 
 	var Variable mut v
 	{
