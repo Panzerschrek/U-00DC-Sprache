@@ -253,7 +253,7 @@ fn ManglerMSVC::EncodeType( this, ManglerState &mut mangler_state, Type& t )
 
 		mangler_state.PushElement( g_class_type_prefix );
 
-		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ ClassType::TypeinfoClassDescription />() )
+		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ TypeinfoClassDescription />() )
 		{
 			// Encode typeinfo, like type template.
 

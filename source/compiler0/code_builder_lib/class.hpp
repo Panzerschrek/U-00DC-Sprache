@@ -2,6 +2,7 @@
 #include "../lex_synt_lib/program_string.hpp"
 #include "coroutine.hpp"
 #include "template_types.hpp"
+#include "typeinfo.hpp"
 
 namespace U
 {
@@ -34,11 +35,6 @@ public:
 	{
 		TypeTemplatePtr class_template;
 		TemplateArgs signature_args;
-	};
-
-	struct TypeinfoClassDescription
-	{
-		Type source_type; // Type for which this typeinfo class was generated.
 	};
 
 	struct NonGeneratedClassTag{};

@@ -313,6 +313,44 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 		return ErrorValue();
 	}
 
+	// Try to perform lazy typeinfo field fetch.
+	if( std::holds_alternative< TypeinfoClassDescription >( class_type->generated_class_data ) &&
+		member_access_operator.template_parameters == std::nullopt )
+	{
+		if( const VariablePtr fetch_result= TryFetchTypeinfoClassLazyField( variable->type, member_access_operator.member_name ) )
+		{
+			U_ASSERT( fetch_result->constexpr_value != nullptr );
+			function_context.variables_state.AddNodeIfNotExists( fetch_result );
+			if( variable->constexpr_value != nullptr )
+				return fetch_result; // Pass constexpr fetch result for constexpr typeinfo variable.
+			else
+			{
+				// This is a typeinfo element access via non-constexpr typeinfo variable.
+				// Since typeinfo classes have no constructors it's impossible to construct typeinfo variable.
+				// So, assume this instance is instance of single true (generated) typeinfo variable.
+				// It is still possible to create value of typeinfo class via unsafe-hacks, but ignore such possibility and return one legit possible value.
+				//
+				// Note that we create here immutable reference, even if source variable is mutable.
+				// So, typeinfo list pseudo-field behaves like immutable field.
+				// Doing so we prevent possible modification of returned variable, since it is de-facto global constant and thus can't be modified.
+
+				const VariableMutPtr non_constexpr_ref=
+					std::make_shared<Variable>(
+						fetch_result->type,
+						ValueType::ReferenceImut,
+						Variable::Location::Pointer,
+						fetch_result->name,
+						fetch_result->llvm_value,
+						nullptr ); // Create reference node with null constexpr value, since source variable is not constexpr.
+
+				function_context.variables_state.AddNode( non_constexpr_ref );
+				function_context.variables_state.TryAddLink( fetch_result, non_constexpr_ref, names.GetErrors(), member_access_operator.src_loc );
+				RegisterTemporaryVariable( function_context, non_constexpr_ref );
+				return non_constexpr_ref;
+			}
+		}
+	}
+
 	const auto class_value= ResolveClassValue( class_type, member_access_operator.member_name );
 	NamesScopeValue* const class_member= class_value.first;
 	if( class_member == nullptr )
@@ -1384,7 +1422,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	NamesScope& root_namespace= *names.GetRoot();
 	BuildTypeInfo( type, *names.GetRoot() );
 
-	const VariableMutPtr& var_ptr= typeinfo_cache_[type];
+	const VariableMutPtr& var_ptr= typeinfo_cache_[type].variable;
 	BuildFullTypeinfo( type, var_ptr, root_namespace );
 
 	function_context.variables_state.AddNodeIfNotExists( var_ptr );
@@ -1692,7 +1730,7 @@ Value CodeBuilder::AccessClassField(
 
 				if( const auto global_variable= llvm::dyn_cast<llvm::GlobalVariable>(element) )
 				{
-					if( std::get_if< Class::TypeinfoClassDescription>( &field.class_->generated_class_data ) != nullptr && field_name == "type_id" )
+					if( std::get_if<TypeinfoClassDescription>( &field.class_->generated_class_data ) != nullptr && field_name == "type_id" )
 					{
 						// HACK!
 						// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.

@@ -120,6 +120,33 @@ struct FunctionPointerType
 	op==( FunctionPointerType& l, FunctionPointerType& r ) : bool;
 }
 
+//
+// Typeinfo stuff
+//
+
+struct TypeinfoClassDescription
+{
+	Type source_type; // Type for which this typeinfo class was generated.
+	bool is_main_class= false; // Main class - a class produced by typeinfo operator. Non-main class - some other typeinfo class, like list node class.
+}
+
+struct TypeinfoCacheElement
+{
+	VariablePtr variable; // Variable - result of typeinfo operator call.
+
+	// Various typeinfo lists. They are created lazily.
+	VariableNullablePtr elements_list; // For enums and tuples.
+	VariableNullablePtr fields_list;
+	VariableNullablePtr types_list;
+	VariableNullablePtr functions_list;
+	VariableNullablePtr parents_list;
+	VariableNullablePtr arguments_list;
+}
+
+//
+// Class type
+//
+
 struct ClassType
 {
 	//
@@ -140,10 +167,6 @@ struct ClassType
 	{
 		TypeTemplatePtr class_template;
 		TemplateArgsFinished signature_args;
-	}
-	struct TypeinfoClassDescription
-	{
-		Type source_type; // Type for which this typeinfo class was generated.
 	}
 
 	struct NonGeneratedClassTag{}

@@ -590,7 +590,8 @@ llvm::GenericValue Interpreter::GetVal( const llvm::Value* const val )
 			for( uint32_t i= 0u; i < res.AggregateVal.size(); ++i )
 				res.AggregateVal[i]= GetVal( undef_value->getElementValue(i) );
 		}
-		else U_ASSERT(false);
+		else
+			errors_.push_back( "Building unknown undef value" );
 	}
 	else if( const auto function= llvm::dyn_cast<llvm::Function>(val) )
 		res.IntVal= llvm::APInt( pointer_size_in_bits_, reinterpret_cast<size_t>( function ) );

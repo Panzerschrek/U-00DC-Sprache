@@ -1,3 +1,4 @@
+import "/assert.u"
 import "/sort.u"
 import "/keywords.uh"
 import "error_reporting.uh"
@@ -67,29 +68,6 @@ import "code_builder.uh"
 		fields_llvm_types.push_back( unsafe( LLVMPointerType( class_field.t.GetLLVMType(), 0u ) ) );
 
 		fields_initializers.push_back( dependent_type_typeinfo.llvm_value );
-
-		auto mut members_lock= class_members.lock_mut();
-		members_lock.deref().AddName( ?name, move(class_field) );
-	}
-?>
-
-?macro <? ADD_LIST_FIELD:block( ?name:expr, ?list:expr ) ?>
-->
-<?
-	{
-		auto list_variable= ?list;
-		var ClassField mut class_field
-		{
-			.t= list_variable.t,
-			.is_mutable= true,
-			.is_reference= false,
-			.index= u32(fields_llvm_types.size()),
-			.syntax_element= dummy_syntax_element,
-			.source_class= typeinfo_class,
-		};
-
-		fields_llvm_types.push_back( class_field.t.GetLLVMType() );
-		fields_initializers.push_back( list_variable.constexpr_value );
 
 		auto mut members_lock= class_members.lock_mut();
 		members_lock.deref().AddName( ?name, move(class_field) );
@@ -199,23 +177,6 @@ struct EnumElementForTypeinfo
 	}
 }
 
-fn FinishTypeinfoList( LLVMContextRef llvm_context, ust::vector</Type/> mut element_types, ust::vector</LLVMValueRef/>& initializers ) : VariableLite
-{
-	var TupleType mut tuple_type{ .element_types= move(element_types) };
-
-	var ust::vector</LLVMTypeRef/> mut element_llvm_types;
-	foreach( &element_type : tuple_type.element_types )
-	{
-		element_llvm_types.push_back( element_type.GetLLVMType() );
-	}
-
-	tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
-
-	var LLVMValueRef val= unsafe( LLVMConstStructInContext( llvm_context, cast_mut(initializers).data(), u32(initializers.size()), LLVMBool::False ) );
-
-	return VariableLite( move(tuple_type), ValueType::Value, Variable::Location::LLVMRegister, val, val );
-}
-
 fn CodeBuilder::BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace ) : VariablePtr
 {
 	GetTypeinfoPrototype( t, root_namespace );
@@ -225,12 +186,12 @@ fn CodeBuilder::BuildTypeinfo( mut this, Type& t, NamesScopePtr& root_namespace 
 fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : VariablePtr
 {
 	// Check if already created.
-	if_var( &v : typeinfo_cache_.find(t) )
+	if_var( &entry : typeinfo_cache_.find(t) )
 	{
-		return v;
+		return entry.variable;
 	}
 
-	var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, t, g_typeinfo_root_class_name );
+	var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, t, g_typeinfo_root_class_name, true );
 
 	var Variable mut v
 	{
@@ -249,8 +210,9 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		v.llvm_value= AddGlobalConstantVariable( variable_name, llvm_type, v.constexpr_value );
 	}
 
-	auto mut v_ptr= VariablePtr( move(v) );
-	typeinfo_cache_.insert( t, v_ptr );
+	var VariablePtr mut v_ptr( move(v) );
+	var TypeinfoCacheElement mut cache_element{ .variable= v_ptr };
+	typeinfo_cache_.insert( t, move(cache_element) );
 
 	// Add type as typedef into class members namespace.
 	// This allows us to get typename itself, using typeinfo variable and use such type as normal.
@@ -265,7 +227,7 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 
 fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 {
-	var VariablePtr typeinfo_variable_ptr= typeinfo_cache_.find(t).try_deref();
+	var VariablePtr typeinfo_variable_ptr= typeinfo_cache_.find(t).try_deref().variable;
 
 	var ClassTypePtr typeinfo_class= typeinfo_variable_ptr.lock_imut().deref().t.GetClassType().try_deref();
 	if( typeinfo_class.lock_imut().deref().is_complete )
@@ -331,7 +293,6 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 	else if_var( &tuple_type : t.GetTupleType() )
 	{
 		ADD_SIZE_FIELD( "element_count", tuple_type.element_types.size() )
-		ADD_LIST_FIELD( "elements_list", BuildTypeinfoTupleElementsList( root_namespace, tuple_type ) )
 	}
 	else if_var( &pointer_type : t.GetRawPointerType() )
 	{
@@ -341,7 +302,6 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 	{
 		var FunctionType& function_type= function_pointer_type.function_type;
 		ADD_TYPEINFO_FIELD( "return_type", function_type.return_type )
-		ADD_LIST_FIELD( "arguments_list", BuildTypeinfoFunctionParamsList( root_namespace, function_type ) )
 		ADD_BOOL_FIELD( "return_value_is_reference", function_type.return_value_type != ValueType::Value )
 		ADD_BOOL_FIELD( "return_value_is_mutable"  , function_type.return_value_type == ValueType::ReferenceMut )
 		ADD_BOOL_FIELD( "unsafe"                   , function_type.is_unsafe )
@@ -366,11 +326,6 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 		ADD_SIZE_FIELD( "field_count", field_count )
 
 		ADD_SIZE_FIELD( "parent_count", class_.parents.size() )
-
-		ADD_LIST_FIELD( "fields_list", BuildTypeinfoClassFieldsList( root_namespace, class_ptr ) )
-		ADD_LIST_FIELD( "functions_list", BuildTypeinfoClassFunctionsList( root_namespace, class_ptr ) )
-		ADD_LIST_FIELD( "types_list", BuildTypeinfoClassTypesList( root_namespace, class_ptr ) )
-		ADD_LIST_FIELD( "parents_list", BuildTypeinfoClassParentsList( root_namespace, class_ptr ) )
 
 		if( is_polymorph )
 		{
@@ -414,7 +369,7 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 
 		ADD_BOOL_FIELD( "is_interface", class_.kind == ClassType::Kind::Interface )
 
-		ADD_BOOL_FIELD( "is_typeinfo", !class_.generated_class_data.get</ ClassType::TypeinfoClassDescription />().empty() )
+		ADD_BOOL_FIELD( "is_typeinfo", !class_.generated_class_data.get</ TypeinfoClassDescription />().empty() )
 
 		if_var( &coroutine_type_description : class_.generated_class_data.get</ CoroutineTypeDescription />() )
 		{
@@ -438,7 +393,6 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 
 		ADD_SIZE_FIELD( "element_count", enum_.elements.size() )
 		ADD_TYPEINFO_FIELD( "underlaying_type", enum_.underlaying_type )
-		ADD_LIST_FIELD( "elements_list", BuildTypeinfoEnumElementsList( root_namespace, enum_ptr ) )
 	}
 	else { halt; }
 
@@ -457,10 +411,10 @@ fn CodeBuilder::BuildFullTypeinfo( mut this, Type& t ) : VariablePtr
 	return typeinfo_variable_ptr;
 }
 
-fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr
+fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name, bool is_main_class ) : ClassTypePtr
 {
 	var NamesScopeMutPtr class_members( NamesScope( name, root_namespace ) );
-	var ClassType::TypeinfoClassDescription mut typeinfo_class_description{ .source_type = src_type };
+	var TypeinfoClassDescription mut typeinfo_class_description{ .source_type = src_type, .is_main_class= is_main_class };
 	var ClassType mut class_type
 	{
 		.members= class_members,
@@ -494,6 +448,11 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 	return move(class_type_ptr);
 }
 
+fn CodeBuilder::CreateTypeinfoHelperClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr
+{
+	return CreateTypeinfoClass( root_namespace, src_type, name, false );
+}
+
 fn CodeBuilder::FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::array_view_imut</LLVMTypeRef/> fields_llvm_types )
 {
 	with( mut lock : typeinfo_class.lock_mut() )
@@ -510,7 +469,128 @@ fn CodeBuilder::FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust
 	TryGenerateDestructor( typeinfo_class );
 }
 
-fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : VariableLite
+fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, ust::string_view8 name ) : VariableNullablePtr
+{
+	// Generate typeinfo list fields on-demand, instead of creating lists as typeinfo class fields as usual.
+	// The main reason to do this - for faster compilation.
+	// Building typeinfo lists is too costly - requires creation of bunch of node classes, each with members namespace, destructor, fields, etc.
+	// So, avoid doing this unless typeinfo list isn't direclty accessed.
+	// Such optimization also reduces total memory usage by the compiler frontend.
+
+	auto class_type_opt= typeinfo_type.GetClassType();
+	if( class_type_opt.empty() )
+	{
+		return VariableNullablePtr();
+	}
+	var ClassTypePtr class_type= class_type_opt.try_deref();
+
+	var Type mut source_type;
+	if_var( & typeinfo_type_description : class_type.lock_imut().deref().generated_class_data.get</ TypeinfoClassDescription />() )
+	{
+		if( !typeinfo_type_description.is_main_class )
+		{
+			// This is some helper typeinfo class (like list node class), not main class (type of "typeinfo") operator.
+			return VariableNullablePtr();
+		}
+		source_type= typeinfo_type_description.source_type;
+	}
+	else
+	{
+		return VariableNullablePtr();
+	}
+
+	var TypeinfoCacheElement mut cache_element= typeinfo_cache_.find( source_type ).try_deref();
+
+	var NamesScopePtr root_namespace= GetRootNamespace( class_type.lock_imut().deref().members );
+
+	if( !source_type.GetFundamentalType().empty() ||
+		!source_type.GetArrayType().empty() ||
+		!source_type.GetRawPointerType().empty() )
+	{
+		// These kinds of types have no lists.
+	}
+	else if_var( enum_type : source_type.GetEnumType() )
+	{
+		if( name == "elements_list" )
+		{
+			if( cache_element.elements_list.empty() )
+			{
+				cache_element.elements_list= BuildTypeinfoEnumElementsList( root_namespace, enum_type );
+				typeinfo_cache_[ source_type ]= cache_element;
+			}
+			return cache_element.elements_list;
+		}
+	}
+	else if_var( &tuple_type : source_type.GetTupleType() )
+	{
+		if( name == "elements_list" )
+		{
+			if( cache_element.elements_list.empty() )
+			{
+				cache_element.elements_list= BuildTypeinfoTupleElementsList( root_namespace, tuple_type );
+				typeinfo_cache_[ source_type ]= cache_element;
+			}
+			return cache_element.elements_list;
+		}
+	}
+	else if_var( class_type : source_type.GetClassType() )
+	{
+		if( name == "fields_list" )
+		{
+			if( cache_element.fields_list.empty() )
+			{
+				cache_element.fields_list= BuildTypeinfoClassFieldsList( root_namespace, class_type );
+				typeinfo_cache_[ source_type ]= cache_element;
+			}
+			return cache_element.fields_list;
+		}
+		if( name == "types_list" )
+		{
+			if( cache_element.types_list.empty() )
+			{
+				cache_element.types_list= BuildTypeinfoClassTypesList( root_namespace, class_type );
+				typeinfo_cache_[ source_type ]= cache_element;
+			}
+			return cache_element.types_list;
+		}
+		if( name == "functions_list" )
+		{
+			if( cache_element.functions_list.empty() )
+			{
+				cache_element.functions_list= BuildTypeinfoClassFunctionsList( root_namespace, class_type );
+				typeinfo_cache_[ source_type ]= cache_element;
+			}
+			return cache_element.functions_list;
+		}
+		if( name == "parents_list" )
+		{
+			if( cache_element.parents_list.empty() )
+			{
+				cache_element.parents_list= BuildTypeinfoClassParentsList( root_namespace, class_type );
+				typeinfo_cache_[ source_type ]= cache_element;
+			}
+			return cache_element.parents_list;
+		}
+	}
+	else if_var( function_pointer_type : source_type.GetFunctionPointerType() )
+	{
+		if( name == "arguments_list" )
+		{
+			if( cache_element.arguments_list.empty() )
+			{
+				cache_element.arguments_list= BuildTypeinfoFunctionParamsList( root_namespace, function_pointer_type.function_type );
+				typeinfo_cache_[ source_type ]= cache_element;
+			}
+			return cache_element.arguments_list;
+		}
+	}
+	else { halt; }
+
+	// Unknown member.
+	return VariableNullablePtr();
+}
+
+fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : VariablePtr
 {
 	var ust::vector</Type/> mut list_types;
 	var ust::vector</LLVMValueRef/> mut list_initializers;
@@ -519,7 +599,7 @@ fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_na
 
 	for( auto mut i= 0s; i < tuple_type.element_types.size(); ++i )
 	{
-		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, tuple_type, g_typeinfo_tuple_elements_list_node_class_name + ust::to_string8(i) );
+		var ClassTypePtr typeinfo_class= CreateTypeinfoHelperClass( root_namespace, tuple_type, g_typeinfo_tuple_elements_list_node_class_name + ust::to_string8(i) );
 		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
 
 		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
@@ -536,10 +616,10 @@ fn CodeBuilder::BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_na
 		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
-	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
+	return FinishTypeinfoList( move(list_types), list_initializers.range() );
 }
 
-fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariableLite
+fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariablePtr
 {
 	var ust::vector</Type/> mut list_types;
 	var ust::vector</LLVMValueRef/> mut list_initializers;
@@ -550,7 +630,7 @@ fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_n
 
 	for( auto mut i= 0s; i < function_type.params.size(); ++i )
 	{
-		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, function_pointer_type, g_typeinfo_function_params_list_node_class_name + ust::to_string8(i) );
+		var ClassTypePtr typeinfo_class= CreateTypeinfoHelperClass( root_namespace, function_pointer_type, g_typeinfo_function_params_list_node_class_name + ust::to_string8(i) );
 		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
 
 		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
@@ -569,10 +649,10 @@ fn CodeBuilder::BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_n
 		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
-	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
+	return FinishTypeinfoList( move(list_types), list_initializers.range() );
 }
 
-fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite
+fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr
 {
 	var ust::vector</ ClassFieldForTypeinfo /> mut class_fields;
 	{
@@ -604,7 +684,7 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		auto field_lock= class_field_for_typeinfo.class_field.lock_imut();
 		var ClassField& field= field_lock.deref();
 
-		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_fields_list_node_class_name + ust::to_string8(list_types.size()) );
+		var ClassTypePtr typeinfo_class= CreateTypeinfoHelperClass( root_namespace, class_type, g_typeinfo_class_fields_list_node_class_name + ust::to_string8(list_types.size()) );
 		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
 
 		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
@@ -628,10 +708,10 @@ fn CodeBuilder::BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_name
 		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
-	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
+	return FinishTypeinfoList( move(list_types), list_initializers.range() );
 }
 
-fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite
+fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr
 {
 	var ust::vector</ClassFunctionForTypeinfo/> mut functions_list;
 
@@ -671,7 +751,7 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 	{
 		var FunctionVariable& function= class_function.function;
 
-		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_functions_list_node_class_name + ust::to_string8(list_types.size()) );
+		var ClassTypePtr typeinfo_class= CreateTypeinfoHelperClass( root_namespace, class_type, g_typeinfo_class_functions_list_node_class_name + ust::to_string8(list_types.size()) );
 		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
 
 		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
@@ -693,10 +773,10 @@ fn CodeBuilder::BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_n
 		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
-	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
+	return FinishTypeinfoList( move(list_types), list_initializers.range() );
 }
 
-fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite
+fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr
 {
 	var ust::vector</ClassInnerTypeForTypeinfo/> mut class_inner_types;
 	{
@@ -750,7 +830,7 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 
 	foreach( &inner_type : class_inner_types )
 	{
-		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_types_list_node_class_name + ust::to_string8(list_types.size()) );
+		var ClassTypePtr typeinfo_class= CreateTypeinfoHelperClass( root_namespace, class_type, g_typeinfo_class_types_list_node_class_name + ust::to_string8(list_types.size()) );
 		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
 
 		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
@@ -766,10 +846,10 @@ fn CodeBuilder::BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_names
 		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
-	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
+	return FinishTypeinfoList( move(list_types), list_initializers.range() );
 }
 
-fn CodeBuilder::BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite
+fn CodeBuilder::BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr
 {
 	var ust::vector</Type/> mut list_types;
 	var ust::vector</LLVMValueRef/> mut list_initializers;
@@ -780,7 +860,7 @@ fn CodeBuilder::BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_nam
 	var ClassType& class_= class_lock.deref();
 	foreach( &parent : class_.parents )
 	{
-		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, class_type, g_typeinfo_class_parents_list_node_class_name + ust::to_string8(list_types.size()) );
+		var ClassTypePtr typeinfo_class= CreateTypeinfoHelperClass( root_namespace, class_type, g_typeinfo_class_parents_list_node_class_name + ust::to_string8(list_types.size()) );
 		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
 
 		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
@@ -796,10 +876,10 @@ fn CodeBuilder::BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_nam
 		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
-	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
+	return FinishTypeinfoList( move(list_types), list_initializers.range() );
 }
 
-fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : VariableLite
+fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : VariablePtr
 {
 	auto enum_lock= enum_type.lock_imut();
 	var Enum& enum_= enum_lock.deref();
@@ -827,7 +907,7 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 
 	foreach( &enum_element : enum_elemens_list )
 	{
-		var ClassTypePtr typeinfo_class= CreateTypeinfoClass( root_namespace, enum_type, g_typeinfo_enum_elements_list_node_class_name + ust::to_string8(list_types.size()) );
+		var ClassTypePtr typeinfo_class= CreateTypeinfoHelperClass( root_namespace, enum_type, g_typeinfo_enum_elements_list_node_class_name + ust::to_string8(list_types.size()) );
 		var NamesScopeMutPtr class_members= typeinfo_class.lock_imut().deref().members;
 
 		var ust::vector</LLVMTypeRef/> mut fields_llvm_types;
@@ -859,7 +939,36 @@ fn CodeBuilder::BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_nam
 		list_initializers.push_back( unsafe( LLVMConstNamedStruct( typeinfo_class.lock_imut().deref().llvm_type, fields_initializers.data(), u32(fields_initializers.size()) ) ) );
 	}
 
-	return FinishTypeinfoList( llvm_context_, move(list_types), list_initializers );
+	return FinishTypeinfoList( move(list_types), list_initializers.range() );
+}
+
+fn CodeBuilder::FinishTypeinfoList( mut this, ust::vector</Type/> mut element_types, ust::array_view_imut</LLVMValueRef/> initializers ) : VariablePtr
+{
+	debug_assert( element_types.size() == initializers.size(), "typeinfo list types/initializers size mismatch!" );
+
+	var TupleType mut tuple_type{ .element_types= move(element_types) };
+
+	var ust::vector</LLVMTypeRef/> mut element_llvm_types;
+	foreach( &element_type : tuple_type.element_types )
+	{
+		element_llvm_types.push_back( element_type.GetLLVMType() );
+	}
+
+	tuple_type.llvm_type= unsafe( LLVMStructTypeInContext( llvm_context_, element_llvm_types.data(), u32(element_llvm_types.size()), LLVMBool::False ) );
+
+	var Variable mut v
+	{
+		.t= move(tuple_type),
+		.value_type= ValueType::ReferenceImut,
+		.location= Variable::Location::Pointer,
+		.name= "typeinfo_list", // TODO - set something more relevant?
+		.constexpr_value= unsafe( LLVMConstStructInContext( llvm_context_, cast_mut(initializers).data(), u32(initializers.size()), LLVMBool::False ) )
+	};
+
+	auto name_nt= "\0"; // Save some space - avoid to give LLVM variable a name. This is irrelevant, since this variable has private visibility.
+	v.llvm_value= unsafe( AddGlobalConstantVariable( name_nt, v.t.GetLLVMType(), v.constexpr_value ) );
+
+	return VariablePtr( move(v) );
 }
 
 } // namespace U1

@@ -40,12 +40,6 @@ struct CodeBuilderOptions
 	ManglingScheme mangling_scheme= ManglingScheme::ItaniumABI;
 };
 
-struct TypeinfoPartVariable
-{
-	Type type;
-	llvm::Constant* constexpr_value= nullptr;
-};
-
 class CodeBuilder
 {
 public:
@@ -885,19 +879,23 @@ private:
 	ClassPtr CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name );
 	VariableMutPtr BuildTypeinfoPrototype( const Type& type, NamesScope& root_namespace );
 	void BuildFullTypeinfo( const Type& type, const VariableMutPtr& typeinfo_variable, NamesScope& root_namespace );
-	const Variable& GetTypeinfoListEndNode( NamesScope& root_namespace );
 	void FinishTypeinfoClass( ClassPtr class_type, const ClassFieldsVector<llvm::Type*>& fields_llvm_types );
-	TypeinfoPartVariable BuildTypeinfoEnumElementsList( EnumPtr enum_type, NamesScope& root_namespace );
+
+	VariablePtr TryFetchTypeinfoClassLazyField( const Type& typeinfo_type, std::string_view name ); // Returns nullptr if can't fetch.
+
+	VariablePtr CreateTypeinfoListVariable( llvm::SmallVectorImpl<TypeinfoListElement>& list );
+
+	VariablePtr BuildTypeinfoEnumElementsList( EnumPtr enum_type, NamesScope& root_namespace );
 	void CreateTypeinfoClassMembersListNodeCommonFields(
 		const Class& class_, ClassPtr node_class_type,
 		std::string_view member_name,
 		ClassFieldsVector<llvm::Type*>& fields_llvm_types, ClassFieldsVector<llvm::Constant*>& fields_initializers );
-	TypeinfoPartVariable BuildTypeinfoClassFieldsList( ClassPtr class_type, NamesScope& root_namespace );
-	TypeinfoPartVariable BuildTypeinfoClassTypesList( ClassPtr class_type, NamesScope& root_namespace );
-	TypeinfoPartVariable BuildTypeinfoClassFunctionsList( ClassPtr class_type, NamesScope& root_namespace );
-	TypeinfoPartVariable BuildTypeinfoClassParentsList( ClassPtr class_type, NamesScope& root_namespace );
-	TypeinfoPartVariable BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace );
-	TypeinfoPartVariable BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
+	VariablePtr BuildTypeinfoClassFieldsList( ClassPtr class_type, NamesScope& root_namespace );
+	VariablePtr BuildTypeinfoClassTypesList( ClassPtr class_type, NamesScope& root_namespace );
+	VariablePtr BuildTypeinfoClassFunctionsList( ClassPtr class_type, NamesScope& root_namespace );
+	VariablePtr BuildTypeinfoClassParentsList( ClassPtr class_type, NamesScope& root_namespace );
+	VariablePtr BuildTypeinfoFunctionArguments( const FunctionType& function_type, NamesScope& root_namespace );
+	VariablePtr BuildTypeinfoTupleElements( const TupleType& tuple_type, NamesScope& root_namespace );
 
 	// Block elements
 	BlockBuildInfo BuildIfAlternative( NamesScope& names, FunctionContext& function_context, const Synt::IfAlternative& if_alterntative );
@@ -1378,7 +1376,7 @@ private:
 	ProgramStringMap< ClassPtr > template_classes_cache_;
 
 	// We needs to generate same typeinfo classes for same types. Use cache for it.
-	std::unordered_map< Type, VariableMutPtr, TypeHasher > typeinfo_cache_;
+	std::unordered_map< Type, TypeinfoCacheElement, TypeHasher > typeinfo_cache_;
 	std::vector<std::unique_ptr<Class>> typeinfo_class_table_;
 
 	std::vector<Type> non_sync_expression_stack_;

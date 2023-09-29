@@ -443,7 +443,7 @@ std::string Type::ToString() const
 		std::string operator()( const ClassPtr class_ ) const
 		{
 			std::string result;
-			if( const auto typeinfo_class_description= std::get_if< Class::TypeinfoClassDescription>( &class_->generated_class_data ) )
+			if( const auto typeinfo_class_description= std::get_if<TypeinfoClassDescription>( &class_->generated_class_data ) )
 			{
 				result= Keyword(Keywords::typeof_);
 				result+= "(";

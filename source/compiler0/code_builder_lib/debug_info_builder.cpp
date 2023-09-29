@@ -444,7 +444,7 @@ void DebugInfoBuilder::BuildClassTypeFullDebugInfo( const ClassPtr class_type )
 	uint32_t alignment_in_bits= 1;
 
 	if( the_class.is_complete && // Build proper info for complete clases.
-		std::get_if<Class::TypeinfoClassDescription>( &the_class.generated_class_data ) == nullptr ) // Skip typeinfo, because it may contain recursive structures.
+		std::get_if<TypeinfoClassDescription>( &the_class.generated_class_data ) == nullptr ) // Skip typeinfo, because it may contain recursive structures.
 	{
 		for( const ClassFieldPtr& class_field : the_class.fields_order )
 		{

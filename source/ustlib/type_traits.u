@@ -21,7 +21,13 @@ fn is_parent_for() : bool
 {
 	static_if( typeinfo</A/>.is_class & typeinfo</B/>.is_class )
 	{
-		return type_traits_impl::has_parent</ A />( typeinfo</B/>.parents_list );
+		// Statically check if both classes are polymorph, beffore requesting parents lists and building extra template function.
+		// This check is valid, since only polymorph classes can have parents or be parents.
+		static_if( typeinfo</A/>.is_polymorph && typeinfo</B/>.is_polymorph )
+		{
+			return type_traits_impl::has_parent</ A />( typeinfo</B/>.parents_list );
+		}
+		else{ return false; }
 	}
 	else{ return false; }
 }
@@ -31,7 +37,13 @@ fn is_ancestor_for() : bool
 {
 	static_if( typeinfo</A/>.is_class & typeinfo</B/>.is_class )
 	{
-		return type_traits_impl::has_ancestor</ A />( typeinfo</B/>.parents_list );
+		// Statically check if both classes are polymorph, beffore requesting parents lists and building extra template function.
+		// This check is valid, since only polymorph classes can have parents or be parents.
+		static_if( typeinfo</A/>.is_polymorph && typeinfo</B/>.is_polymorph )
+		{
+			return type_traits_impl::has_ancestor</ A />( typeinfo</B/>.parents_list );
+		}
+		else{ return false; }
 	}
 	else{ return false; }
 }
@@ -97,11 +109,7 @@ fn constexpr is_class_typeinfo_type() : bool
 	{
 		static_if( typeinfo</T/>.is_typeinfo )
 		{
-			return
-				class_have_field( typeinfo</T/>.fields_list, "fields_list" ) &&
-				class_have_field( typeinfo</T/>.fields_list, "types_list" ) &&
-				class_have_field( typeinfo</T/>.fields_list, "functions_list" ) &&
-				class_have_field( typeinfo</T/>.fields_list, "parents_list" );
+			return typeinfo</ T::src_type />.is_class;
 		}
 		else { return false; }
 	}
@@ -115,9 +123,7 @@ fn constexpr is_array_typeinfo_type() : bool
 	{
 		static_if( typeinfo</T/>.is_typeinfo )
 		{
-			return
-				class_have_field( typeinfo</T/>.fields_list, "element_count" ) &&
-				class_have_field( typeinfo</T/>.fields_list, "element_type" );
+			return typeinfo</ T::src_type />.is_array;
 		}
 		else { return false; }
 	}
@@ -131,10 +137,7 @@ fn constexpr is_tuple_typeinfo_type() : bool
 	{
 		static_if( typeinfo</T/>.is_typeinfo )
 		{
-			return
-				class_have_field( typeinfo</T/>.fields_list, "element_count" ) &&
-				class_have_field( typeinfo</T/>.fields_list, "elements_list" ) &&
-				!class_have_field( typeinfo</T/>.fields_list, "underlaying_type" );
+			return typeinfo</ T::src_type />.is_tuple;
 		}
 		else { return false; }
 	}

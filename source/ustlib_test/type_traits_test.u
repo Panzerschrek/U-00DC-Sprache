@@ -121,6 +121,10 @@ static_assert(  ust::class_have_field( typeinfo</ NonEmptyStruct />.fields_list,
 static_assert(  ust::class_have_field( typeinfo</ NonEmptyStruct />.fields_list, "y" ) );
 static_assert( !ust::class_have_field( typeinfo</ NonEmptyStruct />.fields_list, "z" ) );
 
+//
+// is_typeinfo_type
+//
+
 static_assert( !ust::is_class_typeinfo_type</ i32 />() );
 static_assert( !ust::is_class_typeinfo_type</ typeof( typeinfo</i32/> ) />() );
 static_assert( !ust::is_class_typeinfo_type</ EmptyStruct />() );
@@ -131,6 +135,14 @@ static_assert( !ust::is_array_typeinfo_type</ typeof( typeinfo</i32/> ) />() );
 static_assert( !ust::is_array_typeinfo_type</ EmptyStruct />() );
 static_assert( ust::is_array_typeinfo_type</ typeof( typeinfo</ [ i32, 2 ] /> ) />() );
 static_assert( ust::is_array_typeinfo_type</ typeof( typeinfo</ [ A, 2 ] /> ) />() );
+
+static_assert( !ust::is_tuple_typeinfo_type</ i32 />() );
+static_assert( !ust::is_tuple_typeinfo_type</ typeof( typeinfo</i32/> ) />() );
+static_assert( !ust::is_tuple_typeinfo_type</ EmptyStruct />() );
+static_assert( ust::is_tuple_typeinfo_type</ typeof( typeinfo</ tup[] /> ) />() );
+static_assert( ust::is_tuple_typeinfo_type</ typeof( typeinfo</ tup[ i32, f64 ] /> ) />() );
+static_assert( ust::is_tuple_typeinfo_type</ typeof( typeinfo</ tup[ A ] /> ) />() );
+static_assert( ust::is_tuple_typeinfo_type</ typeof( typeinfo</ tup[ [ i32, 2 ], tup[ u16, bool ] ] /> ) />() );
 
 //
 // HaveMethod
