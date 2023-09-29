@@ -288,8 +288,8 @@ void CodeBuilder::FinishTypeinfoClass( const ClassPtr class_type, const ClassFie
 VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_type, const std::string_view name )
 {
 	// Generate typeinfo list fields on-demand, instead of creating lists as typeinfo class fields as usual.
-	// The main reason to to this - for faster compilation.
-	// Building typeinfo lists is too costly - requires creation of buch of node classes, each with members namespace, destructor, fields, etc.
+	// The main reason to do this - for faster compilation.
+	// Building typeinfo lists is too costly - requires creation of bunch of node classes, each with members namespace, destructor, fields, etc.
 	// So, avoid doing this unless typeinfo list isn't direclty accessed.
 	// Such optimization also reduces total memory usage, that is especially important for the Language Server.
 
@@ -297,7 +297,7 @@ VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_ty
 	if( typeinfo_class_type == nullptr )
 		return nullptr;
 
-	const auto typeinfo_type_description= std::get_if<TypeinfoClassDescription >( &typeinfo_class_type->generated_class_data );
+	const auto typeinfo_type_description= std::get_if<TypeinfoClassDescription>( &typeinfo_class_type->generated_class_data );
 	if( typeinfo_type_description == nullptr )
 		return nullptr;
 
@@ -431,7 +431,7 @@ VariablePtr CodeBuilder::CreateTypeinfoListVariable( llvm::SmallVectorImpl<Typei
 			std::move(list_type),
 			ValueType::ReferenceImut,
 			Variable::Location::Pointer,
-			"typeinfo_lazy_list", // TODO - set something more relevant?
+			"typeinfo_list",
 			nullptr,
 			initializer );
 

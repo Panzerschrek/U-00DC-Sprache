@@ -1541,12 +1541,13 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 			function_context.references_graph.AddNodeIfNotExists( fetch_result );
 			if( variable.constexpr_value != LLVMValueRef::Null )
 			{
+				// Pass constexpr fetch result for constexpr typeinfo variable.
 				return move(fetch_result);
 			}
 			else
 			{
 				// This is a typeinfo element access via non-constexpr typeinfo variable.
-				// Since typeinfo classes have no constructors it's unpossible to construct typeinfo variable.
+				// Since typeinfo classes have no constructors it's impossible to construct typeinfo variable.
 				// So, assume this instance is instance of single true (generated) typeinfo variable.
 				// It is still possible to create value of typeinfo class via unsafe-hacks, but ignore such possibility and return one legit possible value.
 				//
@@ -1570,6 +1571,7 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 				var VariablePtr mut result_ptr( move(result) );
 				function_context.references_graph.AddNode( result_ptr );
 				function_context.references_graph.TryAddLink( fetch_result, result_ptr, names_scope, member_access_operator.src_loc );
+				RegisterTemporaryVariable( function_context, result_ptr );
 				return move(result_ptr);
 			}
 		}

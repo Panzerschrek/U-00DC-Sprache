@@ -13,7 +13,7 @@ struct TypeinfoListElement
 
 struct TypeinfoCacheElement
 {
-	VariableMutPtr variable; // variable - result of typeinfo operator call.
+	VariableMutPtr variable; // Variable - result of typeinfo operator call.
 
 	// Various typeinfo lists. They are created lazily.
 	VariablePtr elements_list= nullptr; // For enums and tuples.

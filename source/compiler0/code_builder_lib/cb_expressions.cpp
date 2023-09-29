@@ -326,7 +326,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 			else
 			{
 				// This is a typeinfo element access via non-constexpr typeinfo variable.
-				// Since typeinfo classes have no constructors it's unpossible to construct typeinfo variable.
+				// Since typeinfo classes have no constructors it's impossible to construct typeinfo variable.
 				// So, assume this instance is instance of single true (generated) typeinfo variable.
 				// It is still possible to create value of typeinfo class via unsafe-hacks, but ignore such possibility and return one legit possible value.
 				//

@@ -132,7 +132,7 @@ struct TypeinfoClassDescription
 
 struct TypeinfoCacheElement
 {
-	VariablePtr variable; // variable - result of typeinfo operator call.
+	VariablePtr variable; // Variable - result of typeinfo operator call.
 
 	// Various typeinfo lists. They are created lazily.
 	VariableNullablePtr elements_list; // For enums and tuples.

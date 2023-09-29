@@ -472,10 +472,10 @@ fn CodeBuilder::FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust
 fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, ust::string_view8 name ) : VariableNullablePtr
 {
 	// Generate typeinfo list fields on-demand, instead of creating lists as typeinfo class fields as usual.
-	// The main reason to to this - for faster compilation.
-	// Building typeinfo lists is too costly - requires creation of buch of node classes, each with members namespace, destructor, fields, etc.
+	// The main reason to do this - for faster compilation.
+	// Building typeinfo lists is too costly - requires creation of bunch of node classes, each with members namespace, destructor, fields, etc.
 	// So, avoid doing this unless typeinfo list isn't direclty accessed.
-	// Such optimization also reduces total memory usage, that is especially important for the Language Server.
+	// Such optimization also reduces total memory usage by the compiler frontend.
 
 	auto class_type_opt= typeinfo_type.GetClassType();
 	if( class_type_opt.empty() )
@@ -961,11 +961,12 @@ fn CodeBuilder::FinishTypeinfoList( mut this, ust::vector</Type/> mut element_ty
 		.t= move(tuple_type),
 		.value_type= ValueType::ReferenceImut,
 		.location= Variable::Location::Pointer,
-		.name= "some_list",
+		.name= "typeinfo_list", // TODO - set something more relevant?
 		.constexpr_value= unsafe( LLVMConstStructInContext( llvm_context_, cast_mut(initializers).data(), u32(initializers.size()), LLVMBool::False ) )
 	};
 
-	v.llvm_value= unsafe( AddGlobalConstantVariable( v.name, v.t.GetLLVMType(), v.constexpr_value ) );
+	auto name_nt= "\0"; // Save some space - avoid to give LLVM variable a name. This is irrelevant, since this variable has private visibility.
+	v.llvm_value= unsafe( AddGlobalConstantVariable( name_nt, v.t.GetLLVMType(), v.constexpr_value ) );
 
 	return VariablePtr( move(v) );
 }
