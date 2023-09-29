@@ -306,7 +306,7 @@ fn CodeBuilder::BuildClass( mut this, NamesScopePtr& names_scope_ptr, ClassTypeP
 	}
 	with( mut lock : class_type.lock_imut() )
 	{
-		auto mut description_opt= lock.deref().generated_class_data.get</ ClassType::TypeinfoClassDescription />();
+		auto mut description_opt= lock.deref().generated_class_data.get</ TypeinfoClassDescription />();
 		if( !description_opt.empty() )
 		{
 			var Type t= description_opt.try_deref().source_type;

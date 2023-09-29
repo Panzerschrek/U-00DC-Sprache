@@ -1531,6 +1531,49 @@ fn CodeBuilder::BuildExpressionCode( mut this, NamesScopePtr& names_scope, Funct
 	}
 	var ClassTypePtr class_type= class_type_ref.try_deref();
 
+	if( member_access_operator.template_args.empty() &&
+		!class_type.lock_imut().deref().generated_class_data.get</ TypeinfoClassDescription />().empty() )
+	{
+		var VariableNullablePtr fetch_result_opt= TryFetchTypeinfoClassLazyField( variable.t, member_access_operator.member_name.range() );
+		if( !fetch_result_opt.empty() )
+		{
+			var VariablePtr mut fetch_result= fetch_result_opt.try_to_non_nullable();
+			function_context.references_graph.AddNodeIfNotExists( fetch_result );
+			if( variable.constexpr_value != LLVMValueRef::Null )
+			{
+				return move(fetch_result);
+			}
+			else
+			{
+				// This is a typeinfo element access via non-constexpr typeinfo variable.
+				// Since typeinfo classes have no constructors it's unpossible to construct typeinfo variable.
+				// So, assume this instance is instance of single true (generated) typeinfo variable.
+				// It is still possible to create value of typeinfo class via unsafe-hacks, but ignore such possibility and return one legit possible value.
+				//
+				// Note that we create here immutable reference, even if source variable is mutable.
+				// So, typeinfo list pseudo-field behaves like immutable field.
+				// Doing so we prevent possible modification of returned variable, since it is de-facto global constant and thus can't be modified.
+
+				auto fetch_result_lock= fetch_result.lock_imut();
+				var Variable& fetch_result_data= fetch_result_lock.deref();
+
+				var Variable mut result
+				{
+					.t= fetch_result_data.t,
+					.value_type= ValueType::ReferenceImut,
+					.location= Variable::Location::Pointer,
+					.llvm_value= fetch_result_data.llvm_value,
+					.constexpr_value= LLVMValueRef::Null, // Create reference node with null constexpr value, since source variable is not constexpr.
+					.name= fetch_result_data.name,
+				};
+
+				var VariablePtr mut result_ptr( move(result) );
+				function_context.references_graph.TryAddLink( fetch_result, result_ptr, names_scope, member_access_operator.src_loc );
+				return move(result_ptr);
+			}
+		}
+	}
+
 	auto mut class_member_opt= ResolveClassValue( class_type, member_access_operator.member_name );
 	if( class_member_opt.empty() )
 	{
@@ -1988,7 +2031,7 @@ fn CodeBuilder::AccessDirectClassField(
 					}
 					else
 					{
-						if( !class_type.lock_imut().deref().generated_class_data.get</ ClassType::TypeinfoClassDescription />().empty() && field_name == "type_id" )
+						if( !class_type.lock_imut().deref().generated_class_data.get</ TypeinfoClassDescription />().empty() && field_name == "type_id" )
 						{
 							// HACK!
 							// LLVM performs constants folding since poiters are not typed. So, we can't obtain full path to GlobalVariable initializer.

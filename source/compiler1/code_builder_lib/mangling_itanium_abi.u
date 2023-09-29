@@ -578,7 +578,7 @@ fn EncodeTypeName( ManglerState& mut mangler_state, Type& t )
 		auto class_members_lock= class_members.lock_imut();
 		auto& class_members_ref= class_members_lock.deref();
 
-		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ ClassType::TypeinfoClassDescription />() )
+		if_var( &typeinfo_class_description : class_type.generated_class_data.get</ TypeinfoClassDescription />() )
 		{
 			ADD_NODE( mangler_state )
 			{

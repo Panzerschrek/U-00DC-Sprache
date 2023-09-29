@@ -242,7 +242,7 @@ fn CodeBuilder::BuildProgram( mut this, SourceGraph& source_graph ) : BuildResul
 	// Finalize incomplete typeinfo.
 	foreach( &entry : typeinfo_cache_ )
 	{
-		with( &v : entry.value().lock_imut().deref() )
+		with( &v : entry.value().variable.lock_imut().deref() )
 		{
 			auto llvm_type= v.t.GetLLVMType();
 			unsafe

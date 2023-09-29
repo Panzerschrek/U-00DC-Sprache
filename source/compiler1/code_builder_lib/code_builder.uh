@@ -774,16 +774,19 @@ private:
 	fn GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_namespace ) : VariablePtr;
 	fn BuildFullTypeinfo( mut this, Type& t ) : VariablePtr;
 
-	fn CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
+	fn CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name, bool is_main_class ) : ClassTypePtr;
+	fn CreateTypeinfoHelperClass( mut this, NamesScopePtr& root_namespace, Type& src_type, ust::string8& name ) : ClassTypePtr;
 	fn FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust::array_view_imut</LLVMTypeRef/> fields_llvm_types );
+	fn TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, ust::string_view8 name ) : VariableNullablePtr;
 
-	fn BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : VariableLite;
-	fn BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariableLite;
-	fn BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
-	fn BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
-	fn BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
-	fn BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariableLite;
-	fn BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : VariableLite;
+	fn BuildTypeinfoTupleElementsList( mut this, NamesScopePtr& root_namespace, TupleType& tuple_type ) : VariablePtr;
+	fn BuildTypeinfoFunctionParamsList( mut this, NamesScopePtr& root_namespace, FunctionType& function_type ) : VariablePtr;
+	fn BuildTypeinfoClassFieldsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
+	fn BuildTypeinfoClassFunctionsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
+	fn BuildTypeinfoClassTypesList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
+	fn BuildTypeinfoClassParentsList( mut this, NamesScopePtr& root_namespace, ClassTypePtr& class_type ) : VariablePtr;
+	fn BuildTypeinfoEnumElementsList( mut this, NamesScopePtr& root_namespace, EnumTypePtr& enum_type ) : VariablePtr;
+	fn FinishTypeinfoList( mut this, ust::vector</Type/> mut element_types, ust::array_view_imut</LLVMValueRef/> initializers ) : VariablePtr;
 
 	// Virtual stuff
 	fn CheckvirtualFunctionOverridingReferenceNotation(
@@ -1126,7 +1129,7 @@ private:
 	// Template things for current source graph node added sequentialy into this vector too.
 	ust::vector</ ust::string8 /> generated_template_things_sequence_;
 
-	ust::unordered_map</Type, VariablePtr /> typeinfo_cache_;
+	ust::unordered_map</Type, TypeinfoCacheElement /> typeinfo_cache_;
 	ust::vector</ ClassTypePtr /> typeinfo_class_table_;
 
 	// Maps string -> llvm::GlobalVariable
