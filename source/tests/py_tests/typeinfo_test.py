@@ -1081,3 +1081,18 @@ def TypeinfoListsAreLazy_Test1():
 	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
 	assert( len(errors_list) > 0 )
 	assert( HaveError( errors_list, "ExpectedReferenceValue", 8 ) )
+
+
+def TypeinfoListsAreLazy_Test2():
+	c_program_text= """
+		class C{ fn Foo(); fn Bar(this); fn Baz( mut this, i32 y ); }
+		fn Foo()
+		{
+			auto& fl0= typeinfo</C/>.functions_list;
+			auto& fl1= typeinfo</C/>.functions_list;
+			// typeinfo lists should be cached - two requests for it should return same address.
+			halt if( unsafe( $<(cast_mut(fl0)) != $<(cast_mut(fl1)) ) );
+		}
+	"""
+	tests_lib.build_program( c_program_text )
+	tests_lib.run_function( "_Z3Foov" )
