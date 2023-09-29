@@ -277,12 +277,8 @@ void CodeBuilder::FinishTypeinfoClass( const ClassPtr class_type, const ClassFie
 	class_.is_complete= true;
 	class_.can_be_constexpr= true;
 
-	// Generate only destructor, because almost all structs and classes must have it.
-	// Other methods - constructors, assignment operators does not needs for typeinfo classes.
-	TryGenerateDestructor( class_type );
-
-	const FunctionVariable& destructor= class_.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) )->value.GetFunctionsSet()->functions.front();
-	EnsureLLVMFunctionCreated( destructor )->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), destructor.type ) );
+	// Generate no destructor. There is no reason to generate it for typeinfo class.
+	// Avoiding destructor generation saves some compilation time and memory.
 }
 
 VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_type, const std::string_view name )
