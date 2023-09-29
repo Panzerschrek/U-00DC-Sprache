@@ -2979,7 +2979,10 @@ fn CodeBuilder::TryCallOverloadedBinaryOperator(
 
 		function_context.references_graph.RemoveNode( r_var_lock_node );
 
-		BuildDestructorPart( names_scope, function_context, l_var.llvm_value, l_var.t, src_loc );
+		if( l_var.t.HaveDestructor() )
+		{
+			BuildDestructorPart( names_scope, function_context, l_var.llvm_value, l_var.t, src_loc );
+		}
 
 		SetupReferencesInCopyOrMove( names_scope, function_context, l_var_ptr, r_var_ptr, src_loc );
 

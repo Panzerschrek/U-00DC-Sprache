@@ -1199,6 +1199,7 @@ fn CodeBuilder::BuildMembersDestructors( mut this, FunctionContext &mut function
 
 		if( class_field.index == ~0u ){ continue; } // May be in case of error
 		if( class_field.is_reference ) { continue; }
+		if( !class_field.t.HaveDestructor() ) { continue; }
 
 		auto field_llvm_value= CreateClassFieldGEP( function_context, class_type, value, class_field );
 

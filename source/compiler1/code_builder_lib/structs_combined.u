@@ -561,6 +561,31 @@ fn Type::IsEqualityComparable( this ) : bool
 	return false;
 }
 
+fn Type::HaveDestructor( this ) : bool
+{
+	if( !GetClassType().empty() )
+	{
+		return true; // Aassume all classes have destructors.
+	}
+	if_var( &array_type : GetArrayType() )
+	{
+		return array_type.element_type.HaveDestructor();
+	}
+	if_var( &tuple_type : GetTupleType() )
+	{
+		foreach( &element_type : tuple_type.element_types )
+		{
+			if( element_type.HaveDestructor() )
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	return false;
+}
+
 fn Type::CanBeConstexpr( this ) : bool
 {
 	if( !GetFundamentalType().empty() || !GetEnumType().empty() || !GetFunctionPointerType().empty() )

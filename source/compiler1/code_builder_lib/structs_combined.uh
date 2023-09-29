@@ -280,6 +280,7 @@ public:
 	fn IsCopyConstructible( this ) : bool;
 	fn IsCopyAssignable( this ) : bool;
 	fn IsEqualityComparable( this ) : bool;
+	fn HaveDestructor( this ) : bool;
 	fn CanBeConstexpr( this ) : bool;
 	fn IsAbstract( this ) : bool;
 

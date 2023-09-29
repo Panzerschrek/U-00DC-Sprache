@@ -1649,7 +1649,10 @@ fn CodeBuilder::CallDestructorsForVariablesFrame( mut this, NamesScopePtr& names
 			}
 			if( !function_context.references_graph.NodeIsMoved( variable_ptr ) )
 			{
-				BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
+				if( variable.t.HaveDestructor() )
+				{
+					BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
+				}
 
 				// Do not create lifetime for variables existing only in llvm register (without any address).
 				if( variable.location == Variable::Location::Pointer )
@@ -1712,7 +1715,7 @@ fn CodeBuilder::DestroyUnusedTemporaryVariables( mut this, NamesScopePtr& names_
 				{
 					if( !function_context.is_functionless_context )
 					{
-						if( variable.llvm_value != LLVMValueRef::Null )
+						if( variable.llvm_value != LLVMValueRef::Null && variable.t.HaveDestructor() )
 						{
 							BuildDestructorPart( names_scope, function_context, variable.llvm_value, variable.t, src_loc );
 						}
