@@ -201,13 +201,11 @@ fn CodeBuilder::GetTypeinfoPrototype( mut this, Type& t, NamesScopePtr& root_nam
 		.name= Type(typeinfo_class).ToString()
 	};
 
-	var ust::string8 mut variable_name = "_val_of_";
-	variable_name+= mangler_.deref().MangleType(typeinfo_class);
 	unsafe
 	{
 		auto llvm_type= v.t.GetLLVMType();
 		v.constexpr_value= LLVMGetUndef( llvm_type ); // llvm::Constant is immutable, so, we can create real constant only if we build comple typeinfo.
-		v.llvm_value= AddGlobalConstantVariable( variable_name.range(), llvm_type, v.constexpr_value );
+		v.llvm_value= AddGlobalConstantVariable( "\0", llvm_type, v.constexpr_value );
 	}
 
 	var VariablePtr mut v_ptr( move(v) );
@@ -427,20 +425,18 @@ fn CodeBuilder::CreateTypeinfoClass( mut this, NamesScopePtr& root_namespace, Ty
 
 	with( mut lock : class_members.lock_mut() )
 	{
-		// Create functions set for constructors/destructors/assignment operators.
+		// Create functions set for constructors/assignment operators.
 		var FunctionsSet functions_set{ .class_= class_type_ptr };
 		lock.deref().AddName( KeywordToString( Keyword::constructor_ ), functions_set );
-		lock.deref().AddName( KeywordToString( Keyword::destructor_  ), functions_set );
 		lock.deref().AddName( OverloadedOperatorToString( OverloadedOperator::Assign ), functions_set );
 
 		// Add special member to names scope to identify it as class names scope.
 		lock.deref().SetClass( class_type_ptr );
 	}
 
-	auto name_mangled= mangler_.deref().MangleType( class_type_ptr );
 	with( mut lock : class_type_ptr.lock_mut() )
 	{
-		lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, name_mangled.front() ) );
+		lock.deref().llvm_type= unsafe( LLVMStructCreateNamed( llvm_context_, g_null_string ) );
 	}
 
 	typeinfo_class_table_.push_back( class_type_ptr );
@@ -463,10 +459,6 @@ fn CodeBuilder::FinishTypeinfoClass( mut this, ClassTypePtr& typeinfo_class, ust
 
 		class_.is_complete= true;
 	}
-
-	// Each class should have destructor, so, generate it even for typeinfo class.
-	TryGenerateDestructorPrototype( typeinfo_class );
-	TryGenerateDestructor( typeinfo_class );
 }
 
 fn CodeBuilder::TryFetchTypeinfoClassLazyField( mut this, Type& typeinfo_type, ust::string_view8 name ) : VariableNullablePtr

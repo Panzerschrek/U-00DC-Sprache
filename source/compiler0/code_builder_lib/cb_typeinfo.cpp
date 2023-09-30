@@ -23,11 +23,6 @@ const std::string g_typeinfo_class_parents_list_node_class_name= "_TICPL_";
 const std::string g_typeinfo_function_arguments_list_node_class_name= "_TIAL_";
 const std::string g_typeinfo_tuple_elements_list_node_class_name= "_TITL_";
 
-std::string GetTypeinfoVariableName( const ClassPtr typeinfo_class )
-{
-	return "_val_of_" + std::string(typeinfo_class->llvm_type->getName());
-}
-
 } // namespace
 
 VariablePtr CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_namespace )
@@ -43,6 +38,8 @@ VariablePtr CodeBuilder::BuildTypeInfo( const Type& type, NamesScope& root_names
 ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Type& src_type, std::string name )
 {
 	// Currently, give "random" names for typeinfo classes.
+	// There is no reason to give meaningfull names to LLVM types, since these names are insignificant.
+	// Avoiding calculation and storing of mangled names reduces compilation time and memory usage.
 	llvm::StructType* const llvm_type= llvm::StructType::create( llvm_context_ );
 
 	auto typeinfo_class_ptr= std::make_unique<Class>( std::move(name), &root_namespace );
@@ -51,8 +48,6 @@ ClassPtr CodeBuilder::CreateTypeinfoClass( NamesScope& root_namespace, const Typ
 
 	typeinfo_class->llvm_type= llvm_type;
 	typeinfo_class->generated_class_data= TypeinfoClassDescription{ src_type, false /* non-main by default */ };
-
-	llvm_type->setName( mangler_->MangleType( typeinfo_class ) );
 
 	typeinfo_class->inner_reference_type= InnerReferenceType::Imut; // Almost all typeinfo have references to another typeinfo.
 
@@ -70,11 +65,7 @@ VariableMutPtr CodeBuilder::BuildTypeinfoPrototype( const Type& type, NamesScope
 			"typeinfo</" + type.ToString() + "/>");
 
 	result->constexpr_value= llvm::UndefValue::get( typeinfo_class->llvm_type ); // Currently uninitialized.
-	result->llvm_value=
-		CreateGlobalConstantVariable(
-			result->type,
-			GetTypeinfoVariableName( typeinfo_class ),
-			result->constexpr_value );
+	result->llvm_value= CreateGlobalConstantVariable( result->type, "", result->constexpr_value );
 
 	// This allows to get typename itself, using typeinfo variable and use such type as normal.
 	typeinfo_class->members->AddName( "src_type", NamesScopeValue( type, g_dummy_src_loc ) );
@@ -277,12 +268,8 @@ void CodeBuilder::FinishTypeinfoClass( const ClassPtr class_type, const ClassFie
 	class_.is_complete= true;
 	class_.can_be_constexpr= true;
 
-	// Generate only destructor, because almost all structs and classes must have it.
-	// Other methods - constructors, assignment operators does not needs for typeinfo classes.
-	TryGenerateDestructor( class_type );
-
-	const FunctionVariable& destructor= class_.members->GetThisScopeValue( Keyword( Keywords::destructor_ ) )->value.GetFunctionsSet()->functions.front();
-	EnsureLLVMFunctionCreated( destructor )->setName( mangler_->MangleFunction( *class_.members, Keyword( Keywords::destructor_ ), destructor.type ) );
+	// Generate no destructor. There is no reason to generate it for typeinfo class.
+	// Avoiding destructor generation saves some compilation time and memory.
 }
 
 VariablePtr CodeBuilder::TryFetchTypeinfoClassLazyField( const Type& typeinfo_type, const std::string_view name )

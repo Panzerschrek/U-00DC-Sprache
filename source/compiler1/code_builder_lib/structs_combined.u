@@ -563,9 +563,10 @@ fn Type::IsEqualityComparable( this ) : bool
 
 fn Type::HaveDestructor( this ) : bool
 {
-	if( !GetClassType().empty() )
+	if_var( &class_type_ptr : GetClassType() )
 	{
-		return true; // Aassume all classes have destructors.
+		// Assume all classes except typeinfo have destructors.
+		return class_type_ptr.lock_imut().deref().generated_class_data.get</ TypeinfoClassDescription />().empty();
 	}
 	if_var( &array_type : GetArrayType() )
 	{
