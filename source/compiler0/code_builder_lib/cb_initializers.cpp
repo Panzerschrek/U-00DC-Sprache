@@ -670,7 +670,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.overloaded_methods_set= constructors_set;
 
-		CallFunctionValue( std::move(this_overloaded_methods_set), {}, src_loc, block_names, function_context );
+		CallFunctionValue( std::move(this_overloaded_methods_set), {}, src_loc, std::nullopt, block_names, function_context );
 
 		return nullptr;
 	}
@@ -963,7 +963,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.overloaded_methods_set= constructors_set;
 
-		CallFunctionValue( std::move(this_overloaded_methods_set), synt_args, src_loc, block_names, function_context );
+		CallFunctionValue( std::move(this_overloaded_methods_set), synt_args, src_loc, std::nullopt, block_names, function_context );
 	}
 	else U_ASSERT( false );
 

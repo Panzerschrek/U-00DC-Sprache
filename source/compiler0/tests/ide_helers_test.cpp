@@ -477,6 +477,33 @@ U_TEST( GoToDefinition_Test13 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 5, 14 ) == std::nullopt );
 }
 
+U_TEST( GoToDefinition_Test14 )
+{
+	// Should select proper definition point for overloaded function call.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x );
+		fn Bar( f32 x );
+		fn Bar();
+		fn Bar( bool b, char8 c );
+		fn Foo()
+		{
+			Bar( false, "7"c8 );
+			Bar();
+			Bar( 67.5f );
+			Bar( 777 );
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  8, 3 ) == SrcLoc( 0, 5, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9, 3 ) == SrcLoc( 0, 4, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 3 ) == SrcLoc( 0, 3, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 3 ) == SrcLoc( 0, 2, 5 ) );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=

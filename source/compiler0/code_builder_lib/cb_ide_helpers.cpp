@@ -62,30 +62,6 @@ void CodeBuilder::DeleteFunctionsBodies()
 		DeleteFunctionsBodies_r( *typeinfo_class->members );
 }
 
-SrcLoc CodeBuilder::GetDefinitionFetchSrcLoc( const NamesScopeValue& value )
-{
-	// Process functions set specially.
-	// TODO - maybe perform overloaidng resolution to fetch proper function?
-	if( const auto functions_set= value.value.GetFunctionsSet() )
-	{
-		if( !functions_set->functions.empty() )
-			return functions_set->functions.front().body_src_loc;
-		if( !functions_set->template_functions.empty() )
-			return functions_set->template_functions.front()->src_loc;
-		if( !functions_set->syntax_elements.empty() )
-			return functions_set->syntax_elements.front()->src_loc;
-		if( !functions_set->out_of_line_syntax_elements.empty() )
-			return functions_set->out_of_line_syntax_elements.front()->src_loc;
-	}
-	if( const auto type_templates_set= value.value.GetTypeTemplatesSet() )
-	{
-		if( !type_templates_set->type_templates.empty() )
-			return type_templates_set->type_templates.front()->src_loc;
-	}
-
-	return value.src_loc;
-}
-
 void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc )
 {
 	if( !collect_definition_points_ )
@@ -94,7 +70,37 @@ void CodeBuilder::CollectDefinition( const NamesScopeValue& value, const SrcLoc&
 	// For now enable saving definitions for non-main (imported) files, in order to implement occurences search.
 
 	DefinitionPoint point;
-	point.src_loc= GetDefinitionFetchSrcLoc( value );
+	point.src_loc= value.src_loc;
+
+	if( value.value.GetFunctionsSet() != nullptr )
+		return; // Collect function definitions via separate method.
+	if( const auto type_templates_set= value.value.GetTypeTemplatesSet() )
+	{
+		// TODO - collect type templates definitions specially.
+		if( !type_templates_set->type_templates.empty() )
+			point.src_loc= type_templates_set->type_templates.front()->src_loc;
+	}
+
+	if( point.src_loc.GetFileIndex() >= compiled_sources_.size() )
+		return; // Ignore names with generated location (like built-in types).
+
+	// Reset macro expansion contexts.
+	// This fixes search of definitions/usages inside macro expansions.
+	// This breaks search within macro definitions itself, but it is anyway irrelevant.
+	SrcLoc src_loc_corrected= src_loc;
+	src_loc_corrected.SetMacroExpansionIndex( SrcLoc::c_max_macro_expanison_index );
+	point.src_loc.SetMacroExpansionIndex( SrcLoc::c_max_macro_expanison_index );
+
+	definition_points_.insert( std::make_pair( src_loc_corrected, std::move(point) ) );
+}
+
+void CodeBuilder::CollectFunctionDefinition( const FunctionVariable& function_variable, const SrcLoc& src_loc )
+{
+	if( !collect_definition_points_ )
+		return;
+
+	DefinitionPoint point;
+	point.src_loc= function_variable.body_src_loc;
 
 	if( point.src_loc.GetFileIndex() >= compiled_sources_.size() )
 		return; // Ignore names with generated location (like built-in types).
