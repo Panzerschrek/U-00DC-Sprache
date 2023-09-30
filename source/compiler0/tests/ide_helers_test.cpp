@@ -578,6 +578,36 @@ U_TEST( GoToDefinition_Test16 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  5, 5 ) == SrcLoc( 0, 10, 5 ) );
 }
 
+U_TEST( GoToDefinition_Test17 )
+{
+	// Should select proper definition point for function pointer initialization.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x );
+		fn Bar( f32 x );
+		fn Bar();
+		fn Bar( bool b, char8 c );
+		template</ type T /> fn Bar( u64 x ) : T { return T(x); }
+		fn Foo()
+		{
+			var ( fn( i32 x ) ) ptr0( Bar );
+			var ( fn( f32 x ) ) ptr1( Bar );
+			var ( fn() ) ptr2( Bar );
+			var ( fn( bool b, char8 c ) ) ptr3( Bar );
+			var ( fn( u64 x ) : i64 ) ptr4( Bar</i64/> );
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9, 29 ) == SrcLoc( 0, 2, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 29 ) == SrcLoc( 0, 3, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 22 ) == SrcLoc( 0, 4, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 12, 39 ) == SrcLoc( 0, 5, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 35 ) == SrcLoc( 0, 6, 26 ) );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=

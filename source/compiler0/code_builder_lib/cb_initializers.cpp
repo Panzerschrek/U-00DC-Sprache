@@ -1361,6 +1361,15 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	if( function_variable->is_deleted )
 		REPORT_ERROR( AccessingDeletedMethod, block_names.GetErrors(), initializer_expression_src_loc );
 
+	{
+		SrcLoc value_src_loc;
+		if( const auto template_parametrization= std::get_if< std::unique_ptr< const Synt::TemplateParametrization > >( &initializer_expression ) )
+			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parametrization)->base );
+		else
+			value_src_loc= initializer_expression_src_loc;
+		CollectFunctionDefinition( *function_variable, value_src_loc );
+	}
+
 	llvm::Value* function_value= EnsureLLVMFunctionCreated( *function_variable );
 	if( function_variable->type != function_pointer_type.function_type )
 		function_value= function_context.llvm_ir_builder.CreatePointerCast( function_value, variable->type.GetLLVMType() );
