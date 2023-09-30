@@ -822,13 +822,15 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	Value CallFunction(
+	// Call something (function, pointer) or even perform temp variable construction.
+	Value CallFunctionValue(
 		const Value& function_value,
 		llvm::ArrayRef<Synt::Expression> synt_args,
 		const SrcLoc& src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	// Perform specific call.
 	Value DoCallFunction(
 		llvm::Value* function,
 		const FunctionType& function_type,

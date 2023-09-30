@@ -79,7 +79,7 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Value function_value= BuildExpressionCode( call_operator.expression, names, function_context );
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
-	return CallFunction( function_value, call_operator.arguments, call_operator.src_loc, names, function_context );
+	return CallFunctionValue( function_value, call_operator.arguments, call_operator.src_loc, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -2934,7 +2934,7 @@ Value CodeBuilder::DoReferenceCast(
 	return result;
 }
 
-Value CodeBuilder::CallFunction(
+Value CodeBuilder::CallFunctionValue(
 	const Value& function_value,
 	const llvm::ArrayRef<Synt::Expression> synt_args,
 	const SrcLoc& src_loc,
