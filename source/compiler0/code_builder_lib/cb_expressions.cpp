@@ -2997,14 +2997,12 @@ Value CodeBuilder::CallFunctionValue(
 		return ErrorValue();
 	}
 
-	size_t total_args= (this_ == nullptr ? 0u : 1u) + synt_args.size();
-
 	const FunctionVariable* function_ptr= nullptr;
 
 	// Make preevaluation af arguments for selection of overloaded function.
 	{
 		llvm::SmallVector<FunctionType::Param, 16> actual_args;
-		actual_args.reserve( total_args );
+		actual_args.reserve( (this_ == nullptr ? 0u : 1u) + synt_args.size() );
 
 		{
 			const bool prev_is_functionless_context= function_context.is_functionless_context;
@@ -3043,7 +3041,6 @@ Value CodeBuilder::CallFunctionValue(
 	{
 		// Static function call via "this".
 		// Just dump first "this" arg.
-		total_args--;
 		this_= nullptr;
 	}
 
