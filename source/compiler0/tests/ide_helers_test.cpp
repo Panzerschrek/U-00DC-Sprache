@@ -492,7 +492,9 @@ U_TEST( GoToDefinition_Test14 )
 			Bar();
 			Bar( 67.5f );
 			Bar( 777 );
+			Bar</ i64 />( 77u64 );
 		}
+		template</ type T /> fn Bar( u64 x ) : T { return T(x); }
 	)";
 
 	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
@@ -502,6 +504,7 @@ U_TEST( GoToDefinition_Test14 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9, 3 ) == SrcLoc( 0, 4, 5 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 3 ) == SrcLoc( 0, 3, 5 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 3 ) == SrcLoc( 0, 2, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 12, 3 ) == SrcLoc( 0, 14, 26 ) );
 }
 
 U_TEST( GetAllOccurrences_Test0 )

@@ -79,7 +79,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Value function_value= BuildExpressionCode( call_operator.expression, names, function_context );
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
-	return CallFunctionValue( function_value, call_operator.arguments, call_operator.src_loc, Synt::GetExpressionSrcLoc(call_operator.expression), names, function_context );
+	std::optional<SrcLoc> value_src_loc;
+	if( collect_definition_points_ )
+	{
+		// Choose src_loc for definitions collection.
+		// In most cases proper src_loc is just src_loc of NameLookup/NamesScopeNameFetch, which is proper function name lexem.
+		// But this also may be call to template function with explicitely provided template params.
+		// In such case extract underlaying name.
+		if( const auto template_parametrization= std::get_if< std::unique_ptr< const Synt::TemplateParametrization > >( &call_operator.expression ) )
+			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parametrization)->base );
+		else
+			value_src_loc= Synt::GetExpressionSrcLoc(call_operator.expression);
+	}
+
+	return CallFunctionValue( function_value, call_operator.arguments, call_operator.src_loc, value_src_loc, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(

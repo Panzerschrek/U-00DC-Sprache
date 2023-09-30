@@ -43,6 +43,11 @@ struct GetSrcLocVisitor final
 	}
 };
 
+SrcLoc GetComplexNameSrcLoc( const ComplexName& complex_name )
+{
+	return std::visit( GetSrcLocVisitor(), complex_name );
+}
+
 SrcLoc GetExpressionSrcLoc( const Expression& expression )
 {
 	return std::visit( GetSrcLocVisitor(), expression );
