@@ -79,7 +79,20 @@ Value CodeBuilder::BuildExpressionCodeImpl(
 	const Value function_value= BuildExpressionCode( call_operator.expression, names, function_context );
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
-	return CallFunction( function_value, call_operator.arguments, call_operator.src_loc, names, function_context );
+	std::optional<SrcLoc> value_src_loc;
+	if( collect_definition_points_ )
+	{
+		// Choose src_loc for definitions collection.
+		// In most cases proper src_loc is just src_loc of NameLookup/NamesScopeNameFetch, which is proper function name lexem.
+		// But this also may be call to template function with provided template args.
+		// In such case extract underlaying name.
+		if( const auto template_parametrization= std::get_if< std::unique_ptr< const Synt::TemplateParametrization > >( &call_operator.expression ) )
+			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parametrization)->base );
+		else
+			value_src_loc= Synt::GetExpressionSrcLoc(call_operator.expression);
+	}
+
+	return CallFunctionValue( function_value, call_operator.arguments, call_operator.src_loc, value_src_loc, names, function_context );
 }
 
 Value CodeBuilder::BuildExpressionCodeImpl(
@@ -2934,17 +2947,18 @@ Value CodeBuilder::DoReferenceCast(
 	return result;
 }
 
-Value CodeBuilder::CallFunction(
+Value CodeBuilder::CallFunctionValue(
 	const Value& function_value,
 	const llvm::ArrayRef<Synt::Expression> synt_args,
-	const SrcLoc& src_loc,
+	const SrcLoc& call_src_loc,
+	const std::optional<SrcLoc>& function_value_src_loc,
 	NamesScope& names,
 	FunctionContext& function_context )
 {
 	CHECK_RETURN_ERROR_VALUE(function_value);
 
 	if( const Type* const type= function_value.GetTypeName() )
-		return BuildTempVariableConstruction( *type, synt_args, src_loc, names, function_context );
+		return BuildTempVariableConstruction( *type, synt_args, call_src_loc, names, function_context );
 
 	VariablePtr this_;
 	OverloadedFunctionsSetConstPtr functions_set= function_value.GetFunctionsSet();
@@ -2966,7 +2980,7 @@ Value CodeBuilder::CallFunction(
 			// Call function pointer directly.
 			if( function_pointer->function_type.params.size() != synt_args.size() )
 			{
-				REPORT_ERROR( InvalidFunctionArgumentCount, names.GetErrors(), src_loc, synt_args.size(), function_pointer->function_type.params.size() );
+				REPORT_ERROR( InvalidFunctionArgumentCount, names.GetErrors(), call_src_loc, synt_args.size(), function_pointer->function_type.params.size() );
 				return ErrorValue();
 			}
 
@@ -2979,7 +2993,7 @@ Value CodeBuilder::CallFunction(
 
 			return
 				DoCallFunction(
-					func_itself, function_pointer->function_type, src_loc,
+					func_itself, function_pointer->function_type, call_src_loc,
 					nullptr, args, false,
 					names, function_context );
 		}
@@ -2987,24 +3001,22 @@ Value CodeBuilder::CallFunction(
 		// Try to call overloaded () operator.
 		// DO NOT fill "this" here and continue this function because we should process callable object as non-this.
 
-		if( auto res= TryCallOverloadedPostfixOperator( callable_variable, synt_args, OverloadedOperator::Call, src_loc, names, function_context ) )
+		if( auto res= TryCallOverloadedPostfixOperator( callable_variable, synt_args, OverloadedOperator::Call, call_src_loc, names, function_context ) )
 			return std::move(*res);
 	}
 
 	if( functions_set == nullptr )
 	{
-		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), src_loc, function_value.GetKindName() );
+		REPORT_ERROR( OperationNotSupportedForThisType, names.GetErrors(), call_src_loc, function_value.GetKindName() );
 		return ErrorValue();
 	}
-
-	size_t total_args= (this_ == nullptr ? 0u : 1u) + synt_args.size();
 
 	const FunctionVariable* function_ptr= nullptr;
 
 	// Make preevaluation af arguments for selection of overloaded function.
 	{
 		llvm::SmallVector<FunctionType::Param, 16> actual_args;
-		actual_args.reserve( total_args );
+		actual_args.reserve( (this_ == nullptr ? 0u : 1u) + synt_args.size() );
 
 		{
 			const bool prev_is_functionless_context= function_context.is_functionless_context;
@@ -3025,7 +3037,7 @@ Value CodeBuilder::CallFunction(
 		}
 
 		function_ptr=
-			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, names.GetErrors(), src_loc );
+			GetOverloadedFunction( *functions_set, actual_args, this_ != nullptr, names.GetErrors(), call_src_loc );
 	}
 
 	// TODO - collect definition point for resolved function.
@@ -3039,16 +3051,21 @@ Value CodeBuilder::CallFunction(
 
 	function.referenced= true;
 
+	if( function_value_src_loc != std::nullopt )
+	{
+		// Collect definition point for specific selected function.
+		CollectFunctionDefinition( function, *function_value_src_loc );
+	}
+
 	if( this_ != nullptr && !function.is_this_call )
 	{
 		// Static function call via "this".
 		// Just dump first "this" arg.
-		total_args--;
 		this_= nullptr;
 	}
 
 	if( function_ptr->is_deleted )
-		REPORT_ERROR( AccessingDeletedMethod, names.GetErrors(), src_loc );
+		REPORT_ERROR( AccessingDeletedMethod, names.GetErrors(), call_src_loc );
 
 	if( !( function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprIncomplete || function_ptr->constexpr_kind == FunctionVariable::ConstexprKind::ConstexprComplete ) )
 		function_context.have_non_constexpr_operations_inside= true; // Can not call non-constexpr function in constexpr function.
@@ -3061,7 +3078,7 @@ Value CodeBuilder::CallFunction(
 	llvm::Value* llvm_function_ptr= EnsureLLVMFunctionCreated( function );
 	if( this_ != nullptr )
 	{
-		auto fetch_result= TryFetchVirtualFunction( this_, function, function_context, names.GetErrors(), src_loc );
+		auto fetch_result= TryFetchVirtualFunction( this_, function, function_context, names.GetErrors(), call_src_loc );
 		llvm_function_ptr= fetch_result.second;
 		this_= fetch_result.first;
 	}
@@ -3069,7 +3086,7 @@ Value CodeBuilder::CallFunction(
 	return
 		DoCallFunction(
 			llvm_function_ptr, function_type,
-			src_loc,
+			call_src_loc,
 			this_,
 			synt_args_ptrs, false,
 			names, function_context,

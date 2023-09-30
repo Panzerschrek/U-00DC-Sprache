@@ -194,9 +194,8 @@ private:
 	};
 
 private:
-	SrcLoc GetDefinitionFetchSrcLoc( const NamesScopeValue& value );
-
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
+	void CollectFunctionDefinition( const FunctionVariable& function_variable, const SrcLoc& src_loc );
 
 	NamesScope* GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
@@ -822,13 +821,16 @@ private:
 		NamesScope& names,
 		FunctionContext& function_context );
 
-	Value CallFunction(
+	// Call something (function, pointer) or even perform temp variable construction.
+	Value CallFunctionValue(
 		const Value& function_value,
 		llvm::ArrayRef<Synt::Expression> synt_args,
-		const SrcLoc& src_loc,
+		const SrcLoc& call_src_loc,
+		const std::optional<SrcLoc>& function_value_src_loc,
 		NamesScope& names,
 		FunctionContext& function_context );
 
+	// Perform specific call.
 	Value DoCallFunction(
 		llvm::Value* function,
 		const FunctionType& function_type,

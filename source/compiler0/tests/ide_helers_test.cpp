@@ -427,7 +427,6 @@ U_TEST( GoToDefinition_Test11 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13,  5 ) == SrcLoc( 0,  2, 12 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 10 ) == SrcLoc( 0,  4, 13 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 15 ) == SrcLoc( 0,  6, 10 ) );
-	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 23 ) == SrcLoc( 0,  8,  8 ) );
 }
 
 U_TEST( GoToDefinition_Test12 )
@@ -475,6 +474,163 @@ U_TEST( GoToDefinition_Test13 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 3,  6 ) == std::nullopt );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 4, 14 ) == std::nullopt );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 5, 14 ) == std::nullopt );
+}
+
+U_TEST( GoToDefinition_Test14 )
+{
+	// Should select proper definition point for overloaded function call.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x );
+		fn Bar( f32 x );
+		fn Bar();
+		fn Bar( bool b, char8 c );
+		fn Foo()
+		{
+			Bar( false, "7"c8 );
+			Bar();
+			Bar( 67.5f );
+			Bar( 777 );
+			Bar</ i64 />( 77u64 );
+		}
+		template</ type T /> fn Bar( u64 x ) : T { return T(x); }
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  8, 3 ) == SrcLoc( 0, 5, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9, 3 ) == SrcLoc( 0, 4, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 3 ) == SrcLoc( 0, 3, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 3 ) == SrcLoc( 0, 2, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 12, 3 ) == SrcLoc( 0, 14, 26 ) );
+}
+
+U_TEST( GoToDefinition_Test15 )
+{
+	// Should select proper definition point for overloaded method call.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn Bar( this, i32 x );
+			fn Bar( this, f32 x );
+			fn Bar( this );
+			fn Bar( this, bool b, char8 c );
+			template</ type T /> fn Bar( this, u64 x ) : T { return T(x); }
+		}
+		fn Foo()
+		{
+			var S s;
+			s.Bar( false, "7"c8 );
+			s.Bar();
+			s.Bar( 67.5f );
+			s.Bar( 777 );
+			s.Bar</ i64 />( 77u64 );
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 5 ) == SrcLoc( 0, 7, 6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 14, 5 ) == SrcLoc( 0, 6, 6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 15, 5 ) == SrcLoc( 0, 5, 6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 16, 5 ) == SrcLoc( 0, 4, 6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 17, 5 ) == SrcLoc( 0, 8, 27 ) );
+}
+
+U_TEST( GoToDefinition_Test16 )
+{
+	// Should return proper definition point for overloaded functions with prototypes.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x );
+		fn Bar( f32 x );
+		fn Bar();
+		fn Bar( bool b, char8 c );
+
+		fn Bar( i32 x ) {}
+		fn Bar( f32 x ) {}
+		fn Bar() {}
+		fn Bar( bool b, char8 c ){}
+
+		fn Foo()
+		{
+			Bar( false, "7"c8 );
+			Bar();
+			Bar( 67.5f );
+			Bar( 777 );
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 14, 3 ) == SrcLoc( 0, 10, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 15, 3 ) == SrcLoc( 0,  9, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 16, 3 ) == SrcLoc( 0,  8, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 17, 3 ) == SrcLoc( 0,  7, 5 ) );
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  2, 5 ) == SrcLoc( 0,  7, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  3, 5 ) == SrcLoc( 0,  8, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  4, 5 ) == SrcLoc( 0,  9, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  5, 5 ) == SrcLoc( 0, 10, 5 ) );
+}
+
+U_TEST( GoToDefinition_Test17 )
+{
+	// Should select proper definition point for function pointer initialization.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x );
+		fn Bar( f32 x );
+		fn Bar();
+		fn Bar( bool b, char8 c );
+		template</ type T /> fn Bar( u64 x ) : T { return T(x); }
+		fn Foo()
+		{
+			var ( fn( i32 x ) ) ptr0( Bar );
+			var ( fn( f32 x ) ) ptr1( Bar );
+			var ( fn() ) ptr2( Bar );
+			var ( fn( bool b, char8 c ) ) ptr3( Bar );
+			var ( fn( u64 x ) : i64 ) ptr4( Bar</i64/> );
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9, 29 ) == SrcLoc( 0, 2, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 29 ) == SrcLoc( 0, 3, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 22 ) == SrcLoc( 0, 4, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 12, 39 ) == SrcLoc( 0, 5, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 35 ) == SrcLoc( 0, 6, 26 ) );
+}
+
+U_TEST( GoToDefinition_Test18 )
+{
+	// Should select proper mut/imut overloaded method.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn Foo( mut this );
+			fn Foo( imut this );
+		}
+		fn Foo()
+		{
+			var S mut s_mut, imut s_imut;
+			s_mut.Foo();
+			s_imut.Foo();
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10,  9 ) == SrcLoc( 0, 4, 6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 10 ) == SrcLoc( 0, 5, 6 ) );
 }
 
 U_TEST( GetAllOccurrences_Test0 )
@@ -637,6 +793,55 @@ U_TEST( GetAllOccurrences_Test4 )
 
 	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  8,  8 ) == result_foo );
 	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 13, 23 ) == result_foo );
+}
+
+U_TEST( GetAllOccurrences_Test5 )
+{
+	// Should return proper definition point for overloaded functions with prototypes.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x );
+		fn Bar( f32 x );
+		fn Bar();
+		fn Bar( bool b, char8 c );
+
+		fn Bar( i32 x ) {}
+		fn Bar( f32 x ) {}
+		fn Bar() {}
+		fn Bar( bool b, char8 c ){}
+
+		fn Foo()
+		{
+			Bar( false, "7"c8 );
+			Bar();
+			Bar( 67.5f );
+			Bar( 777 );
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	const std::vector<SrcLoc> result_0{ SrcLoc( 0,  2,  5 ), SrcLoc( 0,  7,  5 ), SrcLoc( 0, 17,  3 ) };
+	const std::vector<SrcLoc> result_1{ SrcLoc( 0,  3,  5 ), SrcLoc( 0,  8,  5 ), SrcLoc( 0, 16,  3 ) };
+	const std::vector<SrcLoc> result_2{ SrcLoc( 0,  4,  5 ), SrcLoc( 0,  9,  5 ), SrcLoc( 0, 15,  3 ) };
+	const std::vector<SrcLoc> result_3{ SrcLoc( 0,  5,  5 ), SrcLoc( 0, 10,  5 ), SrcLoc( 0, 14,  3 ) };
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  2,  5 ) == result_0 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  7,  5 ) == result_0 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 17,  3 ) == result_0 );
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  3,  5 ) == result_1 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  8,  5 ) == result_1 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 16,  3 ) == result_1 );
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  4,  5 ) == result_2 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  9,  5 ) == result_2 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 15,  3 ) == result_2 );
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  5,  5 ) == result_3 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 10,  5 ) == result_3 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 14,  3 ) == result_3 );
 }
 
 } // namespace

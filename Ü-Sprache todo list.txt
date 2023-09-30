@@ -77,9 +77,8 @@ QtCreator plugin:
 Language server
 *) Reduce memory usage - avoid building unnecessary code, clear unused internal data structures, make mangled names shorter, etc.
 *) Occurences search improvement - search not only in document and its imports, but in other opened and non-opened documents
+*) Go to definition - pick definition of function, defined in other document (that is not imported directly)
 *) Declarations search
-*) Select proper overloaded function for "go to definition" for function call site
-*) Return all overloaded functions (both prototypes and definitions) in occurences search
 *) Document symbols - provide proper ranges (for namespaces, classes, etc), provide exact selection ranges
 *) A way to provide configuration (import directories, other compilation options)
 *) SignatureHelp - filter suggested functions based on already provided arguments
@@ -87,6 +86,7 @@ Language server
 *) Avoid infinite calculations in constexpr functions executiong during compilation in the LanguageServer
 *) Fix "go to definition" for templates - preprocess templates with dummy types in order to fill definitions table for them
 *) Go to definition for non-value names - loop labels, reference tags, imports, etc.
+*) Go to definition for macros
 *) Backup completion for non-compiled documents
 *) Filter-out some symbol kinds in completion, depending on context
 *) Sort completed items using some kind of prioroty

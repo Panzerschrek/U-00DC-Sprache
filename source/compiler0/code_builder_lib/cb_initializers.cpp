@@ -670,7 +670,7 @@ llvm::Constant* CodeBuilder::ApplyEmptyInitializer(
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.overloaded_methods_set= constructors_set;
 
-		CallFunction( std::move(this_overloaded_methods_set), {}, src_loc, block_names, function_context );
+		CallFunctionValue( std::move(this_overloaded_methods_set), {}, src_loc, std::nullopt, block_names, function_context );
 
 		return nullptr;
 	}
@@ -963,7 +963,7 @@ llvm::Constant* CodeBuilder::ApplyConstructorInitializer(
 		this_overloaded_methods_set.this_= variable;
 		this_overloaded_methods_set.overloaded_methods_set= constructors_set;
 
-		CallFunction( std::move(this_overloaded_methods_set), synt_args, src_loc, block_names, function_context );
+		CallFunctionValue( std::move(this_overloaded_methods_set), synt_args, src_loc, std::nullopt, block_names, function_context );
 	}
 	else U_ASSERT( false );
 
@@ -1360,6 +1360,15 @@ llvm::Constant* CodeBuilder::InitializeFunctionPointer(
 	}
 	if( function_variable->is_deleted )
 		REPORT_ERROR( AccessingDeletedMethod, block_names.GetErrors(), initializer_expression_src_loc );
+
+	{
+		SrcLoc value_src_loc;
+		if( const auto template_parametrization= std::get_if< std::unique_ptr< const Synt::TemplateParametrization > >( &initializer_expression ) )
+			value_src_loc= Synt::GetComplexNameSrcLoc( (*template_parametrization)->base );
+		else
+			value_src_loc= initializer_expression_src_loc;
+		CollectFunctionDefinition( *function_variable, value_src_loc );
+	}
 
 	llvm::Value* function_value= EnsureLLVMFunctionCreated( *function_variable );
 	if( function_variable->type != function_pointer_type.function_type )
