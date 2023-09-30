@@ -927,7 +927,7 @@ def TypeinfoForTypeinfo_Test1():
 def TypeinfoForTypeinfo_Test2():
 	c_program_text= """
 		auto& tt= typeinfo</ typeof( typeinfo</i32/> ) />;
-		// There are no special methods for typeinfo class except destructor.
+		// There are no special methods for typeinfo class.
 		static_assert( !tt.is_default_constructible );
 		static_assert( !tt.is_copy_constructible );
 		static_assert( !tt.is_copy_assignable );
@@ -1096,3 +1096,68 @@ def TypeinfoListsAreLazy_Test2():
 	"""
 	tests_lib.build_program( c_program_text )
 	tests_lib.run_function( "_Z3Foov" )
+
+
+def TypeinfoClassHasNoDestructor_Test0():
+	c_program_text= """
+		fn Foo( typeof(typeinfo</i32/>)& some_typeinfo_arg )
+		{
+			unsafe( some_typeinfo_arg.destructor() );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NameNotFound", 4 ) )
+
+
+def TypeinfoClassHasNoDestructor_Test1():
+	c_program_text= """
+		fn Foo( typeof( typeinfo</ tup[ f32, i32, bool ] />.elements_list[1] )& some_typeinfo_arg )
+		{
+			unsafe( some_typeinfo_arg.destructor() );
+		}
+	"""
+	errors_list= ConvertErrors( tests_lib.build_program_with_errors( c_program_text ) )
+	assert( len(errors_list) > 0 )
+	assert( HaveError( errors_list, "NameNotFound", 4 ) )
+
+
+def TypeinfoClassHasNoDestructor_Test2():
+	c_program_text= """
+		template</ size_type size0, size_type size1 />
+		fn constexpr StringEquals( [ char8, size0 ]& s0, [ char8, size1 ]& s1 ) : bool
+		{
+			if( size0 != size1 ) { return false; }
+			var size_type mut i(0);
+			while( i < size0 )
+			{
+				if( s0[i] != s1[i] ) { return false; }
+				++i;
+			}
+			return true;
+		}
+
+		template</ type T, size_type name_size />
+		fn constexpr ClassHasMethod( [ char8, name_size ]& name ) : bool
+		{
+			for( &field_info : typeinfo</T/>.functions_list )
+			{
+				if( StringEquals( field_info.name, name ) )
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		class SomeClass{}
+		auto& some_class_typeinfo= typeinfo</ SomeClass />;
+		type SomeTypeinfoClass= typeof( some_class_typeinfo );
+		// Typeinfo classes have no constructors and no destructors.
+		static_assert( !ClassHasMethod</ SomeTypeinfoClass />( "destructor" ) );
+		static_assert( !ClassHasMethod</ SomeTypeinfoClass />( "constructor" ) );
+		// Regular classes have constructors and destructors.
+		static_assert(  ClassHasMethod</ SomeClass />( "destructor" ) );
+		static_assert(  ClassHasMethod</ SomeClass />( "constructor" ) );
+	"""
+	tests_lib.build_program( c_program_text )
