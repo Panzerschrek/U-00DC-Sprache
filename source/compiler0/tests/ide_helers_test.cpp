@@ -608,6 +608,31 @@ U_TEST( GoToDefinition_Test17 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 35 ) == SrcLoc( 0, 6, 26 ) );
 }
 
+U_TEST( GoToDefinition_Test18 )
+{
+	// Should select proper mut/imut overloaded method.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn Foo( mut this );
+			fn Foo( imut this );
+		}
+		fn Foo()
+		{
+			var S mut s_mut, imut s_imut;
+			s_mut.Foo();
+			s_imut.Foo();
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10,  9 ) == SrcLoc( 0, 4, 6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 10 ) == SrcLoc( 0, 5, 6 ) );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=
