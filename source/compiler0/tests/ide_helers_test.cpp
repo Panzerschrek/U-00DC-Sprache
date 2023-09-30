@@ -427,7 +427,6 @@ U_TEST( GoToDefinition_Test11 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13,  5 ) == SrcLoc( 0,  2, 12 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 10 ) == SrcLoc( 0,  4, 13 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 15 ) == SrcLoc( 0,  6, 10 ) );
-	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 23 ) == SrcLoc( 0,  8,  8 ) );
 }
 
 U_TEST( GoToDefinition_Test12 )
@@ -539,6 +538,44 @@ U_TEST( GoToDefinition_Test15 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 15, 5 ) == SrcLoc( 0, 5, 6 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 16, 5 ) == SrcLoc( 0, 4, 6 ) );
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 17, 5 ) == SrcLoc( 0, 8, 27 ) );
+}
+
+U_TEST( GoToDefinition_Test16 )
+{
+	// Should return proper definition point for overloaded functions with prototypes.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x );
+		fn Bar( f32 x );
+		fn Bar();
+		fn Bar( bool b, char8 c );
+
+		fn Bar( i32 x ) {}
+		fn Bar( f32 x ) {}
+		fn Bar() {}
+		fn Bar( bool b, char8 c ){}
+
+		fn Foo()
+		{
+			Bar( false, "7"c8 );
+			Bar();
+			Bar( 67.5f );
+			Bar( 777 );
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 14, 3 ) == SrcLoc( 0, 10, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 15, 3 ) == SrcLoc( 0,  9, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 16, 3 ) == SrcLoc( 0,  8, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 17, 3 ) == SrcLoc( 0,  7, 5 ) );
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  2, 5 ) == SrcLoc( 0,  7, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  3, 5 ) == SrcLoc( 0,  8, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  4, 5 ) == SrcLoc( 0,  9, 5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  5, 5 ) == SrcLoc( 0, 10, 5 ) );
 }
 
 U_TEST( GetAllOccurrences_Test0 )

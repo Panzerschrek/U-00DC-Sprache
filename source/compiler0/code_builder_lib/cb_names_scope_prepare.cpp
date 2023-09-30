@@ -385,7 +385,6 @@ void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const
 		return;
 	}
 	value->value.GetFunctionsSet()->out_of_line_syntax_elements.push_back(&function);
-	CollectDefinition( *value, function.name.back().src_loc ); // Collect value after populating vector of out of line syntax elements.
 }
 
 void CodeBuilder::NamesScopeFillOutOfLineElement( NamesScope& names_scope, const Synt::Namespace& namespace_ )

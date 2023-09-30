@@ -1224,10 +1224,12 @@ size_t CodeBuilder::PrepareFunction(
 		{ // Ok, body after prototype.
 			prev_function->syntax_element= &func;
 			prev_function->body_src_loc= func.src_loc;
+			CollectFunctionDefinition( *prev_function, prev_function->prototype_src_loc );
 		}
 		else if( prev_function->syntax_element->block != nullptr && func.block == nullptr )
 		{ // Ok, prototype after body. Since order-independent resolving this is correct.
 			prev_function->prototype_src_loc= func.src_loc;
+			CollectFunctionDefinition( *prev_function, prev_function->prototype_src_loc );
 		}
 		else if( prev_function->syntax_element->block == nullptr && func.block == nullptr )
 			REPORT_ERROR( FunctionPrototypeDuplication, names_scope.GetErrors(), func.src_loc, func_name );
