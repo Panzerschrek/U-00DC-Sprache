@@ -740,6 +740,55 @@ U_TEST( GetAllOccurrences_Test4 )
 	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 13, 23 ) == result_foo );
 }
 
+U_TEST( GetAllOccurrences_Test5 )
+{
+	// Should return proper definition point for overloaded functions with prototypes.
+	static const char c_program_text[]=
+	R"(
+		fn Bar( i32 x );
+		fn Bar( f32 x );
+		fn Bar();
+		fn Bar( bool b, char8 c );
+
+		fn Bar( i32 x ) {}
+		fn Bar( f32 x ) {}
+		fn Bar() {}
+		fn Bar( bool b, char8 c ){}
+
+		fn Foo()
+		{
+			Bar( false, "7"c8 );
+			Bar();
+			Bar( 67.5f );
+			Bar( 777 );
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	const std::vector<SrcLoc> result_0{ SrcLoc( 0,  2,  5 ), SrcLoc( 0,  7,  5 ), SrcLoc( 0, 17,  3 ) };
+	const std::vector<SrcLoc> result_1{ SrcLoc( 0,  3,  5 ), SrcLoc( 0,  8,  5 ), SrcLoc( 0, 16,  3 ) };
+	const std::vector<SrcLoc> result_2{ SrcLoc( 0,  4,  5 ), SrcLoc( 0,  9,  5 ), SrcLoc( 0, 15,  3 ) };
+	const std::vector<SrcLoc> result_3{ SrcLoc( 0,  5,  5 ), SrcLoc( 0, 10,  5 ), SrcLoc( 0, 14,  3 ) };
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  2,  5 ) == result_0 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  7,  5 ) == result_0 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 17,  3 ) == result_0 );
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  3,  5 ) == result_1 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  8,  5 ) == result_1 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 16,  3 ) == result_1 );
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  4,  5 ) == result_2 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  9,  5 ) == result_2 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 15,  3 ) == result_2 );
+
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder,  5,  5 ) == result_3 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 10,  5 ) == result_3 );
+	U_TEST_ASSERT( GetAllOccurrences( lexems, *code_builder, 14,  3 ) == result_3 );
+}
+
 } // namespace
 
 } // namespace U
