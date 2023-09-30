@@ -507,6 +507,40 @@ U_TEST( GoToDefinition_Test14 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 12, 3 ) == SrcLoc( 0, 14, 26 ) );
 }
 
+U_TEST( GoToDefinition_Test15 )
+{
+	// Should select proper definition point for overloaded method call.
+	static const char c_program_text[]=
+	R"(
+		struct S
+		{
+			fn Bar( this, i32 x );
+			fn Bar( this, f32 x );
+			fn Bar( this );
+			fn Bar( this, bool b, char8 c );
+			template</ type T /> fn Bar( this, u64 x ) : T { return T(x); }
+		}
+		fn Foo()
+		{
+			var S s;
+			s.Bar( false, "7"c8 );
+			s.Bar();
+			s.Bar( 67.5f );
+			s.Bar( 777 );
+			s.Bar</ i64 />( 77u64 );
+		}
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 13, 5 ) == SrcLoc( 0, 7, 6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 14, 5 ) == SrcLoc( 0, 6, 6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 15, 5 ) == SrcLoc( 0, 5, 6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 16, 5 ) == SrcLoc( 0, 4, 6 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 17, 5 ) == SrcLoc( 0, 8, 27 ) );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=
