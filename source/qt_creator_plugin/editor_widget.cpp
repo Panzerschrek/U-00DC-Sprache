@@ -13,10 +13,6 @@ namespace U
 namespace QtCreatorPlugin
 {
 
-EditorWidget::EditorWidget()
-{
-}
-
 void EditorWidget::finalizeInitialization()
 {
 	// Allow adding breakpoints.

@@ -11,9 +11,6 @@ class EditorWidget final : public TextEditor::TextEditorWidget
 {
 	Q_OBJECT
 
-public:
-	EditorWidget();
-
 private:
 	virtual void finalizeInitialization() override;
 
