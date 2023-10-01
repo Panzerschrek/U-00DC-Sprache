@@ -470,7 +470,18 @@ void FindImpl( const Synt::Class& class_ )
 void FindImpl( const Synt::TypeTemplate& type_template )
 {
 	prefix_.push_back( &type_template );
-	FindImplVariant( type_template.something );
+
+	std::optional<GlobalItem> prev_global_item= global_item_;
+	std::visit(
+		[&]( const auto& el )
+		{
+			global_item_= GlobalItem( el.get() );
+			FindImpl( el );
+		},
+		type_template.something );
+
+	global_item_= prev_global_item;
+
 	prefix_.pop_back();
 
 	// TODO - process template arguments and signature arguments.

@@ -180,21 +180,32 @@ NamesScope* CodeBuilder::EvaluateCompletionRequestPrefix_r( NamesScope& start_sc
 	}
 	else if( const auto type_template= std::get_if<const Synt::TypeTemplate*>( &prefix_head ) )
 	{
+		TypeTemplatesSet temp_type_templates_set;
+		PrepareTypeTemplate( **type_template, temp_type_templates_set, start_scope );
+		if( temp_type_templates_set.type_templates.empty() )
+			return nullptr;
+		const TypeTemplatePtr& prepared_type_template= temp_type_templates_set.type_templates.front();
+
+		// Try to found existing type template with same signature and provess completion inside it.
+		// It is faster to existing type template, rather than creating new one for each completion request.
 		if( const NamesScopeValue* const value= start_scope.GetThisScopeValue( (*type_template)->name ) )
 		{
 			if( const auto type_templates_set= value->value.GetTypeTemplatesSet() )
 			{
-				for( const TypeTemplatePtr& type_template_ptr : type_templates_set->type_templates )
+				for( const TypeTemplatePtr& existing_type_template : type_templates_set->type_templates )
 				{
-					if( type_template_ptr->syntax_element == *type_template )
+					if( prepared_type_template->signature_params == existing_type_template->signature_params )
 					{
 						// Found this type template.
-						// TODO - support completion inside templates.
-						return nullptr;
+						if( const auto type_template_space= BuildTypeTemplateForCompletion( start_scope, existing_type_template ) )
+							return EvaluateCompletionRequestPrefix_r( *type_template_space, prefix_tail );
 					}
 				}
 			}
 		}
+
+		if( const auto type_template_space= BuildTypeTemplateForCompletion( start_scope, prepared_type_template ) )
+			return EvaluateCompletionRequestPrefix_r( *type_template_space, prefix_tail );
 	}
 	else U_ASSERT(false);
 
@@ -456,9 +467,10 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template )
 {
-	// TODO - support completion inside templates.
-	(void)names_scope;
-	(void)type_template;
+	TypeTemplatesSet temp_type_templates_set;
+	PrepareTypeTemplate( type_template, temp_type_templates_set, names_scope );
+	if( !temp_type_templates_set.type_templates.empty() )
+		BuildTypeTemplateForCompletion( names_scope, temp_type_templates_set.type_templates.front() );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_syntax_element )
@@ -520,6 +532,49 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	// Nothing to complete in class visibility label.
 	(void)names_scope;
 	(void)class_visibility_label;
+}
+
+NamesScope* CodeBuilder::BuildTypeTemplateForCompletion( NamesScope& names_scope, const TypeTemplatePtr& type_template )
+{
+	const auto template_args_scope= std::make_shared<NamesScope>( "", &names_scope );
+
+	TemplateArgs signature_args;
+
+	for( const TemplateBase::TemplateParameter& param : type_template->template_params )
+	{
+		// TODO - support value params.
+		const NamesScopeValue dummy_arg( Value( GetStubTemplateArgType() ), param.src_loc );
+		template_args_scope->AddName( param.name, dummy_arg );
+
+		// TODO - prepare signature args properly.
+		signature_args.push_back( GetStubTemplateArgType() );
+	}
+
+	const auto errors_container= std::make_shared<CodeBuilderErrorsContainer>();
+	template_args_scope->SetErrors( errors_container );
+
+	const auto prev_skip_building_generated_functions= skip_building_generated_functions_;
+	skip_building_generated_functions_= false;
+
+	const NamesScopeValue* names_scope_value=
+		FinishTemplateTypeGeneration( SrcLoc(), names_scope, TemplateTypePreparationResult{ type_template, template_args_scope, signature_args } );
+
+	skip_building_generated_functions_= prev_skip_building_generated_functions;
+
+	if( names_scope_value == nullptr )
+		return nullptr;
+
+	if( const auto type= names_scope_value->value.GetTypeName() )
+	{
+		if( const auto class_type= type->GetClassType() )
+		{
+			GlobalThingBuildClass( class_type );
+			GlobalThingBuildNamespace( *class_type->members );
+		}
+	}
+
+	// It is ok to return raw pointer here, since template args scope is stored inside generated_template_things_storage_.
+	return template_args_scope.get();
 }
 
 void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const std::string_view name )

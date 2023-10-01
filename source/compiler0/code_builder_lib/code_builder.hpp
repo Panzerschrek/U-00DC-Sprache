@@ -217,6 +217,9 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassField& class_field );
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
 
+	// Performs template instantiation with dummy args and returns names scope, if it is a class template.
+	NamesScope* BuildTypeTemplateForCompletion( NamesScope& names_scope, const TypeTemplatePtr& type_template );
+
 	void RootNamespaseLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 	void NamesScopeFetchComleteImpl( const Value& base, std::string_view name );
