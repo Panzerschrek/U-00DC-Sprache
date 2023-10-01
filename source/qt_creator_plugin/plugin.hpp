@@ -3,8 +3,6 @@
 #include <plugins/texteditor/textdocument.h>
 #include <plugins/texteditor/texteditor.h>
 
-#include "usprache_global.hpp"
-
 namespace U
 {
 
