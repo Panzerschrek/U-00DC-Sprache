@@ -478,8 +478,13 @@ void FindImpl( const Synt::TypeTemplate& type_template )
 
 void FindImpl( const Synt::FunctionTemplate& function_template )
 {
-	// TODO
-	(void)function_template;
+	for( const auto& param : function_template.params )
+	{
+		if( param.param_type != std::nullopt )
+			FindImplVariant( *param.param_type );
+	}
+
+	FindImpl( function_template.function );
 }
 
 void FindImpl( const Synt::Namespace& namespace_ )

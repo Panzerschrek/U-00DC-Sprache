@@ -821,6 +821,27 @@ U_TEST( DocumentCompletion_Test17 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test18 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Complete inside function template.
+	document.UpdateText( DocumentRange{ { 1, 0 }, { 1, 0 } }, "template</ type T /> fn Foo( T t_param ){par}" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 44 } );
+	const CompletionItemsNormalized expected_completion_result{ "t_param" };
+	//U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;

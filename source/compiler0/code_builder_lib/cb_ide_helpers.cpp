@@ -133,10 +133,10 @@ Type CodeBuilder::GetStubTemplateArgType()
 	class_type->kind= Class::Kind::Struct;
 	class_type->parents_list_prepared= true;
 	class_type->is_complete= true;
+	class_type->llvm_type= llvm::StructType::get( llvm_context_, llvm::ArrayRef<llvm::Type*>() );
 
 	TryGenerateDefaultConstructor( class_type );
 	TryGenerateCopyConstructor( class_type );
-	TryGenerateCopyAssignmentOperator( class_type );
 	TryGenerateCopyAssignmentOperator( class_type );
 	TryGenerateEqualityCompareOperator( class_type );
 	TryGenerateDestructor( class_type );
@@ -461,11 +461,45 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)type_template;
 }
 
-void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template )
+void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_syntax_element )
 {
-	// TODO - support completion inside templates.
-	(void)names_scope;
-	(void)function_template;
+	// Prepare function template and instatiate it with dummy template args in order to produce some sort of usefull completion result.
+
+	OverloadedFunctionsSet functions_set;
+	PrepareFunctionTemplate( function_template_syntax_element, functions_set, names_scope, names_scope.GetClass() );
+
+	FunctionTemplatePtr result_function_template;
+	for( const FunctionTemplatePtr& function_template : functions_set.template_functions )
+	{
+		if( function_template != nullptr && function_template->syntax_element == &function_template_syntax_element )
+		{
+			result_function_template= function_template;
+			break;
+		}
+	}
+
+	if( result_function_template == nullptr )
+		return;
+
+	const auto template_args_scope= std::make_shared<NamesScope>( "", &names_scope );
+	for( const TemplateBase::TemplateParameter& param : result_function_template->template_params )
+	{
+		template_args_scope->AddName( param.name, NamesScopeValue( Value( GetStubTemplateArgType() ), param.src_loc ) );
+		// TODO - support value params.
+	}
+
+	const auto errors_container= std::make_shared<CodeBuilderErrorsContainer>();
+	template_args_scope->SetErrors( errors_container );
+
+	const auto prev_skip_building_generated_functions= skip_building_generated_functions_;
+	skip_building_generated_functions_= false;
+
+	FinishTemplateFunctionGeneration(
+		*errors_container,
+		function_template_syntax_element.src_loc,
+		TemplateFunctionPreparationResult{ result_function_template, template_args_scope } );
+
+	skip_building_generated_functions_= prev_skip_building_generated_functions;
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ )

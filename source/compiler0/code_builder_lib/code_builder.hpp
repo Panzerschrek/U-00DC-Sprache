@@ -1302,7 +1302,7 @@ private:
 	const bool generate_tbaa_metadata_;
 	const bool report_about_unused_names_;
 	const bool collect_definition_points_;
-	const bool skip_building_generated_functions_;
+	bool skip_building_generated_functions_;
 
 	struct
 	{
