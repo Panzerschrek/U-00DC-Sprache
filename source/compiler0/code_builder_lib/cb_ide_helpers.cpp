@@ -115,6 +115,36 @@ void CodeBuilder::CollectFunctionDefinition( const FunctionVariable& function_va
 	definition_points_.insert( std::make_pair( src_loc_corrected, std::move(point) ) );
 }
 
+Type CodeBuilder::GetStubTemplateArgType()
+{
+	if( stub_template_param_type_ != std::nullopt )
+		return *stub_template_param_type_; // Already created.
+
+	// Generate sime class. It is equivalent of something like
+	// struct TemplateParam{}
+
+	NamesScope& root_namespace= *compiled_sources_.front().names_map;
+
+	auto stub_class= std::make_unique<Class>( "TemplateParam", &root_namespace );
+	const ClassPtr class_type= stub_class.get();
+	classes_table_.push_back( std::move(stub_class) );
+
+	class_type->members->SetClass( class_type );
+	class_type->kind= Class::Kind::Struct;
+	class_type->parents_list_prepared= true;
+	class_type->is_complete= true;
+
+	TryGenerateDefaultConstructor( class_type );
+	TryGenerateCopyConstructor( class_type );
+	TryGenerateCopyAssignmentOperator( class_type );
+	TryGenerateCopyAssignmentOperator( class_type );
+	TryGenerateEqualityCompareOperator( class_type );
+	TryGenerateDestructor( class_type );
+
+	stub_template_param_type_= Type( class_type );
+	return *stub_template_param_type_;
+}
+
 NamesScope* CodeBuilder::GetNamesScopeForCompletion( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
 {
 	NamesScope& root_names_scope= *compiled_sources_.front().names_map;

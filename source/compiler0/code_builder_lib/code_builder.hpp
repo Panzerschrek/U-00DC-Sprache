@@ -197,6 +197,8 @@ private:
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
 	void CollectFunctionDefinition( const FunctionVariable& function_variable, const SrcLoc& src_loc );
 
+	Type GetStubTemplateArgType();
+
 	NamesScope* GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	NamesScope* EvaluateCompletionRequestPrefix_r( NamesScope& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	std::vector<CompletionItem> CompletionResultFinalize();
@@ -1402,6 +1404,8 @@ private:
 	};
 	// Map usage point to definition point.
 	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
+
+	std::optional<Type> stub_template_param_type_;
 
 	// Output container for completion result items.
 	std::vector<CompletionItem> completion_items_;
