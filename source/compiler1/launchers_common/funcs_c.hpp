@@ -99,7 +99,7 @@ LLVMModuleRef U1_BuildProgramUsingVFS(
 	const U1_StringView& target_triple_str,
 	bool build_debug_info,
 	bool generate_tbaa_metadata,
-	bool enable_unused_names,
+	bool allow_unused_names,
 	U::ManglingScheme mangling_scheme,
 	const U1_StringView& prelude_code,
 	U1_SourceFilePathCallback result_source_file_path_callback,

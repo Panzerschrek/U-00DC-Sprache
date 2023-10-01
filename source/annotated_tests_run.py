@@ -132,7 +132,7 @@ def ParseCompilerErrorsOutput( output_str ):
 def DoFailTest( file_path, expected_errors_list ):
 	output_str= ""
 	try:
-		output_str= str( subprocess.check_output( [ g_compiler_executable, file_path, "--tests-output", "-o", "temp.bc", "--enable-unused-names" ], universal_newlines= True ) )
+		output_str= str( subprocess.check_output( [ g_compiler_executable, file_path, "--tests-output", "-o", "temp.bc", "--allow-unused-names" ], universal_newlines= True ) )
 	except subprocess.CalledProcessError as called_process_error:
 		output_str= str(called_process_error.output)
 
@@ -168,7 +168,7 @@ def DoSuccessTest( file_path ):
 	object_file= file_name + "_temp.o"
 	executable_file= file_name + "_temp.exe"
 
-	compiler_args= [ g_compiler_executable, file_path, "-o", object_file, "--enable-unused-names" ]
+	compiler_args= [ g_compiler_executable, file_path, "-o", object_file, "--allow-unused-names" ]
 	if g_use_position_independent_code :
 		compiler_args= compiler_args + [ "--relocation-model", "pic" ]
 

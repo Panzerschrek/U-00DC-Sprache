@@ -115,7 +115,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::Triple& target_triple,
 	const bool generate_debug_info,
 	const bool generate_tbaa_metadata,
-	const bool enable_unused_names,
+	const bool allow_unused_names,
 	const ManglingScheme mangling_scheme,
 	const std::string_view prelude_code )
 {
@@ -130,7 +130,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 			StringToStringView(target_triple.normalize()),
 			generate_debug_info,
 			generate_tbaa_metadata,
-			enable_unused_names,
+			allow_unused_names,
 			mangling_scheme,
 			StringToStringView(prelude_code),
 			SourceFilePathProcessingFunction,

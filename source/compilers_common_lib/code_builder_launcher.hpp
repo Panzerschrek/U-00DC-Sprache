@@ -30,7 +30,7 @@ CodeBuilderLaunchResult LaunchCodeBuilder(
 	const llvm::Triple& target_triple,
 	bool generate_debug_info,
 	bool generate_tbaa_metadata,
-	bool enable_unused_names,
+	bool allow_unused_names,
 	ManglingScheme mangling_scheme,
 	std::string_view prelude_code );
 

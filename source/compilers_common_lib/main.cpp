@@ -183,9 +183,9 @@ cl::opt<bool> generate_debug_info(
 	cl::init(false),
 	cl::cat(options_category) );
 
-cl::opt<bool> enable_unused_names(
-	"enable-unused-names",
-	cl::desc("Enable declaration of unused names (variables, type aliases, etc.)."),
+cl::opt<bool> allow_unused_names(
+	"allow-unused-names",
+	cl::desc("Allow declaration of unused names (variables, type aliases, etc.)."),
 	cl::init(false),
 	cl::cat(options_category) );
 
@@ -559,7 +559,7 @@ int Main( int argc, const char* argv[] )
 					target_triple,
 					Options::generate_debug_info,
 					generate_tbaa_metadata,
-					Options::enable_unused_names,
+					Options::allow_unused_names,
 					mangling_scheme,
 					prelude_code );
 
