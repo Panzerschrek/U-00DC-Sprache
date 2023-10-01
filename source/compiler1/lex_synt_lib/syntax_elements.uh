@@ -120,38 +120,38 @@ struct CastRef
 {
 	SrcLoc src_loc;
 	TypeName t;
-	ust::shared_ptr_final</Expression/> expression;
+	ust::box</Expression/> expression;
 }
 
 struct CastRefUnsafe
 {
 	SrcLoc src_loc;
 	TypeName t;
-	ust::shared_ptr_final</Expression/> expression;
+	ust::box</Expression/> expression;
 }
 
 struct CastImut
 {
 	SrcLoc src_loc;
-	ust::shared_ptr_final</Expression/> expression;
+	ust::box</Expression/> expression;
 }
 
 struct CastMut
 {
 	SrcLoc src_loc;
-	ust::shared_ptr_final</Expression/> expression;
+	ust::box</Expression/> expression;
 }
 
 struct SafeExpression
 {
 	SrcLoc src_loc;
-	ust::shared_ptr_final</Expression/> expression;
+	ust::box</Expression/> expression;
 }
 
 struct UnsafeExpression
 {
 	SrcLoc src_loc;
-	ust::shared_ptr_final</Expression/> expression;
+	ust::box</Expression/> expression;
 }
 
 struct MoveOperator
@@ -163,26 +163,26 @@ struct MoveOperator
 struct TakeOperator
 {
 	SrcLoc src_loc;
-	ust::shared_ptr_final</Expression/> expression;
+	ust::box</Expression/> expression;
 }
 
 struct TernaryOperator
 {
 	SrcLoc src_loc;
-	ust::shared_ptr_final</Expression/> condition;
-	[ ust::shared_ptr_final</Expression/>, 2 ] branches;
+	ust::box</Expression/> condition;
+	[ ust::box</Expression/>, 2 ] branches;
 }
 
 struct ReferenceToRawPointerOperator
 {
 	SrcLoc src_loc;
-	ust::shared_ptr_final</Expression/> expression;
+	ust::box</Expression/> expression;
 }
 
 struct RawPointerToReferenceOperator
 {
 	SrcLoc src_loc;
-	ust::shared_ptr_final</Expression/> expression;
+	ust::box</Expression/> expression;
 }
 
 struct BinaryOperator
