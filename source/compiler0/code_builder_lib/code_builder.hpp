@@ -558,6 +558,8 @@ private:
 		const SrcLoc& src_loc,
 		const FunctionTemplatePtr& function_template_ptr );
 
+	std::string EncodeFunctionTemplateInstantiation( const FunctionTemplate& function_template, llvm::ArrayRef<TemplateArg> template_args );
+
 	const FunctionVariable* FinishTemplateFunctionGeneration(
 		CodeBuilderErrorsContainer& errors_container,
 		const SrcLoc& src_loc,

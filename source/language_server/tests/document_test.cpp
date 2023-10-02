@@ -942,9 +942,12 @@ U_TEST( DocumentCompletion_Test23 )
 	// Should properly handle template with complex signature.
 	document.UpdateText( DocumentRange{ { 1, 61 }, { 1, 61 } }, "auto x= arg" );
 
-	const auto completion_result= document.Complete( DocumentPosition{ 1, 72 } );
 	const CompletionItemsNormalized expected_completion_result{ "value_arg" };
-	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	for( size_t i= 0; i < 2; ++i )
+	{
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 72 } );
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
 }
 
 U_TEST( DocumentCompletion_Test24 )
@@ -963,9 +966,13 @@ U_TEST( DocumentCompletion_Test24 )
 	// Should properly handle template with complex signature.
 	document.UpdateText( DocumentRange{ { 1, 63 }, { 1, 63 } }, "arr" );
 
-	const auto completion_result= document.Complete( DocumentPosition{ 1, 66 } );
 	const CompletionItemsNormalized expected_completion_result{ "arr_arg" };
-	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	for( size_t i= 0; i < 2; ++i )
+	{
+		// Should complete properly more then once.
+		const auto completion_result= document.Complete( DocumentPosition{ 1, 66 } );
+		U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+	}
 }
 
 U_TEST( DocumentSignatureHelp_Test0 )

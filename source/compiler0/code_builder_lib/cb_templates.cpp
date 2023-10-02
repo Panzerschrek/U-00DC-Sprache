@@ -999,6 +999,14 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionParametrization(
 	return FinishTemplateFunctionGeneration( errors_container, src_loc, result );
 }
 
+std::string CodeBuilder::EncodeFunctionTemplateInstantiation( const FunctionTemplate& function_template, const llvm::ArrayRef<TemplateArg> template_args )
+{
+	// Encode name for caching. Name must be unique for each template and its parameters.
+	return
+		std::to_string( reinterpret_cast<uintptr_t>( function_template.parent != nullptr ? function_template.parent.get() : &function_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
+		mangler_->MangleTemplateArgs( template_args );
+}
+
 const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 	CodeBuilderErrorsContainer& errors_container,
 	const SrcLoc& src_loc,
@@ -1029,10 +1037,7 @@ const FunctionVariable* CodeBuilder::FinishTemplateFunctionGeneration(
 		return nullptr;
 	}
 
-	// Encode name for caching. Name must be unique for each template and its parameters.
-	const std::string name_encoded=
-		std::to_string( reinterpret_cast<uintptr_t>( function_template.parent != nullptr ? function_template.parent.get() : &function_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
-		mangler_->MangleTemplateArgs( template_args );
+	const std::string name_encoded= EncodeFunctionTemplateInstantiation( function_template, template_args );
 
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
 	{
