@@ -216,7 +216,10 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
 
 	// Performs template instantiation with dummy args and returns names scope, if it is a class template.
-	NamesScopePtr BuildTypeTemplateForCompletion( const TypeTemplatePtr& type_template );
+	// May reuse value, created during previous dummy-instantiation.
+	NamesScopePtr InstantiateTypeTemplateWithDummyArgs( const TypeTemplatePtr& type_template );
+
+	void InstantiateFunctionTemplateWithDummyArgs( const FunctionTemplatePtr& function_template );
 
 	// This function is basically reverse of "MatchTemplateArg".
 	TemplateArg CreateDummyTemplateSignatureArg( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam& signature_param );

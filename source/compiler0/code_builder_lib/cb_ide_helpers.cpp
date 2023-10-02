@@ -167,14 +167,14 @@ NamesScopePtr CodeBuilder::EvaluateCompletionRequestPrefix_r( const NamesScopePt
 					if( prepared_type_template->signature_params == existing_type_template->signature_params )
 					{
 						// Found this type template.
-						if( const auto type_template_space= BuildTypeTemplateForCompletion( existing_type_template ) )
+						if( const auto type_template_space= InstantiateTypeTemplateWithDummyArgs( existing_type_template ) )
 							return EvaluateCompletionRequestPrefix_r( type_template_space, prefix_tail );
 					}
 				}
 			}
 		}
 
-		if( const auto type_template_space= BuildTypeTemplateForCompletion( prepared_type_template ) )
+		if( const auto type_template_space= InstantiateTypeTemplateWithDummyArgs( prepared_type_template ) )
 			return EvaluateCompletionRequestPrefix_r( type_template_space, prefix_tail );
 	}
 	else U_ASSERT(false);
@@ -440,12 +440,12 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	TypeTemplatesSet temp_type_templates_set;
 	PrepareTypeTemplate( type_template, temp_type_templates_set, names_scope );
 	if( !temp_type_templates_set.type_templates.empty() )
-		BuildTypeTemplateForCompletion( temp_type_templates_set.type_templates.front() );
+		InstantiateTypeTemplateWithDummyArgs( temp_type_templates_set.type_templates.front() );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_syntax_element )
 {
-	// Prepare function template and instatiate it with dummy template args in order to produce some sort of usefull completion result.
+	// Prepare function template and instantiate it with dummy template args in order to produce some sort of usefull completion result.
 
 	OverloadedFunctionsSet functions_set;
 	PrepareFunctionTemplate( function_template_syntax_element, functions_set, names_scope, names_scope.GetClass() );
@@ -463,26 +463,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	if( result_function_template == nullptr )
 		return;
 
-	const auto template_args_scope= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, result_function_template->parent_namespace );
-
-	// Since it is not always possible to calculate template args from signature args for function template,
-	// perform direct args filling.
-	for( const TemplateBase::TemplateParameter& param : result_function_template->template_params )
-		CreateDummyTemplateSignatureArgForTemplateParam( *result_function_template, *template_args_scope, param );
-
-	// Do not care here about signature params filling.
-	// For function templates they are used mostly for overloaded resolition.
-	// But we do not need it for completion.
-
-	const auto prev_skip_building_generated_functions= skip_building_generated_functions_;
-	skip_building_generated_functions_= false;
-
-	FinishTemplateFunctionGeneration(
-		EnsureDummyTemplateInstantiationArgsScopeCreated()->GetErrors(),
-		function_template_syntax_element.src_loc,
-		TemplateFunctionPreparationResult{ result_function_template, template_args_scope } );
-
-	skip_building_generated_functions_= prev_skip_building_generated_functions;
+	InstantiateFunctionTemplateWithDummyArgs( result_function_template );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::Namespace& namespace_ )
@@ -505,7 +486,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)class_visibility_label;
 }
 
-NamesScopePtr CodeBuilder::BuildTypeTemplateForCompletion( const TypeTemplatePtr& type_template )
+NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTemplatePtr& type_template )
 {
 	const auto template_args_scope= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, type_template->parent_namespace );
 
@@ -552,6 +533,30 @@ NamesScopePtr CodeBuilder::BuildTypeTemplateForCompletion( const TypeTemplatePtr
 	skip_building_generated_functions_= prev_skip_building_generated_functions;
 
 	return template_args_scope;
+}
+
+void CodeBuilder::InstantiateFunctionTemplateWithDummyArgs( const FunctionTemplatePtr& function_template )
+{
+	const auto template_args_scope= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, function_template->parent_namespace );
+
+	// Since it is not always possible to calculate template args from signature args for function template,
+	// perform direct args filling.
+	for( const TemplateBase::TemplateParameter& param : function_template->template_params )
+		CreateDummyTemplateSignatureArgForTemplateParam( *function_template, *template_args_scope, param );
+
+	// Do not care here about signature params filling.
+	// For function templates they are used mostly for overloaded resolition.
+	// But we do not need it for completion.
+
+	const auto prev_skip_building_generated_functions= skip_building_generated_functions_;
+	skip_building_generated_functions_= false;
+
+	FinishTemplateFunctionGeneration(
+		EnsureDummyTemplateInstantiationArgsScopeCreated()->GetErrors(),
+		SrcLoc(),
+		TemplateFunctionPreparationResult{ function_template, template_args_scope } );
+
+	skip_building_generated_functions_= prev_skip_building_generated_functions;
 }
 
 TemplateArg CodeBuilder::CreateDummyTemplateSignatureArg( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam& signature_param )
@@ -839,7 +844,7 @@ void CodeBuilder::DummyInstantiateTemplates_r( NamesScope& names_scope )
 				for( const TypeTemplatePtr& type_template : type_templates_set->type_templates )
 				{
 					if( type_template->src_loc.GetFileIndex() == 0 )
-						BuildTypeTemplateForCompletion( type_template );
+						InstantiateTypeTemplateWithDummyArgs( type_template );
 				}
 			}
 			else if( const auto functions_set= value.GetFunctionsSet() )
@@ -847,9 +852,7 @@ void CodeBuilder::DummyInstantiateTemplates_r( NamesScope& names_scope )
 				for( const FunctionTemplatePtr& function_template : functions_set->template_functions )
 				{
 					if( function_template->src_loc.GetFileIndex() == 0 )
-					{
-						// TODO
-					}
+						InstantiateFunctionTemplateWithDummyArgs( function_template );
 				}
 			}
 			else if( const NamesScopePtr inner_namespace= value.GetNamespace() )
