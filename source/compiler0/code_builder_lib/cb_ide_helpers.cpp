@@ -167,14 +167,14 @@ NamesScopePtr CodeBuilder::EvaluateCompletionRequestPrefix_r( const NamesScopePt
 					if( prepared_type_template->signature_params == existing_type_template->signature_params )
 					{
 						// Found this type template.
-						if( const auto type_template_space= BuildTypeTemplateForCompletion( *start_scope, existing_type_template ) )
+						if( const auto type_template_space= BuildTypeTemplateForCompletion( existing_type_template ) )
 							return EvaluateCompletionRequestPrefix_r( type_template_space, prefix_tail );
 					}
 				}
 			}
 		}
 
-		if( const auto type_template_space= BuildTypeTemplateForCompletion( *start_scope, prepared_type_template ) )
+		if( const auto type_template_space= BuildTypeTemplateForCompletion( prepared_type_template ) )
 			return EvaluateCompletionRequestPrefix_r( type_template_space, prefix_tail );
 	}
 	else U_ASSERT(false);
@@ -440,7 +440,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	TypeTemplatesSet temp_type_templates_set;
 	PrepareTypeTemplate( type_template, temp_type_templates_set, names_scope );
 	if( !temp_type_templates_set.type_templates.empty() )
-		BuildTypeTemplateForCompletion( names_scope, temp_type_templates_set.type_templates.front() );
+		BuildTypeTemplateForCompletion( temp_type_templates_set.type_templates.front() );
 }
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_syntax_element )
@@ -463,7 +463,7 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	if( result_function_template == nullptr )
 		return;
 
-	const auto template_args_scope= std::make_shared<NamesScope>( "", &names_scope );
+	const auto template_args_scope= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, result_function_template->parent_namespace );
 
 	// Since it is not always possible to calculate template args from signature args for function template,
 	// perform direct args filling.
@@ -474,14 +474,11 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	// For function templates they are used mostly for overloaded resolition.
 	// But we do not need it for completion.
 
-	const auto errors_container= std::make_shared<CodeBuilderErrorsContainer>();
-	template_args_scope->SetErrors( errors_container );
-
 	const auto prev_skip_building_generated_functions= skip_building_generated_functions_;
 	skip_building_generated_functions_= false;
 
 	FinishTemplateFunctionGeneration(
-		*errors_container,
+		EnsureDummyTemplateInstantiationArgsScopeCreated()->GetErrors(),
 		function_template_syntax_element.src_loc,
 		TemplateFunctionPreparationResult{ result_function_template, template_args_scope } );
 
@@ -508,9 +505,9 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 	(void)class_visibility_label;
 }
 
-NamesScopePtr CodeBuilder::BuildTypeTemplateForCompletion( NamesScope& names_scope, const TypeTemplatePtr& type_template )
+NamesScopePtr CodeBuilder::BuildTypeTemplateForCompletion( const TypeTemplatePtr& type_template )
 {
-	const auto template_args_scope= std::make_shared<NamesScope>( "", &names_scope );
+	const auto template_args_scope= std::make_shared<NamesScope>( NamesScope::c_template_args_namespace_name, type_template->parent_namespace );
 
 	// Since (normally) template args should be evaluated during matching of signature params,
 	// pefrorm dummy signature args creation.
@@ -520,28 +517,39 @@ NamesScopePtr CodeBuilder::BuildTypeTemplateForCompletion( NamesScope& names_sco
 	for( const TemplateSignatureParam& signature_param : type_template->signature_params )
 		signature_args.push_back( CreateDummyTemplateSignatureArg( *type_template, *template_args_scope, signature_param ) );
 
-	const auto errors_container= std::make_shared<CodeBuilderErrorsContainer>();
-	template_args_scope->SetErrors( errors_container );
+	{
+		const std::string name_encoded= EncodeTypeTemplateInstantiation( *type_template, signature_args );
+		if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )
+		{
+			// If this is not first instantiation, return previous namespace, where inserted type is really located.
+			const NamesScopePtr template_parameters_space= it->second.value.GetNamespace();
+			U_ASSERT( template_parameters_space != nullptr );
+			return template_parameters_space;
+		}
+	}
 
 	const auto prev_skip_building_generated_functions= skip_building_generated_functions_;
 	skip_building_generated_functions_= false;
 
 	const NamesScopeValue* names_scope_value=
-		FinishTemplateTypeGeneration( SrcLoc(), names_scope, TemplateTypePreparationResult{ type_template, template_args_scope, signature_args } );
+		FinishTemplateTypeGeneration(
+			SrcLoc(),
+			*EnsureDummyTemplateInstantiationArgsScopeCreated(),
+			TemplateTypePreparationResult{ type_template, template_args_scope, signature_args } );
 
-	skip_building_generated_functions_= prev_skip_building_generated_functions;
-
-	if( names_scope_value == nullptr )
-		return nullptr;
-
-	if( const auto type= names_scope_value->value.GetTypeName() )
+	if( names_scope_value != nullptr )
 	{
-		if( const auto class_type= type->GetClassType() )
+		if( const auto type= names_scope_value->value.GetTypeName() )
 		{
-			GlobalThingBuildClass( class_type );
-			GlobalThingBuildNamespace( *class_type->members );
+			if( const auto class_type= type->GetClassType() )
+			{
+				GlobalThingBuildClass( class_type );
+				GlobalThingBuildNamespace( *class_type->members );
+			}
 		}
 	}
+
+	skip_building_generated_functions_= prev_skip_building_generated_functions;
 
 	return template_args_scope;
 }
@@ -783,6 +791,80 @@ Type CodeBuilder::GetStubTemplateArgType()
 
 	stub_template_param_type_= Type( enum_type );
 	return *stub_template_param_type_;
+}
+
+NamesScopePtr CodeBuilder::EnsureDummyTemplateInstantiationArgsScopeCreated()
+{
+	if( dummy_template_instantiation_args_scope_ != nullptr )
+		return dummy_template_instantiation_args_scope_;
+
+	dummy_template_instantiation_args_scope_= std::make_unique<NamesScope>( "_dummy_instantiation_point_scope", compiled_sources_.front().names_map.get() );
+
+	// Create errors container, not linked with root errors container.
+	// Doing so we ignore all errors in dummy template instantiations.
+	const auto errors_container= std::make_shared<CodeBuilderErrorsContainer>();
+	dummy_template_instantiation_args_scope_->SetErrors( errors_container );
+
+	return dummy_template_instantiation_args_scope_;
+}
+
+void CodeBuilder::DummyInstantiateTemplates()
+{
+	const auto prev_skip_building_generated_functions= skip_building_generated_functions_;
+	skip_building_generated_functions_= false;
+
+	DummyInstantiateTemplates_r( *compiled_sources_.front().names_map );
+
+	// Instantiate also contents of templates.
+	// use index-based for because this array may be modified during iteration.
+	for( size_t i= 0; i < generated_template_things_sequence_.size(); ++i )
+	{
+		if( const auto namespace_= generated_template_things_storage_[generated_template_things_sequence_[i]].value.GetNamespace() )
+			DummyInstantiateTemplates_r( *namespace_ );
+	}
+
+	skip_building_generated_functions_= prev_skip_building_generated_functions;
+}
+
+void CodeBuilder::DummyInstantiateTemplates_r( NamesScope& names_scope )
+{
+	// Instantiate templates with dummy params.
+	// Doing so we allow to collect definition points for template code, even if it was not instantiated.
+	// Process only templates, defined in root namespace.
+	names_scope.ForEachValueInThisScope(
+		[&]( Value& value )
+		{
+			if( const auto type_templates_set= value.GetTypeTemplatesSet() )
+			{
+				for( const TypeTemplatePtr& type_template : type_templates_set->type_templates )
+				{
+					if( type_template->src_loc.GetFileIndex() == 0 )
+						BuildTypeTemplateForCompletion( type_template );
+				}
+			}
+			else if( const auto functions_set= value.GetFunctionsSet() )
+			{
+				for( const FunctionTemplatePtr& function_template : functions_set->template_functions )
+				{
+					if( function_template->src_loc.GetFileIndex() == 0 )
+					{
+						// TODO
+					}
+				}
+			}
+			else if( const NamesScopePtr inner_namespace= value.GetNamespace() )
+				DummyInstantiateTemplates_r( *inner_namespace );
+			else if( const Type* const type= value.GetTypeName() )
+			{
+				if( const ClassPtr class_type= type->GetClassType() )
+				{
+					// Process classes only from parent namespace.
+					// Otherwise we can get loop, using type alias.
+					if( class_type->members->GetParent() == &names_scope )
+						DummyInstantiateTemplates_r( *class_type->members );
+				}
+			}
+		});
 }
 
 void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const std::string_view name )

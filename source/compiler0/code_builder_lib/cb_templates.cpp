@@ -831,6 +831,14 @@ CodeBuilder::TemplateTypePreparationResult CodeBuilder::PrepareTemplateType(
 	return result;
 }
 
+std::string CodeBuilder::EncodeTypeTemplateInstantiation( const TypeTemplate& type_template, const TemplateArgs& signature_args )
+{
+	// Encode name for caching. Name must be unique for each template and its parameters.
+	return
+		std::to_string( reinterpret_cast<uintptr_t>( &type_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
+		mangler_->MangleTemplateArgs( signature_args );
+}
+
 NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 	const SrcLoc& src_loc,
 	NamesScope& arguments_names_scope,
@@ -840,10 +848,7 @@ NamesScopeValue* CodeBuilder::FinishTemplateTypeGeneration(
 	const TypeTemplate& type_template= *type_template_ptr;
 	const NamesScopePtr& template_args_namespace= template_type_preparation_result.template_args_namespace;
 
-	// Encode name for caching. Name must be unique for each template and its parameters.
-	const std::string name_encoded=
-		std::to_string( reinterpret_cast<uintptr_t>( &type_template ) ) + // Encode template address, because we needs unique keys for templates with same name.
-		mangler_->MangleTemplateArgs( template_type_preparation_result.signature_args );
+	const std::string name_encoded= EncodeTypeTemplateInstantiation( type_template, template_type_preparation_result.signature_args );
 
 	// Check, if type already generated.
 	if( const auto it= generated_template_things_storage_.find( name_encoded ); it != generated_template_things_storage_.end() )

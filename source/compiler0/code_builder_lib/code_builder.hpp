@@ -216,7 +216,7 @@ private:
 	void BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::ClassVisibilityLabel& class_visibility_label );
 
 	// Performs template instantiation with dummy args and returns names scope, if it is a class template.
-	NamesScopePtr BuildTypeTemplateForCompletion( NamesScope& names_scope, const TypeTemplatePtr& type_template );
+	NamesScopePtr BuildTypeTemplateForCompletion( const TypeTemplatePtr& type_template );
 
 	// This function is basically reverse of "MatchTemplateArg".
 	TemplateArg CreateDummyTemplateSignatureArg( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam& signature_param );
@@ -233,6 +233,10 @@ private:
 	TemplateArg CreateDummyTemplateSignatureArgForTemplateParam( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateBase::TemplateParameter& param );
 
 	Type GetStubTemplateArgType();
+
+	NamesScopePtr EnsureDummyTemplateInstantiationArgsScopeCreated();
+	void DummyInstantiateTemplates();
+	void DummyInstantiateTemplates_r( NamesScope& names_scope );
 
 	void RootNamespaseLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
@@ -531,6 +535,8 @@ private:
 	TemplateTypePreparationResult PrepareTemplateType(
 		const TypeTemplatePtr& type_template_ptr,
 		llvm::ArrayRef<TemplateArg> template_arguments );
+
+	std::string EncodeTypeTemplateInstantiation( const TypeTemplate& type_template, const TemplateArgs& signature_args );
 
 	NamesScopeValue* FinishTemplateTypeGeneration(
 		const SrcLoc& src_loc,
@@ -1423,6 +1429,9 @@ private:
 	std::unordered_map<SrcLoc, DefinitionPoint, SrcLocHasher> definition_points_;
 
 	std::optional<Type> stub_template_param_type_;
+
+	// Use dummy namespace as source point for dummy instantiations of templates.
+	NamesScopePtr dummy_template_instantiation_args_scope_;
 
 	// Output container for completion result items.
 	std::vector<CompletionItem> completion_items_;

@@ -72,6 +72,9 @@ std::unique_ptr<CodeBuilder> CodeBuilder::BuildProgramAndLeaveInternalState(
 	instance->BuildProgramInternal( source_graph );
 	// Do not finalize program - save some time.
 
+	if( instance->collect_definition_points_ )
+		instance->DummyInstantiateTemplates();
+
 	return instance;
 }
 

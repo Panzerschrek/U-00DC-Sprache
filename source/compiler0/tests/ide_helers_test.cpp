@@ -633,6 +633,35 @@ U_TEST( GoToDefinition_Test18 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 11, 10 ) == SrcLoc( 0, 5, 6 ) );
 }
 
+U_TEST( GoToDefinition_Test19 )
+{
+	// Should found definitions inside non-instantiated class template.
+	static const char c_program_text[]=
+	R"(
+		template</ type SomeT />
+		struct Box
+		{
+			SomeT field;
+			fn Foo( this )
+			{
+				Bar();
+				auto& ref= field;
+				auto& ref_to_unknown= unknown; // Errors should be ignored.
+			}
+			type ThisType= Box</ SomeT />;
+		}
+		fn Bar();
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  5,  3 ) == SrcLoc( 0,  2, 18 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  8,  4 ) == SrcLoc( 0, 14,  5 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9, 15 ) == SrcLoc( 0,  5,  9 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 12, 18 ) == SrcLoc( 0,  3,  9 ) );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=
