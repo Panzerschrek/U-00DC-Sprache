@@ -115,45 +115,6 @@ void CodeBuilder::CollectFunctionDefinition( const FunctionVariable& function_va
 	definition_points_.insert( std::make_pair( src_loc_corrected, std::move(point) ) );
 }
 
-Type CodeBuilder::GetStubTemplateArgType()
-{
-	if( stub_template_param_type_ != std::nullopt )
-		return *stub_template_param_type_; // Already created.
-
-	// Generate some enum. It is equivalent of something like
-	//	struct TemplateParam { Member0 }
-	// Use enum since enums can also be used as template value params.
-
-	NamesScope& root_namespace= *compiled_sources_.front().names_map;
-
-	auto stub_enum= std::make_unique<Enum>( "TemplateParam", &root_namespace );
-	const EnumPtr enum_type= stub_enum.get();
-	enums_table_.push_back( std::move(stub_enum) );
-
-	enum_type->underlaying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
-	enum_type->element_count= 1;
-
-	const std::string_view member_name= "Member0";
-	const auto constexpr_value= llvm::Constant::getNullValue( enum_type->underlaying_type.llvm_type );
-
-	const VariablePtr member_variable=
-		std::make_shared<Variable>(
-			enum_type,
-			ValueType::ReferenceImut,
-			Variable::Location::Pointer,
-			std::string( member_name ),
-			CreateGlobalConstantVariable(
-				enum_type,
-				mangler_->MangleGlobalVariable( enum_type->members, member_name, enum_type, true ),
-				constexpr_value ),
-			constexpr_value );
-
-	enum_type->members.AddName( member_name, NamesScopeValue( member_variable, SrcLoc() ) );
-
-	stub_template_param_type_= Type( enum_type );
-	return *stub_template_param_type_;
-}
-
 NamesScopePtr CodeBuilder::GetNamesScopeForCompletion( const llvm::ArrayRef<CompletionRequestPrefixComponent> prefix )
 {
 	const NamesScopePtr& root_names_scope= compiled_sources_.front().names_map;
@@ -503,11 +464,15 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 		return;
 
 	const auto template_args_scope= std::make_shared<NamesScope>( "", &names_scope );
+
+	// Since it is not always possible to calculate template args from signature args for function template,
+	// perform direct args filling.
 	for( const TemplateBase::TemplateParameter& param : result_function_template->template_params )
-	{
-		template_args_scope->AddName( param.name, NamesScopeValue( Value( GetStubTemplateArgType() ), param.src_loc ) );
-		// TODO - support value params.
-	}
+		CreateDummyTemplateSignatureArgForTemplateParam( *result_function_template, *template_args_scope, param );
+
+	// Do not care here about signature params filling.
+	// For function templates they are used mostly for overloaded resolition.
+	// But we do not need it for completion.
 
 	const auto errors_container= std::make_shared<CodeBuilderErrorsContainer>();
 	template_args_scope->SetErrors( errors_container );
@@ -547,17 +512,13 @@ NamesScopePtr CodeBuilder::BuildTypeTemplateForCompletion( NamesScope& names_sco
 {
 	const auto template_args_scope= std::make_shared<NamesScope>( "", &names_scope );
 
+	// Since (normally) template args should be evaluated during matching of signature params,
+	// pefrorm dummy signature args creation.
+	// This will fille template args properly.
 	TemplateArgs signature_args;
-
-	for( const TemplateBase::TemplateParameter& param : type_template->template_params )
-	{
-		// TODO - support value params.
-		const NamesScopeValue dummy_arg( Value( GetStubTemplateArgType() ), param.src_loc );
-		template_args_scope->AddName( param.name, dummy_arg );
-
-		// TODO - prepare signature args properly.
-		signature_args.push_back( GetStubTemplateArgType() );
-	}
+	signature_args.reserve( type_template->signature_params.size() );
+	for( const TemplateSignatureParam& signature_param : type_template->signature_params )
+		signature_args.push_back( CreateDummyTemplateSignatureArg( *type_template, *template_args_scope, signature_param ) );
 
 	const auto errors_container= std::make_shared<CodeBuilderErrorsContainer>();
 	template_args_scope->SetErrors( errors_container );
@@ -583,6 +544,245 @@ NamesScopePtr CodeBuilder::BuildTypeTemplateForCompletion( NamesScope& names_sco
 	}
 
 	return template_args_scope;
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArg( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam& signature_param )
+{
+	return signature_param.Visit( [&]( const auto& el ) { return CreateDummyTemplateSignatureArgImpl( template_, args_names_scope, el ); } );
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TypeParam& type_param )
+{
+	(void)template_;
+	(void)args_names_scope;
+
+	return type_param.t;
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::VariableParam& variable_param )
+{
+	(void)template_;
+	(void)args_names_scope;
+
+	TemplateVariableArg arg;
+	arg.type= variable_param.type;
+	arg.constexpr_value= llvm::Constant::getNullValue( arg.type.GetLLVMType() );
+
+	return std::move(arg);
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TemplateParam& template_param )
+{
+	if( template_param.index < template_.template_params.size() )
+		return CreateDummyTemplateSignatureArgForTemplateParam( template_, args_names_scope, template_.template_params[ template_param.index ] );
+
+	return invalid_type_;
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::ArrayParam& array_param )
+{
+	const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, *array_param.element_type );
+	const TemplateArg element_count= CreateDummyTemplateSignatureArg( template_, args_names_scope, *array_param.element_count );
+
+	if( const auto t= std::get_if<Type>( &element_type ) )
+	{
+		if( const auto v= std::get_if<TemplateVariableArg>( &element_count ) )
+		{
+			ArrayType array_type;
+			array_type.element_type= *t;
+			array_type.element_count= v->constexpr_value->getUniqueInteger().getLimitedValue();
+			array_type.llvm_type= llvm::ArrayType::get( array_type.element_type.GetLLVMType(), array_type.element_count );
+			return Type( std::move(array_type) );
+		}
+	}
+
+	return invalid_type_;
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TupleParam& tuple_param )
+{
+	TupleType tuple_type;
+	tuple_type.element_types.reserve( tuple_param.element_types.size() );
+	llvm::SmallVector<llvm::Type*, 16> elements_llvm_types;
+	elements_llvm_types.reserve( tuple_param.element_types.size() );
+
+	for( const TemplateSignatureParam& element_param : tuple_param.element_types )
+	{
+		const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, element_param );
+		if( const auto t= std::get_if<Type>( &element_type ) )
+		{
+			tuple_type.element_types.push_back( *t );
+			elements_llvm_types.push_back( t->GetLLVMType() );
+		}
+		else
+			return invalid_type_;
+	}
+
+	tuple_type.llvm_type= llvm::StructType::get( llvm_context_, elements_llvm_types );
+
+	return Type( std::move(tuple_type) );
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::RawPointerParam& raw_pointer_param )
+{
+	const TemplateArg element_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, *raw_pointer_param.element_type );
+	if( const auto t= std::get_if<Type>( &element_type ) )
+	{
+		RawPointerType raw_pointer;
+		raw_pointer.element_type= *t;
+		raw_pointer.llvm_type= raw_pointer.element_type.GetLLVMType()->getPointerTo();
+
+		return Type( std::move(raw_pointer) );
+	}
+
+	return invalid_type_;
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::FunctionParam& function_param )
+{
+	FunctionType function_type;
+
+	for( const TemplateSignatureParam::FunctionParam::Param& param : function_param.params )
+	{
+		FunctionType::Param out_param;
+
+		const TemplateArg param_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, *param.type );
+		if( const auto t= std::get_if<Type>( &param_type ) )
+			out_param.type= *t;
+		else
+			return invalid_type_;
+
+		out_param.value_type= param.value_type;
+		function_type.params.push_back( std::move(out_param) );
+	}
+
+	const TemplateArg return_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, *function_param.return_type );
+	if( const auto t= std::get_if<Type>( &return_type ) )
+		function_type.return_type= *t;
+	else
+		return invalid_type_;
+
+	function_type.return_value_type= function_param.return_value_type;
+	function_type.unsafe= function_param.is_unsafe;
+	function_type.calling_convention= function_param.calling_convention;
+
+	return Type( FunctionPointerType{ std::move(function_type), llvm::PointerType::get( llvm_context_, 0 ) } );
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::CoroutineParam& coroutine_param )
+{
+	const TemplateArg return_type_type= CreateDummyTemplateSignatureArg( template_, args_names_scope, *coroutine_param.return_type );
+	if( const auto t= std::get_if<Type>( &return_type_type ) )
+	{
+		CoroutineTypeDescription coroutine_type_description;
+		coroutine_type_description.kind= coroutine_param.kind;
+		coroutine_type_description.return_type= *t;
+		coroutine_type_description.return_value_type= coroutine_param.return_value_type;
+		coroutine_type_description.inner_reference_type= coroutine_param.inner_reference_type;
+		coroutine_type_description.non_sync= coroutine_param.non_sync;
+
+		return Type( GetCoroutineType( *args_names_scope.GetRoot(), coroutine_type_description ) );
+	}
+
+	return invalid_type_;
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param )
+{
+	std::vector<TemplateArg> args;
+	args.reserve( specialized_template_param.params.size() );
+	for( const TemplateSignatureParam& param : specialized_template_param.params )
+		args.push_back( CreateDummyTemplateSignatureArg( template_, args_names_scope, param ) );
+
+	// TODO - instantiate some type template here.
+	return invalid_type_;
+}
+
+TemplateArg CodeBuilder::CreateDummyTemplateSignatureArgForTemplateParam( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateBase::TemplateParameter& param )
+{
+	if( const auto inserted_arg= args_names_scope.GetThisScopeValue( param.name ) )
+	{
+		// Template arg was already created. Just fetch it.
+		if( const auto type= inserted_arg->value.GetTypeName() )
+			return *type;
+		else if( const auto variable= inserted_arg->value.GetVariable() )
+			return TemplateVariableArg( *variable );
+	}
+	else
+	{
+		if( param.type != std::nullopt )
+		{
+			// Create variable arg.
+			const TemplateArg type_arg= CreateDummyTemplateSignatureArg( template_, args_names_scope, *param.type );
+			if( const auto t= std::get_if<Type>( &type_arg ) )
+			{
+				TemplateVariableArg arg;
+				arg.type= *t;
+				arg.constexpr_value= llvm::Constant::getNullValue( arg.type.GetLLVMType() );
+
+				const VariablePtr variable_for_insertion=
+					std::make_shared<Variable>(
+						arg.type,
+						ValueType::ReferenceImut,
+						Variable::Location::Pointer,
+						param.name,
+						CreateGlobalConstantVariable( arg.type, param.name, arg.constexpr_value ),
+						arg.constexpr_value );
+
+				args_names_scope.AddName( param.name, NamesScopeValue( variable_for_insertion, param.src_loc ) );
+				return std::move(arg);
+			}
+		}
+		else
+		{
+			// Create type arg. Use stub type for this.
+
+			const Type t= GetStubTemplateArgType();
+			args_names_scope.AddName( param.name, NamesScopeValue( t, param.src_loc ) );
+			return t;
+		}
+	}
+
+	return invalid_type_;
+}
+
+Type CodeBuilder::GetStubTemplateArgType()
+{
+	if( stub_template_param_type_ != std::nullopt )
+		return *stub_template_param_type_; // Already created.
+
+	// Generate some enum. It is equivalent of something like
+	//	struct TemplateParam { Member0 }
+	// Use enum since enums can also be used as template value params.
+
+	NamesScope& root_namespace= *compiled_sources_.front().names_map;
+
+	auto stub_enum= std::make_unique<Enum>( "TemplateParam", &root_namespace );
+	const EnumPtr enum_type= stub_enum.get();
+	enums_table_.push_back( std::move(stub_enum) );
+
+	enum_type->underlaying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
+	enum_type->element_count= 1;
+
+	const std::string_view member_name= "Member0";
+	const auto constexpr_value= llvm::Constant::getNullValue( enum_type->underlaying_type.llvm_type );
+
+	const VariablePtr member_variable=
+		std::make_shared<Variable>(
+			enum_type,
+			ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			std::string( member_name ),
+			CreateGlobalConstantVariable(
+				enum_type,
+				mangler_->MangleGlobalVariable( enum_type->members, member_name, enum_type, true ),
+				constexpr_value ),
+			constexpr_value );
+
+	enum_type->members.AddName( member_name, NamesScopeValue( member_variable, SrcLoc() ) );
+
+	stub_template_param_type_= Type( enum_type );
+	return *stub_template_param_type_;
 }
 
 void CodeBuilder::NameLookupCompleteImpl( const NamesScope& names_scope, const std::string_view name )

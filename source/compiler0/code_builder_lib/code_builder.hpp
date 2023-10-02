@@ -197,8 +197,6 @@ private:
 	void CollectDefinition( const NamesScopeValue& value, const SrcLoc& src_loc );
 	void CollectFunctionDefinition( const FunctionVariable& function_variable, const SrcLoc& src_loc );
 
-	Type GetStubTemplateArgType();
-
 	NamesScopePtr GetNamesScopeForCompletion( llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	NamesScopePtr EvaluateCompletionRequestPrefix_r( const NamesScopePtr& start_scope, llvm::ArrayRef<CompletionRequestPrefixComponent> prefix );
 	std::vector<CompletionItem> CompletionResultFinalize();
@@ -219,6 +217,22 @@ private:
 
 	// Performs template instantiation with dummy args and returns names scope, if it is a class template.
 	NamesScopePtr BuildTypeTemplateForCompletion( NamesScope& names_scope, const TypeTemplatePtr& type_template );
+
+	// This function is basically reverse of "MatchTemplateArg".
+	TemplateArg CreateDummyTemplateSignatureArg( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam& signature_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TypeParam& type_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::VariableParam& variable_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TemplateParam& template_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::ArrayParam& array_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::TupleParam& tuple_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::RawPointerParam& raw_pointer_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::FunctionParam& function_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::CoroutineParam& coroutine_param );
+	TemplateArg CreateDummyTemplateSignatureArgImpl( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateSignatureParam::SpecializedTemplateParam& specialized_template_param );
+
+	TemplateArg CreateDummyTemplateSignatureArgForTemplateParam( const TemplateBase& template_, NamesScope& args_names_scope, const TemplateBase::TemplateParameter& param );
+
+	Type GetStubTemplateArgType();
 
 	void RootNamespaseLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );
 	void NameLookupCompleteImpl( const NamesScope& names_scope, std::string_view name );

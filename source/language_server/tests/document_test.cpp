@@ -926,6 +926,48 @@ U_TEST( DocumentCompletion_Test22 )
 	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
 }
 
+U_TEST( DocumentCompletion_Test23 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "template</ type T, T value_arg /> struct Box</ value_arg /> {}" );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should properly handle template with complex signature.
+	document.UpdateText( DocumentRange{ { 1, 61 }, { 1, 61 } }, "auto x= arg" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 72 } );
+	const CompletionItemsNormalized expected_completion_result{ "value_arg" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
+U_TEST( DocumentCompletion_Test24 )
+{
+	DocumentsContainer documents;
+	TestVfs vfs(documents);
+	const IVfs::Path path= "/test.u";
+	Document document( path, GetTestDocumentBuildOptions(), vfs, g_tests_logger );
+	documents[path]= &document;
+
+	document.SetText( "template</ type T, size_type S /> fn foo( [ T, S ]& arr_arg ) {} " );
+
+	document.StartRebuild( g_tests_thread_pool );
+	document.WaitUntilRebuildFinished();
+
+	// Should properly handle template with complex signature.
+	document.UpdateText( DocumentRange{ { 1, 63 }, { 1, 63 } }, "arr" );
+
+	const auto completion_result= document.Complete( DocumentPosition{ 1, 66 } );
+	const CompletionItemsNormalized expected_completion_result{ "arr_arg" };
+	U_TEST_ASSERT( NormalizeCompletionResult( completion_result ) == expected_completion_result );
+}
+
 U_TEST( DocumentSignatureHelp_Test0 )
 {
 	DocumentsContainer documents;
