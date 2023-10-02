@@ -120,28 +120,37 @@ Type CodeBuilder::GetStubTemplateArgType()
 	if( stub_template_param_type_ != std::nullopt )
 		return *stub_template_param_type_; // Already created.
 
-	// Generate sime class. It is equivalent of something like
-	// struct TemplateParam{}
+	// Generate some enum. It is equivalent of something like
+	//	struct TemplateParam { Member0 }
+	// Use enum since enums can also be used as template value params.
 
 	NamesScope& root_namespace= *compiled_sources_.front().names_map;
 
-	auto stub_class= std::make_unique<Class>( "TemplateParam", &root_namespace );
-	const ClassPtr class_type= stub_class.get();
-	classes_table_.push_back( std::move(stub_class) );
+	auto stub_enum= std::make_unique<Enum>( "TemplateParam", &root_namespace );
+	const EnumPtr enum_type= stub_enum.get();
+	enums_table_.push_back( std::move(stub_enum) );
 
-	class_type->members->SetClass( class_type );
-	class_type->kind= Class::Kind::Struct;
-	class_type->parents_list_prepared= true;
-	class_type->is_complete= true;
-	class_type->llvm_type= llvm::StructType::get( llvm_context_, llvm::ArrayRef<llvm::Type*>() );
+	enum_type->underlaying_type= FundamentalType( U_FundamentalType::u8_, fundamental_llvm_types_.u8_ );
+	enum_type->element_count= 1;
 
-	TryGenerateDefaultConstructor( class_type );
-	TryGenerateCopyConstructor( class_type );
-	TryGenerateCopyAssignmentOperator( class_type );
-	TryGenerateEqualityCompareOperator( class_type );
-	TryGenerateDestructor( class_type );
+	const std::string_view member_name= "Member0";
+	const auto constexpr_value= llvm::Constant::getNullValue( enum_type->underlaying_type.llvm_type );
 
-	stub_template_param_type_= Type( class_type );
+	const VariablePtr member_variable=
+		std::make_shared<Variable>(
+			enum_type,
+			ValueType::ReferenceImut,
+			Variable::Location::Pointer,
+			std::string( member_name ),
+			CreateGlobalConstantVariable(
+				enum_type,
+				mangler_->MangleGlobalVariable( enum_type->members, member_name, enum_type, true ),
+				constexpr_value ),
+			constexpr_value );
+
+	enum_type->members.AddName( member_name, NamesScopeValue( member_variable, SrcLoc() ) );
+
+	stub_template_param_type_= Type( enum_type );
 	return *stub_template_param_type_;
 }
 
