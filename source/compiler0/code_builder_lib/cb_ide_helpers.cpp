@@ -437,6 +437,8 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::TypeTemplate& type_template )
 {
+	// TODO - fix this. Avoid further destruction of TypeTemplatePtr.
+	// We need to keep it alive, since some internal structures may contain raw reference to it.
 	TypeTemplatesSet temp_type_templates_set;
 	PrepareTypeTemplate( type_template, temp_type_templates_set, names_scope );
 	if( !temp_type_templates_set.type_templates.empty() )
@@ -446,6 +448,9 @@ void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const 
 void CodeBuilder::BuildElementForCompletionImpl( NamesScope& names_scope, const Synt::FunctionTemplate& function_template_syntax_element )
 {
 	// Prepare function template and instantiate it with dummy template args in order to produce some sort of usefull completion result.
+
+	// TODO - fix this. Avoid further destruction of FunctionTemplatePtr.
+	// We need to keep it alive, since some internal structures may contain raw reference to it.
 
 	OverloadedFunctionsSet functions_set;
 	PrepareFunctionTemplate( function_template_syntax_element, functions_set, names_scope, names_scope.GetClass() );
