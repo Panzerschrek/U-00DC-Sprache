@@ -684,6 +684,33 @@ U_TEST( GoToDefinition_Test20 )
 	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 6,  3 ) == SrcLoc( 0, 8,  5 ) );
 }
 
+U_TEST( GoToDefinition_Test21 )
+{
+	// Should found definitions inside non-instantiated function template inside non-instantiated class template.
+	static const char c_program_text[]=
+	R"(
+		template</ type OuterT />
+		struct Box
+		{
+			template</ type InnerT />
+			fn Foo()
+			{
+				var InnerT inner= zero_init;
+				var OuterT outer= zero_init;
+				Bar();
+			}
+		}
+		fn Bar();
+	)";
+
+	const auto code_builder= BuildProgramForIdeHelpersTest( c_program_text );
+	const Lexems lexems= LexicalAnalysis( c_program_text ).lexems;
+
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  8, 8 ) == SrcLoc( 0,  5, 19 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder,  9, 8 ) == SrcLoc( 0,  2, 18 ) );
+	U_TEST_ASSERT( GetDefinition( lexems, *code_builder, 10, 4 ) == SrcLoc( 0, 13,  5 ) );
+}
+
 U_TEST( GetAllOccurrences_Test0 )
 {
 	static const char c_program_text[]=

@@ -497,7 +497,7 @@ NamesScopePtr CodeBuilder::InstantiateTypeTemplateWithDummyArgs( const TypeTempl
 
 	// Since (normally) template args should be evaluated during matching of signature params,
 	// pefrorm dummy signature args creation.
-	// This will fille template args properly.
+	// This will fill template args properly.
 	TemplateArgs signature_args;
 	signature_args.reserve( type_template->signature_params.size() );
 	for( const TemplateSignatureParam& signature_param : type_template->signature_params )
